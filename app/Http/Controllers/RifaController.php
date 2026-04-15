@@ -7,6 +7,7 @@ use App\Models\RifaVenta;
 use App\Models\BotInstance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class RifaController extends Controller
 {
@@ -98,24 +99,28 @@ class RifaController extends Controller
             ? implode(', ', array_map(fn($n) => str_pad($n, 5, '0', STR_PAD_LEFT), $venta->ticket_numbers))
             : 'Por asignar';
 
-        $mensaje = "🎉 *¡Pago confirmado!*\n\n"
+        // Generar imagen del ticket
+        $ticketBase64 = $this->generateTicketImage($venta);
+
+        $mensaje = "🎉 *¡Tu participación está confirmada!*\n\n"
                  . "📋 *Pedido:* {$venta->order_number}\n"
                  . "🎟️ *Rifa:* " . ($venta->rifa?->nombre ?? $venta->plan_nombre) . "\n"
                  . "🎫 *Tickets:* {$venta->tickets}\n"
-                 . "💰 *Monto:* S/ " . number_format($venta->monto, 2) . "\n"
                  . "🔑 *Código:* *{$venta->ticket_code}*\n"
                  . "🔢 *Números:* {$numeros}\n\n"
                  . "¡Mucha suerte! 🍀🍀🍀";
 
         try {
-            $response = \Illuminate\Support\Facades\Http::timeout(5)->post("{$botUrl}/action", [
-                'token'     => 'wa-bot-secret-2024',
-                'action'    => 'send_ticket',
-                'wa_number' => $venta->wa_number,
-                'message'   => $mensaje,
+            \Illuminate\Support\Facades\Http::timeout(15)->post("{$botUrl}/action", [
+                'token'          => 'wa-bot-secret-2024',
+                'action'         => 'send_ticket',
+                'wa_number'      => $venta->wa_number,
+                'message'        => $mensaje,
+                'ticket_base64'  => $ticketBase64,
+                'ticket_mime'    => 'image/png',
             ]);
         } catch (\Throwable $e) {
-            // Bot no disponible — guardar igual
+            // Bot no disponible
         }
 
         $venta->update(['status' => 'enviado']);
@@ -126,6 +131,50 @@ class RifaController extends Controller
     {
         $venta->update(['status' => 'cancelado']);
         return response()->json(['ok' => true]);
+    }
+
+    // ── Vista previa del ticket (HTML para screenshot) ──────────
+    public function ticketPreview(RifaVenta $venta, Request $request)
+    {
+        if ($request->get('token') !== 'wa-bot-secret-2024' && !auth()->check()) abort(403);
+
+        $rifa    = $venta->rifa;
+        $project = $venta->project;
+
+        return view('rifas.ticket', [
+            'negocio'      => $project?->name ?? 'Prueba tu Suerte',
+            'negocio_logo' => null,
+            'evento'       => $rifa?->descripcion ?? '',
+            'rifa_nombre'  => $rifa?->nombre ?? $venta->plan_nombre,
+            'banner_url'   => $rifa?->imagen_url,
+            'nombre'       => $venta->nombre ?? 'Participante',
+            'dni'          => $venta->dni ?? '—',
+            'celular'      => $venta->wa_number,
+            'ciudad'       => $venta->ciudad ?? '—',
+            'ticket_code'  => $venta->ticket_code ?? '—',
+            'precio'       => number_format($venta->monto / max($venta->tickets, 1), 2),
+        ]);
+    }
+
+    /** Genera imagen PNG del ticket usando Puppeteer y la devuelve como base64 */
+    private function generateTicketImage(RifaVenta $venta): ?string
+    {
+        $url      = route('rifas.ticket.preview', ['venta' => $venta->id, 'token' => 'wa-bot-secret-2024']);
+        $outFile  = storage_path("app/public/tickets/ticket-{$venta->id}.png");
+        $outDir   = dirname($outFile);
+        if (!is_dir($outDir)) mkdir($outDir, 0755, true);
+
+        $script   = base_path('whatsbot/ticket-generator.js');
+        $node     = trim(shell_exec('which node') ?: '/usr/bin/node');
+
+        $cmd = "{$node} {$script} --url=" . escapeshellarg($url)
+             . " --output=" . escapeshellarg($outFile) . " 2>&1";
+        shell_exec($cmd);
+
+        if (file_exists($outFile)) {
+            return base64_encode(file_get_contents($outFile));
+        }
+        return null;
     }
 
     // ── Bot API ───────────────────────────────────────────────
@@ -209,7 +258,7 @@ class RifaController extends Controller
 
     public function botUpdateData(Request $request, RifaVenta $venta)
     {
-        $venta->update($request->only(['nombre', 'dni']));
+        $venta->update($request->only(['nombre', 'dni', 'ciudad']));
         return response()->json(['ok' => true]);
     }
 

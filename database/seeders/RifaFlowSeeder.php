@@ -11,8 +11,10 @@ use Illuminate\Database\Seeder;
 
 /**
  * Siembra el flujo conversacional del bot de rifas.
- * Estados: inicio → ver_rifas → seleccionar_rifa → elegir_cantidad
- *          → confirmar_pedido → esperando_pago → pago_recibido
+ * Estados:
+ *   inicio → ver_rifas → seleccionar_rifa → elegir_cantidad
+ *   → pedir_nombre → pedir_dni → pedir_ciudad
+ *   → confirmar_pedido → esperando_pago → pago_recibido
  */
 class RifaFlowSeeder extends Seeder
 {
@@ -66,47 +68,73 @@ class RifaFlowSeeder extends Seeder
                 'input_type' => 'number',
                 'sort_order' => 4,
             ],
+            'pedir_nombre' => [
+                'label'      => 'Pedir Nombre',
+                'message'    => "👤 Por favor escribe tu *nombre completo*:",
+                'input_type' => 'text',
+                'sort_order' => 5,
+            ],
+            'pedir_dni' => [
+                'label'      => 'Pedir DNI',
+                'message'    => "🪪 Escribe tu *DNI o documento de identidad*:",
+                'input_type' => 'text',
+                'sort_order' => 6,
+            ],
+            'pedir_ciudad' => [
+                'label'      => 'Pedir Ciudad',
+                'message'    => "📍 ¿Desde qué *ciudad* participas?",
+                'input_type' => 'text',
+                'sort_order' => 7,
+            ],
             'confirmar_pedido' => [
                 'label'      => 'Confirmar Pedido',
-                'message'    => "📋 *Resumen de tu pedido:*\n\n🎟️ Rifa: *{rifa_nombre}*\n🔢 Tickets: *{rifa_tickets}*\n💰 Total: *S/ {rifa_total}*\n📦 N° Pedido: *{order_number}*\n\n*Realiza el pago:*\n🏦 Yape: 999-999-999\n🏦 BCP: 123-456789-0-12\n\nEnvía tu comprobante de pago para confirmar tu participación 📸",
+                'message'    => "📋 *Resumen de tu pedido:*\n\n🎟️ Rifa: *{rifa_nombre}*\n🔢 Tickets: *{rifa_tickets}*\n💰 Total: *S/ {rifa_total}*\n📦 N° Pedido: *{order_number}*\n\n👤 Nombre: *{nombre}*\n🪪 DNI: *{dni}*\n\n*Realiza el pago:*\n🏦 Yape: 999-999-999\n🏦 BCP: 123-456789-0-12\n\nEnvía tu comprobante de pago para confirmar tu participación 📸",
                 'input_type' => 'image',
-                'sort_order' => 5,
+                'sort_order' => 8,
             ],
             'esperando_pago' => [
                 'label'      => 'Esperando Pago',
                 'message'    => "⏳ *Comprobante recibido*\n\nEstamos verificando tu pago.\nTe notificaremos cuando sea confirmado. ✅\n\nN° Pedido: *{order_number}*",
                 'input_type' => 'text',
-                'sort_order' => 6,
+                'sort_order' => 9,
             ],
             'pago_recibido' => [
                 'label'      => 'Pago Confirmado',
                 'message'    => "🎉 *¡Tu participación está confirmada!*\n\nPronto recibirás tu ticket con los números asignados. 🍀",
                 'input_type' => 'text',
-                'sort_order' => 7,
+                'sort_order' => 10,
             ],
         ];
 
         $created = [];
         foreach ($states as $key => $data) {
-            $created[$key] = BotState::create(array_merge($data, ['flow_id' => $flow->id, 'key' => $key, 'is_active' => true]));
+            $created[$key] = BotState::create(array_merge($data, [
+                'flow_id'   => $flow->id,
+                'key'       => $key,
+                'is_active' => true,
+            ]));
         }
 
         // Transiciones
         $transitions = [
-            // inicio → ver_rifas con opción "1" o "rifas"
+            // inicio → ver_rifas
             ['from' => 'inicio',           'to' => 'ver_rifas',        'trigger' => '1',       'action' => null],
             ['from' => 'inicio',           'to' => 'ver_rifas',        'trigger' => 'rifas',   'action' => null],
             ['from' => 'inicio',           'to' => 'ver_rifas',        'trigger' => '',        'action' => null],
             // ver_rifas → seleccionar_rifa (carga y muestra rifas)
             ['from' => 'ver_rifas',        'to' => 'seleccionar_rifa', 'trigger' => '',        'action' => 'show_rifas'],
-            // seleccionar_rifa → elegir_cantidad (guarda la rifa elegida)
+            // seleccionar_rifa → elegir_cantidad
             ['from' => 'seleccionar_rifa', 'to' => 'elegir_cantidad',  'trigger' => '',        'action' => 'select_rifa'],
-            // elegir_cantidad → confirmar_pedido (guarda cantidad + crea orden)
-            ['from' => 'elegir_cantidad',  'to' => 'confirmar_pedido', 'trigger' => '',        'action' => 'save_quantity|create_rifa_order'],
+            // elegir_cantidad → pedir_nombre (guarda cantidad + crea orden)
+            ['from' => 'elegir_cantidad',  'to' => 'pedir_nombre',     'trigger' => '',        'action' => 'save_quantity|create_rifa_order'],
+            // recopilar datos
+            ['from' => 'pedir_nombre',     'to' => 'pedir_dni',        'trigger' => '',        'action' => 'save_rifa_nombre'],
+            ['from' => 'pedir_dni',        'to' => 'pedir_ciudad',     'trigger' => '',        'action' => 'save_rifa_dni'],
+            ['from' => 'pedir_ciudad',     'to' => 'confirmar_pedido', 'trigger' => '',        'action' => 'save_rifa_ciudad'],
             // confirmar_pedido → esperando_pago (recibe comprobante imagen)
             ['from' => 'confirmar_pedido', 'to' => 'esperando_pago',   'trigger' => 'image',   'action' => 'save_rifa_payment'],
             ['from' => 'confirmar_pedido', 'to' => 'confirmar_pedido', 'trigger' => '',        'action' => null],
-            // esperando_pago → loop (re-envía instrucciones)
+            // esperando_pago → loop
             ['from' => 'esperando_pago',   'to' => 'esperando_pago',   'trigger' => '',        'action' => null],
         ];
 

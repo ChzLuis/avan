@@ -177,6 +177,9 @@ function buildVars(data) {
         rifa_total:   data.rifaTotal||'',
         order_number: data.orderNumber||'',
         nombre:       data.nombre||'',
+        dni:          data.dni||'',
+        celular:      data.celular||'',
+        ciudad:       data.ciudad||'',
     };
 }
 
@@ -487,6 +490,29 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
             }
             break;
         }
+
+        // ── Recopilar datos del participante (rifa) ───────────
+        case 'save_rifa_nombre': {
+            const nombre = body.trim();
+            sessionData = { ...sessionData, nombre };
+            if (sessionData.rifaOrderId)
+                await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/data`, { nombre });
+            break;
+        }
+        case 'save_rifa_dni': {
+            const dni = body.trim();
+            sessionData = { ...sessionData, dni };
+            if (sessionData.rifaOrderId)
+                await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/data`, { dni });
+            break;
+        }
+        case 'save_rifa_ciudad': {
+            const ciudad = body.trim();
+            sessionData = { ...sessionData, ciudad };
+            if (sessionData.rifaOrderId)
+                await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/data`, { ciudad });
+            break;
+        }
     }
     return sessionData;
 }
@@ -511,9 +537,18 @@ const server = http.createServer(async (req, res) => {
             const waNumber = data.wa_number.replace(/\D/g,'');
             const waId     = waNumber + '@c.us';
 
-            // Acción especial: enviar ticket de rifa (mensaje libre desde Laravel)
-            if (data.action === 'send_ticket' && data.message) {
-                await client.sendMessage(waId, data.message);
+            // Acción especial: enviar ticket de rifa (imagen + mensaje desde Laravel)
+            if (data.action === 'send_ticket') {
+                if (data.ticket_base64) {
+                    const media = new MessageMedia(
+                        data.ticket_mime || 'image/png',
+                        data.ticket_base64,
+                        'ticket.png'
+                    );
+                    await client.sendMessage(waId, media, { caption: data.message || '' });
+                } else if (data.message) {
+                    await client.sendMessage(waId, data.message);
+                }
                 res.writeHead(200,{'Content-Type':'application/json'}); res.end(JSON.stringify({ok:true}));
                 return;
             }

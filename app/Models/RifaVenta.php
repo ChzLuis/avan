@@ -12,7 +12,7 @@ class RifaVenta extends Model
     protected $fillable = [
         'project_id', 'rifa_id', 'order_number', 'wa_number',
         'plan', 'plan_nombre', 'tickets', 'monto',
-        'nombre', 'dni', 'payment_proof', 'ticket_code',
+        'nombre', 'dni', 'ciudad', 'payment_proof', 'ticket_code',
         'ticket_numbers', 'status',
     ];
 
