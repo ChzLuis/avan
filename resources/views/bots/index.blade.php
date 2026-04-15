@@ -29,6 +29,7 @@
             $badge   = match($status) {
                 'connected' => ['bg-green-100 text-green-700',  'Conectado'],
                 'qr'        => ['bg-yellow-100 text-yellow-700','Escanear QR'],
+                'starting'  => ['bg-blue-100 text-blue-600',    'Iniciando...'],
                 default     => ['bg-gray-100 text-gray-500',    'Offline'],
             };
             $statesCount = $bot->flow?->states_count ?? 0;
@@ -65,6 +66,12 @@
                         <div class="flex items-center gap-2 py-3 text-green-600">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             <span class="text-sm font-medium">WhatsApp conectado correctamente</span>
+                        </div>
+                    @elseif($status === 'starting')
+                        <div class="flex flex-col items-center py-4 gap-2">
+                            <div class="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                            <p class="text-xs text-blue-600 font-medium">Iniciando bot...</p>
+                            <p class="text-xs text-gray-400">El QR aparecerá en unos segundos</p>
                         </div>
                     @else
                         <div class="py-3 text-center">
@@ -199,9 +206,10 @@ function refreshStatus(bot) {
             if (!badge || !qrDiv) return;
 
             const labels = {
-                connected: ['bg-green-100 text-green-700',  'Conectado'],
-                qr:        ['bg-yellow-100 text-yellow-700','Escanear QR'],
-                offline:   ['bg-gray-100 text-gray-500',    'Offline'],
+                connected: ['bg-green-100 text-green-700',   'Conectado'],
+                qr:        ['bg-yellow-100 text-yellow-700', 'Escanear QR'],
+                starting:  ['bg-blue-100 text-blue-600',     'Iniciando...'],
+                offline:   ['bg-gray-100 text-gray-500',     'Offline'],
             };
             const [cls, txt] = labels[data.status] || labels.offline;
             badge.className  = `text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`;
@@ -213,6 +221,8 @@ function refreshStatus(bot) {
                 qrDiv.innerHTML = `<div class="flex flex-col items-center py-3"><p class="text-xs text-gray-500 mb-2">WhatsApp → Dispositivos vinculados → Vincular dispositivo</p><img src="${data.qr}" class="w-44 h-44 rounded-xl border border-gray-200"></div>`;
             } else if (data.status === 'qr') {
                 qrDiv.innerHTML = `<div class="flex flex-col items-center py-4 gap-2"><div class="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div><p class="text-xs text-yellow-600 font-medium">Generando QR...</p><p class="text-xs text-gray-400">Se actualizará automáticamente</p></div>`;
+            } else if (data.status === 'starting') {
+                qrDiv.innerHTML = `<div class="flex flex-col items-center py-4 gap-2"><div class="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div><p class="text-xs text-blue-600 font-medium">Iniciando bot...</p><p class="text-xs text-gray-400">El QR aparecerá en unos segundos</p></div>`;
             } else {
                 qrDiv.innerHTML = `<div class="py-3 text-center"><p class="text-xs text-gray-400">Bot no iniciado — usa los botones de abajo</p></div>`;
             }

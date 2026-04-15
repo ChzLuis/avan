@@ -51,6 +51,10 @@ class BotStatusController extends Controller
             'restart' => "{$pm2} restart {$pm2Name} 2>&1 || {$startCmd} 2>&1",
         };
 
+        if ($data['action'] === 'start') {
+            file_put_contents($bot->statusFile(), json_encode(['status'=>'starting','qr'=>null,'updated_at'=>now()]));
+        }
+
         $output = shell_exec($cmd);
 
         if ($data['action'] === 'stop') {
