@@ -159,9 +159,25 @@ function distanciaKm(lat1,lng1,lat2,lng2) {
 function calcularDelivery(km) { return Math.ceil(Math.max(DELIVERY_MIN,km*DELIVERY_KM)*2)/2; }
 function fillMessage(tpl, vars) { return tpl.replace(/\{(\w+)\}/g,(_,k)=>vars[k]??''); }
 function buildVars(data) {
-    return { negocio:NEGOCIO, mi_numero:MI_NUMERO, cliente:data.cliente||'', total:data.total||'',
-             nPedido:data.nPedido||'', n_pedido:data.nPedido||'', delivery:data.deliveryCost!=null?Number(data.deliveryCost).toFixed(2):'',
-             total_final:data.totalFinal||data.total||'', km:data.km||'', direccion:data.deliveryAddress||'' };
+    return {
+        negocio:      NEGOCIO,
+        mi_numero:    MI_NUMERO,
+        cliente:      data.cliente||'',
+        total:        data.total||'',
+        nPedido:      data.nPedido||'',
+        n_pedido:     data.nPedido||'',
+        delivery:     data.deliveryCost!=null ? Number(data.deliveryCost).toFixed(2) : '',
+        total_final:  data.totalFinal||data.total||'',
+        km:           data.km||'',
+        direccion:    data.deliveryAddress||'',
+        // Variables de rifa
+        rifa_nombre:  data.rifaNombre||'',
+        rifa_precio:  data.rifaPrecio ? Number(data.rifaPrecio).toFixed(2) : '',
+        rifa_tickets: data.rifaTickets||'',
+        rifa_total:   data.rifaTotal||'',
+        order_number: data.orderNumber||'',
+        nombre:       data.nombre||'',
+    };
 }
 
 async function enviar(msg, texto) {
@@ -345,6 +361,115 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
             }
             break;
         }
+
+        // ── Acciones de RIFA ──────────────────────────────────
+        case 'show_rifas': {
+            // Carga rifas de la API y las envía como mensajes con imagen
+            try {
+                const params = new URLSearchParams({ token: BOT_TOKEN, bot: BOT_TYPE });
+                const res    = await fetch(`${LARAVEL_URL}/wa/rifas?${params}`);
+                const data   = await res.json();
+                if (data.ok && data.rifas.length > 0) {
+                    sessionData = { ...sessionData, rifas: data.rifas };
+                    // Enviar cada rifa con su imagen
+                    for (let i = 0; i < data.rifas.length; i++) {
+                        const r   = data.rifas[i];
+                        const txt = `*${i+1}.* ${r.texto}`;
+                        if (r.imagen_url) {
+                            try {
+                                const media = await MessageMedia.fromUrl(r.imagen_url, { unsafeMime: true });
+                                await client.sendMessage(msg.from, media, { caption: txt });
+                            } catch(e) {
+                                await enviar(msg, txt);
+                            }
+                        } else {
+                            await enviar(msg, txt);
+                        }
+                    }
+                } else {
+                    await enviar(msg, '⚠️ No hay rifas disponibles en este momento.');
+                }
+            } catch(e) { console.error('show_rifas:', e.message); }
+            break;
+        }
+
+        case 'select_rifa': {
+            const rifas   = sessionData.rifas || [];
+            const selIdx  = parseInt(body) - 1;
+            const selRifa = rifas[selIdx];
+            if (selRifa) {
+                sessionData = { ...sessionData, rifaId: selRifa.id, rifaNombre: selRifa.nombre,
+                    rifaPrecio: selRifa.precio_ticket, rifaMin: selRifa.min_tickets };
+            } else {
+                // Intentar buscar por nombre
+                const found = rifas.find(r => r.nombre.toLowerCase().includes(lower));
+                if (found) {
+                    sessionData = { ...sessionData, rifaId: found.id, rifaNombre: found.nombre,
+                        rifaPrecio: found.precio_ticket, rifaMin: found.min_tickets };
+                }
+            }
+            break;
+        }
+
+        case 'save_quantity':
+        case 'save_quantity|create_rifa_order':
+        case 'save_quantity_create_order': {
+            const qty    = parseInt(body.replace(/\D/g,'')) || 1;
+            const precio = sessionData.rifaPrecio || 0;
+            const total  = (qty * precio).toFixed(2);
+            sessionData  = { ...sessionData, rifaTickets: qty, rifaTotal: total };
+
+            // Si la acción incluye create_rifa_order, crear el pedido ya
+            if (action !== 'save_quantity') {
+                try {
+                    const resp = await laravelPost('wa/rifa-order', {
+                        rifa_id: sessionData.rifaId, tickets: qty, wa_number: waNumber,
+                    });
+                    if (resp?.ok) {
+                        sessionData = { ...sessionData,
+                            orderNumber: resp.order_number,
+                            rifaTotal:   Number(resp.monto).toFixed(2),
+                            rifaTickets: resp.tickets,
+                            rifaNombre:  resp.rifa_nombre,
+                            rifaOrderId: resp.order_id,
+                        };
+                    }
+                } catch(e) { console.error('create_rifa_order:', e.message); }
+            }
+            break;
+        }
+
+        case 'create_rifa_order': {
+            try {
+                const resp = await laravelPost('wa/rifa-order', {
+                    rifa_id:  sessionData.rifaId,
+                    tickets:  sessionData.rifaTickets || 1,
+                    wa_number: waNumber,
+                });
+                if (resp?.ok) {
+                    sessionData = { ...sessionData,
+                        orderNumber: resp.order_number,
+                        rifaTotal:   resp.monto.toFixed(2),
+                        rifaTickets: resp.tickets,
+                        rifaNombre:  resp.rifa_nombre,
+                        rifaOrderId: resp.order_id,
+                    };
+                }
+            } catch(e) { console.error('create_rifa_order:', e.message); }
+            break;
+        }
+
+        case 'save_rifa_payment': {
+            if (msg.hasMedia && msg.type === 'image') {
+                try {
+                    const media = await msg.downloadMedia();
+                    if (sessionData.rifaOrderId && media?.data)
+                        await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/payment-proof`,
+                            { image_base64: media.data, mimetype: media.mimetype || 'image/jpeg' });
+                } catch(e) { console.error('save_rifa_payment:', e.message); }
+            }
+            break;
+        }
     }
     return sessionData;
 }
@@ -366,13 +491,22 @@ const server = http.createServer(async (req, res) => {
         try {
             const data = JSON.parse(raw);
             if (data.token !== BOT_TOKEN) { res.writeHead(401); res.end(); return; }
-            const waId    = data.wa_number.replace(/\D/g,'')+('@c.us');
+            const waNumber = data.wa_number.replace(/\D/g,'');
+            const waId     = waNumber + '@c.us';
+
+            // Acción especial: enviar ticket de rifa (mensaje libre desde Laravel)
+            if (data.action === 'send_ticket' && data.message) {
+                await client.sendMessage(waId, data.message);
+                res.writeHead(200,{'Content-Type':'application/json'}); res.end(JSON.stringify({ok:true}));
+                return;
+            }
+
             const builder = MENSAJES_ADMIN[data.action];
             if (builder && waId) {
                 await client.sendMessage(waId, builder(NEGOCIO));
                 if (FLOW?.flow_id) {
                     const map = { confirmar_pago:'pago_recibido', en_camino:'en_camino', entregado:'entregado' };
-                    if (map[data.action]) await laravelPost('wa/session',{ flow_id:FLOW.flow_id, wa_number:data.wa_number.replace(/\D/g,''), state:map[data.action] });
+                    if (map[data.action]) await laravelPost('wa/session',{ flow_id:FLOW.flow_id, wa_number:waNumber, state:map[data.action] });
                 }
                 res.writeHead(200,{'Content-Type':'application/json'}); res.end(JSON.stringify({ok:true}));
             } else { res.writeHead(400); res.end(); }

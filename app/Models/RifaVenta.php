@@ -3,16 +3,52 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class RifaVenta extends Model
 {
     protected $table = 'rifa_ventas';
 
     protected $fillable = [
-        'project_id','wa_number','plan','plan_nombre','tickets',
-        'monto','nombre','dni','payment_proof','ticket_code','status',
+        'project_id', 'rifa_id', 'order_number', 'wa_number',
+        'plan', 'plan_nombre', 'tickets', 'monto',
+        'nombre', 'dni', 'payment_proof', 'ticket_code',
+        'ticket_numbers', 'status',
     ];
 
+    protected $casts = ['ticket_numbers' => 'array'];
+
+    public function rifa()    { return $this->belongsTo(Rifa::class); }
+    public function project() { return $this->belongsTo(Project::class); }
+
+    public static function generateOrderNumber(): string
+    {
+        do {
+            $num = 'R' . strtoupper(Str::random(6));
+        } while (self::where('order_number', $num)->exists());
+        return $num;
+    }
+
+    public function assignTicketNumbers(): array
+    {
+        $used    = self::where('rifa_id', $this->rifa_id)
+                       ->where('status', '!=', 'cancelado')
+                       ->where('id', '!=', $this->id)
+                       ->get()->flatMap(fn($v) => $v->ticket_numbers ?? [])->toArray();
+        $numbers = [];
+        $attempts = 0;
+        while (count($numbers) < $this->tickets && $attempts < 1000) {
+            $n = rand(1, 99999);
+            if (!in_array($n, $used) && !in_array($n, $numbers)) {
+                $numbers[] = $n;
+            }
+            $attempts++;
+        }
+        sort($numbers);
+        return $numbers;
+    }
+
+    // Compatibilidad con planes hardcodeados anteriores
     public static function planes(): array
     {
         return [

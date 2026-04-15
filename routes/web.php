@@ -274,16 +274,24 @@ Route::post('/wa/find-order',                   [WaBotController::class, 'findOr
 Route::post('/wa/order/{order}/delivery',       [WaBotController::class, 'updateDelivery'])->name('wa.order.delivery')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // ─── Rifa Bot API ─────────────────────────────────────────────────────────────
-Route::post('/wa/rifa/save',                   [RifaController::class, 'botSave'])->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-Route::post('/wa/rifa/{venta}/payment-proof',  [RifaController::class, 'botPaymentProof'])->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-Route::post('/wa/rifa/{venta}/data',           [RifaController::class, 'botUpdateData'])->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+$nocsrf = [\App\Http\Middleware\VerifyCsrfToken::class];
+Route::get('/wa/rifas',                        [RifaController::class, 'botList'])->withoutMiddleware($nocsrf);
+Route::post('/wa/rifa-order',                  [RifaController::class, 'botCreateOrder'])->withoutMiddleware($nocsrf);
+Route::post('/wa/rifa/save',                   [RifaController::class, 'botSave'])->withoutMiddleware($nocsrf);
+Route::post('/wa/rifa/{venta}/payment-proof',  [RifaController::class, 'botPaymentProof'])->withoutMiddleware($nocsrf);
+Route::post('/wa/rifa/{venta}/data',           [RifaController::class, 'botUpdateData'])->withoutMiddleware($nocsrf);
 
 // ─── Rifa Panel Admin ─────────────────────────────────────────────────────────
 Route::middleware(['auth', \App\Http\Middleware\SetActiveProject::class])->group(function () {
-    Route::get('/rifas',                    [RifaController::class, 'index'])->name('rifas.index');
-    Route::post('/rifas/{venta}/validar',    [RifaController::class, 'validar'])->name('rifas.validar');
-    Route::post('/rifas/{venta}/enviar',     [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
-    Route::post('/rifas/{venta}/cancelar',   [RifaController::class, 'cancelar'])->name('rifas.cancelar');
+    Route::get('/rifas',                         [RifaController::class, 'index'])->name('rifas.index');
+    Route::post('/rifas/catalog',                [RifaController::class, 'rifaStore'])->name('rifas.store');
+    Route::put('/rifas/catalog/{rifa}',          [RifaController::class, 'rifaUpdate'])->name('rifas.update');
+    Route::delete('/rifas/catalog/{rifa}',       [RifaController::class, 'rifaDestroy'])->name('rifas.destroy');
+    Route::post('/rifas/{venta}/confirmar',      [RifaController::class, 'confirmarPago'])->name('rifas.confirmar');
+    Route::post('/rifas/{venta}/enviar',         [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
+    Route::post('/rifas/{venta}/cancelar',       [RifaController::class, 'cancelar'])->name('rifas.cancelar');
+    // Compatibilidad
+    Route::post('/rifas/{venta}/validar',        [RifaController::class, 'validar'])->name('rifas.validar');
 });
 
 // ─── Pagos del catálogo ───────────────────────────────────────────────────────
