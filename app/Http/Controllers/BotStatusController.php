@@ -43,10 +43,10 @@ class BotStatusController extends Controller
         $pm2Bin   = trim(shell_exec('which pm2') ?: '/usr/bin/pm2');
         $useSudo  = (posix_getuid() !== 0) ? 'sudo ' : '';
         $pm2      = "{$useSudo}{$pm2Bin}";
-        $startCmd = "{$envVars} {$pm2} start {$engine} --name {$pm2Name} -- --bot={$data['bot']} --output {$logFile} --error {$logFile} --merge-logs";
+        $startCmd = "{$pm2} start {$engine} --name {$pm2Name} -f -- --bot={$data['bot']} --output {$logFile} --error {$logFile} --merge-logs";
 
         $cmd = match($data['action']) {
-            'start'   => "{$pm2} delete {$pm2Name} 2>/dev/null; {$startCmd} 2>&1",
+            'start'   => "{$pm2} delete {$pm2Name} 2>/dev/null; sleep 1; {$startCmd} 2>&1",
             'stop'    => "{$pm2} stop {$pm2Name} 2>&1",
             'restart' => "{$pm2} restart {$pm2Name} 2>&1 || {$startCmd} 2>&1",
         };
