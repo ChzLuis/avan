@@ -4,8 +4,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class BotState extends Model
 {
-    protected $fillable = ['flow_id', 'key', 'label', 'message', 'image_url', 'input_type', 'sort_order', 'is_active'];
-    protected $casts    = ['is_active' => 'boolean'];
+    protected $fillable = ['flow_id', 'key', 'label', 'message', 'images', 'input_type', 'sort_order', 'is_active'];
+    protected $casts    = ['is_active' => 'boolean', 'images' => 'array'];
 
     public function flow()        { return $this->belongsTo(BotFlow::class, 'flow_id'); }
     public function transitions() { return $this->hasMany(BotTransition::class, 'from_state_id')->orderBy('sort_order'); }

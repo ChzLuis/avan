@@ -138,6 +138,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/bots/config',                     [BotStatusController::class, 'configSave'])->name('bots.config.save');
         Route::post('/bots/control',                    [BotStatusController::class, 'botControl'])->name('bots.control');
         Route::get('/bots/logs',                        [BotStatusController::class, 'botLogs'])->name('bots.logs');
+        Route::post('/bots/upload-image',               [BotStatusController::class, 'uploadImage'])->name('bots.upload.image');
         Route::post('/bots/instances',                  [BotStatusController::class, 'botStore'])->name('bots.instances.store');
         Route::delete('/bots/instances/{bot}',          [BotStatusController::class, 'botDestroy'])->name('bots.instances.destroy');
 

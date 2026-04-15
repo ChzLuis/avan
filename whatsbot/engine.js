@@ -284,14 +284,20 @@ client.on('message', async msg => {
 
         const nextState = FLOW.states[nextStateKey];
         if (nextState?.message) {
-            const text = fillMessage(nextState.message, buildVars(sessionData));
-            if (nextState.image_url) {
-                try {
-                    const media = await MessageMedia.fromUrl(nextState.image_url, { unsafeMime: true });
-                    await client.sendMessage(msg.from, media, { caption: text });
-                } catch(e) {
-                    await enviar(msg, text);
-                    console.warn('No se pudo enviar imagen del estado:', e.message);
+            const text   = fillMessage(nextState.message, buildVars(sessionData));
+            const images = nextState.images || [];
+            if (images.length > 0) {
+                // Enviar primera imagen con el mensaje como caption
+                for (let i = 0; i < images.length; i++) {
+                    try {
+                        const imageUrl = images[i].startsWith('http') ? images[i] : `${LARAVEL_URL}${images[i]}`;
+                        const media    = await MessageMedia.fromUrl(imageUrl, { unsafeMime: true });
+                        const caption  = i === 0 ? text : undefined;
+                        await client.sendMessage(msg.from, media, caption ? { caption } : {});
+                    } catch(e) {
+                        if (i === 0) await enviar(msg, text);
+                        console.warn(`Imagen ${i} no enviada:`, e.message);
+                    }
                 }
             } else {
                 await enviar(msg, text);

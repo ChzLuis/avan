@@ -8,6 +8,7 @@ use App\Models\BotState;
 use App\Models\BotTransition;
 use App\Models\BotConfig;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\WaBotController;
 
 class BotStatusController extends Controller
@@ -193,7 +194,7 @@ class BotStatusController extends Controller
             'key'        => 'required|string|max:60',
             'label'      => 'required|string|max:100',
             'message'    => 'required|string',
-            'image_url'  => 'nullable|string|max:500',
+            'images'     => 'nullable|array|max:5',
             'input_type' => 'required|in:text,number,image,location,option',
             'sort_order' => 'integer',
             'is_active'  => 'boolean',
@@ -214,7 +215,7 @@ class BotStatusController extends Controller
         $data = $request->validate([
             'label'      => 'required|string|max:100',
             'message'    => 'required|string',
-            'image_url'  => 'nullable|string|max:500',
+            'images'     => 'nullable|array|max:5',
             'input_type' => 'required|in:text,number,image,location,option',
             'sort_order' => 'integer',
             'is_active'  => 'boolean',
@@ -264,6 +265,14 @@ class BotStatusController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    // ── Upload imagen para estado ─────────────────────────────────
+    public function uploadImage(Request $request)
+    {
+        $request->validate(['image' => 'required|image|max:5120']); // 5MB max
+        $path = $request->file('image')->store('bot-images', 'public');
+        return response()->json(['ok' => true, 'url' => Storage::url($path), 'path' => $path]);
+    }
+
     // ── Config ────────────────────────────────────────────────────
     public function configSave(Request $request)
     {
@@ -286,7 +295,7 @@ class BotStatusController extends Controller
                 'key'        => $s->key,
                 'label'      => $s->label,
                 'message'    => $s->message,
-                'image_url'  => $s->image_url,
+                'images'     => $s->images ?? [],
                 'input_type' => $s->input_type,
                 'transitions'=> $s->transitions->map(fn($t) => [
                     'trigger'      => $t->trigger,

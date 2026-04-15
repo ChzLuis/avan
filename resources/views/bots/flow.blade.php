@@ -109,9 +109,19 @@
                 <p class="text-xs text-gray-400 mt-1">Usa <code class="bg-gray-100 px-1 rounded">{negocio}</code>, <code class="bg-gray-100 px-1 rounded">{order_number}</code>, <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code>, <code class="bg-gray-100 px-1 rounded">{rifa_total}</code></p>
             </div>
             <div>
-                <label class="label">Imagen del bot (URL opcional)</label>
-                <input type="url" id="s-image-url" placeholder="https://... (jpg, png)" class="input">
-                <p class="text-xs text-gray-400 mt-1">El bot enviará esta imagen junto al mensaje</p>
+                <label class="label">Imágenes del bot <span class="text-gray-400 font-normal">(hasta 5)</span></label>
+                <div id="s-image-drop" ondragover="event.preventDefault()" ondrop="dropImages(event)"
+                     class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center cursor-pointer hover:border-indigo-300 transition"
+                     onclick="document.getElementById('s-image-input').click()">
+                    <svg class="w-6 h-6 mx-auto text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="text-xs text-gray-400">Haz clic o arrastra imágenes aquí</p>
+                    <p class="text-xs text-gray-300">JPG, PNG — máx. 5MB cada una</p>
+                </div>
+                <input type="file" id="s-image-input" accept="image/*" multiple class="hidden" onchange="uploadImages(this.files)">
+                <div id="s-image-previews" class="flex flex-wrap gap-2 mt-2"></div>
+                <p class="text-xs text-gray-400 mt-1">El bot enviará las imágenes junto al mensaje del estado</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
@@ -145,6 +155,43 @@ const flowId  = {{ $flow?->id ?? 'null' }};
 const botType = '{{ $botType }}';
 const baseUrl = '{{ url("/bixoadmin/bots") }}';
 let editingStateId = null;
+let stateImages    = []; // URLs de imágenes del estado actual
+
+// ── Upload de imágenes ────────────────────────────────────────
+async function uploadImages(files) {
+    const remaining = 5 - stateImages.length;
+    const toUpload  = Array.from(files).slice(0, remaining);
+    for (const file of toUpload) {
+        const fd = new FormData();
+        fd.append('image', file);
+        fd.append('_token', csrf);
+        try {
+            const res  = await fetch(`${baseUrl}/upload-image`, { method:'POST', body: fd });
+            const data = await res.json();
+            if (data.ok) { stateImages.push(data.url); renderPreviews(); }
+        } catch(e) { console.error('Upload:', e); }
+    }
+}
+function dropImages(e) {
+    e.preventDefault();
+    uploadImages(e.dataTransfer.files);
+}
+function removeImage(idx) {
+    stateImages.splice(idx, 1);
+    renderPreviews();
+}
+function renderPreviews() {
+    const container = document.getElementById('s-image-previews');
+    container.innerHTML = stateImages.map((url, i) => `
+        <div class="relative group w-16 h-16">
+            <img src="${url}" class="w-16 h-16 object-cover rounded-lg border border-gray-200">
+            <button onclick="removeImage(${i})" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center">✕</button>
+        </div>`).join('');
+    // Mostrar add más si hay menos de 5
+    if (stateImages.length < 5) {
+        container.innerHTML += `<div onclick="document.getElementById('s-image-input').click()" class="w-16 h-16 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center cursor-pointer hover:border-indigo-300 text-gray-300 text-xl">+</div>`;
+    }
+}
 let states = @json($allStates);
 
 const inputTypes = @json($inputTypes);
@@ -164,6 +211,8 @@ async function createFlow() {
 function openNewState() {
     if (!flowId) { if(confirm('No hay flujo creado. ¿Crear ahora?')) createFlow(); return; }
     editingStateId = null;
+    stateImages    = [];
+    renderPreviews();
     document.getElementById('modal-title').textContent = 'Nuevo estado';
     document.getElementById('s-key').value = '';
     document.getElementById('s-label').value = '';
@@ -185,7 +234,7 @@ async function saveState() {
         key:        document.getElementById('s-key').value.trim(),
         label:      document.getElementById('s-label').value.trim(),
         message:    document.getElementById('s-message').value.trim(),
-        image_url:  document.getElementById('s-image-url').value.trim() || null,
+        images:     stateImages,
         input_type: document.getElementById('s-input-type').value,
         sort_order: parseInt(document.getElementById('s-order').value) || 0,
         is_active:  document.getElementById('s-active').checked ? 1 : 0,
@@ -281,7 +330,8 @@ function editState(id) {
     document.getElementById('s-key').value = state.key;
     document.getElementById('s-label').value = state.label;
     document.getElementById('s-message').value = state.message;
-    document.getElementById('s-image-url').value = state.image_url || '';
+    stateImages = state.images || [];
+    renderPreviews();
     document.getElementById('s-input-type').value = state.input_type;
     document.getElementById('s-order').value = state.sort_order;
     document.getElementById('s-active').checked = !!state.is_active;
