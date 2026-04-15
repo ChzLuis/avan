@@ -1,6 +1,0 @@
-2026/04/15-10:09:01.584 1ed8 Reusing MANIFEST C:\xampp\htdocs\avan\whatsbot\.wwebjs_auth\session-whatsbot\Default\Local Storage\leveldb/MANIFEST-000001
-2026/04/15-10:09:01.602 1ed8 Recovering log #3
-2026/04/15-10:09:01.605 1ed8 Reusing old log C:\xampp\htdocs\avan\whatsbot\.wwebjs_auth\session-whatsbot\Default\Local Storage\leveldb/000003.log 
-2026/04/15-10:11:18.785 1864 Level-0 table #5: started
-2026/04/15-10:11:18.801 1864 Level-0 table #5: 19275 bytes OK
-2026/04/15-10:11:18.808 1864 Delete type=0 #3
