@@ -193,6 +193,7 @@ class BotStatusController extends Controller
             'key'        => 'required|string|max:60',
             'label'      => 'required|string|max:100',
             'message'    => 'required|string',
+            'image_url'  => 'nullable|string|max:500',
             'input_type' => 'required|in:text,number,image,location,option',
             'sort_order' => 'integer',
             'is_active'  => 'boolean',
@@ -213,6 +214,7 @@ class BotStatusController extends Controller
         $data = $request->validate([
             'label'      => 'required|string|max:100',
             'message'    => 'required|string',
+            'image_url'  => 'nullable|string|max:500',
             'input_type' => 'required|in:text,number,image,location,option',
             'sort_order' => 'integer',
             'is_active'  => 'boolean',
@@ -284,6 +286,7 @@ class BotStatusController extends Controller
                 'key'        => $s->key,
                 'label'      => $s->label,
                 'message'    => $s->message,
+                'image_url'  => $s->image_url,
                 'input_type' => $s->input_type,
                 'transitions'=> $s->transitions->map(fn($t) => [
                     'trigger'      => $t->trigger,

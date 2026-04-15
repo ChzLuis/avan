@@ -284,7 +284,18 @@ client.on('message', async msg => {
 
         const nextState = FLOW.states[nextStateKey];
         if (nextState?.message) {
-            await enviar(msg, fillMessage(nextState.message, buildVars(sessionData)));
+            const text = fillMessage(nextState.message, buildVars(sessionData));
+            if (nextState.image_url) {
+                try {
+                    const media = await MessageMedia.fromUrl(nextState.image_url, { unsafeMime: true });
+                    await client.sendMessage(msg.from, media, { caption: text });
+                } catch(e) {
+                    await enviar(msg, text);
+                    console.warn('No se pudo enviar imagen del estado:', e.message);
+                }
+            } else {
+                await enviar(msg, text);
+            }
             if (nextStateKey === 'esperando_pago') await enviarImagen(msg);
         }
 

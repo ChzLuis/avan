@@ -4,7 +4,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class BotState extends Model
 {
-    protected $fillable = ['flow_id', 'key', 'label', 'message', 'input_type', 'sort_order', 'is_active'];
+    protected $fillable = ['flow_id', 'key', 'label', 'message', 'image_url', 'input_type', 'sort_order', 'is_active'];
     protected $casts    = ['is_active' => 'boolean'];
 
     public function flow()        { return $this->belongsTo(BotFlow::class, 'flow_id'); }

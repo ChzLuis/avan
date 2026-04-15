@@ -106,7 +106,12 @@
             <div>
                 <label class="label">Mensaje del bot</label>
                 <textarea id="s-message" rows="4" placeholder="Hola! Soy el bot de {negocio}. ¿En qué puedo ayudarte?&#10;&#10;1️⃣ Ver productos&#10;2️⃣ Hacer pedido" class="input resize-none"></textarea>
-                <p class="text-xs text-gray-400 mt-1">Usa <code class="bg-gray-100 px-1 rounded">{negocio}</code> para el nombre del proyecto</p>
+                <p class="text-xs text-gray-400 mt-1">Usa <code class="bg-gray-100 px-1 rounded">{negocio}</code>, <code class="bg-gray-100 px-1 rounded">{order_number}</code>, <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code>, <code class="bg-gray-100 px-1 rounded">{rifa_total}</code></p>
+            </div>
+            <div>
+                <label class="label">Imagen del bot (URL opcional)</label>
+                <input type="url" id="s-image-url" placeholder="https://... (jpg, png)" class="input">
+                <p class="text-xs text-gray-400 mt-1">El bot enviará esta imagen junto al mensaje</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
@@ -180,6 +185,7 @@ async function saveState() {
         key:        document.getElementById('s-key').value.trim(),
         label:      document.getElementById('s-label').value.trim(),
         message:    document.getElementById('s-message').value.trim(),
+        image_url:  document.getElementById('s-image-url').value.trim() || null,
         input_type: document.getElementById('s-input-type').value,
         sort_order: parseInt(document.getElementById('s-order').value) || 0,
         is_active:  document.getElementById('s-active').checked ? 1 : 0,
@@ -275,6 +281,7 @@ function editState(id) {
     document.getElementById('s-key').value = state.key;
     document.getElementById('s-label').value = state.label;
     document.getElementById('s-message').value = state.message;
+    document.getElementById('s-image-url').value = state.image_url || '';
     document.getElementById('s-input-type').value = state.input_type;
     document.getElementById('s-order').value = state.sort_order;
     document.getElementById('s-active').checked = !!state.is_active;
