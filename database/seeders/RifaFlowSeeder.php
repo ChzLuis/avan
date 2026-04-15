@@ -21,11 +21,16 @@ class RifaFlowSeeder extends Seeder
         $project = Project::first();
         if (!$project) { $this->command->error('No hay proyectos.'); return; }
 
-        $bot = BotInstance::firstOrCreate(
-            ['project_id' => $project->id, 'bot_type' => 'rifa'],
-            ['name' => 'Bot Rifa', 'description' => 'Bot de rifas WhatsApp',
-             'icon_color' => 'purple', 'port' => 3002, 'is_active' => true]
-        );
+        $bot = BotInstance::where('bot_type', 'rifa')->first()
+            ?? BotInstance::create([
+                'project_id'  => $project->id,
+                'bot_type'    => 'rifa',
+                'name'        => 'Bot Rifa',
+                'description' => 'Bot de rifas WhatsApp',
+                'icon_color'  => 'purple',
+                'port'        => 3002,
+                'is_active'   => true,
+            ]);
 
         $flow = BotFlow::firstOrCreate(
             ['project_id' => $project->id, 'bot_type' => 'rifa'],
