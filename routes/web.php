@@ -285,6 +285,7 @@ Route::post('/wa/rifa/{venta}/data',           [RifaController::class, 'botUpdat
 
 // ─── Rifa Panel Admin ─────────────────────────────────────────────────────────
 Route::middleware(['auth', \App\Http\Middleware\SetActiveProject::class])->group(function () {
+    Route::get('/rifas/ventas-json',             [RifaController::class, 'ventasJson'])->name('rifas.ventas-json');
     Route::get('/rifas',                         [RifaController::class, 'index'])->name('rifas.index');
     Route::post('/rifas/catalog',                [RifaController::class, 'rifaStore'])->name('rifas.store');
     Route::put('/rifas/catalog/{rifa}',          [RifaController::class, 'rifaUpdate'])->name('rifas.update');

@@ -127,6 +127,33 @@ class RifaController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    // ── JSON para panel de bots ──────────────────────────────────
+    public function ventasJson()
+    {
+        $project = app('active_project');
+        $ventas  = RifaVenta::with('rifa')
+                    ->where('project_id', $project->id)
+                    ->orderByDesc('created_at')
+                    ->limit(100)
+                    ->get()
+                    ->map(fn($v) => [
+                        'id'            => $v->id,
+                        'nombre'        => $v->nombre,
+                        'dni'           => $v->dni,
+                        'ciudad'        => $v->ciudad,
+                        'wa_number'     => $v->wa_number,
+                        'plan_nombre'   => $v->plan_nombre ?? $v->rifa?->nombre,
+                        'tickets'       => $v->tickets,
+                        'monto'         => $v->monto,
+                        'ticket_code'   => $v->ticket_code,
+                        'ticket_numbers'=> $v->ticket_numbers,
+                        'payment_proof' => $v->payment_proof,
+                        'status'        => $v->status,
+                        'created_at'    => $v->created_at->format('d/m/Y H:i'),
+                    ]);
+        return response()->json(['ventas' => $ventas]);
+    }
+
     public function cancelar(RifaVenta $venta)
     {
         $venta->update(['status' => 'cancelado']);

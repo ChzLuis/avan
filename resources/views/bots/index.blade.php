@@ -105,6 +105,12 @@
                 </button>
                 <div class="ml-auto flex items-center gap-2">
                     <span class="text-xs text-gray-400">{{ $statesCount }} estados</span>
+                    @if($bot->bot_type === 'rifa')
+                    <button onclick="toggleVentas('{{ $bot->bot_type }}')"
+                        class="flex items-center gap-1 text-xs bg-purple-50 border border-purple-200 text-purple-700 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition">
+                        🎟️ Ventas
+                    </button>
+                    @endif
                     <a href="{{ route('bots.flow', ['bot'=>$bot->bot_type]) }}"
                        class="flex items-center gap-1 text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -125,6 +131,19 @@
                 </div>
                 <pre id="logs-content-{{ $bot->bot_type }}" class="bg-gray-950 text-green-400 text-xs font-mono p-4 overflow-x-auto max-h-48 overflow-y-auto">Cargando...</pre>
             </div>
+
+            {{-- Ventas Rifa --}}
+            @if($bot->bot_type === 'rifa')
+            <div id="ventas-{{ $bot->bot_type }}" class="hidden border-t border-gray-100">
+                <div class="flex items-center justify-between px-5 py-2.5 bg-purple-50">
+                    <span class="text-xs font-semibold text-purple-700">🎟️ Ventas de Rifa</span>
+                    <button onclick="loadVentas('{{ $bot->bot_type }}')" class="text-xs text-purple-500 hover:text-purple-700">↻ Actualizar</button>
+                </div>
+                <div id="ventas-content-{{ $bot->bot_type }}" class="p-4 max-h-96 overflow-y-auto space-y-2">
+                    <p class="text-xs text-gray-400 text-center py-4">Cargando...</p>
+                </div>
+            </div>
+            @endif
         </div>
         @endforeach
 
@@ -324,6 +343,90 @@ async function deleteBot(id, name) {
             setTimeout(() => location.reload(), 1000);
         }
     } catch(e) { showToast('Error al eliminar', 'error'); }
+}
+
+// ── Ventas Rifa ────────────────────────────────────────────────
+function toggleVentas(bot) {
+    const panel = document.getElementById(`ventas-${bot}`);
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        loadVentas(bot);
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+async function loadVentas(bot) {
+    const container = document.getElementById(`ventas-content-${bot}`);
+    if (!container) return;
+    container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Cargando...</p>';
+    try {
+        const res  = await fetch(`/rifas/ventas-json`);
+        const data = await res.json();
+        if (!data.ventas || data.ventas.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Sin ventas registradas</p>';
+            return;
+        }
+        const statusBadge = s => ({
+            pendiente: '<span class="px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">Pendiente</span>',
+            pagado:    '<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">Pagado</span>',
+            enviado:   '<span class="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">Enviado</span>',
+            cancelado: '<span class="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-700">Cancelado</span>',
+        }[s] || `<span class="text-xs text-gray-400">${s}</span>`);
+
+        container.innerHTML = data.ventas.map(v => `
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-white border border-gray-100 rounded-lg px-3 py-2.5" id="rv-${v.id}">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-semibold text-gray-800">${v.nombre || '—'}</span>
+                    <span class="text-xs text-gray-400">DNI: ${v.dni || '—'}</span>
+                    <span class="text-xs text-gray-400">WA: ${v.wa_number}</span>
+                </div>
+                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span class="text-xs text-purple-700">${v.plan_nombre}</span>
+                    <span class="text-xs text-gray-500">${v.tickets} ticket(s)</span>
+                    <span class="text-xs font-semibold text-gray-700">S/ ${Number(v.monto).toFixed(2)}</span>
+                    ${v.ticket_code ? `<span class="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded">${v.ticket_code}</span>` : ''}
+                    ${statusBadge(v.status)}
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                ${v.payment_proof ? `<a href="/${v.payment_proof}" target="_blank" class="text-xs text-indigo-600 hover:underline">🧾 Comprobante</a>` : ''}
+                ${v.status === 'pendiente' ? `
+                    <button onclick="rifaValidar(${v.id})" class="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700">✓ Validar</button>
+                    <button onclick="rifaCancelar(${v.id})" class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-200">Cancelar</button>
+                ` : ''}
+                ${v.status === 'pagado' ? `
+                    <a href="/rifas/${v.id}/ticket-preview" target="_blank" class="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg hover:bg-purple-200">👁️ Boleto</a>
+                    <button onclick="rifaEnviar(${v.id})" class="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700">🎟️ Enviar</button>
+                ` : ''}
+                ${v.status === 'enviado' ? `
+                    <a href="/rifas/${v.id}/ticket-preview" target="_blank" class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-200">👁️ Boleto</a>
+                ` : ''}
+            </div>
+        </div>`).join('');
+    } catch(e) { container.innerHTML = '<p class="text-xs text-red-400 text-center py-4">Error al cargar ventas</p>'; }
+}
+
+async function rifaValidar(id) {
+    if (!confirm('¿Validar este pago?')) return;
+    const r = await fetch(`/rifas/${id}/validar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
+    const d = await r.json();
+    if (d.ok) loadVentas('rifa');
+}
+async function rifaEnviar(id) {
+    if (!confirm('¿Enviar ticket por WhatsApp?')) return;
+    showToast('Generando y enviando ticket...', 'info');
+    const r = await fetch(`/rifas/${id}/enviar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
+    const d = await r.json();
+    if (d.ok) { showToast('Ticket enviado ✓', 'success'); loadVentas('rifa'); }
+    else showToast('Error al enviar', 'error');
+}
+async function rifaCancelar(id) {
+    if (!confirm('¿Cancelar esta venta?')) return;
+    const r = await fetch(`/rifas/${id}/cancelar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
+    const d = await r.json();
+    if (d.ok) loadVentas('rifa');
 }
 
 // ── Toast ──────────────────────────────────────────────────────
