@@ -127,6 +127,17 @@ class RifaController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    // ── Portal Comercial — lista de ventas ───────────────────────
+    public function indexComercial()
+    {
+        $project = \App\Models\Project::findOrFail(session('comercial_project_id'));
+        $ventas  = RifaVenta::with('rifa')
+                    ->where('project_id', $project->id)
+                    ->orderByDesc('created_at')
+                    ->get();
+        return view('comercial.rifas', compact('project', 'ventas'));
+    }
+
     // ── JSON para panel de bots ──────────────────────────────────
     public function ventasJson()
     {

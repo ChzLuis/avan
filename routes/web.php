@@ -410,6 +410,11 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/pos',  [PosController::class, 'indexComercial'])->name('pos');
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
 
+        Route::get('/rifas',                  [RifaController::class, 'indexComercial'])->name('rifas');
+        Route::post('/rifas/{venta}/validar', [RifaController::class, 'confirmarPago'])->name('rifas.validar');
+        Route::post('/rifas/{venta}/enviar',  [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
+        Route::post('/rifas/{venta}/cancelar',[RifaController::class, 'cancelar'])->name('rifas.cancelar');
+
         Route::get('/pedidos',                [OrderController::class, 'index'])->name('pedidos');
         Route::post('/pedidos',               [OrderController::class, 'store'])->name('pedidos.store');
         Route::get('/pedidos/{order}',        [OrderController::class, 'show'])->name('pedidos.show');
