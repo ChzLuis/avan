@@ -276,6 +276,7 @@ Route::post('/wa/order/{order}/delivery',       [WaBotController::class, 'update
 
 // ─── Rifa Bot API ─────────────────────────────────────────────────────────────
 $nocsrf = [\App\Http\Middleware\VerifyCsrfToken::class];
+Route::get('/rifas/ticket-design',             [RifaController::class, 'ticketDesign'])->name('rifas.ticket.design');
 Route::get('/rifas/{venta}/ticket-preview',    [RifaController::class, 'ticketPreview'])->name('rifas.ticket.preview');
 Route::get('/wa/rifas',                        [RifaController::class, 'botList'])->withoutMiddleware($nocsrf);
 Route::post('/wa/rifa-order',                  [RifaController::class, 'botCreateOrder'])->withoutMiddleware($nocsrf);

@@ -160,6 +160,25 @@ class RifaController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    // ── Preview de diseño con datos ficticios ────────────────────
+    public function ticketDesign(Request $request)
+    {
+        if (!auth()->check() && $request->get('token') !== 'wa-bot-secret-2024') abort(403);
+        return view('rifas.ticket', [
+            'negocio'      => 'Prueba tu Suerte',
+            'negocio_logo' => null,
+            'evento'       => 'Gran Rifa Aniversario 2026',
+            'rifa_nombre'  => 'Gran Rifa Aniversario',
+            'banner_url'   => null,
+            'nombre'       => 'Juan Pérez García',
+            'dni'          => '12345678',
+            'celular'      => '+51 999 888 777',
+            'ciudad'       => 'Lima',
+            'ticket_code'  => 'TK-A8X2F1',
+            'precio'       => '25.00',
+        ]);
+    }
+
     // ── Vista previa del ticket (HTML para screenshot) ──────────
     public function ticketPreview(RifaVenta $venta, Request $request)
     {
