@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 
 class ProveedorController extends Controller
 {
-    public function index(Project $project)
+    public function index()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $proveedores = $project->proveedores()->orderBy('name')->get();
         return view('company.proveedores', compact('project', 'proveedores'));
     }
@@ -27,8 +29,10 @@ class ProveedorController extends Controller
         ];
     }
 
-    public function store(Request $request, Project $project)
+    public function store(Request $request)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $data = $request->validate($this->rules());
         $data['project_id'] = $project->id;
         $data['is_active']  = $request->boolean('is_active', true);
@@ -36,8 +40,10 @@ class ProveedorController extends Controller
         return response()->json(['proveedor' => $this->row($p)]);
     }
 
-    public function update(Request $request, Project $project, Proveedor $proveedor)
+    public function update(Request $request, Proveedor $proveedor)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($proveedor->project_id === $project->id, 403);
         $data = $request->validate($this->rules());
         $data['is_active'] = $request->boolean('is_active');
@@ -45,8 +51,10 @@ class ProveedorController extends Controller
         return response()->json(['proveedor' => $this->row($proveedor->fresh())]);
     }
 
-    public function destroy(Project $project, Proveedor $proveedor)
+    public function destroy(Proveedor $proveedor)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($proveedor->project_id === $project->id, 403);
         $proveedor->delete();
         return response()->json(['ok' => true]);

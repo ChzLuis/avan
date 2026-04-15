@@ -4,7 +4,7 @@
 @php
     $csrf = csrf_token();
     $pid  = $project->id;
-    $catalogsUrl = route('catalogs.index', ['project' => $pid]);
+    $catalogsUrl = route('catalogs.index');
 @endphp
 
 <div class="flex flex-col h-full w-full overflow-hidden">
@@ -29,7 +29,7 @@
 {{-- BODY --}}
 <div class="flex flex-1 overflow-hidden"
      x-data="{
-        employees: {{ Illuminate\Support\Js::from($employees->map(fn($e) => [
+        employees: {{ Illuminate\Support\Js::from($employees->load('user')->map(fn($e) => [
             'id'           => $e->id,
             'name'         => $e->name,
             'role'         => $e->role ?? '',
@@ -38,6 +38,8 @@
             'email'        => $e->email ?? '',
             'hire_date'    => $e->hire_date?->format('Y-m-d') ?? '',
             'is_available' => $e->is_active,
+            'has_user'     => (bool)$e->user_id,
+            'username'     => $e->user?->username ?? '',
         ])) }},
         departments:   {{ Illuminate\Support\Js::from($departments) }},
         jobTitles:     {{ Illuminate\Support\Js::from($jobTitles) }},
@@ -53,9 +55,12 @@
         saving: false,
         deleting: false,
         form: {},
+        passwordModal: false,
+        generatedPassword: '',
+        generatedEmail: '',
         csrf: '{{ $csrf }}',
-        storeUrl: '{{ route('hr.employees.store', ['project' => $pid]) }}',
-        baseUrl: '{{ url('/'.$pid.'/hr/employees') }}',
+        storeUrl: '{{ route('hr.employees.store') }}',
+        baseUrl: '{{ route('hr.employees.store') }}',
 
         get filtered() {
             return this.employees.filter(e => {
@@ -83,7 +88,8 @@
             this.tab       = 'info';
             this.form = {
                 name: '', role: '', area: '', phone: '',
-                email: '', hire_date: '', is_available: true
+                email: '', hire_date: '', is_available: true,
+                username: '', password: '', password_confirmation: '',
             };
         },
 
@@ -91,7 +97,7 @@
             this.selected  = e;
             this.creating  = false;
             this.tab       = 'info';
-            this.form      = { ...e };
+            this.form      = { ...e, password: '', password_confirmation: '' };
         },
 
         async save() {
@@ -102,13 +108,16 @@
             const method = this.selected ? 'PUT' : 'POST';
             try {
                 const payload = {
-                    name:       this.form.name,
-                    role:       this.form.role       || null,
-                    area:       this.form.area       || null,
-                    phone:      this.form.phone      || null,
-                    email:      this.form.email      || null,
-                    hire_date:  this.form.hire_date  || null,
-                    is_active:  this.form.is_available,
+                    name:                  this.form.name,
+                    role:                  this.form.role       || null,
+                    area:                  this.form.area       || null,
+                    phone:                 this.form.phone      || null,
+                    email:                 this.form.email      || null,
+                    hire_date:             this.form.hire_date  || null,
+                    is_active:             this.form.is_available,
+                    username:              this.form.username              || null,
+                    password:              this.form.password              || null,
+                    password_confirmation: this.form.password_confirmation || null,
                 };
                 const res = await fetch(url, {
                     method,
@@ -121,8 +130,12 @@
                 });
                 const json = await res.json();
                 if (res.ok) {
-                    // Normalize server response: server returns is_active, map to is_available
-                    const normalized = { ...json.employee, is_available: json.employee.is_active };
+                    const normalized = {
+                        ...json.employee,
+                        is_available:          json.employee.is_active,
+                        password:              '',
+                        password_confirmation: '',
+                    };
                     if (this.selected) {
                         const idx = this.employees.findIndex(e => e.id === this.selected.id);
                         if (idx !== -1) this.employees[idx] = normalized;
@@ -134,8 +147,20 @@
                         this.creating = false;
                         this.form     = { ...normalized };
                     }
+                    // Mostrar contraseña generada
+                    if (json.employee.generated_password) {
+                        this.generatedPassword = json.employee.generated_password;
+                        this.generatedEmail    = json.employee.generated_username || json.employee.email;
+                        this.passwordModal     = true;
+                    }
                 } else {
-                    alert(json.message || 'Error al guardar');
+                    // Mostrar errores de validación
+                    if (json.errors) {
+                        const msgs = Object.values(json.errors).flat().join('\n');
+                        alert(msgs);
+                    } else {
+                        alert(json.message || 'Error al guardar');
+                    }
                 }
             } catch(err) {
                 alert('Error de red');
@@ -252,7 +277,7 @@
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
 
         {{-- Nuevo empleado --}}
-        <button @click="openNew()"
+        <button @click="openNew(); panel='detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 transition text-left"
                 :class="creating ? 'bg-emerald-50 border-l-2 border-emerald-500' : ''">
             <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
@@ -268,7 +293,7 @@
 
         {{-- Filas de empleados --}}
         <template x-for="e in filtered" :key="e.id">
-            <button @click="select(e)"
+            <button @click="select(e); panel='detail'"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                     :class="selected?.id===e.id ? 'bg-emerald-50 border-l-2 border-emerald-500' : ''">
                 {{-- Avatar con iniciales --}}
@@ -284,9 +309,12 @@
                               x-text="e.area"></span>
                     </div>
                 </div>
-                <span :class="e.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'"
-                      class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0"
-                      x-text="e.is_available ? 'Activo' : 'Inactivo'"></span>
+                <div class="flex flex-col items-end gap-1">
+                    <span :class="e.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'"
+                          class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                          x-text="e.is_available ? 'Activo' : 'Inactivo'"></span>
+                    <span x-show="e.has_user" class="text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md font-semibold">Acceso</span>
+                </div>
             </button>
         </template>
 
@@ -424,7 +452,7 @@
 
                         {{-- Teléfono --}}
                         <div>
-                            <label class="label">Teléfono</label>
+                            <label class="label">Teléfono / Celular</label>
                             <input type="text" x-model="form.phone"
                                    placeholder="Ej: +51 999 888 777"
                                    class="input">
@@ -445,6 +473,7 @@
                                    class="input">
                         </div>
 
+
                         {{-- Estado (referencia visual) --}}
                         <div class="flex items-end">
                             <div :class="form.is_available
@@ -463,45 +492,54 @@
                 {{-- ═══ TAB: ACCESO ═══ --}}
                 <div x-show="tab==='access'" class="space-y-4 max-w-lg">
 
-                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
-                        <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-emerald-800 mb-1">Acceso gestionado por Roles</p>
-                                <p class="text-xs text-emerald-700 leading-relaxed">
-                                    Los permisos de acceso al sistema para este empleado se administran a través del módulo de Roles y Permisos.
-                                    Asigna el rol correspondiente al correo del empleado para otorgarle acceso.
-                                </p>
-                            </div>
-                        </div>
+                    {{-- Usuario --}}
+                    <div>
+                        <label class="label">Usuario</label>
+                        <input type="text" x-model="form.username"
+                               placeholder="Ej: maria.garcia"
+                               class="input">
+                        <p class="text-xs text-gray-400 mt-1">Si lo dejas vacío al crear, se genera automáticamente del nombre.</p>
                     </div>
 
-                    <div x-show="form.email" class="bg-white border border-gray-200 rounded-xl p-4">
-                        <p class="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">Correo del empleado</p>
-                        <p class="text-sm text-gray-800 font-medium" x-text="form.email || '—'"></p>
+                    {{-- Correo --}}
+                    <div>
+                        <label class="label">Correo electrónico</label>
+                        <input type="email" x-model="form.email"
+                               placeholder="empleado@empresa.com"
+                               class="input">
                     </div>
 
-                    <div x-show="!form.email" class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
-                        <p class="font-semibold mb-1">Sin correo registrado</p>
-                        <p class="text-xs text-yellow-700">Para asignar acceso al sistema, primero registra el correo electrónico del empleado en la pestaña Información.</p>
+                    {{-- Contraseña --}}
+                    <div>
+                        <label class="label">
+                            Contraseña
+                            <span x-show="selected" class="text-gray-400 font-normal text-xs ml-1">(dejar vacío para no cambiar)</span>
+                            <span x-show="creating" class="text-gray-400 font-normal text-xs ml-1">(dejar vacío para generar automático)</span>
+                        </label>
+                        <input type="password" x-model="form.password"
+                               placeholder="••••••••"
+                               class="input">
                     </div>
 
-                    <a href="{{ route('roles.index', ['project' => $pid]) }}"
-                       class="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50 transition group">
-                        <svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        </svg>
-                        <span>Ir al módulo de Roles y Permisos</span>
-                        <svg class="w-3.5 h-3.5 text-gray-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </a>
+                    {{-- Confirmar contraseña --}}
+                    <div>
+                        <label class="label">Confirmar contraseña</label>
+                        <input type="password" x-model="form.password_confirmation"
+                               placeholder="••••••••"
+                               class="input">
+                    </div>
+
+                    {{-- Estado acceso --}}
+                    <div x-show="selected && selected.has_user"
+                         class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                        <p class="text-xs text-emerald-700 font-medium">Este empleado tiene acceso al sistema</p>
+                    </div>
+
+                    <div x-show="!selected || !selected.has_user"
+                         class="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                        <p class="text-xs text-yellow-800">Sin acceso aún. Agrega un correo y guarda para crear el usuario.</p>
+                    </div>
 
                 </div>
 
@@ -561,6 +599,58 @@
 
 </div>
 </div>
+
+{{-- ─── MODAL: Contraseña generada ─────────────────────────────────────────── --}}
+<template x-teleport="body">
+<div x-show="passwordModal"
+     x-transition.opacity
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+     @keydown.escape.window="passwordModal=false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" @click.stop>
+
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 text-base">Acceso creado</h3>
+                <p class="text-xs text-gray-500">Comparte estas credenciales con el empleado</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4 space-y-3 mb-5">
+            <div>
+                <p class="text-xs text-gray-400 mb-1 font-medium uppercase tracking-wide">Usuario</p>
+                <p class="text-sm font-medium text-gray-800 font-mono" x-text="generatedEmail"></p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 mb-1 font-medium uppercase tracking-wide">Contraseña temporal</p>
+                <div class="flex items-center gap-2">
+                    <p class="text-lg font-bold text-emerald-700 font-mono tracking-widest" x-text="generatedPassword"></p>
+                    <button @click="navigator.clipboard.writeText(generatedPassword); $el.textContent='✓'"
+                            class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg hover:bg-emerald-200 transition">
+                        Copiar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-5">
+            <p class="text-xs text-yellow-800">
+                <strong>Importante:</strong> Esta contraseña solo se muestra una vez. El empleado puede cambiarla desde su perfil.
+            </p>
+        </div>
+
+        <button @click="passwordModal=false"
+                class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition">
+            Entendido
+        </button>
+    </div>
+</div>
+</template>
 
 </x-slot>
 </x-app-layout>

@@ -87,7 +87,7 @@
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-card">
 
     {{-- Header de la cotización --}}
-    <div class="px-8 py-6 border-b border-gray-100" style="background: linear-gradient(135deg, {{ $primaryColor }}15, {{ $primaryColor }}05)">
+    <div class="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100" style="background: linear-gradient(135deg, {{ $primaryColor }}15, {{ $primaryColor }}05)">
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div class="flex items-center gap-2 mb-2">
@@ -121,7 +121,7 @@
     </div>
 
     {{-- Datos del cliente --}}
-    <div class="px-8 py-5 border-b border-gray-100 bg-gray-50">
+    <div class="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-100 bg-gray-50">
       <p class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Preparado para</p>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
@@ -144,7 +144,8 @@
     </div>
 
     {{-- Tabla de items --}}
-    <div class="px-8 py-6">
+    <div class="px-4 sm:px-8 py-4 sm:py-6">
+      <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b-2 border-gray-200">
@@ -173,11 +174,12 @@
           </tr>
         </tfoot>
       </table>
+      </div>
     </div>
 
     {{-- Condiciones --}}
     @if($quote->payment_method || $quote->payment_condition || $quote->notes)
-    <div class="px-8 pb-6 space-y-3">
+    <div class="px-4 sm:px-8 pb-4 sm:pb-6 space-y-3">
       @if($quote->payment_method || $quote->payment_condition)
       <div class="flex flex-wrap gap-3">
         @if($quote->payment_method)

@@ -1,0 +1,14 @@
+{
+  "name": "whatsbot",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp para pedidos del catálogo",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0"
+  }
+}

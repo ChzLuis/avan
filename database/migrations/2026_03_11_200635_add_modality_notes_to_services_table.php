@@ -6,24 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('services', function (Blueprint $table) {
-            $table->string('modality', 30)->nullable()->after('duration_min');
-            $table->text('notes')->nullable()->after('description');
+            if (!Schema::hasColumn('services', 'modality')) $table->string('modality', 30)->nullable()->after('duration_min');
+            if (!Schema::hasColumn('services', 'notes')) $table->text('notes')->nullable()->after('description');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('services', function (Blueprint $table) {
-            $table->dropColumn(['modality', 'notes']);
+            $cols = array_filter(['modality','notes'], fn($c) => Schema::hasColumn('services', $c));
+            if ($cols) $table->dropColumn(array_values($cols));
         });
     }
 };

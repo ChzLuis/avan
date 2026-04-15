@@ -1,5 +1,9 @@
-<x-app-layout>
-<x-slot name="slot">
+@php
+    $quotesApiBase = ($portalLayout ?? 'panel') === 'comercial'
+        ? route('bixosales.cotizaciones')
+        : route('quotes');
+@endphp
+<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Cotizaciones">
 <div class="flex flex-1 overflow-hidden" x-data="{
     quotes: {{ Js::from($quotes->map(fn($q) => [
         'id'=>$q->id,'client_name'=>$q->client_name,'client_phone'=>$q->client_phone ?? '',
@@ -45,7 +49,7 @@
 
     async save() {
         this.saving=true;
-        const base = window.location.pathname.replace(/\/[0-9]+\/quotes.*/,'') + '/' + {{ $project->id }} + '/quotes';
+        const base = '{{ $quotesApiBase }}';
         const url  = this.creating ? base : base + '/' + this.selected.id;
         const body = this.creating ? {...this.form} : {status:this.form.status,notes:this.form.notes};
         const res  = await fetch(url, {
@@ -64,7 +68,7 @@
 
     async del() {
         if(!confirm('Eliminar esta cotización?')) return;
-        const base = window.location.pathname.replace(/\/[0-9]+\/quotes.*/,'') + '/' + {{ $project->id }} + '/quotes';
+        const base = '{{ $quotesApiBase }}';
         await fetch(base+'/'+this.selected.id, {method:'DELETE',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}});
         this.quotes=this.quotes.filter(q=>q.id!==this.selected.id); this.selected=null;
     },
@@ -74,7 +78,7 @@
     async sendToClient() {
         if (!this.selected) return;
         this.sending = true;
-        const base = window.location.pathname.replace(/\/[0-9]+\/quotes.*/,'') + '/' + {{ $project->id }} + '/quotes';
+        const base = '{{ $quotesApiBase }}';
         const res = await fetch(base + '/' + this.selected.id + '/send', {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
@@ -171,11 +175,11 @@
                                 <button @click="addItem()" class="text-xs text-indigo-600">+ Agregar</button>
                             </div>
                             <template x-for="(item, i) in form.items" :key="i">
-                                <div class="grid grid-cols-6 gap-2 items-center">
-                                    <input x-model="form.items[i].description" class="input col-span-3 text-xs" placeholder="Descripción">
-                                    <input type="number" x-model="form.items[i].price" class="input col-span-1 text-xs" placeholder="Precio" step="0.01">
-                                    <input type="number" x-model="form.items[i].quantity" class="input col-span-1 text-xs" placeholder="Cant." min="1">
-                                    <button @click="removeItem(i)" class="text-red-400 text-xs">✕</button>
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <input x-model="form.items[i].description" class="input text-xs w-full sm:flex-1" placeholder="Descripción">
+                                    <input type="number" x-model="form.items[i].price" class="input text-xs w-28 sm:w-20" placeholder="Precio" step="0.01">
+                                    <input type="number" x-model="form.items[i].quantity" class="input text-xs w-20 sm:w-16" placeholder="Cant." min="1">
+                                    <button @click="removeItem(i)" class="text-red-400 text-xs flex-shrink-0">✕</button>
                                 </div>
                             </template>
                             <div class="flex justify-end pt-1">
@@ -276,5 +280,4 @@
 </div>
 
 </div>
-</x-slot>
-</x-app-layout>
+</x-portal-layout>

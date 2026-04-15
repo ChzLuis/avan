@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('catalog_lists', function (Blueprint $table) {
-            $table->boolean('is_system')->default(false)->after('is_active');
-        });
+        if (!Schema::hasColumn('catalog_lists', 'is_system')) {
+            Schema::table('catalog_lists', function (Blueprint $table) {
+                $table->boolean('is_system')->default(false)->after('is_active');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('catalog_lists', function (Blueprint $table) {
-            $table->dropColumn('is_system');
-        });
+        if (Schema::hasColumn('catalog_lists', 'is_system')) {
+            Schema::table('catalog_lists', function (Blueprint $table) {
+                $table->dropColumn('is_system');
+            });
+        }
     }
 };

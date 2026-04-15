@@ -11,12 +11,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'wa/*',
+        ]);
         $middleware->web(append: [
             \App\Http\Middleware\SetActiveProject::class,
         ]);
         $middleware->alias([
-            'module'         => \App\Http\Middleware\CheckModuleActive::class,
-            'project.member' => \App\Http\Middleware\CheckProjectMember::class,
+            'module'           => \App\Http\Middleware\CheckModuleActive::class,
+            'project.member'   => \App\Http\Middleware\CheckProjectMember::class,
+            'facturacion.auth' => \App\Http\Middleware\FacturacionAuth::class,
+            'comercial.auth'      => \App\Http\Middleware\ComercialAuth::class,
+            'comunicaciones.auth' => \App\Http\Middleware\ComunicacionesAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

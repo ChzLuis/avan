@@ -126,7 +126,6 @@ class PaymentController extends Controller
                     'failure' => $baseUrl . '?payment=failure&order=' . $order->id,
                     'pending' => $baseUrl . '?payment=pending&order=' . $order->id,
                 ],
-                'auto_return'         => 'approved',
                 'notification_url'    => url('/p/' . $slug . '/mp-webhook'),
                 'external_reference'  => (string) $order->id,
                 'statement_descriptor' => $project->name,
@@ -139,18 +138,23 @@ class PaymentController extends Controller
         $result = json_decode($response, true);
 
         if ($httpCode === 201 && isset($result['init_point'])) {
+            $isSandbox = str_starts_with($accessToken, 'TEST-');
             $order->update([
                 'payment_status'  => 'pending_payment',
                 'payment_gateway' => 'mercadopago',
+                'payment_reference' => $result['id'] ?? null,
             ]);
             return response()->json([
-                'ok'         => true,
-                'init_point' => $result['init_point'],
-                'sandbox_init_point' => $result['sandbox_init_point'] ?? null,
+                'ok'                 => true,
+                'init_point'         => $result['init_point'],
+                'sandbox_init_point' => $isSandbox ? ($result['sandbox_init_point'] ?? $result['init_point']) : null,
+                'preference_id'      => $result['id'] ?? null,
+                'is_sandbox'         => $isSandbox,
             ]);
         }
 
-        return response()->json(['ok' => false, 'message' => 'Error al crear preferencia de pago.'], 422);
+        $errMsg = $result['message'] ?? $result['error'] ?? 'Error al crear preferencia de pago.';
+        return response()->json(['ok' => false, 'message' => $errMsg], 422);
     }
 
     // ─── Mercado Pago: webhook IPN ────────────────────────────────────────────

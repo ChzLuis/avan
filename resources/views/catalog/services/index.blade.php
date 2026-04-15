@@ -17,7 +17,7 @@
         <p class="text-xs text-gray-400 mt-0.5" id="service-count-label">Cargando...</p>
     </div>
     <div class="flex items-center gap-2">
-        <a href="{{ route('catalog', ['project' => $pid]) }}"
+        <a href="{{ route('catalog') }}"
            class="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
             <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
@@ -50,7 +50,7 @@
         deleting: false,
         form: {},
         csrf: '{{ $csrf }}',
-        storeUrl: '{{ route('services.store', ['project' => $pid]) }}',
+        storeUrl: '{{ route('services.store') }}',
         baseUrl: '{{ url('/'.$pid.'/catalog/services') }}',
 
         get filtered() {
@@ -227,7 +227,7 @@
     {{-- Lista --}}
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
         {{-- Nuevo --}}
-        <button @click="openNew()"
+        <button @click="openNew(); panel='detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 transition text-left"
                 :class="!selected && Object.keys(form).length ? 'bg-purple-50 border-l-2 border-purple-500' : ''">
             <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
@@ -242,7 +242,7 @@
         </button>
 
         <template x-for="s in filtered" :key="s.id">
-            <button @click="openEdit(s)"
+            <button @click="openEdit(s); panel='detail'"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                     :class="selected?.id===s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
                 <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">

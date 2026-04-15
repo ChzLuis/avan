@@ -1,6 +1,5 @@
 <x-guest-layout>
 
-    {{-- Mensaje de sesión (ej: enlace de reset enviado) --}}
     @if(session('status'))
     <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 flex items-center gap-2">
         <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -10,7 +9,6 @@
     </div>
     @endif
 
-    {{-- Error general --}}
     @if($errors->any())
     <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
         <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,40 +23,32 @@
           @submit="loading = true">
         @csrf
 
-        {{-- Correo electrónico --}}
+        {{-- Usuario --}}
         <div class="mb-4">
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">
-                Correo electrónico
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-1.5">
+                Usuario
             </label>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
                 </div>
-                <input id="email" type="email" name="email"
-                       value="{{ old('email') }}"
+                <input id="username" type="text" name="username"
+                       value="{{ old('username') }}"
                        required autofocus autocomplete="username"
-                       placeholder="tu@correo.com"
+                       placeholder="nombre_usuario"
                        class="w-full pl-10 pr-4 py-3 border rounded-xl text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                              {{ $errors->has('email') ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300' }}">
+                              {{ $errors->has('username') ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300' }}">
             </div>
         </div>
 
         {{-- Contraseña --}}
-        <div class="mb-5">
-            <div class="flex items-center justify-between mb-1.5">
-                <label for="password" class="block text-sm font-medium text-gray-700">
-                    Contraseña
-                </label>
-                @if(Route::has('password.request'))
-                <a href="{{ route('password.request') }}"
-                   class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
-                    ¿Olvidaste tu contraseña?
-                </a>
-                @endif
-            </div>
+        <div class="mb-6">
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
+                Contraseña
+            </label>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +63,6 @@
                        placeholder="••••••••"
                        class="w-full pl-10 pr-12 py-3 border rounded-xl text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
                               {{ $errors->has('password') ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300' }}">
-                {{-- Toggle mostrar contraseña --}}
                 <button type="button" @click="showPass = !showPass"
                         class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
                     <svg x-show="!showPass" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,7 +86,7 @@
             </label>
         </div>
 
-        {{-- Botón de ingreso --}}
+        {{-- Botón --}}
         <button type="submit"
                 :disabled="loading"
                 class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold rounded-xl text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
@@ -109,11 +98,5 @@
         </button>
 
     </form>
-
-    {{-- Footer del formulario --}}
-    <p class="mt-6 text-center text-xs text-gray-400">
-        Al ingresar aceptas los <a href="#" class="text-indigo-500 hover:underline">Términos de uso</a>
-        y la <a href="#" class="text-indigo-500 hover:underline">Política de privacidad</a>.
-    </p>
 
 </x-guest-layout>

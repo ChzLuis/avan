@@ -44,6 +44,7 @@
          ])) }},
          allModules: {{ Illuminate\Support\Js::from($allModulesData->values()) }},
          panel: 'list',
+         search: '',
 
          selected: null,
          tab: 'general',
@@ -51,6 +52,33 @@
          modEnabled: {},
          saving: false,
          isNew: false,
+         copied: null,
+
+         get filteredProjects() {
+             if (!this.search.trim()) return this.projects;
+             const q = this.search.toLowerCase();
+             return this.projects.filter(p =>
+                 p.name.toLowerCase().includes(q) ||
+                 (p.category || '').toLowerCase().includes(q)
+             );
+         },
+
+         avatarColor(name) {
+             const colors = [
+                 ['#6366f1','#8b5cf6'],['#0ea5e9','#38bdf8'],['#10b981','#34d399'],
+                 ['#f59e0b','#fbbf24'],['#ef4444','#f87171'],['#ec4899','#f472b6'],
+                 ['#f97316','#fb923c'],['#14b8a6','#2dd4bf'],['#8b5cf6','#a78bfa'],
+                 ['#06b6d4','#22d3ee'],
+             ];
+             let hash = 0;
+             for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+             const pair = colors[Math.abs(hash) % colors.length];
+             return 'linear-gradient(135deg, ' + pair[0] + ', ' + pair[1] + ')';
+         },
+
+         async copyUrl(text) {
+             try { await navigator.clipboard.writeText(text); this.copied = text; setTimeout(() => this.copied = null, 2000); } catch(e) {}
+         },
 
          select(p) {
             if(window.innerWidth<768)this.panel='detail';
@@ -76,7 +104,7 @@
 
          async save() {
              this.saving = true;
-             const url    = this.isNew ? '/avan/public/projects' : '/avan/public/projects/' + this.selected.id;
+             const url    = this.isNew ? '/projects' : '/projects/' + this.selected.id;
              const method = this.isNew ? 'POST' : 'PUT';
              const res = await fetch(url, {
                  method,
@@ -103,7 +131,7 @@
          async saveModules() {
              this.saving = true;
              const enabledIds = Object.entries(this.modEnabled).filter(([,v]) => v).map(([k]) => parseInt(k));
-             await fetch('/avan/public/{{ $pid }}/projects/' + this.selected.id + '/modules', {
+             await fetch('/{{ $pid }}/projects/' + this.selected.id + '/modules', {
                  method: 'POST',
                  headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':'{{ $csrf }}', 'Accept':'application/json' },
                  body: JSON.stringify({ modules: enabledIds })
@@ -115,7 +143,7 @@
 
          async saveSettings() {
              this.saving = true;
-             await fetch('/avan/public/projects/' + this.selected.id, {
+             await fetch('/projects/' + this.selected.id, {
                  method: 'PUT',
                  headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':'{{ $csrf }}', 'Accept':'application/json' },
                  body: JSON.stringify({ name: this.form.name, ruc: this.form.ruc, email: this.form.email, country: this.form.country, currency: this.form.currency, phone: this.form.phone, address: this.form.address })
@@ -125,7 +153,8 @@
 
          async del() {
              if (!confirm('¿Eliminar ' + this.selected.name + '? Esta acción no se puede deshacer.')) return;
-             const res = await fetch('/avan/public/projects/' + this.selected.id, {
+             const wasCurrent = this.selected.is_current;
+             const res = await fetch('/projects/' + this.selected.id, {
                  method: 'DELETE',
                  headers: { 'X-CSRF-TOKEN':'{{ $csrf }}', 'Accept':'application/json' }
              });
@@ -133,6 +162,7 @@
                  this.projects = this.projects.filter(p => p.id !== this.selected.id);
                  this.selected = null;
                  this.isNew = false;
+                 if (wasCurrent) window.location.href = '/bixoadmin';
              }
          },
 
@@ -147,7 +177,7 @@
     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
         <div>
             <h2 class="text-sm font-semibold text-gray-700">Negocios</h2>
-            <p class="text-xs text-gray-400" x-text="projects.length + ' negocio' + (projects.length !== 1 ? 's' : '')"></p>
+            <p class="text-xs text-gray-400" x-text="filteredProjects.length + ' negocio' + (filteredProjects.length !== 1 ? 's' : '')"></p>
         </div>
         <button @click="openNew()" class="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,12 +187,23 @@
         </button>
     </div>
 
+    {{-- Buscador --}}
+    <div class="px-3 py-2 border-b border-gray-100 bg-white flex-shrink-0">
+        <div class="relative">
+            <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+            </svg>
+            <input type="text" x-model="search" placeholder="Buscar negocio..."
+                   class="w-full pl-7 pr-3 py-1.5 text-xs rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-indigo-400 focus:bg-white transition-colors">
+        </div>
+    </div>
+
     <div class="overflow-y-auto flex-1">
-        <template x-for="p in projects" :key="p.id">
+        <template x-for="p in filteredProjects" :key="p.id">
             <div @click="select(p)"
                  :class="selected && selected.id === p.id ? 'list-item selected' : 'list-item'">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                     :style="'background: linear-gradient(135deg, #6366f1, #8b5cf6)'"
+                     :style="avatarColor(p.name)"
                      x-text="p.name.substring(0,2).toUpperCase()"></div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1.5">
@@ -171,11 +212,23 @@
                               class="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0">activo</span>
                     </div>
                     <p class="text-xs text-gray-400 truncate" x-text="p.category || 'Sin rubro'"></p>
+                    {{-- Íconos de módulos activos --}}
+                    <div class="flex gap-0.5 mt-1 flex-wrap" x-show="p.modules && p.modules.length > 0">
+                        <template x-for="mid in p.modules.slice(0,6)" :key="mid">
+                            <div class="w-4 h-4 rounded bg-gray-100 flex items-center justify-center"
+                                 :title="allModules.find(m=>m.id===mid)?.name ?? ''">
+                                <svg class="w-2.5 h-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                        </template>
+                        <span x-show="p.modules.length > 6" class="text-[9px] text-gray-400 self-center ml-0.5"
+                              x-text="'+' + (p.modules.length - 6)"></span>
+                    </div>
                 </div>
                 <div class="flex flex-col items-end gap-1">
                     <span :class="p.is_active ? 'badge-active' : 'badge-inactive'"
                           x-text="p.is_active ? 'On' : 'Off'"></span>
-                    <span class="text-[9px] text-gray-400" x-text="(p.modules?.length ?? 0) + ' mód.'"></span>
                 </div>
             </div>
         </template>
@@ -206,7 +259,7 @@
                 <div class="flex items-center gap-3">
                     <template x-if="!isNew && selected">
                         <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                             style="background: linear-gradient(135deg, #6366f1, #8b5cf6)"
+                             :style="avatarColor(selected.name)"
                              x-text="selected.name.substring(0,2).toUpperCase()"></div>
                     </template>
                     <template x-if="isNew">
@@ -419,35 +472,152 @@
                 {{-- ── Tab: Acceso ── --}}
                 <div x-show="tab==='acceso'" x-cloak class="p-6">
                     <template x-if="selected">
-                        <div class="space-y-3 max-w-md">
-                            <div class="bg-gray-50 rounded-xl divide-y divide-gray-100 overflow-hidden border border-gray-200">
-                                <div class="flex items-center justify-between px-4 py-3">
-                                    <span class="text-sm text-gray-500">Panel principal</span>
-                                    <a :href="'/avan/public/' + selected.id + '/dashboard'"
-                                       class="text-indigo-600 text-xs font-medium hover:underline flex items-center gap-1">
-                                        Abrir panel
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                        </svg>
-                                    </a>
-                                </div>
-                                <div class="flex items-center justify-between px-4 py-3">
-                                    <span class="text-sm text-gray-500">URL pública</span>
-                                    <a :href="'/avan/public/p/' + selected.slug" target="_blank"
-                                       class="text-indigo-600 text-xs font-mono hover:underline truncate max-w-[180px]"
-                                       x-text="'/p/' + selected.slug"></a>
-                                </div>
-                                <div class="flex items-center justify-between px-4 py-3">
-                                    <span class="text-sm text-gray-500">Configuración completa</span>
-                                    <a :href="'/avan/public/' + selected.id + '/settings'"
-                                       class="text-indigo-600 text-xs font-medium hover:underline flex items-center gap-1">
-                                        Ir a ajustes
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                        </svg>
-                                    </a>
+                        <div class="space-y-4 max-w-lg">
+                            <p class="text-xs text-gray-400">URLs de acceso a los portales de este negocio.</p>
+
+                            {{-- Portal de Gestión (Admin interno) --}}
+                            <div>
+                                <h3 class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Gestión interna</h3>
+                                <div class="rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+                                    <div class="flex items-center gap-3 px-4 py-3 bg-white">
+                                        <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-medium text-gray-700">Panel de trabajo</p>
+                                            <p class="text-[11px] text-gray-400 font-mono truncate" x-text="'/' + selected.id + '/dashboard'"></p>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <button @click="copyUrl(window.location.origin + '/' + selected.id + '/dashboard')"
+                                                    class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                                                    :title="copied === window.location.origin + '/' + selected.id + '/dashboard' ? 'Copiado' : 'Copiar URL'">
+                                                <svg x-show="copied !== window.location.origin + '/' + selected.id + '/dashboard'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
+                                                <svg x-show="copied === window.location.origin + '/' + selected.id + '/dashboard'" class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            </button>
+                                            <a :href="'/' + selected.id + '/dashboard'" target="_blank"
+                                               class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            {{-- Portales públicos/externos --}}
+                            <div>
+                                <h3 class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Portales externos</h3>
+                                <div class="rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+
+                                    {{-- Facturación --}}
+                                    <div class="flex items-center gap-3 px-4 py-3 bg-white">
+                                        <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-medium text-gray-700">Portal Facturación</p>
+                                            <p class="text-[11px] text-gray-400 font-mono truncate" x-text="'/f/' + selected.slug"></p>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <button @click="copyUrl(window.location.origin + '/f/' + selected.slug)"
+                                                    class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                                                <svg x-show="copied !== window.location.origin + '/f/' + selected.slug" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
+                                                <svg x-show="copied === window.location.origin + '/f/' + selected.slug" class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            </button>
+                                            <a :href="'/f/' + selected.slug" target="_blank"
+                                               class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {{-- Catálogo público --}}
+                                    <div class="flex items-center gap-3 px-4 py-3 bg-white">
+                                        <div class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-medium text-gray-700">Catálogo público</p>
+                                            <p class="text-[11px] text-gray-400 font-mono truncate" x-text="'/p/' + selected.slug"></p>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <button @click="copyUrl(window.location.origin + '/p/' + selected.slug)"
+                                                    class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                                                <svg x-show="copied !== window.location.origin + '/p/' + selected.slug" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
+                                                <svg x-show="copied === window.location.origin + '/p/' + selected.slug" class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            </button>
+                                            <a :href="'/p/' + selected.slug" target="_blank"
+                                               class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-emerald-600 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {{-- POS (portal de facturación) --}}
+                                    <div class="flex items-center gap-3 px-4 py-3 bg-white">
+                                        <div class="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M15 3h6m0 0v6m0-6L9 15"/>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-medium text-gray-700">Terminal POS</p>
+                                            <p class="text-[11px] text-gray-400 font-mono truncate" x-text="'/f/' + selected.slug + '/pos'"></p>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <button @click="copyUrl(window.location.origin + '/f/' + selected.slug + '/pos')"
+                                                    class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                                                <svg x-show="copied !== window.location.origin + '/f/' + selected.slug + '/pos'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
+                                                <svg x-show="copied === window.location.origin + '/f/' + selected.slug + '/pos'" class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            </button>
+                                            <a :href="'/f/' + selected.slug + '/pos'" target="_blank"
+                                               class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-amber-600 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            {{-- Link a ajustes completos --}}
+                            <a :href="'/' + selected.id + '/settings'"
+                               class="flex items-center gap-2 text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                Ver configuración completa del negocio
+                            </a>
                         </div>
                     </template>
                 </div>
@@ -456,10 +626,10 @@
 
             {{-- Footer --}}
             <div class="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-white flex items-center justify-between">
-                <template x-if="!isNew && selected && !selected.is_current">
+                <template x-if="!isNew && selected">
                     <button @click="del()" class="btn-danger text-sm">Eliminar negocio</button>
                 </template>
-                <template x-if="isNew || (selected && selected.is_current)">
+                <template x-if="isNew">
                     <span></span>
                 </template>
 

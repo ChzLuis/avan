@@ -51,7 +51,7 @@
         deleting: false,
         form: {},
         csrf: '{{ $csrf }}',
-        storeUrl: '{{ route('proveedores.store', ['project' => $pid]) }}',
+        storeUrl: '{{ route('proveedores.store') }}',
         baseUrl: '{{ url('/'.$pid.'/company/proveedores') }}',
 
         get filtered() {
@@ -248,7 +248,7 @@
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
 
         {{-- Nuevo proveedor --}}
-        <button @click="openNew()"
+        <button @click="openNew(); panel='detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-teal-50 transition text-left"
                 :class="creating ? 'bg-teal-50 border-l-2 border-teal-500' : ''">
             <div class="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
@@ -264,7 +264,7 @@
 
         {{-- Filas --}}
         <template x-for="p in filtered" :key="p.id">
-            <button @click="select(p)"
+            <button @click="select(p); panel='detail'"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                     :class="selected?.id===p.id ? 'bg-teal-50 border-l-2 border-teal-500' : ''">
                 <div class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center flex-shrink-0">

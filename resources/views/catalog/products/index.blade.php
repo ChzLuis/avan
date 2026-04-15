@@ -4,7 +4,7 @@
 @php
     $csrf     = csrf_token();
     $pid      = $project->id;
-    $base     = url("/{$pid}/catalog");
+    $base     = url("/bixoadmin/catalog");
     $currency = $project->setting('currency', 'S/');
 
     $supplierList = $project->catalogLists()->where('type', 'proveedor')->with('values')->first();
@@ -28,7 +28,7 @@
         <p class="text-xs text-gray-400 mt-0.5" id="product-count-label">Cargando...</p>
     </div>
     <div class="flex items-center gap-2">
-        <a href="{{ route('services.index', ['project' => $pid]) }}"
+        <a href="{{ route('services.index') }}"
            class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
             <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -55,27 +55,53 @@
             </button>
             <div x-show="open" @click.outside="open=false" x-cloak
                  class="absolute right-0 mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
-                <a href="{{ route('products.template', ['project' => $pid]) }}"
+                <a href="{{ route('products.template') }}"
                    class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                     <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    Descargar plantilla
+                    Descargar plantilla Excel
                 </a>
                 <label class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                     <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                     </svg>
-                    Importar CSV
-                    <input type="file" accept=".csv,.txt" class="hidden" id="import-file" @change="importCSV($event)">
+                    Importar archivo
+                    <input type="file" accept=".csv,.txt,.xls,.xlsx" class="hidden" id="import-file" @change="importCSV($event)">
                 </label>
                 <div class="border-t border-gray-100 my-1"></div>
-                <a href="{{ route('products.export', ['project' => $pid]) }}"
+                <a href="{{ route('products.export') }}"
                    class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                     <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
-                    Exportar CSV
+                    Exportar CSV (genérico)
+                </a>
+                <div class="border-t border-gray-100 my-1"></div>
+                <p class="px-4 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Para marketplaces</p>
+                <a href="{{ route('products.export.meli') }}"
+                   class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <span class="w-4 h-4 flex items-center justify-center text-xs font-bold text-yellow-500">ML</span>
+                    Mercado Libre
+                </a>
+                <a href="{{ route('products.export.rappi') }}"
+                   class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <span class="w-4 h-4 flex items-center justify-center text-xs font-bold text-orange-500">R</span>
+                    Rappi
+                </a>
+                <a href="{{ route('products.export.shopee') }}"
+                   class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <span class="w-4 h-4 flex items-center justify-center text-xs font-bold text-red-500">S</span>
+                    Shopee
+                </a>
+                <div class="border-t border-gray-100 my-1"></div>
+                <p class="px-4 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Catálogo web</p>
+                <a href="{{ route('products.export.static') }}"
+                   class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                    Exportar para GitHub Pages
                 </a>
             </div>
         </div>
@@ -94,6 +120,9 @@
              'notes'            => $p->notes ?? '',
              'price'            => (float)$p->price,
              'compare_price'    => $p->compare_price !== null ? (float)$p->compare_price : null,
+             'wholesale_price'  => $p->wholesale_price !== null ? (float)$p->wholesale_price : null,
+             'wholesale_min_qty'=> $p->wholesale_min_qty ?? null,
+             'wholesale_unit'   => $p->wholesale_unit ?? '',
              'cost'             => $p->cost !== null ? (float)$p->cost : null,
              'unit'             => $p->unit ?? '',
              'stock'            => (int)($p->stock ?? 0),
@@ -107,6 +136,8 @@
              'category_id'      => $p->category_id,
              'brand_catalog_id' => $p->brand_catalog_id,
              'category_name'    => $p->category?->name ?? '',
+             'images'           => $p->images->map(fn($i) => ['id'=>$i->id,'url'=>$i->url,'is_main'=>$i->is_main])->values()->toArray(),
+             'main_image'       => $p->mainImage?->url,
          ])) }},
          categories: {{ Illuminate\Support\Js::from($categories) }},
          brands:     {{ Illuminate\Support\Js::from($brands->map(fn($b) => ['id'=>$b->id,'label'=>$b->label])) }},
@@ -173,7 +204,7 @@
              this.selected = null; this.creating = true; this.tab = 'info';
              this.form = {
                  name:'', sku:'', barcode:'', description:'', notes:'',
-                 price:'', compare_price:'', cost:'', unit:'',
+                 price:'', compare_price:'', wholesale_price:'', wholesale_min_qty:'', wholesale_unit:'', cost:'', unit:'',
                  stock:0, stock_min:0, stock_max:0,
                  location:'', supplier:'',
                  has_tax:false, tax_rate:18,
@@ -217,14 +248,36 @@
          async importCSV(event) {
              const file = event.target.files[0]; if (!file) return;
              this.importing = true;
-             const fd = new FormData(); fd.append('file', file); fd.append('_token', '{{ $csrf }}');
-             const res  = await fetch('{{ $base }}/products/import', { method:'POST', headers:{'Accept':'application/json'}, body: fd });
-             const data = await res.json();
-             this.importing = false;
-             event.target.value = '';
-             alert(data.errors && data.errors.length
-                 ? 'Importados: ' + data.created + '\nErrores:\n' + data.errors.join('\n')
-                 : 'Se importaron ' + data.created + ' productos.');
+             const fd = new FormData();
+             fd.append('file', file);
+             fd.append('_token', '{{ $csrf }}');
+             try {
+                 const res  = await fetch('{{ $base }}/products/import', { method:'POST', headers:{'Accept':'application/json'}, body: fd });
+                 const data = await res.json();
+                 this.importing = false;
+                 event.target.value = '';
+
+                 if (data.created === 0 && (!data.errors || data.errors.length === 0)) {
+                     alert('⚠️ No se importó ningún producto.\n\nVerifica que el archivo tenga datos desde la fila 3 en adelante y que la columna "nombre" esté completa.');
+                     return;
+                 }
+
+                 if (data.errors && data.errors.length) {
+                     alert(`✅ Importados: ${data.created} productos\n⚠️ Errores en ${data.errors.length} filas:\n\n` + data.errors.slice(0,5).join('\n'));
+                 } else {
+                     alert(`✅ ¡Importación exitosa!\n\n${data.created} productos agregados al catálogo.`);
+                 }
+
+                 // Recargar lista de productos
+                 const r = await fetch('{{ $base }}/products?json=1', { headers:{'Accept':'application/json'} });
+                 const d = await r.json();
+                 if (d.products) { this.products = d.products; this.filtered = d.products; }
+                 else location.reload();
+             } catch(e) {
+                 this.importing = false;
+                 event.target.value = '';
+                 alert('❌ Error al importar. Verifica que el archivo sea CSV o XLS válido.');
+             }
          }
      }"
      x-init="
@@ -331,7 +384,7 @@
     {{-- Lista --}}
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
         {{-- Nuevo --}}
-        <button @click="openNew()"
+        <button @click="openNew(); panel='detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition text-left"
                 :class="creating ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
             <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
@@ -346,7 +399,7 @@
         </button>
 
         <template x-for="p in filtered" :key="p.id">
-            <button @click="select(p)"
+            <button @click="select(p); panel='detail'"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                     :class="selected?.id===p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
                 <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
@@ -477,7 +530,7 @@
                         <div>
                             <label class="label flex items-center justify-between">
                                 Categoria
-                                <a href="{{ route('categories.index', ['project' => $pid]) }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
+                                <a href="{{ route('categories.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
                             <select x-model.number="form.category_id" class="input">
                                 <option value="">Sin categoria</option>
@@ -490,7 +543,7 @@
                         <div>
                             <label class="label flex items-center justify-between">
                                 Marca
-                                <a href="{{ route('catalogs.index', ['project' => $pid]) }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
+                                <a href="{{ route('catalogs.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
                             <template x-if="brands.length > 0">
                                 <div>
@@ -504,7 +557,7 @@
                                 </div>
                             </template>
                             <template x-if="brands.length === 0">
-                                <a href="{{ route('catalogs.index', ['project' => $pid]) }}"
+                                <a href="{{ route('catalogs.index') }}"
                                    class="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition text-[11px] text-amber-700 font-medium mt-1">
                                     + Crear catalogo de marcas
                                 </a>
@@ -548,6 +601,31 @@
                             </div>
                             <p class="text-[10px] text-gray-400 mt-0.5">Se muestra <s>tachado</s> como precio anterior</p>
                         </div>
+                        @if($project->setting('wholesale_enabled') === '1')
+                        <div class="col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                            <p class="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-3">💼 Precio por mayor</p>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="label">Precio mayorista</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                        <input type="number" x-model="form.wholesale_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">Precio al por mayor</p>
+                                </div>
+                                <div>
+                                    <label class="label">Cantidad mínima</label>
+                                    <input type="number" x-model="form.wholesale_min_qty" min="1" step="1" class="input" placeholder="Ej: 25">
+                                    <p class="text-[10px] text-gray-400 mt-0.5">Unidades para activar este precio</p>
+                                </div>
+                                <div>
+                                    <label class="label">Unidad mayorista</label>
+                                    <input type="text" x-model="form.wholesale_unit" class="input" placeholder="Ej: saco, caja, docena">
+                                    <p class="text-[10px] text-gray-400 mt-0.5">Ej: saco de 25kg, caja x12</p>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
                         <div>
                             <label class="label">Costo de compra</label>
                             <div class="relative">
@@ -712,7 +790,7 @@
                         <div>
                             <label class="label flex items-center justify-between">
                                 Ubicacion en almacen
-                                <a href="{{ route('catalogs.index', ['project' => $pid]) }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
+                                <a href="{{ route('catalogs.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
                             <template x-if="locations.length > 0">
                                 <div>
@@ -732,7 +810,7 @@
                         <div>
                             <label class="label flex items-center justify-between">
                                 Proveedor
-                                <a href="{{ route('catalogs.index', ['project' => $pid]) }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
+                                <a href="{{ route('catalogs.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
                             <template x-if="suppliers.length > 0">
                                 <div>
@@ -760,7 +838,7 @@
                             <p class="text-sm font-semibold text-blue-800">Configura tus catalogos</p>
                             <p class="text-xs text-blue-600 mt-0.5">
                                 Crea listas de <strong>proveedores</strong>, <strong>ubicaciones</strong> e <strong>impuestos</strong> en
-                                <a href="{{ route('catalogs.index', ['project' => $pid]) }}" class="underline font-semibold">Catalogos de configuracion</a>
+                                <a href="{{ route('catalogs.index') }}" class="underline font-semibold">Catalogos de configuracion</a>
                                 y apareceran como desplegables aqui automaticamente.
                             </p>
                         </div>
@@ -770,53 +848,79 @@
                 </div>
 
                 {{-- TAB: IMAGENES --}}
-                <div x-show="tab==='imagenes'" x-cloak class="p-6 max-w-2xl space-y-4">
+                <div x-show="tab==='imagenes'" x-cloak class="p-5 space-y-4"
+                     x-data="{ uploading: false, imgError: '' }">
 
-                    <div class="grid grid-cols-4 gap-3">
-                        @foreach(['Principal', 'Imagen 2', 'Imagen 3', 'Imagen 4'] as $imgIdx => $imgLabel)
-                        <div class="group">
-                            <div class="aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-gray-50
-                                        hover:border-indigo-300 hover:bg-indigo-50 transition cursor-pointer
-                                        flex flex-col items-center justify-center gap-2 relative overflow-hidden">
-                                @if($imgIdx === 0)
-                                <div class="absolute top-1.5 left-1.5 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">Principal</div>
-                                @endif
-                                <svg class="w-8 h-8 text-gray-300 group-hover:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <span class="text-[10px] text-gray-400 group-hover:text-indigo-500">{{ $imgLabel }}</span>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-
-                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-4">
-                        <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-indigo-800">Gestion de imagenes proximamente</p>
-                                <p class="text-xs text-indigo-600 mt-1 leading-relaxed">
-                                    Subida multiple con drag and drop, imagen principal, reordenar, recortar y optimizacion automatica para SEO (alt text, compresion, formato WebP).
-                                </p>
-                                <div class="flex items-center gap-2 mt-2 flex-wrap">
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Drag and Drop</span>
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">WebP auto</span>
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Alt SEO</span>
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Hasta 4 fotos</span>
+                    {{-- Grid de imágenes actuales --}}
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                        <template x-for="img in (selected?.images || [])" :key="img.id">
+                            <div class="group relative aspect-square rounded-xl overflow-hidden border-2 transition"
+                                 :class="img.is_main ? 'border-indigo-500' : 'border-gray-200'">
+                                <img :src="img.url" class="w-full h-full object-cover">
+                                {{-- Badge principal --}}
+                                <div x-show="img.is_main"
+                                     class="absolute top-1.5 left-1.5 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                                    Principal
+                                </div>
+                                {{-- Acciones hover --}}
+                                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                                    <button x-show="!img.is_main"
+                                            @click="
+                                                await fetch('{{ url('/bixoadmin/catalog/products') }}/' + selected.id + '/images/' + img.id + '/main', {
+                                                    method:'PATCH', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}
+                                                });
+                                                selected.images.forEach(i => i.is_main = false);
+                                                img.is_main = true;
+                                            "
+                                            class="bg-white text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-indigo-50 transition"
+                                            title="Marcar como principal">⭐</button>
+                                    <button @click="
+                                                if(!confirm('¿Eliminar imagen?')) return;
+                                                await fetch('{{ url('/bixoadmin/catalog/products') }}/' + selected.id + '/images/' + img.id, {
+                                                    method:'DELETE', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}
+                                                });
+                                                selected.images = selected.images.filter(i => i.id !== img.id);
+                                            "
+                                            class="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-red-600 transition"
+                                            title="Eliminar">✕</button>
                                 </div>
                             </div>
-                        </div>
+                        </template>
+
+                        {{-- Botón agregar --}}
+                        <label class="aspect-square rounded-xl border-2 border-dashed border-gray-300 hover:border-indigo-400
+                                      hover:bg-indigo-50 transition cursor-pointer flex flex-col items-center justify-center gap-1.5 group">
+                            <svg class="w-7 h-7 text-gray-300 group-hover:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span class="text-[10px] text-gray-400 group-hover:text-indigo-500 font-medium">Agregar</span>
+                            <input type="file" accept="image/*" multiple class="hidden"
+                                   @change="
+                                        uploading = true; imgError = '';
+                                        const files = Array.from($event.target.files);
+                                        for (const file of files) {
+                                            const fd = new FormData();
+                                            fd.append('image', file);
+                                            fd.append('_token', '{{ csrf_token() }}');
+                                            const res = await fetch('{{ url('/bixoadmin/catalog/products') }}/' + selected.id + '/images', { method:'POST', body: fd });
+                                            const data = await res.json();
+                                            if (data.ok) {
+                                                if (!selected.images) selected.images = [];
+                                                selected.images.push(data.image);
+                                            } else { imgError = data.message || 'Error al subir imagen'; }
+                                        }
+                                        uploading = false;
+                                        $event.target.value = '';
+                                   ">
+                        </label>
                     </div>
 
-                    <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-700">
-                        <p class="font-semibold mb-1">Tip SEO para imagenes</p>
-                        <p>Al subir imagenes se generara automaticamente el alt text con el nombre del producto, categoria y nombre del negocio, mejorando tu posicion en Google Imagenes.</p>
-                    </div>
+                    <div x-show="uploading" class="text-xs text-indigo-600 font-medium">⏳ Subiendo imagen...</div>
+                    <div x-show="imgError" x-text="imgError" class="text-xs text-red-600"></div>
 
+                    <p class="text-xs text-gray-400">
+                        Clic en ⭐ para marcar como imagen principal · Pasa el cursor sobre una imagen para ver las opciones · Formatos: JPG, PNG, WebP · Máx 4MB por imagen
+                    </p>
                 </div>
 
             </div>{{-- /overflow-y-auto --}}

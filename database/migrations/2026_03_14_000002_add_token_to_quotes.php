@@ -9,15 +9,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('quotes', function (Blueprint $table) {
-            $table->string('token', 64)->nullable()->unique()->after('id');
-            $table->timestamp('sent_at')->nullable()->after('valid_until');
+            if (!Schema::hasColumn('quotes', 'token')) $table->string('token', 64)->nullable()->unique()->after('id');
+            if (!Schema::hasColumn('quotes', 'sent_at')) $table->timestamp('sent_at')->nullable()->after('valid_until');
         });
     }
 
     public function down(): void
     {
         Schema::table('quotes', function (Blueprint $table) {
-            $table->dropColumn(['token', 'sent_at']);
+            $cols = array_filter(['token','sent_at'], fn($c) => Schema::hasColumn('quotes', $c));
+            if ($cols) $table->dropColumn(array_values($cols));
         });
     }
 };

@@ -8,22 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->string('client_email')->nullable()->after('client_phone');
-        });
+        if (!Schema::hasColumn('orders', 'client_email')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->string('client_email')->nullable()->after('client_phone');
+            });
+        }
 
-        Schema::table('quotes', function (Blueprint $table) {
-            $table->string('client_email')->nullable()->after('client_phone');
-        });
+        if (!Schema::hasColumn('quotes', 'client_email')) {
+            Schema::table('quotes', function (Blueprint $table) {
+                $table->string('client_email')->nullable()->after('client_phone');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn('client_email');
-        });
-        Schema::table('quotes', function (Blueprint $table) {
-            $table->dropColumn('client_email');
-        });
+        if (Schema::hasColumn('orders', 'client_email')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->dropColumn('client_email');
+            });
+        }
+        if (Schema::hasColumn('quotes', 'client_email')) {
+            Schema::table('quotes', function (Blueprint $table) {
+                $table->dropColumn('client_email');
+            });
+        }
     }
 };

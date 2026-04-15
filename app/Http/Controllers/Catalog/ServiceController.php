@@ -9,8 +9,10 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    public function index(Project $project)
+    public function index()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $categories = $project->categories()->where('is_active', true)->orderBy('sort_order')->get();
         $services   = $project->services()->with('category')->orderBy('sort_order')->get();
 
@@ -31,8 +33,10 @@ class ServiceController extends Controller
         ];
     }
 
-    public function store(Request $request, Project $project)
+    public function store(Request $request)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $data = $request->validate($this->rules());
         $data['project_id']   = $project->id;
         $data['is_available'] = $request->boolean('is_available', true);
@@ -45,8 +49,10 @@ class ServiceController extends Controller
         return back()->with('success', 'Servicio creado.');
     }
 
-    public function update(Request $request, Project $project, Service $service)
+    public function update(Request $request, Service $service)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($service->project_id === $project->id, 403);
 
         $data = $request->validate($this->rules());
@@ -59,8 +65,10 @@ class ServiceController extends Controller
         return back()->with('success', 'Servicio actualizado.');
     }
 
-    public function destroy(Project $project, Service $service)
+    public function destroy(Service $service)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($service->project_id === $project->id, 403);
         $service->delete();
 

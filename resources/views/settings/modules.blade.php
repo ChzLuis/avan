@@ -1,33 +1,32 @@
 <x-app-layout>
 <x-slot name="slot">
-<div class="flex flex-1 overflow-hidden">
+<div class="flex flex-1 overflow-hidden" x-data="{ mv: '{{ request()->has('cat') ? 'detail' : 'list' }}' }">
 
-{{-- PANEL IZQUIERDO — categorías --}}
-<div class="list-panel flex-shrink-0">
+{{-- PANEL IZQUIERDO --}}
+<div class="list-panel flex-shrink-0" :class="{ 'mp-hidden': mv === 'detail' }">
     <div class="px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
-        <h2 class="text-sm font-semibold text-gray-700">Centro de control</h2>
+        <h2 class="text-sm font-semibold text-gray-700">Módulos</h2>
         <p class="text-xs text-gray-400 mt-0.5">{{ $project->name }}</p>
     </div>
     <div class="overflow-y-auto flex-1">
         @php
         $cats = [
-            ['key'=>'plataformas', 'label'=>'Plataformas digitales', 'desc'=>'Tienda, Work, Portal',
+            ['key'=>'plataformas', 'label'=>'Plataformas',     'desc'=>'Tienda, Work, Portal',
              'icon'=>'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2'],
-            ['key'=>'ventas',     'label'=>'Ventas y comercial',    'desc'=>'POS, pedidos, facturas',
+            ['key'=>'ventas',     'label'=>'Ventas',           'desc'=>'POS, pedidos, facturas',
              'icon'=>'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z'],
-            ['key'=>'clientes',   'label'=>'Clientes y CRM',        'desc'=>'Agenda, clientes, grupos',
+            ['key'=>'clientes',   'label'=>'Clientes',         'desc'=>'CRM, agenda, grupos',
              'icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
-            ['key'=>'empresa',    'label'=>'Empresa y RRHH',        'desc'=>'Empleados, sedes, nómina',
+            ['key'=>'empresa',    'label'=>'Empresa',          'desc'=>'Empleados, sedes, nómina',
              'icon'=>'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'],
-            ['key'=>'logistica',  'label'=>'Logística y almacén',   'desc'=>'Inventario, despacho',
+            ['key'=>'logistica',  'label'=>'Logística',        'desc'=>'Inventario, despacho',
              'icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
-            ['key'=>'integraciones','label'=>'Integraciones',       'desc'=>'Pagos, WhatsApp, Google',
-             'icon'=>'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'],
         ];
         $current = request('cat', 'plataformas');
         @endphp
         @foreach($cats as $cat)
-        <a href="{{ route('settings.modules', ['project'=>$project->id]) }}?cat={{ $cat['key'] }}"
+        <a href="{{ route('settings.modules') }}?cat={{ $cat['key'] }}"
+           @click="mv = 'detail'"
            class="list-item {{ $current === $cat['key'] ? 'selected' : '' }}">
             <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
                         {{ $current === $cat['key'] ? 'bg-indigo-600' : 'bg-gray-100' }}">
@@ -45,8 +44,17 @@
     </div>
 </div>
 
-{{-- PANEL DERECHO — módulos de la categoría --}}
-<div class="detail-panel">
+{{-- PANEL DERECHO --}}
+<div class="detail-panel" :class="{ 'mp-active': mv === 'detail' }">
+
+    {{-- Botón volver (solo mobile) --}}
+    <button @click="mv = 'list'" type="button"
+            class="md:hidden flex items-center gap-2 px-4 py-3 text-sm text-indigo-600 border-b border-gray-100 w-full hover:bg-gray-50 flex-shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Volver a Módulos
+    </button>
 
     @if(session('success'))
     <div x-data="{show:true}" x-show="show" x-init="setTimeout(()=>show=false,3000)" x-cloak
@@ -61,66 +69,72 @@
     @php
     $cat = request('cat', 'plataformas');
     $pid = $project->id;
+    $allModuleKeys = $allModules->pluck('id', 'key')->toArray();
 
-    // Helper para verificar si un módulo está activo
-    $isActive = fn(string $key) => in_array($key, $activeModuleIds ?? [])
-        || $project->modules()->where('key', $key)->wherePivot('is_active', true)->exists();
-
-    // Definición completa de módulos por categoría
     $moduleDefs = [
 
+        // ══════════════════════════════════
+        // PLATAFORMAS
+        // ══════════════════════════════════
         'plataformas' => [
-            'title' => 'Plataformas digitales',
-            'desc'  => 'Activa los productos digitales que verán tus clientes y tu equipo',
+            'title' => 'Plataformas',
+            'desc'  => 'Los productos principales que activas para tu negocio',
             'items' => [
                 [
-                    'key'     => 'store',
-                    'label'   => 'Avan Store',
-                    'desc'    => 'Catálogo público de ventas online. Tus clientes pueden ver productos, hacer pedidos y pagar desde cualquier dispositivo.',
-                    'badge'   => 'Catálogo público',
-                    'color'   => '#0ea5e9',
-                    'icon'    => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
-                    'url'     => $project->slug ? '/avan/public/p/'.$project->slug : null,
-                    'config'  => route('settings.design', ['project'=>$pid]).'?s=tienda',
+                    'key'    => 'store',
+                    'label'  => 'Tienda online',
+                    'desc'   => 'Catálogo público para tus clientes. Pueden ver productos, hacer pedidos y pagar sin necesidad de crear una cuenta.',
+                    'badge'  => 'Público',
+                    'color'  => '#0ea5e9',
+                    'icon'   => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
+                    'url'    => $project->slug ? url('/'.$project->slug) : null,
+                    'links'  => [
+                        ['label'=>'Diseño y colores',  'href'=> route('settings.design').'?s=brand'],
+                        ['label'=>'Plantilla',         'href'=> route('settings.design').'?s=plantilla'],
+                        ['label'=>'Pagos en línea',    'href'=> route('settings.design').'?s=payments'],
+                    ],
                 ],
                 [
-                    'key'     => 'orders',
-                    'label'   => 'Avan Work',
-                    'desc'    => 'Panel operativo para tu equipo: POS, pedidos, cotizaciones, facturas, clientes y agenda.',
-                    'badge'   => 'Operaciones internas',
-                    'color'   => '#6366f1',
-                    'icon'    => 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2',
-                    'url'     => route('pos.index', ['project'=>$pid]),
-                    'config'  => null,
+                    'key'    => 'orders',
+                    'label'  => 'Panel de operaciones',
+                    'desc'   => 'Panel para tu equipo: POS, pedidos, cotizaciones, facturas y clientes. Todo en un solo lugar.',
+                    'badge'  => 'Interno',
+                    'color'  => '#6366f1',
+                    'icon'   => 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2',
+                    'url'    => route('pos.index'),
+                    'links'  => [],
                 ],
                 [
-                    'key'     => 'docs',
-                    'label'   => 'Avan Docs',
-                    'desc'    => 'Portal de clientes. Tus clientes pueden ver sus pedidos, cotizaciones y facturas desde un enlace personalizado.',
-                    'badge'   => 'Portal de clientes',
-                    'color'   => '#10b981',
-                    'icon'    => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-                    'url'     => null,
-                    'config'  => null,
-                    'soon'    => true,
+                    'key'    => 'docs',
+                    'label'  => 'Portal de clientes',
+                    'desc'   => 'Tus clientes pueden ver sus pedidos, cotizaciones y facturas desde un enlace personalizado sin necesidad de login.',
+                    'badge'  => 'Portal',
+                    'color'  => '#10b981',
+                    'icon'   => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+                    'url'    => null,
+                    'links'  => [],
+                    'soon'   => true,
                 ],
                 [
-                    'key'     => 'pages',
-                    'label'   => 'Avan Pages',
-                    'desc'    => 'Página web del negocio con secciones personalizables: inicio, servicios, equipo, contacto y más.',
-                    'badge'   => 'Página web',
-                    'color'   => '#f59e0b',
-                    'icon'    => 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-                    'url'     => null,
-                    'config'  => null,
-                    'soon'    => true,
+                    'key'    => 'pages',
+                    'label'  => 'Página web',
+                    'desc'   => 'Página web del negocio con secciones personalizables: inicio, servicios, equipo y contacto.',
+                    'badge'  => 'Web',
+                    'color'  => '#f59e0b',
+                    'icon'   => 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    'url'    => null,
+                    'links'  => [],
+                    'soon'   => true,
                 ],
             ],
         ],
 
+        // ══════════════════════════════════
+        // VENTAS
+        // ══════════════════════════════════
         'ventas' => [
-            'title' => 'Ventas y comercial',
-            'desc'  => 'Módulos del área comercial disponibles en Avan Work',
+            'title' => 'Ventas',
+            'desc'  => 'Módulos del área comercial disponibles en tu panel de operaciones',
             'items' => [
                 [
                     'key'   => 'orders',
@@ -129,7 +143,7 @@
                     'badge' => 'POS',
                     'color' => '#6366f1',
                     'icon'  => 'M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1-4l-3 3m0 0l-3-3m3 3V4',
-                    'config'=> route('pos.index', ['project'=>$pid]),
+                    'url'   => route('pos.index'),
                 ],
                 [
                     'key'   => 'orders',
@@ -138,68 +152,71 @@
                     'badge' => 'Pedidos',
                     'color' => '#f59e0b',
                     'icon'  => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-                    'config'=> route('orders', ['project'=>$pid]),
+                    'url'   => route('orders'),
                 ],
                 [
                     'key'   => 'quotes',
                     'label' => 'Cotizaciones',
-                    'desc'  => 'Genera y envía cotizaciones profesionales a tus clientes. Convierte cotización en pedido con un clic.',
+                    'desc'  => 'Genera y envía cotizaciones profesionales. Convierte una cotización en pedido con un clic.',
                     'badge' => 'Cotizaciones',
                     'color' => '#10b981',
                     'icon'  => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-                    'config'=> route('quotes', ['project'=>$pid]),
+                    'url'   => route('quotes'),
                 ],
                 [
                     'key'   => 'invoices',
                     'label' => 'Facturas y boletas',
-                    'desc'  => 'Emite boletas y facturas electrónicas. Preparado para integración con SUNAT/OSE (Nubefact, Efact).',
+                    'desc'  => 'Emite boletas y facturas electrónicas. Compatible con SUNAT / OSE (Nubefact, Efact).',
                     'badge' => 'Facturación',
                     'color' => '#8b5cf6',
                     'icon'  => 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z',
-                    'config'=> route('invoices.index', ['project'=>$pid]),
+                    'url'   => route('invoices.index'),
                 ],
                 [
                     'key'   => 'catalog',
-                    'label' => 'Productos y catálogo',
-                    'desc'  => 'Gestiona tu catálogo de productos y servicios. Precios, categorías, fotos e inventario.',
+                    'label' => 'Productos y categorías',
+                    'desc'  => 'Gestiona tu catálogo: productos, servicios, categorías, precios e imágenes.',
                     'badge' => 'Catálogo',
                     'color' => '#0ea5e9',
                     'icon'  => 'M4 6h16M4 10h16M4 14h16M4 18h16',
-                    'config'=> route('catalog', ['project'=>$pid]),
+                    'url'   => route('catalog'),
                 ],
             ],
         ],
 
+        // ══════════════════════════════════
+        // CLIENTES
+        // ══════════════════════════════════
         'clientes' => [
-            'title' => 'Clientes y CRM',
+            'title' => 'Clientes',
             'desc'  => 'Herramientas para gestionar la relación con tus clientes',
             'items' => [
                 [
                     'key'   => 'clients',
                     'label' => 'Base de clientes',
-                    'desc'  => 'Directorio completo de clientes con historial de compras, contacto y documentos.',
+                    'desc'  => 'Directorio de clientes con historial de compras, datos de contacto y documentos.',
                     'badge' => 'CRM',
                     'color' => '#8b5cf6',
                     'icon'  => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-                    'config'=> route('clients', ['project'=>$pid]),
+                    'url'   => route('clients'),
                 ],
                 [
                     'key'   => 'agenda',
                     'label' => 'Agenda y citas',
-                    'desc'  => 'Sistema de reservas y citas. Tus clientes pueden agendar desde el catálogo público.',
+                    'desc'  => 'Reservas y citas. Tus clientes pueden agendar directamente desde la tienda online.',
                     'badge' => 'Agenda',
                     'color' => '#ec4899',
                     'icon'  => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-                    'config'=> route('agenda', ['project'=>$pid]),
+                    'url'   => route('agenda'),
                 ],
                 [
                     'key'   => 'groups',
                     'label' => 'Grupos de clientes',
-                    'desc'  => 'Segmenta tus clientes en grupos para enviar promociones y gestionar precios diferenciados.',
+                    'desc'  => 'Segmenta tus clientes para gestionar precios diferenciados y promociones.',
                     'badge' => 'Segmentación',
                     'color' => '#f97316',
                     'icon'  => 'M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z',
-                    'config'=> route('groups.index', ['project'=>$pid, 'type'=>'client']),
+                    'url'   => route('groups.index', ['type'=>'client']),
                 ],
                 [
                     'key'   => 'loyalty',
@@ -213,8 +230,11 @@
             ],
         ],
 
+        // ══════════════════════════════════
+        // EMPRESA
+        // ══════════════════════════════════
         'empresa' => [
-            'title' => 'Empresa y RRHH',
+            'title' => 'Empresa',
             'desc'  => 'Gestión interna del equipo y la estructura empresarial',
             'items' => [
                 [
@@ -224,7 +244,7 @@
                     'badge' => 'RRHH',
                     'color' => '#f97316',
                     'icon'  => 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-                    'config'=> route('hr.employees.index', ['project'=>$pid]),
+                    'url'   => route('hr.employees.index'),
                 ],
                 [
                     'key'   => 'sedes',
@@ -233,12 +253,12 @@
                     'badge' => 'Sedes',
                     'color' => '#64748b',
                     'icon'  => 'M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z',
-                    'config'=> route('sedes.index', ['project'=>$pid]),
+                    'url'   => route('sedes.index'),
                 ],
                 [
                     'key'   => 'payroll',
                     'label' => 'Planilla y nómina',
-                    'desc'  => 'Cálculo de sueldos, descuentos, gratificaciones y generación de boletas de pago.',
+                    'desc'  => 'Cálculo de sueldos, descuentos, gratificaciones y boletas de pago.',
                     'badge' => 'Nómina',
                     'color' => '#10b981',
                     'icon'  => 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z',
@@ -256,8 +276,11 @@
             ],
         ],
 
+        // ══════════════════════════════════
+        // LOGÍSTICA
+        // ══════════════════════════════════
         'logistica' => [
-            'title' => 'Logística y almacén',
+            'title' => 'Logística',
             'desc'  => 'Control de inventario, despacho y proveedores',
             'items' => [
                 [
@@ -276,12 +299,12 @@
                     'badge' => 'Compras',
                     'color' => '#6366f1',
                     'icon'  => 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
-                    'config'=> route('proveedores.index', ['project'=>$pid]),
+                    'url'   => route('proveedores.index'),
                 ],
                 [
                     'key'   => 'logistics',
                     'label' => 'Despacho y envíos',
-                    'desc'  => 'Gestión de despachos, guías de remisión y seguimiento de entregas a domicilio.',
+                    'desc'  => 'Guías de remisión y seguimiento de entregas a domicilio.',
                     'badge' => 'Despacho',
                     'color' => '#f59e0b',
                     'icon'  => 'M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0',
@@ -290,52 +313,9 @@
             ],
         ],
 
-        'integraciones' => [
-            'title' => 'Integraciones externas',
-            'desc'  => 'Conecta Avan con servicios de pago, comunicación y más',
-            'items' => [
-                [
-                    'key'   => 'payments',
-                    'label' => 'Pagos en línea',
-                    'desc'  => 'Culqi (Perú) y Mercado Pago (LATAM). Acepta tarjetas, Yape, Plin y transferencias.',
-                    'badge' => 'Pagos',
-                    'color' => '#10b981',
-                    'icon'  => 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
-                    'config'=> route('settings.design', ['project'=>$pid]).'?s=payments',
-                ],
-                [
-                    'key'   => 'whatsapp',
-                    'label' => 'WhatsApp Business API',
-                    'desc'  => 'Envía notificaciones de pedidos, cotizaciones y confirmaciones por WhatsApp automáticamente.',
-                    'badge' => 'WhatsApp',
-                    'color' => '#22c55e',
-                    'icon'  => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
-                    'soon'  => true,
-                ],
-                [
-                    'key'   => 'sunat',
-                    'label' => 'SUNAT — Facturación electrónica',
-                    'desc'  => 'Integración con OSE (Nubefact, Efact). Emite comprobantes válidos ante SUNAT automáticamente.',
-                    'badge' => 'SUNAT',
-                    'color' => '#dc2626',
-                    'icon'  => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-                    'soon'  => true,
-                ],
-                [
-                    'key'   => 'google',
-                    'label' => 'Google Calendar',
-                    'desc'  => 'Sincroniza las citas de tu agenda con Google Calendar automáticamente.',
-                    'badge' => 'Google',
-                    'color' => '#4285F4',
-                    'icon'  => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-                    'soon'  => true,
-                ],
-            ],
-        ],
     ];
 
-    $section   = $moduleDefs[$cat] ?? $moduleDefs['plataformas'];
-    $allModuleKeys = $allModules->pluck('id', 'key')->toArray();
+    $section = $moduleDefs[$cat] ?? $moduleDefs['plataformas'];
     @endphp
 
     {{-- Header --}}
@@ -344,87 +324,92 @@
         <p class="text-xs text-gray-400 mt-0.5">{{ $section['desc'] }}</p>
     </div>
 
-    {{-- Cards de módulos --}}
+    {{-- Cards --}}
     <div class="flex-1 overflow-y-auto p-6">
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 max-w-4xl">
             @foreach($section['items'] as $item)
             @php
-                $moduleId  = $allModuleKeys[$item['key']] ?? null;
-                $enabled   = $moduleId && in_array($moduleId, $activeModuleIds);
-                $isSoon    = $item['soon'] ?? false;
+                $moduleId = $allModuleKeys[$item['key']] ?? null;
+                $enabled  = $moduleId && in_array($moduleId, $activeModuleIds);
+                $isSoon   = $item['soon'] ?? false;
+                $hasLinks = !empty($item['links'] ?? []);
             @endphp
-            <div class="bg-white border rounded-2xl p-5 flex flex-col gap-4 transition-all
+            <div class="bg-white border rounded-2xl p-5 flex flex-col gap-3 transition-all
                         {{ $enabled ? 'border-indigo-200 shadow-sm shadow-indigo-100' : 'border-gray-200' }}
-                        {{ $isSoon ? 'opacity-60' : '' }}">
+                        {{ $isSoon ? 'opacity-55' : '' }}">
 
-                {{-- Top: icono + badge + toggle --}}
+                {{-- Top: icono + nombre + toggle --}}
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                             style="background: {{ $item['color'] }}20; border: 1px solid {{ $item['color'] }}30">
-                            <svg class="w-5 h-5" style="color: {{ $item['color'] }}"
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                             style="background:{{ $item['color'] }}18; border:1px solid {{ $item['color'] }}28">
+                            <svg class="w-5 h-5" style="color:{{ $item['color'] }}"
                                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                       d="{{ $item['icon'] }}"/>
                             </svg>
                         </div>
                         <div>
-                            <p class="font-semibold text-gray-800 text-sm">{{ $item['label'] }}</p>
-                            <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                                  style="background: {{ $item['color'] }}15; color: {{ $item['color'] }}">
+                            <p class="font-semibold text-gray-800 text-sm leading-tight">{{ $item['label'] }}</p>
+                            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block"
+                                  style="background:{{ $item['color'] }}15; color:{{ $item['color'] }}">
                                 {{ $item['badge'] }}
                             </span>
                         </div>
                     </div>
 
-                    {{-- Toggle --}}
-                    @if(!$isSoon && $moduleId)
-                    <form method="POST"
-                          action="{{ route('settings.modules.update', ['project'=>$pid]) }}"
-                          x-data="{ on: {{ $enabled ? 'true' : 'false' }} }">
-                        @csrf
-                        <input type="hidden" name="module_key" value="{{ $item['key'] }}">
-                        <input type="hidden" name="module_id" value="{{ $moduleId }}">
-                        <input type="hidden" name="enabled" :value="on ? '1' : '0'">
-                        <input type="hidden" name="redirect_cat" value="{{ $cat }}">
-                        <button type="submit" @click="on = !on"
-                                :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
-                                class="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex-shrink-0">
-                            <span :class="on ? 'translate-x-7' : 'translate-x-1'"
-                                  class="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 flex-shrink-0"></span>
-                        </button>
-                    </form>
-                    @elseif($isSoon)
+                    {{-- Toggle o badge "Próximamente" --}}
+                    @if($isSoon)
                     <span class="text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-full font-semibold flex-shrink-0">
                         Próximamente
                     </span>
+                    @elseif($moduleId)
+                    <form method="POST"
+                          action="{{ route('settings.modules.update') }}"
+                          x-data="{ on: {{ $enabled ? 'true' : 'false' }} }">
+                        @csrf
+                        <input type="hidden" name="module_id"   value="{{ $moduleId }}">
+                        <input type="hidden" name="enabled"     :value="on ? '1' : '0'">
+                        <input type="hidden" name="redirect_cat" value="{{ $cat }}">
+                        <button type="submit" @click="on = !on"
+                                :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
+                                class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 flex-shrink-0">
+                            <span :class="on ? 'translate-x-6' : 'translate-x-1'"
+                                  class="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"></span>
+                        </button>
+                    </form>
                     @endif
                 </div>
 
                 {{-- Descripción --}}
                 <p class="text-xs text-gray-500 leading-relaxed">{{ $item['desc'] }}</p>
 
-                {{-- Footer: estado + acciones --}}
-                <div class="flex items-center justify-between pt-1 border-t border-gray-100">
+                {{-- Footer --}}
+                <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                    {{-- Estado --}}
                     <div class="flex items-center gap-1.5">
-                        <div class="w-1.5 h-1.5 rounded-full {{ $isSoon ? 'bg-amber-400' : ($enabled ? 'bg-green-500' : 'bg-gray-300') }}"></div>
+                        <div class="w-1.5 h-1.5 rounded-full
+                            {{ $isSoon ? 'bg-amber-400' : ($enabled ? 'bg-green-500' : 'bg-gray-300') }}"></div>
                         <span class="text-[11px] text-gray-400">
                             {{ $isSoon ? 'No disponible aún' : ($enabled ? 'Activo' : 'Inactivo') }}
                         </span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        @if(!$isSoon && isset($item['config']) && $item['config'] && $enabled)
-                        <a href="{{ $item['config'] }}"
-                           class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            Configurar
+
+                    {{-- Acciones --}}
+                    <div class="flex items-center gap-3">
+                        {{-- Links de configuración rápida (solo plataformas) --}}
+                        @if(!$isSoon && $hasLinks && $enabled)
+                        @foreach($item['links'] as $link)
+                        <a href="{{ $link['href'] }}"
+                           class="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors">
+                            {{ $link['label'] }}
                         </a>
+                        @endforeach
                         @endif
-                        @if(!$isSoon && isset($item['url']) && $item['url'] && $enabled)
-                        <a href="{{ $item['url'] }}" target="_blank"
+
+                        {{-- Abrir --}}
+                        @if(!$isSoon && !empty($item['url']) && $enabled)
+                        <a href="{{ $item['url'] }}" target="_blank" rel="noopener"
                            class="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -442,7 +427,6 @@
     </div>
 
 </div>
-
 </div>
 </x-slot>
 </x-app-layout>

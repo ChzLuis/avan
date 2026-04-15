@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Iniciar sesión — AVAN</title>
+    <title>Iniciar sesión — BIXO</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -24,7 +24,7 @@
     $loginBgImage = $loginProject?->setting('login_bg_image', '');
     $loginHeading = $loginProject?->setting('login_heading', 'Bienvenido de vuelta');
     $loginSubtitle = $loginProject?->setting('login_subtitle', 'Ingresa a tu panel de gestión');
-    $appName      = $loginProject?->name ?? 'AVAN';
+    $appName      = 'BIXO';
 
     if ($loginBg === 'solid') {
         $bgStyle = "background:{$loginColor1};";

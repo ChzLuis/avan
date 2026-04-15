@@ -170,7 +170,7 @@
   @endif
 
   <div class="footer">
-    <p>{{ $project->name }} &nbsp;|&nbsp; Comprobante generado por AVAN</p>
+    <p>{{ $project->name }} &nbsp;|&nbsp; Comprobante generado por BIXO</p>
     @if(!$invoice->sunat_status)
     <p style="margin-top:2px;font-style:italic;">Este documento es una representación impresa — pendiente de envío a SUNAT</p>
     @endif

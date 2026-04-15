@@ -10,8 +10,10 @@ use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
-    public function panel(Project $project)
+    public function panel()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $allProjects = \App\Models\Project::where('owner_id', auth()->id())
             ->orWhereHas('members', fn($q) => $q->where('user_id', auth()->id()))
             ->orderByDesc('updated_at')->get();
@@ -19,7 +21,7 @@ class ProjectController extends Controller
         return view('projects.panel', compact('project', 'allProjects', 'allModules'));
     }
 
-    public function updateModules(Request $request, Project $project, Project $target)
+    public function updateModules(Request $request, Project $target)
     {
         abort_unless(auth()->id() === $target->owner_id, 403);
         $enabledIds = $request->input('modules', []);
@@ -32,7 +34,7 @@ class ProjectController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function toggleStatus(Request $request, Project $project, Project $target)
+    public function toggleStatus(Request $request, Project $target)
     {
         abort_unless(auth()->id() === $target->owner_id, 403);
         $target->update(['is_active' => !$target->is_active]);
@@ -56,13 +58,12 @@ class ProjectController extends Controller
         ]);
 
         $data['owner_id']  = auth()->id();
-        $data['slug']      = Str::slug($data['name']) . '-' . Str::random(4);
+        $data['slug']      = Str::slug($data['name']) . '-' . strtolower(Str::random(4));
         $data['is_active'] = true;
 
         $project = Project::create($data);
 
-        $defaults = Module::whereIn('key', ['dashboard', 'catalog', 'orders', 'clients', 'settings'])->get();
-        foreach ($defaults as $module) {
+        foreach (Module::all() as $module) {
             $project->modules()->attach($module->id, ['is_active' => true]);
         }
 
@@ -76,14 +77,18 @@ class ProjectController extends Controller
             ->with('success', 'Negocio creado exitosamente.');
     }
 
-    public function edit(Project $project)
+    public function edit()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless(auth()->id() === $project->owner_id, 403);
         return view('projects.edit', compact('project'));
     }
 
-    public function update(Request $request, Project $project)
+    public function update(Request $request)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless(auth()->id() === $project->owner_id, 403);
 
         $data = $request->validate([
@@ -115,7 +120,7 @@ class ProjectController extends Controller
         return redirect()->route('workspace')->with('success', 'Negocio actualizado.');
     }
 
-    public function destroy(Request $request, Project $project)
+    public function destroy(Request $request, \App\Models\Project $project)
     {
         abort_unless(auth()->id() === $project->owner_id, 403);
         $project->delete();

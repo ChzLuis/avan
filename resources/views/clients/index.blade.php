@@ -1,5 +1,9 @@
-<x-app-layout>
-<x-slot name="slot">
+@php
+    $clientsApiBase = ($portalLayout ?? 'panel') === 'comercial'
+        ? route('bixosales.clientes')
+        : route('clients');
+@endphp
+<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Clientes">
 
 @php
     $csrf = csrf_token();
@@ -52,8 +56,8 @@
         deleting: false,
         form: {},
         csrf: '{{ $csrf }}',
-        storeUrl: '{{ route('clients.store', ['project' => $pid]) }}',
-        baseUrl: '{{ url('/'.$pid.'/clients') }}',
+        storeUrl: '{{ $clientsApiBase }}',
+        baseUrl: '{{ $clientsApiBase }}',
 
         get filtered() {
             return this.clients.filter(c => {
@@ -220,7 +224,7 @@
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
 
         {{-- Nuevo cliente --}}
-        <button @click="openNew()"
+        <button @click="openNew(); panel='detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-sky-50 transition text-left"
                 :class="creating ? 'bg-sky-50 border-l-2 border-sky-500' : ''">
             <div class="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
@@ -236,7 +240,7 @@
 
         {{-- Filas de clientes --}}
         <template x-for="c in filtered" :key="c.id">
-            <button @click="select(c)"
+            <button @click="select(c); panel='detail'"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                     :class="selected?.id===c.id ? 'bg-sky-50 border-l-2 border-sky-500' : ''">
                 {{-- Avatar con iniciales --}}
@@ -464,5 +468,4 @@
 </div>
 </div>
 
-</x-slot>
-</x-app-layout>
+</x-portal-layout>

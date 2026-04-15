@@ -39,7 +39,7 @@
         deleting: false,
         form: {},
         csrf: '{{ $csrf }}',
-        storeUrl: '{{ route('sedes.store', ['project' => $pid]) }}',
+        storeUrl: '{{ route('sedes.store') }}',
         baseUrl: '{{ url('/'.$pid.'/company/sedes') }}',
 
         get filtered() {
@@ -197,7 +197,7 @@
     {{-- Lista --}}
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
         {{-- Nueva sede --}}
-        <button @click="openNew()"
+        <button @click="openNew(); panel='detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 transition text-left"
                 :class="!selected && Object.keys(form).length ? 'bg-orange-50 border-l-2 border-orange-500' : ''">
             <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -212,7 +212,7 @@
         </button>
 
         <template x-for="s in filtered" :key="s.id">
-            <button @click="openEdit(s)"
+            <button @click="openEdit(s); panel='detail'"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                     :class="selected?.id===s.id ? 'bg-orange-50 border-l-2 border-orange-500' : ''">
                 <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">

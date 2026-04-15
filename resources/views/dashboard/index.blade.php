@@ -1,12 +1,21 @@
 <x-app-layout>
 <x-slot name="slot">
 
+<div class="flex flex-1 overflow-hidden" x-data="{ mv: 'detail' }">
+
 {{-- ===== PANEL 2: LISTA (stats + actividad reciente) ===== --}}
-<div class="list-panel hidden md:flex flex-col" style="width:340px;">
+<div class="list-panel flex-col" style="width:340px;" :class="{ 'mp-hidden': mv === 'detail' }">
     {{-- Header del panel --}}
     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
         <h2 class="text-sm font-semibold text-gray-700">Resumen</h2>
-        <span class="text-xs text-gray-400">{{ now()->format('d/m/Y') }}</span>
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-400">{{ now()->format('d/m/Y') }}</span>
+            <button @click="mv = 'detail'" class="md:hidden text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <div class="overflow-y-auto flex-1 p-4 space-y-3">
@@ -49,10 +58,15 @@
 </div>
 
 {{-- ===== PANEL 3: DETALLE (accesos rápidos y módulos) ===== --}}
-<div class="detail-panel">
+<div class="detail-panel" :class="{ 'mp-active': mv === 'detail' }">
     {{-- Tabs --}}
     <div x-data="{ tab: 'overview' }">
         <div class="flex items-center border-b border-gray-200 px-4 bg-white">
+            <button @click="mv = 'list'" class="md:hidden mr-2 text-gray-400 hover:text-gray-600 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
             <button @click="tab='overview'" :class="tab==='overview' ? 'detail-tab active' : 'detail-tab'">Vista general</button>
             <button @click="tab='pending'" :class="tab==='pending' ? 'detail-tab active' : 'detail-tab'">Pendientes</button>
             <button @click="tab='shortcuts'" :class="tab==='shortcuts' ? 'detail-tab active' : 'detail-tab'">Accesos rápidos</button>
@@ -143,7 +157,7 @@
                         <span class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 text-sm">⚙</span>
                         <span class="text-sm font-medium text-gray-700">Configurar negocio</span>
                     </a>
-                    <a href="/p/{{ $activeProject->slug }}" target="_blank"
+                    <a href="/{{ $activeProject->slug }}" target="_blank"
                        class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors">
                         <span class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-sm">↗</span>
                         <span class="text-sm font-medium text-gray-700">Ver página pública</span>
@@ -154,6 +168,8 @@
         </div>
     </div>
 </div>
+
+</div>{{-- end flex wrapper --}}
 
 </x-slot>
 </x-app-layout>

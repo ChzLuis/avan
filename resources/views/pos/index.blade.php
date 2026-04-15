@@ -1,67 +1,110 @@
-<x-app-layout>
-<x-slot name="slot">
-<div class="flex flex-1 overflow-hidden" x-data="posApp()" x-init="init()">
+<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="POS — Caja">
+<div class="flex flex-1 overflow-hidden pb-16 md:pb-0" x-data="Object.assign(posApp(), { posTab: 'catalog' })" x-init="init()" style="height:calc(100vh - 56px);">
 
 {{-- ══════════════════════════════════════════════════════
      PANEL IZQUIERDO — Catálogo de productos
 ══════════════════════════════════════════════════════ --}}
-<div class="flex flex-col bg-white border-r border-gray-200" style="width:58%; min-width:0;">
+<div class="flex flex-col bg-white border-r border-gray-200 w-full md:w-[58%]"
+     :class="{ 'hidden md:flex': posTab !== 'catalog' }">
 
     {{-- Header catálogo --}}
-    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-        <div class="flex-1 relative">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input x-model="search" type="text" placeholder="Buscar producto..." autocomplete="off"
-                   class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
+    <div class="flex flex-col border-b border-gray-100 flex-shrink-0">
+        {{-- Tabs Productos / Servicios --}}
+        <div class="flex border-b border-gray-100 px-4 pt-2 gap-4">
+            <button @click="catalogTab='products'"
+                    :class="catalogTab==='products' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-400 hover:text-gray-600'"
+                    class="pb-2 text-sm transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+                Productos
+                <span class="text-xs bg-gray-100 text-gray-500 rounded-full px-1.5 py-0.5" x-text="products.length"></span>
+            </button>
+            <button @click="catalogTab='services'"
+                    :class="catalogTab==='services' ? 'border-b-2 border-purple-600 text-purple-700 font-semibold' : 'text-gray-400 hover:text-gray-600'"
+                    class="pb-2 text-sm transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Servicios
+                <span class="text-xs bg-gray-100 text-gray-500 rounded-full px-1.5 py-0.5" x-text="services.length"></span>
+            </button>
         </div>
-        {{-- Filtro categoría --}}
-        <div class="flex gap-1 overflow-x-auto pb-0.5" style="max-width:55%">
-            <button @click="filterCat=null"
-                    :class="filterCat===null ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                    class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition">
-                Todo
-            </button>
-            <template x-for="cat in categories" :key="cat.id">
-            <button @click="filterCat = cat.id"
-                    :class="filterCat === cat.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                    class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition"
-                    x-text="cat.name">
-            </button>
-        </template>
+        {{-- Buscador + filtro categoría --}}
+        <div class="flex items-center gap-2 px-3 py-2">
+            <div class="flex-1 relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input x-model="search" type="text" placeholder="Buscar..." autocomplete="off"
+                       class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
+            </div>
+            <div class="flex gap-1 overflow-x-auto" style="max-width:50%">
+                <button @click="filterCat=null"
+                        :class="filterCat===null ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        class="px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition">Todo</button>
+                <template x-for="cat in categories" :key="cat.id">
+                    <button @click="filterCat = cat.id"
+                            :class="filterCat===cat.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                            class="px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition"
+                            x-text="cat.name">
+                    </button>
+                </template>
+            </div>
         </div>
     </div>
 
-    {{-- Grid de productos --}}
+    {{-- Grid de ítems --}}
     <div class="flex-1 overflow-y-auto p-3">
-        <div class="grid grid-cols-3 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(140px,1fr));">
-            <template x-for="p in filteredProducts" :key="p.id">
-                <button @click="addToCart(p)"
-                        class="bg-white border border-gray-200 rounded-xl p-3 text-left hover:border-indigo-400 hover:shadow-md transition-all group active:scale-95">
-                    {{-- Imagen o placeholder --}}
-                    <div class="w-full aspect-square rounded-lg mb-2 overflow-hidden bg-gray-100 flex items-center justify-center">
-                        <template x-if="p.image">
-                            <img :src="p.image" :alt="p.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
-                        </template>
-                        <template x-if="!p.image">
-                            <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                            </svg>
-                        </template>
+        {{-- Productos --}}
+        <div x-show="catalogTab==='products'">
+            <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(130px,1fr));">
+                <template x-for="p in filteredProducts" :key="p.id">
+                    <button @click="addToCart(p)"
+                            class="bg-white border border-gray-200 rounded-xl p-3 text-left hover:border-indigo-400 hover:shadow-md transition-all group active:scale-95">
+                        <div class="w-full aspect-square rounded-lg mb-2 overflow-hidden bg-gray-100 flex items-center justify-center">
+                            <template x-if="p.image">
+                                <img :src="p.image" :alt="p.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                            </template>
+                            <template x-if="!p.image">
+                                <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </template>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-800 leading-tight line-clamp-2" x-text="p.name"></p>
+                        <p class="text-sm font-bold text-indigo-600 mt-1" x-text="'S/ ' + p.price.toFixed(2)"></p>
+                    </button>
+                </template>
+                <template x-if="filteredProducts.length === 0">
+                    <div class="col-span-full text-center py-10 text-gray-400">
+                        <p class="text-sm">Sin productos</p>
                     </div>
-                    <p class="text-xs font-semibold text-gray-800 leading-tight line-clamp-2" x-text="p.name"></p>
-                    <p class="text-sm font-bold text-indigo-600 mt-1" x-text="'S/ ' + p.price.toFixed(2)"></p>
-                </button>
-            </template>
-            <template x-if="filteredProducts.length === 0">
-                <div class="col-span-full text-center py-12 text-gray-400">
-                    <svg class="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                    <p class="text-sm">Sin resultados</p>
-                </div>
-            </template>
+                </template>
+            </div>
+        </div>
+        {{-- Servicios --}}
+        <div x-show="catalogTab==='services'">
+            <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(130px,1fr));">
+                <template x-for="s in filteredServices" :key="s.id">
+                    <button @click="addToCart(s)"
+                            class="bg-white border border-gray-200 rounded-xl p-3 text-left hover:border-purple-400 hover:shadow-md transition-all group active:scale-95">
+                        <div class="w-full aspect-square rounded-lg mb-2 overflow-hidden bg-purple-50 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-800 leading-tight line-clamp-2" x-text="s.name"></p>
+                        <p class="text-sm font-bold text-purple-600 mt-1" x-text="'S/ ' + s.price.toFixed(2)"></p>
+                        <p x-show="s.duration_min" class="text-[10px] text-gray-400 mt-0.5" x-text="s.duration_min >= 60 ? Math.floor(s.duration_min/60)+'h'+(s.duration_min%60?s.duration_min%60+'m':'') : s.duration_min+'min'"></p>
+                    </button>
+                </template>
+                <template x-if="filteredServices.length === 0">
+                    <div class="col-span-full text-center py-10 text-gray-400">
+                        <p class="text-sm">Sin servicios</p>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 
@@ -83,7 +126,8 @@
 {{-- ══════════════════════════════════════════════════════
      PANEL DERECHO — Carrito / Cobro
 ══════════════════════════════════════════════════════ --}}
-<div class="flex flex-col bg-gray-50" style="width:42%; min-width:280px;">
+<div class="flex flex-col bg-gray-50 w-full md:w-[42%] md:min-w-[280px]"
+     :class="{ 'hidden md:flex': posTab !== 'cart' }">
 
     {{-- Header carrito --}}
     <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
@@ -115,9 +159,13 @@
         </template>
 
         <template x-for="(item, idx) in cart" :key="idx">
-            <div class="bg-white rounded-xl border border-gray-200 px-3 py-2.5 flex items-center gap-2">
+            <div class="bg-white rounded-xl border border-gray-200 px-3 py-2.5 flex items-center gap-2"
+                 :class="item.type==='service' ? 'border-purple-200' : ''">
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-800 truncate" x-text="item.name"></p>
+                    <div class="flex items-center gap-1.5">
+                        <p class="text-sm font-medium text-gray-800 truncate" x-text="item.name"></p>
+                        <span x-show="item.type==='service'" class="text-[9px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap">servicio</span>
+                    </div>
                     <p class="text-xs text-gray-500" x-text="'S/ ' + item.price.toFixed(2) + ' c/u'"></p>
                 </div>
                 {{-- Qty controls --}}
@@ -357,17 +405,33 @@
     </div>
 </div>
 
+{{-- ══════════════════════════════════════════════════════
+     TAB BAR MÓVIL (solo visible en mobile)
+══════════════════════════════════════════════════════ --}}
+<div class="md:hidden fixed bottom-0 left-0 right-0 flex border-t border-gray-200 bg-white z-50" style="padding-bottom: env(safe-area-inset-bottom)">
+    <button @click="posTab='catalog'" class="flex-1 py-3 text-xs font-medium flex flex-col items-center gap-1" :class="posTab==='catalog' ? 'text-indigo-600' : 'text-gray-500'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        Catálogo
+    </button>
+    <button @click="posTab='cart'" class="flex-1 py-3 text-xs font-medium flex flex-col items-center gap-1" :class="posTab==='cart' ? 'text-indigo-600' : 'text-gray-500'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Carrito <span x-show="cart.length > 0" class="text-[10px] bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center" x-text="cart.length"></span>
+    </button>
+</div>
+
 </div>
 
 <script>
 function posApp() {
     return {
         products: @json($productsJs),
+        services: @json($servicesJs),
         categories: @json($categoriesJs),
         transactions: @json($transactionsJs),
 
         search: '',
         filterCat: null,
+        catalogTab: 'products',
         cart: [],
         processing: false,
         showCustom: false,
@@ -386,14 +450,15 @@ function posApp() {
         },
 
         init() {
-            if (this.transactions.length === 0) {
-                // default payment
-            }
             @if($paymentMethods->isNotEmpty())
             this.paymentForm.method = '{{ $paymentMethods->first() }}';
             @else
             this.paymentForm.method = 'Efectivo';
             @endif
+            // Auto-switch a servicios si no hay productos
+            if (this.products.length === 0 && this.services.length > 0) {
+                this.catalogTab = 'services';
+            }
         },
 
         get filteredProducts() {
@@ -401,6 +466,14 @@ function posApp() {
                 const s = !this.search || p.name.toLowerCase().includes(this.search.toLowerCase());
                 const c = this.filterCat === null || p.cat_id === this.filterCat;
                 return s && c;
+            });
+        },
+
+        get filteredServices() {
+            return this.services.filter(s => {
+                const q = !this.search || s.name.toLowerCase().includes(this.search.toLowerCase());
+                const c = this.filterCat === null || s.cat_id === this.filterCat;
+                return q && c;
             });
         },
 
@@ -421,18 +494,27 @@ function posApp() {
             return Object.entries(map);
         },
 
-        addToCart(product) {
-            const existing = this.cart.find(i => i.product_id === product.id);
+        addToCart(item) {
+            const key = (item.type || 'product') + '_' + item.id;
+            const existing = this.cart.find(i => i._key === key);
             if (existing) {
                 existing.qty++;
             } else {
-                this.cart.push({ product_id: product.id, name: product.name, price: product.price, qty: 1 });
+                this.cart.push({
+                    _key: key,
+                    product_id:  item.type === 'service' ? null : item.id,
+                    service_id:  item.type === 'service' ? item.id : null,
+                    type:        item.type || 'product',
+                    name:        item.name,
+                    price:       item.price,
+                    qty:         1
+                });
             }
         },
 
         addCustomItem() {
             if (!this.customItem.name || this.customItem.price <= 0) return;
-            this.cart.push({ product_id: null, name: this.customItem.name, price: this.customItem.price, qty: this.customItem.qty || 1 });
+            this.cart.push({ _key: 'custom_' + Date.now(), product_id: null, service_id: null, type: 'custom', name: this.customItem.name, price: this.customItem.price, qty: this.customItem.qty || 1 });
             this.customItem = { name: '', price: 0, qty: 1 };
             this.showCustom = false;
         },
@@ -443,7 +525,7 @@ function posApp() {
             else this.cart[idx].qty--;
         },
         removeFromCart(idx) { this.cart.splice(idx, 1); },
-        clearCart() { this.cart = []; this.paymentForm.received = 0; },
+        clearCart() { this.cart = []; this.paymentForm.received = 0; this.showCustom = false; },
 
         async charge() {
             if (this.cart.length === 0 || !this.paymentForm.method || this.processing) return;
@@ -462,7 +544,8 @@ function posApp() {
                         payment_method: this.paymentForm.method,
                         notes:          this.paymentForm.notes || null,
                         items: this.cart.map(i => ({
-                            product_id: i.product_id,
+                            product_id: i.product_id || null,
+                            service_id: i.service_id || null,
                             name:       i.name,
                             price:      i.price,
                             quantity:   i.qty,
@@ -524,5 +607,4 @@ function posApp() {
     }
 }
 </script>
-</x-slot>
-</x-app-layout>
+</x-portal-layout>

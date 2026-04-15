@@ -9,8 +9,10 @@ use Spatie\Permission\Models\Permission;
 
 class RolePermissionController extends Controller
 {
-    public function index(Project $project)
+    public function index()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $roles = Role::withCount('users')
             ->with('permissions')
             ->get()
@@ -29,8 +31,10 @@ class RolePermissionController extends Controller
         return view('roles.index', compact('project', 'roles', 'allPermissions'));
     }
 
-    public function store(Request $request, Project $project)
+    public function store(Request $request)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless(auth()->id() === $project->owner_id, 403);
         $data = $request->validate([
             'name'        => 'required|string|max:60',
@@ -48,16 +52,20 @@ class RolePermissionController extends Controller
         ]);
     }
 
-    public function update(Request $request, Project $project, Role $role)
+    public function update(Request $request, Role $role)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless(auth()->id() === $project->owner_id, 403);
         $data = $request->validate(['permissions' => 'array']);
         $role->syncPermissions($data['permissions'] ?? []);
         return response()->json(['ok' => true]);
     }
 
-    public function destroy(Project $project, Role $role)
+    public function destroy(Role $role)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless(auth()->id() === $project->owner_id, 403);
         if ($role->users()->count() > 0) {
             return response()->json(['error' => 'El rol tiene usuarios asignados'], 422);

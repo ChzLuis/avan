@@ -1,13 +1,18 @@
-<x-app-layout>
-<x-slot name="slot">
+@php
+    $invoicesApiBase = ($portalLayout ?? 'panel') === 'comercial'
+        ? route('bixosales.facturas')
+        : route('invoices.index');
+@endphp
+<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Facturas / Boletas">
 <div class="flex flex-1 overflow-hidden"
      x-data="invoicesApp()"
-     x-init="init()">
+     x-init="init()"
+     @resize.window="isMobile = window.innerWidth < 768">
 
 {{-- PANEL 2: LISTA --}}
 <div class="flex flex-col border-r overflow-hidden flex-shrink-0"
-     style="width:340px; background:#fff; border-color:#e5e7eb;"
-     :class="panel==='list'||window.innerWidth>=768 ? 'flex' : 'hidden'">
+     style="background:#fff; border-color:#e5e7eb; --list-width:340px; width:var(--list-width,340px);"
+     :class="panel==='list'||!isMobile ? 'flex' : 'hidden'">
 
     {{-- Header lista --}}
     <div class="px-4 py-3 flex items-center gap-2 border-b" style="border-color:#e5e7eb;">
@@ -74,7 +79,7 @@
 
 {{-- PANEL 3: DETALLE --}}
 <div class="flex flex-col flex-1 overflow-hidden bg-white"
-     :class="panel==='detail'||window.innerWidth>=768 ? 'flex' : 'hidden'">
+     :class="panel==='detail'||!isMobile ? 'flex' : 'hidden'">
 
     {{-- Back mobile --}}
     <div class="px-4 py-2 border-b md:hidden" style="border-color:#e5e7eb;">
@@ -114,7 +119,7 @@
             <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
                 {{-- Tipo y serie --}}
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="label">Tipo</label>
                         <select x-model="form.type" @change="autoSerie()" class="input">
@@ -131,7 +136,7 @@
                 </div>
 
                 {{-- Fechas --}}
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="label">Fecha emisión</label>
                         <input x-model="form.issue_date" type="date" class="input">
@@ -149,7 +154,7 @@
                         <label class="label">Nombre / Razón social *</label>
                         <input x-model="form.client_name" type="text" class="input" placeholder="Cliente">
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="label">Tipo doc.</label>
                             <select x-model="form.client_doc_type" class="input">
@@ -165,7 +170,7 @@
                             <input x-model="form.client_doc_number" type="text" maxlength="15" class="input">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="label">Teléfono</label>
                             <input x-model="form.client_phone" type="text" class="input">
@@ -207,7 +212,7 @@
                                         </svg>
                                     </button>
                                 </div>
-                                <div class="grid grid-cols-3 gap-1.5">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                                     <div>
                                         <label class="text-[10px] text-gray-500">Cantidad</label>
                                         <input x-model="item.quantity" type="number" min="0.001" step="0.001"
@@ -253,7 +258,7 @@
                 </div>
 
                 {{-- Pago y notas --}}
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="label">Método de pago</label>
                         <input x-model="form.payment_method" type="text" placeholder="Efectivo, Yape..." class="input">
@@ -295,7 +300,7 @@
                     <p class="text-xs text-gray-500" x-text="selected.type_label + ' · ' + selected.client_name"></p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a :href="`{{ url('/'.$project->id.'/invoices') }}/`+selected.id+`/pdf`"
+                    <a :href="`{{ $invoicesApiBase }}/`+selected.id+`/pdf`"
                        target="_blank"
                        class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
                        title="Ver PDF / Imprimir">
@@ -392,7 +397,7 @@
                 {{-- Items --}}
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Ítems</p>
-                    <div class="border rounded-lg overflow-hidden">
+                    <div class="border rounded-lg overflow-hidden overflow-x-auto">
                         <table class="w-full text-xs">
                             <thead class="bg-gray-50 border-b">
                                 <tr>
@@ -472,16 +477,48 @@
                     </div>
                 </template>
 
-                {{-- Integración SUNAT placeholder --}}
-                <template x-if="!selected.sunat_status && selected.status !== 'cancelled'">
-                    <div class="border border-dashed border-gray-200 rounded-lg p-3 text-xs text-gray-400 text-center">
-                        <svg class="w-5 h-5 mx-auto mb-1 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                        </svg>
-                        Envío a SUNAT disponible próximamente
+                {{-- Bloque SUNAT --}}
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            <span class="text-xs font-semibold text-gray-700">SUNAT</span>
+                        </div>
+                        <template x-if="selected.sunat_status">
+                            <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                                  :class="{
+                                    'bg-green-100 text-green-700': selected.sunat_status==='accepted',
+                                    'bg-red-100 text-red-700':    selected.sunat_status==='rejected',
+                                    'bg-yellow-100 text-yellow-700': selected.sunat_status==='pending' || selected.sunat_status==='error',
+                                  }"
+                                  x-text="{accepted:'Aceptado',rejected:'Rechazado',pending:'Pendiente',error:'Error'}[selected.sunat_status] ?? selected.sunat_status">
+                            </span>
+                        </template>
                     </div>
-                </template>
+                    <div class="px-3 py-3 space-y-2">
+                        <template x-if="selected.sunat_status === 'accepted'">
+                            <p class="text-xs text-green-700">✓ Comprobante aceptado y registrado en SUNAT.</p>
+                        </template>
+                        <template x-if="selected.sunat_error">
+                            <p class="text-xs text-red-600 break-words" x-text="selected.sunat_error"></p>
+                        </template>
+                        <template x-if="selected.sunat_status !== 'accepted' && selected.status !== 'cancelled'">
+                            <button @click="enviarSunat()"
+                                    :disabled="sendingSunat"
+                                    class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition
+                                           bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-60 disabled:cursor-not-allowed">
+                                <svg x-show="sendingSunat" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                </svg>
+                                <span x-text="sendingSunat ? 'Enviando...' : (selected.sunat_status ? 'Reintentar envío' : 'Enviar a SUNAT')"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -497,8 +534,10 @@ function invoicesApp() {
         search: '',
         filterType: '',
         panel: 'list',
+        isMobile: window.innerWidth < 768,
         selected: null,
         creating: false,
+        sendingSunat: false,
         editStatus: '',
         saving: false,
         saveError: '',
@@ -531,7 +570,7 @@ function invoicesApp() {
             this.creating = false;
             this.panel = 'detail';
             // fetch full detail
-            const res = await fetch(`{{ url('/'.$project->id.'/invoices') }}/` + inv.id, {
+            const res = await fetch(`{{ $invoicesApiBase }}/` + inv.id, {
                 headers: { 'Accept': 'application/json' }
             });
             const data = await res.json();
@@ -583,7 +622,7 @@ function invoicesApp() {
         async save() {
             this.saving = true;
             this.saveError = '';
-            const res = await fetch(`{{ route('invoices.store', ['project'=>$project->id]) }}`, {
+            const res = await fetch(`{{ $invoicesApiBase }}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -620,7 +659,7 @@ function invoicesApp() {
         },
 
         async updateStatus() {
-            await fetch(`{{ url('/'.$project->id.'/invoices') }}/` + this.selected.id, {
+            await fetch(`{{ $invoicesApiBase }}/` + this.selected.id, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -635,9 +674,32 @@ function invoicesApp() {
             if (idx > -1) { this.invoices[idx].status = this.editStatus; this.invoices[idx].status_label = this.selected.status_label; }
         },
 
+        async enviarSunat() {
+            if (!this.selected) return;
+            this.sendingSunat = true;
+            const res = await fetch(`{{ $invoicesApiBase }}/` + this.selected.id + '/sunat', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+            });
+            const data = await res.json();
+            this.sendingSunat = false;
+            if (data.ok) {
+                const idx = this.invoices.findIndex(i => i.id === this.selected.id);
+                const upd = { sunat_status: 'accepted', status: 'sent', status_label: 'Enviada' };
+                if (idx > -1) this.invoices[idx] = { ...this.invoices[idx], ...upd };
+                this.selected = { ...this.selected, ...upd, sunat_error: null };
+                alert('✓ ' + (data.message || 'Aceptado por SUNAT'));
+            } else {
+                const errUpd = { sunat_status: 'rejected' };
+                const idx = this.invoices.findIndex(i => i.id === this.selected.id);
+                if (idx > -1) this.invoices[idx] = { ...this.invoices[idx], ...errUpd };
+                this.selected = { ...this.selected, ...errUpd, sunat_error: data.message };
+            }
+        },
+
         async deleteInvoice() {
             if (!confirm('¿Eliminar este comprobante?')) return;
-            const res = await fetch(`{{ url('/'.$project->id.'/invoices') }}/` + this.selected.id, {
+            const res = await fetch(`{{ $invoicesApiBase }}/` + this.selected.id, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
             });
@@ -650,5 +712,4 @@ function invoicesApp() {
     };
 }
 </script>
-</x-slot>
-</x-app-layout>
+</x-portal-layout>

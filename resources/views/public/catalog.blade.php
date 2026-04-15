@@ -26,11 +26,12 @@
   $seoTitle       = ($settings['seo_title']       ?? null) ?: ($project->name . ' — Catálogo Online');
   $seoDesc        = ($settings['seo_description'] ?? null) ?: ($project->description ?? 'Explora nuestros productos y haz tu pedido en línea.');
   $seoKeywords    = ($settings['seo_keywords']    ?? null) ?: ($project->name . ', catálogo, productos, comprar online');
-  $canonicalUrl   = url('/p/' . $project->slug);
+  $canonicalUrl   = url('/' . $project->slug);
   $ogImage        = $project->logo_url ? asset('storage/'.$project->logo_url) : asset('img/og-default.png');
   $primaryColor   = $settings['primary_color'] ?? '#4f46e5';
-  $storeMode      = $settings['store_mode']           ?? 'direct';   // 'direct' | 'quote_only'
-  $quotePriceDisp = $settings['quote_price_display']  ?? 'show';     // 'show' | 'hide'
+  $storeMode        = $settings['store_mode']           ?? 'direct';   // 'direct' | 'quote_only'
+  $quotePriceDisp   = $settings['quote_price_display']  ?? 'show';     // 'show' | 'hide'
+  $wholesaleEnabled = ($settings['wholesale_enabled'] ?? '0') === '1';
   // Número WA: si hay quote_whatsapp en settings úsalo, si no, whatsapp del proyecto
   $quoteWaRaw = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? '');
   if (!$quoteWaRaw) {
@@ -40,13 +41,18 @@
   $quoteWaCountry = $settings['quote_whatsapp_country'] ?? '51';
   // Si el número ya empieza con el código de país, úsalo tal cual; si no, anteponlo
   $quoteWa = '';
-  if ($quoteWaRaw) {
+  if ($quoteWaRaw && ($settings['show_wa_button'] ?? '1') === '1') {
       $quoteWa = str_starts_with($quoteWaRaw, $quoteWaCountry)
           ? $quoteWaRaw
           : $quoteWaCountry . $quoteWaRaw;
   }
   $quoteWaMsg     = $settings['quote_wa_msg'] ?? 'Hola, me interesa cotizar los siguientes productos:';
   $isQuoteOnly       = $storeMode === 'quote_only';
+  // Envío
+  $shippingEnabled  = ($settings['shipping_enabled']  ?? '0') === '1';
+  $shippingCost     = (float)($settings['shipping_cost']      ?? 0);
+  $shippingFreeFrom = (float)($settings['shipping_free_from'] ?? 0);
+  $requireAddress   = ($settings['require_address']   ?? '0') === '1';
   $acceptedPayments  = json_decode($settings['accepted_payments'] ?? '[]', true) ?? [];
   $paymentMeta = [
       'efectivo'      => ['label'=>'Efectivo',              'emoji'=>'💵', 'color'=>'#16a34a'],
@@ -155,10 +161,53 @@
 <script type="application/ld+json">{!! json_encode($ldList, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>
 @endif
 
+@php
+  $secondaryColor  = $settings['secondary_color']  ?? '#6b7280';
+  $fontTitle       = $settings['font_title']        ?? $settings['font'] ?? 'Inter';
+  $fontBody        = $settings['font_body']         ?? $settings['font'] ?? 'Inter';
+  $borderRadiusMap = ['sharp'=>'0px','rounded'=>'8px','pill'=>'50px'];
+  $borderRadius    = $borderRadiusMap[$settings['border_radius'] ?? 'rounded'] ?? '8px';
+  $currencySymbol  = $settings['currency_symbol']   ?? 'S/';
+  $heroImage       = $settings['hero_image']        ?? '';
+  $heroOverlay     = (int)($settings['hero_overlay'] ?? '50');
+  $heroAlign       = $settings['hero_align']        ?? 'center';
+  $heroHeight      = $settings['hero_height']       ?? 'medium';
+  $heroCta1Show    = ($settings['hero_cta1_show']   ?? '1') === '1';
+  $heroCta1Text    = $settings['hero_cta1_text']    ?? 'Ver catálogo';
+  $heroCta2Show    = ($settings['hero_cta2_show']   ?? '0') === '1';
+  $heroCta2Text    = $settings['hero_cta2_text']    ?? 'Contáctanos';
+  $catalogTitle    = $settings['catalog_section_title'] ?? 'Nuestros productos';
+  $catalogBadgeSale = $settings['catalog_badge_sale'] ?? 'OFERTA';
+  $catalogBadgeNew  = $settings['catalog_badge_new']  ?? 'NUEVO';
+  $btnCartText     = $settings['btn_cart_text']     ?? 'Agregar al carrito';
+  $btnQuoteText    = $settings['btn_quote_text']    ?? 'Cotizar';
+  $floatCartShow   = ($settings['float_cart_show']  ?? '1') === '1';
+  $floatWaShow     = ($settings['float_wa_show']    ?? '1') === '1';
+  $floatWaTooltip  = $settings['float_wa_tooltip']  ?? '¿Necesitas ayuda?';
+  $footerTagline   = $settings['footer_tagline']    ?? '';
+  $footerCopyright = $settings['footer_copyright']  ?? ('© ' . date('Y') . ' ' . $project->name);
+  $faviconUrl      = $settings['favicon_url']       ?? '';
+  $logoUrl         = $settings['logo_url']          ?? '';
+  $logoHeight      = (int)($settings['logo_height'] ?? '40');
+  $heroHeightMap   = ['small'=>'300px','medium'=>'480px','large'=>'600px','full'=>'100vh'];
+  $heroHeightCss   = $heroHeightMap[$heroHeight] ?? '480px';
+  $heroAlignClass  = ['left'=>'text-left items-start','center'=>'text-center items-center','right'=>'text-right items-end'][$heroAlign] ?? 'text-center items-center';
+  $allFonts = array_unique(array_filter([$fontTitle, $fontBody]));
+@endphp
+@if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
+@foreach($allFonts as $f)
+<link href="https://fonts.googleapis.com/css2?family={{ urlencode(str_replace(' ', '+', $f)) }}:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+@endforeach
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
-:root { --c: {{ $primaryColor }}; }
+:root {
+  --c: {{ $primaryColor }};
+  --c2: {{ $secondaryColor }};
+  --radius: {{ $borderRadius }};
+  --font-title: '{{ $fontTitle }}', sans-serif;
+  --font-body: '{{ $fontBody }}', sans-serif;
+}
 .btn-p         { background:var(--c); color:#fff; }
 .btn-p:hover   { filter:brightness(.9); }
 .btn-outline-p { border:2px solid var(--c); color:var(--c); }
@@ -187,6 +236,22 @@
 
 @media(max-width:640px){ .drawer{ width:100%; } }
 </style>
+
+@php
+$currency = $settings['currency'] ?? 'S/';
+$searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
+    'id'    => $p->id,
+    'name'  => $p->name,
+    'price' => (float)$p->price,
+    'cp'    => $p->compare_price ? (float)$p->compare_price : null,
+    'img'   => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+    'cat'   => $cat->name,
+    'catId' => (string)$cat->id,
+    'url'   => route('public.product', [$project->slug, $p->id]),
+    'desc'  => \Str::limit(strip_tags($p->description ?? ''), 100),
+    'stock' => $p->stock,
+]))->values();
+@endphp
 </head>
 <body class="bg-gray-50 text-gray-800" x-data="store()" x-cloak>
 
@@ -259,7 +324,7 @@
     </a>
 
     {{-- Buscador central --}}
-    <div class="flex-1 max-w-2xl mx-auto">
+    <div class="flex-1 max-w-2xl mx-auto relative" @click.outside="searchOpen = false">
       <div class="flex items-stretch bg-gray-50 rounded-xl border-2 border-gray-200 overflow-hidden
                   focus-within:border-[var(--c)] focus-within:bg-white transition-all">
         <select x-model="filterCat"
@@ -271,17 +336,66 @@
         </select>
         <input x-model="search"
                @input.debounce.200ms="filterCat=filterCat"
+               @input="searchOpen = search.trim().length >= 2; searchIdx = -1; if(search.trim().length >= 2) _scrollToCatalog()"
+               @keydown.escape="searchOpen = false; search = ''; searchIdx = -1"
+               @keydown.arrow-down.prevent="if(suggestions.length) searchIdx = Math.min(searchIdx+1, suggestions.length-1)"
+               @keydown.arrow-up.prevent="searchIdx = Math.max(searchIdx-1, -1)"
+               @keydown.enter.prevent="suggestions[searchIdx] ? selectSuggestion(suggestions[searchIdx]) : (searchOpen=false, _scrollToCatalog())"
                type="search"
                placeholder="Buscar productos, marcas..."
                aria-label="Buscar en el catálogo de {{ $project->name }}"
                autocomplete="off"
                class="flex-1 bg-transparent px-4 py-3 text-sm outline-none min-w-0 placeholder-gray-400">
-        <button class="btn-p px-5 py-3 text-sm font-semibold flex-shrink-0 flex items-center gap-1.5 transition">
+        <button @click="searchOpen=false; _scrollToCatalog()" class="btn-p px-5 py-3 text-sm font-semibold flex-shrink-0 flex items-center gap-1.5 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
           </svg>
           <span class="hidden sm:block">Buscar</span>
         </button>
+      </div>
+      {{-- Dropdown predictivo --}}
+      <div x-show="searchOpen && suggestions.length > 0"
+           x-cloak
+           x-transition:enter="transition ease-out duration-100"
+           x-transition:enter-start="opacity-0 -translate-y-1"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-[200] overflow-hidden">
+          <template x-for="(p, i) in suggestions" :key="p.id">
+              <button @click="selectSuggestion(p)"
+                      :class="searchIdx===i ? 'bg-indigo-50' : 'hover:bg-gray-50'"
+                      class="flex items-center gap-3 w-full px-4 py-2.5 transition-colors text-left border-b border-gray-100 last:border-0">
+                  <div class="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
+                      <img x-show="p.img" :src="p.img" class="w-full h-full object-cover">
+                      <div x-show="!p.img" class="w-full h-full flex items-center justify-center">
+                          <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                          </svg>
+                      </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                      <p class="text-sm font-semibold text-gray-800 truncate" x-html="_highlight(p.name)"></p>
+                      <p class="text-xs text-gray-400 truncate" x-text="p.cat"></p>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <div class="text-right">
+                          <p class="text-sm font-bold" style="color:var(--c,#4f46e5)" x-text="'{{ $currency }} ' + p.price.toFixed(2)"></p>
+                          <p x-show="p.cp && p.cp > p.price" class="text-xs text-gray-400 line-through" x-text="'{{ $currency }} ' + (p.cp||0).toFixed(2)"></p>
+                      </div>
+                      <svg class="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                      </svg>
+                  </div>
+              </button>
+          </template>
+          <button @click="searchOpen=false; _scrollToCatalog()"
+                  class="flex items-center justify-between w-full px-4 py-2.5 bg-gray-50 border-t border-gray-100 hover:bg-gray-100 transition-colors text-left">
+              <span class="text-xs font-semibold text-gray-600">Ver todos los resultados
+                  <span style="color:var(--c,#4f46e5)" x-text="'(' + suggestions.length + ')'"></span>
+              </span>
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+              </svg>
+          </button>
       </div>
     </div>
 
@@ -456,7 +570,7 @@
 ═══════════════════════════════════════════ --}}
 <section id="tabs-section" class="max-w-[1400px] mx-auto px-4 pb-8" x-data="{ tab: 'new' }">
   {{-- Header --}}
-  <div class="flex items-center gap-6 border-b-2 border-gray-200 mb-6">
+  <div class="flex items-center gap-6 border-b-2 border-gray-200 mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4">
     <button @click="tab='new'"
             :class="tab==='new' ? 'tab-act' : 'text-gray-500 hover:text-gray-800'"
             class="pb-3 text-sm font-semibold transition whitespace-nowrap">
@@ -480,9 +594,9 @@
   {{-- Novedades --}}
   <div x-show="tab==='new'" x-transition:enter="transition opacity-0 duration-200" x-transition:enter-end="opacity-100">
     @if($newArrivals->count())
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
       @foreach($newArrivals as $p)
-        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp])
+        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
       @endforeach
     </div>
     @else
@@ -493,9 +607,9 @@
   {{-- En Oferta --}}
   <div x-show="tab==='sale'" x-transition:enter="transition opacity-0 duration-200" x-transition:enter-end="opacity-100">
     @if($onSale->count())
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
       @foreach($onSale as $p)
-        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp])
+        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
       @endforeach
     </div>
     @else
@@ -509,9 +623,9 @@
   {{-- Destacados --}}
   <div x-show="tab==='all'" x-transition:enter="transition opacity-0 duration-200" x-transition:enter-end="opacity-100">
     @if($featured->count())
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
       @foreach($featured as $p)
-        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp])
+        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
       @endforeach
     </div>
     @else
@@ -526,15 +640,34 @@
 <section id="catalogo" class="max-w-[1400px] mx-auto px-4 pb-16">
 
   {{-- Barra de filtros activos + resultados --}}
-  <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+  <div class="sticky top-16 z-20 bg-white/95 backdrop-blur-sm -mx-4 px-4 py-3 mb-6 border-b border-gray-100 shadow-sm flex items-center justify-between flex-wrap gap-3">
     <div class="flex items-center gap-3">
       <h2 class="font-black text-gray-900 text-xl">Catálogo completo</h2>
-      <span x-show="filterCat!=='' || search!==''"
+      <span x-show="filterCat!=='' || search!=='' || priceFilter!=='' || onSaleFilter"
             class="badge-p text-xs px-2 py-0.5 rounded-full font-semibold">Filtrado</span>
     </div>
     <div class="flex items-center gap-2">
-      <span x-show="filterCat!=='' || search!==''" class="text-sm text-gray-500">
-        <button @click="filterCat=''; search=''"
+      {{-- Botón Filtros (solo mobile/tablet) --}}
+      <button @click="filterOpen=true"
+              class="xl:hidden flex items-center gap-1.5 text-xs font-semibold border border-gray-300 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50 transition relative">
+        <svg class="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+        </svg>
+        <span>Filtros</span>
+        <span x-show="priceFilter!=='' || onSaleFilter"
+              class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center text-white"
+              style="background:var(--c)"
+              x-text="(priceFilter!==''?1:0)+(onSaleFilter?1:0)"></span>
+      </button>
+      <select x-model="sortBy" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none bg-white text-gray-700 cursor-pointer hover:border-gray-400 transition">
+        <option value="default">Ordenar</option>
+        <option value="price_asc">Precio ↑</option>
+        <option value="price_desc">Precio ↓</option>
+        <option value="newest">Más nuevos</option>
+        <option value="name_az">Nombre A→Z</option>
+      </select>
+      <span x-show="filterCat!=='' || search!=='' || priceFilter!=='' || onSaleFilter" class="text-sm text-gray-500">
+        <button @click="filterCat=''; search=''; priceFilter=''; onSaleFilter=false"
                 class="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition">
           ✕ Limpiar filtros
         </button>
@@ -542,11 +675,16 @@
     </div>
   </div>
 
+  {{-- Contador --}}
+  <p class="text-xs text-gray-400 mb-4" x-show="filterCat!=='' || search!=='' || priceFilter!=='' || onSaleFilter">
+    <span x-text="visibleCount"></span> producto<span x-show="visibleCount !== 1">s</span> encontrado<span x-show="visibleCount !== 1">s</span>
+  </p>
+
   {{-- Layout: sidebar + grid --}}
   <div class="flex gap-6">
 
     {{-- Sidebar filtros (desktop) --}}
-    <aside class="w-[200px] flex-shrink-0 hidden xl:block space-y-3">
+    <aside class="w-[210px] flex-shrink-0 hidden xl:block space-y-3">
       <div class="bg-white rounded-2xl border border-gray-200 p-4">
         <p class="font-bold text-gray-800 text-sm mb-3">Precio</p>
         <div class="space-y-2">
@@ -556,20 +694,37 @@
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
             <input type="radio" x-model="priceFilter" value="0-50" class="accent-[var(--c)]">
-            Hasta S/ 50
+            Hasta {{ $currency }} 50
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
             <input type="radio" x-model="priceFilter" value="50-150" class="accent-[var(--c)]">
-            S/ 50 — S/ 150
+            {{ $currency }} 50 — {{ $currency }} 150
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
             <input type="radio" x-model="priceFilter" value="150-500" class="accent-[var(--c)]">
-            S/ 150 — S/ 500
+            {{ $currency }} 150 — {{ $currency }} 500
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
             <input type="radio" x-model="priceFilter" value="500+" class="accent-[var(--c)]">
-            Más de S/ 500
+            Más de {{ $currency }} 500
           </label>
+          {{-- Rango personalizado --}}
+          <div class="pt-2 border-t border-gray-100">
+            <p class="text-xs text-gray-400 mb-1.5">Rango personalizado</p>
+            <div class="flex items-center gap-1.5">
+              <input type="number" x-model.number="priceMin" placeholder="Min" min="0"
+                     class="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 bg-gray-50 transition">
+              <span class="text-gray-300 text-xs">—</span>
+              <input type="number" x-model.number="priceMax" placeholder="Max" min="0"
+                     class="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 bg-gray-50 transition">
+            </div>
+            <button @click="priceFilter='custom'; priceMin=priceMin||0; priceMax=priceMax||99999"
+                    :disabled="!priceMin && !priceMax"
+                    class="mt-2 w-full text-xs font-semibold py-1.5 rounded-lg transition disabled:opacity-40"
+                    style="background:var(--c);color:#fff">Aplicar</button>
+            <button x-show="priceFilter==='custom'" @click="priceFilter=''; priceMin=0; priceMax=0"
+                    class="mt-1 w-full text-xs text-gray-400 hover:text-red-500 transition">Quitar rango</button>
+          </div>
         </div>
       </div>
       <div class="bg-white rounded-2xl border border-gray-200 p-4">
@@ -593,12 +748,29 @@
           <div class="flex-1 border-t border-gray-200 ml-1"></div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
           @foreach($cat->products as $p)
+          @php
+          $qvData = json_encode([
+              'id'    => $p->id,
+              'name'  => $p->name,
+              'img'   => $p->mainImage ? asset('storage/'.$p->mainImage->url) : '',
+              'price' => (float)$p->price,
+              'cp'    => $p->compare_price ? (float)$p->compare_price : null,
+              'desc'  => \Str::limit(strip_tags($p->description ?? ''), 120),
+              'url'   => route('public.product', [$project->slug, $p->id]),
+              'stock' => $p->stock,
+          ]);
+          @endphp
           {{-- SEO: cada producto tiene id anchor para deep-link --}}
           <article id="producto-{{ $p->id }}"
-                   class="prod-card bg-white rounded-2xl border border-gray-200 overflow-hidden"
-                   x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }})"
+                   class="prod-card bg-white rounded-2xl border border-gray-200 overflow-hidden group"
+                   x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}) && ({{ $loop->index }} < 8 || expandedCats['{{ $cat->id }}'])"
+                   data-price="{{ $p->price }}"
+                   data-ts="{{ $p->created_at ? $p->created_at->timestamp : 0 }}"
+                   data-idx="{{ $loop->index }}"
+                   data-name="{{ strtolower($p->name) }}"
+                   data-qv='{{ $qvData }}'
                    itemscope itemtype="https://schema.org/Product">
 
             {{-- Schema.org microdata --}}
@@ -607,7 +779,7 @@
             @if($p->description)<meta itemprop="description" content="{{ Str::limit($p->description, 160) }}">@endif
 
             {{-- Imagen con SEO --}}
-            <div class="prod-img aspect-square bg-gray-50 relative overflow-hidden">
+            <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block prod-img aspect-square bg-gray-50 relative overflow-hidden">
               @if($p->mainImage)
               <img src="{{ asset('storage/'.$p->mainImage->url) }}"
                    alt="{{ $p->name }} — {{ $cat->name }} en {{ $project->name }}"
@@ -626,20 +798,40 @@
               </div>
               @endif
 
-              {{-- Badge descuento --}}
+              {{-- Badge descuento estilo Temu --}}
               @if($p->compare_price && $p->compare_price > $p->price)
-              <span class="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-lg leading-none">
-                -{{ round((($p->compare_price - $p->price) / $p->compare_price) * 100) }}%
+              @php $pct = round((($p->compare_price - $p->price) / $p->compare_price) * 100); @endphp
+              <span class="absolute top-0 left-0 bg-red-500 text-white font-black leading-none rounded-br-xl rounded-tl-xl px-2 py-1" style="font-size:11px">
+                -{{ $pct }}%
               </span>
               @endif
 
-              {{-- Badge nuevo (últimos 30 días) --}}
+              {{-- Badge nuevo --}}
               @if($p->created_at && $p->created_at->diffInDays() <= 30)
-              <span class="absolute top-2 right-2 badge-p text-[10px] font-black px-1.5 py-0.5 rounded-lg leading-none">
+              <span class="absolute top-0 right-0 badge-p text-[10px] font-black px-2 py-1 rounded-bl-xl rounded-tr-xl leading-none">
                 NUEVO
               </span>
               @endif
-            </div>
+
+              {{-- Badge stock --}}
+              @if($p->stock !== null && $p->stock === 0)
+              <span class="absolute bottom-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-black py-1 text-center tracking-wide">AGOTADO</span>
+              @elseif($p->stock !== null && $p->stock > 0 && $p->stock <= 5)
+              <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-black py-1 text-center tracking-wide">⚡ CASI AGOTADO — {{ $p->stock }} restantes</span>
+              @endif
+
+              {{-- Botón vista rápida --}}
+              <button @click.prevent="$el.closest('article').dataset.qv && (qv=JSON.parse($el.closest('article').dataset.qv), qvOpen=true)"
+                      class="absolute inset-0 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 pointer-events-none group-hover:pointer-events-auto">
+                <span class="bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                  Vista rápida
+                </span>
+              </button>
+            </a>
 
             {{-- Info --}}
             <div class="p-3" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
@@ -648,51 +840,151 @@
               <meta itemprop="availability" content="https://schema.org/InStock">
 
               <p class="text-[11px] text-gray-400 mb-0.5 font-medium">{{ $cat->name }}</p>
-              <p class="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-2" itemprop="name">{{ $p->name }}</p>
+              <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-2 hover:underline block" itemprop="name">{{ $p->name }}</a>
 
               @if($p->description)
               <p class="text-xs text-gray-500 line-clamp-2 mb-2 leading-relaxed">{{ $p->description }}</p>
               @endif
 
-              @if(!$isQuoteOnly || $quotePriceDisp === 'show')
-              <div class="flex items-baseline gap-2 mb-3">
-                <span class="price-p font-black text-lg" itemprop="price">S/ {{ number_format($p->price,2) }}</span>
-                @if($p->compare_price && $p->compare_price > $p->price)
-                <span class="text-xs text-gray-400 line-through font-medium">S/ {{ number_format($p->compare_price,2) }}</span>
-                @endif
-                @if($isQuoteOnly)
-                <span class="text-[10px] text-gray-400 font-medium">(referencial)</span>
-                @endif
-              </div>
-              @else
-              <div class="mb-3">
-                <span class="text-xs text-gray-400 italic">Precio a consultar</span>
+              {{-- Rating --}}
+              @if(isset($productRatings) && isset($productRatings[$p->id]))
+              <div class="flex items-center gap-1 mb-1.5">
+                <span class="text-amber-400 text-xs leading-none">{{ str_repeat('★', floor($productRatings[$p->id]->avg_rating)) }}{{ str_repeat('☆', 5 - floor($productRatings[$p->id]->avg_rating)) }}</span>
+                <span class="text-[10px] text-gray-400">({{ $productRatings[$p->id]->rating_count }})</span>
               </div>
               @endif
 
-              <button @click="addToCart({
-                        id:{{ $p->id }},
-                        name:'{{ addslashes($p->name) }}',
-                        price:{{ $p->price }},
-                        img:'{{ $p->mainImage ? asset("storage/".$p->mainImage->url) : "" }}'
-                      })"
-                      class="w-full btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5">
-                @if($isQuoteOnly)
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-                Cotizar
-                @else
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-                Agregar
+              @if(!$isQuoteOnly || $quotePriceDisp === 'show')
+              @php $hasWholesale = $wholesaleEnabled && $p->wholesale_price && $p->wholesale_min_qty; @endphp
+              @if($hasWholesale)
+              {{-- DOS BLOQUES: Minorista + Mayorista --}}
+              <div class="space-y-1.5 mb-1">
+
+                {{-- BLOQUE MINORISTA --}}
+                <div x-data="{ qty:1 }" class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                  <div class="px-2.5 pt-1.5 pb-1 bg-gray-50 border-b border-gray-100">
+                    <span class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Minorista</span>
+                    <div class="flex items-baseline gap-1">
+                      <span class="price-p font-black text-base leading-none">{{ $currency }} {{ number_format($p->price,2) }}</span>
+                      @if($p->unit)<span class="text-[10px] text-gray-400 font-medium">{{ $p->unit }}</span>@endif
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5 px-2 py-1.5">
+                    <div class="flex items-center rounded-lg border border-gray-200 overflow-hidden shrink-0">
+                      <button type="button" @click="qty=Math.max(1,qty-1)" class="w-6 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-base font-bold leading-none">−</button>
+                      <input type="number" x-model.number="qty" min="1" class="w-8 h-7 text-center text-xs font-bold border-x border-gray-200 focus:outline-none bg-white">
+                      <button type="button" @click="qty++" class="w-6 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-base font-bold leading-none">+</button>
+                    </div>
+                    <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (minorista)',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                            {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
+                            class="flex-1 btn-p h-7 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 disabled:opacity-50 whitespace-nowrap">
+                      <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+
+                {{-- BLOQUE MAYORISTA --}}
+                <div x-data="{ qty: {{ (int)$p->wholesale_min_qty }} }" class="rounded-xl border border-amber-400 overflow-hidden">
+                  <div class="px-2.5 pt-1.5 pb-1 bg-amber-500">
+                    <span class="block text-[9px] font-black text-amber-200 uppercase tracking-widest mb-0.5">Mayorista</span>
+                    <div class="flex items-baseline gap-1">
+                      <span class="font-black text-base text-white leading-none">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
+                      @if($p->wholesale_unit)<span class="text-[10px] text-amber-200 font-medium">{{ $p->wholesale_unit }}</span>@endif
+                    </div>
+                    <p class="text-[9px] text-amber-200 mt-0.5">Mín. {{ $p->wholesale_min_qty }}{{ $p->wholesale_unit ? ' '.$p->wholesale_unit : '' }}</p>
+                  </div>
+                  <div class="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50">
+                    <div class="flex items-center rounded-lg border border-amber-300 overflow-hidden bg-white shrink-0">
+                      <button type="button" @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty-1)" class="w-6 h-7 flex items-center justify-center text-amber-600 hover:bg-amber-100 text-base font-bold leading-none">−</button>
+                      <input type="number" x-model.number="qty" min="{{ $p->wholesale_min_qty }}" class="w-8 h-7 text-center text-xs font-bold border-x border-amber-200 focus:outline-none bg-white text-amber-700">
+                      <button type="button" @click="qty++" class="w-6 h-7 flex items-center justify-center text-amber-600 hover:bg-amber-100 text-base font-bold leading-none">+</button>
+                    </div>
+                    <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayorista)',price:{{ $p->wholesale_price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                            {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
+                            class="flex-1 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50 whitespace-nowrap">
+                      <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+              @else
+              {{-- Sin mayoreo: precio estilo Temu --}}
+              <div class="mb-2">
+                <div class="flex items-baseline gap-1.5 flex-wrap">
+                  <span class="price-p font-black text-lg leading-none" itemprop="price">{{ $currency }} {{ number_format($p->price,2) }}</span>
+                  @if($p->compare_price && $p->compare_price > $p->price)
+                  <span class="text-xs text-gray-400 line-through font-medium">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
+                  @endif
+                  @if($isQuoteOnly)
+                  <span class="text-[10px] text-gray-400 font-medium">(referencial)</span>
+                  @endif
+                </div>
+                @if($p->compare_price && $p->compare_price > $p->price)
+                @php $ahorro = $p->compare_price - $p->price; @endphp
+                <p class="text-[10px] text-green-600 font-semibold mt-0.5">Ahorras {{ $currency }} {{ number_format($ahorro,2) }}</p>
                 @endif
+              </div>
+              @if($p->unit)
+              <div x-data="{ qty:1 }" class="flex items-center gap-2 mb-2">
+                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                  <button type="button" @click="qty=Math.max(1,qty-1)" class="px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm font-bold">−</button>
+                  <input type="number" x-model.number="qty" min="1" class="w-10 text-center text-sm font-semibold border-x border-gray-200 py-1 focus:outline-none">
+                  <button type="button" @click="qty++" class="px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm font-bold">+</button>
+                </div>
+                <span class="text-xs text-gray-400">{{ $p->unit }}</span>
+                <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                        {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
+                        class="flex-1 btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 disabled:opacity-50">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                  Agregar
+                </button>
+              </div>
+              @else
+              <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                      {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
+                      class="w-full btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-50 mb-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                @if($isQuoteOnly) Cotizar @else Agregar @endif
               </button>
+              @endif
+              @endif
+              @else
+              <div class="mb-3"><span class="text-xs text-gray-400 italic">Precio a consultar</span></div>
+              <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                      {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
+                      class="w-full btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Cotizar
+              </button>
+              @endif
+              @if($quoteWa && !$isQuoteOnly)
+              <a href="https://wa.me/{{ $quoteWa }}?text={{ urlencode('Hola, me interesa este producto: ' . $p->name) }}"
+                 target="_blank" rel="noopener"
+                 class="mt-1.5 w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white transition hover:opacity-90"
+                 style="background:#25D366;">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.901 0-3.681-.506-5.215-1.389l-.375-.222-3.516.922.938-3.428-.244-.394A9.957 9.957 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                </svg>
+                Consultar por WA
+              </a>
+              @endif
             </div>
           </article>
           @endforeach
         </div>
+        {{-- Ver más --}}
+        @if($cat->products->count() > 8)
+        <div class="mt-4 text-center" x-show="!expandedCats['{{ $cat->id }}'] && matchProduct('', 0, null)">
+          <button @click="expandedCats = {...expandedCats, '{{ $cat->id }}': true}"
+                  class="text-sm font-semibold px-5 py-2 rounded-xl border-2 transition hover:text-white hover:bg-[var(--c)] hover:border-[var(--c)]"
+                  style="border-color:var(--c); color:var(--c)">
+            Ver todos los {{ $cat->products->count() }} productos
+          </button>
+        </div>
+        @endif
       </div>
       @endif
       @endforeach
@@ -702,7 +994,7 @@
         <p class="text-5xl mb-4">🔍</p>
         <p class="font-bold text-gray-700 text-lg mb-1">Sin resultados</p>
         <p class="text-gray-400 text-sm">Intenta con otro término o categoría</p>
-        <button @click="search=''; filterCat=''; priceFilter=''; onSaleFilter=false"
+        <button @click="search=''; filterCat=''; priceFilter=''; onSaleFilter=false; priceMin=0; priceMax=0"
                 class="mt-4 btn-outline-p px-5 py-2 rounded-xl text-sm font-semibold transition">
           Ver todo el catálogo
         </button>
@@ -710,7 +1002,239 @@
 
     </div>
   </div>
+
+  {{-- Vistos recientemente --}}
+  <div x-show="recentlyViewed.length > 0" x-cloak class="mt-12 pt-8 border-t border-gray-100">
+    <h3 class="font-black text-gray-800 text-base mb-4">Vistos recientemente</h3>
+    <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <template x-for="rv in recentlyViewed" :key="rv.id">
+        <a :href="rv.url" class="flex-shrink-0 w-36 bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition group">
+          <div class="aspect-square bg-gray-50 overflow-hidden">
+            <img x-show="rv.img" :src="rv.img" :alt="rv.name" class="w-full h-full object-cover group-hover:scale-105 transition">
+            <div x-show="!rv.img" class="w-full h-full flex items-center justify-center">
+              <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="p-2">
+            <p class="text-xs font-semibold text-gray-800 line-clamp-2 leading-tight" x-text="rv.name"></p>
+            <p class="text-xs font-black mt-1" style="color:var(--c)" x-text="'{{ $currency }} ' + rv.price.toFixed(2)"></p>
+          </div>
+        </a>
+      </template>
+    </div>
+  </div>
 </section>
+
+{{-- ═══════════════════════════════════════════
+     QUICK VIEW MODAL
+═══════════════════════════════════════════ --}}
+<div x-show="qvOpen" x-cloak
+     class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+     @keydown.escape.window="qvOpen=false">
+  <div @click="qvOpen=false" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+  <div x-show="qvOpen && qv"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+    {{-- Close --}}
+    <button @click="qvOpen=false" class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+      <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+    <div class="flex flex-col sm:flex-row" x-show="qv">
+      {{-- Imagen --}}
+      <div class="sm:w-48 aspect-square flex-shrink-0 bg-gray-50 overflow-hidden">
+        <img x-show="qv && qv.img" :src="qv && qv.img" :alt="qv && qv.name" class="w-full h-full object-cover">
+        <div x-show="qv && !qv.img" class="w-full h-full flex items-center justify-center">
+          <svg class="w-12 h-12 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+      </div>
+      {{-- Info --}}
+      <div class="flex-1 p-5 flex flex-col">
+        <p class="text-lg font-black text-gray-900 leading-snug mb-1" x-text="qv && qv.name"></p>
+        <div class="flex items-baseline gap-2 mb-2">
+          <span class="text-xl font-black" style="color:var(--c)" x-text="qv && ('{{ $currency }} ' + qv.price.toFixed(2))"></span>
+          <span x-show="qv && qv.cp && qv.cp > qv.price" class="text-sm text-gray-400 line-through" x-text="qv && qv.cp && ('{{ $currency }} ' + qv.cp.toFixed(2))"></span>
+        </div>
+        <p x-show="qv && qv.desc" class="text-sm text-gray-500 leading-relaxed mb-4 flex-1" x-text="qv && qv.desc"></p>
+        <p x-show="qv && qv.stock === 0" class="text-xs font-bold text-red-500 mb-3">Agotado</p>
+        <div class="flex flex-col gap-2 mt-auto">
+          <button @click="addToCart({id:qv.id,name:qv.name,price:qv.price,img:qv.img}); qvOpen=false"
+                  x-show="qv && qv.stock !== 0"
+                  class="w-full btn-p py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            {{ $isQuoteOnly ? 'Cotizar' : 'Agregar al carrito' }}
+          </button>
+          <a :href="qv && qv.url" class="w-full text-center py-2 rounded-xl text-sm font-semibold border-2 transition hover:bg-gray-50"
+             style="border-color:var(--c); color:var(--c)">
+            Ver producto completo
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- ═══════════════════════════════════════════
+     MOBILE FILTER BOTTOM-SHEET
+═══════════════════════════════════════════ --}}
+<div x-show="filterOpen" x-cloak class="xl:hidden fixed inset-0 z-50 flex flex-col justify-end">
+  {{-- Overlay --}}
+  <div @click="filterOpen=false" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+  {{-- Panel --}}
+  <div class="relative bg-white rounded-t-3xl shadow-2xl max-h-[80vh] flex flex-col"
+       x-transition:enter="transition ease-out duration-300 transform"
+       x-transition:enter-start="translate-y-full"
+       x-transition:enter-end="translate-y-0"
+       x-transition:leave="transition ease-in duration-200 transform"
+       x-transition:leave-start="translate-y-0"
+       x-transition:leave-end="translate-y-full">
+
+    {{-- Handle + header --}}
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <h3 class="font-black text-gray-900">Filtros</h3>
+        <span x-show="priceFilter!=='' || onSaleFilter"
+              class="text-xs px-2 py-0.5 rounded-full font-bold text-white"
+              style="background:var(--c)"
+              x-text="(priceFilter!==''?1:0)+(onSaleFilter?1:0) + ' activo' + ((priceFilter!==''?1:0)+(onSaleFilter?1:0)>1?'s':'')"></span>
+      </div>
+      <button @click="filterOpen=false" class="p-1.5 rounded-lg hover:bg-gray-100 transition">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    {{-- Contenido con scroll --}}
+    <div class="overflow-y-auto flex-1 px-5 py-4 space-y-6">
+
+      {{-- Precio --}}
+      <div>
+        <p class="font-bold text-gray-800 text-sm mb-3">Precio</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button @click="priceFilter=''; priceMin=0; priceMax=0"
+                  :class="priceFilter==='' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">Todos</button>
+          <button @click="priceFilter='0-50'"
+                  :class="priceFilter==='0-50' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">Hasta {{ $currency }} 50</button>
+          <button @click="priceFilter='50-150'"
+                  :class="priceFilter==='50-150' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 50–150</button>
+          <button @click="priceFilter='150-500'"
+                  :class="priceFilter==='150-500' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 150–500</button>
+          <button @click="priceFilter='500+'"
+                  :class="priceFilter==='500+' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition col-span-2">Más de {{ $currency }} 500</button>
+        </div>
+        {{-- Rango personalizado --}}
+        <div class="mt-3 pt-3 border-t border-gray-100">
+          <p class="text-xs text-gray-400 mb-2">O ingresa un rango personalizado</p>
+          <div class="flex items-center gap-2">
+            <input type="number" x-model.number="priceMin" placeholder="Mín" min="0"
+                   class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-gray-400 transition">
+            <span class="text-gray-300">—</span>
+            <input type="number" x-model.number="priceMax" placeholder="Máx" min="0"
+                   class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-gray-400 transition">
+          </div>
+          <button @click="if(priceMin||priceMax){priceFilter='custom'}"
+                  :disabled="!priceMin && !priceMax"
+                  class="mt-2 w-full py-2 rounded-xl text-sm font-bold transition disabled:opacity-40"
+                  style="background:var(--c);color:#fff">Aplicar rango</button>
+        </div>
+      </div>
+
+      {{-- Oferta --}}
+      <div>
+        <p class="font-bold text-gray-800 text-sm mb-3">Disponibilidad</p>
+        <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer transition"
+               :class="onSaleFilter ? 'border-[var(--c)] bg-[color-mix(in_srgb,var(--c)_8%,white)]' : ''">
+          <input type="checkbox" x-model="onSaleFilter" class="accent-[var(--c)] w-4 h-4 rounded">
+          <span class="text-sm font-medium text-gray-700">Solo productos en oferta</span>
+        </label>
+      </div>
+
+      {{-- Ordenamiento --}}
+      <div>
+        <p class="font-bold text-gray-800 text-sm mb-3">Ordenar por</p>
+        <div class="space-y-2">
+          @foreach([['default','Relevancia'],['price_asc','Precio: menor a mayor'],['price_desc','Precio: mayor a menor'],['newest','Más nuevos primero'],['name_az','Nombre A → Z']] as [$val,$lbl])
+          <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer transition"
+                 :class="sortBy==='{{ $val }}' ? 'border-[var(--c)] bg-[color-mix(in_srgb,var(--c)_8%,white)]' : ''">
+            <input type="radio" x-model="sortBy" value="{{ $val }}" class="accent-[var(--c)] w-4 h-4">
+            <span class="text-sm font-medium text-gray-700">{{ $lbl }}</span>
+          </label>
+          @endforeach
+        </div>
+      </div>
+    </div>
+
+    {{-- Footer botones --}}
+    <div class="flex gap-3 px-5 py-4 border-t border-gray-100 flex-shrink-0">
+      <button @click="priceFilter=''; priceMin=0; priceMax=0; onSaleFilter=false; sortBy='default'"
+              class="flex-1 py-3 rounded-xl text-sm font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+        Limpiar todo
+      </button>
+      <button @click="filterOpen=false"
+              class="flex-1 py-3 rounded-xl text-sm font-bold text-white transition"
+              style="background:var(--c)">
+        Ver resultados
+      </button>
+    </div>
+  </div>
+</div>
+
+{{-- TOAST notificación producto agregado --}}
+<div x-show="toastShow && cart.length > 0" x-cloak
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-lg whitespace-nowrap"
+     x-text="toastMsg">
+</div>
+
+{{-- BARRA FLOTANTE INFERIOR estilo Temu --}}
+<div x-show="cart.length > 0" x-cloak
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 translate-y-full"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 translate-y-0"
+     x-transition:leave-end="opacity-0 translate-y-full"
+     class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-2xl px-4 py-3 flex items-center gap-3">
+  {{-- Resumen --}}
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-black btn-p" x-text="cart.reduce((s,i)=>s+i.qty,0)"></span>
+      <span class="text-xs text-gray-500 font-medium">{{ $isQuoteOnly ? 'productos a cotizar' : 'productos en tu pedido' }}</span>
+    </div>
+    <p class="font-black text-base price-p leading-none mt-0.5" x-text="'{{ $currency }} ' + cart.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2)"></p>
+  </div>
+  {{-- Botón ver pedido --}}
+  <button @click="drawerOpen=true"
+          class="btn-p px-5 py-3 rounded-xl font-black text-sm flex items-center gap-2 whitespace-nowrap shadow-lg">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+    </svg>
+    {{ $isQuoteOnly ? 'Ver cotización' : 'Ver pedido' }}
+  </button>
+</div>
 
 {{-- ═══════════════════════════════════════════
      CART DRAWER — 2 pasos
@@ -777,7 +1301,7 @@
           </div>
         </template>
 
-        <template x-for="(item, i) in cart" :key="item.id">
+        <template x-for="(item, i) in cart" :key="item.id+'_'+item.name">
           <div class="flex items-center gap-3 bg-gray-50 rounded-2xl p-3">
             <div class="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200">
               <img :src="item.img" x-show="item.img" class="w-full h-full object-cover" :alt="item.name">
@@ -785,6 +1309,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-bold text-gray-800 leading-snug line-clamp-2" x-text="item.name"></p>
+              <p x-show="item.unit" class="text-[10px] text-gray-400 font-medium" x-text="item.qty+' '+item.unit+' × S/ '+item.price.toFixed(2)"></p>
               @if(!$isQuoteOnly || $quotePriceDisp === 'show')
               <p class="price-p font-black text-sm mt-0.5" x-text="'S/ ' + (item.price * item.qty).toFixed(2)"></p>
               @endif
@@ -870,6 +1395,65 @@
                autocomplete="email">
         <textarea x-model="form.notes" rows="2" placeholder="¿Alguna nota adicional? (opcional)"
                   class="w-full border-2 border-gray-200 focus:border-[var(--c)] rounded-xl px-4 py-2.5 text-sm outline-none resize-none transition"></textarea>
+        @if($requireAddress)
+        <input x-model="form.address" type="text" placeholder="Dirección de entrega *"
+               class="w-full border-2 border-gray-200 focus:border-[var(--c)] rounded-xl px-4 py-2.5 text-sm outline-none transition"
+               autocomplete="street-address">
+        @endif
+
+        {{-- Cupón de descuento --}}
+        <div>
+          <div x-show="!couponApplied" class="flex gap-2">
+            <input x-model="couponCode" @keydown.enter.prevent="applyCoupon" type="text"
+                   placeholder="Código de descuento"
+                   class="flex-1 border-2 border-gray-200 focus:border-[var(--c)] rounded-xl px-4 py-2.5 text-sm outline-none transition uppercase"
+                   style="text-transform:uppercase">
+            <button @click="applyCoupon" :disabled="couponLoading" type="button"
+                    class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 transition text-gray-700 flex-shrink-0">
+              <span x-text="couponLoading ? '…' : 'Aplicar'"></span>
+            </button>
+          </div>
+          <div x-show="couponApplied" class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-sm">
+            <div>
+              <span class="font-mono font-bold text-green-700" x-text="couponApplied ? couponApplied.code : ''"></span>
+              <span class="text-green-600 ml-1">&mdash;
+                <span x-text="couponApplied && couponApplied.type==='percent' ? couponApplied.value+'% desc.' : 'S/ '+(couponApplied?couponApplied.value:0).toFixed(2)+' desc.'"></span>
+              </span>
+            </div>
+            <button @click="removeCoupon" type="button" class="text-gray-400 hover:text-red-500 ml-3 text-lg leading-none">&times;</button>
+          </div>
+          <p x-show="couponError" class="text-red-500 text-xs mt-1" x-text="couponError"></p>
+        </div>
+
+        {{-- Resumen de costos --}}
+        <div x-show="shippingEnabled || couponApplied" class="bg-gray-50 rounded-xl px-4 py-3 space-y-1.5 text-sm">
+          <div class="flex justify-between text-gray-500">
+            <span>Subtotal</span>
+            <span x-text="'S/ ' + subtotal.toFixed(2)"></span>
+          </div>
+          <div x-show="couponApplied && couponDiscount > 0" class="flex justify-between text-green-600 font-medium">
+            <span>Descuento</span>
+            <span x-text="'- S/ ' + couponDiscount.toFixed(2)"></span>
+          </div>
+          <div x-show="shippingEnabled" class="flex justify-between" :class="effectiveShipping === 0 && shippingFreeFrom > 0 ? 'text-green-600 font-medium' : 'text-gray-500'">
+            <span x-text="effectiveShipping === 0 && shippingFreeFrom > 0 ? '🎉 Envío gratis' : 'Envío'"></span>
+            <span x-text="effectiveShipping > 0 ? 'S/ ' + effectiveShipping.toFixed(2) : 'Gratis'"></span>
+          </div>
+          @if($shippingFreeFrom > 0)
+          <p x-show="effectiveShipping > 0" class="text-xs text-gray-400">
+            Agrega S/ <span x-text="Math.max(0, {{ $shippingFreeFrom }} - subtotal).toFixed(2)"></span> más para envío gratis
+          </p>
+          @endif
+          <div class="flex justify-between font-black text-gray-900 border-t border-gray-200 pt-1.5">
+            <span>Total</span>
+            <span x-text="'S/ ' + orderGrandTotal.toFixed(2)"></span>
+          </div>
+        </div>
+        {{-- Si no hay envío ni cupón, mostrar solo total --}}
+        <div x-show="!shippingEnabled && !couponApplied" class="flex justify-between font-black text-gray-900 text-sm px-1">
+          <span>Total</span>
+          <span x-text="'S/ ' + orderGrandTotal.toFixed(2)"></span>
+        </div>
 
         <p x-show="orderError" class="text-red-500 text-xs text-center font-medium" x-text="orderError"></p>
       </div>
@@ -883,12 +1467,13 @@
         </div>
         @if($isQuoteOnly)
         <p class="font-black text-gray-900 text-xl mb-2">¡Cotización enviada!</p>
-        <p class="text-sm text-gray-500 mb-6 leading-relaxed">Recibimos tu solicitud y te enviaremos los precios a la brevedad.</p>
+        <p class="text-sm text-gray-500 mb-4 leading-relaxed">Recibimos tu solicitud y te enviaremos los precios a la brevedad.</p>
         @else
         <p class="font-black text-gray-900 text-xl mb-2">¡Pedido confirmado!</p>
-        <p class="text-sm text-gray-500 mb-6 leading-relaxed">Recibimos tu pedido y nos pondremos en contacto muy pronto.</p>
+        <p class="text-sm text-gray-500 mb-1 leading-relaxed">Recibimos tu pedido y nos pondremos en contacto muy pronto.</p>
+        <p x-show="orderId" class="text-xs text-gray-400 mb-4">Pedido N° <span class="font-black text-gray-700" x-text="orderId"></span></p>
         @endif
-        <button @click="cart=[];orderSent=false;drawerStep=1;form={name:'',phone:'',email:'',notes:''};drawerOpen=false;try{localStorage.removeItem('avan_cart_{{ $project->id }}');localStorage.removeItem('avan_form_{{ $project->id }}');}catch(e){}"
+        <button @click="cart=[];orderSent=false;drawerStep=1;form={name:'',phone:'',email:'',notes:'',address:''};drawerOpen=false;try{localStorage.removeItem('avan_cart_{{ $project->id }}');localStorage.removeItem('avan_form_{{ $project->id }}');}catch(e){}"
                 class="btn-p px-8 py-3 rounded-xl text-sm font-bold">
           {{ $isQuoteOnly ? 'Seguir explorando' : 'Seguir comprando' }}
         </button>
@@ -1075,7 +1660,7 @@
         </div>
         <p class="font-black text-gray-900 text-xl mb-2">¡Pago registrado!</p>
         <p class="text-sm text-gray-500 mb-6 leading-relaxed">Tu pedido está confirmado. Nos pondremos en contacto contigo pronto.</p>
-        <button @click="cart=[];orderSent=false;drawerStep=1;form={name:'',phone:'',email:'',notes:''};drawerOpen=false;try{localStorage.removeItem('avan_cart_{{ $project->id }}');localStorage.removeItem('avan_form_{{ $project->id }}');}catch(e){}"
+        <button @click="cart=[];orderSent=false;drawerStep=1;form={name:'',phone:'',email:'',notes:'',address:''};drawerOpen=false;try{localStorage.removeItem('avan_cart_{{ $project->id }}');localStorage.removeItem('avan_form_{{ $project->id }}');}catch(e){}"
                 class="btn-p px-8 py-3 rounded-xl text-sm font-bold">Seguir comprando</button>
       </div>
 
@@ -1186,12 +1771,12 @@ function store() {
   const _cartKey = 'avan_cart_{{ $project->id }}';
   const _formKey = 'avan_form_{{ $project->id }}';
   let _savedCart = [];
-  let _savedForm = { name: '', phone: '', email: '', notes: '' };
+  let _savedForm = { name: '', phone: '', email: '', notes: '', address: '' };
   try {
     const c = localStorage.getItem(_cartKey);
     if (c) _savedCart = JSON.parse(c);
     const f = localStorage.getItem(_formKey);
-    if (f) _savedForm = { ...{ name:'', phone:'', email:'', notes:'' }, ...JSON.parse(f) };
+    if (f) _savedForm = { ...{ name:'', phone:'', email:'', notes:'', address:'' }, ...JSON.parse(f) };
   } catch(e) {}
 
   return {
@@ -1200,15 +1785,110 @@ function store() {
     search: '',
     filterCat: '',
     priceFilter: '',
+    priceMin: 0,
+    priceMax: 0,
     onSaleFilter: false,
+    sortBy: 'default',
+    filterOpen: false,
+    qv: null,
+    qvOpen: false,
+    expandedCats: {},
+    recentlyViewed: [],
+    // Predictive search
+    searchIndex: @json($searchIndex),
+    searchOpen: false,
+    searchFocus: false,
+    searchIdx: -1,
+    get visibleCount() {
+        const s = this.search.toLowerCase();
+        return this.searchIndex.filter(p => {
+            const nm = s === '' || p.name.toLowerCase().includes(s);
+            const cm = this.filterCat === '' || p.catId === this.filterCat;
+            let pm = true;
+            if (this.priceFilter === '0-50')    pm = p.price <= 50;
+            if (this.priceFilter === '50-150')  pm = p.price > 50 && p.price <= 150;
+            if (this.priceFilter === '150-500') pm = p.price > 150 && p.price <= 500;
+            if (this.priceFilter === '500+')    pm = p.price > 500;
+            if (this.priceFilter === 'custom') {
+                const lo = this.priceMin > 0 ? this.priceMin : 0;
+                const hi = this.priceMax > 0 ? this.priceMax : Infinity;
+                pm = p.price >= lo && p.price <= hi;
+            }
+            const sm = !this.onSaleFilter || (p.cp && p.cp > p.price);
+            return nm && cm && pm && sm;
+        }).length;
+    },
+    get suggestions() {
+        if (!this.search || this.search.trim().length < 2) return [];
+        const q = this.search.toLowerCase().trim();
+        return this.searchIndex
+            .filter(p => p.name.toLowerCase().includes(q) || (p.cat && p.cat.toLowerCase().includes(q)))
+            .slice(0, 6);
+    },
+    selectSuggestion(p) {
+        window.location.href = p.url;
+    },
+    _highlight(text) {
+        if (!this.search || this.search.trim().length < 2) return text;
+        const q = this.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return text.replace(new RegExp('(' + q + ')', 'gi'), '<strong style="color:var(--c,#4f46e5)">$1</strong>');
+    },
+    _scrollToCatalog() {
+        const el = document.getElementById('catalogo');
+        if (!el) return;
+        if (el.getBoundingClientRect().top > 100) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
     drawerOpen: false,
     drawerStep: 1,
     cart: _savedCart,
     form: _savedForm,
     orderLoading: false,
     orderSent: false,
+    toastShow: false,
+    toastMsg: '',
+    toastTimer: null,
     orderError: '',
     noResults: false,
+    // Envío
+    shippingEnabled:  {{ $shippingEnabled  ? 'true' : 'false' }},
+    shippingCost:     {{ $shippingCost }},
+    shippingFreeFrom: {{ $shippingFreeFrom }},
+    requireAddress:   {{ $requireAddress   ? 'true' : 'false' }},
+    get subtotal() { return this.cart.reduce((s,i) => s + i.price * i.qty, 0); },
+    get effectiveShipping() {
+      if (!this.shippingEnabled) return 0;
+      if (this.shippingFreeFrom > 0 && this.subtotal >= this.shippingFreeFrom) return 0;
+      return this.shippingCost;
+    },
+    // Cupones
+    couponCode: '',
+    couponApplied: null,
+    couponError: '',
+    couponLoading: false,
+    get couponDiscount() {
+      if (!this.couponApplied) return 0;
+      const sub = this.subtotal;
+      if (sub < (this.couponApplied.min_order || 0)) return 0;
+      if (this.couponApplied.type === 'percent') return Math.min(sub * this.couponApplied.value / 100, sub);
+      return Math.min(this.couponApplied.value, sub);
+    },
+    async applyCoupon() {
+      if (!this.couponCode.trim()) return;
+      this.couponLoading = true; this.couponError = '';
+      const res = await fetch('/{{ $project->slug }}/coupon', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
+        body: JSON.stringify({ code: this.couponCode, subtotal: this.subtotal })
+      });
+      const d = await res.json();
+      this.couponLoading = false;
+      if (d.ok) { this.couponApplied = d; this.couponError = ''; }
+      else { this.couponError = d.message; this.couponApplied = null; }
+    },
+    removeCoupon() { this.couponApplied = null; this.couponCode = ''; this.couponError = ''; },
+    get orderGrandTotal() {
+      return Math.max(0, this.subtotal - this.couponDiscount + this.effectiveShipping);
+    },
     // Pago
     orderId: null,
     orderTotal: 0,
@@ -1224,6 +1904,51 @@ function store() {
       this.$watch('form', val => {
         try { localStorage.setItem(this._formKey, JSON.stringify(val)); } catch(e) {}
       }, { deep: true });
+      this.$watch('sortBy', () => { this.applySort(); this._syncUrl(); });
+      // Cargar vistos recientemente
+      try {
+        const _rv = JSON.parse(localStorage.getItem('rv_{{ $project->slug }}') || '[]');
+        this.recentlyViewed = _rv.filter(x => x && x.id);
+      } catch(e) {}
+      const _p = new URLSearchParams(window.location.search);
+      if (_p.get('q'))     this.search       = _p.get('q');
+      if (_p.get('cat'))   this.filterCat    = _p.get('cat');
+      if (_p.get('price')) this.priceFilter  = _p.get('price');
+      if (_p.get('pmin'))  this.priceMin     = parseFloat(_p.get('pmin')) || 0;
+      if (_p.get('pmax'))  this.priceMax     = parseFloat(_p.get('pmax')) || 0;
+      if (_p.get('sale'))  this.onSaleFilter = _p.get('sale') === '1';
+      if (_p.get('sort'))  { this.sortBy = _p.get('sort'); this.$nextTick(() => this.applySort()); }
+      // Sync URL when filters change
+      this.$watch('search',       () => this._syncUrl());
+      this.$watch('filterCat',    () => this._syncUrl());
+      this.$watch('priceFilter',  () => this._syncUrl());
+      this.$watch('onSaleFilter', () => this._syncUrl());
+    },
+
+    _syncUrl() {
+      const p = new URLSearchParams();
+      if (this.search)        p.set('q',     this.search);
+      if (this.filterCat)     p.set('cat',   this.filterCat);
+      if (this.priceFilter)   p.set('price', this.priceFilter);
+      if (this.priceFilter === 'custom' && this.priceMin) p.set('pmin', this.priceMin);
+      if (this.priceFilter === 'custom' && this.priceMax) p.set('pmax', this.priceMax);
+      if (this.onSaleFilter)  p.set('sale',  '1');
+      if (this.sortBy && this.sortBy !== 'default') p.set('sort', this.sortBy);
+      history.replaceState(null, '', p.toString() ? '?' + p.toString() : window.location.pathname);
+    },
+
+    applySort() {
+      document.querySelectorAll('[data-products-grid]').forEach(grid => {
+        const cards = [...grid.children];
+        cards.sort((a, b) => {
+          if (this.sortBy === 'price_asc')  return (parseFloat(a.dataset.price)||0) - (parseFloat(b.dataset.price)||0);
+          if (this.sortBy === 'price_desc') return (parseFloat(b.dataset.price)||0) - (parseFloat(a.dataset.price)||0);
+          if (this.sortBy === 'newest')     return (parseInt(b.dataset.ts)||0) - (parseInt(a.dataset.ts)||0);
+          if (this.sortBy === 'name_az')    return (a.dataset.name||'').localeCompare(b.dataset.name||'', 'es');
+          return (parseInt(a.dataset.idx)||0) - (parseInt(b.dataset.idx)||0);
+        });
+        cards.forEach(c => grid.appendChild(c));
+      });
     },
 
     matchProduct(name, price, comparePrice) {
@@ -1233,18 +1958,28 @@ function store() {
       if (this.priceFilter === '50-150')  matchPrice = price > 50 && price <= 150;
       if (this.priceFilter === '150-500') matchPrice = price > 150 && price <= 500;
       if (this.priceFilter === '500+')    matchPrice = price > 500;
+      if (this.priceFilter === 'custom') {
+        const lo = this.priceMin > 0 ? this.priceMin : 0;
+        const hi = this.priceMax > 0 ? this.priceMax : Infinity;
+        matchPrice = price >= lo && price <= hi;
+      }
       const matchSale = !this.onSaleFilter || (comparePrice && comparePrice > price);
       return matchSearch && matchPrice && matchSale;
     },
 
     addToCart(product) {
-      const existing = this.cart.find(i => i.id === product.id);
+      const key = (product.id + '_' + (product.name || '')).toLowerCase();
+      const existing = this.cart.find(i => (i.id + '_' + (i.name || '')).toLowerCase() === key);
       if (existing) {
-        existing.qty++;
+        existing.qty += (product.qty || 1);
       } else {
-        this.cart.push({ ...product, qty: 1 });
+        this.cart.push({ ...product, qty: product.qty || 1 });
       }
-      this.drawerOpen = true;
+      // Mostrar toast sin abrir carrito
+      this.toastMsg = '✓ ' + product.name + ' agregado';
+      this.toastShow = true;
+      clearTimeout(this.toastTimer);
+      this.toastTimer = setTimeout(() => this.toastShow = false, 2000);
     },
 
     sendQuoteWhatsapp() {
@@ -1320,6 +2055,9 @@ function store() {
             client_phone: this.form.phone,
             client_email: this.form.email,
             notes: this.form.notes,
+            coupon_code: this.couponApplied ? this.couponApplied.code : null,
+            delivery_address: this.form.address || null,
+            shipping_cost: this.effectiveShipping > 0 ? this.effectiveShipping : null,
             items: items,
           })
         });
@@ -1335,11 +2073,12 @@ function store() {
           this.drawerStep = 3;
           @else
           // Pedido sin pasarela: éxito directo
-          this.orderSent = true;
+          this.couponApplied = null; this.couponCode = '';
           try {
             localStorage.removeItem(this._cartKey);
             localStorage.removeItem(this._formKey);
           } catch(e) {}
+          window.location.href = '/{{ $project->slug }}/thanks/' + data.order_id;
           @endif
         } else {
           this.orderError = 'No se pudo enviar. Inténtalo de nuevo.';
@@ -1355,15 +2094,15 @@ function store() {
       this.payLoading = true;
       this.payError   = '';
       try {
-        const res = await fetch(`/p/{{ $project->slug }}/pay/${this.orderId}/manual`, {
+        const res = await fetch(`{{ url('/' . $project->slug . '/pay') }}/${this.orderId}/manual`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
           body: JSON.stringify({ reference: this.payReference }),
         });
         const data = await res.json();
         if (data.ok) {
-          this.orderSent = true;
           try { localStorage.removeItem(this._cartKey); localStorage.removeItem(this._formKey); } catch(e) {}
+          window.location.href = '/{{ $project->slug }}/thanks/' + this.orderId;
         } else {
           this.payError = 'No se pudo confirmar el pago. Inténtalo de nuevo.';
         }
@@ -1388,7 +2127,7 @@ function store() {
           self.payLoading = true;
           self.payError   = '';
           try {
-            const res = await fetch(`/p/{{ $project->slug }}/pay/${self.orderId}/culqi`, {
+            const res = await fetch(`{{ url('/' . $project->slug . '/pay') }}/${self.orderId}/culqi`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
               body: JSON.stringify({ token: Culqi.token.id, email: self.form.email }),
@@ -1413,7 +2152,7 @@ function store() {
       this.payLoading = true;
       this.payError   = '';
       try {
-        const res = await fetch(`/p/{{ $project->slug }}/pay/${this.orderId}/mp`, {
+        const res = await fetch(`{{ url('/' . $project->slug . '/pay') }}/${this.orderId}/mp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
           body: JSON.stringify({}),

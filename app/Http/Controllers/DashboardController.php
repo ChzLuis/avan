@@ -7,8 +7,10 @@ use App\Models\Project;
 
 class DashboardController extends Controller
 {
-    public function index(Project $project)
+    public function index()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $activeProject = $project->load('activeModules');
 
         $stats = [

@@ -10,7 +10,7 @@
          editingRole: null,
          form: { name: '', description: '', permissions: [] },
          saving: false,
-         baseUrl: '/avan/public/{{ $project->id }}/roles',
+         baseUrl: '/{{ $project->id }}/roles',
 
          openNew() {
              this.editingRole = null;
@@ -78,7 +78,7 @@
         <template x-for="role in roles" :key="role.id">
             <div class="bg-white border border-gray-200 rounded-xl p-5 hover:border-indigo-300 transition-colors relative group">
                 {{-- Acciones --}}
-                <div class="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="absolute top-4 right-4 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button @click="openEdit(role)"
                             class="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

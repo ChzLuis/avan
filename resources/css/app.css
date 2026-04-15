@@ -76,14 +76,25 @@
 
     /* List panel — width controlled by Alpine :class on mobile */
     .list-panel { @apply border-r border-gray-200 bg-white flex flex-col flex-shrink-0; width: var(--list-width); }
-    @media (max-width: 767px) { .list-panel { width: 100%; } }
+    .detail-panel { @apply flex-1 bg-white flex flex-col overflow-hidden; }
+
+    /* Layout scroll container */
+    .mob-main { min-height: 0; }
+    .mob-main > * { min-height: 0; }
+
+    /* Mobile: full-screen panels, show one at a time */
+    @media (max-width: 767px) {
+        .list-panel { width: 100%; }
+        .detail-panel { display: none; }
+        .detail-panel.mp-active { display: flex !important; }
+        .list-panel.mp-hidden  { display: none !important; }
+    }
+
     .list-item {
         @apply flex items-center justify-between px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-indigo-50 transition-colors text-sm;
     }
     .list-item.selected { @apply bg-indigo-50 border-l-4 border-l-indigo-500; }
 
-    /* Detail panel */
-    .detail-panel { @apply flex-1 bg-white flex flex-col overflow-hidden; }
     .detail-tab {
         @apply px-4 py-2.5 text-sm font-medium border-b-2 cursor-pointer transition-colors;
         border-color: transparent; color: #6b7280;

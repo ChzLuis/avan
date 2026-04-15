@@ -20,8 +20,10 @@ class FerreteriaDemoSeeder extends Seeder
         $user = User::firstOrCreate(
             ['email' => 'ferreteriademo@avan.com'],
             [
-                'name'     => 'Demo Ferretería',
-                'password' => bcrypt('password'),
+                'name'         => 'Demo Ferretería',
+                'username'     => 'demo',
+                'password'     => bcrypt('password'),
+                'is_superadmin'=> true,
             ]
         );
 

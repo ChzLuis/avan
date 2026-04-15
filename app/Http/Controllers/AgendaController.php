@@ -8,8 +8,10 @@ use Illuminate\Http\Request;
 
 class AgendaController extends Controller
 {
-    public function index(Project $project)
+    public function index()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $appointments    = $project->appointments()->with('client')->orderBy('date')->orderBy('start_time')->get();
         $services        = $project->services()->where('is_available', true)->get();
         $appointmentTypes = $this->catValues($project, 'appointment_type');
@@ -23,8 +25,10 @@ class AgendaController extends Controller
         return $list ? $list->values()->where('is_active', true)->orderBy('sort_order')->pluck('label') : collect();
     }
 
-    public function store(Request $request, Project $project)
+    public function store(Request $request)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $data = $request->validate([
             'service_id'   => 'nullable|integer',
             'client_name'  => 'required|string|max:100',
@@ -43,8 +47,10 @@ class AgendaController extends Controller
         return response()->json(['appointment' => $appointment]);
     }
 
-    public function update(Request $request, Project $project, Appointment $appointment)
+    public function update(Request $request, Appointment $appointment)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($appointment->project_id === $project->id, 403);
         $appointment->update($request->validate([
             'status'           => 'required|in:pending,confirmed,done,cancelled',
@@ -55,8 +61,10 @@ class AgendaController extends Controller
         return response()->json(['appointment' => $appointment]);
     }
 
-    public function destroy(Project $project, Appointment $appointment)
+    public function destroy(Appointment $appointment)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($appointment->project_id === $project->id, 403);
         $appointment->delete();
         return response()->json(['ok' => true]);

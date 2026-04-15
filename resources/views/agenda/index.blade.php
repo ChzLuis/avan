@@ -31,11 +31,11 @@
         }).sort((a,b) => a.date < b.date ? 1 : -1);
     },
 
-    select(a) { this.selected={...a}; this.form={...a}; this.creating=false; },
+    select(a) { this.selected={...a}; this.form={...a}; this.creating=false; if(window.innerWidth<768)this.panel='detail'; },
 
     openNew() {
         const today = new Date().toISOString().split('T')[0];
-        this.selected=null; this.creating=true;
+        this.selected=null; this.creating=true; if(window.innerWidth<768)this.panel='detail';
         this.form={client_name:'',client_phone:'',service_id:'',date:today,start_time:'09:00',end_time:'10:00',notes:'',status:'pending'};
     },
 

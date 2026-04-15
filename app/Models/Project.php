@@ -11,7 +11,7 @@ class Project extends Model
 {
     protected $fillable = [
         'owner_id', 'name', 'slug', 'description', 'logo_url',
-        'category', 'phone', 'whatsapp', 'address', 'is_active',
+        'category', 'phone', 'whatsapp', 'address', 'is_active', 'wa_phone',
     ];
 
     protected $casts = ['is_active' => 'boolean'];
@@ -51,6 +51,9 @@ class Project extends Model
     public function sedes(): HasMany        { return $this->hasMany(Sede::class); }
     public function userGroups(): HasMany   { return $this->hasMany(UserGroup::class); }
     public function proveedores(): HasMany  { return $this->hasMany(Proveedor::class); }
+    public function coupons(): HasMany      { return $this->hasMany(Coupon::class); }
+    public function reviews(): HasMany      { return $this->hasMany(\App\Models\Review::class); }
+    public function proposals(): HasMany   { return $this->hasMany(Proposal::class); }
 
     public function setting(string $key, mixed $default = null): mixed
     {

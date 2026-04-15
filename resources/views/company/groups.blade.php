@@ -40,7 +40,7 @@
         deleting: false,
         form: {},
         csrf: '{{ $csrf }}',
-        storeUrl: '{{ route('groups.store', ['project' => $pid]) }}',
+        storeUrl: '{{ route('groups.store') }}',
         baseUrl: '{{ url('/'.$pid.'/company/groups') }}',
 
         get filtered() {
@@ -245,7 +245,7 @@
     {{-- Lista --}}
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
         {{-- Nuevo grupo --}}
-        <button @click="openNew()"
+        <button @click="openNew(); panel='detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-violet-50 transition text-left"
                 :class="!selected && Object.keys(form).length ? 'bg-violet-50 border-l-2 border-violet-500' : ''">
             <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
@@ -260,7 +260,7 @@
         </button>
 
         <template x-for="g in filtered" :key="g.id">
-            <button @click="openEdit(g)"
+            <button @click="openEdit(g); panel='detail'"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                     :class="selected?.id===g.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''">
                 {{-- Color dot --}}

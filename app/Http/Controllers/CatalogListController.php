@@ -9,22 +9,28 @@ use Illuminate\Http\Request;
 
 class CatalogListController extends Controller
 {
-    public function index(Project $project)
+    public function index()
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $catalogs = $project->catalogLists()->orderBy('sort_order')->get();
         return view('catalogs.index', compact('project', 'catalogs'));
     }
 
-    public function store(Request $request, Project $project)
+    public function store(Request $request)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $data = $request->validate($this->catalogRules());
         $data['project_id'] = $project->id;
         $data['is_active']  = $request->boolean('is_active', true);
         return response()->json(['catalog' => CatalogList::create($data)]);
     }
 
-    public function update(Request $request, Project $project, CatalogList $catalog)
+    public function update(Request $request, CatalogList $catalog)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
         $data = $request->validate($this->catalogRules());
         $data['is_active'] = $request->boolean('is_active');
@@ -32,30 +38,38 @@ class CatalogListController extends Controller
         return response()->json(['catalog' => $catalog]);
     }
 
-    public function destroy(Project $project, CatalogList $catalog)
+    public function destroy(CatalogList $catalog)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
         abort_if($catalog->is_system, 403, 'Este catálogo es del sistema y no puede eliminarse.');
         $catalog->delete();
         return response()->json(['ok' => true]);
     }
 
-    public function values(Project $project, CatalogList $catalog)
+    public function values(CatalogList $catalog)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
         return response()->json($catalog->values()->orderBy('sort_order')->get());
     }
 
-    public function storeValue(Request $request, Project $project, CatalogList $catalog)
+    public function storeValue(Request $request, CatalogList $catalog)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
         $data = $request->validate($this->valueRules());
         $data['is_active'] = $request->boolean('is_active', true);
         return response()->json(['value' => $catalog->values()->create($data)]);
     }
 
-    public function updateValue(Request $request, Project $project, CatalogList $catalog, CatalogValue $value)
+    public function updateValue(Request $request, CatalogList $catalog, CatalogValue $value)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
         $data = $request->validate($this->valueRules());
         $data['is_active'] = $request->boolean('is_active');
@@ -63,8 +77,10 @@ class CatalogListController extends Controller
         return response()->json(['value' => $value]);
     }
 
-    public function destroyValue(Project $project, CatalogList $catalog, CatalogValue $value)
+    public function destroyValue(CatalogList $catalog, CatalogValue $value)
     {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
         $value->delete();
         return response()->json(['ok' => true]);

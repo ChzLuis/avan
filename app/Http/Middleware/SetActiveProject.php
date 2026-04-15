@@ -22,14 +22,25 @@ class SetActiveProject
 
         if ($project) {
             $userId   = auth()->id();
-            $isMember = $project->owner_id === $userId
-                || $project->members()->where('user_id', $userId)->exists();
-
+            $cacheKey = "member_{$project->id}_{$userId}";
+            $isMember = session($cacheKey) ?? (
+                $project->owner_id === $userId
+                || $project->members()->where('user_id', $userId)->exists()
+            );
             if ($isMember) {
-                session(['active_project_id' => $project->id]);
-                app()->instance('active_project', $project);
-                view()->share('activeProject', $project);
+                session([$cacheKey => true]);
+            } else {
+                $project = null;
             }
+        }
+
+        if ($project) {
+            session(['active_project_id' => $project->id]);
+            view()->share('activeProject', $project);
+            app()->instance('active_project', $project);
+        } else {
+            view()->share('activeProject', null);
+            app()->bind('active_project', fn() => null);
         }
 
         return $next($request);

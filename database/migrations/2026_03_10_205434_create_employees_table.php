@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->date('hire_date')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });
     }

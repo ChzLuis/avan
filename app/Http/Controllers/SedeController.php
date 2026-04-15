@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 
 class SedeController extends Controller
 {
-    public function index(Project $project) {
+    public function index() {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $sedes = $project->sedes()->orderBy('name')->get();
         return view('company.sedes', compact('project', 'sedes'));
     }
@@ -21,7 +23,9 @@ class SedeController extends Controller
             'is_active' => 'boolean',
         ];
     }
-    public function store(Request $request, Project $project) {
+    public function store(Request $request) {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         $data = $request->validate($this->rules());
         $data['project_id'] = $project->id;
         $data['is_active'] = $request->boolean('is_active', true);
@@ -29,7 +33,9 @@ class SedeController extends Controller
         if ($request->expectsJson()) return response()->json(['sede' => $this->row($sede)]);
         return back()->with('success', 'Sede creada.');
     }
-    public function update(Request $request, Project $project, Sede $sede) {
+    public function update(Request $request, Sede $sede) {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($sede->project_id === $project->id, 403);
         $data = $request->validate($this->rules());
         $data['is_active'] = $request->boolean('is_active');
@@ -37,7 +43,9 @@ class SedeController extends Controller
         if ($request->expectsJson()) return response()->json(['sede' => $this->row($sede->fresh())]);
         return back()->with('success', 'Sede actualizada.');
     }
-    public function destroy(Project $project, Sede $sede) {
+    public function destroy(Sede $sede) {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
         abort_unless($sede->project_id === $project->id, 403);
         $sede->delete();
         if (request()->expectsJson()) return response()->json(['ok' => true]);
