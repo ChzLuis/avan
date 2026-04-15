@@ -152,9 +152,15 @@ async function enviarImagen(msg) {
 // ─────────────────────────────────────────────────────────────
 
 // ── Cliente WhatsApp ──────────────────────────────────────────
+const puppeteerConfig = {
+    headless: true,
+    args: ['--no-sandbox','--disable-setuid-sandbox'],
+};
+if (process.env.CHROMIUM_PATH) puppeteerConfig.executablePath = process.env.CHROMIUM_PATH;
+
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: `whatsbot-${BOT_TYPE}` }),
-    puppeteer: { headless: true, args: ['--no-sandbox','--disable-setuid-sandbox'] }
+    puppeteer: puppeteerConfig,
 });
 
 client.on('qr', qr => {
