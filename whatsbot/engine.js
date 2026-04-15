@@ -159,7 +159,10 @@ const puppeteerConfig = {
 if (process.env.CHROMIUM_PATH) puppeteerConfig.executablePath = process.env.CHROMIUM_PATH;
 
 const client = new Client({
-    authStrategy: new LocalAuth({ clientId: `whatsbot-${BOT_TYPE}` }),
+    authStrategy: new LocalAuth({
+        clientId: `whatsbot-${BOT_TYPE}`,
+        dataPath: path.join(__dirname, '.wwebjs_auth'),
+    }),
     puppeteer: puppeteerConfig,
 });
 
