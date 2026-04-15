@@ -387,9 +387,10 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
 
 // ─── Portal Comercial ─────────────────────────────────────────────────────────
 Route::prefix('bixosales')->name('bixosales.')->group(function () {
-    Route::get('/login',  [ComAuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [ComAuthController::class, 'login'])->name('login.post');
-    Route::post('/logout',[ComAuthController::class, 'logout'])->name('logout');
+    Route::get('/login',         [ComAuthController::class, 'showLogin'])->name('login');
+    Route::post('/login',        [ComAuthController::class, 'login'])->name('login.post');
+    Route::post('/get-projects', [ComAuthController::class, 'getProjects'])->name('get.projects');
+    Route::post('/logout',       [ComAuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth', 'comercial.auth'])->group(function () {
         Route::get('/',             [ComDashController::class, 'index'])->name('dashboard');

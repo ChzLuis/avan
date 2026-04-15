@@ -19,37 +19,72 @@ class AuthController extends Controller
         return view('comercial.login');
     }
 
+    /**
+     * Paso 1: verificar credenciales y devolver proyectos disponibles (AJAX).
+     */
+    public function getProjects(Request $request)
+    {
+        $request->validate(['email' => 'required|string', 'password' => 'required']);
+
+        $login = $request->input('email');
+        $user  = User::where('email', $login)->orWhere('username', $login)->first();
+
+        if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            return response()->json(['ok' => false, 'message' => 'Credenciales incorrectas.'], 401);
+        }
+
+        // Proyectos como owner o miembro
+        $projects = Project::where(function ($q) use ($user) {
+                $q->where('owner_id', $user->id)
+                  ->orWhereHas('members', fn($m) => $m->where('user_id', $user->id));
+            })
+            ->where('is_active', true)
+            ->get(['id', 'name', 'slug']);
+
+        return response()->json([
+            'ok'           => true,
+            'projects'     => $projects,
+            'is_superadmin'=> (bool) $user->is_superadmin,
+        ]);
+    }
+
+    /**
+     * Paso 2: login definitivo con proyecto seleccionado.
+     */
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|string',
-            'password' => 'required',
+            'email'      => 'required|string',
+            'password'   => 'required',
+            'project_id' => 'required',
         ]);
 
-        $login    = $request->input('email');
-        $password = $request->input('password');
+        $login = $request->input('email');
+        $user  = User::where('email', $login)->orWhere('username', $login)->first();
 
-        // Buscar por email o username
-        $user = User::where('email', $login)->orWhere('username', $login)->first();
-
-        if (! $user || ! Hash::check($password, $user->password)) {
+        if (! $user || ! Hash::check($request->input('password'), $user->password)) {
             return back()->withErrors(['email' => 'Credenciales incorrectas.'])->withInput();
         }
 
         Auth::login($user, $request->boolean('remember'));
 
-        // Buscar el proyecto al que pertenece el usuario (owner o miembro)
-        $project = Project::where('owner_id', $user->id)->where('is_active', true)->first();
-
-        if (! $project) {
-            $project = Project::whereHas('members', fn($q) => $q->where('user_id', $user->id))
-                ->where('is_active', true)
-                ->first();
+        // Proyecto especial: admin general
+        if ($request->input('project_id') === 'admin' && $user->is_superadmin) {
+            return redirect(route('dashboard'));
         }
+
+        $projectId = (int) $request->input('project_id');
+        $project   = Project::where('id', $projectId)
+            ->where('is_active', true)
+            ->where(function ($q) use ($user) {
+                $q->where('owner_id', $user->id)
+                  ->orWhereHas('members', fn($m) => $m->where('user_id', $user->id));
+            })
+            ->first();
 
         if (! $project) {
             Auth::logout();
-            return back()->withErrors(['email' => 'No tienes ningún negocio asignado.'])->withInput();
+            return back()->withErrors(['email' => 'No tienes acceso a ese proyecto.'])->withInput();
         }
 
         session(['comercial_project_id' => $project->id]);
