@@ -29,3 +29,4 @@ whatsbot/.wwebjs_auth/
 whatsbot/*.json
 public/.wwebjs_auth/
 .claude/
+whatsbot/node_modules/
