@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Comercial;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -24,11 +26,17 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        $login    = $request->input('email');
+        $password = $request->input('password');
+
+        // Buscar por email o username
+        $user = User::where('email', $login)->orWhere('username', $login)->first();
+
+        if (! $user || ! Hash::check($password, $user->password)) {
             return back()->withErrors(['email' => 'Credenciales incorrectas.'])->withInput();
         }
 
-        $user = Auth::user();
+        Auth::login($user, $request->boolean('remember'));
 
         // Buscar el proyecto al que pertenece el usuario (owner o miembro)
         $project = Project::where('owner_id', $user->id)->where('is_active', true)->first();
