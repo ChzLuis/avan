@@ -25,10 +25,36 @@ if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === undefined)
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const BOT_TOKEN   = 'wa-bot-secret-2024';
-const LARAVEL_URL = process.env.LARAVEL_URL || 'http://127.0.0.1';
+
+// Auto-detectar LARAVEL_URL: env var > leer .env Laravel > fallback local
+function detectLaravelUrl() {
+    if (process.env.LARAVEL_URL) return process.env.LARAVEL_URL;
+    try {
+        const envFile = fs.readFileSync(path.join(__dirname, '../.env'), 'utf8');
+        const match   = envFile.match(/^APP_URL=(.+)$/m);
+        if (match) return match[1].trim().replace(/["']/g, '');
+    } catch(e) {}
+    return 'http://127.0.0.1';
+}
+
+// Auto-detectar chromium del sistema
+function detectChromium() {
+    if (process.env.CHROMIUM_PATH && fs.existsSync(process.env.CHROMIUM_PATH))
+        return process.env.CHROMIUM_PATH;
+    const candidates = [
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+    ];
+    return candidates.find(p => fs.existsSync(p)) || null;
+}
+
+const LARAVEL_URL = detectLaravelUrl();
 const FLOW_FILE   = path.join(__dirname, `flow-${BOT_TYPE}.json`);
 const STATUS_FILE = path.join(__dirname, `${BOT_TYPE}-status.json`);
 const QR_IMAGE    = path.join(__dirname, 'qr-pago.png');
+console.log(`🌐 Laravel URL: ${LARAVEL_URL}`);
 
 // Tarifas delivery (configurable desde BotConfig en el futuro)
 const BASE_LAT     = -13.149770079285672;
@@ -156,7 +182,11 @@ const puppeteerConfig = {
     headless: true,
     args: ['--no-sandbox','--disable-setuid-sandbox'],
 };
-if (process.env.CHROMIUM_PATH) puppeteerConfig.executablePath = process.env.CHROMIUM_PATH;
+const chromiumPath = detectChromium();
+if (chromiumPath) {
+    puppeteerConfig.executablePath = chromiumPath;
+    console.log(`🌐 Chromium: ${chromiumPath}`);
+}
 
 const client = new Client({
     authStrategy: new LocalAuth({
