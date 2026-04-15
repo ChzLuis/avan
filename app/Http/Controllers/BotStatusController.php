@@ -40,12 +40,15 @@ class BotStatusController extends Controller
         $laravelUrl  = config('app.url');
         $chromiumPath = env('CHROMIUM_PATH', '');
         $envVars = "LARAVEL_URL={$laravelUrl}" . ($chromiumPath ? " CHROMIUM_PATH={$chromiumPath}" : '');
-        $startCmd = "{$envVars} pm2 start {$engine} --name {$pm2Name} -- --bot={$data['bot']} --output {$logFile} --error {$logFile} --merge-logs";
+        $pm2Bin   = trim(shell_exec('which pm2') ?: '/usr/bin/pm2');
+        $useSudo  = (posix_getuid() !== 0) ? 'sudo ' : '';
+        $pm2      = "{$useSudo}{$pm2Bin}";
+        $startCmd = "{$envVars} {$pm2} start {$engine} --name {$pm2Name} -- --bot={$data['bot']} --output {$logFile} --error {$logFile} --merge-logs";
 
         $cmd = match($data['action']) {
-            'start'   => "pm2 delete {$pm2Name} 2>/dev/null; {$startCmd} 2>&1",
-            'stop'    => "pm2 stop {$pm2Name} 2>&1",
-            'restart' => "pm2 restart {$pm2Name} 2>&1 || {$startCmd} 2>&1",
+            'start'   => "{$pm2} delete {$pm2Name} 2>/dev/null; {$startCmd} 2>&1",
+            'stop'    => "{$pm2} stop {$pm2Name} 2>&1",
+            'restart' => "{$pm2} restart {$pm2Name} 2>&1 || {$startCmd} 2>&1",
         };
 
         $output = shell_exec($cmd);
@@ -129,7 +132,9 @@ class BotStatusController extends Controller
         abort_unless($bot->project_id === $project->id, 403);
 
         // Detener bot si está corriendo
-        @shell_exec("pm2 delete {$bot->pm2Name()} 2>&1");
+        $pm2Bin  = trim(shell_exec('which pm2') ?: '/usr/bin/pm2');
+        $useSudo = (posix_getuid() !== 0) ? 'sudo ' : '';
+        @shell_exec("{$useSudo}{$pm2Bin} delete {$bot->pm2Name()} 2>&1");
 
         // Limpiar status file
         $statusFile = $bot->statusFile();
