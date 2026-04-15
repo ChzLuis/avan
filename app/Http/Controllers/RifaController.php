@@ -131,10 +131,19 @@ class RifaController extends Controller
     public function indexComercial()
     {
         $project = \App\Models\Project::findOrFail(session('comercial_project_id'));
-        $ventas  = RifaVenta::with('rifa')
-                    ->where('project_id', $project->id)
+
+        // Buscar ventas del proyecto, o del bot rifa si el project_id del seeder difiere
+        $projectIds = collect([$project->id]);
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        if ($botProject && !$projectIds->contains($botProject)) {
+            $projectIds->push($botProject);
+        }
+
+        $ventas = RifaVenta::with('rifa')
+                    ->whereIn('project_id', $projectIds)
                     ->orderByDesc('created_at')
                     ->get();
+
         return view('comercial.rifas', compact('project', 'ventas'));
     }
 
