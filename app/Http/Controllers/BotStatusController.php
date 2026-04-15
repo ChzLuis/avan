@@ -37,10 +37,13 @@ class BotStatusController extends Controller
 
         @mkdir($logDir, 0775, true);
 
-        $startCmd = "pm2 start {$engine} --name {$pm2Name} -- --bot={$data['bot']} --output {$logFile} --error {$logFile} --merge-logs";
+        $laravelUrl  = config('app.url');
+        $chromiumPath = env('CHROMIUM_PATH', '');
+        $envVars = "LARAVEL_URL={$laravelUrl}" . ($chromiumPath ? " CHROMIUM_PATH={$chromiumPath}" : '');
+        $startCmd = "{$envVars} pm2 start {$engine} --name {$pm2Name} -- --bot={$data['bot']} --output {$logFile} --error {$logFile} --merge-logs";
 
         $cmd = match($data['action']) {
-            'start'   => "{$startCmd} 2>&1",
+            'start'   => "pm2 delete {$pm2Name} 2>/dev/null; {$startCmd} 2>&1",
             'stop'    => "pm2 stop {$pm2Name} 2>&1",
             'restart' => "pm2 restart {$pm2Name} 2>&1 || {$startCmd} 2>&1",
         };
