@@ -62,8 +62,8 @@ const BASE_LNG     = -74.2303798295127;
 const DELIVERY_MIN = 6.00;
 const DELIVERY_KM  = 1.50;
 
-// Puerto: main=3001, otros=3002,3003... se lee de la API
-let BOT_PORT    = BOT_TYPE === 'main' ? 3001 : BOT_TYPE === 'rifa' ? 3002 : 3003;
+// Puerto: se lee de --port=XXXX, fallback a 3001/3002/3003 según tipo
+let BOT_PORT    = args.port ? parseInt(args.port) : (BOT_TYPE === 'main' ? 3001 : BOT_TYPE === 'rifa' ? 3002 : 3003);
 let FLOW        = null;
 let PROJECT_SLUG = null;
 let NEGOCIO     = 'Bot';
@@ -166,6 +166,7 @@ function buildVars(data) {
     return {
         negocio:      NEGOCIO,
         mi_numero:    MI_NUMERO,
+        // Pedido general
         cliente:      data.cliente||'',
         total:        data.total||'',
         nPedido:      data.nPedido||'',
@@ -174,18 +175,27 @@ function buildVars(data) {
         total_final:  data.totalFinal||data.total||'',
         km:           data.km||'',
         direccion:    data.deliveryAddress||'',
-        // Variables de rifa
-        rifa_nombre:  data.rifaNombre||'',
-        rifa_precio:  data.rifaPrecio ? Number(data.rifaPrecio).toFixed(2) : '',
-        rifa_tickets: data.rifaTickets||'',
-        rifa_total:   data.rifaTotal||'',
         order_number: data.orderNumber||'',
+        // Datos del cliente (genérico)
         nombre:       data.nombre||'',
-        dni:          data.dni||'',
-        celular:      data.celular||'',
+        documento:    data.documento||data.dni||'',
+        dni:          data.documento||data.dni||'',
+        telefono:     data.telefono||data.celular||'',
+        celular:      data.telefono||data.celular||'',
         ciudad:       data.ciudad||'',
-        // Lista dinámica de rifas (se carga con loadRifasLista)
+        // Ítem seleccionado de lista (genérico)
+        item_nombre:  data.itemNombre||data.rifaNombre||'',
+        item_precio:  data.itemPrecio ? Number(data.itemPrecio).toFixed(2) : (data.rifaPrecio ? Number(data.rifaPrecio).toFixed(2) : ''),
+        item_cantidad:data.itemCantidad||data.rifaTickets||'',
+        item_total:   data.itemTotal||data.rifaTotal||'',
+        // Alias compatibilidad (flujos viejos con {rifa_*})
+        rifa_nombre:  data.itemNombre||data.rifaNombre||'',
+        rifa_precio:  data.itemPrecio ? Number(data.itemPrecio).toFixed(2) : (data.rifaPrecio ? Number(data.rifaPrecio).toFixed(2) : ''),
+        rifa_tickets: data.itemCantidad||data.rifaTickets||'',
+        rifa_total:   data.itemTotal||data.rifaTotal||'',
+        // Lista dinámica
         rifas_lista:  data.rifasLista||'',
+        lista:        data.rifasLista||'',
     };
 }
 
@@ -476,25 +486,30 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
             break;
         }
 
-        // ── Acciones de RIFA ──────────────────────────────────
-        case 'show_rifas': {
-            // Solo carga datos en sesión — el mensaje lo controla el estado del portal
+        // ── Catálogo / Lista genérica ─────────────────────────
+        case 'show_lista':
+        case 'show_rifas': { // compatibilidad
             sessionData = await loadRifasLista(sessionData);
             break;
         }
 
-        case 'select_rifa': {
+        case 'select_item':
+        case 'select_rifa': { // compatibilidad
             const rifas   = sessionData.rifas || [];
             const selIdx  = parseInt(body) - 1;
             const selRifa = rifas[selIdx];
             if (selRifa) {
-                sessionData = { ...sessionData, rifaId: selRifa.id, rifaNombre: selRifa.nombre,
+                sessionData = { ...sessionData, itemId: selRifa.id, itemNombre: selRifa.nombre,
+                    itemPrecio: selRifa.precio_ticket, itemMin: selRifa.min_tickets,
+                    // alias para compatibilidad con flujos viejos
+                    rifaId: selRifa.id, rifaNombre: selRifa.nombre,
                     rifaPrecio: selRifa.precio_ticket, rifaMin: selRifa.min_tickets };
             } else {
-                // Intentar buscar por nombre
                 const found = rifas.find(r => r.nombre.toLowerCase().includes(lower));
                 if (found) {
-                    sessionData = { ...sessionData, rifaId: found.id, rifaNombre: found.nombre,
+                    sessionData = { ...sessionData, itemId: found.id, itemNombre: found.nombre,
+                        itemPrecio: found.precio_ticket, itemMin: found.min_tickets,
+                        rifaId: found.id, rifaNombre: found.nombre,
                         rifaPrecio: found.precio_ticket, rifaMin: found.min_tickets };
                 }
             }
@@ -505,82 +520,106 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
         case 'save_quantity|create_rifa_order':
         case 'save_quantity_create_order': {
             const qty    = parseInt(body.replace(/\D/g,'')) || 1;
-            const precio = sessionData.rifaPrecio || 0;
+            const precio = sessionData.itemPrecio || sessionData.rifaPrecio || 0;
             const total  = (qty * precio).toFixed(2);
-            sessionData  = { ...sessionData, rifaTickets: qty, rifaTotal: total };
+            sessionData  = { ...sessionData, itemCantidad: qty, itemTotal: total,
+                rifaTickets: qty, rifaTotal: total }; // alias
 
-            // Si la acción incluye create_rifa_order, crear el pedido ya
             if (action !== 'save_quantity') {
                 try {
                     const resp = await laravelPost('wa/rifa-order', {
-                        rifa_id: sessionData.rifaId, tickets: qty, wa_number: waNumber,
+                        rifa_id: sessionData.itemId || sessionData.rifaId,
+                        tickets: qty, wa_number: waNumber,
                     });
                     if (resp?.ok) {
                         sessionData = { ...sessionData,
                             orderNumber: resp.order_number,
+                            itemTotal:   Number(resp.monto).toFixed(2),
+                            itemCantidad: resp.tickets,
+                            itemNombre:  resp.rifa_nombre,
+                            itemOrderId: resp.order_id,
                             rifaTotal:   Number(resp.monto).toFixed(2),
                             rifaTickets: resp.tickets,
                             rifaNombre:  resp.rifa_nombre,
                             rifaOrderId: resp.order_id,
                         };
                     }
-                } catch(e) { console.error('create_rifa_order:', e.message); }
+                } catch(e) { console.error('create_order_lista:', e.message); }
             }
             break;
         }
 
-        case 'create_rifa_order': {
+        case 'create_order_lista':
+        case 'create_rifa_order': { // compatibilidad
             try {
                 const resp = await laravelPost('wa/rifa-order', {
-                    rifa_id:  sessionData.rifaId,
-                    tickets:  sessionData.rifaTickets || 1,
+                    rifa_id:   sessionData.itemId || sessionData.rifaId,
+                    tickets:   sessionData.itemCantidad || sessionData.rifaTickets || 1,
                     wa_number: waNumber,
                 });
                 if (resp?.ok) {
                     sessionData = { ...sessionData,
-                        orderNumber: resp.order_number,
-                        rifaTotal:   resp.monto.toFixed(2),
-                        rifaTickets: resp.tickets,
-                        rifaNombre:  resp.rifa_nombre,
-                        rifaOrderId: resp.order_id,
+                        orderNumber:  resp.order_number,
+                        itemTotal:    Number(resp.monto).toFixed(2),
+                        itemCantidad: resp.tickets,
+                        itemNombre:   resp.rifa_nombre,
+                        itemOrderId:  resp.order_id,
+                        rifaTotal:    Number(resp.monto).toFixed(2),
+                        rifaTickets:  resp.tickets,
+                        rifaNombre:   resp.rifa_nombre,
+                        rifaOrderId:  resp.order_id,
                     };
                 }
-            } catch(e) { console.error('create_rifa_order:', e.message); }
+            } catch(e) { console.error('create_order_lista:', e.message); }
             break;
         }
 
-        case 'save_rifa_payment': {
+        // ── Guardar datos del cliente (genérico) ──────────────
+        case 'save_nombre':
+        case 'save_rifa_nombre': { // compatibilidad
+            const nombre = body.trim();
+            sessionData = { ...sessionData, nombre };
+            const oid = sessionData.itemOrderId || sessionData.rifaOrderId;
+            if (oid) await laravelPost(`wa/rifa/${oid}/data`, { nombre });
+            break;
+        }
+        case 'save_documento':
+        case 'save_rifa_dni': { // compatibilidad
+            const documento = body.trim();
+            sessionData = { ...sessionData, documento, dni: documento };
+            const oid = sessionData.itemOrderId || sessionData.rifaOrderId;
+            if (oid) await laravelPost(`wa/rifa/${oid}/data`, { dni: documento });
+            break;
+        }
+        case 'save_ciudad':
+        case 'save_rifa_ciudad': { // compatibilidad
+            const ciudad = body.trim();
+            sessionData = { ...sessionData, ciudad };
+            const oid = sessionData.itemOrderId || sessionData.rifaOrderId;
+            if (oid) await laravelPost(`wa/rifa/${oid}/data`, { ciudad });
+            break;
+        }
+        case 'save_phone': {
+            sessionData = { ...sessionData, telefono: body.trim() };
+            break;
+        }
+
+        case 'save_rifa_payment': // compatibilidad
+        case 'save_payment': {
             if (msg.hasMedia && msg.type === 'image') {
                 try {
                     const media = await msg.downloadMedia();
-                    if (sessionData.rifaOrderId && media?.data)
-                        await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/payment-proof`,
+                    // Pedido lista
+                    const oidLista = sessionData.itemOrderId || sessionData.rifaOrderId;
+                    if (oidLista && media?.data)
+                        await laravelPost(`wa/rifa/${oidLista}/payment-proof`,
                             { image_base64: media.data, mimetype: media.mimetype || 'image/jpeg' });
-                } catch(e) { console.error('save_rifa_payment:', e.message); }
+                    // Pedido general
+                    if (sessionData.orderId && media?.data)
+                        await laravelPost(`wa/order/${sessionData.orderId}/payment-proof`,
+                            { image_base64: media.data, mimetype: media.mimetype || 'image/jpeg' });
+                } catch(e) { console.error('save_payment:', e.message); }
             }
-            break;
-        }
-
-        // ── Recopilar datos del participante (rifa) ───────────
-        case 'save_rifa_nombre': {
-            const nombre = body.trim();
-            sessionData = { ...sessionData, nombre };
-            if (sessionData.rifaOrderId)
-                await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/data`, { nombre });
-            break;
-        }
-        case 'save_rifa_dni': {
-            const dni = body.trim();
-            sessionData = { ...sessionData, dni };
-            if (sessionData.rifaOrderId)
-                await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/data`, { dni });
-            break;
-        }
-        case 'save_rifa_ciudad': {
-            const ciudad = body.trim();
-            sessionData = { ...sessionData, ciudad };
-            if (sessionData.rifaOrderId)
-                await laravelPost(`wa/rifa/${sessionData.rifaOrderId}/data`, { ciudad });
             break;
         }
     }

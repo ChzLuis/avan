@@ -6,23 +6,23 @@
     $botLabel = $botType === 'rifa' ? 'Bot Rifa' : 'Bot Principal';
     $inputTypes = ['text'=>'Texto libre','number'=>'Número','image'=>'Imagen','location'=>'Ubicación','option'=>'Opción de menú'];
     $actions = [
-        'none'               => 'Sin acción',
-        // Catálogo / Lista
-        'show_rifas'         => 'Mostrar lista de productos',
-        'select_rifa'        => 'Seleccionar ítem de lista',
-        'save_quantity'      => 'Guardar cantidad',
-        'create_rifa_order'  => 'Crear pedido',
-        // Datos del participante / cliente
-        'save_rifa_nombre'   => 'Guardar nombre',
-        'save_rifa_dni'      => 'Guardar DNI / documento',
-        'save_rifa_ciudad'   => 'Guardar ciudad',
-        'save_name'          => 'Guardar nombre (cliente)',
-        'save_phone'         => 'Guardar teléfono',
-        'save_address'       => 'Guardar dirección',
+        'none'                => 'Sin acción',
+        // Catálogo / Lista genérica
+        'show_lista'          => 'Cargar lista de ítems',
+        'select_item'         => 'Seleccionar ítem de lista',
+        'save_quantity'       => 'Guardar cantidad',
+        'create_order_lista'  => 'Crear pedido desde lista',
+        // Guardar datos del cliente
+        'save_nombre'         => 'Guardar nombre',
+        'save_documento'      => 'Guardar DNI / documento',
+        'save_ciudad'         => 'Guardar ciudad',
+        'save_phone'          => 'Guardar teléfono',
+        'save_address'        => 'Guardar dirección',
         // Pedido / pago
-        'create_order'       => 'Crear pedido general',
-        'save_payment'       => 'Guardar comprobante de pago',
-        'complete'           => 'Completar flujo',
+        'create_order'        => 'Crear pedido general',
+        'save_delivery'       => 'Guardar dirección de entrega',
+        'save_payment'        => 'Guardar comprobante de pago',
+        'complete'            => 'Completar flujo',
     ];
 @endphp
 
@@ -136,7 +136,20 @@
             <div>
                 <label class="label">Mensaje del bot</label>
                 <textarea id="s-message" rows="4" placeholder="Hola! Soy el bot de {negocio}. ¿En qué puedo ayudarte?&#10;&#10;1️⃣ Ver productos&#10;2️⃣ Hacer pedido" class="input resize-none"></textarea>
-                <p class="text-xs text-gray-400 mt-1">Variables: <code class="bg-gray-100 px-1 rounded">{negocio}</code> <code class="bg-gray-100 px-1 rounded">{rifas_lista}</code> <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code> <code class="bg-gray-100 px-1 rounded">{rifa_precio}</code> <code class="bg-gray-100 px-1 rounded">{rifa_total}</code> <code class="bg-gray-100 px-1 rounded">{nombre}</code> <code class="bg-gray-100 px-1 rounded">{dni}</code> <code class="bg-gray-100 px-1 rounded">{ciudad}</code></p>
+                <p class="text-xs text-gray-400 mt-1">Variables:
+                    <code class="bg-gray-100 px-1 rounded">{negocio}</code>
+                    <code class="bg-gray-100 px-1 rounded">{lista}</code>
+                    <code class="bg-gray-100 px-1 rounded">{item_nombre}</code>
+                    <code class="bg-gray-100 px-1 rounded">{item_precio}</code>
+                    <code class="bg-gray-100 px-1 rounded">{item_cantidad}</code>
+                    <code class="bg-gray-100 px-1 rounded">{item_total}</code>
+                    <code class="bg-gray-100 px-1 rounded">{nombre}</code>
+                    <code class="bg-gray-100 px-1 rounded">{documento}</code>
+                    <code class="bg-gray-100 px-1 rounded">{ciudad}</code>
+                    <code class="bg-gray-100 px-1 rounded">{telefono}</code>
+                    <code class="bg-gray-100 px-1 rounded">{order_number}</code>
+                    <code class="bg-gray-100 px-1 rounded">{total}</code>
+                </p>
             </div>
             <div>
                 <label class="label">Imágenes del bot <span class="text-gray-400 font-normal">(hasta 5)</span></label>
@@ -496,7 +509,20 @@ function selectState(id) {
                 <div>
                     <label class="label">Mensaje del bot</label>
                     <textarea id="e-message" rows="6" class="input resize-none">${escHtml(state.message)}</textarea>
-                    <p class="text-xs text-gray-400 mt-1">Variables: <code class="bg-gray-100 px-1 rounded">{negocio}</code> <code class="bg-gray-100 px-1 rounded">{rifas_lista}</code> <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code> <code class="bg-gray-100 px-1 rounded">{rifa_precio}</code> <code class="bg-gray-100 px-1 rounded">{rifa_total}</code> <code class="bg-gray-100 px-1 rounded">{nombre}</code> <code class="bg-gray-100 px-1 rounded">{dni}</code> <code class="bg-gray-100 px-1 rounded">{ciudad}</code></p>
+                    <p class="text-xs text-gray-400 mt-1">Variables:
+                        <code class="bg-gray-100 px-1 rounded">{negocio}</code>
+                        <code class="bg-gray-100 px-1 rounded">{lista}</code>
+                        <code class="bg-gray-100 px-1 rounded">{item_nombre}</code>
+                        <code class="bg-gray-100 px-1 rounded">{item_precio}</code>
+                        <code class="bg-gray-100 px-1 rounded">{item_cantidad}</code>
+                        <code class="bg-gray-100 px-1 rounded">{item_total}</code>
+                        <code class="bg-gray-100 px-1 rounded">{nombre}</code>
+                        <code class="bg-gray-100 px-1 rounded">{documento}</code>
+                        <code class="bg-gray-100 px-1 rounded">{ciudad}</code>
+                        <code class="bg-gray-100 px-1 rounded">{telefono}</code>
+                        <code class="bg-gray-100 px-1 rounded">{order_number}</code>
+                        <code class="bg-gray-100 px-1 rounded">{total}</code>
+                    </p>
                 </div>
                 <div>
                     <label class="label">Imágenes <span class="text-gray-400 font-normal">(hasta 5)</span></label>
