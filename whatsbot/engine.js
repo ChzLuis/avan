@@ -510,10 +510,10 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
         case 'show_rifas': { // compatibilidad
             sessionData = await loadRifasLista(sessionData);
             if (sessionData.rifas?.length) {
-                const stateMsg = FLOW.states[currentState]?.message || '🎰 *Productos disponibles:*';
+                const nextKey  = transition?.to || '';
+                const stateMsg = (nextKey && FLOW.states[nextKey]?.message) || '🎰 *Productos disponibles:*';
                 await enviarListaConImagenes(msg, sessionData.rifas, fillMessage(stateMsg, buildVars(sessionData)));
-                // Guardar sesión y salir — ya enviamos el mensaje manualmente
-                await saveSession(waNumber, transition?.to || currentState, sessionData);
+                if (nextKey) await saveSession(waNumber, nextKey, sessionData);
                 return;
             }
             break;
