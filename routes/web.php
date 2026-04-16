@@ -133,6 +133,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/bots/states',                     [BotStatusController::class, 'stateStore'])->name('bots.states.store');
         Route::put('/bots/states/{state}',              [BotStatusController::class, 'stateUpdate'])->name('bots.states.update');
         Route::delete('/bots/states/{state}',           [BotStatusController::class, 'stateDestroy'])->name('bots.states.destroy');
+        Route::post('/bots/states/{state}/move',        [BotStatusController::class, 'stateMove'])->name('bots.states.move');
         Route::post('/bots/transitions',                [BotStatusController::class, 'transitionStore'])->name('bots.transitions.store');
         Route::delete('/bots/transitions/{transition}', [BotStatusController::class, 'transitionDestroy'])->name('bots.transitions.destroy');
         Route::post('/bots/config',                     [BotStatusController::class, 'configSave'])->name('bots.config.save');

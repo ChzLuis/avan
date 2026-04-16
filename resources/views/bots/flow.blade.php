@@ -54,15 +54,27 @@
                 </div>
             @else
                 @foreach($allStates as $state)
-                <div class="state-row border-b border-gray-100 px-4 py-3 cursor-pointer hover:bg-gray-50 transition {{ !$state->is_active ? 'opacity-50' : '' }}"
+                <div class="state-row border-b border-gray-100 px-3 py-3 cursor-pointer hover:bg-gray-50 transition {{ !$state->is_active ? 'opacity-50' : '' }}"
                      onclick="selectState({{ $state->id }})"
                      id="row-{{ $state->id }}">
                     <div class="flex items-center gap-2">
+                        <div class="flex flex-col gap-0.5 flex-shrink-0" onclick="event.stopPropagation()">
+                            <button onclick="moveState({{ $state->id }}, 'up')"
+                                    class="text-gray-300 hover:text-gray-600 transition leading-none"
+                                    title="Subir">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+                            </button>
+                            <button onclick="moveState({{ $state->id }}, 'down')"
+                                    class="text-gray-300 hover:text-gray-600 transition leading-none"
+                                    title="Bajar">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        </div>
                         <div class="w-2 h-2 rounded-full flex-shrink-0 {{ $state->is_active ? 'bg-indigo-500' : 'bg-gray-300' }}"></div>
                         <span class="text-sm font-medium text-gray-800 truncate">{{ $state->label }}</span>
                         <span class="ml-auto text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">{{ $state->key }}</span>
                     </div>
-                    <div class="flex items-center gap-2 mt-1 ml-4">
+                    <div class="flex items-center gap-2 mt-1 ml-10">
                         <span class="text-[10px] text-gray-400">{{ $inputTypes[$state->input_type] ?? $state->input_type }}</span>
                         <span class="text-[10px] text-gray-400">·</span>
                         <span class="text-[10px] text-gray-400">{{ $state->transitions->count() }} transiciones</span>
@@ -344,6 +356,16 @@ async function deleteState(id) {
     const r = await fetch(`${baseUrl}/states/${id}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN':csrf, 'Accept':'application/json' }
+    });
+    if ((await r.json()).ok) location.reload();
+}
+
+// ── Reordenar estados ─────────────────────────────────────────
+async function moveState(id, direction) {
+    const r = await fetch(`${baseUrl}/states/${id}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':csrf, 'Accept':'application/json' },
+        body: JSON.stringify({ direction })
     });
     if ((await r.json()).ok) location.reload();
 }

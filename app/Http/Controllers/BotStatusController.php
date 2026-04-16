@@ -238,6 +238,41 @@ class BotStatusController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function stateMove(Request $request, BotState $state)
+    {
+        $project = app('active_project');
+        abort_unless($state->flow->project_id === $project->id, 403);
+
+        $direction = $request->input('direction'); // 'up' | 'down'
+        $flowId    = $state->flow_id;
+        $states    = BotState::where('flow_id', $flowId)->orderBy('sort_order')->get();
+
+        $index = $states->search(fn($s) => $s->id === $state->id);
+        $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+        if ($swapIndex < 0 || $swapIndex >= $states->count()) {
+            return response()->json(['ok' => false]);
+        }
+
+        $current = $states[$index];
+        $swap    = $states[$swapIndex];
+
+        $tmpOrder        = $current->sort_order;
+        $current->sort_order = $swap->sort_order ?: $swapIndex;
+        $swap->sort_order    = $tmpOrder ?: $index;
+
+        // Asegurar que sort_order sea único
+        if ($current->sort_order === $swap->sort_order) {
+            $current->sort_order = $index;
+            $swap->sort_order    = $swapIndex;
+        }
+
+        $current->save();
+        $swap->save();
+
+        return response()->json(['ok' => true]);
+    }
+
     // ── Transiciones ──────────────────────────────────────────────
     public function transitionStore(Request $request)
     {
