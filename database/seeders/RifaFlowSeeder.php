@@ -20,11 +20,15 @@ class RifaFlowSeeder extends Seeder
 {
     public function run(): void
     {
-        $project = Project::first();
+        // Usar el proyecto del BotInstance rifa si ya existe, si no el primero
+        $bot = BotInstance::where('bot_type', 'rifa')->first();
+        $project = $bot
+            ? Project::find($bot->project_id)
+            : Project::first();
+
         if (!$project) { $this->command->error('No hay proyectos.'); return; }
 
-        $bot = BotInstance::where('bot_type', 'rifa')->first()
-            ?? BotInstance::create([
+        $bot = $bot ?? BotInstance::create([
                 'project_id'  => $project->id,
                 'bot_type'    => 'rifa',
                 'name'        => 'Bot Rifa',
