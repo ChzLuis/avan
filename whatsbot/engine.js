@@ -180,7 +180,25 @@ function buildVars(data) {
         dni:          data.dni||'',
         celular:      data.celular||'',
         ciudad:       data.ciudad||'',
+        // Lista dinámica de rifas (se carga con loadRifasLista)
+        rifas_lista:  data.rifasLista||'',
     };
+}
+
+// ── Cargar lista de rifas formateada como texto ───────────────
+async function loadRifasLista(sessionData) {
+    try {
+        const params = new URLSearchParams({ token: BOT_TOKEN, bot: BOT_TYPE });
+        const res    = await fetch(`${LARAVEL_URL}/wa/rifas?${params}`);
+        const data   = await res.json();
+        if (!data.ok || !data.rifas?.length) return { ...sessionData, rifasLista: '⚠️ No hay rifas disponibles en este momento.' };
+
+        const lista = data.rifas.map((r, i) => `*${i+1}.* ${r.texto}`).join('\n\n');
+        return { ...sessionData, rifas: data.rifas, rifasLista: lista };
+    } catch(e) {
+        console.error('loadRifasLista:', e.message);
+        return sessionData;
+    }
 }
 
 async function enviar(msg, texto) {
@@ -310,9 +328,15 @@ client.on('message', async msg => {
         sessionData = await executeAction(msg, waNumber, body, transition, sessionData);
 
         const nextStateKey = transition.to || currentState;
+
+        // Si el siguiente estado usa {rifas_lista}, precargamos las rifas
+        const nextState = FLOW.states[nextStateKey];
+        if (nextState?.message?.includes('{rifas_lista}')) {
+            sessionData = await loadRifasLista(sessionData);
+        }
+
         await saveSession(waNumber, nextStateKey, sessionData);
 
-        const nextState = FLOW.states[nextStateKey];
         if (nextState?.message) {
             const text   = fillMessage(nextState.message, buildVars(sessionData));
             const images = nextState.images || [];
@@ -449,32 +473,8 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
 
         // ── Acciones de RIFA ──────────────────────────────────
         case 'show_rifas': {
-            // Carga rifas de la API y las envía como mensajes con imagen
-            try {
-                const params = new URLSearchParams({ token: BOT_TOKEN, bot: BOT_TYPE });
-                const res    = await fetch(`${LARAVEL_URL}/wa/rifas?${params}`);
-                const data   = await res.json();
-                if (data.ok && data.rifas.length > 0) {
-                    sessionData = { ...sessionData, rifas: data.rifas };
-                    // Enviar cada rifa con su imagen
-                    for (let i = 0; i < data.rifas.length; i++) {
-                        const r   = data.rifas[i];
-                        const txt = `*${i+1}.* ${r.texto}`;
-                        if (r.imagen_url) {
-                            try {
-                                const media = await MessageMedia.fromUrl(r.imagen_url, { unsafeMime: true });
-                                await client.sendMessage(msg.from, media, { caption: txt });
-                            } catch(e) {
-                                await enviar(msg, txt);
-                            }
-                        } else {
-                            await enviar(msg, txt);
-                        }
-                    }
-                } else {
-                    await enviar(msg, '⚠️ No hay rifas disponibles en este momento.');
-                }
-            } catch(e) { console.error('show_rifas:', e.message); }
+            // Solo carga las rifas en sesión; el mensaje del estado usa {rifas_lista}
+            sessionData = await loadRifasLista(sessionData);
             break;
         }
 
