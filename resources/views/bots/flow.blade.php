@@ -5,7 +5,25 @@
     $csrf    = csrf_token();
     $botLabel = $botType === 'rifa' ? 'Bot Rifa' : 'Bot Principal';
     $inputTypes = ['text'=>'Texto libre','number'=>'Número','image'=>'Imagen','location'=>'Ubicación','option'=>'Opción de menú'];
-    $actions = ['none'=>'Sin acción','show_rifas'=>'Mostrar rifas','select_rifa'=>'Seleccionar rifa','save_quantity'=>'Guardar cantidad','create_rifa_order'=>'Crear pedido rifa','save_rifa_nombre'=>'Guardar nombre participante','save_rifa_dni'=>'Guardar DNI','save_rifa_ciudad'=>'Guardar ciudad','save_name'=>'Guardar nombre','save_phone'=>'Guardar teléfono','save_address'=>'Guardar dirección','create_order'=>'Crear pedido','save_payment'=>'Guardar comprobante pago','complete'=>'Completar flujo'];
+    $actions = [
+        'none'               => 'Sin acción',
+        // Catálogo / Lista
+        'show_rifas'         => 'Mostrar lista de productos',
+        'select_rifa'        => 'Seleccionar ítem de lista',
+        'save_quantity'      => 'Guardar cantidad',
+        'create_rifa_order'  => 'Crear pedido',
+        // Datos del participante / cliente
+        'save_rifa_nombre'   => 'Guardar nombre',
+        'save_rifa_dni'      => 'Guardar DNI / documento',
+        'save_rifa_ciudad'   => 'Guardar ciudad',
+        'save_name'          => 'Guardar nombre (cliente)',
+        'save_phone'         => 'Guardar teléfono',
+        'save_address'       => 'Guardar dirección',
+        // Pedido / pago
+        'create_order'       => 'Crear pedido general',
+        'save_payment'       => 'Guardar comprobante de pago',
+        'complete'           => 'Completar flujo',
+    ];
 @endphp
 
 <div class="flex flex-col h-full w-full overflow-hidden">
