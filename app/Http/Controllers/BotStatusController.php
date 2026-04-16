@@ -9,6 +9,7 @@ use App\Models\BotTransition;
 use App\Models\BotConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\WaBotController;
 
 class BotStatusController extends Controller
@@ -329,9 +330,24 @@ class BotStatusController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    // ── Exportar flujo a JSON local (fallback para el bot) ────────────────────
+    // ── Recargar flujo en el bot via HTTP ────────────────────────
+    private function reloadBotFlow(BotFlow $flow): void
+    {
+        try {
+            $bot  = BotInstance::where('project_id', $flow->project_id)
+                                ->where('bot_type', $flow->bot_type)
+                                ->first();
+            $port = $bot?->port ?? 3001;
+            Http::timeout(3)->post("http://127.0.0.1:{$port}/reload", [
+                'token' => 'wa-bot-secret-2024',
+            ]);
+        } catch (\Throwable) {}
+    }
+
+    // ── Exportar flujo a JSON local y notificar al bot ───────────
     private function exportFlow(BotFlow $flow): void
     {
+        $this->reloadBotFlow($flow);
         try {
             $flow->load('states.transitions.toState');
             $states = $flow->states->map(fn($s) => [

@@ -583,6 +583,21 @@ const MENSAJES_ADMIN = {
 };
 
 const server = http.createServer(async (req, res) => {
+    // ── Reload flujo desde portal ─────────────────────────────
+    if (req.method === 'POST' && req.url === '/reload') {
+        let raw = ''; req.on('data', c => raw += c);
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(raw||'{}');
+                if (data.token !== BOT_TOKEN) { res.writeHead(401); res.end(); return; }
+                await loadFlow();
+                console.log(`🔄 [${BOT_TYPE}] Flujo recargado desde portal`);
+                res.writeHead(200,{'Content-Type':'application/json'}); res.end(JSON.stringify({ok:true}));
+            } catch(e) { res.writeHead(500); res.end(); }
+        });
+        return;
+    }
+
     if (req.method !== 'POST' || req.url !== '/action') { res.writeHead(404); res.end(); return; }
     let raw = '';
     req.on('data', c => raw += c);
