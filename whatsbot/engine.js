@@ -463,6 +463,13 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
             const nombre = body.replace(/^hola[,!.\s]*/i,'').trim() || body;
             return { ...sessionData, nombre: nombre || body };
         }
+        case 'save_nombre_documento': {
+            // Formato esperado: "Juan Pérez, 12345678"
+            const partes = body.split(',').map(s => s.trim());
+            const nombre = partes[0] || body;
+            const documento = partes[1]?.replace(/\D/g,'') || '';
+            return { ...sessionData, nombre, documento };
+        }
         case 'create_order': {
             const nombreMatch = body.match(/👤 \*?Cliente:\*? (.+)/);
             const totalMatch  = body.match(/💰 \*?TOTAL:?\*? ?:? ?([A-Z]{0,3}\.?\s*[\d.,]+)/);
