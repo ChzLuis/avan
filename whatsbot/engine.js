@@ -199,13 +199,13 @@ function buildVars(data) {
     };
 }
 
-// ── Cargar lista de rifas formateada como texto ───────────────
+// ── Cargar lista de productos formateada ─────────────────────
 async function loadRifasLista(sessionData) {
     try {
         const params = new URLSearchParams({ token: BOT_TOKEN, bot: BOT_TYPE });
         const res    = await fetch(`${LARAVEL_URL}/wa/rifas?${params}`);
         const data   = await res.json();
-        if (!data.ok || !data.rifas?.length) return { ...sessionData, rifasLista: '⚠️ No hay rifas disponibles en este momento.' };
+        if (!data.ok || !data.rifas?.length) return { ...sessionData, rifasLista: '⚠️ No hay productos disponibles en este momento.' };
 
         const lista = data.rifas.map((r, i) => `*${i+1}.* ${r.texto}`).join('\n\n');
         return { ...sessionData, rifas: data.rifas, rifasLista: lista };
@@ -213,6 +213,25 @@ async function loadRifasLista(sessionData) {
         console.error('loadRifasLista:', e.message);
         return sessionData;
     }
+}
+
+// ── Enviar lista con imágenes individuales ───────────────────
+async function enviarListaConImagenes(msg, rifas, mensajeInicio) {
+    try {
+        await enviar(msg, mensajeInicio);
+        for (let i = 0; i < rifas.length; i++) {
+            const r       = rifas[i];
+            const caption = `*${i+1}.* ${r.texto}`;
+            if (r.imagen_url) {
+                try {
+                    const media = await MessageMedia.fromUrl(r.imagen_url, { unsafeMime: true });
+                    await msg.reply(media, undefined, { caption });
+                    continue;
+                } catch(e) { console.warn(`Imagen producto ${i+1} no enviada:`, e.message); }
+            }
+            await enviar(msg, caption);
+        }
+    } catch(e) { console.error('enviarListaConImagenes:', e.message); }
 }
 
 async function enviar(msg, texto) {
@@ -490,6 +509,13 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
         case 'show_lista':
         case 'show_rifas': { // compatibilidad
             sessionData = await loadRifasLista(sessionData);
+            if (sessionData.rifas?.length) {
+                const stateMsg = FLOW.states[currentState]?.message || '🎰 *Productos disponibles:*';
+                await enviarListaConImagenes(msg, sessionData.rifas, fillMessage(stateMsg, buildVars(sessionData)));
+                // Guardar sesión y salir — ya enviamos el mensaje manualmente
+                await saveSession(waNumber, transition?.to || currentState, sessionData);
+                return;
+            }
             break;
         }
 
@@ -497,21 +523,12 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
         case 'select_rifa': { // compatibilidad
             const rifas   = sessionData.rifas || [];
             const selIdx  = parseInt(body) - 1;
-            const selRifa = rifas[selIdx];
+            const selRifa = rifas[selIdx] || rifas.find(r => r.nombre.toLowerCase().includes(lower));
             if (selRifa) {
-                sessionData = { ...sessionData, itemId: selRifa.id, itemNombre: selRifa.nombre,
-                    itemPrecio: selRifa.precio_ticket, itemMin: selRifa.min_tickets,
-                    // alias para compatibilidad con flujos viejos
-                    rifaId: selRifa.id, rifaNombre: selRifa.nombre,
-                    rifaPrecio: selRifa.precio_ticket, rifaMin: selRifa.min_tickets };
-            } else {
-                const found = rifas.find(r => r.nombre.toLowerCase().includes(lower));
-                if (found) {
-                    sessionData = { ...sessionData, itemId: found.id, itemNombre: found.nombre,
-                        itemPrecio: found.precio_ticket, itemMin: found.min_tickets,
-                        rifaId: found.id, rifaNombre: found.nombre,
-                        rifaPrecio: found.precio_ticket, rifaMin: found.min_tickets };
-                }
+                const precio = selRifa.precio ?? selRifa.precio_ticket ?? 0;
+                sessionData = { ...sessionData,
+                    itemId: selRifa.id, itemNombre: selRifa.nombre, itemPrecio: precio,
+                    rifaId: selRifa.id, rifaNombre: selRifa.nombre, rifaPrecio: precio };
             }
             break;
         }
