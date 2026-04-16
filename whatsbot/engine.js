@@ -598,6 +598,33 @@ client.on("message", async (msg) => {
 
     if (!FLOW) await loadFlow();
 
+    // ── Mensajes no-texto fuera de lugar ─────────────────────
+    const session0 = await getSession(waNumber);
+    const currentState0 = session0?.state || 'inicio';
+    const stateConfig0 = FLOW?.states?.[currentState0];
+    const expectedType = stateConfig0?.input_type;
+
+    if (msg.type === 'audio' || msg.type === 'ptt') {
+      await enviar(msg, '🎙️ Recibí un audio, pero aquí necesito que escribas tu respuesta.\n\n' + (stateConfig0?.message ? '👇 ' + stateConfig0.message.split('\n')[0] : 'Por favor escribe un mensaje de texto.'));
+      return;
+    }
+    if (msg.type === 'sticker') {
+      await enviar(msg, '😄 ¡Gracias por el sticker! Pero necesito que escribas tu respuesta.\n\n' + (stateConfig0?.message ? '👇 ' + stateConfig0.message.split('\n')[0] : 'Por favor escribe un mensaje de texto.'));
+      return;
+    }
+    if (msg.type === 'video') {
+      await enviar(msg, '🎥 Recibí un video, pero aquí no es necesario. ' + (expectedType === 'image' ? 'Envía una *imagen* (captura de pantalla) del comprobante de pago.' : 'Por favor escribe tu respuesta.'));
+      return;
+    }
+    if (msg.hasMedia && msg.type === 'image' && expectedType !== 'image') {
+      await enviar(msg, '📸 Recibí una imagen, pero en este paso necesito que escribas tu respuesta.\n\n' + (stateConfig0?.message ? '👇 ' + stateConfig0.message.split('\n')[0] : ''));
+      return;
+    }
+    if (msg.hasMedia && msg.type !== 'image') {
+      await enviar(msg, '📎 Recibí un archivo, pero aquí solo necesito texto. Por favor escribe tu respuesta.');
+      return;
+    }
+
     const session = await getSession(waNumber);
     let currentState = session?.state || "inicio";
     let sessionData = session?.data || {};
@@ -1107,7 +1134,11 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
     case "save_solo_nombre": {
       const nombreValid = validarNombre(body);
       if (!nombreValid.valido) {
-        await enviar(msg, nombreValid.error + "\n\n📝 Escribe solo tu nombre completo (letras y espacios).");
+        await enviar(msg,
+          `${nombreValid.error}\n\n` +
+          `👤 Escribe solo tu *nombre completo* con letras y espacios.\n` +
+          `_Ejemplo: Juan Pérez García_`
+        );
         return null;
       }
       return { ...sessionData, nombre: nombreValid.valor };
@@ -1117,7 +1148,11 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
       const soloDigitos = body.replace(/\D/g, "");
       const dniValid = validarDNI(soloDigitos);
       if (!dniValid.valido) {
-        await enviar(msg, dniValid.error + "\n\n📝 Escribe solo tu DNI (8 dígitos numéricos).");
+        await enviar(msg,
+          `${dniValid.error}\n\n` +
+          `🆔 Escribe solo tu *DNI* (8 números, sin letras ni espacios).\n` +
+          `_Ejemplo: 12345678_`
+        );
         return null;
       }
       return { ...sessionData, documento: dniValid.valor, dni: dniValid.valor };
@@ -1127,7 +1162,11 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
       const soloDigCel = body.replace(/\D/g, "");
       const celValid = validarTelefono(soloDigCel);
       if (!celValid.valido) {
-        await enviar(msg, celValid.error + "\n\n📝 Escribe solo tu número de celular (9 dígitos, ej: 987654321).");
+        await enviar(msg,
+          `${celValid.error}\n\n` +
+          `📱 Escribe solo tu *número de celular* (9 dígitos).\n` +
+          `_Ejemplo: 987654321_`
+        );
         return null;
       }
 
