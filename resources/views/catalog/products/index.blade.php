@@ -35,7 +35,7 @@
             </svg>
             Servicios
         </a>
-        <button @click="openNew()"
+        <button onclick="window.dispatchEvent(new Event('open-new-product'))"
                 class="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -258,7 +258,7 @@
                  event.target.value = '';
 
                  if (data.created === 0 && (!data.errors || data.errors.length === 0)) {
-                     alert('⚠️ No se importó ningún producto.\n\nVerifica que el archivo tenga datos desde la fila 3 en adelante y que la columna "nombre" esté completa.');
+                     alert('⚠️ No se importó ningún producto.\n\nVerifica que el archivo tenga datos desde la fila 3 en adelante y que la columna \'nombre\' esté completa.');
                      return;
                  }
 
@@ -289,6 +289,7 @@
             const el = document.getElementById('product-count-label');
             if (el) el.textContent = v.length + ' producto' + (v.length !== 1 ? 's' : '');
         });
+        window.addEventListener('open-new-product', () => { $data.openNew(); $data.panel = 'detail'; });
      ">
 
 {{-- ─── PANEL FILTROS (56px) ─────────────────────────────────────── --}}
