@@ -31,10 +31,13 @@ class RifaVenta extends Model
 
     public function assignTicketNumbers(): array
     {
-        $used    = self::where('rifa_id', $this->rifa_id)
-                       ->where('status', '!=', 'cancelado')
-                       ->where('id', '!=', $this->id)
-                       ->get()->flatMap(fn($v) => $v->ticket_numbers ?? [])->toArray();
+        $query = self::where('project_id', $this->project_id)
+                     ->where('status', '!=', 'cancelado')
+                     ->where('id', '!=', $this->id);
+        if ($this->rifa_id) {
+            $query->where('rifa_id', $this->rifa_id);
+        }
+        $used = $query->get()->flatMap(fn($v) => $v->ticket_numbers ?? [])->toArray();
         $numbers = [];
         $attempts = 0;
         while (count($numbers) < $this->tickets && $attempts < 1000) {

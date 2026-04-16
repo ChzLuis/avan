@@ -191,7 +191,7 @@
 
     {{-- ── Nav ── --}}
     @php
-        $sComActivo  = request()->routeIs('pos*') || request()->routeIs('orders*') || request()->routeIs('quotes*') || request()->routeIs('invoices*');
+        $sComActivo  = request()->routeIs('pos*') || request()->routeIs('orders*') || request()->routeIs('quotes*') || request()->routeIs('invoices*') || request()->routeIs('rifas.index');
         $sCatActivo  = request()->routeIs('catalog') || request()->routeIs('products.*') || request()->routeIs('services.*') || request()->routeIs('categories.*') || request()->routeIs('reviews.*');
         $sEmpActivo  = request()->routeIs('clients*') || request()->routeIs('agenda*') || request()->routeIs('hr.*') || request()->routeIs('sedes.*') || request()->routeIs('proveedores.*') || request()->routeIs('groups.*');
         $sCfgActivo  = request()->routeIs('settings*') || request()->routeIs('roles.*') || request()->routeIs('catalogs*') || request()->routeIs('projects.panel*') || request()->routeIs('settings.seo*');
@@ -445,6 +445,20 @@
         </a>
         @endif
         @endforeach
+
+        {{-- Pedidos Bot --}}
+        @if($pid)
+        @php $rifasActivo = request()->routeIs('rifas.index'); @endphp
+        <a href="{{ route('rifas.index') }}" class="ni relative {{ $rifasActivo?'active':'' }}">
+            <span class="ic-wrap" style="background:{{ $rifasActivo ? 'rgba(37,211,102,.15)' : 'transparent' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:{{ $rifasActivo ? '#25d366' : '#4b5563' }}">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+            </span>
+            <span class="ni-label" x-show="open || mob" x-cloak>Pedidos Bot</span>
+            <span class="rail-tip" x-show="!open && !mob" x-cloak>Pedidos Bot</span>
+        </a>
+        @endif
 
         {{-- Propuestas BIXO --}}
         @if($pid)

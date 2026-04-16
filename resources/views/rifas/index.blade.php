@@ -52,15 +52,25 @@
     {{-- Comprobante --}}
     <div class="flex-shrink-0">
         @if($v->payment_proof)
-        <a href="{{ asset($v->payment_proof) }}" target="_blank"
-           class="flex items-center gap-1 text-xs text-indigo-600 hover:underline">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            Ver comprobante
+        @php
+            $proofUrl = str_starts_with($v->payment_proof, 'http')
+                ? $v->payment_proof
+                : (str_starts_with($v->payment_proof, 'storage/')
+                    ? asset($v->payment_proof)
+                    : asset('storage/' . $v->payment_proof));
+            // Si es ruta pública (uploads/)
+            if (str_starts_with($v->payment_proof, 'uploads/')) {
+                $proofUrl = asset($v->payment_proof);
+            }
+        @endphp
+        <a href="{{ $proofUrl }}" target="_blank" class="block">
+            <img src="{{ $proofUrl }}" alt="Comprobante"
+                 class="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition cursor-zoom-in">
         </a>
         @else
-        <span class="text-xs text-gray-400">Sin comprobante</span>
+        <div class="w-16 h-16 rounded-lg border border-dashed border-gray-300 flex items-center justify-center">
+            <span class="text-xs text-gray-400 text-center leading-tight">Sin<br>comprobante</span>
+        </div>
         @endif
     </div>
 
@@ -85,10 +95,17 @@
         <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ $statusClass }}">{{ $statusLabel }}</span>
 
         @if($v->status === 'pendiente')
+        @if($v->payment_proof)
         <button onclick="validar({{ $v->id }})"
-                class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
+                class="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition font-semibold">
             ✓ Validar pago
         </button>
+        @else
+        <button onclick="validar({{ $v->id }})"
+                class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
+            ✓ Validar
+        </button>
+        @endif
         <button onclick="cancelar({{ $v->id }})"
                 class="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition">
             Cancelar

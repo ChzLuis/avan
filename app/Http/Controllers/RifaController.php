@@ -277,12 +277,41 @@ class RifaController extends Controller
         $token = $request->get('token') ?? $request->input('token');
         if ($token !== 'wa-bot-secret-2024') return response()->json(['ok'=>false], 401);
 
-        $rifaId   = $request->input('rifa_id');
+        $itemId   = $request->input('rifa_id');   // puede ser product_id
         $tickets  = (int) $request->input('tickets', 1);
         $waNumber = $request->input('wa_number');
+        $nombre   = $request->input('nombre');
+        $dni      = $request->input('dni');
 
-        $rifa = Rifa::find($rifaId);
-        if (!$rifa) return response()->json(['ok' => false, 'error' => 'Rifa no encontrada'], 404);
+        // Buscar primero en Product, fallback a Rifa
+        $product = \App\Models\Product::find($itemId);
+
+        if ($product) {
+            $monto = $product->price * $tickets;
+            $venta = RifaVenta::create([
+                'project_id'  => $product->project_id,
+                'order_number'=> RifaVenta::generateOrderNumber(),
+                'wa_number'   => $waNumber,
+                'plan_nombre' => $product->name,
+                'tickets'     => $tickets,
+                'monto'       => $monto,
+                'nombre'      => $nombre,
+                'dni'         => $dni,
+                'status'      => 'pendiente',
+            ]);
+
+            return response()->json([
+                'ok'           => true,
+                'order_id'     => $venta->id,
+                'order_number' => $venta->order_number,
+                'monto'        => $monto,
+                'tickets'      => $tickets,
+                'rifa_nombre'  => $product->name,
+            ]);
+        }
+
+        $rifa = Rifa::find($itemId);
+        if (!$rifa) return response()->json(['ok' => false, 'error' => 'Producto no encontrado'], 404);
 
         $monto = $rifa->precio_ticket * $tickets;
 
@@ -294,6 +323,8 @@ class RifaController extends Controller
             'plan_nombre' => $rifa->nombre,
             'tickets'     => $tickets,
             'monto'       => $monto,
+            'nombre'      => $nombre,
+            'dni'         => $dni,
             'status'      => 'pendiente',
         ]);
 

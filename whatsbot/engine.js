@@ -465,10 +465,41 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
         }
         case 'save_nombre_documento': {
             // Formato esperado: "Juan Pérez, 12345678"
-            const partes = body.split(',').map(s => s.trim());
-            const nombre = partes[0] || body;
+            const partes   = body.split(',').map(s => s.trim());
+            const nombre   = partes[0] || body;
             const documento = partes[1]?.replace(/\D/g,'') || '';
-            return { ...sessionData, nombre, documento };
+            sessionData = { ...sessionData, nombre, documento, dni: documento };
+
+            // Si aún no hay pedido en DB, crear uno ahora
+            if (!sessionData.itemOrderId && !sessionData.rifaOrderId) {
+                try {
+                    const resp = await laravelPost('wa/rifa-order', {
+                        rifa_id:  sessionData.itemId || sessionData.rifaId,
+                        tickets:  sessionData.itemCantidad || sessionData.rifaTickets || 1,
+                        wa_number: waNumber,
+                        nombre,
+                        dni: documento,
+                    });
+                    if (resp?.ok) {
+                        sessionData = { ...sessionData,
+                            orderNumber:  resp.order_number,
+                            itemTotal:    Number(resp.monto).toFixed(2),
+                            itemCantidad: resp.tickets,
+                            itemNombre:   resp.rifa_nombre,
+                            itemOrderId:  resp.order_id,
+                            rifaTotal:    Number(resp.monto).toFixed(2),
+                            rifaTickets:  resp.tickets,
+                            rifaNombre:   resp.rifa_nombre,
+                            rifaOrderId:  resp.order_id,
+                        };
+                    }
+                } catch(e) { console.error('save_nombre_documento create_order:', e.message); }
+            } else {
+                // Ya existe pedido, actualizar nombre/dni
+                const oid = sessionData.itemOrderId || sessionData.rifaOrderId;
+                if (oid) await laravelPost(`wa/rifa/${oid}/data`, { nombre, dni: documento });
+            }
+            return sessionData;
         }
         case 'create_order': {
             const nombreMatch = body.match(/👤 \*?Cliente:\*? (.+)/);
@@ -505,17 +536,6 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
             sessionData = { ...sessionData, ...d };
             break;
         }
-        case 'save_payment': {
-            if (msg.hasMedia && msg.type === 'image') {
-                try {
-                    const media = await msg.downloadMedia();
-                    if (sessionData.orderId && media?.data)
-                        await laravelPost(`wa/order/${sessionData.orderId}/payment-proof`,{ image_base64:media.data, mimetype:media.mimetype||'image/jpeg' });
-                } catch(e) { console.error('Comprobante:', e.message); }
-            }
-            break;
-        }
-
         // ── Catálogo / Lista genérica ─────────────────────────
         case 'show_lista':
         case 'show_rifas': { // compatibilidad
