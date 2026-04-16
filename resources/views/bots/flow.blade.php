@@ -237,9 +237,9 @@ function removeImage(idx) {
 function renderPreviews() {
     const container = document.getElementById('s-image-previews');
     container.innerHTML = stateImages.map((url, i) => `
-        <div class="relative group w-16 h-16">
+        <div class="relative w-16 h-16">
             <img src="${url}" class="w-16 h-16 object-cover rounded-lg border border-gray-200">
-            <button onclick="removeImage(${i})" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center">✕</button>
+            <button onclick="removeImage(${i})" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center shadow">✕</button>
         </div>`).join('');
     // Mostrar add más si hay menos de 5
     if (stateImages.length < 5) {
@@ -391,9 +391,9 @@ function renderPreviewsInline() {
     const c = document.getElementById('e-image-previews');
     if (!c) return;
     c.innerHTML = stateImages.map((url,i) => `
-        <div class="relative group w-16 h-16">
+        <div class="relative w-16 h-16">
             <img src="${url}" class="w-16 h-16 object-cover rounded-lg border border-gray-200">
-            <button onclick="removeImageInline(${i})" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center">✕</button>
+            <button onclick="removeImageInline(${i})" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center shadow">✕</button>
         </div>`).join('');
     if (stateImages.length < 5) {
         c.innerHTML += `<div onclick="document.getElementById('e-image-input').click()" class="w-16 h-16 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center cursor-pointer hover:border-indigo-300 text-gray-300 text-xl">+</div>`;
