@@ -353,94 +353,239 @@ async function saveState() {
     else alert(d.message || 'Error al guardar');
 }
 
-// ── Seleccionar estado para ver detalle ───────────────────────
+// ── Helpers escape ────────────────────────────────────────────
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Tabs del panel derecho ────────────────────────────────────
+function showTab(tabId) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('text-indigo-600','border-indigo-500');
+        b.classList.add('text-gray-500','border-transparent');
+    });
+    document.getElementById(tabId).classList.remove('hidden');
+    const btn = document.getElementById('btn-' + tabId);
+    if (btn) { btn.classList.add('text-indigo-600','border-indigo-500'); btn.classList.remove('text-gray-500','border-transparent'); }
+}
+
+function toggleValTab() {
+    const type = document.getElementById('e-input-type')?.value;
+    const sec  = document.getElementById('e-val-section');
+    const num  = document.getElementById('e-val-number');
+    const txt  = document.getElementById('e-val-text');
+    const opt  = document.getElementById('e-val-option');
+    const err  = document.getElementById('e-val-error-wrap');
+    if (!sec) return;
+    [num, txt, opt].forEach(el => el && (el.style.display='none'));
+    if (err) err.style.display = 'block';
+    if      (type === 'number') { sec.classList.remove('hidden'); num.style.display='block'; }
+    else if (type === 'text')   { sec.classList.remove('hidden'); txt.style.display='block'; }
+    else if (type === 'option') { sec.classList.remove('hidden'); opt.style.display='block'; err.style.display='none'; }
+    else                        { sec.classList.add('hidden'); }
+}
+
+function setPatternInline(p) { const el = document.getElementById('e-val-pattern'); if(el) el.value=p; }
+
+// ── Renderizar previews de imágenes (inline panel) ────────────
+function renderPreviewsInline() {
+    const c = document.getElementById('e-image-previews');
+    if (!c) return;
+    c.innerHTML = stateImages.map((url,i) => `
+        <div class="relative group w-16 h-16">
+            <img src="${url}" class="w-16 h-16 object-cover rounded-lg border border-gray-200">
+            <button onclick="removeImageInline(${i})" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center">✕</button>
+        </div>`).join('');
+    if (stateImages.length < 5) {
+        c.innerHTML += `<div onclick="document.getElementById('e-image-input').click()" class="w-16 h-16 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center cursor-pointer hover:border-indigo-300 text-gray-300 text-xl">+</div>`;
+    }
+}
+function removeImageInline(i) { stateImages.splice(i,1); renderPreviewsInline(); }
+async function uploadImagesInline(files) {
+    const rem = 5 - stateImages.length;
+    for (const file of Array.from(files).slice(0, rem)) {
+        const fd = new FormData(); fd.append('image', file); fd.append('_token', csrf);
+        try { const r = await fetch(`${baseUrl}/upload-image`,{method:'POST',body:fd}); const d=await r.json(); if(d.ok){stateImages.push(d.url);renderPreviewsInline();} } catch(e){}
+    }
+}
+
+// ── Seleccionar estado → panel con tabs editables ─────────────
 function selectState(id) {
-    document.querySelectorAll('.state-row').forEach(r => r.classList.remove('bg-indigo-50', 'border-l-2', 'border-indigo-500'));
+    document.querySelectorAll('.state-row').forEach(r => r.classList.remove('bg-indigo-50','border-l-2','border-indigo-500'));
     const row = document.getElementById('row-' + id);
-    if (row) row.classList.add('bg-indigo-50', 'border-l-2', 'border-indigo-500');
+    if (row) row.classList.add('bg-indigo-50','border-l-2','border-indigo-500');
 
     const state = states.find(s => s.id === id);
     if (!state) return;
+
+    stateImages = state.images || [];
+
+    const inputTypeOpts = Object.entries(inputTypes).map(([v,l]) =>
+        `<option value="${v}" ${state.input_type===v?'selected':''}>${l}</option>`).join('');
+
+    const actionOpts = Object.entries(actions).map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
 
     const otherStates = states.filter(s => s.id !== id);
+    const toStateOpts = otherStates.map(s => `<option value="${s.id}">${escHtml(s.label)} (${s.key})</option>`).join('');
+
+    const transHtml = state.transitions.length === 0
+        ? '<p class="text-xs text-gray-400 text-center py-6">Sin transiciones — agrega una para definir a dónde va el flujo</p>'
+        : state.transitions.map(t => `
+            <div class="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0">
+                <div class="flex-shrink-0 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-mono font-medium min-w-12 text-center">${escHtml(t.trigger||'*')}</div>
+                <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <div class="flex-1 min-w-0">
+                    <span class="text-sm text-gray-700">${escHtml(t.to_state?.label||'?')}</span>
+                    ${t.action && t.action!=='none' ? `<span class="ml-2 text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">${escHtml(actions[t.action]||t.action)}</span>` : ''}
+                </div>
+                <button onclick="deleteTransition(${t.id})" class="text-gray-300 hover:text-red-500 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>`).join('');
 
     document.getElementById('detail-panel').innerHTML = `
-        <div class="max-w-2xl space-y-5">
+    <div class="max-w-2xl">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="font-semibold text-gray-900">${escHtml(state.label)}</h2>
+                <span class="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded mt-1 inline-block">${escHtml(state.key)}</span>
+            </div>
+            <button onclick="deleteState(${id})" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition">Eliminar</button>
+        </div>
 
-            {{-- Header --}}
-            <div class="bg-white rounded-xl border border-gray-200 p-5">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h2 class="font-semibold text-gray-900">${state.label}</h2>
-                        <span class="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded mt-1 inline-block">${state.key}</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="editState(${state.id})" class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">Editar</button>
-                        <button onclick="deleteState(${state.id})" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition">Eliminar</button>
-                    </div>
-                </div>
-                <div class="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap border border-gray-100">${state.message}</div>
-                <div class="flex gap-3 mt-3">
-                    <span class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg font-medium">${inputTypes[state.input_type] || state.input_type}</span>
-                    <span class="text-xs ${state.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'} px-2 py-1 rounded-lg font-medium">${state.is_active ? 'Activo' : 'Inactivo'}</span>
-                </div>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {{-- Tabs --}}
+            <div class="flex border-b border-gray-200">
+                <button id="btn-tab-msg"   onclick="showTab('tab-msg')"   class="tab-btn text-indigo-600 border-b-2 border-indigo-500 px-5 py-3 text-sm font-medium">Mensaje</button>
+                <button id="btn-tab-val"   onclick="showTab('tab-val')"   class="tab-btn text-gray-500 border-b-2 border-transparent px-5 py-3 text-sm font-medium hover:text-gray-700">Validación</button>
+                <button id="btn-tab-trans" onclick="showTab('tab-trans')" class="tab-btn text-gray-500 border-b-2 border-transparent px-5 py-3 text-sm font-medium hover:text-gray-700">
+                    Transiciones
+                    <span class="ml-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">${state.transitions.length}</span>
+                </button>
             </div>
 
-            {{-- Transiciones --}}
-            <div class="bg-white rounded-xl border border-gray-200 p-5">
+            {{-- Tab Mensaje --}}
+            <div id="tab-msg" class="tab-panel p-5 space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">Nombre visible</label>
+                        <input id="e-label" type="text" value="${escHtml(state.label)}" class="input">
+                    </div>
+                    <div>
+                        <label class="label">Tipo de entrada</label>
+                        <select id="e-input-type" class="input" onchange="toggleValTab()">${inputTypeOpts}</select>
+                    </div>
+                </div>
+                <div>
+                    <label class="label">Mensaje del bot</label>
+                    <textarea id="e-message" rows="6" class="input resize-none">${escHtml(state.message)}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">Variables: <code class="bg-gray-100 px-1 rounded">{negocio}</code> <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code> <code class="bg-gray-100 px-1 rounded">{rifa_total}</code></p>
+                </div>
+                <div>
+                    <label class="label">Imágenes <span class="text-gray-400 font-normal">(hasta 5)</span></label>
+                    <div ondragover="event.preventDefault()" ondrop="event.preventDefault();uploadImagesInline(event.dataTransfer.files)"
+                         onclick="document.getElementById('e-image-input').click()"
+                         class="border-2 border-dashed border-gray-200 rounded-xl p-3 text-center cursor-pointer hover:border-indigo-300 transition">
+                        <p class="text-xs text-gray-400">Clic o arrastra imágenes aquí</p>
+                    </div>
+                    <input type="file" id="e-image-input" accept="image/*" multiple class="hidden" onchange="uploadImagesInline(this.files)">
+                    <div id="e-image-previews" class="flex flex-wrap gap-2 mt-2"></div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="e-active" ${state.is_active ? 'checked' : ''} class="w-4 h-4 rounded text-indigo-600">
+                    <label for="e-active" class="text-sm text-gray-700">Estado activo</label>
+                </div>
+                <button onclick="saveStateInline(${id})" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition">Guardar cambios</button>
+            </div>
+
+            {{-- Tab Validación --}}
+            <div id="tab-val" class="tab-panel hidden p-5 space-y-4">
+                <div id="e-val-section" class="space-y-4">
+                    <div id="e-val-number" style="display:none">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="label">Valor mínimo</label>
+                                <input type="number" id="e-val-min" value="${state.validation_min??''}" placeholder="ej: 1" class="input">
+                            </div>
+                            <div>
+                                <label class="label">Valor máximo</label>
+                                <input type="number" id="e-val-max" value="${state.validation_max??''}" placeholder="ej: 10" class="input">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="e-val-text" style="display:none">
+                        <label class="label">Patrón de validación (regex)</label>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <button type="button" onclick="setPatternInline('^\\\\d{8}$')" class="text-xs bg-white border border-gray-200 px-2 py-1 rounded hover:bg-indigo-50 hover:border-indigo-300 transition">DNI (8 dígitos)</button>
+                            <button type="button" onclick="setPatternInline('^\\\\d{9}$')" class="text-xs bg-white border border-gray-200 px-2 py-1 rounded hover:bg-indigo-50 hover:border-indigo-300 transition">Celular (9 dígitos)</button>
+                            <button type="button" onclick="setPatternInline('^[a-zA-Z\\u00C0-\\u017E\\\\s]{2,}$')" class="text-xs bg-white border border-gray-200 px-2 py-1 rounded hover:bg-indigo-50 hover:border-indigo-300 transition">Solo letras</button>
+                        </div>
+                        <input type="text" id="e-val-pattern" value="${escHtml(state.validation_pattern||'')}" placeholder="ej: ^\\d{8}$ para DNI" class="input font-mono text-xs">
+                    </div>
+                    <div id="e-val-option" style="display:none">
+                        <p class="text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg">Las opciones válidas se definen por los <strong>triggers</strong> en la pestaña Transiciones.</p>
+                    </div>
+                    <div id="e-val-error-wrap">
+                        <label class="label">Mensaje cuando no sea válido</label>
+                        <input type="text" id="e-val-error" value="${escHtml(state.validation_error||'')}" placeholder="ej: Por favor escribe solo números" class="input">
+                    </div>
+                </div>
+                <p id="e-val-none" class="text-xs text-gray-400 text-center py-4" style="display:none">Cambia el tipo de entrada en la pestaña Mensaje para configurar validación.</p>
+                <button onclick="saveStateInline(${id})" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition">Guardar cambios</button>
+            </div>
+
+            {{-- Tab Transiciones --}}
+            <div id="tab-trans" class="tab-panel hidden p-5">
                 <div class="flex items-center justify-between mb-4">
                     <p class="text-sm font-semibold text-gray-800">Transiciones</p>
-                    <button onclick="openTransition(${state.id})" class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">+ Agregar</button>
+                    <button onclick="openTransition(${id})" class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">+ Agregar</button>
                 </div>
-
-                ${state.transitions.length === 0
-                    ? '<p class="text-xs text-gray-400 text-center py-4">Sin transiciones — agrega una para definir a dónde va el flujo</p>'
-                    : state.transitions.map(t => `
-                        <div class="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0">
-                            <div class="flex-shrink-0 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-mono font-medium min-w-12 text-center">
-                                ${t.trigger || '*'}
-                            </div>
-                            <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                            <div class="flex-1 min-w-0">
-                                <span class="text-sm text-gray-700">${t.to_state?.label || '?'}</span>
-                                ${t.action && t.action !== 'none' ? `<span class="ml-2 text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">${actions[t.action] || t.action}</span>` : ''}
-                            </div>
-                            <button onclick="deleteTransition(${t.id})" class="text-gray-300 hover:text-red-500 transition flex-shrink-0">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                    `).join('')
-                }
+                ${transHtml}
             </div>
         </div>
-    `;
+    </div>`;
+
+    renderPreviewsInline();
+    toggleValTab();
 }
 
-function editState(id) {
-    const state = states.find(s => s.id === id);
-    if (!state) return;
-    editingStateId = id;
-    document.getElementById('modal-title').textContent = 'Editar estado';
-    document.getElementById('s-key').value = state.key;
-    document.getElementById('s-label').value = state.label;
-    document.getElementById('s-message').value = state.message;
-    stateImages = state.images || [];
-    renderPreviews();
-    document.getElementById('s-input-type').value = state.input_type;
-    document.getElementById('s-order').value = state.sort_order;
-    document.getElementById('s-active').checked = !!state.is_active;
-    document.getElementById('s-val-min').value     = state.validation_min ?? '';
-    document.getElementById('s-val-max').value     = state.validation_max ?? '';
-    document.getElementById('s-val-pattern').value = state.validation_pattern ?? '';
-    document.getElementById('s-val-error').value   = state.validation_error ?? '';
-    document.getElementById('s-key').disabled = true;
-    toggleValidation();
-    document.getElementById('modal-state').classList.remove('hidden');
+// ── Guardar estado desde panel inline ─────────────────────────
+async function saveStateInline(id) {
+    const inputType = document.getElementById('e-input-type').value;
+    const payload = {
+        label:               document.getElementById('e-label').value.trim(),
+        message:             document.getElementById('e-message').value.trim(),
+        images:              stateImages,
+        input_type:          inputType,
+        is_active:           document.getElementById('e-active').checked ? 1 : 0,
+        validation_pattern:  inputType === 'text'   ? (document.getElementById('e-val-pattern').value.trim() || null) : null,
+        validation_min:      inputType === 'number' ? (document.getElementById('e-val-min').value !== '' ? parseInt(document.getElementById('e-val-min').value) : null) : null,
+        validation_max:      inputType === 'number' ? (document.getElementById('e-val-max').value !== '' ? parseInt(document.getElementById('e-val-max').value) : null) : null,
+        validation_error:    ['text','number'].includes(inputType) ? (document.getElementById('e-val-error').value.trim() || null) : null,
+    };
+    if (!payload.label || !payload.message) { alert('Completa nombre y mensaje'); return; }
+    const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+        const r = await fetch(`${baseUrl}/states/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':csrf, 'Accept':'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const d = await r.json();
+        if (d.ok) {
+            // Actualizar estado local
+            const idx = states.findIndex(s => s.id === id);
+            if (idx >= 0) Object.assign(states[idx], d.state, { images: stateImages });
+            // Actualizar sidebar label
+            const row = document.getElementById('row-' + id);
+            if (row) row.querySelector('span.font-medium')?.setAttribute('textContent', payload.label);
+            btn.textContent = '✓ Guardado'; btn.classList.add('bg-green-600'); btn.classList.remove('bg-indigo-600');
+            setTimeout(() => { btn.textContent='Guardar cambios'; btn.classList.remove('bg-green-600'); btn.classList.add('bg-indigo-600'); btn.disabled=false; location.reload(); }, 1000);
+        } else { alert(d.message || 'Error al guardar'); btn.disabled=false; btn.textContent='Guardar cambios'; }
+    } catch(e) { alert('Error de conexión'); btn.disabled=false; btn.textContent='Guardar cambios'; }
 }
+
+// editState ya no abre modal — abre el panel inline
+function editState(id) { selectState(id); }
 
 async function deleteState(id) {
     if (!confirm('¿Eliminar este estado? También se eliminarán sus transiciones.')) return;
