@@ -138,7 +138,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="label">Tipo de entrada</label>
-                    <select id="s-input-type" class="input">
+                    <select id="s-input-type" class="input" onchange="toggleValidation()">
                         @foreach($inputTypes as $val => $lbl)
                         <option value="{{ $val }}">{{ $lbl }}</option>
                         @endforeach
@@ -149,6 +149,48 @@
                     <input type="number" id="s-order" value="{{ $allStates->count() }}" class="input">
                 </div>
             </div>
+
+            {{-- Validación dinámica según tipo --}}
+            <div id="validation-section" class="border border-gray-100 rounded-xl p-4 bg-gray-50 space-y-3 hidden">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Validación de entrada</p>
+
+                {{-- Para number: min / max --}}
+                <div id="val-number" style="display:none">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label">Valor mínimo</label>
+                            <input type="number" id="s-val-min" placeholder="ej: 1" class="input">
+                        </div>
+                        <div>
+                            <label class="label">Valor máximo</label>
+                            <input type="number" id="s-val-max" placeholder="ej: 10" class="input">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Para text: patrón regex --}}
+                <div id="val-text" style="display:none">
+                    <label class="label">Patrón de validación (regex)</label>
+                    <div class="flex gap-2 mb-1">
+                        <button type="button" onclick="setPattern('^\d{8}$')" class="text-xs bg-white border border-gray-200 px-2 py-1 rounded hover:bg-indigo-50 hover:border-indigo-300 transition">DNI (8 dígitos)</button>
+                        <button type="button" onclick="setPattern('^\d{9}$')" class="text-xs bg-white border border-gray-200 px-2 py-1 rounded hover:bg-indigo-50 hover:border-indigo-300 transition">Celular (9 dígitos)</button>
+                        <button type="button" onclick="setPattern('^[a-zA-ZÀ-ÿ\s]{2,}$')" class="text-xs bg-white border border-gray-200 px-2 py-1 rounded hover:bg-indigo-50 hover:border-indigo-300 transition">Solo letras</button>
+                    </div>
+                    <input type="text" id="s-val-pattern" placeholder="ej: ^\d{8}$ para DNI de 8 dígitos" class="input font-mono text-xs">
+                </div>
+
+                {{-- Para option: informativo --}}
+                <div id="val-option" style="display:none">
+                    <p class="text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg">Las opciones válidas se definen por los <strong>triggers</strong> de las transiciones de este estado.</p>
+                </div>
+
+                {{-- Mensaje de error (para number y text) --}}
+                <div id="val-error-wrap">
+                    <label class="label">Mensaje cuando no sea válido</label>
+                    <input type="text" id="s-val-error" placeholder="ej: Por favor escribe solo números" class="input">
+                </div>
+            </div>
+
             <div class="flex items-center gap-2">
                 <input type="checkbox" id="s-active" checked class="w-4 h-4 rounded text-indigo-600">
                 <label for="s-active" class="text-sm text-gray-700">Estado activo</label>
@@ -219,6 +261,40 @@ async function createFlow() {
     if (r.ok) location.reload();
 }
 
+// ── Validación dinámica ───────────────────────────────────────
+function toggleValidation() {
+    const type = document.getElementById('s-input-type').value;
+    const section   = document.getElementById('validation-section');
+    const valNumber = document.getElementById('val-number');
+    const valText   = document.getElementById('val-text');
+    const valOption = document.getElementById('val-option');
+    const valError  = document.getElementById('val-error-wrap');
+
+    // Ocultar todo primero
+    valNumber.style.display = 'none';
+    valText.style.display   = 'none';
+    valOption.style.display = 'none';
+    valError.style.display  = 'block';
+
+    if (type === 'number') {
+        section.classList.remove('hidden');
+        valNumber.style.display = 'block';
+    } else if (type === 'text') {
+        section.classList.remove('hidden');
+        valText.style.display = 'block';
+    } else if (type === 'option') {
+        section.classList.remove('hidden');
+        valOption.style.display = 'block';
+        valError.style.display  = 'none';
+    } else {
+        section.classList.add('hidden');
+    }
+}
+
+function setPattern(pattern) {
+    document.getElementById('s-val-pattern').value = pattern;
+}
+
 // ── Modal estado ──────────────────────────────────────────────
 function openNewState() {
     if (!flowId) { if(confirm('No hay flujo creado. ¿Crear ahora?')) createFlow(); return; }
@@ -233,6 +309,11 @@ function openNewState() {
     document.getElementById('s-order').value = states.length;
     document.getElementById('s-active').checked = true;
     document.getElementById('s-key').disabled = false;
+    document.getElementById('s-val-min').value = '';
+    document.getElementById('s-val-max').value = '';
+    document.getElementById('s-val-pattern').value = '';
+    document.getElementById('s-val-error').value = '';
+    toggleValidation();
     document.getElementById('modal-state').classList.remove('hidden');
 }
 
@@ -241,15 +322,20 @@ function closeModal() {
 }
 
 async function saveState() {
+    const inputType = document.getElementById('s-input-type').value;
     const payload = {
-        flow_id:    flowId,
-        key:        document.getElementById('s-key').value.trim(),
-        label:      document.getElementById('s-label').value.trim(),
-        message:    document.getElementById('s-message').value.trim(),
-        images:     stateImages,
-        input_type: document.getElementById('s-input-type').value,
-        sort_order: parseInt(document.getElementById('s-order').value) || 0,
-        is_active:  document.getElementById('s-active').checked ? 1 : 0,
+        flow_id:             flowId,
+        key:                 document.getElementById('s-key').value.trim(),
+        label:               document.getElementById('s-label').value.trim(),
+        message:             document.getElementById('s-message').value.trim(),
+        images:              stateImages,
+        input_type:          inputType,
+        sort_order:          parseInt(document.getElementById('s-order').value) || 0,
+        is_active:           document.getElementById('s-active').checked ? 1 : 0,
+        validation_pattern:  inputType === 'text'   ? (document.getElementById('s-val-pattern').value.trim() || null) : null,
+        validation_min:      inputType === 'number'  ? (document.getElementById('s-val-min').value !== '' ? parseInt(document.getElementById('s-val-min').value) : null) : null,
+        validation_max:      inputType === 'number'  ? (document.getElementById('s-val-max').value !== '' ? parseInt(document.getElementById('s-val-max').value) : null) : null,
+        validation_error:    ['text','number'].includes(inputType) ? (document.getElementById('s-val-error').value.trim() || null) : null,
     };
 
     if (!payload.key || !payload.label || !payload.message) { alert('Completa todos los campos requeridos'); return; }
@@ -347,7 +433,12 @@ function editState(id) {
     document.getElementById('s-input-type').value = state.input_type;
     document.getElementById('s-order').value = state.sort_order;
     document.getElementById('s-active').checked = !!state.is_active;
+    document.getElementById('s-val-min').value     = state.validation_min ?? '';
+    document.getElementById('s-val-max').value     = state.validation_max ?? '';
+    document.getElementById('s-val-pattern').value = state.validation_pattern ?? '';
+    document.getElementById('s-val-error').value   = state.validation_error ?? '';
     document.getElementById('s-key').disabled = true;
+    toggleValidation();
     document.getElementById('modal-state').classList.remove('hidden');
 }
 

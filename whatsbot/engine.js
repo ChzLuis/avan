@@ -280,6 +280,13 @@ client.on('message', async msg => {
 
         console.log(`📨 [${BOT_TYPE}] ${waNumber} | ${currentState} | ${body.substring(0,40)}`);
 
+        // ── Validar input según tipo de entrada ───────────────────
+        const validationError = validateInput(body, stateConfig);
+        if (validationError) {
+            await enviar(msg, validationError);
+            return;
+        }
+
         // Buscar transición aplicable
         let transition = null;
         for (const t of (stateConfig.transitions || [])) {
@@ -321,6 +328,44 @@ client.on('message', async msg => {
 
     } catch(e) { console.error(`❌ [${BOT_TYPE}] error:`, e.message); }
 });
+
+// ── Validación de entrada ─────────────────────────────────────
+function validateInput(body, stateConfig) {
+    const type    = stateConfig.input_type;
+    const errMsg  = stateConfig.validation_error || null;
+
+    if (type === 'number') {
+        if (!/^-?\d+(\.\d+)?$/.test(body.trim())) {
+            return errMsg || '⚠️ Por favor escribe solo números.';
+        }
+        const num = parseFloat(body.trim());
+        if (stateConfig.validation_min !== null && stateConfig.validation_min !== undefined && num < stateConfig.validation_min) {
+            return errMsg || `⚠️ El valor mínimo es ${stateConfig.validation_min}.`;
+        }
+        if (stateConfig.validation_max !== null && stateConfig.validation_max !== undefined && num > stateConfig.validation_max) {
+            return errMsg || `⚠️ El valor máximo es ${stateConfig.validation_max}.`;
+        }
+    }
+
+    if (type === 'text' && stateConfig.validation_pattern) {
+        try {
+            if (!new RegExp(stateConfig.validation_pattern).test(body.trim())) {
+                return errMsg || '⚠️ El formato ingresado no es válido.';
+            }
+        } catch(e) { /* patrón inválido, ignorar */ }
+    }
+
+    if (type === 'option') {
+        const validTriggers = (stateConfig.transitions || [])
+            .filter(t => t.trigger && t.trigger !== '*' && t.trigger !== '')
+            .map(t => t.trigger.toLowerCase());
+        if (validTriggers.length > 0 && !validTriggers.includes(body.trim().toLowerCase())) {
+            return errMsg || `⚠️ Opción no válida. Escribe: ${validTriggers.join(', ')}`;
+        }
+    }
+
+    return null; // válido
+}
 
 // ── Trigger matching ──────────────────────────────────────────
 function matchTrigger(trigger, msg, body, lower) {

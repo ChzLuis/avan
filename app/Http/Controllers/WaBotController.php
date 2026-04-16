@@ -71,11 +71,15 @@ class WaBotController extends Controller
         if (!$flow) return response()->json(['error' => 'No flow found'], 404);
 
         $states = $flow->states->map(fn($s) => [
-            'key'         => $s->key,
-            'label'       => $s->label,
-            'message'     => $s->message,
-            'input_type'  => $s->input_type,
-            'transitions' => $s->transitions->map(fn($t) => [
+            'key'                => $s->key,
+            'label'              => $s->label,
+            'message'            => $s->message,
+            'input_type'         => $s->input_type,
+            'validation_pattern' => $s->validation_pattern,
+            'validation_min'     => $s->validation_min,
+            'validation_max'     => $s->validation_max,
+            'validation_error'   => $s->validation_error,
+            'transitions'        => $s->transitions->map(fn($t) => [
                 'trigger'      => $t->trigger,
                 'to'           => $t->toState?->key,
                 'action'       => $t->action,

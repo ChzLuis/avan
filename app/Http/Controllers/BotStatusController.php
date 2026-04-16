@@ -190,14 +190,18 @@ class BotStatusController extends Controller
     {
         $project = app('active_project');
         $data    = $request->validate([
-            'flow_id'    => 'required|integer',
-            'key'        => 'required|string|max:60',
-            'label'      => 'required|string|max:100',
-            'message'    => 'required|string',
-            'images'     => 'nullable|array|max:5',
-            'input_type' => 'required|in:text,number,image,location,option',
-            'sort_order' => 'integer',
-            'is_active'  => 'boolean',
+            'flow_id'            => 'required|integer',
+            'key'                => 'required|string|max:60',
+            'label'              => 'required|string|max:100',
+            'message'            => 'required|string',
+            'images'             => 'nullable|array|max:5',
+            'input_type'         => 'required|in:text,number,image,location,option',
+            'sort_order'         => 'integer',
+            'is_active'          => 'boolean',
+            'validation_pattern' => 'nullable|string|max:200',
+            'validation_min'     => 'nullable|integer',
+            'validation_max'     => 'nullable|integer',
+            'validation_error'   => 'nullable|string|max:200',
         ]);
 
         $flow = BotFlow::where('project_id', $project->id)->findOrFail($data['flow_id']);
@@ -213,12 +217,16 @@ class BotStatusController extends Controller
         abort_unless($state->flow->project_id === $project->id, 403);
 
         $data = $request->validate([
-            'label'      => 'required|string|max:100',
-            'message'    => 'required|string',
-            'images'     => 'nullable|array|max:5',
-            'input_type' => 'required|in:text,number,image,location,option',
-            'sort_order' => 'integer',
-            'is_active'  => 'boolean',
+            'label'              => 'required|string|max:100',
+            'message'            => 'required|string',
+            'images'             => 'nullable|array|max:5',
+            'input_type'         => 'required|in:text,number,image,location,option',
+            'sort_order'         => 'integer',
+            'is_active'          => 'boolean',
+            'validation_pattern' => 'nullable|string|max:200',
+            'validation_min'     => 'nullable|integer',
+            'validation_max'     => 'nullable|integer',
+            'validation_error'   => 'nullable|string|max:200',
         ]);
 
         $state->update($data);
@@ -327,12 +335,16 @@ class BotStatusController extends Controller
         try {
             $flow->load('states.transitions.toState');
             $states = $flow->states->map(fn($s) => [
-                'key'        => $s->key,
-                'label'      => $s->label,
-                'message'    => $s->message,
-                'images'     => $s->images ?? [],
-                'input_type' => $s->input_type,
-                'transitions'=> $s->transitions->map(fn($t) => [
+                'key'                => $s->key,
+                'label'              => $s->label,
+                'message'            => $s->message,
+                'images'             => $s->images ?? [],
+                'input_type'         => $s->input_type,
+                'validation_pattern' => $s->validation_pattern,
+                'validation_min'     => $s->validation_min,
+                'validation_max'     => $s->validation_max,
+                'validation_error'   => $s->validation_error,
+                'transitions'        => $s->transitions->map(fn($t) => [
                     'trigger'      => $t->trigger,
                     'to'           => $t->toState?->key,
                     'action'       => $t->action,
