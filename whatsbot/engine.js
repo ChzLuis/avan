@@ -421,6 +421,7 @@ function matchTrigger(trigger, msg, body, lower) {
 
 // ── Acciones ──────────────────────────────────────────────────
 async function executeAction(msg, waNumber, body, transition, sessionData) {
+    const lower = body.toLowerCase();
     const action = transition.action;
     if (!action) return sessionData;
 
