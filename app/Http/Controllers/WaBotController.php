@@ -45,23 +45,27 @@ class WaBotController extends Controller
         $data = $request->validate(['token' => 'required|string', 'bot' => 'required|string']);
         if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
 
-        // Buscar proyecto por número de teléfono si viene phone, o devolver todos
-        $phone   = preg_replace('/\D/', '', $request->get('phone', ''));
-        $project = null;
-        if ($phone) {
-            $phoneLast = substr($phone, -9);
-            $project = Project::where('is_active', true)
-                ->where(function($q) use ($phone, $phoneLast) {
-                    $q->where('wa_phone', $phone)
-                      ->orWhereRaw("RIGHT(REPLACE(wa_phone,' ',''),9)=?", [$phoneLast]);
-                })->first();
-        }
+        // Prioridad: BotInstance → teléfono → cualquiera
+        $botInstance = \App\Models\BotInstance::where('bot_type', $data['bot'])->first();
 
         $query = BotFlow::with('states.transitions.toState')
             ->where('bot_type', $data['bot'])
             ->where('is_active', true);
 
-        if ($project) $query->where('project_id', $project->id);
+        if ($botInstance) {
+            $query->where('project_id', $botInstance->project_id);
+        } else {
+            $phone = preg_replace('/\D/', '', $request->get('phone', ''));
+            if ($phone) {
+                $phoneLast = substr($phone, -9);
+                $project = Project::where('is_active', true)
+                    ->where(function($q) use ($phone, $phoneLast) {
+                        $q->where('wa_phone', $phone)
+                          ->orWhereRaw("RIGHT(REPLACE(wa_phone,' ',''),9)=?", [$phoneLast]);
+                    })->first();
+                if ($project) $query->where('project_id', $project->id);
+            }
+        }
 
         $flow = $query->first();
         if (!$flow) return response()->json(['error' => 'No flow found'], 404);
