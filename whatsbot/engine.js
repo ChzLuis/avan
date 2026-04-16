@@ -362,7 +362,9 @@ client.on('message', async msg => {
             return;
         }
 
-        sessionData = await executeAction(msg, waNumber, body, transition, sessionData);
+        const actionResult = await executeAction(msg, waNumber, body, transition, sessionData);
+        if (actionResult === null) return; // show_lista ya manejó todo internamente
+        sessionData = actionResult ?? sessionData;
 
         const nextStateKey = transition.to || currentState;
 
@@ -464,18 +466,21 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
             return { ...sessionData, nombre: nombre || body };
         }
         case 'save_nombre_documento': {
-            // Formato esperado: "Juan Pérez, 12345678"
-            const partes   = body.split(',').map(s => s.trim());
-            const nombre   = partes[0] || body;
-            const documento = partes[1]?.replace(/\D/g,'') || '';
+            // Formato esperado: "Juan Pérez, 12345678"  (coma separa nombre de DNI)
+            const partes    = body.split(',').map(s => s.trim());
+            const nombre    = partes[0] || body;
+            const documento = (partes[1] || '').replace(/\D/g,'');
             sessionData = { ...sessionData, nombre, documento, dni: documento };
 
-            // Si aún no hay pedido en DB, crear uno ahora
-            if (!sessionData.itemOrderId && !sessionData.rifaOrderId) {
+            const itemId  = sessionData.itemId || sessionData.rifaId;
+            const oidExiste = sessionData.itemOrderId || sessionData.rifaOrderId;
+
+            if (!oidExiste && itemId) {
+                // Crear pedido en DB
                 try {
                     const resp = await laravelPost('wa/rifa-order', {
-                        rifa_id:  sessionData.itemId || sessionData.rifaId,
-                        tickets:  sessionData.itemCantidad || sessionData.rifaTickets || 1,
+                        rifa_id:   itemId,
+                        tickets:   sessionData.itemCantidad || sessionData.rifaTickets || 1,
                         wa_number: waNumber,
                         nombre,
                         dni: documento,
@@ -492,12 +497,16 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
                             rifaNombre:   resp.rifa_nombre,
                             rifaOrderId:  resp.order_id,
                         };
+                        console.log(`✅ Pedido creado: ${resp.order_number} (id:${resp.order_id})`);
+                    } else {
+                        console.warn('⚠️  save_nombre_documento: respuesta no ok', resp);
                     }
                 } catch(e) { console.error('save_nombre_documento create_order:', e.message); }
+            } else if (oidExiste) {
+                // Actualizar nombre/dni en pedido existente
+                await laravelPost(`wa/rifa/${oidExiste}/data`, { nombre, dni: documento });
             } else {
-                // Ya existe pedido, actualizar nombre/dni
-                const oid = sessionData.itemOrderId || sessionData.rifaOrderId;
-                if (oid) await laravelPost(`wa/rifa/${oid}/data`, { nombre, dni: documento });
+                console.warn('⚠️  save_nombre_documento: no hay itemId en sesión');
             }
             return sessionData;
         }
@@ -545,7 +554,7 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
                 const stateMsg = (nextKey && FLOW.states[nextKey]?.message) || '🎰 *Productos disponibles:*';
                 await enviarListaConImagenes(msg, sessionData.rifas, fillMessage(stateMsg, buildVars(sessionData)));
                 if (nextKey) await saveSession(waNumber, nextKey, sessionData);
-                return;
+                return null; // señal: ya manejamos todo aquí
             }
             break;
         }
