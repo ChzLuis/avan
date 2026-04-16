@@ -585,7 +585,14 @@ client.on("message", async (msg) => {
     if (msg.isStatus) return;
     if (!msg.from.endsWith("@c.us") && !msg.from.endsWith("@lid")) return;
 
-    const waNumber = msg.from.replace(/@.*$/, "");
+    // Si viene de @lid, intentar obtener el número real del contacto
+    let waNumber = msg.from.replace(/@.*$/, "");
+    if (msg.from.endsWith("@lid")) {
+        try {
+            const contact = await msg.getContact();
+            if (contact?.number) waNumber = contact.number;
+        } catch(e) { /* usar waNumber LID como fallback */ }
+    }
     const body = (msg.body || "").trim();
     const lower = body.toLowerCase();
 
