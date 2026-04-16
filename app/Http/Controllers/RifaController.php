@@ -244,34 +244,31 @@ class RifaController extends Controller
     }
 
     // ── Bot API ───────────────────────────────────────────────
-    /** GET /wa/rifas — lista de rifas activas para el bot */
+    /** GET /wa/rifas — lista de productos activos para el bot */
     public function botList(Request $request)
     {
         $token = $request->get('token');
         if ($token !== 'wa-bot-secret-2024') return response()->json(['ok'=>false], 401);
 
-        // Detectar proyecto por bot_type
         $botType = $request->get('bot', 'rifa');
         $bot     = BotInstance::where('bot_type', $botType)->first();
         if (!$bot) return response()->json(['ok' => false, 'error' => 'Bot no encontrado'], 404);
 
-        $rifas = Rifa::where('project_id', $bot->project_id)
-                     ->where('is_active', true)
-                     ->orderBy('sort_order')
+        $products = \App\Models\Product::where('project_id', $bot->project_id)
+                     ->where('is_available', true)
+                     ->with('mainImage')
+                     ->orderBy('name')
                      ->get()
-                     ->map(fn($r) => [
-                         'id'            => $r->id,
-                         'nombre'        => $r->nombre,
-                         'descripcion'   => $r->descripcion,
-                         'precio_ticket' => (float) $r->precio_ticket,
-                         'min_tickets'   => $r->min_tickets,
-                         'max_tickets'   => $r->max_tickets,
-                         'imagen_url'    => $r->imagen_url,
-                         'premio'        => $r->premio,
-                         'texto'         => $r->formatoParaBot(),
+                     ->map(fn($p) => [
+                         'id'          => $p->id,
+                         'nombre'      => $p->name,
+                         'descripcion' => $p->description ?? '',
+                         'precio'      => (float) $p->price,
+                         'imagen_url'  => $p->mainImage?->url ? asset('storage/' . $p->mainImage->url) : null,
+                         'texto'       => "*{$p->name}*\n💰 S/ " . number_format($p->price, 2) . ($p->description ? "\n_{$p->description}_" : ''),
                      ]);
 
-        return response()->json(['ok' => true, 'rifas' => $rifas]);
+        return response()->json(['ok' => true, 'rifas' => $products]);
     }
 
     /** POST /wa/rifa-order — crear pedido desde el bot */
