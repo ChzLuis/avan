@@ -110,11 +110,17 @@ class RifaController extends Controller
                  . "🔢 *Números:* {$numeros}\n\n"
                  . "¡Mucha suerte! 🍀🍀🍀";
 
+        // Si el wa_number es un LID de WhatsApp (>12 dígitos), usar los últimos 11
+        $waNum = preg_replace('/\D/', '', $venta->wa_number);
+        if (strlen($waNum) > 13) {
+            $waNum = substr($waNum, -11);
+        }
+
         try {
             \Illuminate\Support\Facades\Http::timeout(15)->post("{$botUrl}/action", [
                 'token'          => 'wa-bot-secret-2024',
                 'action'         => 'send_ticket',
-                'wa_number'      => $venta->wa_number,
+                'wa_number'      => $waNum,
                 'message'        => $mensaje,
                 'ticket_base64'  => $ticketBase64,
                 'ticket_mime'    => 'image/png',

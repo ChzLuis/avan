@@ -621,18 +621,61 @@ client.on("message", async (msg) => {
       return;
     }
 
-    const resetWords = [
-      "hola",
-      "menu",
-      "menú",
-      "inicio",
-      "start",
-      "comenzar",
-      "reiniciar",
-    ];
-    if (resetWords.includes(lower) && currentState !== "inicio") {
-      const inicioState = FLOW.states["inicio"];
-      await saveSession(waNumber, "inicio", {});
+    // ── Rate limiting ─────────────────────────────────────────
+    const now = Date.now();
+    if (!global._rateLimits) global._rateLimits = {};
+    const rl = global._rateLimits[waNumber] || { count: 0, windowStart: now };
+    if (now - rl.windowStart > 60000) { rl.count = 0; rl.windowStart = now; }
+    rl.count++;
+    global._rateLimits[waNumber] = rl;
+    if (rl.count > 10) {
+      await enviar(msg, '⏳ Por favor espera un momento antes de enviar más mensajes.');
+      return;
+    }
+
+    // ── Palabras clave globales ───────────────────────────────
+    const resetWords   = ['hola','menu','menú','inicio','start','comenzar','reiniciar'];
+    const cancelWords  = ['cancelar','salir','terminar'];
+    const ayudaWords   = ['ayuda','help','info'];
+    const graciaWords  = ['gracias','thank','thanks'];
+    const respFijas = {
+      'cuándo es el sorteo': '📅 Los sorteos son cada domingo a las 8pm.',
+      'cuando es el sorteo': '📅 Los sorteos son cada domingo a las 8pm.',
+      'cómo se gana':        '🎯 Los ganadores se eligen al azar entre todos los tickets vendidos.',
+      'como se gana':        '🎯 Los ganadores se eligen al azar entre todos los tickets vendidos.',
+      'premios':             '🏆 Revisa los premios disponibles en nuestra descripción.',
+      'tickets':             '🎫 Cada plan ya incluye tickets fijos:\n• S/10 → 1 ticket\n• S/20 → 2 tickets\n• S/50 → 5 tickets\n• S/100 → 10 tickets',
+    };
+
+    // Respuestas fijas
+    if (respFijas[lower]) {
+      await enviar(msg, respFijas[lower]);
+      return;
+    }
+
+    // Gracias
+    if (graciaWords.some(w => lower.includes(w))) {
+      await enviar(msg, '🎉 ¡Gracias a ti por participar! 🍀 Mucha suerte.');
+      return;
+    }
+
+    // Ayuda
+    if (ayudaWords.includes(lower)) {
+      await enviar(msg, `❓ *Ayuda*\n\nEstás en el paso: *${currentState}*\n\n• Escribe *MENU* para volver al inicio\n• Escribe *CANCELAR* para salir\n• Sigue las instrucciones del bot para continuar`);
+      return;
+    }
+
+    // Cancelar
+    if (cancelWords.includes(lower)) {
+      await saveSession(waNumber, 'inicio', {});
+      await enviar(msg, '👋 Proceso cancelado. Escribe *MENU* cuando quieras volver a participar.');
+      return;
+    }
+
+    // Reset
+    if (resetWords.includes(lower) && currentState !== 'inicio') {
+      const inicioState = FLOW.states['inicio'];
+      await saveSession(waNumber, 'inicio', {});
       if (inicioState?.message)
         await enviar(msg, fillMessage(inicioState.message, buildVars({})));
       return;
@@ -641,20 +684,29 @@ client.on("message", async (msg) => {
     const stateConfig = FLOW.states[currentState];
     if (!stateConfig) {
       console.error(`❌ Estado ${currentState} no encontrado en FLOW`);
-      await saveSession(waNumber, "inicio", {});
-      await enviar(msg, "🔄 Reiniciando conversación...");
+      await saveSession(waNumber, 'inicio', {});
+      await enviar(msg, '🔄 Reiniciando conversación...');
       return;
     }
 
-    console.log(
-      `📨 [${BOT_TYPE}] ${waNumber} | ${currentState} | ${body.substring(0, 40)}`,
-    );
+    console.log(`📨 [${BOT_TYPE}] ${waNumber} | ${currentState} | ${body.substring(0,40)}`);
 
     const validationError = validateInput(body, stateConfig);
     if (validationError) {
-      await enviar(msg, validationError);
+      // Contar intentos fallidos
+      if (!global._intentos) global._intentos = {};
+      const key = `${waNumber}_${currentState}`;
+      global._intentos[key] = (global._intentos[key] || 0) + 1;
+      if (global._intentos[key] >= 3) {
+        global._intentos[key] = 0;
+        await enviar(msg, validationError + '\n\n🔄 Demasiados intentos. Escribe *MENU* para reiniciar.');
+      } else {
+        await enviar(msg, validationError);
+      }
       return;
     }
+    // Limpiar intentos al tener input válido
+    if (global._intentos) delete global._intentos[`${waNumber}_${currentState}`];
 
     let transition = null;
     for (const t of stateConfig.transitions || []) {
@@ -665,11 +717,18 @@ client.on("message", async (msg) => {
     }
 
     if (!transition) {
-      await enviar(
-        msg,
-        fillMessage(stateConfig.message, buildVars(sessionData)),
-      );
+      // Contar intentos sin transición
+      if (!global._intentos) global._intentos = {};
+      const key = `${waNumber}_${currentState}_notransition`;
+      global._intentos[key] = (global._intentos[key] || 0) + 1;
+      const hint = global._intentos[key] >= 2
+        ? '\n\n🔄 Escribe *MENU* para reiniciar o *AYUDA* para ver opciones.'
+        : '';
+      await enviar(msg, fillMessage(stateConfig.message, buildVars(sessionData)) + hint);
       return;
+    }
+    if (global._intentos) {
+      delete global._intentos[`${waNumber}_${currentState}_notransition`];
     }
 
     const actionResult = await executeAction(
