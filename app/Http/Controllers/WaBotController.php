@@ -74,6 +74,7 @@ class WaBotController extends Controller
             'key'                => $s->key,
             'label'              => $s->label,
             'message'            => $s->message,
+            'images'             => $s->images ?? [],
             'input_type'         => $s->input_type,
             'validation_pattern' => $s->validation_pattern,
             'validation_min'     => $s->validation_min,
