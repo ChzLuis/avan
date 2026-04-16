@@ -16,6 +16,9 @@ class WorkspaceController extends Controller
             ->get();
 
         if ($projects->isEmpty()) {
+            if (auth()->user()->is_superadmin) {
+                return redirect()->route('projects.panel');
+            }
             return view('workspace.no-project');
         }
 
