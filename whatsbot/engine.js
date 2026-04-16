@@ -157,7 +157,11 @@ function distanciaKm(lat1,lng1,lat2,lng2) {
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 function calcularDelivery(km) { return Math.ceil(Math.max(DELIVERY_MIN,km*DELIVERY_KM)*2)/2; }
-function fillMessage(tpl, vars) { return tpl.replace(/\{(\w+)\}/g,(_,k)=>vars[k]??''); }
+function fillMessage(tpl, vars) {
+    return tpl
+        .replace(/\\n/g, '\n')          // \n literal → salto de línea real
+        .replace(/\{(\w+)\}/g, (_,k) => vars[k] ?? '');
+}
 function buildVars(data) {
     return {
         negocio:      NEGOCIO,
