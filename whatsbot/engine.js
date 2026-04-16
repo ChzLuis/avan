@@ -463,9 +463,16 @@ async function enviarListaConImagenes(msg, rifas, encabezado) {
 async function enviar(msg, texto) {
   if (!msg || !msg.from || !texto) return;
   try {
+    const chat = await msg.getChat();
+    await chat.sendStateTyping();
+    const delay = Math.min(1000 + texto.length * 18, 3000);
+    await new Promise(r => setTimeout(r, delay));
+    await chat.clearState();
     await client.sendMessage(msg.from, texto);
   } catch (e) {
-    console.error("Envío:", e.message);
+    try { await client.sendMessage(msg.from, texto); } catch(e2) {
+      console.error("Envío:", e2.message);
+    }
   }
 }
 async function enviarImagen(msg) {
