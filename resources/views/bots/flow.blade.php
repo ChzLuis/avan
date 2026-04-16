@@ -60,14 +60,14 @@
                     <div class="flex items-center gap-2">
                         <div class="flex flex-col gap-0.5 flex-shrink-0" onclick="event.stopPropagation()">
                             <button onclick="moveState({{ $state->id }}, 'up')"
-                                    class="text-gray-300 hover:text-gray-600 transition leading-none"
+                                    class="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition p-0.5"
                                     title="Subir">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
                             </button>
                             <button onclick="moveState({{ $state->id }}, 'down')"
-                                    class="text-gray-300 hover:text-gray-600 transition leading-none"
+                                    class="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition p-0.5"
                                     title="Bajar">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                         </div>
                         <div class="w-2 h-2 rounded-full flex-shrink-0 {{ $state->is_active ? 'bg-indigo-500' : 'bg-gray-300' }}"></div>
