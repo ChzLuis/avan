@@ -277,6 +277,21 @@ Route::post('/wa/order/{order}/payment-proof',  [WaBotController::class, 'receiv
 Route::post('/wa/find-order',                   [WaBotController::class, 'findOrder'])->name('wa.find_order')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 Route::post('/wa/order/{order}/delivery',       [WaBotController::class, 'updateDelivery'])->name('wa.order.delivery')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
+// ─── QR público para conectar bot ────────────────────────────────────────────
+Route::get('/bot-qr/{bot?}', function ($bot = 'rifa') {
+    $port = \App\Models\BotInstance::where('bot_type', $bot)->value('port') ?? 3001;
+    try {
+        $response = \Illuminate\Support\Facades\Http::timeout(3)->get("http://127.0.0.1:{$port}/qr");
+        return response($response->body(), 200)->header('Content-Type', 'text/html; charset=utf-8');
+    } catch (\Throwable $e) {
+        return response('<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="5"><title>Bot</title>
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;}
+.card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.1);}</style></head>
+<body><div class="card"><div style="font-size:48px">⏳</div><p>Bot iniciando, espera unos segundos...</p></div></body></html>', 200)
+            ->header('Content-Type', 'text/html; charset=utf-8');
+    }
+})->name('bot.qr');
+
 // ─── Rifa Bot API ─────────────────────────────────────────────────────────────
 $nocsrf = [\App\Http\Middleware\VerifyCsrfToken::class];
 Route::get('/rifas/ticket-design',             [RifaController::class, 'ticketDesign'])->name('rifas.ticket.design');

@@ -1622,6 +1622,59 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /qr — página HTML con el QR de WhatsApp ─────────────
+  if (req.method === "GET" && req.url === "/qr") {
+    try {
+      const status = fs.existsSync(STATUS_FILE)
+        ? JSON.parse(fs.readFileSync(STATUS_FILE, "utf8"))
+        : {};
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      if (status.status === "connected") {
+        res.end(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="10"><title>Bot WhatsApp</title>
+<style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;}
+.card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.1);}
+.status{color:#25d366;font-size:18px;font-weight:bold;}</style></head>
+<body><div class="card"><div style="font-size:48px">✅</div><p class="status">Bot conectado y funcionando</p><p style="color:#666;font-size:14px">No es necesario escanear el QR</p></div></body></html>`);
+      } else if (status.qr) {
+        res.end(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="30"><title>Escanea el QR</title>
+<style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;}
+.card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.1);}
+h2{color:#128c7e;margin-bottom:4px;}p{color:#666;font-size:14px;margin-top:4px;}
+img{width:260px;height:260px;border:4px solid #128c7e;border-radius:12px;margin:16px 0;}
+.hint{background:#e7f7ef;border-radius:8px;padding:12px;font-size:13px;color:#075e54;max-width:260px;}</style></head>
+<body><div class="card">
+<h2>📱 Conectar Bot WhatsApp</h2>
+<p>Abre WhatsApp → Dispositivos vinculados → Vincular dispositivo</p>
+<img src="${status.qr}" alt="QR Code">
+<div class="hint">⚠️ Este QR expira en 60 segundos.<br>Si vence, recarga la página.</div>
+</div></body></html>`);
+      } else {
+        res.end(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="5"><title>Iniciando...</title>
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;}
+.card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.1);}</style></head>
+<body><div class="card"><div style="font-size:48px">⏳</div><p>Iniciando bot, espera unos segundos...</p><p style="font-size:12px;color:#999">La página se actualiza sola</p></div></body></html>`);
+      }
+    } catch (e) {
+      res.writeHead(500);
+      res.end("Error");
+    }
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/status") {
+    try {
+      const status = fs.existsSync(STATUS_FILE)
+        ? JSON.parse(fs.readFileSync(STATUS_FILE, "utf8"))
+        : {};
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, ...status }));
+    } catch (e) {
+      res.writeHead(500);
+      res.end();
+    }
+    return;
+  }
+
   if (req.method !== "POST" || req.url !== "/action") {
     res.writeHead(404);
     res.end();
