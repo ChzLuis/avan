@@ -473,7 +473,7 @@ async function enviarImagen(msg) {
     if (fs.existsSync(QR_IMAGE)) {
       const media = MessageMedia.fromFilePath(QR_IMAGE);
       await client.sendMessage(msg.from, media, {
-        caption: "📲 Escanea para pagar",
+        caption: "📲 Escanea este QR con tu app *Yape* o *Plin*\n\n⚠️ *IMPORTANTE:* NO lo escanees con WhatsApp, usa solo la app de pago.",
       });
     }
   } catch (e) {}
