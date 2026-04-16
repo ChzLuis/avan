@@ -724,7 +724,17 @@ client.on("message", async (msg) => {
       const hint = global._intentos[key] >= 2
         ? '\n\n🔄 Escribe *MENU* para reiniciar o *AYUDA* para ver opciones.'
         : '';
-      await enviar(msg, fillMessage(stateConfig.message, buildVars(sessionData)) + hint);
+
+      // Detectar si las transiciones son numéricas (menú de opciones)
+      const numericTriggers = (stateConfig.transitions || [])
+        .map(t => t.trigger)
+        .filter(t => /^\d+$/.test(String(t)));
+      if (numericTriggers.length > 0) {
+        const opciones = numericTriggers.sort((a,b) => a-b).join(', ');
+        await enviar(msg, `❌ Opción no válida. Por favor elige entre: *${opciones}*${hint}`);
+      } else {
+        await enviar(msg, fillMessage(stateConfig.message, buildVars(sessionData)) + hint);
+      }
       return;
     }
     if (global._intentos) {
