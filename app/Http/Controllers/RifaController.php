@@ -257,7 +257,7 @@ class RifaController extends Controller
         $products = \App\Models\Product::where('project_id', $bot->project_id)
                      ->where('is_available', true)
                      ->with('mainImage')
-                     ->orderBy('name')
+                     ->orderBy('price')
                      ->get()
                      ->map(fn($p) => [
                          'id'          => $p->id,
