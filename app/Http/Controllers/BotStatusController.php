@@ -314,7 +314,8 @@ class BotStatusController extends Controller
     {
         $request->validate(['image' => 'required|image|max:5120']); // 5MB max
         $path = $request->file('image')->store('bot-images', 'public');
-        return response()->json(['ok' => true, 'url' => Storage::url($path), 'path' => $path]);
+        $url  = asset('storage/' . $path);
+        return response()->json(['ok' => true, 'url' => $url, 'path' => $path]);
     }
 
     // ── Config ────────────────────────────────────────────────────
