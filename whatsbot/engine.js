@@ -477,28 +477,8 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
 
         // ── Acciones de RIFA ──────────────────────────────────
         case 'show_rifas': {
-            // Carga rifas y las envía (con imagen si tienen), además popula {rifas_lista}
+            // Solo carga datos en sesión — el mensaje lo controla el estado del portal
             sessionData = await loadRifasLista(sessionData);
-            const rifas = sessionData.rifas || [];
-            if (rifas.length === 0) {
-                await enviar(msg, '⚠️ No hay rifas disponibles en este momento.');
-            } else {
-                for (let i = 0; i < rifas.length; i++) {
-                    const r   = rifas[i];
-                    const txt = `*${i+1}.* ${r.texto}`;
-                    if (r.imagen_url) {
-                        try {
-                            const imageUrl = r.imagen_url.startsWith('http') ? r.imagen_url : `${LARAVEL_URL}${r.imagen_url}`;
-                            const media    = await MessageMedia.fromUrl(imageUrl, { unsafeMime: true });
-                            await client.sendMessage(msg.from, media, { caption: txt });
-                        } catch(e) {
-                            await enviar(msg, txt);
-                        }
-                    } else {
-                        await enviar(msg, txt);
-                    }
-                }
-            }
             break;
         }
 
