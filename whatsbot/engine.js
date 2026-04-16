@@ -1104,6 +1104,83 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
       break;
     }
 
+    case "save_solo_nombre": {
+      const nombreValid = validarNombre(body);
+      if (!nombreValid.valido) {
+        await enviar(msg, nombreValid.error + "\n\n📝 Escribe solo tu nombre completo (letras y espacios).");
+        return null;
+      }
+      return { ...sessionData, nombre: nombreValid.valor };
+    }
+
+    case "save_solo_dni": {
+      const soloDigitos = body.replace(/\D/g, "");
+      const dniValid = validarDNI(soloDigitos);
+      if (!dniValid.valido) {
+        await enviar(msg, dniValid.error + "\n\n📝 Escribe solo tu DNI (8 dígitos numéricos).");
+        return null;
+      }
+      return { ...sessionData, documento: dniValid.valor, dni: dniValid.valor };
+    }
+
+    case "save_solo_celular": {
+      const soloDigCel = body.replace(/\D/g, "");
+      const celValid = validarTelefono(soloDigCel);
+      if (!celValid.valido) {
+        await enviar(msg, celValid.error + "\n\n📝 Escribe solo tu número de celular (9 dígitos, ej: 987654321).");
+        return null;
+      }
+
+      // Ya tenemos nombre, DNI y celular — crear el pedido
+      sessionData = { ...sessionData, telefono: celValid.valor, celular: celValid.valor };
+
+      const resumen = "✅ *DATOS GUARDADOS*\n\n"
+        + `👤 *Nombre:* ${sessionData.nombre}\n`
+        + `🆔 *DNI:* ${sessionData.dni}\n`
+        + `📱 *Celular:* ${celValid.valor}`;
+      await enviar(msg, resumen);
+
+      const itemId = sessionData.itemId || sessionData.rifaId;
+      const oidExiste = sessionData.itemOrderId || sessionData.rifaOrderId;
+
+      if (!oidExiste && itemId) {
+        try {
+          const resp = await laravelPost("wa/rifa-order", {
+            rifa_id: itemId,
+            tickets: sessionData.itemCantidad || sessionData.rifaTickets || 1,
+            wa_number: waNumber,
+            nombre: sessionData.nombre,
+            dni: sessionData.dni,
+            telefono: celValid.valor,
+          });
+          if (resp?.ok) {
+            sessionData = {
+              ...sessionData,
+              orderNumber: resp.order_number,
+              itemTotal: Number(resp.monto).toFixed(2),
+              itemCantidad: resp.tickets,
+              itemNombre: resp.rifa_nombre,
+              itemOrderId: resp.order_id,
+              rifaTotal: Number(resp.monto).toFixed(2),
+              rifaTickets: resp.tickets,
+              rifaNombre: resp.rifa_nombre,
+              rifaOrderId: resp.order_id,
+            };
+          }
+        } catch (e) {
+          console.error("Error creando pedido:", e.message);
+        }
+      } else if (oidExiste) {
+        await laravelPost(`wa/rifa/${oidExiste}/data`, {
+          nombre: sessionData.nombre,
+          dni: sessionData.dni,
+          telefono: celValid.valor,
+        });
+      }
+
+      return sessionData;
+    }
+
     case "create_order": {
       const nombreMatch = body.match(/👤 \*?Cliente:\*? (.+)/);
       const totalMatch = body.match(
