@@ -92,7 +92,7 @@ class RifaController extends Controller
         // Encontrar la instancia del bot rifa
         $bot    = BotInstance::where('project_id', $project->id)
                     ->where('bot_type', 'rifa')->first();
-        $port   = $bot?->port ?? 3002;
+        $port   = $bot?->port ?? 3001;
         $botUrl = "http://127.0.0.1:{$port}";
 
         $numeros = $venta->ticket_numbers
