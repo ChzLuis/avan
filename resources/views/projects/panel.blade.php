@@ -3,7 +3,7 @@
 
 @php
     $csrf    = csrf_token();
-    $pid     = $activeProject->id;
+    $pid     = $activeProject?->id;
 
     $rubros = ['Retail','Salud','Comercio','Restaurante','Servicios','Educación','Tecnología','Construcción','Logística','Otro'];
 
