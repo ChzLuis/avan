@@ -265,6 +265,17 @@ client.on('message', async msg => {
 
         const session     = await getSession(waNumber);
         let { state: currentState, data: sessionData } = session;
+
+        // Sesión nueva — enviar bienvenida y esperar siguiente mensaje
+        if (!currentState) {
+            const inicioState = FLOW.states['inicio'];
+            if (inicioState?.message) {
+                await enviar(msg, fillMessage(inicioState.message, buildVars(sessionData)));
+            }
+            await saveSession(waNumber, 'inicio', sessionData);
+            return;
+        }
+
         const stateConfig = FLOW.states[currentState] || FLOW.states['inicio'];
 
         console.log(`📨 [${BOT_TYPE}] ${waNumber} | ${currentState} | ${body.substring(0,40)}`);
