@@ -276,6 +276,15 @@ client.on('message', async msg => {
             return;
         }
 
+        // ── Reset global: palabras clave que reinician el flujo ──
+        const resetWords = ['hola', 'menu', 'menú', 'inicio', 'start', 'comenzar', 'reiniciar'];
+        if (resetWords.includes(lower) && currentState !== 'inicio') {
+            const inicioState = FLOW.states['inicio'];
+            await saveSession(waNumber, 'inicio', {});
+            if (inicioState?.message) await enviar(msg, fillMessage(inicioState.message, buildVars({})));
+            return;
+        }
+
         const stateConfig = FLOW.states[currentState] || FLOW.states['inicio'];
 
         console.log(`📨 [${BOT_TYPE}] ${waNumber} | ${currentState} | ${body.substring(0,40)}`);
