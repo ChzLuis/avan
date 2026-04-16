@@ -1210,6 +1210,12 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
         rifas[selIdx] ||
         rifas.find((r) => r.nombre?.toLowerCase().includes(lower));
 
+      if (!selRifa) {
+        const total = rifas.length;
+        await enviar(msg, `❌ Opción no válida. Por favor elige un número entre *1* y *${total}*`);
+        return null; // no avanzar de estado
+      }
+
       if (selRifa) {
         // Asignar cantidad de tickets según el plan (sin preguntar cantidad)
         let ticketsIncluidos = 1;
