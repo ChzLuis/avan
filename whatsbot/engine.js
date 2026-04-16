@@ -216,21 +216,25 @@ async function loadRifasLista(sessionData) {
 }
 
 // ── Enviar lista con imágenes individuales ───────────────────
-async function enviarListaConImagenes(msg, rifas, mensajeInicio) {
+async function enviarListaConImagenes(msg, rifas, encabezado) {
     try {
-        await enviar(msg, mensajeInicio);
+        // Solo el encabezado sin lista de texto
+        const header = encabezado.split('\n')[0] || '🎰 *Productos disponibles:*';
+        await enviar(msg, header);
         for (let i = 0; i < rifas.length; i++) {
             const r       = rifas[i];
             const caption = `*${i+1}.* ${r.texto}`;
             if (r.imagen_url) {
                 try {
                     const media = await MessageMedia.fromUrl(r.imagen_url, { unsafeMime: true });
-                    await msg.reply(media, undefined, { caption });
+                    await client.sendMessage(msg.from, media, { caption });
                     continue;
                 } catch(e) { console.warn(`Imagen producto ${i+1} no enviada:`, e.message); }
             }
             await enviar(msg, caption);
         }
+        // Mensaje final para elegir
+        await enviar(msg, '👆 Escribe el *número* del plan que te interesa:');
     } catch(e) { console.error('enviarListaConImagenes:', e.message); }
 }
 
