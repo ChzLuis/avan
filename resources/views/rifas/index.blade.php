@@ -96,10 +96,21 @@
         @endif
 
         @if($v->status === 'pagado')
+        <a href="{{ route('rifas.ticket.preview', $v->id) }}" target="_blank"
+           class="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition">
+            👁️ Ver boleto
+        </a>
         <button onclick="enviarTicket({{ $v->id }})"
                 class="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition">
             🎟️ Enviar ticket
         </button>
+        @endif
+
+        @if($v->status === 'enviado')
+        <a href="{{ route('rifas.ticket.preview', $v->id) }}" target="_blank"
+           class="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition">
+            👁️ Ver boleto
+        </a>
         @endif
     </div>
 </div>
