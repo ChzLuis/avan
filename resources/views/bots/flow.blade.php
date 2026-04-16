@@ -118,7 +118,7 @@
             <div>
                 <label class="label">Mensaje del bot</label>
                 <textarea id="s-message" rows="4" placeholder="Hola! Soy el bot de {negocio}. ¿En qué puedo ayudarte?&#10;&#10;1️⃣ Ver productos&#10;2️⃣ Hacer pedido" class="input resize-none"></textarea>
-                <p class="text-xs text-gray-400 mt-1">Usa <code class="bg-gray-100 px-1 rounded">{negocio}</code>, <code class="bg-gray-100 px-1 rounded">{order_number}</code>, <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code>, <code class="bg-gray-100 px-1 rounded">{rifa_total}</code></p>
+                <p class="text-xs text-gray-400 mt-1">Variables: <code class="bg-gray-100 px-1 rounded">{negocio}</code> <code class="bg-gray-100 px-1 rounded">{rifas_lista}</code> <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code> <code class="bg-gray-100 px-1 rounded">{rifa_precio}</code> <code class="bg-gray-100 px-1 rounded">{rifa_total}</code> <code class="bg-gray-100 px-1 rounded">{nombre}</code> <code class="bg-gray-100 px-1 rounded">{dni}</code> <code class="bg-gray-100 px-1 rounded">{ciudad}</code></p>
             </div>
             <div>
                 <label class="label">Imágenes del bot <span class="text-gray-400 font-normal">(hasta 5)</span></label>
@@ -478,7 +478,7 @@ function selectState(id) {
                 <div>
                     <label class="label">Mensaje del bot</label>
                     <textarea id="e-message" rows="6" class="input resize-none">${escHtml(state.message)}</textarea>
-                    <p class="text-xs text-gray-400 mt-1">Variables: <code class="bg-gray-100 px-1 rounded">{negocio}</code> <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code> <code class="bg-gray-100 px-1 rounded">{rifa_total}</code></p>
+                    <p class="text-xs text-gray-400 mt-1">Variables: <code class="bg-gray-100 px-1 rounded">{negocio}</code> <code class="bg-gray-100 px-1 rounded">{rifas_lista}</code> <code class="bg-gray-100 px-1 rounded">{rifa_nombre}</code> <code class="bg-gray-100 px-1 rounded">{rifa_precio}</code> <code class="bg-gray-100 px-1 rounded">{rifa_total}</code> <code class="bg-gray-100 px-1 rounded">{nombre}</code> <code class="bg-gray-100 px-1 rounded">{dni}</code> <code class="bg-gray-100 px-1 rounded">{ciudad}</code></p>
                 </div>
                 <div>
                     <label class="label">Imágenes <span class="text-gray-400 font-normal">(hasta 5)</span></label>
