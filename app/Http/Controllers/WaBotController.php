@@ -103,8 +103,14 @@ class WaBotController extends Controller
         $data = $request->validate(['token' => 'required|string', 'flow_id' => 'required|integer', 'wa_number' => 'required|string']);
         if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
 
+        $existed = BotSession::where('flow_id', $data['flow_id'])->where('wa_number', $data['wa_number'])->exists();
         $session = BotSession::forNumber($data['flow_id'], $data['wa_number']);
-        return response()->json(['ok' => true, 'state' => $session->current_state, 'data' => $session->data ?? []]);
+        return response()->json([
+            'ok'      => true,
+            'state'   => $existed ? $session->current_state : null,
+            'is_new'  => !$existed,
+            'data'    => $session->data ?? [],
+        ]);
     }
 
     // ── Bot → Laravel: actualizar estado de sesión ────────────────────────────
