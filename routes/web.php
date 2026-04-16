@@ -51,6 +51,11 @@ Route::middleware(['auth'])->group(function () {
     // CRUD de proyectos (negocios)
     Route::resource('projects', ProjectController::class)->except(['index', 'show']);
 
+    // Panel de proyectos (superadmin) — fuera del middleware project.member
+    Route::get('/bixoadmin/projects', [ProjectController::class, 'panel'])->name('projects.panel');
+    Route::patch('/bixoadmin/projects/{target}/toggle', [ProjectController::class, 'toggleStatus'])->name('projects.toggle');
+    Route::post('/bixoadmin/projects/{target}/modules', [ProjectController::class, 'updateModules'])->name('projects.modules');
+
     // Panel del negocio — todas las rutas bajo /panel
     Route::prefix('bixoadmin')->middleware(['project.member'])->group(function () {
 
@@ -120,10 +125,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/catalogs/{catalog}/values/{value}',    [CatalogListController::class, 'updateValue'])->name('catalogs.values.update');
         Route::delete('/catalogs/{catalog}/values/{value}', [CatalogListController::class, 'destroyValue'])->name('catalogs.values.destroy');
 
-        // Proyectos (panel 3 columnas)
-        Route::get('/projects',                  [ProjectController::class, 'panel'])->name('projects.panel');
-        Route::patch('/projects/{target}/toggle',[ProjectController::class, 'toggleStatus'])->name('projects.toggle');
-        Route::post('/projects/{target}/modules',[ProjectController::class, 'updateModules'])->name('projects.modules');
+        // Proyectos (panel 3 columnas) — rutas movidas fuera del grupo project.member
 
         // Bots WhatsApp
         Route::get('/bots',                             [BotStatusController::class, 'index'])->name('bots.index');
