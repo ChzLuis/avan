@@ -264,7 +264,7 @@ class RifaController extends Controller
                          'nombre'      => $p->name,
                          'descripcion' => $p->description ?? '',
                          'precio'      => (float) $p->price,
-                         'imagen_url'  => $p->mainImage?->url ? asset('storage/' . $p->mainImage->url) : null,
+                         'imagen_url'  => $p->mainImage?->url ? (str_starts_with($p->mainImage->url, 'http') ? $p->mainImage->url : asset('storage/' . $p->mainImage->url)) : null,
                          'texto'       => "*{$p->name}*\n💰 S/ " . number_format($p->price, 2) . ($p->description ? "\n_{$p->description}_" : ''),
                      ]);
 
