@@ -4,7 +4,7 @@
 @php
     $csrf     = csrf_token();
     $pid      = $project->id;
-    $base     = url("/bixoadmin/catalog");
+    $base     = url("/bixoadmin");
     $currency = $project->setting('currency', 'S/');
 
     $supplierList = $project->catalogLists()->where('type', 'proveedor')->with('values')->first();
@@ -28,6 +28,13 @@
         <p class="text-xs text-gray-400 mt-0.5" id="product-count-label">Cargando...</p>
     </div>
     <div class="flex items-center gap-2">
+        <a href="{{ route('categories.index') }}"
+           class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+            Categorías
+        </a>
         <a href="{{ route('services.index') }}"
            class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
             <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +74,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                     </svg>
                     Importar archivo
-                    <input type="file" accept=".csv,.txt,.xls,.xlsx" class="hidden" id="import-file" @change="importCSV($event)">
+                    <input type="file" accept=".csv,.txt,.xls,.xlsx" class="hidden" id="import-file"
+                           @change="window.dispatchEvent(new CustomEvent('do-import-csv', { detail: { file: $event.target.files[0] } })); $event.target.value=''">
                 </label>
                 <div class="border-t border-gray-100 my-1"></div>
                 <a href="{{ route('products.export') }}"
@@ -75,7 +83,7 @@
                     <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
-                    Exportar CSV (genérico)
+                    Exportar Excel
                 </a>
                 <div class="border-t border-gray-100 my-1"></div>
                 <p class="px-4 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Para marketplaces</p>
@@ -109,188 +117,226 @@
 </div>
 
 {{-- BODY --}}
-<div class="flex flex-1 overflow-hidden"
-     x-data="{
-         products: {{ Illuminate\Support\Js::from($products->map(fn($p) => [
-             'id'               => $p->id,
-             'name'             => $p->name,
-             'sku'              => $p->sku ?? '',
-             'barcode'          => $p->barcode ?? '',
-             'description'      => $p->description ?? '',
-             'notes'            => $p->notes ?? '',
-             'price'            => (float)$p->price,
-             'compare_price'    => $p->compare_price !== null ? (float)$p->compare_price : null,
-             'wholesale_price'  => $p->wholesale_price !== null ? (float)$p->wholesale_price : null,
-             'wholesale_min_qty'=> $p->wholesale_min_qty ?? null,
-             'wholesale_unit'   => $p->wholesale_unit ?? '',
-             'cost'             => $p->cost !== null ? (float)$p->cost : null,
-             'unit'             => $p->unit ?? '',
-             'stock'            => (int)($p->stock ?? 0),
-             'stock_min'        => 0,
-             'stock_max'        => 0,
-             'location'         => '',
-             'supplier'         => '',
-             'has_tax'          => false,
-             'tax_rate'         => 18,
-             'is_available'     => (bool)$p->is_available,
-             'category_id'      => $p->category_id,
-             'brand_catalog_id' => $p->brand_catalog_id,
-             'category_name'    => $p->category?->name ?? '',
-             'images'           => $p->images->map(fn($i) => ['id'=>$i->id,'url'=>$i->url,'is_main'=>$i->is_main])->values()->toArray(),
-             'main_image'       => $p->mainImage?->url,
-         ])) }},
-         categories: {{ Illuminate\Support\Js::from($categories) }},
-         brands:     {{ Illuminate\Support\Js::from($brands->map(fn($b) => ['id'=>$b->id,'label'=>$b->label])) }},
-         units:      {{ Illuminate\Support\Js::from($units->map(fn($u) => $u->label)) }},
-         suppliers:  {{ Illuminate\Support\Js::from($suppliers->map(fn($s) => $s->label)) }},
-         locations:  {{ Illuminate\Support\Js::from($locations->map(fn($l) => $l->label)) }},
-         taxes:      {{ Illuminate\Support\Js::from($taxes->map(fn($t) => ['label'=>$t->label,'rate'=>18])) }},
-         hasCatalogs: {{ $allCatalogs > 0 ? 'true' : 'false' }},
-         search: '',
-         filterCat: null,
-         filterStatus: '',
-         filterStock: false,
-         panel: 'list',
+<script>
+window.__productPageData = {
+    products:   {!! Illuminate\Support\Js::from($products->map(fn($p) => [
+        'id'               => $p->id,
+        'name'             => $p->name,
+        'sku'              => $p->sku ?? '',
+        'barcode'          => $p->barcode ?? '',
+        'description'      => $p->description ?? '',
+        'notes'            => $p->notes ?? '',
+        'price'            => (float)$p->price,
+        'compare_price'    => $p->compare_price !== null ? (float)$p->compare_price : null,
+        'wholesale_price'  => $p->wholesale_price !== null ? (float)$p->wholesale_price : null,
+        'wholesale_min_qty'=> $p->wholesale_min_qty ?? null,
+        'wholesale_unit'   => $p->wholesale_unit ?? '',
+        'cost'             => $p->cost !== null ? (float)$p->cost : null,
+        'unit'             => $p->unit ?? '',
+        'stock'            => (int)($p->stock ?? 0),
+        'stock_min'        => (int)($p->stock_min ?? 0),
+        'stock_max'        => (int)($p->stock_max ?? 0),
+        'location'         => '',
+        'supplier'         => '',
+        'has_tax'          => false,
+        'tax_rate'         => 18,
+        'is_available'     => (bool)$p->is_available,
+        'category_id'      => $p->category_id,
+        'brand_catalog_id' => $p->brand_catalog_id,
+        'category_name'    => $p->category?->name ?? '',
+        'images'           => $p->images->map(fn($i) => ['id'=>$i->id,'url'=>$i->url,'is_main'=>$i->is_main])->values()->toArray(),
+        'main_image'       => $p->mainImage?->url,
+    ])) !!},
+    categories: {!! Illuminate\Support\Js::from($categories) !!},
+    brands:     {!! Illuminate\Support\Js::from($brands->map(fn($b) => ['id'=>$b->id,'label'=>$b->label])) !!},
+    units:      {!! Illuminate\Support\Js::from($units->map(fn($u) => $u->label)) !!},
+    suppliers:  {!! Illuminate\Support\Js::from($suppliers->map(fn($s) => $s->label)) !!},
+    locations:  {!! Illuminate\Support\Js::from($locations->map(fn($l) => $l->label)) !!},
+    taxes:      {!! Illuminate\Support\Js::from($taxes->map(fn($t) => ['label'=>$t->label,'rate'=>18])) !!},
+    hasCatalogs: {{ $allCatalogs > 0 ? 'true' : 'false' }},
+    baseUrl:    '{{ $base }}',
+    csrf:       '{{ $csrf }}',
+};
+document.addEventListener('alpine:init', () => {
+    Alpine.data('productPage', () => ({
+        products:   window.__productPageData.products,
+        categories: window.__productPageData.categories,
+        brands:     window.__productPageData.brands,
+        units:      window.__productPageData.units,
+        suppliers:  window.__productPageData.suppliers,
+        locations:  window.__productPageData.locations,
+        taxes:      window.__productPageData.taxes,
+        hasCatalogs: window.__productPageData.hasCatalogs,
+        baseUrl:    window.__productPageData.baseUrl,
+        csrf:       window.__productPageData.csrf,
+        search: '',
+        filterCat: null,
+        filterStatus: '',
+        filterStock: false,
+        filterLowStock: false,
+        panel: 'list',
+        selected: null,
+        creating: false,
+        tab: 'info',
+        saving: false,
+        importing: false,
+        form: {},
+        importLog: { show: false, created: 0, updated: 0, skipped: 0, errors: [], reloadOnClose: false },
 
-         selected: null,
-         creating: false,
-         tab: 'info',
-         saving: false,
-         importing: false,
-         form: {},
+        get filtered() {
+            return this.products.filter(p => {
+                if (this.search && !p.name.toLowerCase().includes(this.search.toLowerCase())
+                    && !(p.sku||'').toLowerCase().includes(this.search.toLowerCase())) return false;
+                if (this.filterCat !== null) {
+                    const cat = this.categories.find(c => c.id === this.filterCat);
+                    const childIds = cat ? (cat.children||[]).map(s => s.id) : [];
+                    if (p.category_id !== this.filterCat && !childIds.includes(p.category_id)) return false;
+                }
+                if (this.filterStatus === 'active'   && !p.is_available) return false;
+                if (this.filterStatus === 'inactive' &&  p.is_available) return false;
+                if (this.filterStock && (p.stock||0) > 0) return false;
+                if (this.filterLowStock && !((p.stock||0) > 0 && (p.stock_min||0) > 0 && (p.stock||0) <= (p.stock_min||0))) return false;
+                return true;
+            });
+        },
 
-         get filtered() {
-             return this.products.filter(p => {
-                 if (this.search && !p.name.toLowerCase().includes(this.search.toLowerCase())
-                     && !(p.sku||'').toLowerCase().includes(this.search.toLowerCase())) return false;
-                 if (this.filterCat !== null && p.category_id !== this.filterCat) return false;
-                 if (this.filterStatus === 'active'   && !p.is_available) return false;
-                 if (this.filterStatus === 'inactive' &&  p.is_available) return false;
-                 if (this.filterStock && (p.stock||0) > 0) return false;
-                 return true;
-             });
-         },
+        get margin() {
+            const p = parseFloat(this.form.price), c = parseFloat(this.form.cost);
+            if (!p || !c || isNaN(p) || isNaN(c)) return null;
+            return (((p - c) / p) * 100).toFixed(1);
+        },
 
-         get margin() {
-             const p = parseFloat(this.form.price), c = parseFloat(this.form.cost);
-             if (!p || !c || isNaN(p) || isNaN(c)) return null;
-             return (((p - c) / p) * 100).toFixed(1);
-         },
+        get priceWithTax() {
+            const p = parseFloat(this.form.price);
+            if (!p || !this.form.has_tax) return null;
+            return (p * (1 + (parseFloat(this.form.tax_rate)||18)/100)).toFixed(2);
+        },
 
-         get priceWithTax() {
-             const p = parseFloat(this.form.price);
-             if (!p || !this.form.has_tax) return null;
-             return (p * (1 + (parseFloat(this.form.tax_rate)||18)/100)).toFixed(2);
-         },
+        get stockStatus() {
+            const s = parseInt(this.form.stock) || 0;
+            const min = parseInt(this.form.stock_min) || 0;
+            if (s <= 0) return { color:'red', label:'Agotado sin stock' };
+            if (min > 0 && s <= min) return { color:'amber', label:'Stock bajo: quedan ' + s + ' unidades' };
+            return { color:'green', label:'En stock: ' + s + ' unidades disponibles' };
+        },
 
-         get stockStatus() {
-             const s = parseInt(this.form.stock) || 0;
-             const min = parseInt(this.form.stock_min) || 0;
-             if (s <= 0) return { color:'red', label:'Agotado sin stock' };
-             if (min > 0 && s <= min) return { color:'amber', label:'Stock bajo: quedan ' + s + ' unidades' };
-             return { color:'green', label:'En stock: ' + s + ' unidades disponibles' };
-         },
+        clearFilters() {
+            this.search = ''; this.filterCat = null; this.filterStatus = ''; this.filterStock = false; this.filterLowStock = false;
+        },
 
-         clearFilters() {
-             this.search = ''; this.filterCat = null; this.filterStatus = ''; this.filterStock = false;
-         },
+        select(p) {
+            this.selected = p; this.creating = false; this.tab = 'info';
+            this.form = { ...p };
+        },
 
-         select(p) {
-             this.selected = p; this.creating = false; this.tab = 'info';
-             this.form = { ...p };
-         },
+        openNew() {
+            this.selected = null; this.creating = true; this.tab = 'info';
+            this.form = {
+                name:'', sku:'', barcode:'', description:'', notes:'',
+                price:'', compare_price:'', wholesale_price:'', wholesale_min_qty:'', wholesale_unit:'', cost:'', unit:'',
+                stock:0, stock_min:0, stock_max:0,
+                location:'', supplier:'',
+                has_tax:false, tax_rate:18,
+                is_available:true, category_id:'', brand_catalog_id:''
+            };
+        },
 
-         openNew() {
-             this.selected = null; this.creating = true; this.tab = 'info';
-             this.form = {
-                 name:'', sku:'', barcode:'', description:'', notes:'',
-                 price:'', compare_price:'', wholesale_price:'', wholesale_min_qty:'', wholesale_unit:'', cost:'', unit:'',
-                 stock:0, stock_min:0, stock_max:0,
-                 location:'', supplier:'',
-                 has_tax:false, tax_rate:18,
-                 is_available:true, category_id:'', brand_catalog_id:''
-             };
-         },
+        async save() {
+            this.saving = true;
+            const url    = this.creating ? this.baseUrl + '/products' : this.baseUrl + '/products/' + this.selected.id;
+            const method = this.creating ? 'POST' : 'PUT';
+            const res    = await fetch(url, {
+                method,
+                headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': this.csrf, 'Accept':'application/json' },
+                body: JSON.stringify(this.form)
+            });
+            const data = await res.json();
+            const wasCreating = this.creating;
+            if (this.creating) {
+                this.products.push(data.product);
+                this.select(data.product);
+            } else {
+                const idx = this.products.findIndex(p => p.id === data.product.id);
+                if (idx > -1) this.products[idx] = data.product;
+                this.selected = data.product;
+                this.form = { ...data.product };
+            }
+            this.creating = false;
+            this.saving = false;
+            document.getElementById('product-count-label').textContent = this.filtered.length + ' producto' + (this.filtered.length !== 1 ? 's' : '');
+            window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: wasCreating ? 'Producto creado' : 'Cambios guardados', type: 'success' } }));
+        },
 
-         async save() {
-             this.saving = true;
-             const url    = this.creating ? '{{ $base }}/products' : '{{ $base }}/products/' + this.selected.id;
-             const method = this.creating ? 'POST' : 'PUT';
-             const res    = await fetch(url, {
-                 method,
-                 headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':'{{ $csrf }}', 'Accept':'application/json' },
-                 body: JSON.stringify(this.form)
-             });
-             const data = await res.json();
-             if (this.creating) {
-                 this.products.push(data.product);
-                 this.select(data.product);
-             } else {
-                 const idx = this.products.findIndex(p => p.id === data.product.id);
-                 if (idx > -1) this.products[idx] = data.product;
-                 this.selected = data.product;
-                 this.form = { ...data.product };
-             }
-             this.creating = false;
-             this.saving = false;
-             document.getElementById('product-count-label').textContent = this.filtered.length + ' producto' + (this.filtered.length !== 1 ? 's' : '');
-         },
+        async del() {
+            const ok = await window.__confirm({
+                title: 'Eliminar producto',
+                msg: 'Eliminar "' + this.selected.name + '"? Esta accion no se puede deshacer.',
+                confirmLabel: 'Si, eliminar',
+            });
+            if (!ok) return;
+            await fetch(this.baseUrl + '/products/' + this.selected.id, {
+                method: 'DELETE', headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept':'application/json' }
+            });
+            window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Producto eliminado', type: 'warning' } }));
+            this.products = this.products.filter(p => p.id !== this.selected.id);
+            this.selected = null; this.creating = false;
+        },
 
-         async del() {
-             if (!confirm('Eliminar ' + this.selected.name + '?')) return;
-             await fetch('{{ $base }}/products/' + this.selected.id, {
-                 method: 'DELETE', headers: { 'X-CSRF-TOKEN':'{{ $csrf }}', 'Accept':'application/json' }
-             });
-             this.products = this.products.filter(p => p.id !== this.selected.id);
-             this.selected = null; this.creating = false;
-         },
+        dragId: null,
 
-         async importCSV(event) {
-             const file = event.target.files[0]; if (!file) return;
-             this.importing = true;
-             const fd = new FormData();
-             fd.append('file', file);
-             fd.append('_token', '{{ $csrf }}');
-             try {
-                 const res  = await fetch('{{ $base }}/products/import', { method:'POST', headers:{'Accept':'application/json'}, body: fd });
-                 const data = await res.json();
-                 this.importing = false;
-                 event.target.value = '';
+        dragStart(id) { this.dragId = id; },
+        dragOver(id) {
+            if (this.dragId === null || this.dragId === id) return;
+            const from = this.products.findIndex(p => p.id === this.dragId);
+            const to   = this.products.findIndex(p => p.id === id);
+            if (from === -1 || to === -1) return;
+            const arr = [...this.products];
+            arr.splice(to, 0, arr.splice(from, 1)[0]);
+            this.products = arr;
+        },
+        async dragEnd() {
+            if (this.dragId === null) return;
+            this.dragId = null;
+            await fetch(this.baseUrl + '/products/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf },
+                body: JSON.stringify({ ids: this.products.map(p => p.id) }),
+            });
+        },
 
-                 if (data.created === 0 && (!data.errors || data.errors.length === 0)) {
-                     alert('⚠️ No se importó ningún producto.\n\nVerifica que el archivo tenga datos desde la fila 3 en adelante y que la columna \'nombre\' esté completa.');
-                     return;
-                 }
+        async importCSV(file) {
+            if (!file) return;
+            this.importing = true;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('_token', this.csrf);
+            try {
+                const res  = await fetch(this.baseUrl + '/products/import', { method:'POST', headers:{'Accept':'application/json'}, body: fd });
+                const data = await res.json();
+                this.importing = false;
+                this.importLog = { show: true, created: data.created||0, updated: data.updated||0, skipped: data.skipped||0, errors: data.errors||[], reloadOnClose: true };
+            } catch(e) {
+                this.importing = false;
+                this.importLog = { show: true, created: 0, updated: 0, skipped: 0, errors: ['Error de red al importar. Verifica que el archivo sea CSV o XLS valido.'] };
+            }
+        },
 
-                 if (data.errors && data.errors.length) {
-                     alert(`✅ Importados: ${data.created} productos\n⚠️ Errores en ${data.errors.length} filas:\n\n` + data.errors.slice(0,5).join('\n'));
-                 } else {
-                     alert(`✅ ¡Importación exitosa!\n\n${data.created} productos agregados al catálogo.`);
-                 }
-
-                 // Recargar lista de productos
-                 const r = await fetch('{{ $base }}/products?json=1', { headers:{'Accept':'application/json'} });
-                 const d = await r.json();
-                 if (d.products) { this.products = d.products; this.filtered = d.products; }
-                 else location.reload();
-             } catch(e) {
-                 this.importing = false;
-                 event.target.value = '';
-                 alert('❌ Error al importar. Verifica que el archivo sea CSV o XLS válido.');
-             }
-         }
-     }"
-     x-init="
-        $nextTick(() => {
-            const el = document.getElementById('product-count-label');
-            if (el) el.textContent = filtered.length + ' producto' + (filtered.length !== 1 ? 's' : '');
-        });
-        $watch('filtered', v => {
-            const el = document.getElementById('product-count-label');
-            if (el) el.textContent = v.length + ' producto' + (v.length !== 1 ? 's' : '');
-        });
-        window.addEventListener('open-new-product', () => { $data.openNew(); $data.panel = 'detail'; });
-     ">
+        init() {
+            this.$nextTick(() => {
+                const el = document.getElementById('product-count-label');
+                if (el) el.textContent = this.filtered.length + ' producto' + (this.filtered.length !== 1 ? 's' : '');
+            });
+            this.$watch('filtered', v => {
+                const el = document.getElementById('product-count-label');
+                if (el) el.textContent = v.length + ' producto' + (v.length !== 1 ? 's' : '');
+            });
+            window.addEventListener('open-new-product', () => { this.openNew(); this.panel = 'detail'; });
+            window.addEventListener('do-import-csv', (e) => { this.importCSV(e.detail.file); });
+        },
+    }));
+});
+</script>
+<div class="flex flex-1 overflow-hidden" x-data="productPage()">
 
 {{-- ─── PANEL FILTROS (56px) ─────────────────────────────────────── --}}
 <div class="w-14 border-r border-gray-200 bg-gray-50 hidden md:flex flex-col items-center py-3 gap-2 flex-shrink-0">
@@ -305,15 +351,15 @@
             </svg>
         </button>
         <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
-            <template x-if="filterStatus===''">Todos los estados</template>
-            <template x-if="filterStatus==='active'">Solo activos</template>
-            <template x-if="filterStatus==='inactive'">Solo inactivos</template>
+            <template x-if="filterStatus===''"><span>Todos los estados</span></template>
+            <template x-if="filterStatus==='active'"><span>Solo activos</span></template>
+            <template x-if="filterStatus==='inactive'"><span>Solo inactivos</span></template>
         </span>
     </div>
 
     {{-- Sin stock --}}
     <div class="relative group">
-        <button @click="filterStock = !filterStock"
+        <button @click="filterStock = !filterStock; if(filterStock) filterLowStock=false"
                 :class="filterStock ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-gray-600'"
                 class="w-9 h-9 flex items-center justify-center rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -324,10 +370,23 @@
               x-text="filterStock ? 'Mostrando agotados' : 'Filtrar agotados'"></span>
     </div>
 
+    {{-- Stock bajo --}}
+    <div class="relative group">
+        <button @click="filterLowStock = !filterLowStock; if(filterLowStock) filterStock=false"
+                :class="filterLowStock ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-gray-600'"
+                class="w-9 h-9 flex items-center justify-center rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+        </button>
+        <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10"
+              x-text="filterLowStock ? 'Mostrando stock bajo' : 'Filtrar stock bajo'"></span>
+    </div>
+
     {{-- Reset --}}
     <div class="relative group">
         <button @click="clearFilters()"
-                :class="(search||filterCat!==null||filterStatus!==''||filterStock) ? 'bg-amber-100 text-amber-600' : 'text-gray-300'"
+                :class="(search||filterCat!==null||filterStatus!==''||filterStock||filterLowStock) ? 'bg-amber-100 text-amber-600' : 'text-gray-300'"
                 class="w-9 h-9 flex items-center justify-center rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -399,10 +458,40 @@
             </div>
         </button>
 
+        {{-- Estado vacío --}}
+        <div x-show="filtered.length === 0 && !creating" class="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
+                <svg class="w-7 h-7 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+            </div>
+            <template x-if="search || filterCat !== null || filterStatus !== ''">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Sin resultados</p>
+                    <p class="text-xs text-gray-400 mt-1">Prueba con otros filtros</p>
+                    <button @click="clearFilters()" class="mt-3 text-xs text-indigo-600 font-medium hover:underline">Limpiar filtros</button>
+                </div>
+            </template>
+            <template x-if="!search && filterCat === null && filterStatus === ''">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Sin productos aún</p>
+                    <p class="text-xs text-gray-400 mt-1 mb-3">Crea tu primer producto o importa desde Excel</p>
+                    <button @click="openNew(); panel='detail'"
+                            class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-lg transition">
+                        + Crear producto
+                    </button>
+                </div>
+            </template>
+        </div>
+
         <template x-for="p in filtered" :key="p.id">
             <button @click="select(p); panel='detail'"
-                    class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
-                    :class="selected?.id===p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
+                    draggable="true"
+                    @dragstart="dragStart(p.id)"
+                    @dragover.prevent="dragOver(p.id)"
+                    @dragend="dragEnd()"
+                    class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left cursor-grab active:cursor-grabbing"
+                    :class="[selected?.id===p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : '', dragId===p.id ? 'opacity-40' : '']">
                 <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
@@ -422,6 +511,10 @@
                     <span x-show="(p.stock||0) <= 0"
                           class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-red-100 text-red-600">
                         Agotado
+                    </span>
+                    <span x-show="(p.stock||0) > 0 && (p.stock_min||0) > 0 && (p.stock||0) <= (p.stock_min||0)"
+                          class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700">
+                        Stock bajo
                     </span>
                 </div>
             </button>
@@ -534,9 +627,18 @@
                                 <a href="{{ route('categories.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
                             <select x-model.number="form.category_id" class="input">
-                                <option value="">Sin categoria</option>
+                                <option value="">Sin categoría</option>
                                 <template x-for="c in categories" :key="c.id">
-                                    <option :value="c.id" x-text="c.name"></option>
+                                    <template x-if="c.children && c.children.length > 0">
+                                        <optgroup :label="c.name">
+                                            <template x-for="s in c.children" :key="s.id">
+                                                <option :value="s.id" x-text="'  └ ' + s.name"></option>
+                                            </template>
+                                        </optgroup>
+                                    </template>
+                                    <template x-if="!c.children || c.children.length === 0">
+                                        <option :value="c.id" x-text="c.name"></option>
+                                    </template>
                                 </template>
                             </select>
                             <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del modulo de categorias</p>
@@ -583,74 +685,97 @@
                 </div>
 
                 {{-- TAB: PRECIOS --}}
-                <div x-show="tab==='precios'" x-cloak class="p-6 max-w-2xl space-y-5">
+                <div x-show="tab==='precios'" x-cloak class="p-6 max-w-2xl space-y-4">
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="label">Precio de venta *</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
-                                <input type="number" x-model="form.price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-0.5">Precio final para el cliente</p>
+                    {{-- SECCIÓN MINORISTA --}}
+                    <div class="rounded-xl overflow-hidden border border-blue-200">
+                        <div class="bg-blue-600 px-4 py-2 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            <p class="text-xs font-bold text-white uppercase tracking-wider">Venta Minorista — cliente individual</p>
                         </div>
-                        <div>
-                            <label class="label">Precio oferta (tachado)</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
-                                <input type="number" x-model="form.compare_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-0.5">Se muestra <s>tachado</s> como precio anterior</p>
-                        </div>
-                        @if($project->setting('wholesale_enabled') === '1')
-                        <div class="col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                            <p class="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-3">💼 Precio por mayor</p>
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="label">Precio mayorista</label>
-                                    <div class="relative">
-                                        <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
-                                        <input type="number" x-model="form.wholesale_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
-                                    </div>
-                                    <p class="text-[10px] text-gray-400 mt-0.5">Precio al por mayor</p>
-                                </div>
-                                <div>
-                                    <label class="label">Cantidad mínima</label>
-                                    <input type="number" x-model="form.wholesale_min_qty" min="1" step="1" class="input" placeholder="Ej: 25">
-                                    <p class="text-[10px] text-gray-400 mt-0.5">Unidades para activar este precio</p>
-                                </div>
-                                <div>
-                                    <label class="label">Unidad mayorista</label>
-                                    <input type="text" x-model="form.wholesale_unit" class="input" placeholder="Ej: saco, caja, docena">
-                                    <p class="text-[10px] text-gray-400 mt-0.5">Ej: saco de 25kg, caja x12</p>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-                        <div>
-                            <label class="label">Costo de compra</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
-                                <input type="number" x-model="form.cost" step="0.01" min="0" class="input pl-10" placeholder="0.00">
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-0.5">Para calcular margen de ganancia</p>
-                        </div>
-                        <div>
-                            <label class="label">Unidad de medida</label>
-                            <template x-if="units.length > 0">
-                                <div>
+                        <div class="p-4 bg-blue-50 grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="label">Unidad de medida</label>
+                                <template x-if="units.length > 0">
                                     <select x-model="form.unit" class="input">
                                         <option value="">Seleccionar</option>
                                         <template x-for="u in units" :key="u">
                                             <option :value="u" x-text="u"></option>
                                         </template>
                                     </select>
-                                    <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del catalogo de configuracion</p>
+                                </template>
+                                <template x-if="units.length === 0">
+                                    <input type="text" x-model="form.unit" class="input" placeholder="Ej: unidad, kg, litro">
+                                </template>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Ej: unidad, kg, m2</p>
+                            </div>
+                            <div>
+                                <label class="label">Precio unitario *</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
                                 </div>
-                            </template>
-                            <template x-if="units.length === 0">
-                                <input type="text" x-model="form.unit" class="input" placeholder="Ej: unidad, kg, m2, litro">
-                            </template>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Precio final al cliente</p>
+                            </div>
+                            <div>
+                                <label class="label">Precio anterior (tachado)</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.compare_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Se muestra <s>tachado</s> como oferta</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- SECCIÓN MAYORISTA --}}
+                    <div class="rounded-xl overflow-hidden border border-green-200">
+                        <div class="bg-green-700 px-4 py-2 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <p class="text-xs font-bold text-white uppercase tracking-wider">Venta Mayorista — compra al por mayor</p>
+                        </div>
+                        <div class="p-4 bg-green-50 grid grid-cols-4 gap-4">
+                            <div>
+                                <label class="label">Unidad mayorista</label>
+                                <input type="text" x-model="form.wholesale_unit" class="input" placeholder="Ej: caja, saco, docena">
+                                <p class="text-[10px] text-gray-400 mt-0.5">Ej: caja x12, saco 25kg</p>
+                            </div>
+                            <div>
+                                <label class="label">Precio x mayor</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.wholesale_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Precio al por mayor</p>
+                            </div>
+                            <div>
+                                <label class="label">P. venta mayorista</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.compare_price" step="0.01" min="0" class="input pl-10 bg-gray-100" placeholder="0.00" readonly>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Igual al precio anterior</p>
+                            </div>
+                            <div>
+                                <label class="label">Cantidad mínima</label>
+                                <input type="number" x-model="form.wholesale_min_qty" min="1" step="1" class="input" placeholder="Ej: 25">
+                                <p class="text-[10px] text-gray-400 mt-0.5">Unidades para activar precio mayor</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- COSTO --}}
+                    <div class="rounded-xl border border-gray-200 p-4 bg-gray-50">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Costo interno (privado)</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label">Costo de compra</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.cost" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Lo que te cuesta a ti — no se muestra al cliente</p>
+                            </div>
                         </div>
                     </div>
 
@@ -867,7 +992,7 @@
                                 <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
                                     <button x-show="!img.is_main"
                                             @click="
-                                                await fetch('{{ url('/bixoadmin/catalog/products') }}/' + selected.id + '/images/' + img.id + '/main', {
+                                                await fetch('{{ url('/bixoadmin/products') }}/' + selected.id + '/images/' + img.id + '/main', {
                                                     method:'PATCH', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}
                                                 });
                                                 selected.images.forEach(i => i.is_main = false);
@@ -877,7 +1002,7 @@
                                             title="Marcar como principal">⭐</button>
                                     <button @click="
                                                 if(!confirm('¿Eliminar imagen?')) return;
-                                                await fetch('{{ url('/bixoadmin/catalog/products') }}/' + selected.id + '/images/' + img.id, {
+                                                await fetch('{{ url('/bixoadmin/products') }}/' + selected.id + '/images/' + img.id, {
                                                     method:'DELETE', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}
                                                 });
                                                 selected.images = selected.images.filter(i => i.id !== img.id);
@@ -903,7 +1028,7 @@
                                             const fd = new FormData();
                                             fd.append('image', file);
                                             fd.append('_token', '{{ csrf_token() }}');
-                                            const res = await fetch('{{ url('/bixoadmin/catalog/products') }}/' + selected.id + '/images', { method:'POST', body: fd });
+                                            const res = await fetch('{{ url('/bixoadmin/products') }}/' + selected.id + '/images', { method:'POST', body: fd });
                                             const data = await res.json();
                                             if (data.ok) {
                                                 if (!selected.images) selected.images = [];
@@ -960,9 +1085,66 @@
         </div>
     </template>
 
+{{-- ── Modal log de importación ────────────────────────────────────────────── --}}
+<div x-show="importLog.show" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+     @keydown.escape.window="importLog.show=false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        {{-- Header --}}
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">📋</span>
+                <h3 class="font-semibold text-gray-800">Resultado de importación</h3>
+            </div>
+            <button @click="importLog.show=false" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        {{-- Stats --}}
+        <div class="px-6 py-4 grid grid-cols-3 gap-3">
+            <div class="rounded-xl bg-green-50 border border-green-200 px-3 py-3 text-center">
+                <div class="text-2xl font-bold text-green-700" x-text="importLog.created"></div>
+                <div class="text-xs text-green-600 mt-0.5">Creados</div>
+            </div>
+            <div class="rounded-xl bg-blue-50 border border-blue-200 px-3 py-3 text-center">
+                <div class="text-2xl font-bold text-blue-700" x-text="importLog.updated"></div>
+                <div class="text-xs text-blue-600 mt-0.5">Actualizados</div>
+            </div>
+            <div class="rounded-xl bg-red-50 border border-red-200 px-3 py-3 text-center">
+                <div class="text-2xl font-bold text-red-700" x-text="importLog.errors.length"></div>
+                <div class="text-xs text-red-600 mt-0.5">Errores</div>
+            </div>
+        </div>
+        {{-- Sin cambios --}}
+        <div x-show="importLog.created===0 && importLog.updated===0 && importLog.errors.length===0"
+             class="px-6 pb-4 text-sm text-gray-500 text-center">
+            No se encontraron filas para importar.
+        </div>
+        {{-- Lista de errores --}}
+        <div x-show="importLog.errors.length > 0" class="px-6 pb-4">
+            <p class="text-xs font-semibold text-red-600 mb-2">Detalle de errores:</p>
+            <ul class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1.5 max-h-48 overflow-y-auto">
+                <template x-for="(err, i) in importLog.errors" :key="i">
+                    <li class="text-xs text-red-700 flex gap-2">
+                        <span class="text-red-400 flex-shrink-0">•</span>
+                        <span x-text="err"></span>
+                    </li>
+                </template>
+            </ul>
+        </div>
+        {{-- Footer --}}
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-end">
+            <button @click="location.reload()"
+                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                Entendido
+            </button>
+        </div>
+    </div>
+</div>{{-- /modal --}}
+
 </div>{{-- /detalle --}}
 </div>{{-- /body --}}
-</div>{{-- /page --}}
 
+</div>{{-- /page --}}
 </x-slot>
 </x-app-layout>
