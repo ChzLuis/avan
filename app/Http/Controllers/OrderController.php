@@ -71,11 +71,18 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
+        $isSales = request()->routeIs('bixosales.*');
         /** @var \App\Models\Project $project */
-        $project = app('active_project');
+        $project = $isSales
+            ? \App\Models\Project::findOrFail(session('comercial_project_id'))
+            : app('active_project');
         abort_unless($order->project_id === $project->id, 403);
         $order->load('items');
-        return response()->json($order);
+        $data = $order->toArray();
+        if ($order->payment_proof) {
+            $data['payment_proof'] = str_replace('http://', 'https://', asset('storage/' . $order->payment_proof));
+        }
+        return response()->json(['order' => $data]);
     }
 
     public function update(Request $request, Order $order)

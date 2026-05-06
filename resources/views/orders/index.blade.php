@@ -13,7 +13,7 @@
         'items_count'=>$o->items->count(),
         'wa_number'=>$o->wa_number??'', 'wa_status'=>$o->wa_status??'',
         'delivery_address'=>$o->delivery_address??'', 'shipping_cost'=>(float)($o->shipping_cost??0),
-        'payment_proof'=>$o->payment_proof ? asset('storage/'.$o->payment_proof) : null,
+        'payment_proof'=>$o->payment_proof ? str_replace('http://','https://',asset('storage/'.$o->payment_proof)) : null,
     ])) }},
     paymentMethods:    {{ Illuminate\Support\Js::from($paymentMethods) }},
     paymentConditions: {{ Illuminate\Support\Js::from($paymentConditions) }},
@@ -41,7 +41,23 @@
         });
     },
 
-    select(o) { this.selected={...o}; this.form={...o}; this.creating=false; this.tab='detail'; this.panel='detail'; },
+    select(o) { this.selected={...o}; this.form={...o}; this.creating=false; this.tab='detail'; this.panel='detail'; this.refreshSelected(); },
+
+    async refreshSelected() {
+        if (!this.selected) return;
+        try {
+            const base = '{{ $ordersApiBase }}';
+            const res  = await fetch(base + '/' + this.selected.id, {
+                headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': window._csrfToken }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const o = data.order ?? data;
+            const idx = this.orders.findIndex(x => x.id === o.id);
+            if (idx > -1) { this.orders[idx] = {...this.orders[idx], ...o}; }
+            this.selected = {...this.selected, ...o};
+        } catch(e) {}
+    },
 
     openNew() {
         this.selected=null; this.creating=true; this.tab='detail'; if(window.innerWidth<768)this.panel='detail';
@@ -123,6 +139,7 @@
                 const idx = this.orders.findIndex(o => o.id === this.selected.id);
                 if (idx > -1) this.orders[idx].wa_status = data.wa_status;
                 this.selected.wa_status = data.wa_status;
+                await this.refreshSelected();
             }
         } finally { this.waActing = false; }
     }
@@ -352,7 +369,10 @@
 
                                         {{-- Comprobante de pago --}}
                                         <div class="mt-3 pt-3 border-t border-green-100">
-                                            <p class="text-xs font-semibold text-gray-600 mb-2">💳 Comprobante de pago</p>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <p class="text-xs font-semibold text-gray-600">💳 Comprobante de pago</p>
+                                                <button @click="refreshSelected()" class="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-0.5">↻ Actualizar</button>
+                                            </div>
                                             <template x-if="selected.payment_proof">
                                                 <div>
                                                     <a :href="selected.payment_proof" target="_blank" class="block">
