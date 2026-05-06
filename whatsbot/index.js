@@ -10,7 +10,7 @@ const http    = require('http');
 
 // ── CONFIGURACIÓN ─────────────────────────────────────────────
 const BOT_TOKEN    = 'wa-bot-secret-2024';
-const LARAVEL_URL  = 'http://127.0.0.1';
+const LARAVEL_URL  = 'https://admin.mercadosmayoristas.com.pe';
 const BOT_PORT     = 3001;
 const BOT_TYPE     = 'main';
 const FLOW_FILE    = path.join(__dirname, 'flow-main.json');
@@ -28,12 +28,14 @@ let FLOW       = null;   // { flow_id, bot_type, project_id, states: { key: {...
 let PROJECT_SLUG = null;
 let NEGOCIO    = 'Bot';
 let MI_NUMERO  = '';
+// Mapa número → chat ID completo (ej: "169531016216687" → "169531016216687@lid")
+const CHAT_ID_MAP = {};
 // ─────────────────────────────────────────────────────────────
 
 // ── Helpers HTTP ──────────────────────────────────────────────
 async function laravelGet(path) {
     try {
-        const res = await fetch(`${LARAVEL_URL}/${path}`);
+        const res = await fetch(`${LARAVEL_URL}/${path}`, { headers: { Accept: 'application/json' } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
     } catch(e) {
@@ -49,6 +51,7 @@ async function laravelPost(path, body) {
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ token: BOT_TOKEN, ...body }),
         });
+        if (!res.ok) { console.warn('⚠️  POST HTTP', res.status, path); }
         return await res.json();
     } catch(e) {
         console.warn('⚠️  POST error:', path, e.message);
@@ -63,7 +66,7 @@ async function loadFlow(phone = '') {
     try {
         const params = new URLSearchParams({ token: BOT_TOKEN, bot: BOT_TYPE });
         if (phone) params.set('phone', phone);
-        const res = await fetch(`${LARAVEL_URL}/wa/flow-config?${params}`);
+        const res = await fetch(`${LARAVEL_URL}/wa/flow-config?${params}`, { headers: { Accept: 'application/json' } });
         if (res.ok) {
             const data = await res.json();
             if (data.ok) {
@@ -184,7 +187,7 @@ client.on('ready', async () => {
     // Cargar config del proyecto
     try {
         const myNumber = client.info.wid.user;
-        const res = await fetch(`${LARAVEL_URL}/wa/config?token=${BOT_TOKEN}&phone=${myNumber}`);
+        const res = await fetch(`${LARAVEL_URL}/wa/config?token=${BOT_TOKEN}&phone=${myNumber}`, { headers: { Accept: 'application/json' } });
         const data = await res.json();
         if (data.ok) {
             PROJECT_SLUG = data.project_slug;
@@ -218,7 +221,11 @@ client.on('message', async msg => {
         const body     = (msg.body || '').trim();
         const lower    = body.toLowerCase();
 
+        // Guardar el chat ID completo para poder enviarle mensajes después
+        CHAT_ID_MAP[waNumber] = msg.from;
+
         console.log(`📨 ${waNumber} | state:? | type:${msg.type} | ${body.substring(0, 40)}`);
+        if (body.includes('PEDIDO') || body.includes('Pedido')) console.log('BODY_FULL:', JSON.stringify(body.substring(0, 300)));
 
         if (!FLOW) { await loadFlow(); }
 
@@ -239,8 +246,26 @@ client.on('message', async msg => {
             }
         }
 
-        // ── Si no hay transición, avisar o reiniciar ──────────────────
+        // ── Si no hay transición, avisar al usuario ───────────────────
         if (!transition) {
+            const vars = buildVars(sessionData);
+
+            // Tipos no soportados: audio, video, sticker, documento
+            const tipoNoSoportado = {
+                audio:    '🎤 Por el momento no puedo escuchar audios.\n\nPor favor escríbeme tu mensaje con texto 📝',
+                ptt:      '🎤 Por el momento no puedo escuchar audios.\n\nPor favor escríbeme tu mensaje con texto 📝',
+                video:    '🎥 No puedo procesar videos por este medio.\n\nEscríbeme o comparte tu ubicación 📍',
+                sticker:  '😅 Los stickers no los proceso.\n\nSi necesitas ayuda escríbeme 📝',
+                document: '📄 No puedo recibir documentos por aquí.\n\nSi necesitas ayuda escríbeme 📝',
+                vcard:    '📇 No puedo procesar contactos.\n\nSi necesitas ayuda escríbeme 📝',
+            };
+
+            if (tipoNoSoportado[msg.type]) {
+                await enviar(msg, tipoNoSoportado[msg.type]);
+                return;
+            }
+
+            // Estados terminales: reiniciar flujo desde inicio
             const estadosTerminales = ['finalizado', 'problema'];
             if (currentState === 'inicio' || currentState === null || estadosTerminales.includes(currentState)) {
                 const inicioState = FLOW.states['inicio'];
@@ -250,6 +275,7 @@ client.on('message', async msg => {
                 return;
             }
 
+            // Recordatorio corto según el estado actual
             const recordatorio = {
                 esperando_ubicacion: '📍 Por favor comparte tu *ubicación* o escribe tu dirección para calcular el delivery.',
                 esperando_pago:      '📸 Para continuar, envía la *foto del comprobante* de pago (Yape, Plin, etc).',
@@ -291,11 +317,11 @@ function matchTrigger(trigger, msg, body, lower) {
     if (!trigger) return false;
     switch(trigger) {
         case 'PEDIDO+TOTAL':
-            return body.includes('PEDIDO') && body.includes('TOTAL');
+            return (body.includes('PEDIDO') || body.includes('Pedido')) && body.includes('TOTAL');
         case 'location':
             return msg.type === 'location';
         case 'text_address':
-            return msg.type === 'text' && body.length > 5 && !body.includes('PEDIDO');
+            return msg.type === 'text' && body.length > 5 && !body.includes('PEDIDO') && !body.includes('Pedido');
         case 'image':
             return msg.hasMedia && msg.type === 'image';
         case 'si_llego':
@@ -321,12 +347,13 @@ async function executeAction(msg, waNumber, body, transition, sessionData) {
     switch(action) {
         case 'create_order': {
             // Parsear pedido del catálogo
-            const nombreMatch = body.match(/👤 \*?Cliente:\*? (.+)/);
-            const totalMatch  = body.match(/💰 \*?TOTAL:?\*? ?:? ?([A-Z]{0,3}\.?\s*[\d.,]+)/);
-            const pedidoMatch = body.match(/📋 \*?N° Pedido:\*? (.+)/);
-            const cliente     = nombreMatch ? nombreMatch[1].trim() : 'Cliente';
+            console.log('CREATE_ORDER body:', JSON.stringify(body.substring(0,300)));
+            const nombreMatch = body.match(/(?:👤\s*)?\*?Cliente:\*? (.+)/);
+            const totalMatch  = body.match(/(?:💰\s*)?\*?TOTAL:?\*? ?:? ?(?:[A-Z]{0,3}[\/.]?\s*)([\d.,]+)/);
+            const pedidoMatch = body.match(/(?:📋\s*)?\*?N[°º]\s*Pedido:\*? (.+)/);
+            const cliente     = nombreMatch ? nombreMatch[1].replace(/[*]/g,'').trim() : 'Cliente';
             const total       = totalMatch  ? totalMatch[1].trim()  : '';
-            const nPedido     = pedidoMatch ? pedidoMatch[1].trim() : '';
+            const nPedido     = pedidoMatch ? pedidoMatch[1].replace(/[*]/g,'').trim() : '';
             const subtotalNum = parseFloat((total || '0').replace(/[^0-9.]/g,'')) || 0;
 
             const items = [];
@@ -466,11 +493,35 @@ const server = http.createServer(async (req, res) => {
             const data = JSON.parse(raw);
             if (data.token !== BOT_TOKEN) { res.writeHead(401); res.end('Unauthorized'); return; }
 
-            const waId    = data.wa_number.replace(/\D/g, '') + '@c.us';
+            const waNum   = data.wa_number.replace(/\D/g, '');
             const builder = MENSAJES_ADMIN[data.action];
 
-            if (builder && waId) {
+            if (builder && waNum) {
                 const texto = builder(NEGOCIO);
+
+                // Resolver el chat ID completo (@c.us o @lid)
+                // Primero usar el mapa en memoria (más confiable, viene de mensajes reales)
+                let waId = CHAT_ID_MAP[waNum] || (waNum + '@c.us');
+                console.log(`🔍 Chat ID para ${waNum}: ${waId} (mapa: ${!!CHAT_ID_MAP[waNum]})`);
+
+                // Si no está en el mapa, intentar con getChats()
+                if (!CHAT_ID_MAP[waNum]) {
+                    try {
+                        const chats = await client.getChats();
+                        const chat  = chats.find(c =>
+                            c.id.user === waNum ||
+                            c.id._serialized === waNum + '@c.us' ||
+                            c.id._serialized === waNum + '@lid'
+                        );
+                        if (chat) {
+                            waId = chat.id._serialized;
+                            CHAT_ID_MAP[waNum] = waId;
+                            console.log(`🔍 Chat encontrado en lista: ${waId}`);
+                        }
+                    } catch(e) {
+                        console.warn('⚠️  getChats error:', e.message);
+                    }
+                }
 
                 // Actualizar estado de sesión en BD
                 if (FLOW?.flow_id) {
@@ -490,7 +541,19 @@ const server = http.createServer(async (req, res) => {
                     }
                 }
 
-                await client.sendMessage(waId, texto);
+                // Intentar enviar; si falla con @c.us, probar @lid
+                try {
+                    await client.sendMessage(waId, texto);
+                } catch(sendErr) {
+                    if (sendErr.message.includes('LID') && !waId.endsWith('@lid')) {
+                        const altId = waNum + '@lid';
+                        console.warn(`⚠️  @c.us falló (${sendErr.message}), reintentando con ${altId}`);
+                        await client.sendMessage(altId, texto);
+                        CHAT_ID_MAP[waNum] = altId;
+                    } else {
+                        throw sendErr;
+                    }
+                }
                 console.log(`📤 Admin acción "${data.action}" → ${data.wa_number}`);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ ok: true }));
