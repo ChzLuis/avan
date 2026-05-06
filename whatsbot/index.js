@@ -239,13 +239,26 @@ client.on('message', async msg => {
             }
         }
 
-        // ── Si no hay transición, re-enviar mensaje del estado actual ─
+        // ── Si no hay transición, avisar o reiniciar ──────────────────
         if (!transition) {
-            // Excepción: si está en inicio y no hay trigger, ignorar silenciosamente
-            if (currentState === 'inicio') return;
+            const estadosTerminales = ['finalizado', 'problema'];
+            if (currentState === 'inicio' || currentState === null || estadosTerminales.includes(currentState)) {
+                const inicioState = FLOW.states['inicio'];
+                const inicioVars  = buildVars({});
+                await saveSession(waNumber, 'inicio', {});
+                await enviar(msg, fillMessage(inicioState.message, inicioVars));
+                return;
+            }
 
-            const vars = buildVars(sessionData);
-            await enviar(msg, fillMessage(stateConfig.message, vars));
+            const recordatorio = {
+                esperando_ubicacion: '📍 Por favor comparte tu *ubicación* o escribe tu dirección para calcular el delivery.',
+                esperando_pago:      '📸 Para continuar, envía la *foto del comprobante* de pago (Yape, Plin, etc).',
+                pago_recibido:       '⏳ Tu comprobante ya fue recibido. Estamos verificando tu pago, espera un momento.',
+                en_camino:           '🚚 Tu pedido ya va en camino. Pronto lo recibirás.',
+                entregado:           '📦 ¿Llegó tu pedido? Responde:\n✅ *Si llegó* — todo perfecto\n❌ *No llegó* — hubo un problema',
+            };
+            const aviso = recordatorio[currentState] || '⚠️ No entendí tu mensaje. Por favor sigue las instrucciones anteriores.';
+            await enviar(msg, aviso);
             return;
         }
 
