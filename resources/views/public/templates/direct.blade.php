@@ -22,6 +22,7 @@ $shippingCost     = (float)($settings['shipping_cost']      ?? 0);
 $shippingFreeFrom = (float)($settings['shipping_free_from'] ?? 0);
 $requireAddress   = ($settings['require_address']   ?? '0') === '1';
 $quotePriceDisp   = $settings['quote_price_display'] ?? 'show';
+$wholesaleEnabled = ($settings['wholesale_enabled'] ?? '0') === '1';
 $quoteWaRaw       = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? $project->whatsapp ?? '');
 $quoteWaCountry   = $settings['quote_whatsapp_country'] ?? '51';
 $quoteWa          = $quoteWaRaw ? (str_starts_with($quoteWaRaw, $quoteWaCountry) ? $quoteWaRaw : $quoteWaCountry.$quoteWaRaw) : '';
@@ -221,7 +222,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <p class="text-sm font-bold mt-0.5" style="color:var(--c)" x-text="'{{ $currency }} ' + (item.price * item.qty).toFixed(2)"></p>
         </div>
         <div class="flex items-center gap-1.5 flex-shrink-0">
-          <button @click="item.qty>1?item.qty--:cart.splice(cart.indexOf(item),1)"
+          <button @click="item.qty>(item.min_qty||1)?item.qty--:cart.splice(cart.indexOf(item),1)"
                   class="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-red-300 hover:text-red-500 transition text-sm font-bold">−</button>
           <span class="w-7 text-center text-sm font-bold text-gray-800" x-text="item.qty"></span>
           <button @click="item.qty++"
@@ -650,16 +651,51 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <div class="p-3">
             <a href="{{ route('public.product', [$project->slug, $p->id]) }}"
                class="text-gray-800 text-xs font-semibold line-clamp-2 hover:underline block mb-1.5">{{ $p->name }}</a>
-            @if(!$isQuoteOnly || $quotePriceDisp==='show')
+            @php $hasWholesale = $wholesaleEnabled && $p->wholesale_price && $p->wholesale_min_qty; @endphp
+            @if($hasWholesale)
+            {{-- Bloque minorista --}}
+            <div x-data="{ qty:1 }" class="rounded-lg border border-gray-200 bg-white overflow-hidden mb-1.5">
+              <div class="flex items-center justify-between px-2 py-1 bg-gray-50 border-b border-gray-100">
+                <span class="text-[10px] font-bold text-gray-500 uppercase">Minorista</span>
+                <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
+              </div>
+              <div class="flex items-center gap-1 p-1.5">
+                <div class="flex items-center border border-gray-200 rounded overflow-hidden">
+                  <button @click="qty>1?qty--:null" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">−</button>
+                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
+                  <button @click="qty++" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">+</button>
+                </div>
+                <button class="flex-1 py-1.5 text-[11px] font-semibold btn-gc"
+                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                  + Agregar
+                </button>
+              </div>
+            </div>
+            {{-- Bloque mayorista --}}
+            <div x-data="{ qty:{{ (int)$p->wholesale_min_qty }} }" class="rounded-lg border border-amber-400 overflow-hidden">
+              <div class="flex items-center justify-between px-2 py-1 bg-amber-50 border-b border-amber-100">
+                <span class="text-[10px] font-bold text-amber-700 uppercase">Mayor · mín {{ (int)$p->wholesale_min_qty }} {{ $p->wholesale_unit }}</span>
+                <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
+              </div>
+              <div class="flex items-center gap-1 p-1.5">
+                <div class="flex items-center border border-amber-300 rounded overflow-hidden">
+                  <button @click="qty>({{ (int)$p->wholesale_min_qty }})?qty--:null" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">−</button>
+                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
+                  <button @click="qty++" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">+</button>
+                </div>
+                <button class="flex-1 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded"
+                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                  + Agregar
+                </button>
+              </div>
+            </div>
+            @elseif(!$isQuoteOnly || $quotePriceDisp==='show')
             <div class="flex items-baseline gap-1.5 mb-2">
               <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
               @if($p->compare_price && $p->compare_price > $p->price)
               <span class="text-gray-300 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
               @endif
             </div>
-            @else
-            <p class="text-gray-400 text-xs mb-2 italic">Consultar precio</p>
-            @endif
             @if(!$isQuoteOnly)
             <button class="w-full py-2 text-[11px] font-semibold btn-gc"
                     @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
@@ -670,6 +706,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                href="https://wa.me/{{ $quoteWa }}?text={{ urlencode('Hola, me interesa: '.$p->name) }}" target="_blank">
               Cotizar
             </a>
+            @endif
+            @else
+            <p class="text-gray-400 text-xs mb-2 italic">Consultar precio</p>
             @endif
           </div>
         </article>
@@ -711,16 +750,49 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <div class="p-3">
             <a href="{{ route('public.product', [$project->slug, $p->id]) }}"
                class="text-gray-800 text-xs font-semibold line-clamp-2 hover:underline block mb-1.5">{{ $p->name }}</a>
-            @if(!$isQuoteOnly || $quotePriceDisp==='show')
+            @php $hasWholesale = $wholesaleEnabled && $p->wholesale_price && $p->wholesale_min_qty; @endphp
+            @if($hasWholesale)
+            <div x-data="{ qty:1 }" class="rounded-lg border border-gray-200 bg-white overflow-hidden mb-1.5">
+              <div class="flex items-center justify-between px-2 py-1 bg-gray-50 border-b border-gray-100">
+                <span class="text-[10px] font-bold text-gray-500 uppercase">Minorista</span>
+                <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
+              </div>
+              <div class="flex items-center gap-1 p-1.5">
+                <div class="flex items-center border border-gray-200 rounded overflow-hidden">
+                  <button @click="qty>1?qty--:null" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">−</button>
+                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
+                  <button @click="qty++" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">+</button>
+                </div>
+                <button class="flex-1 py-1.5 text-[11px] font-semibold btn-gc"
+                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                  + Agregar
+                </button>
+              </div>
+            </div>
+            <div x-data="{ qty:{{ (int)$p->wholesale_min_qty }} }" class="rounded-lg border border-amber-400 overflow-hidden">
+              <div class="flex items-center justify-between px-2 py-1 bg-amber-50 border-b border-amber-100">
+                <span class="text-[10px] font-bold text-amber-700 uppercase">Mayor · mín {{ (int)$p->wholesale_min_qty }} {{ $p->wholesale_unit }}</span>
+                <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
+              </div>
+              <div class="flex items-center gap-1 p-1.5">
+                <div class="flex items-center border border-amber-300 rounded overflow-hidden">
+                  <button @click="qty>({{ (int)$p->wholesale_min_qty }})?qty--:null" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">−</button>
+                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
+                  <button @click="qty++" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">+</button>
+                </div>
+                <button class="flex-1 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded"
+                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                  + Agregar
+                </button>
+              </div>
+            </div>
+            @elseif(!$isQuoteOnly || $quotePriceDisp==='show')
             <div class="flex items-baseline gap-1.5 mb-2">
               <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
               @if($p->compare_price && $p->compare_price > $p->price)
               <span class="text-gray-300 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
               @endif
             </div>
-            @else
-            <p class="text-gray-400 text-xs mb-2 italic">Consultar precio</p>
-            @endif
             @if(!$isQuoteOnly)
             <button class="w-full py-2 text-[11px] font-semibold btn-gc"
                     @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
@@ -731,6 +803,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                href="https://wa.me/{{ $quoteWa }}?text={{ urlencode('Hola, me interesa: '.$p->name) }}" target="_blank">
               Cotizar
             </a>
+            @endif
+            @else
+            <p class="text-gray-400 text-xs mb-2 italic">Consultar precio</p>
             @endif
           </div>
         </article>
@@ -1132,9 +1207,11 @@ function store() {
     },
 
     addToCart(product) {
-      const existing = this.cart.find(i=>i.id===product.id);
-      if(existing){ existing.qty++; }
-      else{ this.cart.push({...product, qty:1}); }
+      const qty    = product.qty || 1;
+      const minQty = product.min_qty || 1;
+      const existing = this.cart.find(i=>i.id===product.id && i.name===product.name);
+      if(existing){ existing.qty += qty; }
+      else{ this.cart.push({...product, qty: Math.max(qty, minQty), min_qty: minQty}); }
       this.toastMsg = '✓ '+product.name+' agregado';
       this.toastShow = true;
       clearTimeout(this.toastTimer);
