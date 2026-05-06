@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AbandonedCart;
 use App\Models\Project;
 use App\Models\Coupon;
+use App\Models\Product;
 use App\Models\Review;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PublicController extends Controller
 {
@@ -18,8 +21,17 @@ class PublicController extends Controller
     {
         $project    = $this->project($slug);
         $settings   = $project->settings()->pluck('value', 'key');
-        $categories = $project->categories()->where('is_active', true)
-            ->with(['products' => fn($q) => $q->where('is_available', true)->with('mainImage')->orderBy('sort_order')])
+
+        // Cargar árbol: padres con hijos, cada nodo con sus productos
+        $categories = $project->categories()
+            ->where('is_active', true)
+            ->whereNull('parent_id')
+            ->with([
+                'products' => fn($q) => $q->where('is_available', true)->with('mainImage')->orderBy('sort_order'),
+                'children' => fn($q) => $q->where('is_active', true)->with([
+                    'products' => fn($q2) => $q2->where('is_available', true)->with('mainImage')->orderBy('sort_order'),
+                ])->orderBy('sort_order'),
+            ])
             ->orderBy('sort_order')->get();
 
         // Productos para secciones de la tienda
@@ -41,6 +53,7 @@ class PublicController extends Controller
         $template  = $settings['catalog_template'] ?? 'default';
         $tplViews  = [
             'default'    => 'public.catalog',
+            'direct'     => 'public.templates.direct',
             'ella'       => 'public.templates.ella',
             'editorial'  => 'public.templates.editorial',
             'nordic'     => 'public.templates.nordic',
@@ -65,14 +78,19 @@ class PublicController extends Controller
         $code    = strtoupper(trim($request->input('code', '')));
         $subtotal = (float) $request->input('subtotal', 0);
 
+        $shipping = (float) $request->input('shipping', 0);
+        $phone    = $request->input('phone', '');
+
         $coupon = $project->coupons()->where('code', $code)->first();
-        if (!$coupon || !$coupon->isValid()) {
-            return response()->json(['ok' => false, 'message' => 'Cupón inválido o expirado.']);
+        if (!$coupon || !$coupon->isValid($subtotal, $phone)) {
+            $msg = 'Cupón inválido o expirado.';
+            if ($coupon && ($coupon->type === 'first_purchase' || $coupon->first_purchase_only)) {
+                $msg = 'Este cupón es solo para nuevos clientes.';
+            }
+            return response()->json(['ok' => false, 'message' => $msg]);
         }
-        if ($subtotal < (float) $coupon->min_order && $coupon->min_order > 0) {
-            return response()->json(['ok' => false, 'message' => 'Monto mínimo para este cupón: '.number_format($coupon->min_order, 2)]);
-        }
-        $discount = $coupon->calculateDiscount($subtotal);
+
+        $discount = $coupon->calculateDiscount($subtotal, $shipping);
         return response()->json([
             'ok'        => true,
             'code'      => $coupon->code,
@@ -80,6 +98,7 @@ class PublicController extends Controller
             'value'     => (float) $coupon->value,
             'min_order' => (float) $coupon->min_order,
             'discount'  => $discount,
+            'label'     => \App\Models\Coupon::$types[$coupon->type] ?? $coupon->type,
         ]);
     }
 
@@ -95,39 +114,122 @@ class PublicController extends Controller
             'delivery_address' => 'nullable|string|max:255',
             'shipping_cost'    => 'nullable|numeric|min:0',
             'items'            => 'required|array|min:1',
+            'items.*.product_id' => 'nullable|integer',
+            'items.*.name'       => 'nullable|string|max:255',
+            'items.*.price'      => 'nullable|numeric|min:0',
+            'items.*.quantity'   => 'required|integer|min:1',
         ]);
-        $subtotal = collect($data['items'])->sum(fn($i) => ($i['price'] ?? 0) * ($i['quantity'] ?? 1));
-        $shipping = (float) ($data['shipping_cost'] ?? 0);
-        $discount = 0.0;
-        $couponCode = null;
 
-        if (!empty($data['coupon_code'])) {
-            $code   = strtoupper(trim($data['coupon_code']));
-            $coupon = $project->coupons()->where('code', $code)->first();
-            if ($coupon && $coupon->isValid()) {
-                $discount   = $coupon->calculateDiscount($subtotal);
-                $couponCode = $coupon->code;
-                $coupon->increment('uses_count');
+        return DB::transaction(function () use ($project, $data) {
+            // Verificar y descontar stock con lock pesimista
+            foreach ($data['items'] as $item) {
+                if (empty($item['product_id'])) continue;
+
+                $product = Product::allProjects()
+                    ->where('id', $item['product_id'])
+                    ->where('project_id', $project->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$product) continue;
+
+                if ($product->stock !== null) {
+                    $qty = (int) ($item['quantity'] ?? 1);
+                    if ($product->stock < $qty) {
+                        return response()->json([
+                            'ok'      => false,
+                            'message' => "Stock insuficiente para \"{$product->name}\" (disponible: {$product->stock}).",
+                        ], 422);
+                    }
+                    $product->decrement('stock', $qty);
+                }
             }
-        }
 
-        $total = max(0, $subtotal - $discount + $shipping);
-        $order = $project->orders()->create([
-            'client_name'      => $data['client_name'],
-            'client_phone'     => $data['client_phone'],
-            'client_email'     => $data['client_email'] ?? null,
-            'notes'            => $data['notes'] ?? null,
-            'coupon_code'      => $couponCode,
-            'discount'         => $discount > 0 ? $discount : null,
-            'delivery_address' => $data['delivery_address'] ?? null,
-            'shipping_cost'    => $shipping > 0 ? $shipping : null,
-            'total'            => $total,
-            'status'           => 'pending',
+            $subtotal   = collect($data['items'])->sum(fn($i) => ($i['price'] ?? 0) * ($i['quantity'] ?? 1));
+            $shipping   = (float) ($data['shipping_cost'] ?? 0);
+            $discount   = 0.0;
+            $couponCode = null;
+
+            if (!empty($data['coupon_code'])) {
+                $code   = strtoupper(trim($data['coupon_code']));
+                $coupon = $project->coupons()->where('code', $code)->first();
+                if ($coupon && $coupon->isValid($subtotal, $data['client_phone'] ?? null)) {
+                    $discount   = $coupon->calculateDiscount($subtotal, $shipping);
+                    $couponCode = $coupon->code;
+                    $coupon->increment('uses_count');
+                }
+            }
+
+            $total = max(0, $subtotal - $discount + $shipping);
+            $order = $project->orders()->create([
+                'client_name'      => $data['client_name'],
+                'client_phone'     => $data['client_phone'],
+                'client_email'     => $data['client_email'] ?? null,
+                'notes'            => $data['notes'] ?? null,
+                'coupon_code'      => $couponCode,
+                'discount'         => $discount > 0 ? $discount : null,
+                'delivery_address' => $data['delivery_address'] ?? null,
+                'shipping_cost'    => $shipping > 0 ? $shipping : null,
+                'total'            => $total,
+                'status'           => 'pending',
+                'sales_channel'    => 'web',
+            ]);
+
+            foreach ($data['items'] as $item) {
+                $pid = $item['product_id'] ?? null;
+                $name = $item['name'] ?? null;
+                $price = $item['price'] ?? null;
+                if ($pid && (!$name || !$price)) {
+                    $prod = Product::allProjects()->where('id', $pid)->where('project_id', $project->id)->first();
+                    $name  = $name  ?: ($prod->name  ?? 'Producto');
+                    $price = $price ?: ($prod->price ?? 0);
+                }
+                $order->items()->create([
+                    'product_id' => $pid,
+                    'name'       => $name ?: 'Producto',
+                    'price'      => $price ?: 0,
+                    'quantity'   => $item['quantity'],
+                ]);
+            }
+
+            // Marcar carrito abandonado como recuperado
+            AbandonedCart::where('project_id', $project->id)
+                ->where('client_phone', $data['client_phone'])
+                ->whereNull('recovered_at')
+                ->update(['recovered_at' => now()]);
+
+            return response()->json(['ok' => true, 'order_id' => $order->id, 'total' => (float) $order->total]);
+        });
+    }
+
+    /** Guarda carrito para recuperación por abandono (llamado desde JS al llenar nombre+teléfono) */
+    public function saveCart(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $data = $request->validate([
+            'client_name'  => 'required|string|max:100',
+            'client_phone' => 'required|string|max:30',
+            'client_email' => 'nullable|email|max:150',
+            'items'        => 'required|array|min:1',
+            'subtotal'     => 'required|numeric|min:0',
+            'coupon_code'  => 'nullable|string|max:50',
         ]);
-        foreach ($data['items'] as $item) {
-            $order->items()->create($item);
-        }
-        return response()->json(['ok' => true, 'order_id' => $order->id, 'total' => (float) $order->total]);
+
+        // Upsert por proyecto + teléfono para no duplicar
+        AbandonedCart::updateOrCreate(
+            ['project_id' => $project->id, 'client_phone' => $data['client_phone']],
+            [
+                'client_name'   => $data['client_name'],
+                'client_email'  => $data['client_email'] ?? null,
+                'items'         => $data['items'],
+                'subtotal'      => $data['subtotal'],
+                'coupon_code'   => $data['coupon_code'] ?? null,
+                'reminder_sent' => false,
+                'recovered_at'  => null,
+            ]
+        );
+
+        return response()->json(['ok' => true]);
     }
 
     public function storeQuote(Request $request, string $slug)
