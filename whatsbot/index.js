@@ -73,7 +73,8 @@ async function loadFlow(phone = '') {
                 FLOW = data;
                 // Guardar respaldo
                 fs.writeFileSync(FLOW_FILE, JSON.stringify(data, null, 2));
-                console.log(`✅ Flujo cargado desde API: ${Object.keys(data.states).length} estados`);
+                const totalTrans = Object.values(data.states).reduce((sum, s) => sum + (s.transitions?.length || 0), 0);
+                console.log(`✅ Flujo cargado desde API: ${Object.keys(data.states).length} estados, ${totalTrans} transiciones`);
                 return true;
             }
         }
@@ -488,7 +489,29 @@ _${negocio}_`,
 };
 
 const server = http.createServer(async (req, res) => {
-    if (req.method !== 'POST' || req.url !== '/action') {
+    if (req.method !== 'POST') {
+        res.writeHead(404); res.end('Not found'); return;
+    }
+
+    // ── Reload flujo desde API ──────────────────────────────
+    if (req.url === '/reload') {
+        let raw = '';
+        req.on('data', c => raw += c);
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(raw);
+                if (data.token !== BOT_TOKEN) { res.writeHead(401); res.end('Unauthorized'); return; }
+                await loadFlow(MI_NUMERO);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, states: Object.keys(FLOW?.states || {}).length }));
+            } catch(e) {
+                res.writeHead(500); res.end(e.message);
+            }
+        });
+        return;
+    }
+
+    if (req.url !== '/action') {
         res.writeHead(404); res.end('Not found'); return;
     }
     let raw = '';
