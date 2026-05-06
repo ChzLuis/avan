@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminProjectController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminImportController;
 use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\DemoController;
 use Illuminate\Support\Facades\Route;
 
 // ── Login admin (sin auth) ────────────────────────────────────────────────────
@@ -43,5 +44,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Configuración global
         Route::get('/settings',                        [AdminSettingsController::class, 'index'])->name('settings');
         Route::post('/settings',                       [AdminSettingsController::class, 'update'])->name('settings.update');
+
+        // Demos
+        Route::get('/demos',                           [DemoController::class, 'adminIndex'])->name('demos.index');
+        Route::post('/demos/{demo}/cancel',            [DemoController::class, 'adminCancel'])->name('demos.cancel');
+        Route::post('/demos/{demo}/extend',            [DemoController::class, 'adminExtend'])->name('demos.extend');
     });
 });

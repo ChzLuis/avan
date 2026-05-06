@@ -18,6 +18,7 @@ use App\Http\Controllers\HRController;
 use App\Http\Controllers\SedeController;
 use App\Http\Controllers\UserGroupController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PosController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\WaWebhookController;
 use App\Http\Controllers\WaBotController;
 use App\Http\Controllers\RifaController;
 use App\Http\Controllers\BotStatusController;
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\Comunicaciones\AuthController as ComWaAuthController;
 use App\Http\Controllers\Comunicaciones\BandejaController;
 use App\Http\Controllers\Comunicaciones\ClientesCrmController;
@@ -38,6 +40,16 @@ use Illuminate\Support\Facades\Route;
 
 // ─── Redirect raíz ───────────────────────────────────────────────────────────
 Route::get('/', fn() => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
+
+// ─── Demo onboarding (público) ───────────────────────────────────────────────
+Route::get('/demo',                 [DemoController::class, 'index'])->name('demo.index');
+Route::get('/demo/features',        [DemoController::class, 'features'])->name('demo.features');
+Route::post('/demo',                [DemoController::class, 'store'])->name('demo.store');
+
+// ─── Ping de sesión (keep-alive) ─────────────────────────────────────────────
+Route::post('/ping-session', function () {
+    return response()->json(['ok' => true]);
+})->middleware('web')->name('ping.session');
 
 // ─── Panel autenticado ────────────────────────────────────────────────────────
 Route::middleware(['auth'])->group(function () {
@@ -51,63 +63,86 @@ Route::middleware(['auth'])->group(function () {
     // CRUD de proyectos (negocios)
     Route::resource('projects', ProjectController::class)->except(['index', 'show']);
 
-    // Panel de proyectos (superadmin) — fuera del middleware project.member
-    Route::get('/bixoadmin/projects', [ProjectController::class, 'panel'])->name('projects.panel');
-    Route::patch('/bixoadmin/projects/{target}/toggle', [ProjectController::class, 'toggleStatus'])->name('projects.toggle');
-    Route::post('/bixoadmin/projects/{target}/modules', [ProjectController::class, 'updateModules'])->name('projects.modules');
+    // Panel de módulos del negocio activo (reemplaza /bixoadmin/negocios)
+    Route::patch('/bixoadmin/settings/{target}/toggle', [ProjectController::class, 'toggleStatus'])->name('projects.toggle');
+    Route::post('/bixoadmin/settings/{target}/modules', [ProjectController::class, 'updateModules'])->name('projects.modules');
 
     // Panel del negocio — todas las rutas bajo /panel
     Route::prefix('bixoadmin')->middleware(['project.member'])->group(function () {
 
-        // Dashboard
-        Route::get('/',          [DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.alt');
+        // Inicio → redirige a configuración del negocio
+        Route::get('/', fn() => redirect()->route('settings'))->name('dashboard');
+        Route::get('/dashboard', fn() => redirect()->route('settings'))->name('dashboard.alt');
 
-        // Catálogo
-        Route::prefix('catalog')->middleware('module:catalog')->group(function () {
-            Route::get('/',                        [ProductController::class, 'index'])->name('catalog');
-            Route::get('/products/export',         [ProductController::class, 'export'])->name('products.export');
-            Route::get('/products/template',       [ProductController::class, 'template'])->name('products.template');
-            Route::post('/products/import',        [ProductController::class, 'import'])->name('products.import');
-            Route::get('/products/export/static',  [ProductController::class, 'exportStatic'])->name('products.export.static');
-            Route::get('/products/export/meli',    [ProductController::class, 'exportMeli'])->name('products.export.meli');
-            Route::get('/products/export/rappi',   [ProductController::class, 'exportRappi'])->name('products.export.rappi');
-            Route::get('/products/export/shopee',  [ProductController::class, 'exportShopee'])->name('products.export.shopee');
-            Route::resource('products', ProductController::class)->except(['index'])->names([
-                'create' => 'products.create', 'store' => 'products.store',
-                'show'   => 'products.show',   'edit'  => 'products.edit',
+        // Productos — /bixoadmin/products
+        Route::prefix('products')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
+            Route::get('/',               [ProductController::class, 'index'])->name('products.index');
+            Route::get('/export',         [ProductController::class, 'export'])->name('products.export');
+            Route::get('/template',       [ProductController::class, 'template'])->name('products.template');
+            Route::post('/import',        [ProductController::class, 'import'])->name('products.import');
+            Route::post('/reorder',       [ProductController::class, 'reorder'])->name('products.reorder');
+            Route::get('/export/static',  [ProductController::class, 'exportStatic'])->name('products.export.static');
+            Route::get('/export/meli',    [ProductController::class, 'exportMeli'])->name('products.export.meli');
+            Route::get('/export/rappi',   [ProductController::class, 'exportRappi'])->name('products.export.rappi');
+            Route::get('/export/shopee',  [ProductController::class, 'exportShopee'])->name('products.export.shopee');
+            Route::resource('/', ProductController::class)->except(['index'])->parameters(['' => 'product'])->names([
+                'create' => 'products.create', 'store'   => 'products.store',
+                'show'   => 'products.show',   'edit'    => 'products.edit',
                 'update' => 'products.update', 'destroy' => 'products.destroy',
             ]);
-            Route::post('/products/{product}/images',            [ProductController::class, 'uploadImage'])->name('products.images.upload');
-            Route::delete('/products/{product}/images/{image}',  [ProductController::class, 'deleteImage'])->name('products.images.delete');
-            Route::patch('/products/{product}/images/{image}/main', [ProductController::class, 'setMainImage'])->name('products.images.main');
-            Route::get('/services',     [ServiceController::class, 'index'])->name('services.index');
-            Route::resource('services', ServiceController::class)->except(['index'])->names([
-                'create' => 'services.create', 'store'  => 'services.store',
-                'show'   => 'services.show',   'edit'   => 'services.edit',
-                'update' => 'services.update', 'destroy'=> 'services.destroy',
-            ]);
-            Route::resource('categories', CategoryController::class)->names([
-                'index'  => 'categories.index',  'create'  => 'categories.create',
-                'store'  => 'categories.store',  'show'    => 'categories.show',
-                'edit'   => 'categories.edit',   'update'  => 'categories.update',
-                'destroy'=> 'categories.destroy',
-            ]);
+            Route::post('/{product}/images',               [ProductController::class, 'uploadImage'])->name('products.images.upload');
+            Route::delete('/{product}/images/{image}',     [ProductController::class, 'deleteImage'])->name('products.images.delete');
+            Route::patch('/{product}/images/{image}/main', [ProductController::class, 'setMainImage'])->name('products.images.main');
             // Reseñas
-            Route::get('/reviews',              [ProductController::class, 'reviews'])->name('reviews.index');
+            Route::get('/reviews',                [ProductController::class, 'reviews'])->name('reviews.index');
             Route::patch('/reviews/{id}/approve', [ProductController::class, 'approveReview'])->name('reviews.approve');
-            Route::delete('/reviews/{id}',      [ProductController::class, 'destroyReview'])->name('reviews.destroy');
+            Route::delete('/reviews/{id}',        [ProductController::class, 'destroyReview'])->name('reviews.destroy');
         });
+        // Alias legacy para no romper links internos viejos
+        Route::get('/catalog',          fn() => redirect()->route('products.index'))->name('catalog');
+        Route::get('/catalog/products', fn() => redirect()->route('products.index'));
+
+        // Servicios — /bixoadmin/services
+        Route::prefix('services')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
+            Route::get('/',          [ServiceController::class, 'index'])->name('services.index');
+            Route::get('/export',    [ServiceController::class, 'export'])->name('services.export');
+            Route::get('/template',  [ServiceController::class, 'template'])->name('services.template');
+            Route::post('/import',   [ServiceController::class, 'import'])->name('services.import');
+            Route::post('/reorder',  [ServiceController::class, 'reorder'])->name('services.reorder');
+            Route::resource('/', ServiceController::class)->except(['index'])->parameters(['' => 'service'])->names([
+                'create' => 'services.create', 'store'   => 'services.store',
+                'show'   => 'services.show',   'edit'    => 'services.edit',
+                'update' => 'services.update', 'destroy' => 'services.destroy',
+            ]);
+        });
+        // Alias legacy
+        Route::get('/catalog/services', fn() => redirect()->route('services.index'));
+
+        // Categorías — /bixoadmin/categories
+        Route::prefix('categories')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
+            Route::get('/export',    [CategoryController::class, 'export'])->name('categories.export');
+            Route::get('/template',  [CategoryController::class, 'template'])->name('categories.template');
+            Route::post('/import',   [CategoryController::class, 'import'])->name('categories.import');
+            Route::post('/reorder',  [CategoryController::class, 'reorder'])->name('categories.reorder');
+            Route::resource('/', CategoryController::class)->parameters(['' => 'category'])->names([
+                'index'   => 'categories.index',   'create'  => 'categories.create',
+                'store'   => 'categories.store',   'show'    => 'categories.show',
+                'edit'    => 'categories.edit',    'update'  => 'categories.update',
+                'destroy' => 'categories.destroy',
+            ]);
+        });
+        // Alias legacy
+        Route::get('/catalog/categories', fn() => redirect()->route('categories.index'));
 
         // Clientes
         Route::resource('clients', ClientController::class)
-            ->middleware('module:clients')
+            ->middleware(['module:clients', 'can:clients.ver'])
             ->names(['index'=>'clients','create'=>'clients.create','store'=>'clients.store',
                      'show'=>'clients.show','edit'=>'clients.edit','update'=>'clients.update','destroy'=>'clients.destroy']);
 
         // Agenda
-        Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda')->middleware('module:agenda');
-        Route::resource('appointments', AgendaController::class)->except(['index'])->middleware('module:agenda');
+        Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda')->middleware(['module:agenda', 'can:agenda.ver']);
+        Route::resource('appointments', AgendaController::class)->except(['index'])->middleware(['module:agenda', 'can:agenda.ver']);
 
         // Roles y permisos
         Route::get('/roles',           [RolePermissionController::class, 'index'])->name('roles.index');
@@ -127,6 +162,9 @@ Route::middleware(['auth'])->group(function () {
 
         // Proyectos (panel 3 columnas) — rutas movidas fuera del grupo project.member
 
+        // Constructor Bot
+        Route::get('/bot-builder',                      fn() => view('bot-builder.index'))->name('bot-builder.index');
+
         // Bots WhatsApp
         Route::get('/bots',                             [BotStatusController::class, 'index'])->name('bots.index');
         Route::get('/bots/status',                      [BotStatusController::class, 'status'])->name('bots.status');
@@ -140,16 +178,25 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/bots/transitions/{transition}', [BotStatusController::class, 'transitionDestroy'])->name('bots.transitions.destroy');
         Route::post('/bots/config',                     [BotStatusController::class, 'configSave'])->name('bots.config.save');
         Route::post('/bots/control',                    [BotStatusController::class, 'botControl'])->name('bots.control');
+        Route::post('/bots/reset-session',              [BotStatusController::class, 'resetSession'])->name('bots.reset-session');
         Route::get('/bots/logs',                        [BotStatusController::class, 'botLogs'])->name('bots.logs');
         Route::post('/bots/upload-image',               [BotStatusController::class, 'uploadImage'])->name('bots.upload.image');
         Route::post('/bots/instances',                  [BotStatusController::class, 'botStore'])->name('bots.instances.store');
         Route::delete('/bots/instances/{bot}',          [BotStatusController::class, 'botDestroy'])->name('bots.instances.destroy');
+        Route::get('/bots/espera-asesor',               [BotStatusController::class, 'esperaAsesor'])->name('bots.espera-asesor');
 
         // HR / Empleados
-        Route::get('/hr/employees',                [HRController::class, 'index'])->name('hr.employees.index');
-        Route::post('/hr/employees',               [HRController::class, 'store'])->name('hr.employees.store');
-        Route::put('/hr/employees/{employee}',     [HRController::class, 'update'])->name('hr.employees.update');
-        Route::delete('/hr/employees/{employee}',  [HRController::class, 'destroy'])->name('hr.employees.destroy');
+        Route::get('/hr/employees',                [HRController::class, 'index'])->name('hr.employees.index')->middleware('can:hr.ver');
+        Route::post('/hr/employees',               [HRController::class, 'store'])->name('hr.employees.store')->middleware('can:hr.crear');
+        Route::put('/hr/employees/{employee}',     [HRController::class, 'update'])->name('hr.employees.update')->middleware('can:hr.editar');
+        Route::delete('/hr/employees/{employee}',  [HRController::class, 'destroy'])->name('hr.employees.destroy')->middleware('can:hr.eliminar');
+
+        // Asistencia y Comisiones
+        Route::get('/hr/asistencia',               [\App\Http\Controllers\AttendanceController::class, 'index'])->name('hr.attendance.index')->middleware('can:attendance.ver');
+        Route::post('/hr/asistencia',              [\App\Http\Controllers\AttendanceController::class, 'store'])->name('hr.attendance.store')->middleware('can:attendance.ver');
+        Route::post('/hr/asistencia/check-in',     [\App\Http\Controllers\AttendanceController::class, 'checkIn'])->name('hr.attendance.checkin')->middleware('can:attendance.fichar');
+        Route::post('/hr/asistencia/check-out',    [\App\Http\Controllers\AttendanceController::class, 'checkOut'])->name('hr.attendance.checkout')->middleware('can:attendance.fichar');
+        Route::get('/hr/comisiones',               [\App\Http\Controllers\AttendanceController::class, 'comisiones'])->name('hr.comisiones.index')->middleware('can:attendance.ver');
 
         // Sedes
         Route::get('/company/sedes',           [SedeController::class, 'index'])->name('sedes.index');
@@ -164,10 +211,13 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/company/groups/{userGroup}', [UserGroupController::class, 'destroy'])->name('groups.destroy');
 
         // Proveedores
-        Route::get('/company/proveedores',                [ProveedorController::class, 'index'])->name('proveedores.index');
-        Route::post('/company/proveedores',               [ProveedorController::class, 'store'])->name('proveedores.store');
-        Route::put('/company/proveedores/{proveedor}',    [ProveedorController::class, 'update'])->name('proveedores.update');
-        Route::delete('/company/proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
+        Route::get('/company/proveedores',                    [ProveedorController::class, 'index'])->name('proveedores.index');
+        Route::post('/company/proveedores',                   [ProveedorController::class, 'store'])->name('proveedores.store');
+        Route::put('/company/proveedores/{proveedor}',        [ProveedorController::class, 'update'])->name('proveedores.update');
+        Route::delete('/company/proveedores/{proveedor}',     [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
+        Route::get('/company/proveedores/template',           [ProveedorController::class, 'template'])->name('proveedores.template');
+        Route::get('/company/proveedores/export',             [ProveedorController::class, 'export'])->name('proveedores.export');
+        Route::post('/company/proveedores/import',            [ProveedorController::class, 'import'])->name('proveedores.import');
 
         // Comunicaciones / WhatsApp — redirige al portal bixocrm o a settings
         Route::prefix('bixocrm')->group(function () {
@@ -182,6 +232,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/design',   [SettingsController::class, 'design'])->name('settings.design');
         Route::post('/settings/design',  [SettingsController::class, 'updateDesign'])->name('settings.design.update');
         Route::post('/settings/design/apply-template', [SettingsController::class, 'applyTemplate'])->name('settings.design.applyTemplate');
+        Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo');
+        Route::get('/notifications/imports',  [SettingsController::class, 'importLogs'])->name('notifications.imports');
         Route::get('/settings/payments', [SettingsController::class, 'payments'])->name('settings.payments');
         Route::post('/settings/payments',[SettingsController::class, 'updatePayments'])->name('settings.payments.update');
         Route::get('/settings/modules',  [SettingsController::class, 'modules'])->name('settings.modules');
@@ -214,34 +266,34 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['project.member'])->group(function () {
 
         // POS
-        Route::get('/pos',  [PosController::class, 'index'])->name('pos.index')->middleware('module:orders');
-        Route::post('/pos', [PosController::class, 'store'])->name('pos.store')->middleware('module:orders');
+        Route::get('/pos',  [PosController::class, 'index'])->name('pos.index')->middleware(['module:orders', 'can:pos.usar']);
+        Route::post('/pos', [PosController::class, 'store'])->name('pos.store')->middleware(['module:orders', 'can:pos.usar']);
 
         // Facturas
-        Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index')->middleware('module:invoices');
-        Route::post('/invoices',              [InvoiceController::class, 'store'])->name('invoices.store')->middleware('module:invoices');
-        Route::get('/invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show')->middleware('module:invoices');
-        Route::put('/invoices/{invoice}',     [InvoiceController::class, 'update'])->name('invoices.update')->middleware('module:invoices');
-        Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy')->middleware('module:invoices');
-        Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf')->middleware('module:invoices');
-        Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat')->middleware('module:invoices');
+        Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index')->middleware(['module:invoices', 'can:invoices.ver']);
+        Route::post('/invoices',              [InvoiceController::class, 'store'])->name('invoices.store')->middleware(['module:invoices', 'can:invoices.crear']);
+        Route::get('/invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show')->middleware(['module:invoices', 'can:invoices.ver']);
+        Route::put('/invoices/{invoice}',     [InvoiceController::class, 'update'])->name('invoices.update')->middleware(['module:invoices', 'can:invoices.editar']);
+        Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy')->middleware(['module:invoices', 'can:invoices.anular']);
+        Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf')->middleware(['module:invoices', 'can:invoices.ver']);
+        Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat')->middleware(['module:invoices', 'can:invoices.ver']);
 
         // Cotizaciones
         Route::resource('quotes', QuoteController::class)
-            ->middleware('module:quotes')
+            ->middleware(['module:quotes', 'can:quotes.ver'])
             ->names(['index'=>'quotes','create'=>'quotes.create','store'=>'quotes.store',
                      'show'=>'quotes.show','edit'=>'quotes.edit','update'=>'quotes.update','destroy'=>'quotes.destroy']);
-        Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
+        Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send')->middleware('can:quotes.editar');
 
         // Pedidos
         Route::resource('orders', OrderController::class)
-            ->middleware('module:orders')
+            ->middleware(['module:orders', 'can:orders.ver'])
             ->names(['index'=>'orders','create'=>'orders.create','store'=>'orders.store',
                      'show'=>'orders.show','edit'=>'orders.edit','update'=>'orders.update','destroy'=>'orders.destroy']);
 
         // Pedidos WhatsApp — acción del portal sobre pedido WA
-        Route::post('/orders/{order}/wa-action',   [WaBotController::class, 'portalAction'])->name('orders.wa.action')->middleware('module:orders');
-        Route::post('/orders/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('orders.wa.delivery')->middleware('module:orders');
+        Route::post('/orders/{order}/wa-action',   [WaBotController::class, 'portalAction'])->name('orders.wa.action')->middleware(['module:orders', 'can:orders.editar']);
+        Route::post('/orders/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('orders.wa.delivery')->middleware(['module:orders', 'can:orders.editar']);
     });
 
     // Perfil de usuario
@@ -258,6 +310,7 @@ $reserved = 'login|register|logout|workspace|bixoadmin|profile|projects|dashboar
 Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
 Route::get('/{slug}/p/{id}',   [PublicController::class, 'product'])->name('public.product')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->where('id', '[0-9]+');
 Route::post('/{slug}/order',   [PublicController::class, 'storeOrder'])->name('public.order')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
+Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
 Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
 Route::get('/{slug}/thanks/{order}', [PublicController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->where('order', '[0-9]+');
 Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->where('product', '[0-9]+');
@@ -279,18 +332,57 @@ Route::post('/wa/order/{order}/delivery',       [WaBotController::class, 'update
 
 // ─── QR público para conectar bot ────────────────────────────────────────────
 Route::get('/bot-qr/{bot?}', function ($bot = 'rifa') {
-    $port = \App\Models\BotInstance::where('bot_type', $bot)->value('port') ?? 3001;
-    try {
-        $response = \Illuminate\Support\Facades\Http::timeout(3)->get("http://127.0.0.1:{$port}/qr");
-        return response($response->body(), 200)->header('Content-Type', 'text/html; charset=utf-8');
-    } catch (\Throwable $e) {
-        return response('<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="5"><title>Bot</title>
-<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;}
-.card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.1);}</style></head>
-<body><div class="card"><div style="font-size:48px">⏳</div><p>Bot iniciando, espera unos segundos...</p></div></body></html>', 200)
-            ->header('Content-Type', 'text/html; charset=utf-8');
+    $file = base_path("whatsbot/{$bot}-status.json");
+    $css  = '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;padding:12px;}.wrap{text-align:center;width:100%;}p.hint{color:#6b7280;font-size:12px;margin-bottom:10px;line-height:1.4;}img.qr{width:100%;max-width:260px;border-radius:10px;border:2px solid #e5e7eb;}.connected{color:#16a34a;font-weight:600;font-size:15px;}.wait{color:#9ca3af;font-size:13px;}</style>';
+    // Recarga cada 3 seg para mostrar QR nuevo cuando el bot lo genere
+    $head = '<head><meta charset="utf-8"><meta http-equiv="refresh" content="3"><title>Bot QR</title>'.$css.'</head>';
+
+    $data   = file_exists($file) ? (json_decode(file_get_contents($file), true) ?? []) : [];
+    $status = $data['status'] ?? '';
+    $qr     = $data['qr'] ?? null;
+
+    if ($status === 'connected') {
+        $html = '<!DOCTYPE html><html>'.$head.'<body><div class="wrap"><p class="connected">&#10003; Bot Conectado</p></div></body></html>';
+        return response($html)->header('Content-Type', 'text/html; charset=utf-8');
     }
+
+    if ($qr) {
+        $qrSafe = htmlspecialchars($qr, ENT_QUOTES);
+        $html   = '<!DOCTYPE html><html>'.$head.'<body><div class="wrap"><p class="hint">Abre WhatsApp &rarr; Dispositivos vinculados &rarr; Vincular dispositivo</p><img class="qr" src="'.$qrSafe.'"></div></body></html>';
+        return response($html)->header('Content-Type', 'text/html; charset=utf-8');
+    }
+
+    $html = '<!DOCTYPE html><html>'.$head.'<body><div class="wrap"><p class="wait">Bot iniciando... espera unos segundos</p></div></body></html>';
+    return response($html)->header('Content-Type', 'text/html; charset=utf-8');
 })->name('bot.qr');
+
+// ─── Bot status JSON público (para polling desde cualquier panel) ─────────────
+Route::get('/bot-status/meta', function () {
+    $canal = \App\Models\WaCanal::where('bot_type', 'rifa')
+        ->whereNotNull('phone_number_id')
+        ->where('phone_number_id', '!=', '')
+        ->first();
+    if (!$canal) return response()->json(['connected' => false]);
+    $row = \Illuminate\Support\Facades\DB::table('wa_canales')->where('id', $canal->id)->first();
+    if (!$row->access_token || !$row->phone_number_id) return response()->json(['connected' => false]);
+    try {
+        $r = \Illuminate\Support\Facades\Http::withToken($row->access_token)
+            ->timeout(5)
+            ->get("https://graph.facebook.com/v19.0/{$row->phone_number_id}");
+        return response()->json(['connected' => $r->successful()]);
+    } catch (\Throwable $e) {
+        return response()->json(['connected' => false]);
+    }
+})->name('bot.status.meta');
+
+Route::get('/bot-status/{bot?}', function ($bot = 'rifa') {
+    $file = base_path("whatsbot/{$bot}-status.json");
+    $data = file_exists($file) ? (json_decode(file_get_contents($file), true) ?? []) : [];
+    return response()->json([
+        'status' => $data['status'] ?? 'disconnected',
+        'qr'     => $data['qr']     ?? null,
+    ]);
+})->name('bot.status.json');
 
 // ─── Rifa Bot API ─────────────────────────────────────────────────────────────
 $nocsrf = [\App\Http\Middleware\VerifyCsrfToken::class];
@@ -336,11 +428,11 @@ use App\Http\Controllers\Comercial\DashboardController as ComDashController;
 
 // ─── BixoFact — login genérico con desplegable de negocios ──────────────────
 Route::get('/bixofact',        [FacAuthController::class, 'showLoginGeneral'])->name('bixofact.login');
-Route::post('/bixofact/login', [FacAuthController::class, 'loginGeneral'])->name('bixofact.login.post');
+Route::post('/bixofact/login', [FacAuthController::class, 'loginGeneral'])->middleware('throttle:10,1')->name('bixofact.login.post');
 
 Route::prefix('f/{slug}')->name('facturacion.')->group(function () {
     Route::get('/login',  [FacAuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [FacAuthController::class, 'login'])->name('login.post');
+    Route::post('/login', [FacAuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
     Route::post('/logout',[FacAuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth', 'facturacion.auth'])->group(function () {
@@ -388,10 +480,15 @@ Route::get('/wa/webhook/{slug}',  [WaWebhookController::class, 'verify'])->name(
 Route::post('/wa/webhook/{slug}', [WaWebhookController::class, 'receive'])->name('wa.webhook.receive')
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
+// ─── Meta WhatsApp webhook directo ───────────────────────────────────────────
+Route::get('/whatsapp/webhook',  [WaWebhookController::class, 'verifyMeta'])->name('wa.meta.verify');
+Route::post('/whatsapp/webhook', [WaWebhookController::class, 'receiveMeta'])->name('wa.meta.receive')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
 // ─── Portal Comunicaciones ────────────────────────────────────────────────────
 Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
     Route::get('/login',  [ComWaAuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [ComWaAuthController::class, 'login'])->name('login.post');
+    Route::post('/login', [ComWaAuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
     Route::post('/logout',[ComWaAuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth', 'comunicaciones.auth'])->group(function () {
@@ -418,20 +515,23 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
 // ─── Portal Comercial ─────────────────────────────────────────────────────────
 Route::prefix('bixosales')->name('bixosales.')->group(function () {
     Route::get('/login',         [ComAuthController::class, 'showLogin'])->name('login');
-    Route::post('/login',        [ComAuthController::class, 'login'])->name('login.post');
-    Route::post('/get-projects', [ComAuthController::class, 'getProjects'])->name('get.projects');
+    Route::post('/login',        [ComAuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
+    Route::post('/get-projects', [ComAuthController::class, 'getProjects'])->middleware('throttle:10,1')->name('get.projects');
     Route::post('/logout',       [ComAuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['auth', 'comercial.auth'])->group(function () {
+    Route::middleware(['comercial.auth'])->group(function () {
         Route::get('/',             [ComDashController::class, 'index'])->name('dashboard');
 
         Route::get('/pos',  [PosController::class, 'indexComercial'])->name('pos');
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
 
-        Route::get('/rifas',                  [RifaController::class, 'indexComercial'])->name('rifas');
-        Route::post('/rifas/{venta}/validar', [RifaController::class, 'confirmarPago'])->name('rifas.validar');
-        Route::post('/rifas/{venta}/enviar',  [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
-        Route::post('/rifas/{venta}/cancelar',[RifaController::class, 'cancelar'])->name('rifas.cancelar');
+        Route::get('/pedidos-bot',                  [RifaController::class, 'indexComercial'])->name('rifas');
+        Route::post('/pedidos-bot/{venta}/validar', [RifaController::class, 'confirmarPago'])->name('rifas.validar');
+        Route::post('/pedidos-bot/{venta}/enviar',  [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
+        Route::post('/pedidos-bot/{venta}/cancelar',[RifaController::class, 'cancelar'])->name('rifas.cancelar');
+        Route::post('/pedidos-bot/{venta}/editar',   [RifaController::class, 'editarComercial'])->name('rifas.editar');
+        Route::post('/pedidos-bot/{venta}/eliminar', [RifaController::class, 'eliminarComercial'])->name('rifas.eliminar');
+        Route::post('/pedidos-bot/{venta}/enviar-membresia', [RifaController::class, 'enviarConMembresia'])->name('rifas.enviar.membresia');
 
         Route::get('/pedidos',                [OrderController::class, 'index'])->name('pedidos');
         Route::post('/pedidos',               [OrderController::class, 'store'])->name('pedidos.store');
@@ -459,7 +559,14 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/clientes',              [ClientController::class, 'store'])->name('clientes.store');
         Route::put('/clientes/{client}',      [ClientController::class, 'update'])->name('clientes.update');
         Route::delete('/clientes/{client}',   [ClientController::class, 'destroy'])->name('clientes.destroy');
+
+        Route::get('/reportes/ventas-bot',    [ReporteController::class, 'ventasBot'])->name('reportes.ventas');
+        Route::get('/reportes/seguimiento',   [ReporteController::class, 'seguimientoBot'])->name('reportes.seguimiento');
+        Route::get('/reportes/ventas',        [ReporteController::class, 'ventas'])->name('reportes.ventas.general');
+        Route::get('/reportes/top-productos', [ReporteController::class, 'topProductos'])->name('reportes.top.productos');
+        Route::get('/reportes/dashboard-data',[ReporteController::class, 'dashboardData'])->name('reportes.dashboard.data');
     });
 });
 
 require __DIR__.'/auth.php';
+Route::get('/test-membresia', function(){ return 'OK'; });
