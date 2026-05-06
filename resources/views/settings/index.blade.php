@@ -446,6 +446,20 @@
                         <input type="text" name="category" class="input mt-1" placeholder="Tienda, Restaurante..."
                                value="{{ old('category', $selP->category) }}">
                     </div>
+                    @if(auth()->user()->is_superadmin ?? false)
+                    <div class="sm:col-span-2">
+                        <label class="label">
+                            Dominio personalizado
+                            <span class="ml-1 text-[10px] font-semibold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Superadmin</span>
+                        </label>
+                        <div class="mt-1 flex items-center rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
+                            <span class="px-3 text-xs text-gray-400 border-r border-gray-200 py-2.5 bg-white whitespace-nowrap">https://</span>
+                            <input type="text" name="custom_domain" class="flex-1 px-3 py-2.5 text-sm bg-gray-50 focus:outline-none border-0 min-w-0"
+                                   placeholder="gestion.sunegocio.com" value="{{ old('custom_domain', $selP->custom_domain) }}">
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">El cliente apunta su DNS a este servidor. BIXO detectará el dominio automáticamente.</p>
+                    </div>
+                    @endif
                     <div>
                         <label class="label">Moneda</label>
                         <select name="currency" class="input mt-1">

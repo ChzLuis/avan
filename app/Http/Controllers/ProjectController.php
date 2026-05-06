@@ -10,20 +10,9 @@ use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
-    public function panel()
-    {
-        /** @var \App\Models\Project $project */
-        $project = app('active_project');
-        $allProjects = \App\Models\Project::where('owner_id', auth()->id())
-            ->orWhereHas('members', fn($q) => $q->where('user_id', auth()->id()))
-            ->orderByDesc('updated_at')->get();
-        $allModules = Module::orderBy('sort_order')->get();
-        return view('projects.panel', compact('project', 'allProjects', 'allModules'));
-    }
-
     public function updateModules(Request $request, Project $target)
     {
-        abort_unless(auth()->id() === $target->owner_id, 403);
+        $this->authorizeProject($target);
         $enabledIds = $request->input('modules', []);
         $allModules = Module::all();
         $sync = [];
@@ -36,14 +25,9 @@ class ProjectController extends Controller
 
     public function toggleStatus(Request $request, Project $target)
     {
-        abort_unless(auth()->id() === $target->owner_id, 403);
+        $this->authorizeProject($target);
         $target->update(['is_active' => !$target->is_active]);
         return response()->json(['is_active' => $target->is_active]);
-    }
-
-    public function create()
-    {
-        return view('projects.create');
     }
 
     public function store(Request $request)
@@ -77,19 +61,11 @@ class ProjectController extends Controller
             ->with('success', 'Negocio creado exitosamente.');
     }
 
-    public function edit()
-    {
-        /** @var \App\Models\Project $project */
-        $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
-        return view('projects.edit', compact('project'));
-    }
-
     public function update(Request $request)
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
 
         $data = $request->validate([
             'name'        => 'required|string|max:100',
@@ -120,9 +96,9 @@ class ProjectController extends Controller
         return redirect()->route('workspace')->with('success', 'Negocio actualizado.');
     }
 
-    public function destroy(Request $request, \App\Models\Project $project)
+    public function destroy(Request $request, Project $project)
     {
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
         $project->delete();
 
         if ($request->wantsJson()) {

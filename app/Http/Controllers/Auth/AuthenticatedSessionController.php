@@ -36,11 +36,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $inactivity = $request->input('_inactivity');
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        if ($inactivity) {
+            return redirect()->route('login')->with('inactivity', true);
+        }
 
         return redirect('/');
     }

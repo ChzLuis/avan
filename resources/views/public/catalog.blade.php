@@ -48,6 +48,10 @@
   }
   $quoteWaMsg     = $settings['quote_wa_msg'] ?? 'Hola, me interesa cotizar los siguientes productos:';
   $isQuoteOnly       = $storeMode === 'quote_only';
+  // Bot order mode
+  $botOrderMode = ($settings['bot_order_mode'] ?? '0') === '1';
+  $botWaNumber  = preg_replace('/\D/', '', $settings['bot_wa_number'] ?? $project->whatsapp ?? '');
+  if ($botWaNumber && !str_starts_with($botWaNumber, '51')) $botWaNumber = '51' . $botWaNumber;
   // Envío
   $shippingEnabled  = ($settings['shipping_enabled']  ?? '0') === '1';
   $shippingCost     = (float)($settings['shipping_cost']      ?? 0);
@@ -239,18 +243,38 @@
 
 @php
 $currency = $settings['currency'] ?? 'S/';
-$searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
-    'id'    => $p->id,
-    'name'  => $p->name,
-    'price' => (float)$p->price,
-    'cp'    => $p->compare_price ? (float)$p->compare_price : null,
-    'img'   => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
-    'cat'   => $cat->name,
-    'catId' => (string)$cat->id,
-    'url'   => route('public.product', [$project->slug, $p->id]),
-    'desc'  => \Str::limit(strip_tags($p->description ?? ''), 100),
-    'stock' => $p->stock,
-]))->values();
+// Construir searchIndex incluyendo productos de subcategorías
+$searchIndex = $categories->flatMap(function($cat) use ($project) {
+    // Productos directos del padre
+    $rows = $cat->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $cat->name,
+        'catId'    => (string)$cat->id,
+        'parentId' => null,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]);
+    // Productos de subcategorías
+    $subRows = $cat->children->flatMap(fn($sub) => $sub->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $sub->name,
+        'catId'    => (string)$sub->id,
+        'parentId' => (string)$cat->id,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]));
+    return $rows->merge($subRows);
+})->values();
 @endphp
 </head>
 <body class="bg-gray-50 text-gray-800" x-data="store()" x-cloak>
@@ -332,6 +356,9 @@ $searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
           <option value="">Todas las categorías</option>
           @foreach($categories as $cat)
           <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+          @foreach($cat->children as $sub)
+          <option value="{{ $sub->id }}">　└ {{ $sub->name }}</option>
+          @endforeach
           @endforeach
         </select>
         <input x-model="search"
@@ -437,38 +464,7 @@ $searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
   <div class="flex gap-4">
 
     {{-- Sidebar Categorías --}}
-    <aside class="w-[220px] flex-shrink-0 hidden lg:block">
-      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="btn-p px-4 py-3 flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"/>
-          </svg>
-          <span class="font-bold text-sm">Todas las categorías</span>
-        </div>
-        <nav class="p-2" aria-label="Categorías del catálogo">
-          <button @click="filterCat=''; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-                  :class="filterCat==='' ? 'active' : ''"
-                  class="sidebar-cat text-gray-700 font-medium">
-            <svg class="w-4 h-4 flex-shrink-0 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-            </svg>
-            <span>Todo el catálogo</span>
-            <span class="ml-auto text-xs opacity-50 font-normal">{{ $categories->sum(fn($c)=>$c->products->count()) }}</span>
-          </button>
-          @foreach($categories as $cat)
-          <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-                  :class="filterCat==='{{ $cat->id }}' ? 'active' : ''"
-                  class="sidebar-cat text-gray-600">
-            <svg class="w-4 h-4 flex-shrink-0 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-            </svg>
-            <span class="flex-1 truncate">{{ $cat->name }}</span>
-            <span class="text-xs opacity-50 font-normal flex-shrink-0">{{ $cat->products->count() }}</span>
-          </button>
-          @endforeach
-        </nav>
-      </div>
-    </aside>
+    @include('public.partials.category-sidebar')
 
     {{-- Hero + Mini banners --}}
     <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -739,12 +735,17 @@ $searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
     {{-- Grid de productos --}}
     <div class="flex-1">
       @foreach($categories as $cat)
-      @if($cat->products->count())
-      <div x-show="filterCat==='' || filterCat==='{{ $cat->id }}'" class="mb-12">
+      @php
+        $catAllProducts = $cat->products->merge($cat->children->flatMap->products);
+        $showCat = $cat->products->count() || $cat->children->sum(fn($s)=>$s->products->count());
+      @endphp
+      @if($showCat)
+      {{-- Mostrar sección si: sin filtro, o filtro = esta cat padre, o filtro = algún hijo --}}
+      <div x-show="filterCat==='' || filterCat==='{{ $cat->id }}' || filterParent==='{{ $cat->id }}' || [{{ $cat->children->pluck('id')->map(fn($id)=>"'".$id."'")->join(',') }}].includes(filterCat)" class="mb-12">
         <div class="flex items-center gap-3 mb-5">
           <div class="w-1 h-6 rounded-full btn-p flex-shrink-0"></div>
           <h3 class="font-black text-gray-900 text-lg">{{ $cat->name }}</h3>
-          <span class="badge-p text-xs px-2 py-0.5 rounded-full font-bold">{{ $cat->products->count() }}</span>
+          <span class="badge-p text-xs px-2 py-0.5 rounded-full font-bold">{{ $catAllProducts->count() }}</span>
           <div class="flex-1 border-t border-gray-200 ml-1"></div>
         </div>
 
@@ -974,14 +975,44 @@ $searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
             </div>
           </article>
           @endforeach
+
+          {{-- Productos de subcategorías --}}
+          @foreach($cat->children as $sub)
+          @if($sub->products->count())
+          @foreach($sub->products as $p)
+          @php
+          $qvData = json_encode([
+              'id'    => $p->id,
+              'name'  => $p->name,
+              'img'   => $p->mainImage ? asset('storage/'.$p->mainImage->url) : '',
+              'price' => (float)$p->price,
+              'cp'    => $p->compare_price ? (float)$p->compare_price : null,
+              'desc'  => \Str::limit(strip_tags($p->description ?? ''), 120),
+              'url'   => route('public.product', [$project->slug, $p->id]),
+              'stock' => $p->stock,
+          ]);
+          @endphp
+          <article id="producto-{{ $p->id }}"
+                   class="prod-card bg-white rounded-2xl border border-gray-200 overflow-hidden group"
+                   x-show="(filterCat==='' || filterCat==='{{ $sub->id }}' || filterParent==='{{ $cat->id }}') && matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }})"
+                   data-price="{{ $p->price }}"
+                   data-ts="{{ $p->created_at ? $p->created_at->timestamp : 0 }}"
+                   data-name="{{ strtolower($p->name) }}"
+                   data-qv='{{ $qvData }}'>
+            @include('public.partials.product-card', ['p' => $p])
+          </article>
+          @endforeach
+          @endif
+          @endforeach
+
         </div>
         {{-- Ver más --}}
-        @if($cat->products->count() > 8)
+        @if($catAllProducts->count() > 8)
         <div class="mt-4 text-center" x-show="!expandedCats['{{ $cat->id }}'] && matchProduct('', 0, null)">
           <button @click="expandedCats = {...expandedCats, '{{ $cat->id }}': true}"
                   class="text-sm font-semibold px-5 py-2 rounded-xl border-2 transition hover:text-white hover:bg-[var(--c)] hover:border-[var(--c)]"
                   style="border-color:var(--c); color:var(--c)">
-            Ver todos los {{ $cat->products->count() }} productos
+            Ver todos los {{ $catAllProducts->count() }} productos
           </button>
         </div>
         @endif
@@ -1784,6 +1815,7 @@ function store() {
     _formKey,
     search: '',
     filterCat: '',
+    filterParent: '',
     priceFilter: '',
     priceMin: 0,
     priceMax: 0,
@@ -1803,7 +1835,10 @@ function store() {
         const s = this.search.toLowerCase();
         return this.searchIndex.filter(p => {
             const nm = s === '' || p.name.toLowerCase().includes(s);
-            const cm = this.filterCat === '' || p.catId === this.filterCat;
+            // Si filtra por padre: incluir productos directos del padre + todos sus hijos
+            const cm = this.filterCat === ''
+                || p.catId === this.filterCat
+                || (this.filterParent === this.filterCat && p.parentId === this.filterCat);
             let pm = true;
             if (this.priceFilter === '0-50')    pm = p.price <= 50;
             if (this.priceFilter === '50-150')  pm = p.price > 50 && p.price <= 150;
@@ -2044,7 +2079,7 @@ function store() {
         quantity: i.qty,
       }));
       try {
-        const res = await fetch('{{ route("public.order", $project->slug) }}', {
+        const res = await fetch('/{{ $project->slug }}/order', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2063,7 +2098,10 @@ function store() {
         });
         const data = await res.json();
         if (data.ok) {
-          @if($isQuoteOnly && $quoteWa)
+          @if($botOrderMode && $botWaNumber)
+          // Modo bot: abrir WhatsApp con mensaje formateado para el bot
+          this.sendBotOrder(data.order_id, data.total);
+          @elseif($isQuoteOnly && $quoteWa)
           // Cotización con WhatsApp
           this.sendQuoteWhatsapp();
           @elseif(!$isQuoteOnly && $hasOnlinePayment)
@@ -2088,6 +2126,37 @@ function store() {
       }
       this.orderLoading = false;
     },
+
+    @if($botOrderMode && $botWaNumber)
+    sendBotOrder(orderId, total) {
+      const nPedido = '#' + String(orderId).padStart(4, '0');
+      let msg = `📋 *N° Pedido: ${nPedido}*\n`;
+      msg += `👤 *Cliente: ${this.form.name}*\n`;
+      if (this.form.phone) msg += `📱 ${this.form.phone}\n`;
+      msg += `\n📦 *PRODUCTOS*\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+      this.cart.forEach((item, i) => {
+        const sub = (item.price * item.qty).toFixed(2);
+        msg += `${i+1}. *${item.name}*\n   • Cantidad: ${item.qty}\n   • Precio unit.: S/ ${Number(item.price).toFixed(2)}\n   • Subtotal: S/ ${sub}\n\n`;
+      });
+      msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `💰 *TOTAL: S/ ${Number(total).toFixed(2)}*\n`;
+      if (this.form.notes) msg += `\n📝 ${this.form.notes}\n`;
+
+      // Limpiar carrito
+      this.cart = [];
+      this.couponApplied = null; this.couponCode = '';
+      try {
+        localStorage.removeItem(this._cartKey);
+        localStorage.removeItem(this._formKey);
+      } catch(e) {}
+
+      // Abrir WhatsApp — el bot recibe este mensaje y arranca el flujo
+      const url = `https://wa.me/{{ $botWaNumber }}?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+      this.orderSent = true;
+    },
+    @endif
 
     async confirmManualPay() {
       if (!this.payReference.trim()) return;

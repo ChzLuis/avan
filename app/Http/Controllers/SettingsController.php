@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ImportLog;
 use App\Models\Project;
 use App\Models\Module;
 use App\Models\Coupon;
@@ -15,14 +16,20 @@ class SettingsController extends Controller
     public function index(Request $request)
     {
         $userId = auth()->id();
-        $projects = Project::where('owner_id', $userId)
-            ->orWhereHas('members', fn($q) => $q->where('user_id', $userId))
-            ->orderBy('name')
-            ->get();
+        $isSuperadmin = auth()->user()->is_superadmin ?? false;
+
+        $projects = $isSuperadmin
+            ? Project::orderBy('name')->get()
+            : Project::where('owner_id', $userId)
+                ->orWhereHas('members', fn($q) => $q->where('user_id', $userId))
+                ->orderBy('name')
+                ->get();
 
         // Si viene ?p=ID, mostrar ese proyecto en el panel derecho
         if ($request->p && $pid = (int) $request->p) {
-            $project = $projects->firstWhere('id', $pid) ?? app('active_project');
+            $project = $isSuperadmin
+                ? Project::findOrFail($pid)
+                : ($projects->firstWhere('id', $pid) ?? app('active_project'));
         } else {
             $project = app('active_project');
         }
@@ -33,13 +40,16 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $userId = auth()->id();
+        $isSuperadmin = auth()->user()->is_superadmin ?? false;
         // Permitir editar cualquier proyecto del usuario, no solo el activo
         if ($request->input('project_id')) {
-            $project = Project::where('owner_id', $userId)->findOrFail($request->input('project_id'));
+            $project = $isSuperadmin
+                ? Project::findOrFail($request->input('project_id'))
+                : Project::where('owner_id', $userId)->findOrFail($request->input('project_id'));
         } else {
             /** @var \App\Models\Project $project */
             $project = app('active_project');
-            abort_unless($userId === $project->owner_id, 403);
+            $this->authorizeProject($project);
         }
         // Sección wa_phone — guardado directo
         if ($request->input('section') === 'wa_phone') {
@@ -53,15 +63,27 @@ class SettingsController extends Controller
             return back()->with('success', 'Configuración guardada.');
         }
 
+        $customDomainRule = $isSuperadmin
+            ? 'nullable|string|max:150|unique:projects,custom_domain,'.$project->id
+            : 'prohibited';
+
         $data = $request->validate([
-            'name'        => 'sometimes|required|string|max:100',
-            'slug'        => 'nullable|string|max:120|regex:/^[a-z0-9\-]+$/|unique:projects,slug,'.$project->id,
-            'description' => 'nullable|string|max:500',
-            'category'    => 'nullable|string|max:80',
-            'phone'       => 'nullable|string|max:30',
-            'whatsapp'    => 'nullable|string|max:30',
-            'address'     => 'nullable|string|max:200',
+            'name'          => 'sometimes|required|string|max:100',
+            'slug'          => 'nullable|string|max:120|regex:/^[a-z0-9\-]+$/|unique:projects,slug,'.$project->id,
+            'description'   => 'nullable|string|max:500',
+            'category'      => 'nullable|string|max:80',
+            'phone'         => 'nullable|string|max:30',
+            'whatsapp'      => 'nullable|string|max:30',
+            'address'       => 'nullable|string|max:200',
+            'custom_domain' => $customDomainRule,
         ]);
+
+        // Normalizar custom_domain
+        if (isset($data['custom_domain'])) {
+            $data['custom_domain'] = $data['custom_domain']
+                ? strtolower(trim($data['custom_domain']))
+                : null;
+        }
 
         // Si el slug viene vacío o no fue enviado, regenerarlo desde el nombre
         if (!empty($data['name']) && empty($data['slug'])) {
@@ -101,9 +123,12 @@ class SettingsController extends Controller
     public function seo(Request $request)
     {
         $userId = auth()->id();
-        $projects = Project::where('owner_id', $userId)
-            ->orWhereHas('members', fn($q) => $q->where('user_id', $userId))
-            ->orderBy('name')->get();
+        $isSuperadmin = auth()->user()->is_superadmin ?? false;
+        $projects = $isSuperadmin
+            ? Project::orderBy('name')->get()
+            : Project::where('owner_id', $userId)
+                ->orWhereHas('members', fn($q) => $q->where('user_id', $userId))
+                ->orderBy('name')->get();
         if ($request->p && $pid = (int) $request->p) {
             $project = $projects->firstWhere('id', $pid) ?? app('active_project');
         } else {
@@ -116,10 +141,12 @@ class SettingsController extends Controller
     {
         $userId = auth()->id();
         if ($request->input('project_id')) {
-            $project = Project::where('owner_id', $userId)->findOrFail($request->input('project_id'));
+            $project = $isSuperadmin
+                ? Project::findOrFail($request->input('project_id'))
+                : Project::where('owner_id', $userId)->findOrFail($request->input('project_id'));
         } else {
             $project = app('active_project');
-            abort_unless($userId === $project->owner_id, 403);
+            $this->authorizeProject($project);
         }
         $seoKeys = [
             'seo_title', 'seo_description', 'seo_keywords', 'seo_canonical',
@@ -139,11 +166,18 @@ class SettingsController extends Controller
             ->with('success', 'SEO guardado.');
     }
 
-    public function modules()
+    public function modules(Request $request)
     {
-        /** @var \App\Models\Project $project */
-        $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $isSuperadmin = auth()->user()->is_superadmin ?? false;
+        $userId = auth()->id();
+
+        if ($request->p && $isSuperadmin) {
+            $project = Project::findOrFail((int) $request->p);
+        } else {
+            $project = app('active_project');
+            $this->authorizeProject($project);
+        }
+
         $allModules      = Module::where('is_active', true)->orderBy('sort_order')->get();
         $activeModuleIds = $project->modules()->wherePivot('is_active', true)->pluck('modules.id')->toArray();
         return view('settings.modules', compact('project', 'allModules', 'activeModuleIds'));
@@ -151,9 +185,15 @@ class SettingsController extends Controller
 
     public function updateModules(Request $request)
     {
-        /** @var \App\Models\Project $project */
-        $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $isSuperadmin = auth()->user()->is_superadmin ?? false;
+        $userId = auth()->id();
+
+        if ($request->p && $isSuperadmin) {
+            $project = Project::findOrFail((int) $request->p);
+        } else {
+            $project = app('active_project');
+            $this->authorizeProject($project);
+        }
 
         // Toggle individual desde el centro de control
         if ($request->has('module_id')) {
@@ -182,11 +222,46 @@ class SettingsController extends Controller
         return view('settings.design', compact('project'));
     }
 
+    public function uploadLogo(Request $request)
+    {
+        $project = app('active_project');
+        $this->authorizeProject($project);
+        $request->validate(['file' => 'required|image|max:2048']);
+        $type = $request->input('type', 'logo');
+        $path = $request->file('file')->store("logos/{$project->id}", 'public');
+        return response()->json([
+            'path' => $path,
+            'url'  => asset('storage/' . $path),
+        ]);
+    }
+
+    public function importLogs()
+    {
+        $project = app('active_project');
+        $logs = ImportLog::where('project_id', $project->id)
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get()
+            ->map(fn($l) => [
+                'id'         => $l->id,
+                'type'       => $l->type,
+                'filename'   => $l->filename,
+                'created'    => $l->created,
+                'updated'    => $l->updated,
+                'skipped'    => $l->skipped,
+                'has_errors' => $l->has_errors,
+                'errors'     => $l->errors ?? [],
+                'date'       => $l->created_at->format('d/m/Y H:i'),
+                'date_diff'  => $l->created_at->diffForHumans(),
+            ]);
+        return response()->json(['logs' => $logs]);
+    }
+
     public function updateDesign(Request $request)
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
         $keys = [
             // Marca
             'primary_color','secondary_color','whatsapp_msg',
@@ -271,7 +346,7 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
 
         $keys = [
             'payment_yape_number','payment_plin_number',
@@ -314,7 +389,7 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
 
         $templateKey = $request->input('template');
         $template    = CatalogTemplates::get($templateKey);
@@ -333,6 +408,9 @@ class SettingsController extends Controller
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
+        // Crear categorías y subcategorías predefinidas de la plantilla
+        CatalogTemplates::applyCategories($project, $templateKey);
+
         return response()->json(['ok' => true, 'template' => $templateKey]);
     }
 
@@ -340,7 +418,7 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
         $data = $request->validate([
             'code'       => 'required|string|max:50',
             'type'       => 'required|in:percent,fixed',
@@ -362,7 +440,7 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
         $project->coupons()->findOrFail($id)->delete();
         return response()->json(['ok' => true]);
     }
@@ -371,7 +449,7 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
         $coupon = $project->coupons()->findOrFail($id);
         $coupon->update(['is_active' => !$coupon->is_active]);
         return response()->json(['ok' => true, 'is_active' => $coupon->is_active]);

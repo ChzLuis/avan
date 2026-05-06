@@ -359,7 +359,7 @@ async function saveState() {
         key:                 document.getElementById('s-key').value.trim(),
         label:               document.getElementById('s-label').value.trim(),
         message:             document.getElementById('s-message').value.trim(),
-        images:              stateImages,
+        images:              Array.isArray(stateImages) ? stateImages : [],
         input_type:          inputType,
         sort_order:          parseInt(document.getElementById('s-order').value) || 0,
         is_active:           document.getElementById('s-active').checked ? 1 : 0,
@@ -598,7 +598,7 @@ async function saveStateInline(id) {
     const payload = {
         label:               document.getElementById('e-label').value.trim(),
         message:             document.getElementById('e-message').value.trim(),
-        images:              stateImages,
+        images:              Array.isArray(stateImages) ? stateImages : [],
         input_type:          inputType,
         is_active:           document.getElementById('e-active').checked ? 1 : 0,
         validation_pattern:  inputType === 'text'   ? (document.getElementById('e-val-pattern').value.trim() || null) : null,

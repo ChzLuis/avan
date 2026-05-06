@@ -24,7 +24,10 @@ class AuthController extends Controller
      */
     public function getProjects(Request $request)
     {
-        $request->validate(['email' => 'required|string', 'password' => 'required']);
+        $request->validate(
+            ['email' => 'required|string', 'password' => 'required'],
+            ['email.required' => 'El campo usuario es obligatorio.', 'password.required' => 'La contraseña es obligatoria.']
+        );
 
         $login = $request->input('email');
         $user  = User::where('email', $login)->orWhere('username', $login)->first();
@@ -33,18 +36,22 @@ class AuthController extends Controller
             return response()->json(['ok' => false, 'message' => 'Credenciales incorrectas.'], 401);
         }
 
-        // Proyectos como owner o miembro
-        $projects = Project::where(function ($q) use ($user) {
-                $q->where('owner_id', $user->id)
-                  ->orWhereHas('members', fn($m) => $m->where('user_id', $user->id));
-            })
-            ->where('is_active', true)
-            ->get(['id', 'name', 'slug']);
+        // Superadmin ve todos los proyectos activos
+        if ($user->is_superadmin) {
+            $projects = Project::where('is_active', true)->get(['id', 'name', 'slug']);
+        } else {
+            $projects = Project::where(function ($q) use ($user) {
+                    $q->where('owner_id', $user->id)
+                      ->orWhereHas('members', fn($m) => $m->where('user_id', $user->id))
+                      ->orWhereHas('employees', fn($e) => $e->where('user_id', $user->id)->where('is_active', true));
+                })
+                ->where('is_active', true)
+                ->get(['id', 'name', 'slug']);
+        }
 
         return response()->json([
-            'ok'           => true,
-            'projects'     => $projects,
-            'is_superadmin'=> (bool) $user->is_superadmin,
+            'ok'      => true,
+            'projects'=> $projects,
         ]);
     }
 
@@ -53,11 +60,10 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'email'      => 'required|string',
-            'password'   => 'required',
-            'project_id' => 'required',
-        ]);
+        $request->validate(
+            ['email' => 'required|string', 'password' => 'required', 'project_id' => 'required'],
+            ['email.required' => 'El campo usuario es obligatorio.', 'password.required' => 'La contraseña es obligatoria.', 'project_id.required' => 'Selecciona un negocio.']
+        );
 
         $login = $request->input('email');
         $user  = User::where('email', $login)->orWhere('username', $login)->first();
@@ -74,13 +80,17 @@ class AuthController extends Controller
         }
 
         $projectId = (int) $request->input('project_id');
-        $project   = Project::where('id', $projectId)
-            ->where('is_active', true)
-            ->where(function ($q) use ($user) {
+        $query = Project::where('id', $projectId)->where('is_active', true);
+
+        if (! $user->is_superadmin) {
+            $query->where(function ($q) use ($user) {
                 $q->where('owner_id', $user->id)
-                  ->orWhereHas('members', fn($m) => $m->where('user_id', $user->id));
-            })
-            ->first();
+                  ->orWhereHas('members', fn($m) => $m->where('user_id', $user->id))
+                  ->orWhereHas('employees', fn($e) => $e->where('user_id', $user->id)->where('is_active', true));
+            });
+        }
+
+        $project = $query->first();
 
         if (! $project) {
             Auth::logout();
@@ -93,9 +103,12 @@ class AuthController extends Controller
         return redirect()->route('bixosales.dashboard');
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         session()->forget('comercial_project_id');
+        if ($request->input('_inactivity')) {
+            return redirect()->route('bixosales.login')->with('inactivity', true);
+        }
         return redirect()->route('bixosales.login');
     }
 }

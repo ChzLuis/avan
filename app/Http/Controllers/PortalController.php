@@ -25,7 +25,8 @@ class PortalController extends Controller
     public function quote(string $slug, string $token)
     {
         $project = $this->getProject($slug);
-        $quote   = Quote::where('token', $token)
+        $quote   = Quote::allProjects()
+                        ->where('token', $token)
                         ->where('project_id', $project->id)
                         ->with('items')
                         ->firstOrFail();
@@ -38,7 +39,8 @@ class PortalController extends Controller
     public function accept(Request $request, string $slug, string $token)
     {
         $project = $this->getProject($slug);
-        $quote   = Quote::where('token', $token)
+        $quote   = Quote::allProjects()
+                        ->where('token', $token)
                         ->where('project_id', $project->id)
                         ->firstOrFail();
 

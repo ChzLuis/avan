@@ -10,7 +10,7 @@ class ComercialAuth
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! session('comercial_project_id')) {
+        if (! auth()->check() || ! session('comercial_project_id')) {
             return redirect()->route('bixosales.login');
         }
 

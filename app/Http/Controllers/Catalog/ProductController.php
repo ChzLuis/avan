@@ -5,11 +5,17 @@ namespace App\Http\Controllers\Catalog;
 use App\Http\Controllers\Controller;
 use App\Models\CatalogList;
 use App\Models\CatalogValue;
+use App\Models\ImportLog;
 use App\Models\Project;
 use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
@@ -18,7 +24,10 @@ class ProductController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $categories = $project->categories()->where('is_active', true)->orderBy('sort_order')->get();
+        $categories = $project->categories()
+            ->where('is_active', true)->whereNull('parent_id')->where('type', 'product')
+            ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')])
+            ->orderBy('sort_order')->get();
         $products   = $project->products()->with(['category','images'])->orderBy('sort_order')->get();
 
         $brandList    = $project->catalogLists()->where('type', 'brand')->first();
@@ -59,6 +68,8 @@ class ProductController extends Controller
             'cost'             => 'nullable|numeric|min:0',
             'unit'             => 'nullable|string|max:30',
             'stock'            => 'nullable|integer|min:0',
+            'stock_min'        => 'nullable|integer|min:0',
+            'stock_max'        => 'nullable|integer|min:0',
             'is_available'     => 'boolean',
         ];
     }
@@ -109,270 +120,369 @@ class ProductController extends Controller
         return back()->with('success', 'Producto eliminado.');
     }
 
-    // ── Exportar CSV ──────────────────────────────────────────────────────────
-    public function export()
+    public function reorder(Request $request)
     {
-        /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $products = $project->products()->with('category')->orderBy('sort_order')->get();
-
-        $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="productos_' . $project->slug . '_' . now()->format('Ymd') . '.csv"',
-        ];
-
-        $callback = function () use ($products) {
-            $f = fopen('php://output', 'w');
-            fprintf($f, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
-            fwrite($f, "sep=;\n");
-            fputcsv($f, ['nombre','sku','codigo_barras','categoria','precio','precio_comparacion','costo','unidad','stock','disponible','descripcion','notas'], ';');
-            foreach ($products as $p) {
-                fputcsv($f, [
-                    $p->name, $p->sku ?? '', $p->barcode ?? '',
-                    $p->category?->name ?? '', $p->price,
-                    $p->compare_price ?? '', $p->cost ?? '',
-                    $p->unit ?? '', $p->stock ?? 0,
-                    $p->is_available ? 'si' : 'no',
-                    $p->description ?? '', $p->notes ?? '',
-                ], ';');
-            }
-            fclose($f);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        $ids = $request->validate(['ids' => 'required|array', 'ids.*' => 'integer'])['ids'];
+        foreach ($ids as $order => $id) {
+            Product::where('id', $id)->where('project_id', $project->id)->update(['sort_order' => $order]);
+        }
+        return response()->json(['ok' => true]);
     }
 
-    // ── Plantilla XLS (HTML) — abre perfecto en Excel con tildes ─────────────
+    public function export()
+    {
+        $project  = app('active_project');
+        $products = $project->products()->with(['category', 'category.parent'])->orderBy('sort_order')->get()->map(fn($p) => [
+            'nombre'              => $p->name,
+            'sku'                 => $p->sku ?? '',
+            'codigo_barras'       => $p->barcode ?? '',
+            'categoria'           => $p->category?->parent ? $p->category->parent->name : ($p->category?->name ?? ''),
+            'subcategoria'        => $p->category?->parent ? $p->category->name : '',
+            'precio'              => $p->price,
+            'precio_comparacion'  => $p->compare_price ?? '',
+            'precio_mayorista'    => $p->wholesale_price ?? '',
+            'cantidad_mayorista'  => $p->wholesale_min_qty ?? '',
+            'unidad_mayorista'    => $p->wholesale_unit ?? '',
+            'costo'               => $p->cost ?? '',
+            'unidad'              => $p->unit ?? '',
+            'stock'               => $p->stock ?? 0,
+            'disponible'          => $p->is_available ? 'si' : 'no',
+            'descripcion'         => $p->description ?? '',
+            'notas'               => $p->notes ?? '',
+        ])->toArray();
+        $filename = 'productos_' . $project->slug . '_' . now()->format('Ymd') . '.xlsx';
+        $catTree  = $project->categories()->whereNull('parent_id')->where('is_active', true)
+            ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')])
+            ->orderBy('sort_order')->get();
+        return $this->buildProductXlsx($filename, $products, $catTree);
+    }
+
     public function template()
     {
+        $project = app('active_project');
+        $catTree = $project->categories()->whereNull('parent_id')->where('is_active', true)
+            ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')])
+            ->orderBy('sort_order')->get();
+        return $this->buildProductXlsx('plantilla_productos.xlsx', [], $catTree);
+    }
+
+    private function buildProductXlsx(string $filename, array $data, $catTree = null): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        // Columnas con sus keys para import, label display, sección y color
+        // sección: 'base'=negro, 'min'=azul minorista, 'may'=verde mayorista, 'extra'=gris
         $cols = [
-            'nombre'              => ['Nombre del producto',    'text',   true],
-            'sku'                 => ['SKU / Código interno',   'text',   false],
-            'codigo_barras'       => ['Código de barras',       'text',   false],
-            'categoria'           => ['Categoría',              'text',   false],
-            'precio'              => ['Precio de venta',        'number', true],
-            'precio_comparacion'  => ['Precio tachado (antes)', 'number', false],
-            'costo'               => ['Costo / compra',         'number', false],
-            'unidad'              => ['Unidad (unidad/kg/lt…)', 'text',   false],
-            'stock'               => ['Stock',                  'number', false],
-            'disponible'          => ['Disponible (si/no)',     'text',   false],
-            'descripcion'         => ['Descripción',            'text',   false],
-            'notas'               => ['Notas internas',         'text',   false],
+            ['nombre',             'PRODUCTO',          'base', true],
+            ['sku',                'SKU',               'base', false],
+            ['categoria',          'CATEGORÍA',         'base', false],
+            ['subcategoria',       'SUB CATEGORÍA',     'base', false],
+            ['unidad',             'UNID.',             'min',  false],
+            ['precio',             'P. UNIT',           'min',  true],
+            ['precio_comparacion', 'P. VENTA',          'min',  false],
+            ['unidad_mayorista',   'UNID.',             'may',  false],
+            ['precio_mayorista',   'P. X MAYOR',        'may',  false],
+            ['precio_comparacion', 'P. VENTA',          'may',  false],
+            ['cantidad_mayorista', 'CANT. MÍN.',        'may',  false],
+            ['costo',              'COSTO',             'extra',false],
+            ['stock',              'STOCK',             'extra',false],
+            ['disponible',        'VISIBLE',            'extra',false],
+            ['descripcion',        'DESCRIPCIÓN',       'extra',false],
+            ['notas',              'NOTAS',             'extra',false],
         ];
 
-        $example = [
-            'nombre'             => 'Producto Ejemplo',
-            'sku'                => 'SKU-001',
-            'codigo_barras'      => '7501234567890',
-            'categoria'          => 'Electrónica',
-            'precio'             => '199.90',
-            'precio_comparacion' => '249.90',
-            'costo'              => '120.00',
-            'unidad'             => 'unidad',
-            'stock'              => '50',
-            'disponible'         => 'si',
-            'descripcion'        => 'Descripción del producto con tildes áéíóú',
-            'notas'              => 'Notas internas',
+        // Keys únicos para import (precio_comparacion aparece dos veces visualmente)
+        $importKeys = ['nombre','sku','categoria','subcategoria','unidad','precio','precio_comparacion',
+                       'unidad_mayorista','precio_mayorista','cantidad_mayorista','costo','stock','disponible','descripcion','notas'];
+
+        $colorMap = [
+            'base'  => ['header' => '2D3748', 'sub' => '4A5568'],
+            'min'   => ['header' => '1E40AF', 'sub' => '3B82F6'],
+            'may'   => ['header' => '166534', 'sub' => '16A34A'],
+            'extra' => ['header' => '6B7280', 'sub' => '9CA3AF'],
         ];
 
-        // HTML que Excel abre nativamente con UTF-8 correcto
-        $th = fn(string $t, bool $req = false) =>
-            '<th style="background:#4472C4;color:#fff;font-weight:bold;border:1px solid #2d5a9e;padding:6px 10px;white-space:nowrap">'
-            . htmlspecialchars($t) . ($req ? ' <span style="color:#ffd700">*</span>' : '') . '</th>';
+        $spreadsheet = new Spreadsheet();
+        $sheet1 = $spreadsheet->getActiveSheet();
+        $sheet1->setTitle('Productos');
 
-        $tdKey = fn(string $t) =>
-            '<td style="background:#d9e1f2;color:#1f3864;font-family:monospace;font-size:11px;border:1px solid #b4c6e7;padding:4px 8px">'
-            . htmlspecialchars($t) . '</td>';
+        // Fila 1: Grupos de sección (merged)
+        $sections = [
+            ['label' => '',            'color' => '2D3748', 'cols' => 4], // base
+            ['label' => 'MINORISTA',   'color' => '1E40AF', 'cols' => 3], // min
+            ['label' => 'MAYORISTA',   'color' => '166534', 'cols' => 4], // may
+            ['label' => 'DATOS EXTRA', 'color' => '6B7280', 'cols' => 5], // extra
+        ];
+        $colIdx = 1;
+        foreach ($sections as $sec) {
+            $startCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx);
+            $endCol   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx + $sec['cols'] - 1);
+            if ($sec['cols'] > 1) $sheet1->mergeCells("{$startCol}1:{$endCol}1");
+            $sheet1->setCellValue("{$startCol}1", $sec['label']);
+            $sheet1->getStyle("{$startCol}1:{$endCol}1")->applyFromArray([
+                'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 10],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $sec['color']]],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            ]);
+            $colIdx += $sec['cols'];
+        }
+        $sheet1->getRowDimension(1)->setRowHeight(22);
 
-        $tdText = fn(string $t) =>
-            '<td style="mso-number-format:\'\@\';border:1px solid #d0d0d0;padding:4px 8px">'
-            . htmlspecialchars($t) . '</td>';
+        // Fila 2: Encabezados de columna (key para import) — fila oculta
+        $colIdx = 1;
+        foreach ($cols as [$key, $label, $sec, $req]) {
+            $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx) . '2';
+            $sheet1->setCellValue($cell, $key);
+            $colIdx++;
+        }
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($cols));
+        $sheet1->getStyle('A2:' . $lastColLetter . '2')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 8, 'color' => ['rgb' => '9CA3AF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F9FAFB']],
+        ]);
+        $sheet1->getRowDimension(2)->setRowHeight(14);
 
-        $tdNum = fn(string $t) =>
-            '<td style="border:1px solid #d0d0d0;padding:4px 8px;text-align:right">'
-            . htmlspecialchars($t) . '</td>';
+        // Fila 3: Labels visuales con colores por sección
+        $colIdx = 1;
+        foreach ($cols as [$key, $label, $sec, $req]) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx);
+            $sheet1->setCellValue("{$colLetter}3", $label . ($req ? ' *' : ''));
+            $sheet1->getStyle("{$colLetter}3")->applyFromArray([
+                'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 9],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $colorMap[$sec]['sub']]],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FFFFFF']]],
+            ]);
+            $colIdx++;
+        }
+        $sheet1->getRowDimension(3)->setRowHeight(20);
 
-        // Fila encabezados
-        $headerRow = '';
-        foreach ($cols as $key => [$label, $type, $required]) {
-            $headerRow .= $th($label, $required);
+        // Anchos de columna
+        $widths = [35, 15, 20, 20, 12, 12, 12, 15, 12, 12, 12, 12, 10, 10, 35, 25];
+        foreach ($widths as $i => $w) {
+            $sheet1->getColumnDimensionByColumn($i + 1)->setWidth($w);
         }
 
-        // Fila claves técnicas
-        $keyRow = '';
-        foreach ($cols as $key => [$label, $type, $required]) {
-            $keyRow .= $tdKey($key);
+        // Filas de datos
+        if (empty($data)) {
+            $example = ['Arroz Premium 1kg','ARR-001','Abarrotes','Granos y Cereales','unidad','15.90','19.90','saco 25kg','12.00','19.90','25','10.00','100','si','Arroz de grano largo',''];
+            $colIdx = 1;
+            foreach ($example as $val) {
+                $sheet1->setCellValueByColumnAndRow($colIdx, 4, $val);
+                $colIdx++;
+            }
+            $sheet1->getStyle('A4:' . $lastColLetter . '4')->applyFromArray([
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EFF6FF']],
+                'font' => ['italic' => true, 'color' => ['rgb' => '6B7280']],
+            ]);
+        } else {
+            $row = 4;
+            foreach ($data as $i => $item) {
+                $bg = $i % 2 === 0 ? 'FFFFFF' : 'F8FAFC';
+                // precio_comparacion aparece en col 7 (min) y col 10 (may) — mismo valor
+                $rowData = [
+                    $item['nombre'] ?? '', $item['sku'] ?? '', $item['categoria'] ?? '', $item['subcategoria'] ?? '',
+                    $item['unidad'] ?? '', $item['precio'] ?? '', $item['precio_comparacion'] ?? '',
+                    $item['unidad_mayorista'] ?? '', $item['precio_mayorista'] ?? '', $item['precio_comparacion'] ?? '',
+                    $item['cantidad_mayorista'] ?? '',
+                    $item['costo'] ?? '', $item['stock'] ?? '', $item['disponible'] ?? '',
+                    $item['descripcion'] ?? '', $item['notas'] ?? '',
+                ];
+                foreach ($rowData as $ci => $val) {
+                    $sheet1->setCellValueByColumnAndRow($ci + 1, $row, $val);
+                }
+                $sheet1->getStyle('A' . $row . ':' . $lastColLetter . $row)->applyFromArray([
+                    'fill'    => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E5E7EB']]],
+                ]);
+                $row++;
+            }
         }
-
-        // Fila ejemplo
-        $exRow = '';
-        foreach ($cols as $key => [$label, $type, $required]) {
-            $val = $example[$key] ?? '';
-            $exRow .= $type === 'number' ? $tdNum($val) : $tdText($val);
-        }
-
-        // Tabla instrucciones
-        $instrRows = '';
         $instrucciones = [
-            ['nombre',            'Nombre del producto tal como aparece en la tienda',  'Sí'],
-            ['sku',               'Código interno de tu negocio',                        'No'],
-            ['codigo_barras',     'EAN/UPC — se guarda como texto (sin notación científica)', 'No'],
-            ['categoria',         'Debe coincidir exactamente con una categoría existente','No'],
-            ['precio',            'Precio de venta. Decimal con punto: 19.90',           'Sí'],
-            ['precio_comparacion','Precio anterior tachado. Vacío si no aplica.',        'No'],
-            ['costo',             'Costo de compra o producción',                        'No'],
-            ['unidad',            'unidad / kg / lt / m / caja / par…',                  'No'],
-            ['stock',             'Cantidad disponible en inventario',                   'No'],
-            ['disponible',        'si = visible en tienda   |   no = oculto',            'No'],
-            ['descripcion',       'Descripción larga del producto',                      'No'],
-            ['notas',             'Notas internas (no se muestran en la tienda)',         'No'],
+            ['nombre',             'Nombre del producto. Texto libre, máx. 200 caracteres.',                          'Arroz Premium 1kg',  true],
+            ['sku',                'Tu código interno. Déjalo vacío si no tienes.',                                   'ARR-001',            false],
+            ['codigo_barras',      'EAN o UPC del producto.',                                                         '7501234567890',      false],
+            ['categoria',          'Categoría padre. Ver hoja "Categorías" para opciones válidas.',                   'Abarrotes',          false],
+            ['subcategoria',       'Subcategoría (opcional). Debe pertenecer a la categoría padre.',                  'Granos y Cereales',  false],
+            ['precio',             'Precio unitario con punto decimal.',                                              '15.90',              true],
+            ['precio_comparacion', 'Se muestra tachado como precio anterior. Vacío si no aplica.',                    '19.90',              false],
+            ['precio_mayorista',   'Precio especial por volumen. Dejar vacío si no aplica.',                          '12.00',              false],
+            ['cantidad_mayorista', 'Cantidad mínima para activar el precio mayorista. Obligatorio si hay precio_mayorista.', '25',          false],
+            ['unidad_mayorista',   'Descripción de la presentación mayorista. Ej: saco 25kg, caja x12.',              'saco 25kg',          false],
+            ['costo',              'Tu costo o precio de compra. Solo interno.',                                      '10.00',              false],
+            ['unidad',             'unidad / kg / lt / caja / par / docena',                                          'unidad',             false],
+            ['stock',              'Cantidad en inventario. 0 si no controlas stock.',                                '100',                false],
+            ['disponible',         'Escribe exactamente "si" o "no".',                                                'si',                 false],
+            ['descripcion',        'Descripción que verá el cliente en la tienda.',                                   'Arroz de...',        false],
+            ['notas',              'Solo para tu equipo, no se muestra en tienda.',                                   '',                   false],
         ];
-        foreach ($instrucciones as $row) {
-            $instrRows .= '<tr>'
-                . '<td style="font-family:monospace;font-weight:bold;border:1px solid #d0d0d0;padding:4px 10px;background:#f5f5f5">' . htmlspecialchars($row[0]) . '</td>'
-                . '<td style="border:1px solid #d0d0d0;padding:4px 10px">' . htmlspecialchars($row[1]) . '</td>'
-                . '<td style="border:1px solid #d0d0d0;padding:4px 10px;text-align:center;color:' . ($row[2]==='Sí'?'#c00':'#666') . ';font-weight:bold">' . $row[2] . '</td>'
-                . '</tr>';
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('Instrucciones');
+        $sheet2->mergeCells('A1:D1');
+        $sheet2->setCellValue('A1', 'Instrucciones de llenado — Productos');
+        $sheet2->getStyle('A1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 13, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D6F42']],
+        ]);
+        $sheet2->getRowDimension(1)->setRowHeight(28);
+        foreach (['A2' => 'Columna', 'B2' => '¿Qué escribir?', 'C2' => '¿Obligatorio?', 'D2' => 'Ejemplo'] as $cell => $val) {
+            $sheet2->setCellValue($cell, $val);
         }
+        $sheet2->getStyle('A2:D2')->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '155534']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        foreach ($instrucciones as $i => $instr) {
+            $row = $i + 3;
+            $bg  = $i % 2 === 0 ? 'FFFFFF' : 'F6FBF8';
+            $sheet2->setCellValue('A' . $row, $instr[0]);
+            $sheet2->setCellValue('B' . $row, $instr[1]);
+            $sheet2->setCellValue('C' . $row, $instr[3] ? 'Sí' : 'No');
+            $sheet2->setCellValue('D' . $row, $instr[2]);
+            $sheet2->getStyle("A{$row}:D{$row}")->applyFromArray([
+                'fill'    => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E5E7EB']]],
+            ]);
+        }
+        $sheet2->getColumnDimension('A')->setWidth(22);
+        $sheet2->getColumnDimension('B')->setWidth(55);
+        $sheet2->getColumnDimension('C')->setWidth(14);
+        $sheet2->getColumnDimension('D')->setWidth(22);
 
-        $html = <<<HTML
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:x="urn:schemas-microsoft-com:office:excel"
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="ProgId" content="Excel.Sheet">
-<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>
-<x:ExcelWorksheet><x:Name>Productos</x:Name><x:WorksheetOptions><x:Selected/></x:WorksheetOptions></x:ExcelWorksheet>
-<x:ExcelWorksheet><x:Name>Instrucciones</x:Name></x:ExcelWorksheet>
-</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-<style>
-  body { font-family: Calibri, Arial, sans-serif; font-size:12px; }
-  table { border-collapse:collapse; }
-</style>
-</head>
-<body>
+        // ── Hoja 3: Categorías disponibles ───────────────────────────────────
+        $sheet3 = $spreadsheet->createSheet();
+        $sheet3->setTitle('Categorías');
+        $sheet3->mergeCells('A1:C1');
+        $sheet3->setCellValue('A1', 'Categorías disponibles — copia exactamente el nombre');
+        $sheet3->getStyle('A1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D6F42']],
+        ]);
+        $sheet3->getRowDimension(1)->setRowHeight(24);
+        foreach (['A2' => 'Categoría padre', 'B2' => 'Subcategoría', 'C2' => 'Usar en columna'] as $cell => $val) {
+            $sheet3->setCellValue($cell, $val);
+        }
+        $sheet3->getStyle('A2:C2')->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '155534']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $catRow = 3;
+        if ($catTree && $catTree->count()) {
+            foreach ($catTree as $i => $cat) {
+                $bg = $i % 2 === 0 ? 'FFFFFF' : 'F6FBF8';
+                if ($cat->children->isEmpty()) {
+                    $sheet3->setCellValue('A' . $catRow, $cat->name);
+                    $sheet3->setCellValue('B' . $catRow, '');
+                    $sheet3->setCellValue('C' . $catRow, 'categoria');
+                    $sheet3->getStyle("A{$catRow}:C{$catRow}")->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]]]);
+                    $catRow++;
+                } else {
+                    foreach ($cat->children as $j => $sub) {
+                        $bg2 = ($catRow % 2 === 0) ? 'FFFFFF' : 'F6FBF8';
+                        $sheet3->setCellValue('A' . $catRow, $cat->name);
+                        $sheet3->setCellValue('B' . $catRow, $sub->name);
+                        $sheet3->setCellValue('C' . $catRow, 'categoria + subcategoria');
+                        $sheet3->getStyle("A{$catRow}:C{$catRow}")->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg2]]]);
+                        $catRow++;
+                    }
+                }
+            }
+        } else {
+            $sheet3->setCellValue('A3', 'No hay categorías creadas aún. Créalas desde el módulo de Categorías.');
+            $sheet3->getStyle('A3')->getFont()->setItalic(true)->getColor()->setRGB('9CA3AF');
+        }
+        $sheet3->getColumnDimension('A')->setWidth(28);
+        $sheet3->getColumnDimension('B')->setWidth(28);
+        $sheet3->getColumnDimension('C')->setWidth(24);
 
-<table x:str border="1">
-<tr>{$headerRow}</tr>
-<tr>{$keyRow}</tr>
-<tr>{$exRow}</tr>
-</table>
-
-<br><br>
-<table border="1">
-<tr>
-  <th style="background:#4472C4;color:#fff;padding:6px 12px">Campo</th>
-  <th style="background:#4472C4;color:#fff;padding:6px 12px">Descripción</th>
-  <th style="background:#4472C4;color:#fff;padding:6px 12px">Obligatorio</th>
-</tr>
-{$instrRows}
-</table>
-
-</body>
-</html>
-HTML;
-
-        return response($html, 200, [
-            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="plantilla_productos.xls"',
+        $spreadsheet->setActiveSheetIndex(0);
+        $writer = new Xlsx($spreadsheet);
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control'       => 'no-cache, no-store',
-            'Pragma'              => 'no-cache',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 
-    // ── Detectar delimitador CSV ──────────────────────────────────────────────
-    private function detectDelimiter(string $filePath): string
-    {
-        $line = fgets(fopen($filePath, 'r'));
-        $semicolons = substr_count($line, ';');
-        $commas     = substr_count($line, ',');
-        return $semicolons >= $commas ? ';' : ',';
-    }
-
-    // ── Importar CSV ──────────────────────────────────────────────────────────
     public function import(Request $request)
     {
-        /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $request->validate(['file' => 'required|file|mimes:csv,txt,xls,xlsx|max:5120']);
-
-        $file      = $request->file('file');
-        $filePath  = $file->getRealPath();
-        $delimiter = $this->detectDelimiter($filePath);
-        $handle    = fopen($filePath, 'r');
-        $header    = null;
-        $created   = 0;
-        $errors    = [];
-
-        // Quitar BOM si existe
-        $bom = fread($handle, 3);
-        if ($bom !== chr(0xEF).chr(0xBB).chr(0xBF)) {
-            fseek($handle, 0);
-        }
-
-        // Saltar línea sep= si existe
-        $firstLine = fgets($handle);
-        if (!str_starts_with(trim($firstLine), 'sep=')) {
-            fseek($handle, ftell($handle) - strlen($firstLine));
-        }
-
-        $categories = $project->categories()->pluck('id', 'name');
-
-        // Claves técnicas válidas del sistema
-        $validKeys = ['nombre','sku','codigo_barras','categoria','precio',
-                      'precio_comparacion','costo','unidad','stock','disponible','descripcion','notas'];
-
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+        $request->validate(['file' => 'required|file|extensions:csv,txt,xls,xlsx|max:10240']);
+        $path        = $request->file('file')->getRealPath();
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+        $sheet       = $spreadsheet->getSheet(0);
+        $rows        = $sheet->toArray(null, true, true, false);
+        $allCats     = $project->categories()->get()->keyBy('name');
+        $validKeys   = ['nombre','sku','codigo_barras','categoria','subcategoria','precio','precio_comparacion','precio_mayorista','cantidad_mayorista','unidad_mayorista','costo','unidad','stock','disponible','descripcion','notas'];
+        $cleanNum    = fn($v): ?float => ($v !== '' && $v !== null) ? (float) str_replace(',', '.', preg_replace('/[^0-9.,\-]/', '', (string)$v)) : null;
+        $header  = null;
+        $created = 0; $updated = 0; $skipped = 0; $errors = [];
+        foreach ($rows as $i => $row) {
+            $cleaned = array_map(fn($v) => trim((string)($v ?? '')), $row);
+            $lower   = array_map('strtolower', $cleaned);
             if (!$header) {
-                $cleaned = array_map('trim', $row);
-                // Si esta fila tiene las claves técnicas → usarla como header
-                if (count(array_intersect($cleaned, $validKeys)) >= 3) {
-                    $header = $cleaned;
-                }
-                // Si es fila de etiquetas legibles → saltarla, la siguiente será las claves
+                if (count(array_intersect($lower, $validKeys)) >= 2) { $header = $lower; }
                 continue;
             }
-
-            $data = array_combine($header, array_pad($row, count($header), ''));
-
-            // Saltar fila de ejemplo si "nombre" es la clave técnica o está vacío
-            if (trim($data['nombre'] ?? '') === 'nombre') continue;
-
-            if (empty(trim($data['nombre'] ?? ''))) continue;
-
+            if (count(array_intersect($lower, $validKeys)) >= 2) continue;
+            $data   = array_combine($header, array_pad($cleaned, count($header), ''));
+            $nombre = trim($data['nombre'] ?? '');
+            if ($nombre === '' || str_starts_with($nombre, '←')) { $skipped++; continue; }
             try {
-                // Limpiar barcode: quitar notación científica si Excel lo convirtió
-                $barcode = trim($data['codigo_barras'] ?? '');
-                if ($barcode && is_numeric($barcode) && str_contains(strtolower($barcode), 'e')) {
-                    $barcode = number_format((float)$barcode, 0, '', '');
+                $sku     = trim($data['sku'] ?? '') ?: null;
+                $catNombre  = trim($data['categoria'] ?? '');
+                $subNombre  = trim($data['subcategoria'] ?? '');
+                $categoryId = null;
+                if ($subNombre && isset($allCats[$subNombre])) {
+                    $categoryId = $allCats[$subNombre]->id;
+                } elseif ($subNombre) {
+                    $errors[] = '"' . $nombre . '" (fila ' . $i . '): subcategoría "' . $subNombre . '" no existe — se importó sin categoría.';
+                } elseif ($catNombre && isset($allCats[$catNombre])) {
+                    $categoryId = $allCats[$catNombre]->id;
+                } elseif ($catNombre) {
+                    $errors[] = '"' . $nombre . '" (fila ' . $i . '): categoría "' . $catNombre . '" no existe — se importó sin categoría.';
                 }
-                // Limpiar precio: puede venir con coma decimal (1.990,00 → 1990.00)
-                $cleanNum = fn(string $v): ?float => $v !== '' ? (float)str_replace(',', '.', preg_replace('/[^0-9.,]/', '', $v)) : null;
-
-                Product::create([
-                    'project_id'   => $project->id,
-                    'name'         => trim($data['nombre']),
-                    'sku'          => trim($data['sku'] ?? '') ?: null,
-                    'barcode'      => $barcode ?: null,
-                    'category_id'  => $categories[trim($data['categoria'] ?? '')] ?? null,
-                    'price'        => $cleanNum($data['precio'] ?? '') ?? 0,
-                    'compare_price'=> ($v = $cleanNum($data['precio_comparacion'] ?? '')) ? $v : null,
-                    'cost'         => ($v = $cleanNum($data['costo'] ?? '')) ? $v : null,
-                    'unit'         => trim($data['unidad'] ?? '') ?: null,
-                    'stock'        => is_numeric($data['stock'] ?? '') ? (int)$data['stock'] : 0,
-                    'is_available' => strtolower(trim($data['disponible'] ?? 'si')) === 'si',
-                    'description'  => trim($data['descripcion'] ?? '') ?: null,
-                    'notes'        => trim($data['notas'] ?? '') ?: null,
-                ]);
-                $created++;
+                $payload = [
+                    'project_id'    => $project->id,
+                    'name'          => $nombre,
+                    'sku'           => $sku,
+                    'barcode'       => trim($data['codigo_barras'] ?? '') ?: null,
+                    'category_id'      => $categoryId,
+                    'price'            => $cleanNum($data['precio'] ?? '') ?? 0,
+                    'compare_price'    => ($v = $cleanNum($data['precio_comparacion'] ?? '')) && $v > 0 ? $v : null,
+                    'wholesale_price'  => ($v = $cleanNum($data['precio_mayorista'] ?? '')) && $v > 0 ? $v : null,
+                    'wholesale_min_qty'=> is_numeric($data['cantidad_mayorista'] ?? '') && (int)$data['cantidad_mayorista'] > 0 ? (int)$data['cantidad_mayorista'] : null,
+                    'wholesale_unit'   => trim($data['unidad_mayorista'] ?? '') ?: null,
+                    'cost'             => ($v = $cleanNum($data['costo'] ?? '')) && $v > 0 ? $v : null,
+                    'unit'          => trim($data['unidad'] ?? '') ?: null,
+                    'stock'         => is_numeric($data['stock'] ?? '') ? (int)$data['stock'] : 0,
+                    'is_available'  => strtolower($data['disponible'] ?? 'si') === 'si',
+                    'description'   => trim($data['descripcion'] ?? '') ?: null,
+                    'notes'         => trim($data['notas'] ?? '') ?: null,
+                ];
+                $existing = $sku ? Product::where('project_id', $project->id)->where('sku', $sku)->first() : null;
+                $existing ??= Product::where('project_id', $project->id)->where('name', $nombre)->first();
+                if ($existing) { $existing->update($payload); $updated++; }
+                else           { Product::create($payload);   $created++; }
             } catch (\Exception $e) {
-                $errors[] = 'Fila ' . ($created + count($errors) + 2) . ': ' . $e->getMessage();
+                $errors[] = '"' . $nombre . '" (fila ' . $i . '): ' . $e->getMessage();
             }
         }
-        fclose($handle);
-
-        return response()->json(['created' => $created, 'errors' => $errors]);
+        ImportLog::create([
+            'project_id' => $project->id,
+            'user_id'    => auth()->id(),
+            'type'       => 'products',
+            'filename'   => $request->file('file')?->getClientOriginalName() ?? '',
+            'created'    => $created,
+            'updated'    => $updated,
+            'skipped'    => $skipped,
+            'errors'     => $errors,
+            'has_errors' => count($errors) > 0,
+        ]);
+        return response()->json(['created' => $created, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors]);
     }
 
     // ── Exportar catálogo estático para GitHub Pages ──────────────────────────
@@ -575,10 +685,10 @@ HTML;
         $dir = public_path('uploads/products/' . $product->id);
         if (!is_dir($dir)) mkdir($dir, 0775, true);
 
-        $filename = time() . '_' . uniqid() . '.webp';
+        $filename = time() . '_' . uniqid() . '.jpg';
         $destPath = $dir . '/' . $filename;
 
-        // Convertir cualquier formato a WebP con GD y redimensionar a 600x600
+        // Convertir cualquier formato a JPG con GD y redimensionar a 600x600
         $mime = $file->getMimeType();
         $src  = match(true) {
             str_contains($mime, 'png')  => imagecreatefrompng($file->getRealPath()),
@@ -605,7 +715,7 @@ HTML;
         imagecopyresampled($canvas, $src, $offX, $offY, 0, 0, $newW, $newH, $w, $h);
         imagedestroy($src);
 
-        imagewebp($canvas, $destPath, 85);
+        imagejpeg($canvas, $destPath, 90);
         imagedestroy($canvas);
 
         $url = asset('uploads/products/' . $product->id . '/' . $filename);
@@ -671,6 +781,8 @@ HTML;
             'cost'             => $p->cost !== null ? (float)$p->cost : null,
             'unit'             => $p->unit,
             'stock'            => $p->stock,
+            'stock_min'        => $p->stock_min,
+            'stock_max'        => $p->stock_max,
             'is_available'     => (bool)$p->is_available,
             'category_id'      => $p->category_id,
             'brand_catalog_id' => $p->brand_catalog_id,

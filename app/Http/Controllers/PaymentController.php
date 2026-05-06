@@ -177,7 +177,8 @@ class PaymentController extends Controller
             $payment = json_decode($response, true);
 
             if (isset($payment['external_reference']) && isset($payment['status'])) {
-                $order = Order::where('id', $payment['external_reference'])
+                $order = Order::allProjects()
+                              ->where('id', $payment['external_reference'])
                               ->where('project_id', $project->id)
                               ->first();
                 if ($order) {

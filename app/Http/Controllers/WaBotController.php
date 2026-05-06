@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class WaBotController extends Controller
@@ -45,59 +46,65 @@ class WaBotController extends Controller
         $data = $request->validate(['token' => 'required|string', 'bot' => 'required|string']);
         if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
 
-        // Prioridad: BotInstance → teléfono → cualquiera
-        $botInstance = \App\Models\BotInstance::where('bot_type', $data['bot'])->first();
+        $botType  = $data['bot'];
+        $cacheKey = "bot.flow.{$botType}";
 
-        $query = BotFlow::with('states.transitions.toState')
-            ->where('bot_type', $data['bot'])
-            ->where('is_active', true);
+        $payload = Cache::remember($cacheKey, 300, function () use ($botType, $request) {
+            $botInstance = \App\Models\BotInstance::where('bot_type', $botType)->first();
 
-        if ($botInstance) {
-            $query->where('project_id', $botInstance->project_id);
-        } else {
-            $phone = preg_replace('/\D/', '', $request->get('phone', ''));
-            if ($phone) {
-                $phoneLast = substr($phone, -9);
-                $project = Project::where('is_active', true)
-                    ->where(function($q) use ($phone, $phoneLast) {
-                        $q->where('wa_phone', $phone)
-                          ->orWhereRaw("RIGHT(REPLACE(wa_phone,' ',''),9)=?", [$phoneLast]);
-                    })->first();
-                if ($project) $query->where('project_id', $project->id);
+            $query = BotFlow::with('states.transitions.toState')
+                ->where('bot_type', $botType)
+                ->where('is_active', true);
+
+            if ($botInstance) {
+                $query->where('project_id', $botInstance->project_id);
+            } else {
+                $phone = preg_replace('/\D/', '', $request->get('phone', ''));
+                if ($phone) {
+                    $phoneLast = substr($phone, -9);
+                    $project = Project::where('is_active', true)
+                        ->where(function($q) use ($phone, $phoneLast) {
+                            $q->where('wa_phone', $phone)
+                              ->orWhereRaw("RIGHT(REPLACE(wa_phone,' ',''),9)=?", [$phoneLast]);
+                        })->first();
+                    if ($project) $query->where('project_id', $project->id);
+                }
             }
-        }
 
-        $flow = $query->first();
-        if (!$flow) return response()->json(['error' => 'No flow found'], 404);
+            $flow = $query->first();
+            if (!$flow) return null;
 
-        $states = $flow->states->map(fn($s) => [
-            'key'                => $s->key,
-            'label'              => $s->label,
-            'message'            => $s->message,
-            'images'             => $s->images ?? [],
-            'input_type'         => $s->input_type,
-            'validation_pattern' => $s->validation_pattern,
-            'validation_min'     => $s->validation_min,
-            'validation_max'     => $s->validation_max,
-            'validation_error'   => $s->validation_error,
-            'transitions'        => $s->transitions->map(fn($t) => [
-                'trigger'      => $t->trigger,
-                'to'           => $t->toState?->key,
-                'action'       => $t->action,
-                'action_param' => $t->action_param,
-            ])->values(),
-        ])->keyBy('key');
+            $states = $flow->states->map(fn($s) => [
+                'key'                => $s->key,
+                'label'              => $s->label,
+                'message'            => $s->message,
+                'images'             => $s->images ?? [],
+                'input_type'         => $s->input_type,
+                'validation_pattern' => $s->validation_pattern,
+                'validation_min'     => $s->validation_min,
+                'validation_max'     => $s->validation_max,
+                'validation_error'   => $s->validation_error,
+                'transitions'        => $s->transitions->map(fn($t) => [
+                    'trigger'      => $t->trigger,
+                    'to'           => $t->toState?->key,
+                    'action'       => $t->action,
+                    'action_param' => $t->action_param,
+                ])->values(),
+            ])->keyBy('key');
 
-        $payload = [
-            'ok'         => true,
-            'flow_id'    => $flow->id,
-            'bot_type'   => $flow->bot_type,
-            'project_id' => $flow->project_id,
-            'states'     => $states,
-        ];
+            return [
+                'ok'         => true,
+                'flow_id'    => $flow->id,
+                'bot_type'   => $flow->bot_type,
+                'project_id' => $flow->project_id,
+                'states'     => $states,
+            ];
+        });
+
+        if (!$payload) return response()->json(['error' => 'No flow found'], 404);
 
         // Guardar JSON de respaldo para que el bot lo use si Laravel cae
-        static::exportFlowJson($flow->bot_type, $payload);
+        static::exportFlowJson($botType, $payload);
 
         return response()->json($payload);
     }
@@ -111,10 +118,11 @@ class WaBotController extends Controller
         $existed = BotSession::where('flow_id', $data['flow_id'])->where('wa_number', $data['wa_number'])->exists();
         $session = BotSession::forNumber($data['flow_id'], $data['wa_number']);
         return response()->json([
-            'ok'      => true,
-            'state'   => $existed ? $session->current_state : null,
-            'is_new'  => !$existed,
-            'data'    => $session->data ?? [],
+            'ok'              => true,
+            'state'           => $existed ? $session->current_state : null,
+            'is_new'          => !$existed,
+            'data'            => $session->data ?? [],
+            'last_activity_at'=> $existed ? $session->last_activity_at : null,
         ]);
     }
 
@@ -133,7 +141,12 @@ class WaBotController extends Controller
         $session = BotSession::forNumber($data['flow_id'], $data['wa_number']);
         $update  = ['current_state' => $data['state'], 'last_activity_at' => now()];
         if (isset($data['data'])) {
-            $update['data'] = array_merge($session->data ?? [], $data['data']);
+            // Si vuelve a inicio con data vacía, limpiar sesión completa
+            if ($data['state'] === 'inicio' && empty($data['data'])) {
+                $update['data'] = [];
+            } else {
+                $update['data'] = array_merge($session->data ?? [], $data['data']);
+            }
         }
         $session->update($update);
 
@@ -262,7 +275,8 @@ class WaBotController extends Controller
         if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
 
         $phone = preg_replace('/\D/', '', $data['wa_number']);
-        $order = Order::where('wa_number', $phone)
+        $order = Order::allProjects()
+            ->where('wa_number', $phone)
             ->whereNotIn('wa_status', ['entregado', 'problema'])
             ->latest()
             ->first();
@@ -299,9 +313,15 @@ class WaBotController extends Controller
     // ── Portal → Bot: actualizar delivery + costo (tras recibir ubicación) ────
     public function updateDelivery(Request $request, Order $order)
     {
-        /** @var \App\Models\Project $project */
-        $project = app('active_project');
-        abort_unless($order->project_id === $project->id, 403);
+        // Ruta pública (/wa/...): autenticar con token. Ruta admin: verificar sesión.
+        if ($request->routeIs('wa.order.delivery')) {
+            abort_unless($request->input('token') === self::BOT_TOKEN, 403);
+        } else {
+            $projectId = $request->routeIs('bixosales.*')
+                ? session('comercial_project_id')
+                : app('active_project')?->id;
+            abort_unless($order->project_id === $projectId, 403);
+        }
 
         $data = $request->validate([
             'delivery_address' => 'nullable|string',

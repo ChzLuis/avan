@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class HRController extends Controller
 {
@@ -20,7 +21,12 @@ class HRController extends Controller
         $departments   = $this->catValues($project, 'department');
         $jobTitles     = $this->catValues($project, 'job_title');
         $contractTypes = $this->catValues($project, 'contract_type');
-        return view('hr.employees', compact('project', 'employees', 'departments', 'jobTitles', 'contractTypes'));
+        $availableRoles = Role::orderBy('name')->get()->map(fn($r) => [
+            'id'      => $r->id,
+            'name'    => $r->name,
+            'display' => $r->name,
+        ]);
+        return view('hr.employees', compact('project', 'employees', 'departments', 'jobTitles', 'contractTypes', 'availableRoles'));
     }
 
     private function catValues(Project $project, string $type): \Illuminate\Support\Collection
@@ -34,12 +40,13 @@ class HRController extends Controller
         return [
             'name'                  => 'required|string|max:100',
             'role'                  => 'nullable|string|max:80',
+            'spatie_role'           => 'nullable|string|max:80',
             'area'                  => 'nullable|string|max:80',
             'phone'                 => 'nullable|string|max:30',
             'email'                 => 'nullable|email|max:100',
             'hire_date'             => 'nullable|date',
             'is_active'             => 'boolean',
-            'username'              => 'nullable|string|max:50|alpha_dash',
+            'username'              => 'nullable|string|max:50|regex:/^[a-zA-Z0-9_.\-]+$/',
             'password'              => 'nullable|string|min:6|confirmed',
         ];
     }
@@ -66,13 +73,13 @@ class HRController extends Controller
             while (User::where('username', $username)->exists()) {
                 $username = $base . $i++;
             }
-            // Buscar usuario existente por email o username
+            // Solo reutilizar un user existente si ya es empleado de este mismo proyecto
             $existingUser = null;
             if (!empty($data['email'])) {
-                $existingUser = User::where('email', $data['email'])->first();
-            }
-            if (!$existingUser) {
-                $existingUser = User::where('username', $username)->first();
+                $candidate = User::where('email', $data['email'])->first();
+                if ($candidate && Employee::where('user_id', $candidate->id)->where('project_id', $project->id)->exists()) {
+                    $existingUser = $candidate;
+                }
             }
             if (!$existingUser) {
                 $user = User::create([
@@ -134,9 +141,14 @@ class HRController extends Controller
             while (User::where('username', $username)->exists()) {
                 $username = $base . $i++;
             }
+            // Solo reutilizar si ya es empleado de este proyecto
             $existingUser = null;
-            if (!empty($data['email'])) $existingUser = User::where('email', $data['email'])->first();
-            if (!$existingUser) $existingUser = User::where('username', $username)->first();
+            if (!empty($data['email'])) {
+                $candidate = User::where('email', $data['email'])->first();
+                if ($candidate && Employee::where('user_id', $candidate->id)->where('project_id', $project->id)->exists()) {
+                    $existingUser = $candidate;
+                }
+            }
 
             if (!$existingUser) {
                 $user = User::create([
@@ -219,16 +231,17 @@ class HRController extends Controller
     {
         $e->loadMissing('user');
         return [
-            'id'        => $e->id,
-            'name'      => $e->name,
-            'role'      => $e->role ?? '',
-            'area'      => $e->area ?? '',
-            'phone'     => $e->phone ?? '',
-            'email'     => $e->email ?? '',
-            'hire_date' => $e->hire_date?->format('Y-m-d') ?? '',
-            'is_active' => (bool)$e->is_active,
-            'has_user'  => (bool)$e->user_id,
-            'username'  => $e->user?->username ?? '',
+            'id'          => $e->id,
+            'name'        => $e->name,
+            'role'        => $e->role ?? '',
+            'spatie_role' => $e->spatie_role ?? '',
+            'area'        => $e->area ?? '',
+            'phone'       => $e->phone ?? '',
+            'email'       => $e->email ?? '',
+            'hire_date'   => $e->hire_date?->format('Y-m-d') ?? '',
+            'is_active'   => (bool)$e->is_active,
+            'has_user'    => (bool)$e->user_id,
+            'username'    => $e->user?->username ?? '',
         ];
     }
 }

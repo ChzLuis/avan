@@ -4,7 +4,7 @@
 @php
     $csrf = csrf_token();
     $pid  = $project->id;
-    $base = url("/{$pid}/catalog");
+    $base = url("/bixoadmin");
     $currency = $project->setting('currency', 'S/');
 @endphp
 
@@ -24,6 +24,36 @@
             </svg>
             Productos
         </a>
+        <a href="{{ route('categories.index') }}"
+           class="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+            Categorías
+        </a>
+        <div x-data="{open:false}" class="relative">
+            <button @click="open=!open" class="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Carga Masiva
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="open" @click.outside="open=false" x-cloak class="absolute right-0 mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
+                <a href="{{ route('services.template') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Descargar plantilla
+                </a>
+                <label class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Importar archivo
+                    <input type="file" accept=".csv,.xls,.xlsx" class="hidden" @change="window.dispatchEvent(new CustomEvent('do-import-svc', { detail: { file: $event.target.files[0] } })); $event.target.value=''">
+                </label>
+                <div class="border-t border-gray-100 my-1"></div>
+                <a href="{{ route('services.export') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Exportar Excel
+                </a>
+            </div>
+        </div>
         <button @click="openNew()"
                 class="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,23 +65,35 @@
 </div>
 
 {{-- BODY --}}
-<div class="flex flex-1 overflow-hidden"
-     x-data="{
-        services: {{ Illuminate\Support\Js::from($services) }},
-        categories: {{ Illuminate\Support\Js::from($categories) }},
+<script>
+window.__servicePageData = {
+    services:   {!! Illuminate\Support\Js::from($services) !!},
+    categories: {!! Illuminate\Support\Js::from($categories) !!},
+    csrf:       '{{ $csrf }}',
+    storeUrl:   '{{ route('services.store') }}',
+    baseUrl:    '{{ url('/bixoadmin/services') }}',
+    reorderUrl: '{{ route('services.reorder') }}',
+    importUrl:  '{{ route('services.import') }}',
+};
+document.addEventListener('alpine:init', () => {
+    Alpine.data('servicePage', () => ({
+        services:   window.__servicePageData.services,
+        categories: window.__servicePageData.categories,
+        csrf:       window.__servicePageData.csrf,
+        storeUrl:   window.__servicePageData.storeUrl,
+        baseUrl:    window.__servicePageData.baseUrl,
+        reorderUrl: window.__servicePageData.reorderUrl,
+        importUrl:  window.__servicePageData.importUrl,
         search: '',
         filterCat: 0,
         filterAvail: '',
         panel: 'list',
-
         selected: null,
         tab: 'info',
         saving: false,
         deleting: false,
         form: {},
-        csrf: '{{ $csrf }}',
-        storeUrl: '{{ route('services.store') }}',
-        baseUrl: '{{ url('/'.$pid.'/catalog/services') }}',
+        importLog: { show: false, created: 0, updated: 0, errors: [] },
 
         get filtered() {
             return this.services.filter(s => {
@@ -97,18 +139,12 @@
 
         async save() {
             this.saving = true;
-            const url = this.selected
-                ? this.baseUrl + '/' + this.selected.id
-                : this.storeUrl;
+            const url = this.selected ? this.baseUrl + '/' + this.selected.id : this.storeUrl;
             const method = this.selected ? 'PUT' : 'POST';
             try {
                 const res = await fetch(url, {
                     method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrf,
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf },
                     body: JSON.stringify({...this.form}),
                 });
                 const json = await res.json();
@@ -121,45 +157,93 @@
                         this.services.unshift(json.service);
                         this.selected = json.service;
                     }
+                    window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Cambios guardados', type: 'success' } }));
                 } else {
-                    alert(json.message || 'Error al guardar');
+                    window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: json.message || 'Error al guardar', type: 'error' } }));
                 }
             } catch(e) {
-                alert('Error de red');
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Error de red', type: 'error' } }));
             }
             this.saving = false;
         },
 
         async destroy() {
-            if (!this.selected || !confirm('¿Eliminar este servicio?')) return;
+            if (!this.selected) return;
+            const ok = await window.__confirm({
+                title: 'Eliminar servicio',
+                msg: 'Eliminar "' + this.selected.name + '"? Esta accion no se puede deshacer.',
+                confirmLabel: 'Si, eliminar',
+            });
+            if (!ok) return;
             this.deleting = true;
             try {
                 const res = await fetch(this.baseUrl + '/' + this.selected.id, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrf,
-                    },
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf },
                 });
                 if (res.ok) {
+                    window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Servicio eliminado', type: 'warning' } }));
                     this.services = this.services.filter(s => s.id !== this.selected.id);
                     this.selected = null;
                     this.form = {};
                 }
-            } catch(e) { alert('Error de red'); }
+            } catch(e) {
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Error de red', type: 'error' } }));
+            }
             this.deleting = false;
         },
-    }"
-     x-init="
-        $nextTick(() => {
-            const el = document.getElementById('service-count-label');
-            if (el) el.textContent = services.length + ' servicios';
-        });
-        $watch('filtered', v => {
-            const el = document.getElementById('service-count-label');
-            if (el) el.textContent = v.length + ' servicios';
-        });
-     ">
+
+        dragId: null,
+        dragStart(id) { this.dragId = id; },
+        dragOver(id) {
+            if (this.dragId === null || this.dragId === id) return;
+            const from = this.services.findIndex(s => s.id === this.dragId);
+            const to   = this.services.findIndex(s => s.id === id);
+            if (from === -1 || to === -1) return;
+            const arr = [...this.services];
+            arr.splice(to, 0, arr.splice(from, 1)[0]);
+            this.services = arr;
+        },
+        async dragEnd() {
+            if (this.dragId === null) return;
+            this.dragId = null;
+            await fetch(this.reorderUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf },
+                body: JSON.stringify({ ids: this.services.map(s => s.id) }),
+            });
+        },
+
+        async importarServicios(file) {
+            if (!file) return;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('_token', this.csrf);
+            try {
+                const res  = await fetch(this.importUrl, { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd });
+                const data = await res.json();
+                this.importLog = { show: true, created: data.created||0, updated: data.updated||0, errors: data.errors||[] };
+                location.reload();
+            } catch(e) {
+                this.importLog = { show: true, created: 0, updated: 0, errors: ['Error de red al importar. Verifica que el archivo sea CSV o XLS valido.'] };
+            }
+        },
+
+        init() {
+            this.$nextTick(() => {
+                const el = document.getElementById('service-count-label');
+                if (el) el.textContent = this.services.length + ' servicios';
+            });
+            this.$watch('filtered', v => {
+                const el = document.getElementById('service-count-label');
+                if (el) el.textContent = v.length + ' servicios';
+            });
+            window.addEventListener('do-import-svc', (e) => { this.importarServicios(e.detail.file); });
+        },
+    }));
+});
+</script>
+<div class="flex flex-1 overflow-hidden" x-data="servicePage()">
 
 {{-- ─── PANEL FILTROS (60px) ─────────────────────────────────────────────────────── --}}
 <div class="w-14 border-r border-gray-200 bg-gray-50 hidden md:flex flex-col items-center py-3 gap-2 flex-shrink-0">
@@ -243,8 +327,12 @@
 
         <template x-for="s in filtered" :key="s.id">
             <button @click="openEdit(s); panel='detail'"
-                    class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
-                    :class="selected?.id===s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
+                    draggable="true"
+                    @dragstart="dragStart(s.id)"
+                    @dragover.prevent="dragOver(s.id)"
+                    @dragend="dragEnd()"
+                    class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left cursor-grab active:cursor-grabbing"
+                    :class="[selected?.id===s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : '', dragId===s.id ? 'opacity-40' : '']">
                 <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -264,11 +352,29 @@
             </button>
         </template>
 
-        <div x-show="filtered.length===0" class="px-6 py-12 text-center">
-            <svg class="w-10 h-10 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            <p class="text-sm text-gray-400">Sin servicios</p>
+        <div x-show="filtered.length === 0 && !selected" class="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center mb-3">
+                <svg class="w-7 h-7 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <template x-if="search || filterCat !== null || filterStatus !== ''">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Sin resultados</p>
+                    <p class="text-xs text-gray-400 mt-1">Prueba con otros filtros</p>
+                    <button @click="search=''; filterCat=null; filterStatus=''" class="mt-3 text-xs text-purple-600 font-medium hover:underline">Limpiar filtros</button>
+                </div>
+            </template>
+            <template x-if="!search && filterCat === null && filterStatus === ''">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Sin servicios aún</p>
+                    <p class="text-xs text-gray-400 mt-1 mb-3">Crea tu primer servicio o importa desde Excel</p>
+                    <button @click="openNew(); panel='detail'"
+                            class="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium px-3 py-1.5 rounded-lg transition">
+                        + Crear servicio
+                    </button>
+                </div>
+            </template>
         </div>
     </div>
 </div>
@@ -349,11 +455,20 @@
                         {{-- Categoría --}}
                         <div>
                             <label class="label">Categoría</label>
-                            <select x-model="form.category_id" class="input">
+                            <select x-model.number="form.category_id" class="input">
                                 <option value="">Sin categoría</option>
-                                @foreach($categories as $cat)
-                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                @endforeach
+                                <template x-for="c in categories" :key="c.id">
+                                    <template x-if="c.children && c.children.length > 0">
+                                        <optgroup :label="c.name">
+                                            <template x-for="s in c.children" :key="s.id">
+                                                <option :value="s.id" x-text="'  └ ' + s.name"></option>
+                                            </template>
+                                        </optgroup>
+                                    </template>
+                                    <template x-if="!c.children || c.children.length === 0">
+                                        <option :value="c.id" x-text="c.name"></option>
+                                    </template>
+                                </template>
                             </select>
                         </div>
 
@@ -499,8 +614,55 @@
     </template>
 </div>
 
-</div>
+{{-- ── Modal log de importación ────────────────────────────────────────────── --}}
+<div x-show="importLog.show" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+     @keydown.escape.window="importLog.show=false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">📋</span>
+                <h3 class="font-semibold text-gray-800">Resultado de importación</h3>
+            </div>
+            <button @click="importLog.show=false" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="px-6 py-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-green-50 border border-green-200 px-3 py-3 text-center">
+                <div class="text-2xl font-bold text-green-700" x-text="importLog.created"></div>
+                <div class="text-xs text-green-600 mt-0.5">Creados</div>
+            </div>
+            <div class="rounded-xl bg-blue-50 border border-blue-200 px-3 py-3 text-center">
+                <div class="text-2xl font-bold text-blue-700" x-text="importLog.updated"></div>
+                <div class="text-xs text-blue-600 mt-0.5">Actualizados</div>
+            </div>
+        </div>
+        <div x-show="importLog.created===0 && importLog.updated===0 && importLog.errors.length===0"
+             class="px-6 pb-4 text-sm text-gray-500 text-center">
+            No se encontraron filas para importar.
+        </div>
+        <div x-show="importLog.errors.length > 0" class="px-6 pb-4">
+            <p class="text-xs font-semibold text-red-600 mb-2">Detalle de errores (<span x-text="importLog.errors.length"></span>):</p>
+            <ul class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1.5 max-h-48 overflow-y-auto">
+                <template x-for="(err, i) in importLog.errors" :key="i">
+                    <li class="text-xs text-red-700 flex gap-2">
+                        <span class="text-red-400 flex-shrink-0">•</span>
+                        <span x-text="err"></span>
+                    </li>
+                </template>
+            </ul>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-end">
+            <button @click="importLog.show=false"
+                    class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
+                Entendido
+            </button>
+        </div>
+    </div>
 </div>
 
+</div>
+</div>
 </x-slot>
 </x-app-layout>

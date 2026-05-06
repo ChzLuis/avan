@@ -124,15 +124,35 @@ $b2Sub          = $settings['banner2_sub'] ?? 'Hasta 50% de descuento selecciona
 
 @php
 $currency = $settings['currency'] ?? 'S/';
-$searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
-    'id'   => $p->id,
-    'name' => $p->name,
-    'price'=> (float)$p->price,
-    'cp'   => $p->compare_price ? (float)$p->compare_price : null,
-    'img'  => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
-    'cat'  => $cat->name,
-    'url'  => route('public.product', [$project->slug, $p->id]),
-]))->values();
+$searchIndex = $categories->flatMap(function($cat) use ($project) {
+    $rows = $cat->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $cat->name,
+        'catId'    => (string)$cat->id,
+        'parentId' => null,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]);
+    $subRows = $cat->children->flatMap(fn($sub) => $sub->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $sub->name,
+        'catId'    => (string)$sub->id,
+        'parentId' => (string)$cat->id,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]));
+    return $rows->merge($subRows);
+})->values();
 @endphp
 </head>
 
@@ -1525,7 +1545,8 @@ $searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
 <script>
 function store() {
   return {
-    cart: [], search: '', filterCat: '', priceFilter: '', onSaleFilter: false, sortBy: 'default', noResults: false,
+    cart: [], search: '', filterCat: '',
+    filterParent: '', priceFilter: '', onSaleFilter: false, sortBy: 'default', noResults: false,
     filterOpen: false,
     priceMin: 0,
     priceMax: 0,
@@ -1731,7 +1752,7 @@ function store() {
       this.drawerStep   = 3; // mostrar spinner en paso 3 mientras procesa
       const items = this.cart.map(i => ({product_id:i.id, name:i.name, price:i.price, quantity:i.qty}));
       try {
-        const res  = await fetch('/{{ $project->slug }}/orders', {
+        const res  = await fetch('/{{ $project->slug }}/order', {
           method:  'POST',
           headers: {'Content-Type':'application/json', 'X-CSRF-TOKEN':'{{ csrf_token() }}'},
           body:    JSON.stringify({

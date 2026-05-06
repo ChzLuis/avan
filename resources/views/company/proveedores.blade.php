@@ -15,6 +15,29 @@
         <p class="text-xs text-gray-400 mt-0.5" id="prov-count-label">Cargando...</p>
     </div>
     <div class="flex items-center gap-2">
+        <div x-data="{open:false}" class="relative">
+            <button @click="open=!open" class="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Carga Masiva
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="open" @click.outside="open=false" x-cloak class="absolute right-0 mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
+                <a href="{{ route('proveedores.template') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Descargar plantilla
+                </a>
+                <label class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Importar archivo
+                    <input type="file" accept=".csv,.xls,.xlsx" class="hidden" @change="importar($event)">
+                </label>
+                <div class="border-t border-gray-100 my-1"></div>
+                <a href="{{ route('proveedores.export') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Exportar Excel
+                </a>
+            </div>
+        </div>
         <button @click="openNew()"
                 class="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +75,28 @@
         form: {},
         csrf: '{{ $csrf }}',
         storeUrl: '{{ route('proveedores.store') }}',
-        baseUrl: '{{ url('/'.$pid.'/company/proveedores') }}',
+        baseUrl: '{{ url('/bixoadmin/company/proveedores') }}',
+        importLog: { show: false, created: 0, updated: 0, errors: [] },
+
+        async importar(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('_token', this.csrf);
+            try {
+                const res  = await fetch('{{ route('proveedores.import') }}', { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd });
+                const data = await res.json();
+                event.target.value = '';
+                this.importLog = { show: true, created: data.created||0, updated: data.updated||0, errors: data.errors||[] };
+                if ((data.created||0) + (data.updated||0) > 0) {
+                    const r = await fetch(this.baseUrl, { headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf } });
+                    if (r.ok) this.proveedores = (await r.json()).proveedores ?? this.proveedores;
+                }
+            } catch(e) {
+                event.target.value = '';
+                this.importLog = { show: true, created: 0, updated: 0, errors: ['Error de red al importar.'] };
+            }
+        },
 
         get filtered() {
             return this.proveedores.filter(p => {
@@ -499,6 +543,52 @@
         </div>
     </template>
 
+</div>
+
+{{-- ── Modal log de importación ──────────────────────────────────────────── --}}
+<div x-show="importLog.show" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+     @keydown.escape.window="importLog.show=false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">📋</span>
+                <h3 class="font-semibold text-gray-800">Resultado de importación</h3>
+            </div>
+            <button @click="importLog.show=false" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="px-6 py-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-green-50 border border-green-200 px-3 py-3 text-center">
+                <div class="text-2xl font-bold text-green-700" x-text="importLog.created"></div>
+                <div class="text-xs text-green-600 mt-0.5">Creados</div>
+            </div>
+            <div class="rounded-xl bg-blue-50 border border-blue-200 px-3 py-3 text-center">
+                <div class="text-2xl font-bold text-blue-700" x-text="importLog.updated"></div>
+                <div class="text-xs text-blue-600 mt-0.5">Actualizados</div>
+            </div>
+        </div>
+        <div x-show="importLog.created===0 && importLog.updated===0 && importLog.errors.length===0"
+             class="px-6 pb-4 text-sm text-gray-500 text-center">No se encontraron filas para importar.</div>
+        <div x-show="importLog.errors.length > 0" class="px-6 pb-4">
+            <p class="text-xs font-semibold text-red-600 mb-2">Errores (<span x-text="importLog.errors.length"></span>):</p>
+            <ul class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1.5 max-h-48 overflow-y-auto">
+                <template x-for="(err, i) in importLog.errors" :key="i">
+                    <li class="text-xs text-red-700 flex gap-2">
+                        <span class="text-red-400 flex-shrink-0">•</span>
+                        <span x-text="err"></span>
+                    </li>
+                </template>
+            </ul>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-end">
+            <button @click="importLog.show=false"
+                    class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition">
+                Entendido
+            </button>
+        </div>
+    </div>
 </div>
 
 </div>

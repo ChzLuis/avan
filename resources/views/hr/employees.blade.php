@@ -33,6 +33,7 @@
             'id'           => $e->id,
             'name'         => $e->name,
             'role'         => $e->role ?? '',
+            'spatie_role'  => $e->spatie_role ?? '',
             'area'         => $e->area ?? '',
             'phone'        => $e->phone ?? '',
             'email'        => $e->email ?? '',
@@ -41,9 +42,10 @@
             'has_user'     => (bool)$e->user_id,
             'username'     => $e->user?->username ?? '',
         ])) }},
-        departments:   {{ Illuminate\Support\Js::from($departments) }},
-        jobTitles:     {{ Illuminate\Support\Js::from($jobTitles) }},
-        contractTypes: {{ Illuminate\Support\Js::from($contractTypes) }},
+        departments:    {{ Illuminate\Support\Js::from($departments) }},
+        jobTitles:      {{ Illuminate\Support\Js::from($jobTitles) }},
+        contractTypes:  {{ Illuminate\Support\Js::from($contractTypes) }},
+        availableRoles: {{ Illuminate\Support\Js::from($availableRoles) }},
         search: '',
         filterArea: '',
         filterStatus: '',
@@ -58,6 +60,8 @@
         passwordModal: false,
         generatedPassword: '',
         generatedEmail: '',
+        toast: '',
+        _toastTimer: null,
         csrf: '{{ $csrf }}',
         storeUrl: '{{ route('hr.employees.store') }}',
         baseUrl: '{{ route('hr.employees.store') }}',
@@ -87,7 +91,7 @@
             this.creating  = true;
             this.tab       = 'info';
             this.form = {
-                name: '', role: '', area: '', phone: '',
+                name: '', role: '', spatie_role: '', area: '', phone: '',
                 email: '', hire_date: '', is_available: true,
                 username: '', password: '', password_confirmation: '',
             };
@@ -109,11 +113,12 @@
             try {
                 const payload = {
                     name:                  this.form.name,
-                    role:                  this.form.role       || null,
-                    area:                  this.form.area       || null,
-                    phone:                 this.form.phone      || null,
-                    email:                 this.form.email      || null,
-                    hire_date:             this.form.hire_date  || null,
+                    role:                  this.form.role        || null,
+                    spatie_role:           this.form.spatie_role || null,
+                    area:                  this.form.area        || null,
+                    phone:                 this.form.phone       || null,
+                    email:                 this.form.email       || null,
+                    hire_date:             this.form.hire_date   || null,
                     is_active:             this.form.is_available,
                     username:              this.form.username              || null,
                     password:              this.form.password              || null,
@@ -152,6 +157,8 @@
                         this.generatedPassword = json.employee.generated_password;
                         this.generatedEmail    = json.employee.generated_username || json.employee.email;
                         this.passwordModal     = true;
+                    } else {
+                        this.showToast('✅ Datos guardados correctamente');
                     }
                 } else {
                     // Mostrar errores de validación
@@ -187,6 +194,12 @@
                 }
             } catch(err) { alert('Error de red'); }
             this.deleting = false;
+        },
+
+        showToast(msg, duration = 3000) {
+            this.toast = msg;
+            clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => this.toast = '', duration);
         },
      }"
      x-init="
@@ -313,7 +326,18 @@
                     <span :class="e.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'"
                           class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
                           x-text="e.is_available ? 'Activo' : 'Inactivo'"></span>
-                    <span x-show="e.has_user" class="text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md font-semibold">Acceso</span>
+                    <span x-show="e.has_user && e.spatie_role"
+                          class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold"
+                          :class="{
+                            'bg-purple-100 text-purple-700': e.spatie_role==='gerente',
+                            'bg-blue-100 text-blue-600':    e.spatie_role==='vendedor',
+                            'bg-amber-100 text-amber-700':  e.spatie_role==='almacen',
+                            'bg-emerald-100 text-emerald-700': e.spatie_role==='rrhh',
+                            'bg-cyan-100 text-cyan-700':    e.spatie_role==='contador',
+                            'bg-gray-100 text-gray-500':    e.spatie_role==='solo_lectura',
+                          }"
+                          x-text="e.spatie_role"></span>
+                    <span x-show="e.has_user && !e.spatie_role" class="text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md font-semibold">Acceso</span>
                 </div>
             </button>
         </template>
@@ -389,6 +413,16 @@
                         class="px-4 py-3 text-sm transition whitespace-nowrap">
                     Acceso
                 </button>
+                <button @click="tab='roles'"
+                        :class="tab==='roles' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-3 text-sm transition whitespace-nowrap flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                    Roles
+                    <span x-show="form.spatie_role"
+                          class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></span>
+                </button>
                 <button @click="tab='history'"
                         :class="tab==='history' ? 'border-b-2 border-emerald-600 text-emerald-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                         class="px-4 py-3 text-sm transition whitespace-nowrap">
@@ -429,6 +463,26 @@
                             <template x-if="jobTitles.length === 0">
                                 <input type="text" x-model="form.role" placeholder="Ej: Vendedor, Contador" class="input">
                             </template>
+                        </div>
+
+                        {{-- Permisos de acceso --}}
+                        <div>
+                            <label class="label flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                Nivel de acceso al sistema
+                            </label>
+                            <select x-model="form.spatie_role" class="input">
+                                <option value="">Sin acceso (solo lectura o sin login)</option>
+                                <option value="gerente">Gerente — acceso casi total</option>
+                                <option value="vendedor">Vendedor — ventas y clientes</option>
+                                <option value="almacen">Almacén — catálogo e inventario</option>
+                                <option value="rrhh">RRHH — empleados y asistencia</option>
+                                <option value="contador">Contador — facturación y reportes</option>
+                                <option value="solo_lectura">Solo lectura — sin modificar nada</option>
+                            </select>
+                            <p class="text-[11px] text-gray-400 mt-1">
+                                Define qué módulos y acciones puede usar este empleado al iniciar sesión.
+                            </p>
                         </div>
 
                         {{-- Área --}}
@@ -543,6 +597,125 @@
 
                 </div>
 
+                {{-- ═══ TAB: ROLES ═══ --}}
+                <div x-show="tab==='roles'" class="max-w-2xl">
+
+                    {{-- Aviso si no tiene usuario --}}
+                    <div x-show="!form.has_user && !creating"
+                         class="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                        <svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
+                        <p class="text-xs text-amber-800">Este empleado aún no tiene acceso al sistema. Asigna usuario en la pestaña <strong>Acceso</strong> para que el rol tenga efecto.</p>
+                    </div>
+
+                    {{-- Rol asignado actualmente --}}
+                    <div x-show="form.spatie_role" class="mb-4 flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3">
+                        <svg class="w-4 h-4 text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <p class="text-xs text-indigo-800">
+                            Rol activo: <strong x-text="availableRoles.find(r=>r.name===form.spatie_role)?.display || form.spatie_role"></strong>
+                        </p>
+                        <button @click="form.spatie_role=''" class="ml-auto text-indigo-400 hover:text-indigo-700 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    {{-- Sin roles disponibles --}}
+                    <template x-if="availableRoles.length === 0">
+                        <div class="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400">
+                            <svg class="w-10 h-10 mx-auto mb-2 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                            </svg>
+                            <p class="text-sm font-medium">No hay roles creados</p>
+                            <a href="{{ route('roles.index') }}" class="text-xs text-indigo-500 hover:underline mt-1 inline-block">
+                                Ir a Configuración → Roles para crear uno
+                            </a>
+                        </div>
+                    </template>
+
+                    {{-- Lista de roles con checkboxes estilo Aranda --}}
+                    <template x-if="availableRoles.length > 0">
+                        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                            {{-- Cabecera --}}
+                            <div class="grid grid-cols-[1fr_auto] px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol de acceso</span>
+                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 text-center">Asignar</span>
+                            </div>
+                            {{-- Fila sin acceso --}}
+                            <div class="grid grid-cols-[1fr_auto] items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                                 @click="form.spatie_role=''">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-700">Sin acceso</p>
+                                        <p class="text-xs text-gray-400">El empleado no puede ingresar al sistema</p>
+                                    </div>
+                                </div>
+                                <div class="w-16 flex justify-center">
+                                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                         :class="!form.spatie_role ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'">
+                                        <div x-show="!form.spatie_role" class="w-2 h-2 rounded-full bg-white"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{-- Roles disponibles --}}
+                            <template x-for="role in availableRoles" :key="role.id">
+                                <div class="grid grid-cols-[1fr_auto] items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer"
+                                     :class="form.spatie_role===role.name ? 'bg-indigo-50' : ''"
+                                     @click="form.spatie_role = form.spatie_role===role.name ? '' : role.name">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
+                                             :style="`background:${
+                                                role.name==='gerente'     ? '#6366f1' :
+                                                role.name==='vendedor'    ? '#3b82f6' :
+                                                role.name==='almacen'     ? '#f59e0b' :
+                                                role.name==='rrhh'        ? '#10b981' :
+                                                role.name==='contador'    ? '#0891b2' :
+                                                role.name==='solo_lectura'? '#94a3b8' : '#6366f1'
+                                             }`"
+                                             x-text="role.display.substring(0,2).toUpperCase()">
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-800" x-text="role.display"></p>
+                                            <p class="text-xs text-gray-400">
+                                                <span x-text="
+                                                    role.name==='gerente'      ? 'Acceso casi completo al sistema' :
+                                                    role.name==='vendedor'     ? 'Ventas, clientes y pedidos' :
+                                                    role.name==='almacen'      ? 'Catálogo e inventario' :
+                                                    role.name==='rrhh'         ? 'Empleados y asistencia' :
+                                                    role.name==='contador'     ? 'Facturación y reportes' :
+                                                    role.name==='solo_lectura' ? 'Solo puede ver, sin modificar' :
+                                                    'Rol personalizado'
+                                                "></span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="w-16 flex justify-center">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                             :class="form.spatie_role===role.name ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300 group-hover:border-indigo-300'">
+                                            <div x-show="form.spatie_role===role.name" class="w-2 h-2 rounded-full bg-white"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <p class="text-xs text-gray-400 mt-3">
+                        El rol define qué módulos y acciones puede usar este empleado. Solo puede tener un rol activo a la vez.
+                        <a href="{{ route('roles.index') }}" class="text-indigo-500 hover:underline">Gestionar roles →</a>
+                    </p>
+
+                </div>
+
                 {{-- ═══ TAB: HISTORIAL ═══ --}}
                 <div x-show="tab==='history'" class="space-y-4 max-w-lg">
 
@@ -651,6 +824,18 @@
     </div>
 </div>
 </template>
+
+{{-- Toast --}}
+<div x-show="toast"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed bottom-6 right-6 z-50 bg-gray-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg"
+     x-text="toast">
+</div>
 
 </x-slot>
 </x-app-layout>

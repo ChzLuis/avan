@@ -15,11 +15,12 @@ class RolePermissionController extends Controller
         $project = app('active_project');
         $roles = Role::withCount('users')
             ->with('permissions')
+            ->orderBy('name')
             ->get()
             ->map(fn($r) => [
                 'id'          => $r->id,
                 'name'        => $r->name,
-                'display'     => ucwords(str_replace('_', ' ', $r->name)),
+                'display'     => $r->name,
                 'description' => '',
                 'users_count' => $r->users_count,
                 'permissions' => $r->permissions->pluck('name')->values(),
@@ -35,19 +36,23 @@ class RolePermissionController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
         $data = $request->validate([
             'name'        => 'required|string|max:60',
             'description' => 'nullable|string|max:200',
             'permissions' => 'array',
         ]);
-        $role = Role::firstOrCreate(['name' => \Illuminate\Support\Str::slug($data['name']), 'guard_name' => 'web']);
+        // Guardamos el nombre tal cual (puede tener espacios y mayúsculas)
+        $role = Role::firstOrCreate(['name' => trim($data['name']), 'guard_name' => 'web']);
         $role->syncPermissions($data['permissions'] ?? []);
         return response()->json([
             'role' => [
-                'id' => $role->id, 'name' => $role->name,
-                'display' => $data['name'], 'users_count' => 0,
-                'permissions' => collect($data['permissions'] ?? []),
+                'id'          => $role->id,
+                'name'        => $role->name,
+                'display'     => $role->name,
+                'description' => $data['description'] ?? '',
+                'users_count' => 0,
+                'permissions' => collect($data['permissions'] ?? [])->values(),
             ]
         ]);
     }
@@ -56,17 +61,25 @@ class RolePermissionController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
-        $data = $request->validate(['permissions' => 'array']);
+        $this->authorizeProject($project);
+        $data = $request->validate([
+            'name'        => 'sometimes|string|max:60',
+            'description' => 'nullable|string|max:200',
+            'permissions' => 'array',
+        ]);
+        if (!empty($data['name'])) {
+            $role->name = trim($data['name']);
+            $role->save();
+        }
         $role->syncPermissions($data['permissions'] ?? []);
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'display' => $role->name]);
     }
 
     public function destroy(Role $role)
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        abort_unless(auth()->id() === $project->owner_id, 403);
+        $this->authorizeProject($project);
         if ($role->users()->count() > 0) {
             return response()->json(['error' => 'El rol tiene usuarios asignados'], 422);
         }

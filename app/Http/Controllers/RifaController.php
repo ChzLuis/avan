@@ -69,67 +69,163 @@ class RifaController extends Controller
     }
 
     // ── Confirmar pago ───────────────────────────────────────
-    public function confirmarPago(RifaVenta $venta)
-    {
-        abort_unless(in_array($venta->status, ['pendiente','pagado']), 422);
+public function confirmarPago(RifaVenta $venta)
+{
+    abort_unless(in_array($venta->status, ['pendiente','pagado']), 422);
 
-        $numbers = $venta->assignTicketNumbers();
-        $venta->update([
-            'status'         => 'pagado',
-            'ticket_code'    => $venta->ticket_code ?: strtoupper(Str::random(8)),
-            'ticket_numbers' => $numbers,
+    $numbers = $venta->assignTicketNumbers();
+    $venta->update([
+        'status'         => 'pagado',
+        'ticket_code'    => $venta->ticket_code ?: strtoupper(Str::random(8)),
+        'ticket_numbers' => $numbers,
+    ]);
+
+    // ✅ ELIMINAR o COMENTAR todo el bloque de envío de WhatsApp
+    /*
+    try {
+        $projectId = $venta->project_id ?? app('active_project')?->id ?? session('comercial_project_id');
+        $bot  = BotInstance::where('project_id', $projectId)->where('bot_type', 'rifa')->first();
+        $port = $bot?->port ?? 3002;
+
+        $waNum = preg_replace('/\D/', '', $venta->wa_number);
+        if (strlen($waNum) > 13) $waNum = substr($waNum, -11);
+
+        $mensaje = "🎉 *¡TU SUSCRIPCIÓN A LA WEB está confirmada!*\n\n"
+                 . "🎟️ *Plan:* " . ($venta->rifa?->nombre ?? $venta->plan_nombre) . "\n"
+                 . "🎫 *Tickets:* {$venta->tickets}\n"
+                 . "🔢 *N° de Ticket de Membresia:* {$pedido}\n\n"
+                 . "🎫 *YA PUEDES VER TUS TICKETS AQUÍ:* 👇\n"
+                 . "🔗 https://pruebatusuerte.com.pe/consulta-ticket/";
+
+        \Illuminate\Support\Facades\Http::timeout(5)->post("http://127.0.0.1:{$port}/action", [
+            'token'     => 'wa-bot-secret-2024',
+            'action'    => 'send_message',
+            'wa_number' => $waNum,
+            'message'   => $mensaje,
         ]);
-
-        return response()->json(['ok' => true, 'venta' => $venta]);
+    } catch (\Throwable $e) {
+        // Silencioso
     }
+    */
+
+    // Notificar al bot para que continúe pidiendo datos al cliente
+    try {
+        $projectId = $venta->project_id;
+        $bot  = \App\Models\BotInstance::where('project_id', $projectId)->where('bot_type', 'rifa')->first();
+        $port = $bot?->port ?? 3002;
+        $waNum = preg_replace('/\D/', '', $venta->wa_number);
+        \Illuminate\Support\Facades\Http::timeout(5)->post("http://127.0.0.1:{$port}/action", [
+            'token'     => 'wa-bot-secret-2024',
+            'action'    => 'pago_aprobado',
+            'wa_number' => $waNum,
+        ]);
+    } catch (\Throwable $e) {}
+
+    return response()->json(['ok' => true, 'venta' => $venta]);
+}
+
+public function enviarConMembresia(Request $request, RifaVenta $venta)
+{
+    // Verificar si existe la venta
+    if (!$venta) {
+        return response()->json(['ok' => false, 'error' => 'Venta no encontrada'], 404);
+    }
+    
+    // Solo permitir si está pagado o enviado
+    if (!in_array($venta->status, ['pagado', 'enviado'])) {
+        return response()->json(['ok' => false, 'error' => 'El pedido no está pagado. Estado actual: ' . $venta->status], 422);
+    }
+    
+    $validated = $request->validate([
+        'numero_membresia' => 'required|string|max:500'
+    ]);
+
+    $numeroMembresia = $validated['numero_membresia'];
+    $ticketNumbers   = $request->input('ticket_numbers', []);
+
+    $venta->update([
+        'ticket_code'    => $numeroMembresia,
+        'ticket_numbers' => !empty($ticketNumbers) ? $ticketNumbers : null,
+        'status'         => 'enviado',
+    ]);
+    
+    // ✅ ENVIAR MENSAJE DE WHATSAPP (ACTIVADO)
+    try {
+        $projectId = $venta->project_id ?? app('active_project')?->id ?? session('comercial_project_id');
+        $bot = BotInstance::where('project_id', $projectId)->where('bot_type', 'rifa')->first();
+        $port = $bot?->port ?? 3002;
+        \Log::info('Bot port: ' . $port . ' project: ' . $projectId . ' bot_id: ' . ($bot?->id ?? 'null'));
+        
+        $waNum = preg_replace('/\D/', '', $venta->wa_number);
+        if (strlen($waNum) > 13) $waNum = substr($waNum, -11);
+        
+        $planNombre  = $venta->rifa?->nombre ?? $venta->plan_nombre;
+        $listaTickets = !empty($ticketNumbers)
+            ? implode(', ', $ticketNumbers)
+            : $numeroMembresia;
+        $mensaje = "🎉 *¡Tu SUSCRIPCIÓN A LA WEB está confirmada!*\n\n"
+                 . "🎟️ Plan: {$planNombre}\n"
+                 . "🎫 Tickets: {$venta->tickets}\n"
+                 . "🔢 Número de Ticket de membresía : {$listaTickets}\n\n"
+                 . "🎫 YA PUEDES VER TUS TICKETS AQUÍ: 👇\n"
+                 . "🔗 https://pruebatusuerte.com.pe/consulta-ticket/\n\n"
+                 . "¡Mucha suerte! 🍀🍀🍀";
+        
+        // Intentar enviar por whatsapp-web.js (bot local)
+        $response = \Illuminate\Support\Facades\Http::timeout(10)->post("http://127.0.0.1:{$port}/action", [
+            'token'     => 'wa-bot-secret-2024',
+            'action'    => 'send_message',
+            'wa_number' => $waNum,
+            'message'   => $mensaje,
+        ]);
+        \Log::info('WhatsApp enviado a: ' . $waNum . ' - Status: ' . $response->status());
+
+        // También enviar por Meta Cloud API si el usuario tiene canal Meta
+        $waNumFull = preg_replace('/\D/', '', $venta->wa_number);
+        $canalRow = \Illuminate\Support\Facades\DB::table('wa_canales')
+            ->where('bot_type', 'rifa')
+            ->where('project_id', $venta->project_id)
+            ->whereNotNull('phone_number_id')
+            ->where('phone_number_id', '!=', '')
+            ->first();
+        if ($canalRow && $canalRow->access_token && $canalRow->phone_number_id) {
+            $metaRes = \Illuminate\Support\Facades\Http::withToken($canalRow->access_token)
+                ->post("https://graph.facebook.com/v19.0/{$canalRow->phone_number_id}/messages", [
+                    'messaging_product' => 'whatsapp',
+                    'recipient_type'    => 'individual',
+                    'to'                => $waNumFull,
+                    'type'              => 'text',
+                    'text'              => ['body' => $mensaje, 'preview_url' => true],
+                ]);
+            \Log::info('Meta membresía: status=' . $metaRes->status() . ' to=' . $waNumFull);
+        }
+        
+    } catch (\Throwable $e) {
+        \Log::error('Error WhatsApp membresía: ' . $e->getMessage());
+        // No fallamos la respuesta, solo registramos el error
+    }
+    
+    return response()->json(['ok' => true, 'numero_membresia' => $numeroMembresia]);
+}
 
     // ── Enviar ticket por WhatsApp ───────────────────────────
     public function enviarTicket(RifaVenta $venta)
     {
-        abort_unless($venta->status === 'pagado', 422);
-        $project = app('active_project');
-
-        // Encontrar la instancia del bot rifa
-        $bot    = BotInstance::where('project_id', $project->id)
-                    ->where('bot_type', 'rifa')->first();
-        $port   = $bot?->port ?? 3001;
-        $botUrl = "http://127.0.0.1:{$port}";
-
-        $numeros = $venta->ticket_numbers
-            ? implode(', ', array_map(fn($n) => str_pad($n, 5, '0', STR_PAD_LEFT), $venta->ticket_numbers))
-            : 'Por asignar';
-
-        // Generar imagen del ticket
-        $ticketBase64 = $this->generateTicketImage($venta);
-
-        $mensaje = "🎉 *¡Tu participación está confirmada!*\n\n"
-                 . "📋 *Pedido:* {$venta->order_number}\n"
-                 . "🎟️ *Rifa:* " . ($venta->rifa?->nombre ?? $venta->plan_nombre) . "\n"
-                 . "🎫 *Tickets:* {$venta->tickets}\n"
-                 . "🔑 *Código:* *{$venta->ticket_code}*\n"
-                 . "🔢 *Números:* {$numeros}\n\n"
-                 . "¡Mucha suerte! 🍀🍀🍀";
-
-        // Si el wa_number es un LID de WhatsApp (>12 dígitos), usar los últimos 11
-        $waNum = preg_replace('/\D/', '', $venta->wa_number);
-        if (strlen($waNum) > 13) {
-            $waNum = substr($waNum, -11);
-        }
-
-        try {
-            \Illuminate\Support\Facades\Http::timeout(15)->post("{$botUrl}/action", [
-                'token'          => 'wa-bot-secret-2024',
-                'action'         => 'send_ticket',
-                'wa_number'      => $waNum,
-                'message'        => $mensaje,
-                'ticket_base64'  => $ticketBase64,
-                'ticket_mime'    => 'image/png',
-            ]);
-        } catch (\Throwable $e) {
-            // Bot no disponible
-        }
-
+        abort_unless(in_array($venta->status, ['pagado', 'enviado']), 422);
         $venta->update(['status' => 'enviado']);
+
+        // Notificar al bot para que envíe mensaje final al cliente
+        try {
+            $bot  = \App\Models\BotInstance::where('project_id', $venta->project_id)->where('bot_type', 'rifa')->first();
+            $port = $bot?->port ?? 3002;
+            $waNum = preg_replace('/\D/', '', $venta->wa_number);
+            \Illuminate\Support\Facades\Http::timeout(5)->post("http://127.0.0.1:{$port}/action", [
+                'token'     => 'wa-bot-secret-2024',
+                'action'    => 'tickets_enviados',
+                'wa_number' => $waNum,
+            ]);
+        } catch (\Throwable $e) {}
+
         return response()->json(['ok' => true]);
     }
 
@@ -150,7 +246,23 @@ class RifaController extends Controller
                     ->orderByDesc('created_at')
                     ->get();
 
-        return view('comercial.rifas', compact('project', 'ventas'));
+        $ventasJson = $ventas->keyBy('id')->map(fn($v) => [
+            'id'            => $v->id,
+            'nombre'        => $v->nombre,
+            'dni'           => $v->dni,
+            'wa_number'     => $v->wa_number,
+            'ciudad'        => $v->ciudad,
+            'plan_nombre'   => $v->rifa?->nombre ?? $v->plan_nombre,
+            'tickets'       => $v->tickets,
+            'monto'         => $v->monto,
+            'ticket_code'    => $v->ticket_code,
+            'ticket_numbers' => $v->ticket_numbers ?? [],
+            'payment_proof'  => $v->payment_proof ? asset($v->payment_proof) : null,
+            'status'        => $v->status,
+            'created_at'    => $v->created_at->timezone('America/Lima')->format('d/m/Y H:i'),
+        ])->values()->keyBy('id');
+
+        return view('comercial.rifas', compact('project', 'ventas', 'ventasJson'));
     }
 
     // ── JSON para panel de bots ──────────────────────────────────
@@ -175,7 +287,7 @@ class RifaController extends Controller
                         'ticket_numbers'=> $v->ticket_numbers,
                         'payment_proof' => $v->payment_proof,
                         'status'        => $v->status,
-                        'created_at'    => $v->created_at->format('d/m/Y H:i'),
+                        'created_at'    => $v->created_at->timezone('America/Lima')->format('d/m/Y H:i'),
                     ]);
         return response()->json(['ventas' => $ventas]);
     }
@@ -260,7 +372,7 @@ class RifaController extends Controller
         $bot     = BotInstance::where('bot_type', $botType)->first();
         if (!$bot) return response()->json(['ok' => false, 'error' => 'Bot no encontrado'], 404);
 
-        $products = \App\Models\Product::where('project_id', $bot->project_id)
+        $products = \App\Models\Product::allProjects()->where('project_id', $bot->project_id)
                      ->where('is_available', true)
                      ->with('mainImage')
                      ->orderBy('price')
@@ -293,7 +405,9 @@ class RifaController extends Controller
         $product = \App\Models\Product::find($itemId);
 
         if ($product) {
-            $monto = $product->price * $tickets;
+            // Usar monto enviado por el bot; fallback al precio del producto
+            $monto = $request->input('monto') ? (float) $request->input('monto') : (float) $product->price;
+            $ciudad = $request->input('ciudad');
             $venta = RifaVenta::create([
                 'project_id'  => $product->project_id,
                 'order_number'=> RifaVenta::generateOrderNumber(),
@@ -304,6 +418,7 @@ class RifaController extends Controller
                 'monto'       => $monto,
                 'nombre'      => $nombre,
                 'dni'         => $dni,
+                'ciudad'      => $ciudad,
                 'status'      => 'pendiente',
             ]);
 
@@ -353,14 +468,19 @@ class RifaController extends Controller
             if (!is_dir($dir)) mkdir($dir, 0755, true);
             $name = 'proof_' . $venta->id . '_' . time() . '.jpg';
             file_put_contents($dir . '/' . $name, base64_decode($request->image_base64));
-            $venta->update(['payment_proof' => 'uploads/rifas/' . $name]);
+            $venta->update([
+                'payment_proof' => 'uploads/rifas/' . $name,
+                'status'        => 'comprobante',
+                'nombre'        => $request->input('nombre', $venta->nombre),
+                'wa_number'     => $request->input('wa_number', $venta->wa_number),
+            ]);
         }
         return response()->json(['ok' => true]);
     }
 
     public function botUpdateData(Request $request, RifaVenta $venta)
     {
-        $venta->update($request->only(['nombre', 'dni', 'ciudad']));
+        $venta->update($request->only(['nombre', 'dni', 'ciudad', 'email', 'telefono', 'direccion']));
         return response()->json(['ok' => true]);
     }
 
@@ -373,5 +493,37 @@ class RifaController extends Controller
     public function validar(RifaVenta $venta)
     {
         return $this->confirmarPago($venta);
+    }
+
+    // ── Portal Comercial — eliminar pedido ──────────────────────
+    public function eliminarComercial(RifaVenta $venta)
+    {
+        $project = \App\Models\Project::findOrFail(session('comercial_project_id'));
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        $allowed = array_filter([$project->id, $botProject]);
+        abort_unless(in_array($venta->project_id, $allowed), 403);
+
+        $venta->delete();
+        return response()->json(['ok' => true]);
+    }
+
+    // ── Portal Comercial — editar datos del participante ────────
+    public function editarComercial(Request $request, RifaVenta $venta)
+    {
+        $project = \App\Models\Project::findOrFail(sessionA('comercial_project_id'));
+
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        $allowed = [$project->id];
+        if ($botProject) $allowed[] = $botProject;
+        abort_unless(in_array($venta->project_id, $allowed), 403);
+
+        $data = $request->validate([
+            'nombre' => 'nullable|string|max:100',
+            'dni'    => 'nullable|string|max:20',
+            'ciudad' => 'nullable|string|max:100',
+        ]);
+
+        $venta->update(array_filter($data, fn($v) => $v !== null));
+        return response()->json(['ok' => true]);
     }
 }

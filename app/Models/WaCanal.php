@@ -11,7 +11,7 @@ class WaCanal extends Model
     protected $fillable = [
         'project_id', 'nombre', 'tipo', 'telefono',
         'phone_number_id', 'access_token', 'verify_token',
-        'color', 'activo', 'mensaje_bienvenida', 'mensaje_ausencia',
+        'color', 'activo', 'bot_type', 'mensaje_bienvenida', 'mensaje_ausencia',
     ];
 
     protected $casts = ['activo' => 'boolean'];

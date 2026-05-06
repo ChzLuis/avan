@@ -106,15 +106,35 @@ html { scroll-behavior:smooth; }
 
 @php
 $currency = $settings['currency'] ?? 'S/';
-$searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
-    'id'   => $p->id,
-    'name' => $p->name,
-    'price'=> (float)$p->price,
-    'cp'   => $p->compare_price ? (float)$p->compare_price : null,
-    'img'  => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
-    'cat'  => $cat->name,
-    'url'  => route('public.product', [$project->slug, $p->id]),
-]))->values();
+$searchIndex = $categories->flatMap(function($cat) use ($project) {
+    $rows = $cat->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $cat->name,
+        'catId'    => (string)$cat->id,
+        'parentId' => null,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]);
+    $subRows = $cat->children->flatMap(fn($sub) => $sub->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $sub->name,
+        'catId'    => (string)$sub->id,
+        'parentId' => (string)$cat->id,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]));
+    return $rows->merge($subRows);
+})->values();
 @endphp
 </head>
 
@@ -1087,6 +1107,7 @@ function store() {
     cart: _savedCart,
     search: '',
     filterCat: '',
+    filterParent: '',
     priceFilter: '',
     onSaleFilter: false, sortBy: 'default',
     filterOpen: false,
@@ -1319,7 +1340,7 @@ function store() {
         quantity:   i.qty,
       }));
       try {
-        const res = await fetch('/{{ $project->slug }}/orders', {
+        const res = await fetch('/{{ $project->slug }}/order', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
           body:    JSON.stringify({

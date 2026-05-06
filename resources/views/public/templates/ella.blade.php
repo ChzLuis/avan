@@ -121,15 +121,35 @@ h1,h2,h3,h4,.font-jost { font-family: var(--font-title); }
 
 @php
 $currency = $settings['currency'] ?? 'S/';
-$searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
-    'id'   => $p->id,
-    'name' => $p->name,
-    'price'=> (float)$p->price,
-    'cp'   => $p->compare_price ? (float)$p->compare_price : null,
-    'img'  => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
-    'cat'  => $cat->name,
-    'url'  => route('public.product', [$project->slug, $p->id]),
-]))->values();
+$searchIndex = $categories->flatMap(function($cat) use ($project) {
+    $rows = $cat->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $cat->name,
+        'catId'    => (string)$cat->id,
+        'parentId' => null,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]);
+    $subRows = $cat->children->flatMap(fn($sub) => $sub->products->map(fn($p) => [
+        'id'       => $p->id,
+        'name'     => $p->name,
+        'price'    => (float)$p->price,
+        'cp'       => $p->compare_price ? (float)$p->compare_price : null,
+        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'cat'      => $sub->name,
+        'catId'    => (string)$sub->id,
+        'parentId' => (string)$cat->id,
+        'url'      => route('public.product', [$project->slug, $p->id]),
+        'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
+        'stock'    => $p->stock,
+    ]));
+    return $rows->merge($subRows);
+})->values();
 @endphp
 </head>
 <body class="bg-white text-gray-900" x-data="store()" x-cloak>
@@ -678,7 +698,8 @@ $searchIndex = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
     {{-- Grid productos --}}
     <div class="flex-1">
       @foreach($categories as $cat)
-      @if($cat->products->count())
+      @php $catAllProducts = $cat->products->merge($cat->children->flatMap->products); @endphp
+      @if($catAllProducts->count())
       <div x-show="filterCat==='' || filterCat==='{{ $cat->id }}'" class="mb-14">
         <div class="flex items-center gap-4 mb-6">
           <h3 class="font-jost font-black text-gray-900 text-xl">{{ $cat->name }}</h3>
@@ -1398,7 +1419,8 @@ function store() {
 
   return {
     _cartKey, _formKey,
-    search: '', filterCat: '', priceFilter: '', onSaleFilter: false, sortBy: 'default',
+    search: '', filterCat: '',
+    filterParent: '', priceFilter: '', onSaleFilter: false, sortBy: 'default',
     qv: null,
     qvOpen: false,
     expandedCats: {},

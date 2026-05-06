@@ -7,9 +7,11 @@ use App\Models\BotInstance;
 use App\Models\BotState;
 use App\Models\BotTransition;
 use App\Models\BotConfig;
+use App\Models\BotSession;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\WaBotController;
 
 class BotStatusController extends Controller
@@ -39,12 +41,12 @@ class BotStatusController extends Controller
 
         @mkdir($logDir, 0775, true);
 
-        $laravelUrl  = config('app.url');
+        $laravelUrl   = config('app.url');
         $chromiumPath = env('CHROMIUM_PATH', '');
-        $envVars = "LARAVEL_URL={$laravelUrl}" . ($chromiumPath ? " CHROMIUM_PATH={$chromiumPath}" : '');
-        $pm2Bin   = trim(shell_exec('which pm2') ?: '/usr/bin/pm2');
-        $useSudo  = (posix_getuid() !== 0) ? 'sudo ' : '';
-        $pm2      = "{$useSudo}{$pm2Bin}";
+        $pm2Wrapper   = '/usr/local/bin/bot-pm2-run';
+        $pm2Bin       = trim(shell_exec('which pm2') ?: '/usr/bin/pm2');
+        $pm2          = file_exists($pm2Wrapper) ? "sudo {$pm2Wrapper}" : $pm2Bin;
+        // Las variables de entorno van dentro del wrapper, no antes de sudo
         $startCmd = "{$pm2} start {$engine} --name {$pm2Name} -f -- --bot={$data['bot']} --port={$bot->port} --output {$logFile} --error {$logFile} --merge-logs";
 
         $cmd = match($data['action']) {
@@ -57,13 +59,49 @@ class BotStatusController extends Controller
             file_put_contents($bot->statusFile(), json_encode(['status'=>'starting','qr'=>null,'updated_at'=>now()]));
         }
 
+        \Log::info("BOT CMD: {$cmd}");
         $output = shell_exec($cmd);
+        \Log::info("BOT OUTPUT: " . (string)$output);
 
         if ($data['action'] === 'stop') {
             file_put_contents($bot->statusFile(), json_encode(['status'=>'offline','qr'=>null,'updated_at'=>now()]));
         }
 
         return response()->json(['ok' => true, 'output' => trim((string)$output)]);
+    }
+
+    // ── Reset sesión WhatsApp (cambiar número) ────────────────────
+    public function resetSession(Request $request)
+    {
+        $data = $request->validate(['bot' => 'required|string']);
+
+        $project = app('active_project');
+        $bot     = BotInstance::where('project_id', $project->id)
+                              ->where('bot_type', $data['bot'])
+                              ->firstOrFail();
+
+        $port    = $bot->port;
+        $token   = 'wa-bot-secret-2024';
+        $url     = "http://127.0.0.1:{$port}/reset-session";
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode(['token' => $token]),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+        ]);
+        $body = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($code === 200) {
+            file_put_contents($bot->statusFile(), json_encode(['status'=>'qr','qr'=>null,'updated_at'=>now()]));
+            return response()->json(['ok' => true, 'message' => 'Sesión reseteada']);
+        }
+
+        return response()->json(['ok' => false, 'message' => 'No se pudo conectar con el bot'], 502);
     }
 
     // ── Logs del bot ──────────────────────────────────────────────
@@ -138,9 +176,10 @@ class BotStatusController extends Controller
         abort_unless($bot->project_id === $project->id, 403);
 
         // Detener bot si está corriendo
-        $pm2Bin  = trim(shell_exec('which pm2') ?: '/usr/bin/pm2');
-        $useSudo = (posix_getuid() !== 0) ? 'sudo ' : '';
-        @shell_exec("{$useSudo}{$pm2Bin} delete {$bot->pm2Name()} 2>&1");
+        $pm2Wrapper = '/usr/local/bin/bot-pm2-run';
+        $pm2Bin     = trim(shell_exec('which pm2') ?: '/usr/bin/pm2');
+        $pm2        = file_exists($pm2Wrapper) ? "sudo {$pm2Wrapper}" : $pm2Bin;
+        @shell_exec("{$pm2} delete {$bot->pm2Name()} 2>&1");
 
         // Limpiar status file
         $statusFile = $bot->statusFile();
@@ -168,9 +207,71 @@ class BotStatusController extends Controller
                         ->with('states.transitions.toState')
                         ->first();
 
+        if ($request->expectsJson() || $request->wantsJson()) {
+            if (!$flow) {
+                return response()->json(['ok' => false, 'message' => 'Flujo no encontrado']);
+            }
+            $flow->load('states.transitions.toState');
+            $states = $flow->states->sortBy('sort_order')->map(fn($s) => [
+                'id'                 => $s->id,
+                'key'                => $s->key,
+                'label'              => $s->label,
+                'message'            => $s->message,
+                'images'             => $s->images ?? [],
+                'input_type'         => $s->input_type,
+                'sort_order'         => $s->sort_order,
+                'validation_pattern' => $s->validation_pattern,
+                'validation_min'     => $s->validation_min,
+                'validation_max'     => $s->validation_max,
+                'validation_error'   => $s->validation_error,
+                'transitions'        => $s->transitions->map(fn($t) => [
+                    'id'           => $t->id,
+                    'trigger'      => $t->trigger,
+                    'action'       => $t->action,
+                    'action_param' => $t->action_param,
+                    'to_state_id'  => $t->to_state_id,
+                    'to_state_key' => $t->toState?->key,
+                ])->values(),
+            ])->values();
+
+            return response()->json([
+                'ok'      => true,
+                'flow_id' => $flow->id,
+                'name'    => $flow->name,
+                'states'  => $states,
+            ]);
+        }
+
         $allStates = $flow ? $flow->states->load('transitions.toState') : collect();
 
         return view('bots.flow', compact('project', 'flow', 'allStates', 'botType'));
+    }
+
+    // ── Sesiones esperando asesor ─────────────────────────────────
+    public function esperaAsesor(Request $request)
+    {
+        $project = app('active_project');
+        $botType = $request->get('bot', 'main');
+
+        $flow = BotFlow::where('project_id', $project->id)
+            ->where('bot_type', $botType)
+            ->first();
+
+        if (!$flow) {
+            return response()->json(['ok' => true, 'sessions' => []]);
+        }
+
+        $sessions = BotSession::where('flow_id', $flow->id)
+            ->where('current_state', 'esperando_asesor')
+            ->orderByDesc('last_activity_at')
+            ->get(['wa_number', 'last_activity_at', 'data'])
+            ->map(fn($s) => [
+                'wa_number'        => $s->wa_number,
+                'last_activity_at' => $s->last_activity_at?->toIso8601String(),
+                'nombre'           => $s->data['nombre'] ?? null,
+            ]);
+
+        return response()->json(['ok' => true, 'sessions' => $sessions]);
     }
 
     public function flowStore(Request $request)
@@ -348,6 +449,7 @@ class BotStatusController extends Controller
     // ── Exportar flujo a JSON local y notificar al bot ───────────
     private function exportFlow(BotFlow $flow): void
     {
+        Cache::forget("bot.flow.{$flow->bot_type}");
         $this->reloadBotFlow($flow);
         try {
             $flow->load('states.transitions.toState');

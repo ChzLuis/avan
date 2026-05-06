@@ -4,7 +4,7 @@
 @php
     $csrf   = csrf_token();
     $pid    = $project->id;
-    $base   = url("/{$pid}/catalogs");
+    $base   = url("/bixoadmin/catalogs");
 
     $groups = $catalogs->groupBy('type')->map->count();
 @endphp

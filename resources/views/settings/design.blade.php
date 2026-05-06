@@ -119,7 +119,7 @@
         $allTemplates   = \App\Support\CatalogTemplates::all();
         $grouped        = \App\Support\CatalogTemplates::grouped();
         $activeTemplate = $project->setting('catalog_template', '');
-        $tplHasView = ['default','ella','nordic','flash','boutique','urban','fresh','porto'];
+        $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto'];
       @endphp
       <div x-data="{
           selected: '{{ $activeTemplate }}',
@@ -426,25 +426,81 @@
             <p class="text-sm font-semibold text-gray-800">Logo & Favicon</p>
             <p class="text-xs text-gray-400 mt-0.5">Imágenes de identidad del negocio</p>
           </div>
-          <div class="p-4 space-y-3">
+          <div class="p-4 space-y-4" x-data="{
+              logoPreview: '{{ $project->setting('logo_url') ? (str_starts_with($project->setting('logo_url'), 'http') ? $project->setting('logo_url') : asset('storage/'.$project->setting('logo_url'))) : '' }}',
+              faviPreview: '{{ $project->setting('favicon_url') ? (str_starts_with($project->setting('favicon_url'), 'http') ? $project->setting('favicon_url') : asset('storage/'.$project->setting('favicon_url'))) : '' }}',
+              uploadLogo(e) {
+                  const file = e.target.files[0]; if (!file) return;
+                  const fd = new FormData();
+                  fd.append('file', file);
+                  fd.append('type', 'logo');
+                  fd.append('_token', '{{ csrf_token() }}');
+                  fetch('{{ route('settings.upload-logo') }}', { method: 'POST', body: fd })
+                      .then(r => r.json())
+                      .then(d => { if (d.url) { this.logoPreview = d.url; document.getElementById('logo_url_input').value = d.path; } });
+              },
+              uploadFavi(e) {
+                  const file = e.target.files[0]; if (!file) return;
+                  const fd = new FormData();
+                  fd.append('file', file);
+                  fd.append('type', 'favicon');
+                  fd.append('_token', '{{ csrf_token() }}');
+                  fetch('{{ route('settings.upload-logo') }}', { method: 'POST', body: fd })
+                      .then(r => r.json())
+                      .then(d => { if (d.url) { this.faviPreview = d.url; document.getElementById('favicon_url_input').value = d.path; } });
+              }
+          }">
+            {{-- Logo --}}
             <div>
-              <label class="label">URL del logo</label>
-              <input type="url" name="logo_url" class="input"
-                     placeholder="https://midominio.com/logo.png"
-                     value="{{ $project->setting('logo_url') }}">
-              <p class="text-xs text-gray-400 mt-1">PNG con fondo transparente recomendado.</p>
+              <label class="label">Logo del negocio</label>
+              <div class="flex items-center gap-4">
+                <div class="w-20 h-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 flex-shrink-0 overflow-hidden">
+                  <template x-if="logoPreview">
+                    <img :src="logoPreview" class="max-w-full max-h-full object-contain p-1">
+                  </template>
+                  <template x-if="!logoPreview">
+                    <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  </template>
+                </div>
+                <div class="flex-1">
+                  <label class="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg cursor-pointer transition w-fit">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Subir imagen
+                    <input type="file" accept="image/*" class="hidden" @change="uploadLogo($event)">
+                  </label>
+                  <p class="text-xs text-gray-400 mt-1.5">PNG transparente recomendado · Máx 2MB</p>
+                  <input type="hidden" name="logo_url" id="logo_url_input" value="{{ $project->setting('logo_url') }}">
+                </div>
+              </div>
             </div>
+            {{-- Altura logo --}}
             <div>
               <label class="label">Altura del logo (px)</label>
               <input type="number" name="logo_height" class="input" min="20" max="120"
                      placeholder="40" value="{{ $project->setting('logo_height', '40') }}">
             </div>
+            {{-- Favicon --}}
             <div>
-              <label class="label">URL del favicon</label>
-              <input type="url" name="favicon_url" class="input"
-                     placeholder="https://midominio.com/favicon.ico"
-                     value="{{ $project->setting('favicon_url') }}">
-              <p class="text-xs text-gray-400 mt-1">Ícono en la pestaña del navegador. 32×32 px recomendado.</p>
+              <label class="label">Favicon</label>
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 flex-shrink-0 overflow-hidden">
+                  <template x-if="faviPreview">
+                    <img :src="faviPreview" class="max-w-full max-h-full object-contain p-1">
+                  </template>
+                  <template x-if="!faviPreview">
+                    <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  </template>
+                </div>
+                <div class="flex-1">
+                  <label class="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg cursor-pointer transition w-fit">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Subir favicon
+                    <input type="file" accept="image/*" class="hidden" @change="uploadFavi($event)">
+                  </label>
+                  <p class="text-xs text-gray-400 mt-1.5">32×32 px · ICO o PNG</p>
+                  <input type="hidden" name="favicon_url" id="favicon_url_input" value="{{ $project->setting('favicon_url') }}">
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -102,8 +102,8 @@
                             this.error = data.message || 'Credenciales incorrectas.';
                         } else {
                             this.projects     = data.projects;
-                            this.isSuperadmin = data.is_superadmin;
-                            this.projectId    = data.is_superadmin ? 'admin' : (data.projects[0]?.id ?? '');
+                            this.isSuperadmin = false;
+                            this.projectId    = data.projects[0]?.id ?? '';
                             this.step = 2;
                         }
                     } catch(e) {
@@ -124,9 +124,19 @@
                 <span class="text-lg font-bold text-gray-900">Portal Comercial</span>
             </div>
 
+            {{-- Aviso inactividad --}}
+            @if(session('inactivity'))
+            <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Sesión cerrada por inactividad.
+            </div>
+            @endif
+
             {{-- Error blade (por si hay redirect con error) --}}
             @if($errors->any())
-            <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
+            <div x-data x-init="$data.step = 1" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
                 <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -195,7 +205,7 @@
                     </div>
                 </div>
 
-                <button type="button" @click="checkCredentials()" :disabled="loading"
+                <button type="button" @click="email.trim() && password ? checkCredentials() : (error = 'Completa usuario y contraseña.')" :disabled="loading"
                         class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
                     <svg x-show="loading" x-cloak class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>

@@ -1,7 +1,9 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasProjectScope;
 class Client extends Model {
+    use HasProjectScope;
     protected $fillable = ['project_id', 'name', 'phone', 'email', 'notes'];
     public function project()      { return $this->belongsTo(Project::class); }
     public function orders()       { return $this->hasMany(Order::class); }

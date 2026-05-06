@@ -1,9 +1,11 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasProjectScope;
 
 class Invoice extends Model
 {
+    use HasProjectScope;
     protected $fillable = [
         'project_id', 'order_id', 'quote_id', 'client_id',
         'type', 'serie', 'correlativo', 'numero',
@@ -42,7 +44,8 @@ class Invoice extends Model
     /** Siguiente correlativo para la serie dada dentro del proyecto */
     public static function nextCorrelativo(int $projectId, string $type, string $serie): int
     {
-        $max = static::where('project_id', $projectId)
+        $max = static::allProjects()
+            ->where('project_id', $projectId)
             ->where('type', $type)
             ->where('serie', $serie)
             ->max('correlativo');

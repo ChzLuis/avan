@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Project;
 use App\Models\Client;
+use App\Jobs\SendInvoiceToSunat;
 use App\Support\NubefactService;
 use Illuminate\Http\Request;
 
@@ -223,9 +224,10 @@ class InvoiceController extends Controller
         abort_unless($invoice->project_id === $project->id, 403);
         abort_if($invoice->sunat_status === 'accepted', 403, 'Este comprobante ya fue aceptado por SUNAT.');
 
-        $result = (new NubefactService())->enviar($invoice);
+        $invoice->update(['sunat_status' => 'pending']);
+        SendInvoiceToSunat::dispatch($invoice->id);
 
-        return response()->json($result, $result['ok'] ? 200 : 422);
+        return response()->json(['ok' => true, 'message' => 'Enviando a SUNAT en segundo plano...']);
     }
 
     public function sendSunatPortal(string $slug, $invoiceId)
@@ -239,9 +241,10 @@ class InvoiceController extends Controller
 
         abort_if($invoice->sunat_status === 'accepted', 403, 'Este comprobante ya fue aceptado por SUNAT.');
 
-        $result = (new NubefactService())->enviar($invoice);
+        $invoice->update(['sunat_status' => 'pending']);
+        SendInvoiceToSunat::dispatch($invoice->id);
 
-        return response()->json($result, $result['ok'] ? 200 : 422);
+        return response()->json(['ok' => true, 'message' => 'Enviando a SUNAT en segundo plano...']);
     }
 
     public function pdf(Invoice $invoice)

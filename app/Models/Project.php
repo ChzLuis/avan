@@ -11,7 +11,7 @@ class Project extends Model
 {
     protected $fillable = [
         'owner_id', 'name', 'slug', 'description', 'logo_url',
-        'category', 'phone', 'whatsapp', 'address', 'is_active', 'wa_phone',
+        'category', 'phone', 'whatsapp', 'address', 'is_active', 'wa_phone', 'custom_domain',
     ];
 
     protected $casts = ['is_active' => 'boolean'];
