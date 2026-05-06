@@ -446,6 +446,82 @@ class BotStatusController extends Controller
         } catch (\Throwable) {}
     }
 
+    // ── Importar flujo desde JSON local → BD ─────────────────────
+    public function flowImportFromJson(Request $request)
+    {
+        $project = app('active_project');
+        $botType = $request->input('bot_type', 'main');
+        $jsonPath = base_path("whatsbot/flow-{$botType}.json");
+
+        if (!file_exists($jsonPath)) {
+            return response()->json(['ok' => false, 'message' => "Archivo {$jsonPath} no encontrado"]);
+        }
+
+        $json = json_decode(file_get_contents($jsonPath), true);
+        if (!$json || empty($json['states'])) {
+            return response()->json(['ok' => false, 'message' => 'JSON inválido o sin estados']);
+        }
+
+        $flow = BotFlow::firstOrCreate(
+            ['project_id' => $project->id, 'bot_type' => $botType],
+            ['name' => 'Flujo ' . strtoupper($botType), 'is_active' => true]
+        );
+
+        $stateMap = [];
+        $sort = 0;
+        foreach ($json['states'] as $key => $sData) {
+            $state = BotState::updateOrCreate(
+                ['flow_id' => $flow->id, 'key' => $key],
+                [
+                    'label'      => $sData['label'] ?? $key,
+                    'message'    => $sData['message'] ?? '',
+                    'images'     => $sData['images'] ?? [],
+                    'input_type' => $sData['input_type'] ?? 'text',
+                    'sort_order' => $sort++,
+                    'is_active'  => true,
+                    'validation_pattern' => $sData['validation_pattern'] ?? null,
+                    'validation_min'     => $sData['validation_min'] ?? null,
+                    'validation_max'     => $sData['validation_max'] ?? null,
+                    'validation_error'   => $sData['validation_error'] ?? null,
+                ]
+            );
+            $stateMap[$key] = $state->id;
+        }
+
+        // Insertar transiciones
+        $transCount = 0;
+        foreach ($json['states'] as $key => $sData) {
+            $fromId = $stateMap[$key] ?? null;
+            if (!$fromId) continue;
+            BotTransition::where('from_state_id', $fromId)->delete();
+            $tSort = 0;
+            foreach (($sData['transitions'] ?? []) as $t) {
+                $toKey = $t['to'] ?? null;
+                $toId  = $toKey ? ($stateMap[$toKey] ?? null) : null;
+                if (!$toId) continue;
+                BotTransition::create([
+                    'from_state_id' => $fromId,
+                    'to_state_id'   => $toId,
+                    'trigger'       => $t['trigger'] ?? null,
+                    'action'        => $t['action'] ?? null,
+                    'action_param'  => $t['action_param'] ?? null,
+                    'sort_order'    => $tSort++,
+                ]);
+                $transCount++;
+            }
+        }
+
+        $this->exportFlow($flow);
+
+        return response()->json([
+            'ok'      => true,
+            'flow_id' => $flow->id,
+            'states'  => count($stateMap),
+            'transitions' => $transCount,
+            'message' => "Flujo importado: {$flow->id}, {$sort} estados, {$transCount} transiciones",
+        ]);
+    }
+
     // ── Exportar flujo a JSON local y notificar al bot ───────────
     private function exportFlow(BotFlow $flow): void
     {

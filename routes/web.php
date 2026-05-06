@@ -184,6 +184,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/bots/instances',                  [BotStatusController::class, 'botStore'])->name('bots.instances.store');
         Route::delete('/bots/instances/{bot}',          [BotStatusController::class, 'botDestroy'])->name('bots.instances.destroy');
         Route::get('/bots/espera-asesor',               [BotStatusController::class, 'esperaAsesor'])->name('bots.espera-asesor');
+        Route::post('/bots/flow/import-json',           [BotStatusController::class, 'flowImportFromJson'])->name('bots.flow.import');
 
         // HR / Empleados
         Route::get('/hr/employees',                [HRController::class, 'index'])->name('hr.employees.index')->middleware('can:hr.ver');
