@@ -67,6 +67,39 @@ class CatalogTemplates
                 ],
             ],
 
+            'direct' => [
+                'label'          => 'Directo — Solo Catálogo',
+                'category'       => 'General',
+                'icon'           => '📋',
+                'description'    => 'Sin banner ni hero. Entra directo al catálogo de productos. Ideal para negocios que quieren simplicidad.',
+                'preview_bg'     => '#f8fafc',
+                'preview_accent' => '#4f46e5',
+                'settings' => [
+                    'primary_color'        => '#4f46e5',
+                    'secondary_color'      => '#6366f1',
+                    'catalog_layout'       => 'grid',
+                    'card_style'           => 'minimal',
+                    'font'                 => 'Inter',
+                    'font_title'           => 'Inter',
+                    'font_body'            => 'Inter',
+                    'border_radius'        => 'rounded',
+                    'currency_symbol'      => 'S/',
+                    'catalog_cols_desktop' => '3',
+                    'catalog_cols_mobile'  => '2',
+                    'catalog_section_title'=> 'Nuestros productos',
+                    'catalog_badge_sale'   => 'OFERTA',
+                    'catalog_badge_new'    => 'NUEVO',
+                    'float_cart_show'      => '1',
+                    'float_wa_show'        => '1',
+                    'float_wa_tooltip'     => '¿Necesitas ayuda?',
+                    'btn_cart_text'        => 'Agregar al carrito',
+                    'btn_quote_text'       => 'Cotizar',
+                    'btn_shape'            => 'rounded',
+                    'footer_tagline'       => '',
+                    'footer_copyright'     => '',
+                ],
+            ],
+
             // ══════════════════════════════════════════════════════
             // GRUPO: MODA & ESTILO
             // ══════════════════════════════════════════════════════
@@ -876,6 +909,132 @@ class CatalogTemplates
     }
 
     /**
+     * Categorías predefinidas por plantilla.
+     * Estructura: [ ['name' => 'PADRE', 'type' => 'product|service', 'children' => ['Sub1','Sub2']], ... ]
+     */
+    public static function categories(): array
+    {
+        return [
+
+            'supermercado' => [
+                ['name' => 'ABARROTES',            'type' => 'product', 'children' => ['Arroz', 'Harinas', 'Granos y Semillas', 'Menestras', 'Pastas y Fideos', 'Azúcar y Sal']],
+                ['name' => 'CARNES Y DERIVADOS',   'type' => 'product', 'children' => ['Res', 'Pollo', 'Cerdo', 'Embutidos', 'Mariscos']],
+                ['name' => 'FRUTAS Y VERDURAS',    'type' => 'product', 'children' => ['Frutas', 'Verduras', 'Tubérculos', 'Hierbas']],
+                ['name' => 'LÁCTEOS Y HUEVOS',     'type' => 'product', 'children' => ['Leche', 'Quesos', 'Yogurt', 'Huevos']],
+                ['name' => 'PANADERÍA',             'type' => 'product', 'children' => ['Pan', 'Pasteles', 'Galletas']],
+                ['name' => 'BEBIDAS',               'type' => 'product', 'children' => ['Aguas', 'Jugos', 'Gaseosas', 'Energizantes']],
+                ['name' => 'LIMPIEZA Y HOGAR',     'type' => 'product', 'children' => ['Detergentes', 'Desinfectantes', 'Papel y Servilletas']],
+            ],
+
+            'market' => [
+                ['name' => 'ABARROTES',            'type' => 'product', 'children' => ['Arroz', 'Azúcar', 'Aceites', 'Conservas', 'Condimentos']],
+                ['name' => 'ARTEFACTOS',           'type' => 'product', 'children' => ['Electrodomésticos', 'Iluminación', 'Pilas y Cables']],
+                ['name' => 'CARNES Y DERIVADOS',   'type' => 'product', 'children' => ['Res', 'Pollo', 'Cerdo', 'Embutidos']],
+                ['name' => 'FRUTAS Y VERDURAS',    'type' => 'product', 'children' => ['Frutas', 'Verduras', 'Tubérculos']],
+                ['name' => 'PANADERÍA Y PASTELERÍA','type' => 'product', 'children' => ['Pan de molde', 'Pasteles', 'Galletas']],
+                ['name' => 'VINOS, LICORES Y CERVEZAS','type' => 'product', 'children' => ['Cervezas', 'Vinos', 'Destilados', 'Sin alcohol']],
+                ['name' => 'LIMPIEZA',             'type' => 'product', 'children' => ['Detergentes', 'Desinfectantes', 'Esponjas']],
+            ],
+
+            'restaurante' => [
+                ['name' => 'ENTRADAS',             'type' => 'product', 'children' => ['Sopas', 'Ensaladas', 'Aperitivos']],
+                ['name' => 'PLATOS DE FONDO',      'type' => 'product', 'children' => ['Carnes', 'Pollos', 'Pescados', 'Vegetariano']],
+                ['name' => 'MENÚ DEL DÍA',         'type' => 'product', 'children' => ['Menú Clásico', 'Menú Ejecutivo']],
+                ['name' => 'BEBIDAS',              'type' => 'product', 'children' => ['Jugos', 'Gaseosas', 'Agua', 'Calientes']],
+                ['name' => 'POSTRES',              'type' => 'product', 'children' => ['Tortas', 'Helados', 'Dulces']],
+                ['name' => 'DELIVERY',             'type' => 'service', 'children' => ['Delivery Express', 'Delivery Programado']],
+            ],
+
+            'bistro' => [
+                ['name' => 'CAFETERÍA',            'type' => 'product', 'children' => ['Cafés', 'Tés e Infusiones', 'Bebidas Frías']],
+                ['name' => 'DESAYUNOS',            'type' => 'product', 'children' => ['Sándwiches', 'Tostadas', 'Croissants']],
+                ['name' => 'ALMUERZOS',            'type' => 'product', 'children' => ['Platos del día', 'Ensaladas', 'Sopas']],
+                ['name' => 'REPOSTERÍA',           'type' => 'product', 'children' => ['Tortas', 'Galletas', 'Muffins']],
+                ['name' => 'DELIVERY',             'type' => 'service', 'children' => ['Delivery Express', 'Take Away']],
+            ],
+
+            'farmacia' => [
+                ['name' => 'MEDICAMENTOS',         'type' => 'product', 'children' => ['Analgésicos', 'Antibióticos', 'Antiinflamatorios', 'Antialérgicos']],
+                ['name' => 'VITAMINAS Y SUPLEMENTOS','type' => 'product','children' => ['Vitamina C', 'Complejo B', 'Omega 3', 'Probióticos']],
+                ['name' => 'CUIDADO PERSONAL',     'type' => 'product', 'children' => ['Cremas', 'Shampoo', 'Protector Solar']],
+                ['name' => 'BEBÉ Y MATERNIDAD',    'type' => 'product', 'children' => ['Leche de fórmula', 'Pañales', 'Accesorios bebé']],
+                ['name' => 'SERVICIOS',            'type' => 'service', 'children' => ['Inyectables', 'Nebulizaciones', 'Control de presión']],
+            ],
+
+            'mascotas' => [
+                ['name' => 'ALIMENTOS',            'type' => 'product', 'children' => ['Para Perros', 'Para Gatos', 'Para Aves', 'Para Peces']],
+                ['name' => 'MEDICAMENTOS',         'type' => 'product', 'children' => ['Antiparasitarios', 'Vitaminas', 'Antibióticos']],
+                ['name' => 'ACCESORIOS',           'type' => 'product', 'children' => ['Correas y Collares', 'Camas y Casas', 'Juguetes']],
+                ['name' => 'CONSULTAS',            'type' => 'service', 'children' => ['Consulta General', 'Consulta de Emergencia']],
+                ['name' => 'GROOMING',             'type' => 'service', 'children' => ['Baño y Corte', 'Corte de uñas', 'Desparasitación']],
+                ['name' => 'PROCEDIMIENTOS',       'type' => 'service', 'children' => ['Vacunas', 'Cirugías', 'Ecografías']],
+            ],
+
+            'ferreteria' => [
+                ['name' => 'HERRAMIENTAS',         'type' => 'product', 'children' => ['Manuales', 'Eléctricas', 'De medición']],
+                ['name' => 'MATERIALES',           'type' => 'product', 'children' => ['Cemento y Concreto', 'Fierros y Tuberías', 'Pinturas']],
+                ['name' => 'ELECTRICIDAD',         'type' => 'product', 'children' => ['Cables', 'Tomacorrientes', 'Lámparas']],
+                ['name' => 'GASFITERÍA',           'type' => 'product', 'children' => ['Tuberías PVC', 'Llaves y Válvulas', 'Accesorios']],
+                ['name' => 'SERVICIOS',            'type' => 'service', 'children' => ['Instalación Eléctrica', 'Gasfitería', 'Pintura']],
+            ],
+
+            'belleza' => [
+                ['name' => 'CUIDADO DEL ROSTRO',   'type' => 'product', 'children' => ['Cremas hidratantes', 'Limpiadores', 'Protector solar']],
+                ['name' => 'MAQUILLAJE',           'type' => 'product', 'children' => ['Base y corrector', 'Labiales', 'Ojos']],
+                ['name' => 'CABELLO',              'type' => 'product', 'children' => ['Shampoo', 'Acondicionador', 'Tratamientos']],
+                ['name' => 'PERFUMERÍA',           'type' => 'product', 'children' => ['Para ella', 'Para él', 'Unisex']],
+                ['name' => 'TRATAMIENTOS',         'type' => 'service', 'children' => ['Facial', 'Corporal', 'Relajante']],
+                ['name' => 'PELUQUERÍA',           'type' => 'service', 'children' => ['Corte', 'Coloración', 'Alisado']],
+                ['name' => 'UÑAS',                 'type' => 'service', 'children' => ['Manicure', 'Pedicure', 'Nail Art']],
+            ],
+
+            'deporte' => [
+                ['name' => 'EQUIPOS DE GYM',       'type' => 'product', 'children' => ['Pesas y mancuernas', 'Máquinas', 'Colchonetas']],
+                ['name' => 'ROPA DEPORTIVA',       'type' => 'product', 'children' => ['Hombre', 'Mujer', 'Calzado']],
+                ['name' => 'SUPLEMENTOS',          'type' => 'product', 'children' => ['Proteínas', 'Creatina', 'Vitaminas', 'Pre-entreno']],
+                ['name' => 'CLASES',               'type' => 'service', 'children' => ['Musculación', 'Crossfit', 'Yoga', 'Spinning']],
+            ],
+
+            'nordic' => [
+                ['name' => 'SALA Y COMEDOR',       'type' => 'product', 'children' => ['Sofás', 'Mesas', 'Sillas', 'Estantes']],
+                ['name' => 'DORMITORIO',           'type' => 'product', 'children' => ['Camas', 'Colchones', 'Roperos', 'Veladores']],
+                ['name' => 'DECORACIÓN',           'type' => 'product', 'children' => ['Cuadros', 'Floreros', 'Lámparas', 'Alfombras']],
+                ['name' => 'BAÑO Y COCINA',        'type' => 'product', 'children' => ['Accesorios baño', 'Organizadores', 'Cortinas']],
+            ],
+
+            'tecnologia' => [
+                ['name' => 'SMARTPHONES',          'type' => 'product', 'children' => ['Android', 'iPhone', 'Accesorios']],
+                ['name' => 'COMPUTADORAS',         'type' => 'product', 'children' => ['Laptops', 'PC de escritorio', 'Tablets']],
+                ['name' => 'PERIFÉRICOS',          'type' => 'product', 'children' => ['Teclados y Mouse', 'Monitores', 'Auriculares']],
+                ['name' => 'GAMING',               'type' => 'product', 'children' => ['Consolas', 'Videojuegos', 'Sillas gaming']],
+                ['name' => 'SOPORTE TÉCNICO',      'type' => 'service', 'children' => ['Reparación PC', 'Formateo', 'Redes']],
+            ],
+
+            'servicios' => [
+                ['name' => 'CONSULTORÍA',          'type' => 'service', 'children' => ['Empresarial', 'Legal', 'Contable', 'Financiera']],
+                ['name' => 'DISEÑO',               'type' => 'service', 'children' => ['Gráfico', 'Web', 'de Interiores']],
+                ['name' => 'MARKETING',            'type' => 'service', 'children' => ['Redes Sociales', 'SEO', 'Publicidad Digital']],
+                ['name' => 'CAPACITACIÓN',         'type' => 'service', 'children' => ['Cursos presenciales', 'Cursos online', 'Talleres']],
+            ],
+
+            'ella' => [
+                ['name' => 'ROPA',                 'type' => 'product', 'children' => ['Vestidos', 'Blusas', 'Pantalones', 'Faldas']],
+                ['name' => 'CALZADO',              'type' => 'product', 'children' => ['Zapatillas', 'Sandalias', 'Botines', 'Tacones']],
+                ['name' => 'ACCESORIOS',           'type' => 'product', 'children' => ['Carteras', 'Cinturones', 'Joyería', 'Gafas']],
+                ['name' => 'NUEVA COLECCIÓN',      'type' => 'product', 'children' => ['Temporada actual', 'Edición limitada']],
+            ],
+
+            'urban' => [
+                ['name' => 'SNEAKERS',             'type' => 'product', 'children' => ['Running', 'Casual', 'Limited Edition']],
+                ['name' => 'ROPA',                 'type' => 'product', 'children' => ['Polos', 'Hoodies', 'Shorts', 'Joggers']],
+                ['name' => 'ACCESORIOS',           'type' => 'product', 'children' => ['Gorras', 'Mochilas', 'Calcetines']],
+                ['name' => 'COLABS',               'type' => 'product', 'children' => ['Ediciones especiales', 'Drops exclusivos']],
+            ],
+
+        ];
+    }
+
+    /**
      * Aplica los settings de una plantilla a un proyecto.
      * Si $force=true sobreescribe todos los settings existentes.
      */
@@ -897,6 +1056,42 @@ class CatalogTemplates
                 if (!$project->settings()->where('key', $key)->exists()) {
                     $project->settings()->create(['key' => $key, 'value' => $value]);
                 }
+            }
+        }
+    }
+
+    /**
+     * Crea las categorías predefinidas de una plantilla en el proyecto.
+     * Solo crea las que no existen (por nombre).
+     */
+    public static function applyCategories(\App\Models\Project $project, string $templateKey): void
+    {
+        $cats = static::categories()[$templateKey] ?? [];
+        if (empty($cats)) return;
+
+        $order = $project->categories()->max('sort_order') ?? 0;
+
+        foreach ($cats as $catDef) {
+            $parent = \App\Models\Category::firstOrCreate(
+                ['project_id' => $project->id, 'name' => $catDef['name']],
+                [
+                    'type'       => $catDef['type'],
+                    'parent_id'  => null,
+                    'is_active'  => true,
+                    'sort_order' => ++$order,
+                ]
+            );
+
+            $subOrder = 0;
+            foreach ($catDef['children'] as $childName) {
+                \App\Models\Category::firstOrCreate(
+                    ['project_id' => $project->id, 'name' => $childName, 'parent_id' => $parent->id],
+                    [
+                        'type'       => $catDef['type'],
+                        'is_active'  => true,
+                        'sort_order' => ++$subOrder,
+                    ]
+                );
             }
         }
     }
