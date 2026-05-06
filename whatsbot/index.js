@@ -234,7 +234,14 @@ client.on('message', async msg => {
         let { state: currentState, data: sessionData } = session;
         console.log(`   estado actual: ${currentState}`);
 
-        const stateConfig = FLOW.states[currentState] || FLOW.states['inicio'];
+        const estadosTerminales = ['finalizado', 'problema'];
+        const esTerminal = estadosTerminales.includes(currentState);
+
+        // Si está en estado terminal, buscar primero en inicio (para capturar nuevo pedido)
+        let stateConfig = FLOW.states[currentState] || FLOW.states['inicio'];
+        if (esTerminal) {
+            stateConfig = FLOW.states['inicio'];
+        }
 
         // ── Detectar transición aplicable ─────────────────────
         let transition = null;
@@ -265,9 +272,7 @@ client.on('message', async msg => {
                 return;
             }
 
-            // Estados terminales: reiniciar flujo desde inicio
-            const estadosTerminales = ['finalizado', 'problema'];
-            if (currentState === 'inicio' || currentState === null || estadosTerminales.includes(currentState)) {
+            if (currentState === 'inicio' || currentState === null || esTerminal) {
                 const inicioState = FLOW.states['inicio'];
                 const inicioVars  = buildVars({});
                 await saveSession(waNumber, 'inicio', {});
