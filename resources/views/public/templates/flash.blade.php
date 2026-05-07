@@ -131,7 +131,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $cat->name,
         'catId'    => (string)$cat->id,
         'parentId' => null,
@@ -144,7 +144,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $sub->name,
         'catId'    => (string)$sub->id,
         'parentId' => (string)$cat->id,
@@ -521,7 +521,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" data-products-grid>
         @foreach($cat->products as $p)
         @php
-        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?$p->main_image_url:'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
         @endphp
         <article class="flash-card group rounded-xl overflow-hidden cursor-pointer" id="producto-{{ $p->id }}"
                  x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}) && ({{ $loop->index }} < 8 || expandedCats['{{ $cat->id }}'])"
@@ -532,7 +532,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
           <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block relative bg-gray-50 overflow-hidden" style="aspect-ratio:1/1;">
             @if($p->mainImage)
-            <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+            <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
                  loading="lazy" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
             @else
             <div class="w-full h-full flex items-center justify-center bg-gray-100">

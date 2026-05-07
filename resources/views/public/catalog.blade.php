@@ -251,7 +251,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $cat->name,
         'catId'    => (string)$cat->id,
         'parentId' => null,
@@ -265,7 +265,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $sub->name,
         'catId'    => (string)$sub->id,
         'parentId' => (string)$cat->id,
@@ -755,7 +755,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           $qvData = json_encode([
               'id'    => $p->id,
               'name'  => $p->name,
-              'img'   => $p->mainImage ? asset('storage/'.$p->mainImage->url) : '',
+              'img'   => $p->mainImage ? $p->main_image_url : '',
               'price' => (float)$p->price,
               'cp'    => $p->compare_price ? (float)$p->compare_price : null,
               'desc'  => \Str::limit(strip_tags($p->description ?? ''), 120),
@@ -782,7 +782,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             {{-- Imagen con SEO --}}
             <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block prod-img aspect-square bg-gray-50 relative overflow-hidden">
               @if($p->mainImage)
-              <img src="{{ asset('storage/'.$p->mainImage->url) }}"
+              <img src="{{ $p->main_image_url }}"
                    alt="{{ $p->name }} — {{ $cat->name }} en {{ $project->name }}"
                    title="{{ $p->name }}"
                    loading="lazy"
@@ -876,7 +876,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                       <input type="number" x-model.number="qty" min="1" class="w-8 h-7 text-center text-xs font-bold border-x border-gray-200 focus:outline-none bg-white">
                       <button type="button" @click="qty++" class="w-6 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-base font-bold leading-none">+</button>
                     </div>
-                    <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (minorista)',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                    <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (minorista)',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
                             {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
                             class="flex-1 btn-p h-7 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 disabled:opacity-50 whitespace-nowrap">
                       <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -901,7 +901,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                       <input type="number" x-model.number="qty" min="{{ $p->wholesale_min_qty }}" class="w-8 h-7 text-center text-xs font-bold border-x border-amber-200 focus:outline-none bg-white text-amber-700">
                       <button type="button" @click="qty++" class="w-6 h-7 flex items-center justify-center text-amber-600 hover:bg-amber-100 text-base font-bold leading-none">+</button>
                     </div>
-                    <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayorista)',price:{{ $p->wholesale_price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                    <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayorista)',price:{{ $p->wholesale_price }},qty:qty,img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
                             {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
                             class="flex-1 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50 whitespace-nowrap">
                       <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -936,7 +936,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   <button type="button" @click="qty++" class="px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm font-bold">+</button>
                 </div>
                 <span class="text-xs text-gray-400">{{ $p->unit }}</span>
-                <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
                         {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
                         class="flex-1 btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 disabled:opacity-50">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -944,7 +944,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                 </button>
               </div>
               @else
-              <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+              <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
                       {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
                       class="w-full btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-50 mb-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -954,7 +954,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               @endif
               @else
               <div class="mb-3"><span class="text-xs text-gray-400 italic">Precio a consultar</span></div>
-              <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+              <button @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
                       {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
                       class="w-full btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-50">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -984,7 +984,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           $qvData = json_encode([
               'id'    => $p->id,
               'name'  => $p->name,
-              'img'   => $p->mainImage ? asset('storage/'.$p->mainImage->url) : '',
+              'img'   => $p->mainImage ? $p->main_image_url : '',
               'price' => (float)$p->price,
               'cp'    => $p->compare_price ? (float)$p->compare_price : null,
               'desc'  => \Str::limit(strip_tags($p->description ?? ''), 120),

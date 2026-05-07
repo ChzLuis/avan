@@ -130,7 +130,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $cat->name,
         'catId'    => (string)$cat->id,
         'parentId' => null,
@@ -143,7 +143,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $sub->name,
         'catId'    => (string)$sub->id,
         'parentId' => (string)$cat->id,
@@ -793,7 +793,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       class="porto-card group relative cursor-pointer">
       <div class="relative aspect-square overflow-hidden bg-gray-50">
         @if($p->mainImage)
-        <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
           class="w-full h-full object-cover transition duration-500 group-hover:scale-108"
           style="transition:transform .5s ease" loading="lazy">
         @else
@@ -813,7 +813,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </div>
         @if(!$isQuoteOnly)
         <div class="card-actions">
-          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
             class="w-full text-[11px] font-semibold text-white text-center py-1.5 hover:opacity-80 transition">
             + Agregar al carrito
           </button>
@@ -864,7 +864,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       class="porto-card group relative cursor-pointer">
       <div class="relative aspect-square overflow-hidden bg-gray-50">
         @if($p->mainImage)
-        <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
           class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
         @else
         <div class="w-full h-full flex items-center justify-center bg-gray-100">
@@ -881,7 +881,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </div>
         @if(!$isQuoteOnly)
         <div class="card-actions">
-          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
             class="w-full text-[11px] font-semibold text-white text-center py-1.5 hover:opacity-80 transition">
             + Agregar al carrito
           </button>
@@ -930,7 +930,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       class="porto-card group relative cursor-pointer">
       <div class="relative aspect-square overflow-hidden bg-gray-50">
         @if($p->mainImage)
-        <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
           class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
         @else
         <div class="w-full h-full flex items-center justify-center bg-gray-100">
@@ -946,7 +946,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </div>
         @if(!$isQuoteOnly)
         <div class="card-actions">
-          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
             class="w-full text-[11px] font-semibold text-white text-center py-1.5 hover:opacity-80 transition">
             + Agregar al carrito
           </button>
@@ -1010,7 +1010,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     <article class="porto-card group relative cursor-pointer">
       <div class="relative aspect-square overflow-hidden bg-gray-50">
         @if($p->mainImage)
-        <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
           class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
         @else
         <div class="w-full h-full flex items-center justify-center bg-gray-100">
@@ -1029,7 +1029,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </div>
         @if(!$isQuoteOnly)
         <div class="card-actions">
-          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+          <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
             class="w-full text-[11px] font-semibold text-white text-center py-1.5 hover:opacity-80 transition">
             + Agregar al carrito
           </button>
@@ -1279,7 +1279,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4" data-products-grid>
           @foreach($cat->products as $p)
           @php
-          $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+          $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?$p->main_image_url:'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
           @endphp
           <article x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}) && ({{ $loop->index }} < 8 || expandedCats['{{ $cat->id }}'])"
             class="porto-card group relative cursor-pointer"
@@ -1289,7 +1289,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             data-qv='@json($qvData)'>
             <div class="relative aspect-square overflow-hidden bg-gray-50">
               @if($p->mainImage)
-              <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+              <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
                 class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
               @else
               <div class="w-full h-full flex items-center justify-center bg-gray-100">
@@ -1308,7 +1308,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               </div>
               @if(!$isQuoteOnly)
               <div class="card-actions">
-                <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})"
+                <button @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})"
                   class="w-full text-[11px] font-semibold text-white text-center py-1.5 hover:opacity-80 transition">
                   + Agregar al carrito
                 </button>

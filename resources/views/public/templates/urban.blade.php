@@ -176,7 +176,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $cat->name,
         'catId'    => (string)$cat->id,
         'parentId' => null,
@@ -189,7 +189,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $sub->name,
         'catId'    => (string)$sub->id,
         'parentId' => (string)$cat->id,
@@ -424,7 +424,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }})">
         <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block prod-img relative">
           @if($p->mainImage)
-            <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-cover">
+            <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-cover">
           @else
             <div class="w-full h-full flex items-center justify-center opacity-10">
               <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,7 +461,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <p style="font-size:.75rem;color:#555;margin-top:6px;font-style:italic">Precio a consultar</p>
           @endif
           <button class="prod-btn"
-                  @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                  @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
             {{ $isQuoteOnly ? 'Cotizar' : 'Agregar' }}
           </button>
         </div>
@@ -508,7 +508,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }})">
         <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block prod-img relative">
           @if($p->mainImage)
-            <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-cover">
+            <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-cover">
           @else
             <div class="w-full h-full flex items-center justify-center opacity-10">
               <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -543,7 +543,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <p style="font-size:.75rem;color:#555;margin-top:6px;font-style:italic">Precio a consultar</p>
           @endif
           <button class="prod-btn"
-                  @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                  @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
             {{ $isQuoteOnly ? 'Cotizar' : 'Agregar' }}
           </button>
         </div>
@@ -631,7 +631,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
         @foreach($cat->products as $p)
         @php
-        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?$p->main_image_url:'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
         @endphp
         <article id="producto-{{ $p->id }}" class="prod-card group"
                  x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}) && ({{ $loop->index }} < 8 || expandedCats['{{ $cat->id }}'])"
@@ -645,7 +645,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
           <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block prod-img relative">
             @if($p->mainImage)
-            <img src="{{ asset('storage/'.$p->mainImage->url) }}"
+            <img src="{{ $p->main_image_url }}"
                  alt="{{ $p->name }} — {{ $cat->name }}"
                  loading="lazy" decoding="async" width="400" height="400"
                  class="w-full h-full object-cover" itemprop="image">
@@ -705,7 +705,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <p style="font-size:.75rem;color:#555;margin-top:6px;font-style:italic">Precio a consultar</p>
             @endif
             <button class="prod-btn"
-                    @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                    @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
               {{ $isQuoteOnly ? 'Cotizar' : 'Agregar al carrito' }}
             </button>
           </div>

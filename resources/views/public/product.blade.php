@@ -31,7 +31,7 @@
       'name'  => $p->name,
       'price' => (float)$p->price,
       'cp'    => $p->compare_price ? (float)$p->compare_price : null,
-      'img'   => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+      'img'   => $p->mainImage ? $p->main_image_url : null,
       'cat'   => $cat->name,
       'catId' => (string)$cat->id,
       'url'   => url('/'.$project->slug.'/p/'.$p->id),

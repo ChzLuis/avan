@@ -16,5 +16,13 @@ class Product extends Model {
     public function images()    { return $this->hasMany(ProductImage::class)->orderBy('sort_order'); }
     public function mainImage() { return $this->hasOne(ProductImage::class)->where('is_main', true); }
     public function reviews()   { return $this->hasMany(Review::class); }
+
+    public function getMainImageUrlAttribute(): ?string
+    {
+        $url = $this->mainImage?->url;
+        if (!$url) return null;
+        if (str_starts_with($url, 'http')) return $url;
+        return asset('storage/' . $url);
+    }
     public function approvedReviews() { return $this->hasMany(Review::class)->where('is_approved', true)->latest(); }
 }

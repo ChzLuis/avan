@@ -112,7 +112,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $cat->name,
         'catId'    => (string)$cat->id,
         'parentId' => null,
@@ -125,7 +125,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $sub->name,
         'catId'    => (string)$sub->id,
         'parentId' => (string)$cat->id,
@@ -735,7 +735,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
              class="group relative cursor-pointer">
       <div class="relative overflow-hidden" style="aspect-ratio:2/3;background:#f0eeeb;">
         @if($p->mainImage)
-        <img src="{{ asset('storage/'.$p->mainImage->url) }}"
+        <img src="{{ $p->main_image_url }}"
              alt="{{ $p->name }}"
              class="w-full h-full object-cover transition duration-500 group-hover:scale-105"
              loading="lazy">
@@ -743,7 +743,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <div class="prod-overlay">
           @if(!$isQuoteOnly)
           <button class="prod-btn-hover bg-white text-gray-900 text-[10px] uppercase tracking-widest px-5 py-2.5 hover:bg-gray-900 hover:text-white transition"
-                  @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                  @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
             Agregar
           </button>
           @else
@@ -892,7 +892,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     <div class="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-10" data-products-grid>
       @foreach($cat->products as $p)
       @php
-      $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+      $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?$p->main_image_url:'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
       @endphp
       <article x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}) && ({{ $loop->index }} < 8 || expandedCats['{{ $cat->id }}'])"
                class="group relative cursor-pointer"
@@ -902,7 +902,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                data-qv='@json($qvData)'>
         <div class="relative overflow-hidden" style="aspect-ratio:2/3;background:#f0eeeb;">
           @if($p->mainImage)
-          <img src="{{ asset('storage/'.$p->mainImage->url) }}"
+          <img src="{{ $p->main_image_url }}"
                alt="{{ $p->name }}"
                class="w-full h-full object-cover transition duration-500 group-hover:scale-105"
                loading="lazy">
@@ -910,7 +910,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <div class="prod-overlay">
             @if(!$isQuoteOnly)
             <button class="prod-btn-hover bg-white text-gray-900 text-[10px] uppercase tracking-widest px-5 py-2.5 hover:bg-gray-900 hover:text-white transition"
-                    @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                    @click.stop="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
               Agregar
             </button>
             @else

@@ -133,7 +133,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->main_image_url,
         'cat'      => $cat->name,
         'catId'    => (string)$cat->id,
         'parentId' => null,
@@ -146,7 +146,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->main_image_url,
         'cat'      => $sub->name,
         'catId'    => (string)$sub->id,
         'parentId' => (string)$cat->id,
@@ -619,7 +619,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 mb-8" data-products-grid>
         @foreach($cat->products as $idx => $p)
         @php
-        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->main_image_url??'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
         @endphp
         <article
           x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}, '{{ $cat->id }}', null)"
@@ -631,7 +631,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           data-qv='@json($qvData)'>
           <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block card-img relative">
             @if($p->mainImage)
-            <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+            <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
                  class="w-full h-full object-cover" loading="lazy">
             @else
             <div class="w-full h-full flex items-center justify-center text-gray-300">
@@ -666,7 +666,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   <button @click="qty++" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">+</button>
                 </div>
                 <button class="flex-1 py-1.5 text-[11px] font-semibold btn-gc"
-                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
                   + Agregar
                 </button>
               </div>
@@ -684,7 +684,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   <button @click="qty++" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">+</button>
                 </div>
                 <button class="flex-1 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded"
-                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
                   + Agregar
                 </button>
               </div>
@@ -698,7 +698,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             </div>
             @if(!$isQuoteOnly)
             <button class="w-full py-2 text-[11px] font-semibold btn-gc"
-                    @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                    @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
               + Agregar
             </button>
             @else
@@ -718,7 +718,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         @foreach($cat->children as $sub)
         @foreach($sub->products as $idx => $p)
         @php
-        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->main_image_url??'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
         @endphp
         <article
           x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}, '{{ $sub->id }}', '{{ $cat->id }}')"
@@ -730,7 +730,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           data-qv='@json($qvData)'>
           <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block card-img relative">
             @if($p->mainImage)
-            <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+            <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
                  class="w-full h-full object-cover" loading="lazy">
             @else
             <div class="w-full h-full flex items-center justify-center text-gray-300">
@@ -764,7 +764,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   <button @click="qty++" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">+</button>
                 </div>
                 <button class="flex-1 py-1.5 text-[11px] font-semibold btn-gc"
-                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
                   + Agregar
                 </button>
               </div>
@@ -781,7 +781,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   <button @click="qty++" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">+</button>
                 </div>
                 <button class="flex-1 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded"
-                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
                   + Agregar
                 </button>
               </div>
@@ -795,7 +795,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             </div>
             @if(!$isQuoteOnly)
             <button class="w-full py-2 text-[11px] font-semibold btn-gc"
-                    @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                    @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
               + Agregar
             </button>
             @else

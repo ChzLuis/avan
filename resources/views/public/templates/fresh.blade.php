@@ -162,7 +162,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $cat->name,
         'catId'    => (string)$cat->id,
         'parentId' => null,
@@ -175,7 +175,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'name'     => $p->name,
         'price'    => (float)$p->price,
         'cp'       => $p->compare_price ? (float)$p->compare_price : null,
-        'img'      => $p->mainImage ? asset('storage/'.$p->mainImage->url) : null,
+        'img'      => $p->mainImage ? $p->main_image_url : null,
         'cat'      => $sub->name,
         'catId'    => (string)$sub->id,
         'parentId' => (string)$cat->id,
@@ -904,14 +904,14 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
     @foreach($newArrivals as $p)
     @php
-    $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+    $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?$p->main_image_url:'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
     @endphp
     <article x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }})"
              class="fresh-card group" itemscope itemtype="https://schema.org/Product"
              data-qv='@json($qvData)'>
       <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block fc-img relative">
         @if($p->mainImage)
-        <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
              class="w-full h-full object-cover" itemprop="image" loading="lazy">
         @else
         <div class="w-full h-full flex items-center justify-center text-5xl">🌿</div>
@@ -959,7 +959,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         @endif
         @if(!$isQuoteOnly)
         <button class="w-full py-2 text-xs font-semibold rounded-lg btn-gc"
-                @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
           Agregar al carrito
         </button>
         @else
@@ -1209,7 +1209,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-10" data-products-grid>
           @foreach($cat->products as $p)
           @php
-          $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?asset('storage/'.$p->mainImage->url):'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
+          $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->mainImage?$p->main_image_url:'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
           @endphp
           <article x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}) && ({{ $loop->index }} < 8 || expandedCats['{{ $cat->id }}'])"
                    class="fresh-card group" itemscope itemtype="https://schema.org/Product"
@@ -1219,7 +1219,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                    data-qv='@json($qvData)'>
             <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block fc-img relative">
               @if($p->mainImage)
-              <img src="{{ asset('storage/'.$p->mainImage->url) }}" alt="{{ $p->name }}"
+              <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
                    class="w-full h-full object-cover" itemprop="image" loading="lazy">
               @else
               <div class="w-full h-full flex items-center justify-center text-4xl">🌿</div>
@@ -1258,7 +1258,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               @endif
               @if(!$isQuoteOnly)
               <button class="w-full py-2 text-[11px] font-semibold rounded-lg btn-gc"
-                      @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? asset('storage/'.$p->mainImage->url) : '' }}'})">
+                      @click="addToCart({id:{{ $p->id }}, name:'{{ addslashes($p->name) }}', price:{{ $p->price }}, img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
                 Agregar
               </button>
               @else
