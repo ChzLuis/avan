@@ -78,20 +78,24 @@
   </div>
 
   {{-- HORIZONTAL TABS --}}
-  <div class="flex border-b border-gray-200 bg-white px-4 overflow-x-auto flex-shrink-0">
+  <div class="flex border-b border-gray-200 bg-white px-2 overflow-x-auto flex-shrink-0">
     @foreach([
-      ['k'=>'plantilla','l'=>'Plantilla'],
-      ['k'=>'marca',    'l'=>'Marca'],
-      ['k'=>'portada',  'l'=>'Portada'],
-      ['k'=>'catalogo', 'l'=>'Catálogo'],
-      ['k'=>'sistema',  'l'=>'Sistema'],
+      ['k'=>'plantilla','l'=>'Plantilla', 'icon'=>'🎨', 'd'=>'Elige el diseño'],
+      ['k'=>'marca',    'l'=>'Marca',     'icon'=>'🏷️', 'd'=>'Colores y logo'],
+      ['k'=>'portada',  'l'=>'Portada',   'icon'=>'🖼️', 'd'=>'Hero y banners'],
+      ['k'=>'catalogo', 'l'=>'Catálogo',  'icon'=>'📦', 'd'=>'Grid y filtros'],
+      ['k'=>'sistema',  'l'=>'Sistema',   'icon'=>'⚙️', 'd'=>'Modo y SEO'],
     ] as $tab)
     <a href="{{ route('settings.design') }}?s={{ $tab['k'] }}"
-       class="px-4 py-3 text-sm whitespace-nowrap border-b-2 transition
+       class="flex items-center gap-2 px-4 py-3 border-b-2 transition whitespace-nowrap
               {{ $s === $tab['k']
-                 ? 'border-indigo-600 text-indigo-600 font-semibold'
-                 : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-      {{ $tab['l'] }}
+                 ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50'
+                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+      <span class="text-base leading-none">{{ $tab['icon'] }}</span>
+      <div class="flex flex-col">
+        <span class="text-xs font-semibold leading-tight">{{ $tab['l'] }}</span>
+        <span class="text-[10px] leading-tight {{ $s === $tab['k'] ? 'text-indigo-400' : 'text-gray-400' }}">{{ $tab['d'] }}</span>
+      </div>
     </a>
     @endforeach
   </div>
@@ -165,29 +169,6 @@
           </div>
         </div>
 
-        {{-- Banner plantilla activa --}}
-        @if($activeTemplate && isset($allTemplates[$activeTemplate]))
-        @php $act = $allTemplates[$activeTemplate]; @endphp
-        <div class="rounded-2xl overflow-hidden border-2 border-indigo-300 shadow-sm"
-             :class="selected !== '{{ $activeTemplate }}' ? 'hidden' : ''">
-          <div class="flex items-center gap-4 px-5 py-4"
-               style="background: linear-gradient(135deg, {{ $act['preview_bg'] }}, {{ $act['preview_accent'] }}22)">
-            <span class="text-3xl">{{ $act['icon'] }}</span>
-            <div class="flex-1">
-              <div class="flex items-center gap-2">
-                <p class="font-bold text-gray-800">{{ $act['label'] }}</p>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500 text-white">ACTIVA</span>
-              </div>
-              <p class="text-xs text-gray-500 mt-0.5">{{ $act['description'] }}</p>
-            </div>
-            <a href="{{ url('/' . $project->slug) }}" target="_blank"
-               class="flex-shrink-0 text-xs font-bold text-white px-3 py-1.5 rounded-lg transition"
-               style="background: {{ $act['preview_accent'] }}">
-              Ver ↗
-            </a>
-          </div>
-        </div>
-        @endif
 
         {{-- Plantillas por grupo --}}
         @foreach($grouped as $categoryName => $templates)
@@ -299,84 +280,70 @@
       <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5" id="marca-form">
         @csrf
 
-        {{-- Tono de página --}}
+        {{-- Colores de marca (paletas + pickers unificados) --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
-            <p class="text-sm font-semibold text-gray-800">Tono de página</p>
-            <p class="text-xs text-gray-400 mt-0.5">Elige una paleta y se aplica automáticamente a toda la tienda</p>
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-gray-800">Color de marca</p>
+              <p class="text-xs text-gray-400 mt-0.5">Elige una paleta o define tu propio color</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="prev1" class="px-3 py-1.5 rounded-lg text-white text-xs font-medium shadow-sm transition" style="background:{{ $pc }}">Botón</button>
+              <span id="prev2" class="px-2 py-0.5 rounded-full text-white text-xs font-bold" style="background:{{ $pc }}">OFERTA</span>
+            </div>
           </div>
-          <div class="p-4">
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div class="p-4 space-y-4">
+            {{-- Paletas rápidas --}}
+            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
               @foreach([
-                ['name'=>'Índigo clásico',  'p'=>'#4f46e5','s'=>'#6366f1'],
-                ['name'=>'Verde fresco',    'p'=>'#16a34a','s'=>'#4ade80'],
-                ['name'=>'Naranja activo',  'p'=>'#ea580c','s'=>'#fb923c'],
-                ['name'=>'Rojo vibrante',   'p'=>'#dc2626','s'=>'#f87171'],
-                ['name'=>'Azul moderno',    'p'=>'#2563eb','s'=>'#60a5fa'],
-                ['name'=>'Violeta premium', 'p'=>'#7c3aed','s'=>'#a78bfa'],
-                ['name'=>'Rosa trendy',     'p'=>'#db2777','s'=>'#f472b6'],
-                ['name'=>'Teal natura',     'p'=>'#0d9488','s'=>'#2dd4bf'],
-                ['name'=>'Amarillo bold',   'p'=>'#ca8a04','s'=>'#facc15'],
-                ['name'=>'Negro elegante',  'p'=>'#18181b','s'=>'#71717a'],
-                ['name'=>'Slate corporativo','p'=>'#475569','s'=>'#94a3b8'],
-                ['name'=>'Café tierra',     'p'=>'#92400e','s'=>'#d97706'],
+                ['name'=>'Índigo',    'p'=>'#4f46e5','s'=>'#6366f1'],
+                ['name'=>'Verde',     'p'=>'#16a34a','s'=>'#4ade80'],
+                ['name'=>'Naranja',   'p'=>'#ea580c','s'=>'#fb923c'],
+                ['name'=>'Rojo',      'p'=>'#dc2626','s'=>'#f87171'],
+                ['name'=>'Azul',      'p'=>'#2563eb','s'=>'#60a5fa'],
+                ['name'=>'Violeta',   'p'=>'#7c3aed','s'=>'#a78bfa'],
+                ['name'=>'Rosa',      'p'=>'#db2777','s'=>'#f472b6'],
+                ['name'=>'Teal',      'p'=>'#0d9488','s'=>'#2dd4bf'],
+                ['name'=>'Amarillo',  'p'=>'#ca8a04','s'=>'#facc15'],
+                ['name'=>'Negro',     'p'=>'#18181b','s'=>'#71717a'],
+                ['name'=>'Slate',     'p'=>'#475569','s'=>'#94a3b8'],
+                ['name'=>'Café',      'p'=>'#92400e','s'=>'#d97706'],
               ] as $tone)
               <button type="button"
                       onclick="setColors('{{ $tone['p'] }}','{{ $tone['s'] }}')"
-                      class="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition text-left tone-btn"
+                      class="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition text-left tone-btn"
                       data-p="{{ $tone['p'] }}" data-s="{{ $tone['s'] }}">
-                <div class="flex gap-1 flex-shrink-0">
-                  <span class="w-4 h-4 rounded-full" style="background:{{ $tone['p'] }}"></span>
-                  <span class="w-4 h-4 rounded-full" style="background:{{ $tone['s'] }}"></span>
-                </div>
-                <span class="text-xs text-gray-700 font-medium leading-tight">{{ $tone['name'] }}</span>
+                <div class="w-4 h-4 rounded-full flex-shrink-0 border border-white shadow-sm" style="background:{{ $tone['p'] }}"></div>
+                <span class="text-xs text-gray-600 font-medium truncate">{{ $tone['name'] }}</span>
               </button>
               @endforeach
             </div>
-          </div>
-        </div>
 
-        {{-- Colores de marca --}}
-        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
-            <p class="text-sm font-semibold text-gray-800">Colores de marca</p>
-            <p class="text-xs text-gray-400 mt-0.5">Definen botones, badges y acentos de tu tienda</p>
-          </div>
-          <div class="p-4 space-y-4">
-            <div>
-              <label class="label">Color principal</label>
-              <div class="flex items-center gap-3 mt-1">
-                <input type="color" id="cp1" name="primary_color" value="{{ $pc }}"
-                       class="w-12 h-10 rounded-lg cursor-pointer border-2 border-gray-200 p-0.5 flex-shrink-0"
-                       oninput="syncColor(this,'ct1','prev1','prev2')">
-                <div class="flex-1 min-w-0">
+            {{-- Pickers personalizados --}}
+            <div class="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
+              <div>
+                <label class="label">Color principal</label>
+                <div class="flex items-center gap-2 mt-1">
+                  <input type="color" id="cp1" name="primary_color" value="{{ $pc }}"
+                         class="w-10 h-9 rounded-lg cursor-pointer border border-gray-200 p-0.5 flex-shrink-0"
+                         oninput="syncColor(this,'ct1','prev1','prev2')">
                   <input type="text" id="ct1" value="{{ $pc }}" maxlength="7" placeholder="#4f46e5"
-                         class="w-28 font-mono text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-400 uppercase"
+                         class="flex-1 font-mono text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-400 uppercase min-w-0"
                          oninput="syncText(this,'cp1','prev1','prev2')">
-                  <p class="text-xs text-gray-400 mt-0.5">Botones, badges y destacados</p>
                 </div>
+                <p class="text-xs text-gray-400 mt-1">Botones y badges</p>
               </div>
-            </div>
-            <div>
-              <label class="label">Color secundario</label>
-              <div class="flex items-center gap-3 mt-1">
-                <input type="color" id="cp2" name="secondary_color" value="{{ $sc }}"
-                       class="w-12 h-10 rounded-lg cursor-pointer border-2 border-gray-200 p-0.5 flex-shrink-0"
-                       oninput="syncColor(this,'ct2','prev3','prev4')">
-                <div class="flex-1 min-w-0">
+              <div>
+                <label class="label">Color secundario</label>
+                <div class="flex items-center gap-2 mt-1">
+                  <input type="color" id="cp2" name="secondary_color" value="{{ $sc }}"
+                         class="w-10 h-9 rounded-lg cursor-pointer border border-gray-200 p-0.5 flex-shrink-0"
+                         oninput="syncColor(this,'ct2','prev3','prev4')">
                   <input type="text" id="ct2" value="{{ $sc }}" maxlength="7" placeholder="#6b7280"
-                         class="w-28 font-mono text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-400 uppercase"
+                         class="flex-1 font-mono text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-400 uppercase min-w-0"
                          oninput="syncText(this,'cp2','prev3','prev4')">
-                  <p class="text-xs text-gray-400 mt-0.5">Hover, bordes y acentos secundarios</p>
                 </div>
-              </div>
-            </div>
-            <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
-              <p class="text-xs text-gray-500 mb-2 font-medium">Vista previa</p>
-              <div class="flex items-center gap-2 flex-wrap">
-                <button type="button" id="prev1" class="px-3 py-1.5 rounded-lg text-white text-xs font-medium shadow-sm" style="background:{{ $pc }}">Agregar al carrito</button>
-                <span id="prev2" class="px-2 py-0.5 rounded-full text-white text-xs font-medium" style="background:{{ $pc }}">OFERTA</span>
-                <button type="button" id="prev3" class="px-3 py-1.5 rounded-lg text-white text-xs font-medium" style="background:{{ $sc }}">Secundario</button>
+                <p class="text-xs text-gray-400 mt-1">Hover y acentos</p>
               </div>
             </div>
           </div>
