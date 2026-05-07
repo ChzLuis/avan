@@ -58,7 +58,8 @@ $b2Sub          = $settings['banner2_sub'] ?? 'Hasta 50% de descuento selecciona
   $fontTitle  = $settings['font_title'] ?? $settings['font'] ?? 'Poppins';
   $fontBody   = $settings['font_body']  ?? $settings['font'] ?? 'Inter';
   $borderRadius = ['sharp'=>'0px','rounded'=>'8px','pill'=>'50px'][$settings['border_radius'] ?? 'rounded'] ?? '8px';
-  $faviconUrl   = $settings['favicon_url'] ?? '';
+  $faviconRaw   = $settings['favicon_url'] ?? '';
+  $faviconUrl   = $faviconRaw ? (str_starts_with($faviconRaw,'http') ? $faviconRaw : asset('storage/'.$faviconRaw)) : '';
   $catalogBadgeSale = $settings['catalog_badge_sale'] ?? 'OFERTA';
   $catalogBadgeNew  = $settings['catalog_badge_new']  ?? 'NUEVO';
   $btnCartText  = $settings['btn_cart_text']  ?? 'Agregar al carrito';

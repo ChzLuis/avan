@@ -81,7 +81,8 @@
   $fontTitle  = $settings['font_title'] ?? $settings['font'] ?? 'Poppins';
   $fontBody   = $settings['font_body']  ?? $settings['font'] ?? 'Poppins';
   $borderRadius = ['sharp'=>'0px','rounded'=>'8px','pill'=>'50px'][$settings['border_radius'] ?? 'rounded'] ?? '8px';
-  $faviconUrl   = $settings['favicon_url'] ?? '';
+  $faviconRaw   = $settings['favicon_url'] ?? '';
+  $faviconUrl   = $faviconRaw ? (str_starts_with($faviconRaw,'http') ? $faviconRaw : asset('storage/'.$faviconRaw)) : '';
   $catalogBadgeSale = $settings['catalog_badge_sale'] ?? 'SALE';
   $catalogBadgeNew  = $settings['catalog_badge_new']  ?? 'NEW DROP';
   $btnCartText  = $settings['btn_cart_text']  ?? 'Agregar al carrito';

@@ -41,7 +41,8 @@ $secondaryColor   = $settings['secondary_color'] ?? '#818cf8';
 $fontTitle        = $settings['font_title'] ?? $settings['font'] ?? 'Inter';
 $fontBody         = $settings['font_body']  ?? $settings['font'] ?? 'Inter';
 $borderRadius     = ['sharp'=>'4px','rounded'=>'8px','pill'=>'20px'][$settings['border_radius'] ?? 'rounded'] ?? '8px';
-$faviconUrl       = $settings['favicon_url'] ?? '';
+$faviconRaw       = $settings['favicon_url'] ?? '';
+$faviconUrl       = $faviconRaw ? (str_starts_with($faviconRaw,'http') ? $faviconRaw : asset('storage/'.$faviconRaw)) : '';
 $footerCopyright  = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $project->name);
 @endphp
 
