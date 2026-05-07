@@ -5,6 +5,13 @@
   use Illuminate\Support\Str;
   $primaryColor   = $settings['primary_color'] ?? '#4f46e5';
   $currency       = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
+  $headerBg       = $settings['header_bg_color'] ?? '#ffffff';
+  $headerText     = $settings['header_text_color'] ?? '#111827';
+  $headerHeight   = max(48, (int)($settings['header_height'] ?? 72));
+  $logoRaw        = $settings['logo_url'] ?? $project->logo_url ?? '';
+  $logoSrc        = $logoRaw ? (str_starts_with($logoRaw,'http') ? $logoRaw : asset('storage/'.$logoRaw)) : '';
+  $faviconRaw     = $settings['favicon_url'] ?? '';
+  $faviconUrl     = $faviconRaw ? (str_starts_with($faviconRaw,'http') ? $faviconRaw : asset('storage/'.$faviconRaw)) : '';
   $isQuoteOnly    = ($settings['store_mode'] ?? 'direct') === 'quote_only';
   $quotePriceDisp = $settings['quote_price_display'] ?? 'show';
   $quoteWaRaw     = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? '');
@@ -41,6 +48,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ $seoTitle }}</title>
+@if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
 <meta name="description" content="{{ $seoDesc }}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{{ $canonicalUrl }}">
@@ -144,22 +152,22 @@
 </div>
 
 {{-- ─── HEADER PRINCIPAL ─── --}}
-<header class="bg-white shadow-sm sticky top-0 z-30 border-b border-gray-100">
-  <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4">
+<header class="shadow-sm sticky top-0 z-30 border-b border-gray-100" style="background:{{ $headerBg }}; color:{{ $headerText }}">
+  <div class="max-w-[1400px] mx-auto px-4 flex items-center gap-4" style="min-height:{{ $headerHeight }}px">
 
     {{-- Logo --}}
     <a href="{{ $catalogUrl }}" class="flex items-center gap-2.5 flex-shrink-0" aria-label="{{ $project->name }}">
-      @if($project->logo_url)
-        <img src="{{ asset('storage/'.$project->logo_url) }}"
+      @if($logoSrc)
+        <img src="{{ $logoSrc }}"
              alt="Logo {{ $project->name }}"
-             class="h-11 w-11 rounded-xl object-cover"
-             width="44" height="44">
+             class="object-contain w-auto"
+             style="height:{{ min($headerHeight - 16, 56) }}px; max-width:240px">
       @else
         <div class="h-11 w-11 rounded-xl btn-p flex items-center justify-center text-white font-black text-xl select-none">
           {{ strtoupper(substr($project->name,0,1)) }}
         </div>
+        <span class="font-black text-xl tracking-tight hidden sm:block" style="color:{{ $headerText }}">{{ $project->name }}</span>
       @endif
-      <span class="font-black text-gray-900 text-xl tracking-tight hidden sm:block">{{ $project->name }}</span>
     </a>
 
     {{-- Buscador central con predicción --}}
