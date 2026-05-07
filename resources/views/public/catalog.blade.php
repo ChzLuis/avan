@@ -242,7 +242,7 @@
 </style>
 
 @php
-$currency = $settings['currency'] ?? 'S/';
+$currency = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
 // Construir searchIndex incluyendo productos de subcategorías
 $searchIndex = $categories->flatMap(function($cat) use ($project) {
     // Productos directos del padre
@@ -887,13 +887,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
                 {{-- BLOQUE MAYORISTA --}}
                 <div x-data="{ qty: {{ (int)$p->wholesale_min_qty }} }" class="rounded-xl border border-amber-400 overflow-hidden">
-                  <div class="px-2.5 pt-1.5 pb-1 bg-amber-500">
+                  <div class="px-2.5 pt-1.5 pb-1.5 bg-amber-500">
                     <span class="block text-[9px] font-black text-amber-200 uppercase tracking-widest mb-0.5">Mayorista</span>
                     <div class="flex items-baseline gap-1">
                       <span class="font-black text-base text-white leading-none">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
                       @if($p->wholesale_unit)<span class="text-[10px] text-amber-200 font-medium">{{ $p->wholesale_unit }}</span>@endif
                     </div>
-                    <p class="text-[9px] text-amber-200 mt-0.5">Mín. {{ $p->wholesale_min_qty }}{{ $p->wholesale_unit ? ' '.$p->wholesale_unit : '' }}</p>
+                    <p class="text-[9px] text-amber-200 mt-0.5">Mín. {{ $p->wholesale_min_qty }} unid.{{ $p->wholesale_unit ? ' · '.$p->wholesale_unit : '' }}</p>
                   </div>
                   <div class="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50">
                     <div class="flex items-center rounded-lg border border-amber-300 overflow-hidden bg-white shrink-0">

@@ -522,7 +522,7 @@
             <div>
               <label class="label">Símbolo de moneda</label>
               <select name="currency_symbol" class="input">
-                @foreach(['S/'=>'S/ — Sol peruano','$'=>'$ — Dólar','€'=>'€ — Euro','COP$'=>'COP$ — Peso colombiano','CLP$'=>'CLP$ — Peso chileno','ARS$'=>'ARS$ — Peso argentino','MXN$'=>'MXN$ — Peso mexicano','Bs.'=>'Bs. — Boliviano'] as $cs_v => $cs_l)
+                @foreach(['S/'=>'S/ — Sol peruano','Soles'=>'Soles — Sol peruano (palabra)','$'=>'$ — Dólar','€'=>'€ — Euro','COP$'=>'COP$ — Peso colombiano','CLP$'=>'CLP$ — Peso chileno','ARS$'=>'ARS$ — Peso argentino','MXN$'=>'MXN$ — Peso mexicano','Bs.'=>'Bs. — Boliviano'] as $cs_v => $cs_l)
                 <option value="{{ $cs_v }}" {{ $project->setting('currency_symbol', 'S/') === $cs_v ? 'selected' : '' }}>{{ $cs_l }}</option>
                 @endforeach
               </select>

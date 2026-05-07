@@ -120,7 +120,7 @@ h1,h2,h3,h4,.font-jost { font-family: var(--font-title); }
 </style>
 
 @php
-$currency = $settings['currency'] ?? 'S/';
+$currency = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
 $searchIndex = $categories->flatMap(function($cat) use ($project) {
     $rows = $cat->products->map(fn($p) => [
         'id'       => $p->id,

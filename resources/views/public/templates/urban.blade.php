@@ -169,7 +169,7 @@ body { background: #0a0a0a; color: #e5e5e5; }
 </style>
 
 @php
-$currency = $settings['currency'] ?? 'S/';
+$currency = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
 $searchIndex = $categories->flatMap(function($cat) use ($project) {
     $rows = $cat->products->map(fn($p) => [
         'id'       => $p->id,

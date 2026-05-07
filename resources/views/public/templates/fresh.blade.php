@@ -155,7 +155,7 @@ html { scroll-behavior: smooth; }
 </style>
 
 @php
-$currency = $settings['currency'] ?? 'S/';
+$currency = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
 $searchIndex = $categories->flatMap(function($cat) use ($project) {
     $rows = $cat->products->map(fn($p) => [
         'id'       => $p->id,
