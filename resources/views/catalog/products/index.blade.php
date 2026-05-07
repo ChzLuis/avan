@@ -5,7 +5,7 @@
     $csrf     = csrf_token();
     $pid      = $project->id;
     $base     = url("/bixoadmin");
-    $currency = $project->setting('currency', 'S/');
+    $currency = $project->setting('currency_symbol') ?: $project->setting('currency', 'S/');
 
     $supplierList = $project->catalogLists()->where('type', 'proveedor')->with('values')->first();
     $suppliers    = $supplierList ? $supplierList->values()->where('is_active', true)->orderBy('sort_order')->get() : collect();
