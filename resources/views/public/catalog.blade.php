@@ -999,7 +999,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                    data-ts="{{ $p->created_at ? $p->created_at->timestamp : 0 }}"
                    data-name="{{ strtolower($p->name) }}"
                    data-qv='{{ $qvData }}'>
-            @include('public.partials.product-card', ['p' => $p])
+            @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp ?? 'show', 'quoteWa' => $quoteWa ?? '', 'loop' => $loop])
           </article>
           @endforeach
           @endif
