@@ -123,7 +123,7 @@
         $allTemplates   = \App\Support\CatalogTemplates::all();
         $grouped        = \App\Support\CatalogTemplates::grouped();
         $activeTemplate = $project->setting('catalog_template', '');
-        $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto'];
+        $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria'];
       @endphp
       <div x-data="{
           selected: '{{ $activeTemplate }}',

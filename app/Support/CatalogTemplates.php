@@ -785,6 +785,60 @@ class CatalogTemplates
             ],
 
             // ══════════════════════════════════════════════════════
+            // GRUPO: BEBIDAS & LICORERÍA
+            // ══════════════════════════════════════════════════════
+
+            'licoreria' => [
+                'label'          => 'Licorería — Bebidas & Spirits',
+                'category'       => 'Bebidas & Licorería',
+                'icon'           => '🥃',
+                'description'    => 'Fondo navy oscuro con acentos dorados. Tipografía serif elegante. Para licorerías, vinotecas y tiendas de spirits.',
+                'preview_bg'     => '#0d1117',
+                'preview_accent' => '#b8973a',
+                'settings' => [
+                    'primary_color'        => '#b8973a',
+                    'secondary_color'      => '#8c6a1e',
+                    'hero_bg_color'        => '#0d1117',
+                    'hero_badge'           => '🥃 Selección Premium',
+                    'hero_title'           => 'Los mejores spirits te esperan',
+                    'hero_subtitle'        => 'Licores, vinos, cervezas y más. Delivery a domicilio y recojo en tienda.',
+                    'hero_align'           => 'center',
+                    'hero_height'          => 'large',
+                    'hero_overlay'         => '50',
+                    'hero_cta1_show'       => '1',
+                    'hero_cta1_text'       => 'Ver catálogo',
+                    'hero_cta2_show'       => '1',
+                    'hero_cta2_text'       => 'Ofertas del día',
+                    'banner1_title'        => 'Whiskies & Bourbon',
+                    'banner1_sub'          => 'Single malt y blended seleccionados',
+                    'banner2_title'        => 'Vinos & Espumantes',
+                    'banner2_sub'          => 'Los mejores varietales de la región',
+                    'catalog_layout'       => 'grid',
+                    'card_style'           => 'dark',
+                    'font'                 => 'Playfair Display',
+                    'font_title'           => 'Playfair Display',
+                    'font_body'            => 'Inter',
+                    'border_radius'        => 'rounded',
+                    'currency_symbol'      => 'S/',
+                    'catalog_cols_desktop' => '4',
+                    'catalog_cols_mobile'  => '2',
+                    'catalog_section_title' => 'Nuestros productos',
+                    'catalog_badge_sale'   => 'OFERTA',
+                    'catalog_badge_new'    => 'NUEVO',
+                    'float_cart_show'      => '1',
+                    'float_wa_show'        => '1',
+                    'float_wa_tooltip'     => '¿Necesitas ayuda?',
+                    'btn_cart_text'        => 'Agregar al carrito',
+                    'btn_quote_text'       => 'Cotizar',
+                    'btn_shape'            => 'rounded',
+                    'announcement_text'    => '🥃 Delivery disponible · Envío gratis en pedidos mayores a S/ 150',
+                    'announcement_bg'      => '#161b22',
+                    'footer_tagline'       => 'Los mejores spirits, directo a tu puerta.',
+                    'footer_copyright'     => '',
+                ],
+            ],
+
+            // ══════════════════════════════════════════════════════
             // GRUPO: LUJO & PREMIUM
             // ══════════════════════════════════════════════════════
 
@@ -1029,6 +1083,16 @@ class CatalogTemplates
                 ['name' => 'ROPA',                 'type' => 'product', 'children' => ['Polos', 'Hoodies', 'Shorts', 'Joggers']],
                 ['name' => 'ACCESORIOS',           'type' => 'product', 'children' => ['Gorras', 'Mochilas', 'Calcetines']],
                 ['name' => 'COLABS',               'type' => 'product', 'children' => ['Ediciones especiales', 'Drops exclusivos']],
+            ],
+
+            'licoreria' => [
+                ['name' => 'WHISKIES & BOURBON',   'type' => 'product', 'children' => ['Scotch Single Malt', 'Scotch Blended', 'Bourbon', 'Irlandés', 'Japonés']],
+                ['name' => 'VINOS',                'type' => 'product', 'children' => ['Tinto', 'Blanco', 'Rosé', 'Espumante', 'Dulce']],
+                ['name' => 'RON & CAÑA',           'type' => 'product', 'children' => ['Ron blanco', 'Ron añejo', 'Pisco', 'Cachaza']],
+                ['name' => 'VODKA & GIN',          'type' => 'product', 'children' => ['Vodka', 'Gin', 'Tónica y mixers']],
+                ['name' => 'CERVEZAS',             'type' => 'product', 'children' => ['Nacional', 'Importada', 'Artesanal', 'Sin alcohol']],
+                ['name' => 'LICORES & DIGESTIVOS', 'type' => 'product', 'children' => ['Amaretto', 'Baileys', 'Kahlúa', 'Aperol', 'Sambuca']],
+                ['name' => 'ACCESORIOS',           'type' => 'product', 'children' => ['Copas y vasos', 'Coctelería', 'Hielo y enfriadores']],
             ],
 
         ];
