@@ -746,13 +746,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     <a href="{{ $canonicalUrl }}" class="flex items-center gap-2 flex-shrink-0" aria-label="{{ $project->name }}">
       @if($project->logo_url)
         <img src="{{ asset('storage/'.$project->logo_url) }}" alt="Logo {{ $project->name }}"
-             class="h-10 w-10 rounded-xl object-cover" width="40" height="40">
+             style="height:44px; max-height:52px; max-width:180px" class="object-contain w-auto">
       @else
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
           <path d="M17 8C8 10 5.9 16.17 3.82 21h2.14c.62-1.76 1.65-3.38 3.04-4.6C10.37 21.5 12 24 12 24s1.5-2.3 2.91-7.6c1.36 1.22 2.39 2.84 3.04 4.6h2.1C17.9 16.17 17 8 17 8z"/>
         </svg>
+        <span class="font-bold text-green-800 text-lg hidden sm:block">{{ $project->name }}</span>
       @endif
-      <span class="font-bold text-green-800 text-lg hidden sm:block">{{ $project->name }}</span>
     </a>
 
     {{-- MenÃº categorÃ­as centrado --}}

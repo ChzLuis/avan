@@ -403,13 +403,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     <a href="{{ $canonicalUrl }}" class="flex items-center gap-2.5 flex-shrink-0">
       @if($logoUrl)
         <img src="{{ $logoUrl }}" alt="{{ $project->name }}"
-             style="height:{{ $logoHeight }}px; max-height:60px" class="object-contain">
+             style="height:{{ $logoHeight }}px; max-height:52px; max-width:200px" class="object-contain w-auto">
       @else
         <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--c)">
           <span class="text-white font-black text-sm">{{ mb_strtoupper(mb_substr($project->name,0,1)) }}</span>
         </div>
+        <span class="font-bold text-gray-800 text-sm hidden sm:block truncate max-w-[140px]">{{ $project->name }}</span>
       @endif
-      <span class="font-bold text-gray-800 text-sm hidden sm:block truncate max-w-[140px]">{{ $project->name }}</span>
     </a>
 
     {{-- Buscador central --}}

@@ -233,14 +233,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @if($project->logo_url)
         <img src="{{ asset('storage/'.$project->logo_url) }}"
              alt="Logo {{ $project->name }}"
-             class="h-10 w-10 object-cover"
-             width="40" height="40">
+             style="height:44px; max-height:52px; max-width:180px" class="object-contain w-auto">
       @else
         <div class="h-10 w-10 btn-accent flex items-center justify-center text-lg font-black select-none">
           {{ strtoupper(substr($project->name,0,1)) }}
         </div>
+        <span class="font-black text-white text-xl uppercase tracking-tight hidden sm:block">{{ $project->name }}</span>
       @endif
-      <span class="font-black text-white text-xl uppercase tracking-tight hidden sm:block">{{ $project->name }}</span>
     </a>
 
     {{-- Buscador --}}
