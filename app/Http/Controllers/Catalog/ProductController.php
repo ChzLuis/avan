@@ -267,7 +267,7 @@ class ProductController extends Controller
             $example = ['Arroz Premium 1kg','ARR-001','Abarrotes','Granos y Cereales','unidad','15.90','19.90','saco 25kg','12.00','19.90','25','10.00','100','si','Arroz de grano largo',''];
             $colIdx = 1;
             foreach ($example as $val) {
-                $sheet1->setCellValueByColumnAndRow($colIdx, 4, $val);
+                $sheet1->setCellValue([$colIdx, 4], $val);
                 $colIdx++;
             }
             $sheet1->getStyle('A4:' . $lastColLetter . '4')->applyFromArray([
@@ -288,7 +288,7 @@ class ProductController extends Controller
                     $item['descripcion'] ?? '', $item['notas'] ?? '',
                 ];
                 foreach ($rowData as $ci => $val) {
-                    $sheet1->setCellValueByColumnAndRow($ci + 1, $row, $val);
+                    $sheet1->setCellValue([$ci + 1, $row], $val);
                 }
                 $sheet1->getStyle('A' . $row . ':' . $lastColLetter . $row)->applyFromArray([
                     'fill'    => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
