@@ -332,7 +332,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      HEADER PRINCIPAL
 ═══════════════════════════════════════════ --}}
 <header class="shadow-sm sticky top-0 z-30 border-b border-gray-100" style="background:{{ $headerBg }}">
-  <div class="max-w-[1400px] mx-auto px-4 py-2 flex items-center gap-4 min-h-[56px]" style="color:{{ $headerText }}">
+  <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4 min-h-[72px]" style="color:{{ $headerText }}">
 
     {{-- Logo --}}
     @php $logoSrc = $logoUrl ?: ($project->logo_url ? asset('storage/'.$project->logo_url) : null); @endphp
