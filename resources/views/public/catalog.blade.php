@@ -341,7 +341,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @if($logoSrc)
         <img src="{{ $logoSrc }}"
              alt="Logo {{ $project->name }}"
-             style="height:{{ $logoHeight }}px; max-height:56px; max-width:220px"
+             style="height:{{ $logoHeight }}px; max-width:300px"
              class="object-contain w-auto">
       @else
         <div class="h-11 w-11 rounded-xl btn-p flex items-center justify-center text-white font-black text-xl select-none">
