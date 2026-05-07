@@ -4,7 +4,7 @@
 @php
   use Illuminate\Support\Str;
   $primaryColor   = $settings['primary_color'] ?? '#4f46e5';
-  $currency       = $settings['currency'] ?? 'S/';
+  $currency       = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
   $isQuoteOnly    = ($settings['store_mode'] ?? 'direct') === 'quote_only';
   $quotePriceDisp = $settings['quote_price_display'] ?? 'show';
   $quoteWaRaw     = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? '');
