@@ -577,17 +577,18 @@
 
     <div>
       <div class="flex items-center gap-3 mb-4">
-        @if($project->logo_url)
-        <img src="{{ asset('storage/'.$project->logo_url) }}"
+        @if($logoSrc)
+        <img src="{{ $logoSrc }}"
              alt="Logo {{ $project->name }}"
-             class="h-10 w-10 rounded-xl object-cover"
-             loading="lazy" width="40" height="40">
+             class="object-contain w-auto"
+             style="height:48px; max-width:200px"
+             loading="lazy">
         @else
         <div class="h-10 w-10 rounded-xl btn-p flex items-center justify-center text-white font-black text-lg">
           {{ strtoupper(substr($project->name,0,1)) }}
         </div>
-        @endif
         <span class="text-white font-black text-lg">{{ $project->name }}</span>
+        @endif
       </div>
       @if($project->description)
       <p class="text-sm leading-relaxed text-gray-500 line-clamp-4">{{ $project->description }}</p>
