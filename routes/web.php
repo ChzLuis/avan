@@ -565,6 +565,7 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/reportes/seguimiento',   [ReporteController::class, 'seguimientoBot'])->name('reportes.seguimiento');
         Route::get('/reportes/ventas',        [ReporteController::class, 'ventas'])->name('reportes.ventas.general');
         Route::get('/reportes/top-productos', [ReporteController::class, 'topProductos'])->name('reportes.top.productos');
+        Route::get('/reportes/rentabilidad',  [ReporteController::class, 'rentabilidad'])->name('reportes.rentabilidad');
         Route::get('/reportes/dashboard-data',[ReporteController::class, 'dashboardData'])->name('reportes.dashboard.data');
     });
 });

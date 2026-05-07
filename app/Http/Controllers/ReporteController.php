@@ -172,6 +172,92 @@ class ReporteController extends Controller
         ));
     }
 
+    /** Rentabilidad: ganancia neta por producto y por día */
+    public function rentabilidad(Request $request)
+    {
+        $project = Project::findOrFail(session('comercial_project_id'));
+        $desde   = $request->get('desde', now()->startOfMonth()->format('Y-m-d'));
+        $hasta   = $request->get('hasta', now()->format('Y-m-d'));
+
+        // Items de órdenes completadas/activas con costo del producto
+        $items = OrderItem::with('product')
+            ->whereHas('order', fn($q) => $q
+                ->where('project_id', $project->id)
+                ->whereNotIn('status', ['cancelled'])
+                ->whereBetween(DB::raw('DATE(orders.created_at)'), [$desde, $hasta])
+            )
+            ->whereNotNull('product_id')
+            ->get();
+
+        // Rentabilidad por producto
+        $porProducto = $items->groupBy('product_id')->map(function ($grupo) {
+            $first    = $grupo->first();
+            $costo    = (float)($first->product->cost ?? 0);
+            $vendidos = $grupo->sum('quantity');
+            $ingresos = $grupo->sum(fn($i) => $i->price * $i->quantity);
+            $costoTotal = $costo * $vendidos;
+            $ganancia   = $ingresos - $costoTotal;
+            $margen     = $ingresos > 0 ? round(($ganancia / $ingresos) * 100, 1) : 0;
+            return [
+                'nombre'      => $first->name,
+                'vendidos'    => $vendidos,
+                'ingresos'    => $ingresos,
+                'costo_unit'  => $costo,
+                'costo_total' => $costoTotal,
+                'ganancia'    => $ganancia,
+                'margen'      => $margen,
+            ];
+        })->sortByDesc('ganancia')->values();
+
+        // Ganancia neta por día
+        $porDia = $items->groupBy(fn($i) => $i->order->created_at->format('Y-m-d'))
+            ->map(function ($grupo, $fecha) {
+                $ingresos   = $grupo->sum(fn($i) => $i->price * $i->quantity);
+                $costoTotal = $grupo->sum(fn($i) => (float)($i->product->cost ?? 0) * $i->quantity);
+                return [
+                    'fecha'    => \Carbon\Carbon::parse($fecha)->format('d/m'),
+                    'ingresos' => round($ingresos, 2),
+                    'costo'    => round($costoTotal, 2),
+                    'ganancia' => round($ingresos - $costoTotal, 2),
+                ];
+            })->sortKeys()->values();
+
+        // Totales globales
+        $totalIngresos  = $porProducto->sum('ingresos');
+        $totalCosto     = $porProducto->sum('costo_total');
+        $totalGanancia  = $porProducto->sum('ganancia');
+        $margenGlobal   = $totalIngresos > 0 ? round(($totalGanancia / $totalIngresos) * 100, 1) : 0;
+        $sinCosto       = $items->whereNull('product.cost')->count();
+
+        // Items sin product_id (sin costo trackeable) — ingresos brutos
+        $itemsSinProducto = OrderItem::whereNull('product_id')
+            ->whereHas('order', fn($q) => $q
+                ->where('project_id', $project->id)
+                ->whereNotIn('status', ['cancelled'])
+                ->whereBetween(DB::raw('DATE(orders.created_at)'), [$desde, $hasta])
+            )->sum(DB::raw('price * quantity'));
+
+        if ($request->get('export') === 'csv') {
+            return $this->exportCsv('rentabilidad-' . $desde . '-' . $hasta,
+                ['Producto', 'Unidades vendidas', 'Ingresos', 'Costo unitario', 'Costo total', 'Ganancia neta', 'Margen %'],
+                $porProducto->map(fn($p) => [
+                    $p['nombre'], $p['vendidos'],
+                    number_format($p['ingresos'], 2),
+                    number_format($p['costo_unit'], 2),
+                    number_format($p['costo_total'], 2),
+                    number_format($p['ganancia'], 2),
+                    $p['margen'] . '%',
+                ])->toArray()
+            );
+        }
+
+        return view('comercial.reportes.rentabilidad', compact(
+            'project', 'porProducto', 'porDia',
+            'totalIngresos', 'totalCosto', 'totalGanancia', 'margenGlobal',
+            'sinCosto', 'itemsSinProducto', 'desde', 'hasta'
+        ));
+    }
+
     /** 7.4 — Datos en tiempo real para dashboard (polling JSON) */
     public function dashboardData(Request $request)
     {
