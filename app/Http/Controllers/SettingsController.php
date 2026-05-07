@@ -267,6 +267,7 @@ class SettingsController extends Controller
             'primary_color','secondary_color','whatsapp_msg',
             'logo_url','logo_height','favicon_url',
             'font_title','font_body','border_radius','currency_symbol',
+            'header_bg_color','header_text_color',
             'facebook_url','instagram_url','tiktok_url','youtube_url','twitter_url','linkedin_url',
             // Portada — Hero
             'hero_title','hero_subtitle','hero_badge','hero_bg_color',
