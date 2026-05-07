@@ -1279,39 +1279,101 @@
         {{-- Footer --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
-            <p class="text-sm font-semibold text-gray-800">Footer</p>
+            <p class="text-sm font-semibold text-gray-800">Footer — Contenido</p>
           </div>
-          <div class="p-4 space-y-3">
-            <div>
-              <label class="label">Tagline / slogan</label>
-              <input type="text" name="footer_tagline" class="input"
-                     placeholder="Tu tienda de confianza desde 2020"
-                     value="{{ $project->setting('footer_tagline') }}">
-            </div>
+          <div class="p-4 space-y-4">
+
+            {{-- Copyright --}}
             <div>
               <label class="label">Copyright</label>
               <input type="text" name="footer_copyright" class="input"
                      placeholder="© 2026 Mi Tienda. Todos los derechos reservados."
                      value="{{ $project->setting('footer_copyright', '© ' . date('Y') . ' ' . $project->name . '. Todos los derechos reservados.') }}">
             </div>
-            @foreach([
-              ['key'=>'footer_show_social',  'label'=>'Mostrar íconos de redes sociales', 'def'=>'1'],
-              ['key'=>'footer_show_payment', 'label'=>'Mostrar badges de métodos de pago', 'def'=>'1'],
-              ['key'=>'footer_show_address', 'label'=>'Mostrar dirección en el footer',    'def'=>'1'],
-            ] as $ft)
-            <label class="flex items-center justify-between cursor-pointer py-1">
-              <span class="text-sm text-gray-700">{{ $ft['label'] }}</span>
-              <div x-data="{ on: {{ ($project->setting($ft['key'], $ft['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
-                <input type="hidden" name="{{ $ft['key'] }}" :value="on ? '1' : '0'">
-                <button type="button" @click="on = !on"
-                        :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
-                        class="relative w-10 h-5 rounded-full transition-colors focus:outline-none">
-                  <span :class="on ? 'translate-x-5' : 'translate-x-1'"
-                        class="block w-4 h-4 bg-white rounded-full shadow transform transition-transform"></span>
-                </button>
+
+            {{-- Texto desarrollado por --}}
+            <div>
+              <label class="label">Texto "Desarrollado por"</label>
+              <input type="text" name="footer_dev_text" class="input"
+                     placeholder="Desarrollado por AVAN"
+                     value="{{ $project->setting('footer_dev_text', 'Desarrollado por AVAN') }}">
+            </div>
+
+            {{-- Beneficios (barra superior del footer) --}}
+            <div class="border-t pt-4">
+              <label class="label font-semibold">Barra de beneficios (hasta 3)</label>
+              <p class="text-xs text-gray-400 mb-2">Iconos disponibles: tienda, envio, pago, seguridad, soporte, regalo, corazon</p>
+              @foreach([1,2,3] as $bn)
+              <div class="grid grid-cols-3 gap-2 mb-2">
+                <input type="text" name="footer_benefit_{{ $bn }}_icon" class="input text-xs"
+                       placeholder="Ícono (ej: tienda)"
+                       value="{{ $project->setting('footer_benefit_'.$bn.'_icon', ['1'=>'tienda','2'=>'envio','3'=>'pago'][$bn] ?? '') }}">
+                <input type="text" name="footer_benefit_{{ $bn }}_text" class="input text-xs col-span-2"
+                       placeholder="Texto del beneficio"
+                       value="{{ $project->setting('footer_benefit_'.$bn.'_text') }}">
               </div>
-            </label>
-            @endforeach
+              @endforeach
+            </div>
+
+            {{-- Columna: Páginas de la tienda --}}
+            <div class="border-t pt-4">
+              <label class="label font-semibold">Columna "Información" — páginas y enlaces</label>
+              <p class="text-xs text-gray-400 mb-2">Título | URL (una por línea). Ej: Políticas de privacidad | /privacidad</p>
+              <textarea name="footer_pages" class="input text-xs font-mono" rows="6"
+                        placeholder="Políticas de privacidad | /privacidad&#10;Términos y condiciones | /terminos&#10;Condiciones de entrega | /entrega&#10;Cambios y devoluciones | /devoluciones&#10;Preguntas frecuentes | /faq&#10;Formas de pago | /pagos">{{ $project->setting('footer_pages') }}</textarea>
+            </div>
+
+            {{-- Columna: Menú tienda --}}
+            <div class="border-t pt-4">
+              <label class="label font-semibold">Columna "{{ $project->name }}" — menú de la tienda</label>
+              <p class="text-xs text-gray-400 mb-2">Título | URL (una por línea). Ej: ¿Quiénes somos? | /nosotros</p>
+              <textarea name="footer_store_pages" class="input text-xs font-mono" rows="4"
+                        placeholder="¿Quiénes somos? | /nosotros&#10;Contáctanos | /contacto">{{ $project->setting('footer_store_pages') }}</textarea>
+            </div>
+
+            {{-- Newsletter --}}
+            <div class="border-t pt-4">
+              <label class="label font-semibold">Boletín / Newsletter</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="label text-xs">Título del boletín</label>
+                  <input type="text" name="footer_newsletter_title" class="input text-sm"
+                         placeholder="Boletín"
+                         value="{{ $project->setting('footer_newsletter_title', 'Boletín') }}">
+                </div>
+                <div>
+                  <label class="label text-xs">URL de suscripción (form action)</label>
+                  <input type="text" name="footer_newsletter_url" class="input text-sm"
+                         placeholder="https://..."
+                         value="{{ $project->setting('footer_newsletter_url') }}">
+                </div>
+              </div>
+            </div>
+
+            {{-- Toggles --}}
+            <div class="border-t pt-4 space-y-2">
+              @foreach([
+                ['key'=>'footer_show_social',      'label'=>'Mostrar íconos de redes sociales', 'def'=>'1'],
+                ['key'=>'footer_show_categories',  'label'=>'Mostrar columna de categorías',    'def'=>'1'],
+                ['key'=>'footer_show_newsletter',  'label'=>'Mostrar formulario de boletín',    'def'=>'1'],
+                ['key'=>'footer_show_benefits',    'label'=>'Mostrar barra de beneficios',      'def'=>'1'],
+                ['key'=>'footer_show_address',     'label'=>'Mostrar dirección en el footer',   'def'=>'1'],
+              ] as $ft)
+              <label class="flex items-center justify-between cursor-pointer py-1">
+                <span class="text-sm text-gray-700">{{ $ft['label'] }}</span>
+                <div x-data="{ on: {{ ($project->setting($ft['key'], $ft['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
+                  <input type="hidden" name="{{ $ft['key'] }}" :value="on ? '1' : '0'">
+                  <button type="button" @click="on = !on"
+                          :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
+                          class="relative w-10 h-5 rounded-full transition-colors focus:outline-none">
+                    <span :class="on ? 'translate-x-5' : 'translate-x-1'"
+                          class="block w-4 h-4 bg-white rounded-full shadow transform transition-transform"></span>
+                  </button>
+                </div>
+              </label>
+              @endforeach
+            </div>
+
           </div>
         </div>
 

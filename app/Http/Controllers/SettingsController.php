@@ -295,8 +295,14 @@ class SettingsController extends Controller
             'payment_yape_number','payment_plin_number','payment_bank_details','payment_manual_instructions',
             'culqi_public_key','culqi_mode',
             // Sistema — Footer y textos
-            'footer_tagline','footer_copyright',
-            'footer_show_social','footer_show_payment','footer_show_address',
+            'footer_tagline','footer_copyright','footer_dev_text',
+            'footer_benefit_1_icon','footer_benefit_1_text',
+            'footer_benefit_2_icon','footer_benefit_2_text',
+            'footer_benefit_3_icon','footer_benefit_3_text',
+            'footer_pages','footer_store_pages',
+            'footer_newsletter_title','footer_newsletter_url',
+            'footer_show_social','footer_show_categories','footer_show_newsletter',
+            'footer_show_benefits','footer_show_address',
             'cart_title','cart_empty_msg','btn_checkout_text','btn_send_quote_text',
             'txt_no_results','txt_search_placeholder','txt_view_more','txt_all_cats',
             // Sistema — Login

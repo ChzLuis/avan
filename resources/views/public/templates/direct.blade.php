@@ -847,71 +847,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 
 {{-- ─── FOOTER ─────────────────────────────────────────────────────────────── --}}
-<footer style="background:{{ $footerBg }}" class="mt-10 py-10">
-  <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-    <div>
-      @if($logoUrl)
-      <img src="{{ $logoUrl }}" alt="{{ $project->name }}"
-           style="max-height:{{ $footerLogoH }}px; max-width:{{ $footerLogoH * 4 }}px" class="object-contain w-auto mb-3" loading="lazy">
-      @else
-      <p class="font-bold text-lg mb-3" style="color:{{ $footerText }}">{{ $project->name }}</p>
-      @endif
-      @if($seoDesc)<p class="text-sm leading-relaxed" style="color:{{ $footerText }}; opacity:0.7">{{ $seoDesc }}</p>@endif
-      @if($project->whatsapp)
-      <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}" target="_blank" rel="noopener"
-         class="inline-flex items-center gap-2 mt-4 bg-[#25D366] text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-[#20ba5a] transition">
-        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
-        </svg>
-        WhatsApp
-      </a>
-      @endif
-    </div>
-    <div>
-      <p class="text-xs uppercase tracking-widest mb-4" style="color:{{ $footerText }}; opacity:0.6">Categorías</p>
-      <ul class="space-y-2">
-        @foreach($categories as $cat)
-        <li>
-          <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-                  class="text-sm transition text-left hover:opacity-100" style="color:{{ $footerText }}; opacity:0.75">
-            {{ $cat->name }}
-          </button>
-        </li>
-        @endforeach
-      </ul>
-    </div>
-    <div>
-      <p class="text-xs uppercase tracking-widest mb-4" style="color:{{ $footerText }}; opacity:0.6">Contacto</p>
-      <ul class="space-y-2 text-sm" style="color:{{ $footerText }}; opacity:0.75">
-        @if($project->phone)
-        <li class="flex items-center gap-2">
-          <svg class="w-4 h-4 opacity-40 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-          </svg>
-          {{ $project->phone }}
-        </li>
-        @endif
-        @if($project->address)
-        <li class="flex items-start gap-2">
-          <svg class="w-4 h-4 opacity-40 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-          </svg>
-          {{ $project->address }}
-        </li>
-        @endif
-        @foreach(['facebook_url'=>'Facebook','instagram_url'=>'Instagram','tiktok_url'=>'TikTok'] as $sKey=>$sLabel)
-        @if($settings[$sKey] ?? null)
-        <li><a href="{{ $settings[$sKey] }}" target="_blank" rel="noopener" class="hover:text-white transition">{{ $sLabel }}</a></li>
-        @endif
-        @endforeach
-      </ul>
-    </div>
-  </div>
-  <div class="border-t mt-8 pt-6 text-center" style="border-color:{{ $footerText }}20">
-    <p class="text-xs" style="color:{{ $footerText }}; opacity:0.5">{{ $footerCopyright }}</p>
-  </div>
-</footer>
-
+@include('public.partials.footer', ['footerBg'=>$footerBg,'footerText'=>$footerText,'footerLogoH'=>$footerLogoH,'logoSrc'=>$logoUrl])
 
 {{-- ─── BOTÓN FLOTANTE WHATSAPP ────────────────────────────────────────────── --}}
 @if($project->whatsapp)
