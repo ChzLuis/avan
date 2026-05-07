@@ -94,7 +94,7 @@
     </style>
 </head>
 
-<body class="font-sans antialiased" style="background:#f1f5f9"
+<body class="font-sans antialiased overflow-hidden" style="background:#f1f5f9"
       x-data="{
           open: localStorage.getItem('sb_open') !== null
                     ? localStorage.getItem('sb_open') !== 'false'
