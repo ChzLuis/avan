@@ -538,7 +538,7 @@
          class="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
         <div class="bg-gray-50 overflow-hidden" style="aspect-ratio:1/1;">
           @if($r->mainImage)
-          <img src="{{ asset('storage/'.$r->mainImage->url) }}" alt="{{ $r->name }}"
+          <img src="{{ $r->main_image_url }}" alt="{{ $r->name }}"
                loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
           @else
           <div class="w-full h-full flex items-center justify-center">

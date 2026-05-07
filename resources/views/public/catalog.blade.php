@@ -148,7 +148,7 @@
         ],
       ];
       if ($ldProd->mainImage) {
-        $ldItem['item']['image'] = asset('storage/'.$ldProd->mainImage->url);
+        $ldItem['item']['image'] = $ldProd->main_image_url;
       }
       $ldItems[] = $ldItem;
     }

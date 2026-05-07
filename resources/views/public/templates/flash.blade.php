@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" prefix="og: https://ogp.me/ns#">
 <head>
 <meta charset="UTF-8">
@@ -32,18 +32,18 @@
   }
   $quoteWaMsg   = $settings['quote_wa_msg'] ?? 'Hola, me interesa cotizar los siguientes productos:';
   $canonicalUrl = url('/' . $project->slug);
-  $seoTitle     = ($settings['seo_title'] ?? null) ?: ($project->name . ' — Catálogo Online');
+  $seoTitle     = ($settings['seo_title'] ?? null) ?: ($project->name . ' â€” CatÃ¡logo Online');
   $seoDesc      = ($settings['seo_description'] ?? null) ?: ($project->description ?? 'Explora nuestros productos.');
   $ogImage      = $project->logo_url ? asset('storage/'.$project->logo_url) : asset('img/og-default.png');
   $acceptedPayments = json_decode($settings['accepted_payments'] ?? '[]', true) ?? [];
   $paymentMeta = [
-      'efectivo'      => ['label'=>'Efectivo',              'emoji'=>'💵'],
-      'yape'          => ['label'=>'Yape',                  'emoji'=>'🟣'],
-      'plin'          => ['label'=>'Plin',                  'emoji'=>'🔵'],
-      'transferencia' => ['label'=>'Transferencia',         'emoji'=>'🏦'],
-      'tarjeta'       => ['label'=>'Tarjeta crédito/débito','emoji'=>'💳'],
-      'qr'            => ['label'=>'Pago QR',               'emoji'=>'📲'],
-      'contra_entrega'=> ['label'=>'Contra entrega',        'emoji'=>'🚚'],
+      'efectivo'      => ['label'=>'Efectivo',              'emoji'=>'ðŸ’µ'],
+      'yape'          => ['label'=>'Yape',                  'emoji'=>'ðŸŸ£'],
+      'plin'          => ['label'=>'Plin',                  'emoji'=>'ðŸ”µ'],
+      'transferencia' => ['label'=>'Transferencia',         'emoji'=>'ðŸ¦'],
+      'tarjeta'       => ['label'=>'Tarjeta crÃ©dito/dÃ©bito','emoji'=>'ðŸ’³'],
+      'qr'            => ['label'=>'Pago QR',               'emoji'=>'ðŸ“²'],
+      'contra_entrega'=> ['label'=>'Contra entrega',        'emoji'=>'ðŸšš'],
   ];
 @endphp
 
@@ -79,7 +79,7 @@
   $btnCartText  = $settings['btn_cart_text']  ?? 'Agregar al carrito';
   $btnQuoteText = $settings['btn_quote_text'] ?? 'Cotizar';
   $footerTagline   = $settings['footer_tagline']  ?? '';
-  $footerCopyright = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $project->name);
+  $footerCopyright = $settings['footer_copyright'] ?? ('Â© ' . date('Y') . ' ' . $project->name);
 @endphp
 @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
 <style>
@@ -152,7 +152,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
         'stock'    => $p->stock,
     ]));
-    return $rows->merge($subRows);
+    return $rows->concat($subRows);
 })->values();
 @endphp
 </head>
@@ -170,9 +170,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      x-text="toastMsg">
 </div>
 
-{{-- ═══ BARRA ROJA SUPERIOR ═══ --}}
+{{-- â•â•â• BARRA ROJA SUPERIOR â•â•â• --}}
 <div class="bg-red-600 text-white py-2 px-4 text-center text-sm font-bold flex items-center justify-center gap-6 flex-wrap">
-  <span class="blink">OFERTA RELÁMPAGO</span>
+  <span class="blink">OFERTA RELÃMPAGO</span>
   <span class="opacity-50">|</span>
   <span class="flex items-center gap-2">
     Termina en:
@@ -196,7 +196,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <span class="blink text-yellow-200">Envio Gratis</span>
 </div>
 
-{{-- ═══ HEADER COMPACTO ═══ --}}
+{{-- â•â•â• HEADER COMPACTO â•â•â• --}}
 <header class="bg-white sticky top-0 z-30 border-b border-gray-200" style="box-shadow:0 2px 8px rgba(0,0,0,.08);">
   <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4">
 
@@ -213,13 +213,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     {{-- Buscador central grande --}}
     <div class="flex-1 flex items-stretch max-w-2xl mx-auto">
       <div class="relative flex-1" @click.outside="searchOpen = false">
-      <input x-model="search" type="search" placeholder="Buscar productos, marcas, categorías..."
+      <input x-model="search" type="search" placeholder="Buscar productos, marcas, categorÃ­as..."
              @input="searchOpen = search.trim().length >= 2; searchIdx = -1; if(search.trim().length >= 2) _scrollToCatalog()"
              @keydown.arrow-down.prevent="if(suggestions.length){searchIdx=(searchIdx+1)%suggestions.length}"
              @keydown.arrow-up.prevent="if(suggestions.length){searchIdx=(searchIdx-1+suggestions.length)%suggestions.length}"
              @keydown.enter.prevent="if(searchIdx>=0){selectSuggestion(suggestions[searchIdx])}else{searchOpen=false;_scrollToCatalog()}"
              @keydown.escape="searchOpen=false;searchIdx=-1"
-             aria-label="Buscar en el catálogo"
+             aria-label="Buscar en el catÃ¡logo"
              class="w-full border-2 border-gray-200 border-r-0 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-red-400 transition">
       {{-- Predictive search dropdown --}}
       <div x-show="searchOpen && suggestions.length > 0"
@@ -298,7 +298,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
 </header>
 
-{{-- ═══ BARRA DE CATEGORÍAS ═══ --}}
+{{-- â•â•â• BARRA DE CATEGORÃAS â•â•â• --}}
 @if($categories->count())
 <div class="bg-white border-b border-gray-200" style="box-shadow:0 1px 4px rgba(0,0,0,.04);">
   <div class="max-w-[1400px] mx-auto px-4">
@@ -306,12 +306,12 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <button @click="filterCat=''; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
               :class="filterCat==='' ? 'bg-red-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
               class="flex-shrink-0 flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs font-semibold transition min-w-[72px]">
-        <span class="text-lg">🏪</span>
+        <span class="text-lg">ðŸª</span>
         <span>Todo</span>
       </button>
       @foreach($categories as $cat)
       @php
-        $catIcons = ['👕','👖','👟','👜','💄','🏠','📱','💻','🎮','🧴','🍕','🎁'];
+        $catIcons = ['ðŸ‘•','ðŸ‘–','ðŸ‘Ÿ','ðŸ‘œ','ðŸ’„','ðŸ ','ðŸ“±','ðŸ’»','ðŸŽ®','ðŸ§´','ðŸ•','ðŸŽ'];
         $icon = $catIcons[$loop->index % count($catIcons)];
       @endphp
       <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
@@ -326,7 +326,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </div>
 @endif
 
-{{-- ═══ HERO CAROUSEL ═══ --}}
+{{-- â•â•â• HERO CAROUSEL â•â•â• --}}
 <section x-data="{ slide: 0, playing: true }"
          x-init="setInterval(() => { if(playing) slide = slide === 0 ? 1 : 0; }, 4000)"
          class="relative overflow-hidden" style="height:50vh;min-height:360px;">
@@ -339,10 +339,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <div class="max-w-[1400px] mx-auto px-8 w-full flex items-center justify-between">
         <div class="max-w-lg">
           <span class="inline-block bg-yellow-400 text-yellow-900 text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-wider mb-4">
-            Oferta del día
+            Oferta del dÃ­a
           </span>
           <h1 class="text-white font-black text-4xl md:text-6xl leading-none mb-3 tracking-tight">
-            {{ $settings['hero_title'] ?? 'Precios Increíbles' }}
+            {{ $settings['hero_title'] ?? 'Precios IncreÃ­bles' }}
           </h1>
           <p class="text-white/80 text-base md:text-lg mb-6 font-medium">
             {{ $settings['hero_subtitle'] ?? 'Los mejores productos al mejor precio' }}
@@ -371,14 +371,14 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             {{ $settings['banner1_title'] ?? 'Nuevos Productos' }}
           </h1>
           <p class="text-white/80 text-base md:text-lg mb-6 font-medium">
-            {{ $settings['banner1_sub'] ?? 'Descubre las últimas novedades' }}
+            {{ $settings['banner1_sub'] ?? 'Descubre las Ãºltimas novedades' }}
           </p>
           <button @click="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
                   class="bg-white text-orange-600 px-8 py-3.5 font-black text-sm uppercase tracking-wider rounded-full hover:bg-yellow-400 hover:text-yellow-900 transition-all">
             Explorar ahora
           </button>
         </div>
-        <div class="text-white/10 font-black text-[14rem] leading-none select-none hidden lg:block">★</div>
+        <div class="text-white/10 font-black text-[14rem] leading-none select-none hidden lg:block">â˜…</div>
       </div>
     </div>
   </div>
@@ -392,7 +392,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
 </section>
 
-{{-- ═══ 3 BANNERS ═══ --}}
+{{-- â•â•â• 3 BANNERS â•â•â• --}}
 <section class="max-w-[1400px] mx-auto px-4 py-6">
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <div class="bg-red-500 rounded-2xl p-6 text-white relative overflow-hidden cursor-pointer hover:bg-red-600 transition"
@@ -401,22 +401,22 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <p class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Ofertas activas</p>
       <p class="font-black text-2xl leading-tight">{{ $settings['banner1_title'] ?? 'Hasta 50% OFF' }}</p>
       <p class="text-white/70 text-sm mt-1">{{ $settings['banner1_sub'] ?? 'En productos seleccionados' }}</p>
-      <span class="inline-block mt-3 bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Ver ofertas →</span>
+      <span class="inline-block mt-3 bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Ver ofertas â†’</span>
     </div>
     <div class="bg-orange-500 rounded-2xl p-6 text-white relative overflow-hidden cursor-pointer hover:bg-orange-600 transition"
          @click="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">
       <div class="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10"></div>
       <p class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Nuevos ingresos</p>
-      <p class="font-black text-2xl leading-tight">{{ $settings['banner2_title'] ?? 'Lo Más Nuevo' }}</p>
-      <p class="text-white/70 text-sm mt-1">{{ $settings['banner2_sub'] ?? 'Recién llegados' }}</p>
-      <span class="inline-block mt-3 bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Explorar →</span>
+      <p class="font-black text-2xl leading-tight">{{ $settings['banner2_title'] ?? 'Lo MÃ¡s Nuevo' }}</p>
+      <p class="text-white/70 text-sm mt-1">{{ $settings['banner2_sub'] ?? 'ReciÃ©n llegados' }}</p>
+      <span class="inline-block mt-3 bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Explorar â†’</span>
     </div>
     <div class="bg-blue-600 rounded-2xl p-6 text-white relative overflow-hidden cursor-pointer hover:bg-blue-700 transition"
          @click="drawerOpen=true">
       <div class="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/10"></div>
       <p class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Tu carrito</p>
-      <p class="font-black text-2xl leading-tight">Pedido Fácil</p>
-      <p class="text-white/70 text-sm mt-1">Compra rápida y segura</p>
+      <p class="font-black text-2xl leading-tight">Pedido FÃ¡cil</p>
+      <p class="text-white/70 text-sm mt-1">Compra rÃ¡pida y segura</p>
       <span class="inline-block mt-3 bg-white/20 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 w-fit">
         <span x-text="'Ver carrito (' + cartCount + ')'" class="text-xs font-bold"></span>
       </span>
@@ -424,7 +424,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
 </section>
 
-{{-- ═══ CATÁLOGO COMPLETO (grid denso) ═══ --}}
+{{-- â•â•â• CATÃLOGO COMPLETO (grid denso) â•â•â• --}}
 <section id="catalogo" class="max-w-[1400px] mx-auto px-4 pb-16">
 
   {{-- Barra filtros sticky --}}
@@ -459,16 +459,16 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </button>
       <select x-model="sortBy" class="text-xs border border-gray-200 rounded-full px-2 py-1.5 outline-none bg-white text-gray-700 cursor-pointer hover:border-gray-400 transition">
         <option value="default">Ordenar</option>
-        <option value="price_asc">Precio ↑</option>
-        <option value="price_desc">Precio ↓</option>
-        <option value="newest">Más nuevos</option>
-        <option value="name_az">Nombre A→Z</option>
+        <option value="price_asc">Precio â†‘</option>
+        <option value="price_desc">Precio â†“</option>
+        <option value="newest">MÃ¡s nuevos</option>
+        <option value="name_az">Nombre Aâ†’Z</option>
       </select>
       {{-- Solo oferta --}}
       <button @click="onSaleFilter=!onSaleFilter"
               :class="onSaleFilter ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
               class="px-3 py-1.5 text-xs font-bold rounded-full transition flex items-center gap-1">
-        🏷️ Oferta
+        ðŸ·ï¸ Oferta
       </button>
 
       {{-- Precio dropdown --}}
@@ -483,7 +483,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </button>
         <div x-show="open" @click.away="open=false"
              class="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-xl p-3 shadow-xl z-30 min-w-[175px]">
-          @foreach(['' => 'Todos', '0-50' => 'Hasta S/ 50', '50-150' => 'S/ 50 — S/ 150', '150-500' => 'S/ 150 — S/ 500', '500+' => 'Más de S/ 500'] as $val => $label)
+          @foreach(['' => 'Todos', '0-50' => 'Hasta S/ 50', '50-150' => 'S/ 50 â€” S/ 150', '150-500' => 'S/ 150 â€” S/ 500', '500+' => 'MÃ¡s de S/ 500'] as $val => $label)
           <label class="flex items-center gap-2 text-xs cursor-pointer py-1.5 text-gray-700 hover:text-red-600 transition">
             <input type="radio" x-model="priceFilter" value="{{ $val }}" @change="open=false"
                    class="w-3 h-3 accent-red-500">
@@ -497,7 +497,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <button x-show="filterCat!=='' || search!=='' || priceFilter!=='' || onSaleFilter"
               @click="filterCat=''; search=''; priceFilter=''; onSaleFilter=false; priceMin=0; priceMax=0"
               class="px-3 py-1.5 text-xs font-bold rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 transition">
-        ✕ Limpiar
+        âœ• Limpiar
       </button>
     </div>
   </div>
@@ -558,7 +558,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             @if($p->stock !== null && $p->stock === 0)
             <span class="absolute bottom-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-black py-1 text-center tracking-wide">AGOTADO</span>
             @elseif($p->stock !== null && $p->stock > 0 && $p->stock <= 5)
-            <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">⚡ CASI AGOTADO — {{ $p->stock }} restantes</span>
+            <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">âš¡ CASI AGOTADO â€” {{ $p->stock }} restantes</span>
             @endif
             <button @click.prevent="const d=$el.closest('[data-qv]');if(d){qv=JSON.parse(d.dataset.qv);qvOpen=true}"
                     class="absolute inset-0 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
@@ -567,7 +567,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
-                Vista rápida
+                Vista rÃ¡pida
               </span>
             </button>
           </a>
@@ -578,7 +578,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
             @if(isset($productRatings) && isset($productRatings[$p->id]))
             <div class="flex items-center gap-1 mb-1">
-              <span class="text-amber-400 text-xs">{{ str_repeat('★', floor($productRatings[$p->id]->avg_rating)) }}{{ str_repeat('☆', 5 - floor($productRatings[$p->id]->avg_rating)) }}</span>
+              <span class="text-amber-400 text-xs">{{ str_repeat('â˜…', floor($productRatings[$p->id]->avg_rating)) }}{{ str_repeat('â˜†', 5 - floor($productRatings[$p->id]->avg_rating)) }}</span>
               <span class="text-[10px] text-gray-400">({{ $productRatings[$p->id]->rating_count }})</span>
             </div>
             @endif
@@ -598,12 +598,12 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <p class="text-xs text-gray-400 italic mb-2">Precio a consultar</p>
             @endif
 
-            {{-- Botón SIEMPRE visible (no solo en hover) --}}
+            {{-- BotÃ³n SIEMPRE visible (no solo en hover) --}}
             <button @click="addToCart({
                       id:{{ $p->id }},
                       name:'{{ addslashes($p->name) }}',
                       price:{{ $p->price }},
-                      img:'{{ $p->mainImage ? asset("storage/".$p->mainImage->url) : "" }}'
+                      img:'{{ $p->mainImage ? ($p->main_image_url ?? "") : "" }}'
                     })"
                     {{ $p->stock !== null && $p->stock === 0 ? 'disabled' : '' }}
                     class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -641,9 +641,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     @endforeach
 
     <div x-show="noResults" class="text-center py-16">
-      <p class="text-4xl mb-3">🔍</p>
+      <p class="text-4xl mb-3">ðŸ”</p>
       <p class="font-black text-gray-700 text-lg mb-1">Sin resultados</p>
-      <p class="text-gray-400 text-sm mb-5">Intenta con otro término</p>
+      <p class="text-gray-400 text-sm mb-5">Intenta con otro tÃ©rmino</p>
       <button @click="search=''; filterCat=''; priceFilter=''; onSaleFilter=false; priceMin=0; priceMax=0"
               class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-full text-sm font-bold transition">
         Ver todo
@@ -674,7 +674,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
 </section>
 
-{{-- ═══ FOOTER COMPACTO ═══ --}}
+{{-- â•â•â• FOOTER COMPACTO â•â•â• --}}
 <footer class="bg-gray-900 text-gray-400">
   {{-- Fila 1 --}}
   <div class="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -695,7 +695,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @endif
     </div>
     <div>
-      <p class="font-bold text-white text-xs uppercase tracking-wider mb-3">Categorías</p>
+      <p class="font-bold text-white text-xs uppercase tracking-wider mb-3">CategorÃ­as</p>
       <ul class="space-y-1.5">
         @foreach($categories->take(5) as $cat)
         <li>
@@ -726,7 +726,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @endif
     </div>
     <div>
-      <p class="font-bold text-white text-xs uppercase tracking-wider mb-3">Síguenos</p>
+      <p class="font-bold text-white text-xs uppercase tracking-wider mb-3">SÃ­guenos</p>
       @php
         $footerSocials = [['key'=>'facebook_url','label'=>'Facebook','color'=>'#1877F2'],['key'=>'instagram_url','label'=>'Instagram','color'=>'#E1306C'],['key'=>'tiktok_url','label'=>'TikTok','color'=>'#222'],['key'=>'youtube_url','label'=>'YouTube','color'=>'#FF0000']];
       @endphp
@@ -743,13 +743,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
   {{-- Fila 2 --}}
   <div class="border-t border-gray-800 py-4 text-center text-xs text-gray-600">
-    &copy; {{ date('Y') }} <strong class="text-gray-500">{{ $project->name }}</strong> &mdash; Catálogo online por <strong class="text-gray-500">AVAN</strong>
+    &copy; {{ date('Y') }} <strong class="text-gray-500">{{ $project->name }}</strong> &mdash; CatÃ¡logo online por <strong class="text-gray-500">AVAN</strong>
   </div>
 </footer>
 
-{{-- ═══════════════════════════════════════════
+{{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MOBILE FILTER BOTTOM-SHEET
-═══════════════════════════════════════════ --}}
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <div x-show="filterOpen" x-cloak class="xl:hidden fixed inset-0 z-50 flex flex-col justify-end">
   <div @click="filterOpen=false" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
   <div class="relative bg-white rounded-t-3xl shadow-2xl max-h-[80vh] flex flex-col"
@@ -785,21 +785,21 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   class="border rounded-xl px-3 py-2 text-sm text-left transition">Hasta {{ $currency }} 50</button>
           <button @click="priceFilter='50-150'"
                   :class="priceFilter==='50-150' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
-                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 50–150</button>
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 50â€“150</button>
           <button @click="priceFilter='150-500'"
                   :class="priceFilter==='150-500' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
-                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 150–500</button>
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 150â€“500</button>
           <button @click="priceFilter='500+'"
                   :class="priceFilter==='500+' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
-                  class="border rounded-xl px-3 py-2 text-sm text-left transition col-span-2">Más de {{ $currency }} 500</button>
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition col-span-2">MÃ¡s de {{ $currency }} 500</button>
         </div>
         <div class="mt-3 pt-3 border-t border-gray-100">
           <p class="text-xs text-gray-400 mb-2">O ingresa un rango personalizado</p>
           <div class="flex items-center gap-2">
-            <input type="number" x-model.number="priceMin" placeholder="Mín" min="0"
+            <input type="number" x-model.number="priceMin" placeholder="MÃ­n" min="0"
                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-gray-400 transition">
-            <span class="text-gray-300">—</span>
-            <input type="number" x-model.number="priceMax" placeholder="Máx" min="0"
+            <span class="text-gray-300">â€”</span>
+            <input type="number" x-model.number="priceMax" placeholder="MÃ¡x" min="0"
                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-gray-400 transition">
           </div>
           <button @click="if(priceMin||priceMax){priceFilter='custom'}"
@@ -819,7 +819,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <div>
         <p class="font-bold text-gray-800 text-sm mb-3">Ordenar por</p>
         <div class="space-y-2">
-          @foreach([['default','Relevancia'],['price_asc','Precio: menor a mayor'],['price_desc','Precio: mayor a menor'],['newest','Más nuevos primero'],['name_az','Nombre A → Z']] as [$val,$lbl])
+          @foreach([['default','Relevancia'],['price_asc','Precio: menor a mayor'],['price_desc','Precio: mayor a menor'],['newest','MÃ¡s nuevos primero'],['name_az','Nombre A â†’ Z']] as [$val,$lbl])
           <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer transition"
                  :class="sortBy==='{{ $val }}' ? 'border-[var(--c)] bg-[color-mix(in_srgb,var(--c)_8%,white)]' : ''">
             <input type="radio" x-model="sortBy" value="{{ $val }}" class="accent-[var(--c)] w-4 h-4">
@@ -843,10 +843,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
 </div>
 
-{{-- ═══ CART DRAWER ═══ --}}
+{{-- â•â•â• CART DRAWER â•â•â• --}}
 <div x-show="drawerOpen" x-cloak>
   <div class="drawer-overlay" @click="drawerOpen=false" aria-hidden="true"></div>
-  <div class="drawer" role="dialog" aria-label="{{ $isQuoteOnly ? 'Mi cotización' : 'Mi pedido' }}"
+  <div class="drawer" role="dialog" aria-label="{{ $isQuoteOnly ? 'Mi cotizaciÃ³n' : 'Mi pedido' }}"
        x-show="drawerOpen"
        x-transition:enter="transition ease-out duration-300 transform"
        x-transition:enter-start="translate-x-full"
@@ -871,7 +871,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           </svg>
         </div>
         <h2 class="font-black text-gray-900 text-base"
-            x-text="drawerStep===1 ? '{{ $isQuoteOnly ? 'Mi cotización' : 'Tu pedido' }}' : (drawerStep===2 ? 'Confirmar datos' : 'Pagar')"></h2>
+            x-text="drawerStep===1 ? '{{ $isQuoteOnly ? 'Mi cotizaciÃ³n' : 'Tu pedido' }}' : (drawerStep===2 ? 'Confirmar datos' : 'Pagar')"></h2>
         <span x-show="cart.length && drawerStep===1"
               class="badge-red text-xs px-2 py-0.5 rounded-full font-black" x-text="cart.length + ' items'"></span>
       </div>
@@ -890,7 +890,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <svg class="w-14 h-14 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
-            <p class="font-bold text-gray-600 mb-1">{{ $isQuoteOnly ? 'Tu cotización está vacía' : 'Tu carrito está vacío' }}</p>
+            <p class="font-bold text-gray-600 mb-1">{{ $isQuoteOnly ? 'Tu cotizaciÃ³n estÃ¡ vacÃ­a' : 'Tu carrito estÃ¡ vacÃ­o' }}</p>
             <p class="text-sm">Agrega productos para comenzar</p>
           </div>
         </template>
@@ -909,7 +909,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <div class="flex items-center gap-1 flex-shrink-0">
               <button @click="item.qty > 1 ? item.qty-- : cart.splice(i,1)"
                       class="w-8 h-8 rounded-lg border-2 border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-600 hover:text-red-500 font-bold text-sm transition flex items-center justify-center">
-                <span x-text="item.qty > 1 ? '−' : '×'"></span>
+                <span x-text="item.qty > 1 ? 'âˆ’' : 'Ã—'"></span>
               </button>
               <span class="w-7 text-center text-sm font-black text-gray-800" x-text="item.qty"></span>
               <button @click="item.qty++"
@@ -962,27 +962,27 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </div>
         <input x-model="form.name" type="text" placeholder="Tu nombre completo *"
                class="w-full border-2 border-gray-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-sm outline-none transition" autocomplete="name">
-        <input x-model="form.phone" type="tel" placeholder="Tu WhatsApp / teléfono *"
+        <input x-model="form.phone" type="tel" placeholder="Tu WhatsApp / telÃ©fono *"
                class="w-full border-2 border-gray-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-sm outline-none transition" autocomplete="tel">
-        <input x-model="form.email" type="email" placeholder="Tu correo electrónico (opcional)"
+        <input x-model="form.email" type="email" placeholder="Tu correo electrÃ³nico (opcional)"
                class="w-full border-2 border-gray-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-sm outline-none transition" autocomplete="email">
         <textarea x-model="form.notes" rows="2" placeholder="Nota adicional (opcional)"
                   class="w-full border-2 border-gray-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-sm outline-none resize-none transition"></textarea>
         @if($requireAddress)
-        <input x-model="form.address" type="text" placeholder="Dirección de entrega *"
+        <input x-model="form.address" type="text" placeholder="DirecciÃ³n de entrega *"
                class="w-full border-2 border-gray-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-sm outline-none transition"
                autocomplete="street-address">
         @endif
-        {{-- Cupón --}}
+        {{-- CupÃ³n --}}
         <div>
           <div x-show="!couponApplied" class="flex gap-2">
             <input x-model="couponCode" @keydown.enter.prevent="applyCoupon" type="text"
-                   placeholder="Código de descuento"
+                   placeholder="CÃ³digo de descuento"
                    class="flex-1 border-2 border-gray-200 focus:border-[var(--accent)] rounded-xl px-4 py-2.5 text-sm outline-none transition uppercase"
                    style="text-transform:uppercase">
             <button @click="applyCoupon" :disabled="couponLoading" type="button"
                     class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 transition text-gray-700 flex-shrink-0">
-              <span x-text="couponLoading ? '…' : 'Aplicar'"></span>
+              <span x-text="couponLoading ? 'â€¦' : 'Aplicar'"></span>
             </button>
           </div>
           <div x-show="couponApplied" class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-sm">
@@ -1001,10 +1001,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <span x-text="'- S/ ' + couponDiscount.toFixed(2)"></span>
           </div>
           <div x-show="shippingEnabled" class="flex justify-between" :class="effectiveShipping===0 && shippingFreeFrom>0 ? 'text-green-600 font-medium' : 'text-gray-500'">
-            <span x-text="effectiveShipping===0 && shippingFreeFrom>0 ? '🎉 Envío gratis' : 'Envío'"></span>
+            <span x-text="effectiveShipping===0 && shippingFreeFrom>0 ? 'ðŸŽ‰ EnvÃ­o gratis' : 'EnvÃ­o'"></span>
             <span x-text="effectiveShipping>0 ? 'S/ '+effectiveShipping.toFixed(2) : 'Gratis'"></span>
           </div>
-          @if($shippingFreeFrom > 0)<p x-show="effectiveShipping>0" class="text-xs text-gray-400">Agrega S/ <span x-text="Math.max(0,{{ $shippingFreeFrom }}-subtotal).toFixed(2)"></span> más para envío gratis</p>@endif
+          @if($shippingFreeFrom > 0)<p x-show="effectiveShipping>0" class="text-xs text-gray-400">Agrega S/ <span x-text="Math.max(0,{{ $shippingFreeFrom }}-subtotal).toFixed(2)"></span> mÃ¡s para envÃ­o gratis</p>@endif
           <div class="flex justify-between font-black text-gray-900 border-t border-gray-200 pt-1.5"><span>Total</span><span x-text="'S/ '+orderGrandTotal.toFixed(2)"></span></div>
         </div>
         <p x-show="orderError" class="text-red-500 text-xs text-center font-medium" x-text="orderError"></p>
@@ -1016,10 +1016,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
           </svg>
         </div>
-        <p class="font-black text-gray-900 text-xl mb-2">{{ $isQuoteOnly ? '¡Cotización enviada!' : '¡Pedido confirmado!' }}</p>
+        <p class="font-black text-gray-900 text-xl mb-2">{{ $isQuoteOnly ? 'Â¡CotizaciÃ³n enviada!' : 'Â¡Pedido confirmado!' }}</p>
         <p class="text-sm text-gray-500 mb-1 leading-relaxed">{{ $isQuoteOnly ? 'Recibimos tu solicitud.' : 'Nos pondremos en contacto pronto.' }}</p>
         @if(!$isQuoteOnly)
-        <p x-show="orderId" class="text-xs text-gray-400 mb-4">Pedido N° <span class="font-black text-gray-700" x-text="orderId"></span></p>
+        <p x-show="orderId" class="text-xs text-gray-400 mb-4">Pedido NÂ° <span class="font-black text-gray-700" x-text="orderId"></span></p>
         @endif
         <button @click="cart=[];orderSent=false;drawerStep=1;form={name:'',phone:'',email:'',notes:'',address:''};drawerOpen=false;try{localStorage.removeItem('avan_cart_{{ $project->id }}');localStorage.removeItem('avan_form_{{ $project->id }}');}catch(e){}"
                 class="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition mt-3">
@@ -1053,7 +1053,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <span x-show="!orderLoading">{{ $isQuoteOnly ? ($quoteWa ? 'Enviar cotización por WhatsApp' : 'Solicitar cotización') : 'Confirmar pedido' }}</span>
+          <span x-show="!orderLoading">{{ $isQuoteOnly ? ($quoteWa ? 'Enviar cotizaciÃ³n por WhatsApp' : 'Solicitar cotizaciÃ³n') : 'Confirmar pedido' }}</span>
           <span x-show="orderLoading">Enviando...</span>
         </button>
         @endif
@@ -1075,7 +1075,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pago manual</p>
           @foreach($payManualMethods as $mKey)
           @php
-            $mMeta = ['yape'=>['label'=>'Yape','emoji'=>'🟣'],'plin'=>['label'=>'Plin','emoji'=>'🔵'],'transferencia'=>['label'=>'Transferencia bancaria','emoji'=>'🏦'],'qr'=>['label'=>'Pago con QR','emoji'=>'📲'],'contra_entrega'=>['label'=>'Contra entrega','emoji'=>'🚚']];
+            $mMeta = ['yape'=>['label'=>'Yape','emoji'=>'ðŸŸ£'],'plin'=>['label'=>'Plin','emoji'=>'ðŸ”µ'],'transferencia'=>['label'=>'Transferencia bancaria','emoji'=>'ðŸ¦'],'qr'=>['label'=>'Pago con QR','emoji'=>'ðŸ“²'],'contra_entrega'=>['label'=>'Contra entrega','emoji'=>'ðŸšš']];
             $mm = $mMeta[$mKey] ?? null;
             $mmDetails = match($mKey) { 'yape' => $payYapeNumber, 'plin' => $payPlinNumber, 'transferencia' => $payBankDetails, default => '' };
           @endphp
@@ -1102,7 +1102,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               @endif
               @if($payManualInstr)<p class="text-xs text-gray-500 italic">{{ $payManualInstr }}</p>@endif
               <div>
-                <label class="text-xs font-semibold text-gray-600 block mb-1">Número de operación / referencia *</label>
+                <label class="text-xs font-semibold text-gray-600 block mb-1">NÃºmero de operaciÃ³n / referencia *</label>
                 <input x-model="payReference" type="text" placeholder="Ej: 123456789"
                        class="w-full border-2 border-gray-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-sm outline-none transition">
               </div>
@@ -1112,7 +1112,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                <span x-show="!payLoading">Ya pagué — confirmar</span>
+                <span x-show="!payLoading">Ya paguÃ© â€” confirmar</span>
                 <span x-show="payLoading">Confirmando...</span>
               </button>
             </div>
@@ -1127,10 +1127,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pago con tarjeta</p>
           <button @click="openCulqi()" :disabled="payLoading"
                   class="w-full flex items-center gap-3 px-4 py-3.5 border-2 border-gray-200 rounded-2xl text-left hover:border-red-300 transition disabled:opacity-50">
-            <span class="text-2xl leading-none">💳</span>
+            <span class="text-2xl leading-none">ðŸ’³</span>
             <div class="flex-1">
-              <p class="text-sm font-bold text-gray-800">Tarjeta crédito / débito</p>
-              <p class="text-xs text-gray-500">Visa, Mastercard — pago seguro vía Culqi</p>
+              <p class="text-sm font-bold text-gray-800">Tarjeta crÃ©dito / dÃ©bito</p>
+              <p class="text-xs text-gray-500">Visa, Mastercard â€” pago seguro vÃ­a Culqi</p>
             </div>
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -1145,7 +1145,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mercado Pago</p>
           <button @click="openMercadoPago()" :disabled="payLoading"
                   class="w-full flex items-center gap-3 px-4 py-3.5 border-2 border-gray-200 rounded-2xl text-left hover:border-blue-400 transition disabled:opacity-50">
-            <span class="text-2xl leading-none">🛒</span>
+            <span class="text-2xl leading-none">ðŸ›’</span>
             <div class="flex-1">
               <p class="text-sm font-bold text-gray-800">Mercado Pago</p>
               <p class="text-xs text-gray-500">Tarjetas, wallets, cuotas</p>
@@ -1160,7 +1160,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           </button>
         </div>
         @endif
-        <p class="text-center text-xs text-gray-400 pt-2">Tus datos están protegidos y nunca se comparten</p>
+        <p class="text-center text-xs text-gray-400 pt-2">Tus datos estÃ¡n protegidos y nunca se comparten</p>
       </div>
 
       <div x-show="orderSent" class="flex-1 flex flex-col items-center justify-center px-5 py-8 text-center">
@@ -1169,8 +1169,8 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
           </svg>
         </div>
-        <p class="font-black text-gray-900 text-xl mb-2">¡Pago registrado!</p>
-        <p class="text-sm text-gray-500 mb-6 leading-relaxed">Tu pedido está confirmado.</p>
+        <p class="font-black text-gray-900 text-xl mb-2">Â¡Pago registrado!</p>
+        <p class="text-sm text-gray-500 mb-6 leading-relaxed">Tu pedido estÃ¡ confirmado.</p>
         <button @click="cart=[];orderSent=false;drawerStep=1;form={name:'',phone:'',email:'',notes:'',address:''};drawerOpen=false;try{localStorage.removeItem('avan_cart_{{ $project->id }}');localStorage.removeItem('avan_form_{{ $project->id }}');}catch(e){}"
                 class="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition">
           Seguir comprando
@@ -1235,7 +1235,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
 </div>
 
-{{-- ═══ ALPINE STORE ═══ --}}
+{{-- â•â•â• ALPINE STORE â•â•â• --}}
 <script>
 function store() {
   const _cartKey = 'avan_cart_{{ $project->id }}';
@@ -1424,7 +1424,7 @@ function store() {
       const existing = this.cart.find(i => i.id === product.id);
       if (existing) { existing.qty++; }
       else { this.cart.push({ ...product, qty: 1 }); }
-      this.toastMsg = '✓ ' + product.name + ' agregado';
+      this.toastMsg = 'âœ“ ' + product.name + ' agregado';
       this.toastShow = true;
       clearTimeout(this.toastTimer);
       this.toastTimer = setTimeout(() => { this.toastShow = false; }, 2000);
@@ -1435,24 +1435,24 @@ function store() {
       const businessName = `{{ addslashes($project->name) }}`;
       const customMsg    = `{{ addslashes($quoteWaMsg) }}`;
       const fecha = new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' });
-      let lines = `🛒 *SOLICITUD DE COTIZACIÓN*\n━━━━━━━━━━━━━━━━━━━━━━\n🏪 *${businessName}*\n\n${customMsg}\n\n👤 *DATOS*\n• Nombre: ${this.form.name}\n`;
-      if (this.form.phone) lines += `• Teléfono: ${this.form.phone}\n`;
-      lines += `\n📦 *PRODUCTOS*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+      let lines = `ðŸ›’ *SOLICITUD DE COTIZACIÃ“N*\nâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\nðŸª *${businessName}*\n\n${customMsg}\n\nðŸ‘¤ *DATOS*\nâ€¢ Nombre: ${this.form.name}\n`;
+      if (this.form.phone) lines += `â€¢ TelÃ©fono: ${this.form.phone}\n`;
+      lines += `\nðŸ“¦ *PRODUCTOS*\nâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\n`;
       let total = 0;
       this.cart.forEach((item, idx) => {
         @if(!$isQuoteOnly || $quotePriceDisp === 'show')
         const subtotal = (item.price * item.qty).toFixed(2);
-        lines += `${idx+1}. *${item.name}*\n   Cant: ${item.qty}  •  S/ ${subtotal}\n`;
+        lines += `${idx+1}. *${item.name}*\n   Cant: ${item.qty}  â€¢  S/ ${subtotal}\n`;
         total += item.price * item.qty;
         @else
-        lines += `${idx+1}. *${item.name}* — cant: ${item.qty}\n`;
+        lines += `${idx+1}. *${item.name}* â€” cant: ${item.qty}\n`;
         @endif
       });
       @if(!$isQuoteOnly || $quotePriceDisp === 'show')
-      lines += `━━━━━━━━━━━━━━━━━━━━━━\n💰 *Total referencial: S/ ${total.toFixed(2)}*\n`;
+      lines += `â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\nðŸ’° *Total referencial: S/ ${total.toFixed(2)}*\n`;
       @endif
-      if (this.form.notes) lines += `\n📝 Nota: ${this.form.notes}\n`;
-      lines += `\n📅 Fecha: ${fecha}\n_Cotización generada desde el catálogo online de ${businessName}_`;
+      if (this.form.notes) lines += `\nðŸ“ Nota: ${this.form.notes}\n`;
+      lines += `\nðŸ“… Fecha: ${fecha}\n_CotizaciÃ³n generada desde el catÃ¡logo online de ${businessName}_`;
       window.open(`https://wa.me/{{ $quoteWa }}?text=${encodeURIComponent(lines)}`, '_blank');
       this.cart = [];
       this.orderSent = true;
@@ -1461,7 +1461,7 @@ function store() {
 
     async submitOrder() {
       if (!this.form.name.trim() || !this.form.phone.trim()) {
-        this.orderError = 'Por favor ingresa tu nombre y teléfono.'; return;
+        this.orderError = 'Por favor ingresa tu nombre y telÃ©fono.'; return;
       }
       this.orderLoading = true; this.orderError = '';
       const items = this.cart.map(i => ({ product_id: i.id, name: i.name, price: i.price, quantity: i.qty }));
@@ -1481,8 +1481,8 @@ function store() {
           try { localStorage.removeItem(this._cartKey); localStorage.removeItem(this._formKey); } catch(e) {}
           window.location.href = '/{{ $project->slug }}/thanks/' + data.order_id;
           @endif
-        } else { this.orderError = 'No se pudo enviar. Inténtalo de nuevo.'; }
-      } catch(e) { this.orderError = 'Error de conexión.'; }
+        } else { this.orderError = 'No se pudo enviar. IntÃ©ntalo de nuevo.'; }
+      } catch(e) { this.orderError = 'Error de conexiÃ³n.'; }
       this.orderLoading = false;
     },
 
@@ -1498,7 +1498,7 @@ function store() {
         const data = await res.json();
         if (data.ok) { try { localStorage.removeItem(this._cartKey); localStorage.removeItem(this._formKey); } catch(e) {}; window.location.href = '/{{ $project->slug }}/thanks/' + this.orderId; }
         else { this.payError = 'No se pudo confirmar el pago.'; }
-      } catch(e) { this.payError = 'Error de conexión.'; }
+      } catch(e) { this.payError = 'Error de conexiÃ³n.'; }
       this.payLoading = false;
     },
 
@@ -1520,7 +1520,7 @@ function store() {
             const data = await res.json();
             if (data.ok) { self.orderSent = true; try { localStorage.removeItem(self._cartKey); localStorage.removeItem(self._formKey); } catch(e) {} }
             else { self.payError = data.message || 'Error al procesar el pago.'; }
-          } catch(e) { self.payError = 'Error de conexión.'; }
+          } catch(e) { self.payError = 'Error de conexiÃ³n.'; }
           self.payLoading = false; Culqi.close();
         }
       };
@@ -1540,7 +1540,7 @@ function store() {
           const url = (data.is_sandbox && data.sandbox_init_point) ? data.sandbox_init_point : data.init_point;
           window.location.href = url;
         } else { this.payError = data.message || 'Error al iniciar Mercado Pago.'; }
-      } catch(e) { this.payError = 'Error de conexión.'; }
+      } catch(e) { this.payError = 'Error de conexiÃ³n.'; }
       this.payLoading = false;
     },
     @endif
@@ -1567,8 +1567,10 @@ function store() {
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
     </svg>
-    {{ $isQuoteOnly ? 'Ver cotización' : 'Ver pedido' }}
+    {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
 </body>
 </html>
+
+

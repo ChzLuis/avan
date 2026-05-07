@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" prefix="og: https://ogp.me/ns#">
 <head>
 <meta charset="UTF-8">
@@ -26,8 +26,8 @@ $quoteWaRaw     = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? $proje
 $quoteWaCountry = $settings['quote_whatsapp_country'] ?? '51';
 $quoteWa        = $quoteWaRaw ? (str_starts_with($quoteWaRaw, $quoteWaCountry) ? $quoteWaRaw : $quoteWaCountry.$quoteWaRaw) : '';
 $canonicalUrl   = url('/' . $project->slug);
-$seoTitle       = ($settings['seo_title'] ?? null) ?: ($project->name . ' — Catálogo Online');
-$seoDesc        = ($settings['seo_description'] ?? null) ?: ($project->description ?? 'Explora nuestros productos y haz tu pedido en línea.');
+$seoTitle       = ($settings['seo_title'] ?? null) ?: ($project->name . ' â€” CatÃ¡logo Online');
+$seoDesc        = ($settings['seo_description'] ?? null) ?: ($project->description ?? 'Explora nuestros productos y haz tu pedido en lÃ­nea.');
 $heroBg         = $settings['hero_bg_color'] ?? '#1a1a2e';
 $heroTitle      = $settings['hero_title'] ?? 'Bienvenido a nuestra tienda';
 $heroSub        = $settings['hero_subtitle'] ?? 'Descubre los mejores productos al mejor precio';
@@ -64,7 +64,7 @@ $b2Sub          = $settings['banner2_sub'] ?? 'Hasta 50% de descuento selecciona
   $btnCartText  = $settings['btn_cart_text']  ?? 'Agregar al carrito';
   $btnQuoteText = $settings['btn_quote_text'] ?? 'Cotizar';
   $footerTagline   = $settings['footer_tagline']  ?? '';
-  $footerCopyright = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $project->name);
+  $footerCopyright = $settings['footer_copyright'] ?? ('Â© ' . date('Y') . ' ' . $project->name);
 @endphp
 @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
 <style>
@@ -151,7 +151,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         'desc'     => \Str::limit(strip_tags($p->description ?? ''), 100),
         'stock'    => $p->stock,
     ]));
-    return $rows->merge($subRows);
+    return $rows->concat($subRows);
 })->values();
 @endphp
 </head>
@@ -170,9 +170,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      x-text="toastMsg">
 </div>
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  DRAWER — 3 pasos                               ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  DRAWER â€” 3 pasos                               â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <div x-show="drawerOpen" class="drawer-overlay" @click="drawerOpen=false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
 
 <div x-show="drawerOpen" class="drawer-panel"
@@ -191,7 +191,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </svg>
       <span x-show="drawerStep===1">Mi Carrito (<span x-text="cartCount"></span>)</span>
       <span x-show="drawerStep===2">Datos del pedido</span>
-      <span x-show="drawerStep===3">Confirmación</span>
+      <span x-show="drawerStep===3">ConfirmaciÃ³n</span>
     </span>
     <!-- Indicador pasos -->
     <div class="flex items-center gap-1 mr-3">
@@ -208,7 +208,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </button>
   </div>
 
-  {{-- ── PASO 1: Carrito ── --}}
+  {{-- â”€â”€ PASO 1: Carrito â”€â”€ --}}
   <div x-show="drawerStep===1" class="flex flex-col flex-1 overflow-hidden">
     <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-hide">
       <template x-if="cart.length===0">
@@ -216,9 +216,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
-          <p class="text-sm text-gray-400 mb-1">Tu carrito está vacío</p>
+          <p class="text-sm text-gray-400 mb-1">Tu carrito estÃ¡ vacÃ­o</p>
           <p class="text-xs text-gray-300">Agrega productos para comenzar</p>
-          <button @click="drawerOpen=false" class="mt-4 text-xs accent font-semibold hover:opacity-70 transition">Continuar comprando →</button>
+          <button @click="drawerOpen=false" class="mt-4 text-xs accent font-semibold hover:opacity-70 transition">Continuar comprando â†’</button>
         </div>
       </template>
       <template x-for="(item, idx) in cart" :key="item.id">
@@ -230,7 +230,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <p class="text-gray-400 text-[10px]">S/ <span x-text="item.price.toFixed(2)"></span> c/u</p>
             <div class="flex items-center gap-2 mt-2">
               <button @click="item.qty>1?item.qty--:removeFromCart(idx)"
-                class="w-7 h-7 border border-gray-200 text-gray-500 text-sm flex items-center justify-center hover:border-gray-400 hover:bg-gray-50 transition rounded">−</button>
+                class="w-7 h-7 border border-gray-200 text-gray-500 text-sm flex items-center justify-center hover:border-gray-400 hover:bg-gray-50 transition rounded">âˆ’</button>
               <span class="text-gray-700 text-sm font-semibold w-5 text-center" x-text="item.qty"></span>
               <button @click="item.qty++"
                 class="w-7 h-7 border border-gray-200 text-gray-500 text-sm flex items-center justify-center hover:border-gray-400 hover:bg-gray-50 transition rounded">+</button>
@@ -249,19 +249,19 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <span class="text-gray-400"><span x-text="cartCount"></span> producto(s)</span>
         <span class="font-bold text-gray-800">S/ <span x-text="cartTotal.toFixed(2)"></span></span>
       </div>
-      <p class="text-[10px] text-gray-300 mb-3">Envío coordinado al confirmar pedido</p>
+      <p class="text-[10px] text-gray-300 mb-3">EnvÃ­o coordinado al confirmar pedido</p>
       <button @click="cart.length>0&&(drawerStep=2)" :disabled="cart.length===0"
         class="w-full py-3 text-sm font-semibold btn-accent rounded disabled:opacity-30 transition">
-        Proceder al pago →
+        Proceder al pago â†’
       </button>
       <button @click="drawerOpen=false" class="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition mt-1">Continuar comprando</button>
     </div>
   </div>
 
-  {{-- ── PASO 2: Datos del pedido ── --}}
+  {{-- â”€â”€ PASO 2: Datos del pedido â”€â”€ --}}
   <div x-show="drawerStep===2" class="flex flex-col flex-1 overflow-hidden">
     <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-hide">
-      <p class="text-gray-400 text-xs">Completa tu información para confirmar el pedido</p>
+      <p class="text-gray-400 text-xs">Completa tu informaciÃ³n para confirmar el pedido</p>
       <div>
         <label class="block text-xs font-semibold text-gray-600 mb-1">Nombre completo <span class="text-red-400">*</span></label>
         <input type="text" x-model="form.name"
@@ -269,13 +269,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           placeholder="Tu nombre completo">
       </div>
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Teléfono / WhatsApp <span class="text-red-400">*</span></label>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">TelÃ©fono / WhatsApp <span class="text-red-400">*</span></label>
         <input type="tel" x-model="form.phone"
           class="w-full border border-gray-200 rounded-md py-2.5 px-3 text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition"
           placeholder="Ej: 987 654 321">
       </div>
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Correo electrónico</label>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Correo electrÃ³nico</label>
         <input type="email" x-model="form.email"
           class="w-full border border-gray-200 rounded-md py-2.5 px-3 text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition"
           placeholder="tu@correo.com">
@@ -288,21 +288,21 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </div>
       @if($requireAddress)
       <div class="px-5 pb-2">
-        <input x-model="form.address" type="text" placeholder="Dirección de entrega *"
+        <input x-model="form.address" type="text" placeholder="DirecciÃ³n de entrega *"
                class="w-full border border-gray-200 rounded-md py-2.5 px-3 text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition"
                autocomplete="street-address">
       </div>
       @endif
-      <!-- Cupón -->
+      <!-- CupÃ³n -->
       <div class="px-5 mb-3">
         <div x-show="!couponApplied" class="flex gap-2">
           <input x-model="couponCode" @keydown.enter.prevent="applyCoupon" type="text"
-                 placeholder="Código de descuento"
+                 placeholder="CÃ³digo de descuento"
                  class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[var(--accent)] uppercase transition"
                  style="text-transform:uppercase">
           <button @click="applyCoupon" :disabled="couponLoading" type="button"
                   class="px-3 py-2 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 transition text-gray-700 flex-shrink-0">
-            <span x-text="couponLoading ? '…' : 'Aplicar'"></span>
+            <span x-text="couponLoading ? 'â€¦' : 'Aplicar'"></span>
           </button>
         </div>
         <div x-show="couponApplied" class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs">
@@ -319,7 +319,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <p class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Resumen</p>
         <template x-for="item in cart" :key="item.id">
           <div class="flex justify-between text-xs text-gray-500 py-0.5">
-            <span x-text="item.name+' × '+item.qty" class="truncate mr-2 max-w-[180px]"></span>
+            <span x-text="item.name+' Ã— '+item.qty" class="truncate mr-2 max-w-[180px]"></span>
             <span class="font-semibold whitespace-nowrap">S/ <span x-text="(item.price*item.qty).toFixed(2)"></span></span>
           </div>
         </template>
@@ -329,7 +329,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </div>
         @if($shippingEnabled)
         <div class="flex justify-between text-xs text-gray-500 border-t border-gray-200 pt-1.5 mt-1.5" :class="effectiveShipping===0 && shippingFreeFrom>0 ? 'text-green-600' : ''">
-          <span x-text="effectiveShipping===0 && shippingFreeFrom>0 ? '🎉 Envío gratis' : 'Envío'"></span>
+          <span x-text="effectiveShipping===0 && shippingFreeFrom>0 ? 'ðŸŽ‰ EnvÃ­o gratis' : 'EnvÃ­o'"></span>
           <span x-text="effectiveShipping>0 ? 'S/ '+effectiveShipping.toFixed(2) : 'Gratis'"></span>
         </div>
         @endif
@@ -349,14 +349,14 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </svg>
         <span x-text="orderLoading?'Enviando pedido...':'Confirmar pedido'"></span>
       </button>
-      <button @click="drawerStep=1" class="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition">← Volver al carrito</button>
+      <button @click="drawerStep=1" class="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition">â† Volver al carrito</button>
     </div>
   </div>
 
-  {{-- ── PASO 3: Confirmación / Pago ── --}}
+  {{-- â”€â”€ PASO 3: ConfirmaciÃ³n / Pago â”€â”€ --}}
   <div x-show="drawerStep===3" class="flex flex-col flex-1 overflow-y-auto px-5 py-6 scrollbar-hide gap-4">
 
-    <!-- Pago confirmado (regresa de MP/Culqi con éxito) -->
+    <!-- Pago confirmado (regresa de MP/Culqi con Ã©xito) -->
     <template x-if="orderSent">
       <div class="text-center py-6">
         <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
@@ -364,10 +364,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
           </svg>
         </div>
-        <p class="font-bold text-gray-800 text-xl mb-1">¡Pago confirmado!</p>
+        <p class="font-bold text-gray-800 text-xl mb-1">Â¡Pago confirmado!</p>
         <p class="text-gray-500 text-sm">Pedido #<span x-text="orderId"></span></p>
         <p x-show="payReference" class="text-gray-400 text-xs mt-1">Referencia: <span x-text="payReference"></span></p>
-        <p class="text-gray-400 text-xs mt-3">Recibirás confirmación pronto. ¡Gracias por tu compra!</p>
+        <p class="text-gray-400 text-xs mt-3">RecibirÃ¡s confirmaciÃ³n pronto. Â¡Gracias por tu compra!</p>
         <button @click="cart=[];drawerOpen=false;drawerStep=1;orderSent=false"
           class="mt-6 btn-accent px-8 py-2.5 rounded-lg text-sm font-semibold">Seguir comprando</button>
       </div>
@@ -387,7 +387,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </div>
     </template>
 
-    <!-- Pedido creado — seleccionar método de pago -->
+    <!-- Pedido creado â€” seleccionar mÃ©todo de pago -->
     <template x-if="!orderSent && orderId > 0">
       <div>
         <div class="text-center mb-5 bg-green-50 rounded-xl p-5 border border-green-100">
@@ -396,18 +396,18 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           </svg>
           <p class="font-bold text-gray-800 text-lg">Pedido #<span x-text="orderId"></span> creado</p>
           <p class="accent font-bold text-xl mt-1">S/ <span x-text="orderTotal.toFixed(2)"></span></p>
-          <p class="text-gray-400 text-xs mt-1">Ahora elige cómo pagar</p>
+          <p class="text-gray-400 text-xs mt-1">Ahora elige cÃ³mo pagar</p>
         </div>
 
         @if($hasOnlinePayment)
-        <p class="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-widest">Método de pago</p>
+        <p class="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-widest">MÃ©todo de pago</p>
         <div class="space-y-2">
 
           @if($payManualEnabled && in_array('yape', $payManualMethods) && $payYapeNumber)
           <div class="border border-gray-100 rounded-xl p-4 flex items-center gap-4 hover:border-purple-200 transition cursor-default">
-            <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-xl">🟣</div>
+            <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-xl">ðŸŸ£</div>
             <div>
-              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Yape al número</p>
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Yape al nÃºmero</p>
               <p class="text-base font-bold text-gray-800">{{ $payYapeNumber }}</p>
             </div>
           </div>
@@ -415,9 +415,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
           @if($payManualEnabled && in_array('plin', $payManualMethods) && $payPlinNumber)
           <div class="border border-gray-100 rounded-xl p-4 flex items-center gap-4 hover:border-blue-200 transition cursor-default">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-xl">🔵</div>
+            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-xl">ðŸ”µ</div>
             <div>
-              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Plin al número</p>
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Plin al nÃºmero</p>
               <p class="text-base font-bold text-gray-800">{{ $payPlinNumber }}</p>
             </div>
           </div>
@@ -425,7 +425,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
           @if($payManualEnabled && $payBankDetails)
           <div class="border border-gray-100 rounded-xl p-4 hover:border-green-200 transition">
-            <p class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">🏦 Transferencia bancaria</p>
+            <p class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">ðŸ¦ Transferencia bancaria</p>
             <p class="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{{ $payBankDetails }}</p>
           </div>
           @endif
@@ -443,7 +443,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           @if($mpEnabled)
           <a :href="'/{{ $project->slug }}/mp-checkout?order='+orderId"
             class="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold border-2 border-gray-200 text-gray-700 text-center rounded-xl hover:border-[#009ee3] hover:text-[#009ee3] transition">
-            <span>💳</span> Pagar con Mercado Pago
+            <span>ðŸ’³</span> Pagar con Mercado Pago
           </a>
           @endif
 
@@ -458,7 +458,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
         @else
         <div class="text-center bg-blue-50 p-5 rounded-xl border border-blue-100">
-          <p class="text-blue-700 text-sm font-semibold mb-1">¡Pedido recibido!</p>
+          <p class="text-blue-700 text-sm font-semibold mb-1">Â¡Pedido recibido!</p>
           <p class="text-blue-500 text-xs">Nos pondremos en contacto contigo para coordinar el pago y la entrega.</p>
         </div>
         @endif
@@ -484,9 +484,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- FIN DRAWER --}}
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  TOP BAR                                        ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  TOP BAR                                        â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <div class="bg-[#2d2d2d] py-2">
   <div class="max-w-7xl mx-auto px-4 flex items-center justify-between text-xs text-gray-400">
     <div class="flex items-center gap-5">
@@ -532,9 +532,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </div>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  HEADER sticky                                  ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  HEADER sticky                                  â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <header class="bg-white shadow-sm sticky top-0 z-40">
   <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
     <!-- Logo -->
@@ -551,7 +551,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <div class="flex border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition focus-within:border-gray-400">
         <select x-model="filterCat"
           class="border-r border-gray-200 bg-gray-50 text-xs text-gray-500 px-3 py-2.5 focus:outline-none hidden md:block min-w-[140px]">
-          <option value="">Todas las categorías</option>
+          <option value="">Todas las categorÃ­as</option>
           @foreach($categories as $cat)
           <option value="{{ $cat->id }}">{{ $cat->name }}</option>
           @endforeach
@@ -636,20 +636,20 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </header>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  MEGA NAV                                       ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  MEGA NAV                                       â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <nav class="bg-accent sticky top-[72px] z-30" x-data="{catOpen:false}">
   <div class="max-w-7xl mx-auto px-4 flex items-center">
-    <!-- Dropdown categorías -->
+    <!-- Dropdown categorÃ­as -->
     <div class="relative flex-shrink-0">
       <button @click="catOpen=!catOpen"
         class="flex items-center gap-2 text-white font-semibold text-sm py-3 px-4 hover:bg-black/10 transition border-r border-white/10">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
-        <span class="hidden sm:inline">☰ Todas las categorías</span>
-        <span class="sm:hidden">Categorías</span>
+        <span class="hidden sm:inline">â˜° Todas las categorÃ­as</span>
+        <span class="sm:hidden">CategorÃ­as</span>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform" :class="catOpen?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
         </svg>
@@ -657,7 +657,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <div x-show="catOpen" @click.outside="catOpen=false" class="mega-dropdown" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
         <button @click="filterCat='';catOpen=false;document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
           class="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 font-medium border-b border-gray-50 transition">
-          🏪 Todos los productos
+          ðŸª Todos los productos
         </button>
         @foreach($categories as $cat)
         <button @click="filterCat='{{ $cat->id }}';catOpen=false;document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
@@ -668,7 +668,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </div>
     </div>
 
-    <!-- Links rápidos de categorías -->
+    <!-- Links rÃ¡pidos de categorÃ­as -->
     <div class="flex items-center overflow-x-auto scrollbar-hide flex-1">
       @foreach($categories as $cat)
       <button @click="filterCat='{{ $cat->id }}';document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
@@ -681,9 +681,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </nav>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  HERO — 2 slides Alpine auto-rotando            ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  HERO â€” 2 slides Alpine auto-rotando            â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <section x-data="{
   slide: 0,
   slides: [
@@ -699,7 +699,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         x-transition:enter-end="opacity-100"
         class="absolute inset-0 flex items-center"
         :style="'background:'+s.bg">
-        <!-- Patrón decorativo fondo -->
+        <!-- PatrÃ³n decorativo fondo -->
         <div class="absolute inset-0 opacity-5" style="background-image:radial-gradient(circle at 70% 50%, #fff 1px, transparent 1px);background-size:40px 40px;"></div>
         <div class="relative max-w-7xl mx-auto px-8 md:px-20 w-full">
           <div class="max-w-xl">
@@ -714,7 +714,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               </button>
               <button @click="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
                 class="btn-outline-white px-7 py-3 rounded-lg text-sm font-semibold">
-                Ver catálogo completo
+                Ver catÃ¡logo completo
               </button>
             </div>
           </div>
@@ -733,45 +733,45 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </section>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  3 BANNERS FILA                                 ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  3 BANNERS FILA                                 â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <section class="max-w-7xl mx-auto px-4 py-7">
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <!-- Banner 1 — color primario -->
+    <!-- Banner 1 â€” color primario -->
     <div class="bg-accent rounded-xl p-7 text-white relative overflow-hidden flex flex-col justify-between min-h-[130px]">
       <div class="absolute right-0 top-0 w-32 h-32 rounded-full bg-white/10 -translate-y-8 translate-x-8"></div>
       <div>
         <p class="font-bold text-lg leading-tight">{{ $b1Title }}</p>
         @if($b1Sub)<p class="text-white/75 text-sm mt-1">{{ $b1Sub }}</p>@endif
       </div>
-      <a href="#novedades" class="mt-4 inline-block border border-white/40 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-white/15 transition self-start">Ver más →</a>
+      <a href="#novedades" class="mt-4 inline-block border border-white/40 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-white/15 transition self-start">Ver mÃ¡s â†’</a>
     </div>
-    <!-- Banner 2 — gris oscuro -->
+    <!-- Banner 2 â€” gris oscuro -->
     <div class="bg-gray-700 rounded-xl p-7 text-white relative overflow-hidden flex flex-col justify-between min-h-[130px]">
       <div class="absolute right-0 top-0 w-32 h-32 rounded-full bg-white/5 -translate-y-8 translate-x-8"></div>
       <div>
         <p class="font-bold text-lg leading-tight">{{ $b2Title }}</p>
         @if($b2Sub)<p class="text-white/75 text-sm mt-1">{{ $b2Sub }}</p>@endif
       </div>
-      <a href="#catalogo" class="mt-4 inline-block border border-white/30 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-white/15 transition self-start">Ver más →</a>
+      <a href="#catalogo" class="mt-4 inline-block border border-white/30 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-white/15 transition self-start">Ver mÃ¡s â†’</a>
     </div>
-    <!-- Banner 3 — #1a1a2e -->
+    <!-- Banner 3 â€” #1a1a2e -->
     <div class="bg-[#1a1a2e] rounded-xl p-7 text-white relative overflow-hidden flex flex-col justify-between min-h-[130px]">
       <div class="absolute right-0 top-0 w-32 h-32 rounded-full bg-white/5 -translate-y-8 translate-x-8"></div>
       <div>
-        <p class="font-bold text-lg leading-tight">Catálogo completo</p>
-        <p class="text-white/60 text-sm mt-1">{{ $categories->count() }} categorías disponibles</p>
+        <p class="font-bold text-lg leading-tight">CatÃ¡logo completo</p>
+        <p class="text-white/60 text-sm mt-1">{{ $categories->count() }} categorÃ­as disponibles</p>
       </div>
-      <a href="#catalogo" class="mt-4 inline-block border border-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-white/10 transition self-start">Ver más →</a>
+      <a href="#catalogo" class="mt-4 inline-block border border-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-white/10 transition self-start">Ver mÃ¡s â†’</a>
     </div>
   </div>
 </section>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  NEW ARRIVALS con TABS                          ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  NEW ARRIVALS con TABS                          â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <section id="novedades" class="max-w-7xl mx-auto px-4 py-8" x-data="{tab:'new'}">
   <div class="flex items-center gap-1 border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
     <h2 class="font-bold text-gray-800 text-xl mr-5 whitespace-nowrap">Productos</h2>
@@ -829,13 +829,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         @if($p->stock !== null && $p->stock === 0)
         <span class="absolute bottom-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-black py-1 text-center tracking-wide">AGOTADO</span>
         @elseif($p->stock !== null && $p->stock > 0 && $p->stock <= 5)
-        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">⚡ CASI AGOTADO — {{ $p->stock }} restantes</span>
+        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">âš¡ CASI AGOTADO â€” {{ $p->stock }} restantes</span>
         @endif
       </div>
       <div class="p-3">
         <p class="text-gray-400 text-[10px] mb-0.5 truncate">{{ $p->category->name ?? '' }}</p>
         <p class="text-gray-700 text-xs font-semibold truncate"><a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="hover:underline">{{ $p->name }}</a></p>
-        <div class="text-yellow-400 text-[11px] my-1">⭐⭐⭐⭐⭐</div>
+        <div class="text-yellow-400 text-[11px] my-1">â­â­â­â­â­</div>
         @if(!$isQuoteOnly || $quotePriceDisp === 'show')
         <div class="flex items-baseline gap-2">
           <span class="accent font-bold text-sm">S/ {{ number_format($p->price, 2) }}</span>
@@ -895,13 +895,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         @if($p->stock !== null && $p->stock === 0)
         <span class="absolute bottom-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-black py-1 text-center tracking-wide">AGOTADO</span>
         @elseif($p->stock !== null && $p->stock > 0 && $p->stock <= 5)
-        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">⚡ CASI AGOTADO — {{ $p->stock }} restantes</span>
+        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">âš¡ CASI AGOTADO â€” {{ $p->stock }} restantes</span>
         @endif
       </div>
       <div class="p-3">
         <p class="text-gray-400 text-[10px] mb-0.5">{{ $p->category->name ?? '' }}</p>
         <p class="text-gray-700 text-xs font-semibold truncate"><a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="hover:underline">{{ $p->name }}</a></p>
-        <div class="text-yellow-400 text-[11px] my-1">⭐⭐⭐⭐⭐</div>
+        <div class="text-yellow-400 text-[11px] my-1">â­â­â­â­â­</div>
         @if(!$isQuoteOnly || $quotePriceDisp === 'show')
         <div class="flex items-baseline gap-2">
           <span class="accent font-bold text-sm">S/ {{ number_format($p->price, 2) }}</span>
@@ -960,13 +960,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         @if($p->stock !== null && $p->stock === 0)
         <span class="absolute bottom-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-black py-1 text-center tracking-wide">AGOTADO</span>
         @elseif($p->stock !== null && $p->stock > 0 && $p->stock <= 5)
-        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">⚡ CASI AGOTADO — {{ $p->stock }} restantes</span>
+        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">âš¡ CASI AGOTADO â€” {{ $p->stock }} restantes</span>
         @endif
       </div>
       <div class="p-3">
         <p class="text-gray-400 text-[10px] mb-0.5">{{ $p->category->name ?? '' }}</p>
         <p class="text-gray-700 text-xs font-semibold truncate"><a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="hover:underline">{{ $p->name }}</a></p>
-        <div class="text-yellow-400 text-[11px] my-1">⭐⭐⭐⭐⭐</div>
+        <div class="text-yellow-400 text-[11px] my-1">â­â­â­â­â­</div>
         @if(!$isQuoteOnly || $quotePriceDisp === 'show')
         <span class="accent font-bold text-sm">S/ {{ number_format($p->price, 2) }}</span>
         @else
@@ -981,9 +981,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </section>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  BANNER FULL WIDTH                              ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  BANNER FULL WIDTH                              â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <section class="py-20 px-4 bg-accent relative overflow-hidden my-4">
   <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(circle at 80% 50%, #fff 2px, transparent 2px);background-size:50px 50px;"></div>
   <div class="relative text-center max-w-2xl mx-auto">
@@ -996,14 +996,14 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </section>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  BEST SELLERS                                   ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  BEST SELLERS                                   â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @if($featured->count() > 0)
 <section class="max-w-7xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-6">
-    <h2 class="font-bold text-gray-800 text-xl">Más vendidos</h2>
-    <a href="#catalogo" class="text-xs accent font-semibold hover:opacity-70 transition">Ver todo →</a>
+    <h2 class="font-bold text-gray-800 text-xl">MÃ¡s vendidos</h2>
+    <a href="#catalogo" class="text-xs accent font-semibold hover:opacity-70 transition">Ver todo â†’</a>
   </div>
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     @foreach($featured->take(5) as $p)
@@ -1043,13 +1043,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         @if($p->stock !== null && $p->stock === 0)
         <span class="absolute bottom-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-black py-1 text-center tracking-wide">AGOTADO</span>
         @elseif($p->stock !== null && $p->stock > 0 && $p->stock <= 5)
-        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">⚡ CASI AGOTADO — {{ $p->stock }} restantes</span>
+        <span class="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-[10px] font-bold py-1 text-center leading-tight">âš¡ CASI AGOTADO â€” {{ $p->stock }} restantes</span>
         @endif
       </div>
       <div class="p-3">
         <p class="text-gray-400 text-[10px] mb-0.5">{{ $p->category->name ?? '' }}</p>
         <p class="text-gray-700 text-xs font-semibold truncate"><a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="hover:underline">{{ $p->name }}</a></p>
-        <div class="text-yellow-400 text-[11px] my-1">⭐⭐⭐⭐⭐</div>
+        <div class="text-yellow-400 text-[11px] my-1">â­â­â­â­â­</div>
         @if(!$isQuoteOnly || $quotePriceDisp === 'show')
         <div class="flex items-baseline gap-2">
           <span class="accent font-bold text-sm">S/ {{ number_format($p->price, 2) }}</span>
@@ -1072,28 +1072,28 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 @endif
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  TRUST ROW                                      ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  TRUST ROW                                      â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <section class="bg-white border-y border-gray-100 py-10 my-4">
   <div class="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
     <div class="flex flex-col items-center gap-2.5">
-      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">🚚</div>
-      <p class="text-sm font-semibold text-gray-700">Envío rápido</p>
+      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">ðŸšš</div>
+      <p class="text-sm font-semibold text-gray-700">EnvÃ­o rÃ¡pido</p>
       <p class="text-xs text-gray-400">Entrega a domicilio</p>
     </div>
     <div class="flex flex-col items-center gap-2.5">
-      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">🔒</div>
+      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">ðŸ”’</div>
       <p class="text-sm font-semibold text-gray-700">Pago seguro</p>
       <p class="text-xs text-gray-400">Datos protegidos SSL</p>
     </div>
     <div class="flex flex-col items-center gap-2.5">
-      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">🔄</div>
+      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">ðŸ”„</div>
       <p class="text-sm font-semibold text-gray-700">Devoluciones</p>
       <p class="text-xs text-gray-400">Sin complicaciones</p>
     </div>
     <div class="flex flex-col items-center gap-2.5">
-      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">🎧</div>
+      <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">ðŸŽ§</div>
       <p class="text-sm font-semibold text-gray-700">Soporte 24/7</p>
       <p class="text-xs text-gray-400">Siempre disponibles</p>
     </div>
@@ -1101,18 +1101,18 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </section>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  CATÁLOGO COMPLETO con SIDEBAR                  ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  CATÃLOGO COMPLETO con SIDEBAR                  â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <section id="catalogo" class="max-w-7xl mx-auto px-4 py-12">
   <div class="flex gap-6">
 
     {{-- Sidebar --}}
     <aside class="hidden md:block w-60 flex-shrink-0 space-y-4">
-      <!-- Categorías -->
+      <!-- CategorÃ­as -->
       <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
         <div class="bg-accent text-white px-4 py-3">
-          <p class="font-semibold text-sm">Categorías</p>
+          <p class="font-semibold text-sm">CategorÃ­as</p>
         </div>
         <ul>
           <li>
@@ -1143,13 +1143,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <input type="radio" x-model="priceFilter" value="" class="accent-[var(--c)]"> Todos los precios
           </label>
           <label class="flex items-center gap-2.5 text-xs text-gray-500 cursor-pointer hover:text-gray-700 transition">
-            <input type="radio" x-model="priceFilter" value="0-50" class="accent-[var(--c)]"> S/ 0 – S/ 50
+            <input type="radio" x-model="priceFilter" value="0-50" class="accent-[var(--c)]"> S/ 0 â€“ S/ 50
           </label>
           <label class="flex items-center gap-2.5 text-xs text-gray-500 cursor-pointer hover:text-gray-700 transition">
-            <input type="radio" x-model="priceFilter" value="50-100" class="accent-[var(--c)]"> S/ 50 – S/ 100
+            <input type="radio" x-model="priceFilter" value="50-100" class="accent-[var(--c)]"> S/ 50 â€“ S/ 100
           </label>
           <label class="flex items-center gap-2.5 text-xs text-gray-500 cursor-pointer hover:text-gray-700 transition">
-            <input type="radio" x-model="priceFilter" value="100-250" class="accent-[var(--c)]"> S/ 100 – S/ 250
+            <input type="radio" x-model="priceFilter" value="100-250" class="accent-[var(--c)]"> S/ 100 â€“ S/ 250
           </label>
           <label class="flex items-center gap-2.5 text-xs text-gray-500 cursor-pointer hover:text-gray-700 transition">
             <input type="radio" x-model="priceFilter" value="250+" class="accent-[var(--c)]"> S/ 250+
@@ -1161,7 +1161,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <div class="flex items-center gap-1.5">
             <input type="number" x-model.number="priceMin" placeholder="Min" min="0"
                    class="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 bg-gray-50 transition">
-            <span class="text-gray-300 text-xs">—</span>
+            <span class="text-gray-300 text-xs">â€”</span>
             <input type="number" x-model.number="priceMax" placeholder="Max" min="0"
                    class="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 bg-gray-50 transition">
           </div>
@@ -1192,11 +1192,11 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
           </svg>
-          <p class="text-xs text-gray-500 font-medium">Catálogo completo</p>
+          <p class="text-xs text-gray-500 font-medium">CatÃ¡logo completo</p>
         </div>
         <div class="flex items-center gap-2">
           <div class="relative" @click.outside="searchOpen = false">
-          <input type="text" x-model="search" placeholder="Buscar en catálogo..."
+          <input type="text" x-model="search" placeholder="Buscar en catÃ¡logo..."
                  @input="searchOpen = search.trim().length >= 2; searchIdx = -1; if(search.trim().length >= 2) _scrollToCatalog()"
                  @keydown.arrow-down.prevent="if(suggestions.length){searchIdx=(searchIdx+1)%suggestions.length}"
                  @keydown.arrow-up.prevent="if(suggestions.length){searchIdx=(searchIdx-1+suggestions.length)%suggestions.length}"
@@ -1236,7 +1236,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               </template>
               <div class="px-4 py-2.5 bg-gray-50 border-t border-gray-100 text-center">
                   <button @click="searchOpen=false; _scrollToCatalog()" class="text-xs font-medium" style="color:var(--c,#4f46e5)">
-                      Ver todos los resultados →
+                      Ver todos los resultados â†’
                   </button>
               </div>
           </div>
@@ -1245,10 +1245,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             <option value="default">Ordenar por...</option>
             <option value="price_asc">Precio: menor a mayor</option>
             <option value="price_desc">Precio: mayor a menor</option>
-            <option value="newest">Más recientes</option>
-            <option value="name_az">Nombre A→Z</option>
+            <option value="newest">MÃ¡s recientes</option>
+            <option value="name_az">Nombre Aâ†’Z</option>
           </select>
-          <!-- Filtros móvil toggle -->
+          <!-- Filtros mÃ³vil toggle -->
           <button @click="filterOpen=true" class="xl:hidden border border-gray-200 rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 transition relative" title="Filtros">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
@@ -1266,7 +1266,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <span x-text="visibleCount"></span> producto<span x-show="visibleCount!==1">s</span> encontrado<span x-show="visibleCount!==1">s</span>
       </p>
 
-      <!-- Productos por categoría -->
+      <!-- Productos por categorÃ­a -->
       @foreach($categories as $cat)
       @if($cat->products->count() > 0)
       <div x-show="filterCat==='' || filterCat==='{{ $cat->id }}'">
@@ -1322,7 +1322,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               @if($p->stock !== null && $p->stock === 0)
               <span class="absolute bottom-2 left-2 bg-red-600 text-white text-[9px] font-extrabold uppercase px-2 py-0.5 rounded">Agotado</span>
               @elseif($p->stock !== null && $p->stock > 0 && $p->stock <= 5)
-              <span class="absolute bottom-2 left-2 bg-amber-500 text-white text-[9px] font-extrabold uppercase px-2 py-0.5 rounded">Últimas {{ $p->stock }}</span>
+              <span class="absolute bottom-2 left-2 bg-amber-500 text-white text-[9px] font-extrabold uppercase px-2 py-0.5 rounded">Ãšltimas {{ $p->stock }}</span>
               @endif
               <button @click.prevent="const d=$el.closest('[data-qv]');if(d){qv=JSON.parse(d.dataset.qv);qvOpen=true}"
                       class="absolute inset-0 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
@@ -1331,7 +1331,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                   </svg>
-                  Vista rápida
+                  Vista rÃ¡pida
                 </span>
               </button>
             </div>
@@ -1340,7 +1340,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               <p class="text-gray-700 text-xs font-semibold truncate"><a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="hover:underline">{{ $p->name }}</a></p>
               @if(isset($productRatings) && isset($productRatings[$p->id]))
               <div class="flex items-center gap-1 mb-1">
-                <span class="text-amber-400 text-xs">{{ str_repeat('★', floor($productRatings[$p->id]->avg_rating)) }}{{ str_repeat('☆', 5 - floor($productRatings[$p->id]->avg_rating)) }}</span>
+                <span class="text-amber-400 text-xs">{{ str_repeat('â˜…', floor($productRatings[$p->id]->avg_rating)) }}{{ str_repeat('â˜†', 5 - floor($productRatings[$p->id]->avg_rating)) }}</span>
                 <span class="text-[10px] text-gray-400">({{ $productRatings[$p->id]->rating_count }})</span>
               </div>
               @endif
@@ -1381,7 +1381,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <p class="text-gray-500 font-medium">Sin resultados</p>
-        <p class="text-sm text-gray-400 mt-1">Intenta con otro término de búsqueda</p>
+        <p class="text-sm text-gray-400 mt-1">Intenta con otro tÃ©rmino de bÃºsqueda</p>
         <button @click="search=''; filterCat=''; priceFilter=''; onSaleFilter=false"
                 class="mt-4 text-sm text-indigo-600 hover:text-indigo-800 underline">
           Limpiar filtros
@@ -1414,9 +1414,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </section>
 
 
-{{-- ╔══════════════════════════════════════════════════╗
-     ║  FOOTER                                         ║
-     ╚══════════════════════════════════════════════════╝ --}}
+{{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     â•‘  FOOTER                                         â•‘
+     â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <footer class="bg-[#1a1a2e] text-white pt-16 pb-8 mt-8">
   <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-12">
     <!-- Col 1: Logo + desc -->
@@ -1428,7 +1428,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <p class="font-extrabold text-xl mb-5">{{ $project->name }}</p>
       @endif
       <p class="text-white/45 text-sm leading-relaxed">{{ $seoDesc }}</p>
-      <!-- Métodos de pago -->
+      <!-- MÃ©todos de pago -->
       <div class="flex flex-wrap gap-2 mt-5">
         <span class="bg-white/8 text-white/60 text-[10px] px-2.5 py-1 rounded border border-white/10">Visa</span>
         <span class="bg-white/8 text-white/60 text-[10px] px-2.5 py-1 rounded border border-white/10">Mastercard</span>
@@ -1440,7 +1440,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
     <!-- Col 2: Links -->
     <div>
-      <p class="text-white/30 text-xs uppercase tracking-widest mb-5 font-semibold">Navegación</p>
+      <p class="text-white/30 text-xs uppercase tracking-widest mb-5 font-semibold">NavegaciÃ³n</p>
       <ul class="space-y-2.5">
         <li>
           <button @click="filterCat='';document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
@@ -1463,9 +1463,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </ul>
     </div>
 
-    <!-- Col 3: Categorías -->
+    <!-- Col 3: CategorÃ­as -->
     <div>
-      <p class="text-white/30 text-xs uppercase tracking-widest mb-5 font-semibold">Categorías</p>
+      <p class="text-white/30 text-xs uppercase tracking-widest mb-5 font-semibold">CategorÃ­as</p>
       <ul class="space-y-2.5">
         @foreach($categories as $cat)
         <li>
@@ -1520,7 +1520,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <!-- Footer bottom -->
   <div class="border-t border-white/8 pt-6">
     <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-3">
-      <p class="text-white/20 text-xs">© {{ date('Y') }} {{ $project->name }} — Todos los derechos reservados</p>
+      <p class="text-white/20 text-xs">Â© {{ date('Y') }} {{ $project->name }} â€” Todos los derechos reservados</p>
       <div class="flex items-center gap-2 text-white/20 text-xs">
         <span>Visa</span><span>|</span><span>Mastercard</span><span>|</span>
         <span>Yape</span><span>|</span><span>PagoEfectivo</span>
@@ -1530,9 +1530,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </footer>
 
 
-{{-- Botón flotante WhatsApp --}}
+{{-- BotÃ³n flotante WhatsApp --}}
 @if($project->whatsapp)
-<a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}?text={{ urlencode($settings['whatsapp_msg'] ?? 'Hola, quisiera más información sobre sus productos') }}"
+<a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}?text={{ urlencode($settings['whatsapp_msg'] ?? 'Hola, quisiera mÃ¡s informaciÃ³n sobre sus productos') }}"
   target="_blank" rel="noopener"
   class="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl hover:scale-110 transition-transform">
   <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -1687,7 +1687,7 @@ function store() {
           this.drawerStep = 3;
           this.payReference = urlParams.get('payment_id') || 'mp-ok';
         } else if (payStatus === 'failure') {
-          this.payError   = 'El pago fue rechazado. Intenta con otro método.';
+          this.payError   = 'El pago fue rechazado. Intenta con otro mÃ©todo.';
           this.drawerOpen = true;
           this.drawerStep = 3;
         }
@@ -1698,7 +1698,7 @@ function store() {
       const existing = this.cart.find(i => i.id === item.id);
       if (existing) { existing.qty++; }
       else { this.cart.push({...item, qty:1}); }
-      this.toastMsg = '✓ ' + item.name + ' agregado';
+      this.toastMsg = 'âœ“ ' + item.name + ' agregado';
       this.toastShow = true;
       clearTimeout(this.toastTimer);
       this.toastTimer = setTimeout(() => { this.toastShow = false; }, 2000);
@@ -1746,7 +1746,7 @@ function store() {
       return true;
     },
     async submitOrder() {
-      if (!this.form.name || !this.form.phone) { this.orderError = 'Completa nombre y teléfono.'; return; }
+      if (!this.form.name || !this.form.phone) { this.orderError = 'Completa nombre y telÃ©fono.'; return; }
       this.orderLoading = true;
       this.orderError   = '';
       this.drawerStep   = 3; // mostrar spinner en paso 3 mientras procesa
@@ -1775,11 +1775,11 @@ function store() {
           this.payError     = '';
           this.drawerStep   = 3;
         } else {
-          this.orderError  = data.message || 'No se pudo enviar. Inténtalo de nuevo.';
+          this.orderError  = data.message || 'No se pudo enviar. IntÃ©ntalo de nuevo.';
           this.drawerStep  = 2;
         }
       } catch(e) {
-        this.orderError = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
+        this.orderError = 'Error de conexiÃ³n. Verifica tu internet e intenta de nuevo.';
         this.drawerStep = 2;
       }
       this.orderLoading = false;
@@ -1814,7 +1814,7 @@ function store() {
           <span class="text-xl font-bold" style="color:var(--c)" x-text="'$'+Number(qv?.price).toFixed(2)"></span>
           <span x-show="qv?.cp && qv?.cp > qv?.price" class="text-sm text-gray-400 line-through" x-text="'$'+Number(qv?.cp).toFixed(2)"></span>
         </div>
-        <p x-show="qv?.stock !== null && qv?.stock <= 5 && qv?.stock > 0" class="text-xs text-amber-600 font-medium">¡Solo quedan <span x-text="qv?.stock"></span> en stock!</p>
+        <p x-show="qv?.stock !== null && qv?.stock <= 5 && qv?.stock > 0" class="text-xs text-amber-600 font-medium">Â¡Solo quedan <span x-text="qv?.stock"></span> en stock!</p>
         <p x-show="qv?.stock === 0" class="text-xs text-red-500 font-medium">Agotado</p>
         <button @click="addToCart({id:qv.id,name:qv.name,price:qv.price,img:qv.img}); qvOpen=false"
                 :disabled="qv?.stock === 0"
@@ -1827,9 +1827,9 @@ function store() {
   </div>
 </div>
 
-{{-- ═══════════════════════════════════════════
+{{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MOBILE FILTER BOTTOM-SHEET
-═══════════════════════════════════════════ --}}
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 <div x-show="filterOpen" x-cloak class="xl:hidden fixed inset-0 z-50 flex flex-col justify-end">
   <div @click="filterOpen=false" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
   <div class="relative bg-white rounded-t-3xl shadow-2xl max-h-[80vh] flex flex-col"
@@ -1865,21 +1865,21 @@ function store() {
                   class="border rounded-xl px-3 py-2 text-sm text-left transition">Hasta {{ $currency }} 50</button>
           <button @click="priceFilter='50-150'"
                   :class="priceFilter==='50-150' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
-                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 50–150</button>
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 50â€“150</button>
           <button @click="priceFilter='150-500'"
                   :class="priceFilter==='150-500' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
-                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 150–500</button>
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $currency }} 150â€“500</button>
           <button @click="priceFilter='500+'"
                   :class="priceFilter==='500+' ? 'border-[var(--c)] text-[var(--c)] font-bold' : 'border-gray-200 text-gray-600'"
-                  class="border rounded-xl px-3 py-2 text-sm text-left transition col-span-2">Más de {{ $currency }} 500</button>
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition col-span-2">MÃ¡s de {{ $currency }} 500</button>
         </div>
         <div class="mt-3 pt-3 border-t border-gray-100">
           <p class="text-xs text-gray-400 mb-2">O ingresa un rango personalizado</p>
           <div class="flex items-center gap-2">
-            <input type="number" x-model.number="priceMin" placeholder="Mín" min="0"
+            <input type="number" x-model.number="priceMin" placeholder="MÃ­n" min="0"
                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-gray-400 transition">
-            <span class="text-gray-300">—</span>
-            <input type="number" x-model.number="priceMax" placeholder="Máx" min="0"
+            <span class="text-gray-300">â€”</span>
+            <input type="number" x-model.number="priceMax" placeholder="MÃ¡x" min="0"
                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-gray-400 transition">
           </div>
           <button @click="if(priceMin||priceMax){priceFilter='custom'}"
@@ -1899,7 +1899,7 @@ function store() {
       <div>
         <p class="font-bold text-gray-800 text-sm mb-3">Ordenar por</p>
         <div class="space-y-2">
-          @foreach([['default','Relevancia'],['price_asc','Precio: menor a mayor'],['price_desc','Precio: mayor a menor'],['newest','Más nuevos primero'],['name_az','Nombre A → Z']] as [$val,$lbl])
+          @foreach([['default','Relevancia'],['price_asc','Precio: menor a mayor'],['price_desc','Precio: mayor a menor'],['newest','MÃ¡s nuevos primero'],['name_az','Nombre A â†’ Z']] as [$val,$lbl])
           <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer transition"
                  :class="sortBy==='{{ $val }}' ? 'border-[var(--c)] bg-[color-mix(in_srgb,var(--c)_8%,white)]' : ''">
             <input type="radio" x-model="sortBy" value="{{ $val }}" class="accent-[var(--c)] w-4 h-4">
@@ -1942,9 +1942,11 @@ function store() {
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
     </svg>
-    {{ $isQuoteOnly ? 'Ver cotización' : 'Ver pedido' }}
+    {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
 
 </body>
 </html>
+
+

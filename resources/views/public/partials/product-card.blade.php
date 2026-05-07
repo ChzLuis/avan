@@ -14,7 +14,7 @@
   {{-- Imagen con SEO: alt descriptivo, lazy load, dimensiones explícitas --}}
   <a href="{{ route('public.product', [$project->slug, $product->id]) }}" class="block prod-img aspect-square bg-gray-50 relative overflow-hidden">
     @if($product->mainImage)
-    <img src="{{ $product->mainImage->url }}"
+    <img src="{{ $product->main_image_url }}"
          alt="{{ $product->name }}{{ isset($product->category) && $product->category ? ' — '.$product->category->name : '' }}{{ isset($projectName) ? ' en '.$projectName : '' }}"
          title="{{ $product->name }}"
          loading="lazy"
@@ -83,7 +83,7 @@
               id:{{ $product->id }},
               name:'{{ addslashes($product->name) }}',
               price:{{ $product->price }},
-              img:'{{ $product->mainImage ? $product->mainImage->url : "" }}'
+              img:'{{ $product->main_image_url ?? "" }}'
             })"
             {{ $product->stock !== null && $product->stock === 0 ? 'disabled' : '' }}
             class="w-full btn-p py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
