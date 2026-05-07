@@ -193,6 +193,8 @@
   $faviconUrl      = $settings['favicon_url']       ?? '';
   $logoUrl         = $settings['logo_url']          ?? '';
   $logoHeight      = (int)($settings['logo_height'] ?? '40');
+  $headerBg        = $settings['header_bg_color']   ?? '#ffffff';
+  $headerText      = $settings['header_text_color'] ?? '#111827';
   $heroHeightMap   = ['small'=>'300px','medium'=>'480px','large'=>'600px','full'=>'100vh'];
   $heroHeightCss   = $heroHeightMap[$heroHeight] ?? '480px';
   $heroAlignClass  = ['left'=>'text-left items-start','center'=>'text-center items-center','right'=>'text-right items-end'][$heroAlign] ?? 'text-center items-center';
@@ -329,21 +331,22 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- ═══════════════════════════════════════════
      HEADER PRINCIPAL
 ═══════════════════════════════════════════ --}}
-<header class="bg-white shadow-sm sticky top-0 z-30 border-b border-gray-100">
-  <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4">
+<header class="shadow-sm sticky top-0 z-30 border-b border-gray-100" style="background:{{ $headerBg }}">
+  <div class="max-w-[1400px] mx-auto px-4 py-2 flex items-center gap-4 min-h-[56px]" style="color:{{ $headerText }}">
 
     {{-- Logo --}}
+    @php $logoSrc = $logoUrl ?: ($project->logo_url ? asset('storage/'.$project->logo_url) : null); @endphp
     <a href="{{ $canonicalUrl }}" class="flex items-center gap-2.5 flex-shrink-0" aria-label="{{ $project->name }}">
-      @if($project->logo_url)
-        <img src="{{ asset('storage/'.$project->logo_url) }}"
+      @if($logoSrc)
+        <img src="{{ $logoSrc }}"
              alt="Logo {{ $project->name }}"
-             style="height:{{ $logoHeight }}px; max-height:52px; max-width:200px"
+             style="height:{{ $logoHeight }}px; max-height:56px; max-width:220px"
              class="object-contain w-auto">
       @else
         <div class="h-11 w-11 rounded-xl btn-p flex items-center justify-center text-white font-black text-xl select-none">
           {{ strtoupper(substr($project->name,0,1)) }}
         </div>
-        <span class="font-black text-gray-900 text-xl tracking-tight hidden sm:block">{{ $project->name }}</span>
+        <span class="font-black text-xl tracking-tight hidden sm:block" style="color:{{ $headerText }}">{{ $project->name }}</span>
       @endif
     </a>
 

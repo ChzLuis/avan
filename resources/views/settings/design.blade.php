@@ -520,6 +520,24 @@
               </div>
             </div>
             <div>
+              <label class="label">Color del encabezado (header)</label>
+              <div class="flex items-center gap-3 mt-1">
+                <input type="color" name="header_bg_color"
+                       value="{{ $project->setting('header_bg_color', '#ffffff') }}"
+                       class="h-9 w-14 rounded-lg border border-gray-300 cursor-pointer p-0.5">
+                <span class="text-xs text-gray-400">Fondo del header del catálogo público</span>
+              </div>
+            </div>
+            <div>
+              <label class="label">Color del texto del encabezado</label>
+              <div class="flex items-center gap-3 mt-1">
+                <input type="color" name="header_text_color"
+                       value="{{ $project->setting('header_text_color', '#111827') }}"
+                       class="h-9 w-14 rounded-lg border border-gray-300 cursor-pointer p-0.5">
+                <span class="text-xs text-gray-400">Color del texto e íconos en el header</span>
+              </div>
+            </div>
+            <div>
               <label class="label">Símbolo de moneda</label>
               <select name="currency_symbol" class="input">
                 @foreach(['S/'=>'S/ — Sol peruano','Soles'=>'Soles — Sol peruano (palabra)','$'=>'$ — Dólar','€'=>'€ — Euro','COP$'=>'COP$ — Peso colombiano','CLP$'=>'CLP$ — Peso chileno','ARS$'=>'ARS$ — Peso argentino','MXN$'=>'MXN$ — Peso mexicano','Bs.'=>'Bs. — Boliviano'] as $cs_v => $cs_l)
