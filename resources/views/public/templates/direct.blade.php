@@ -33,7 +33,7 @@ $logoUrl          = $logoRaw ? (str_starts_with($logoRaw, 'http') ? $logoRaw : a
 $logoHeight       = (int)($settings['logo_height'] ?? 40);
 $seoTitle         = ($settings['seo_title'] ?? null) ?: ($project->name . ' — Catálogo Online');
 $seoDesc          = ($settings['seo_description'] ?? null) ?: ($project->description ?? '');
-$currency         = $settings['currency'] ?? 'S/';
+$currency         = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
 $secondaryColor   = $settings['secondary_color'] ?? '#818cf8';
 $fontTitle        = $settings['font_title'] ?? $settings['font'] ?? 'Inter';
 $fontBody         = $settings['font_body']  ?? $settings['font'] ?? 'Inter';
@@ -673,9 +673,12 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             </div>
             {{-- Bloque mayorista --}}
             <div x-data="{ qty:{{ (int)$p->wholesale_min_qty }} }" class="rounded-lg border border-amber-400 overflow-hidden">
-              <div class="flex items-center justify-between px-2 py-1 bg-amber-50 border-b border-amber-100">
-                <span class="text-[10px] font-bold text-amber-700 uppercase">Mayor · mín {{ (int)$p->wholesale_min_qty }} {{ $p->wholesale_unit }}</span>
-                <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
+              <div class="px-2 pt-1.5 pb-1 bg-amber-50 border-b border-amber-100">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-amber-700 uppercase">Mayorista</span>
+                  <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
+                </div>
+                <p class="text-[9px] text-amber-500 mt-0.5">Mín. {{ (int)$p->wholesale_min_qty }} unid.{{ $p->wholesale_unit ? ' · '.$p->wholesale_unit : '' }}</p>
               </div>
               <div class="flex items-center gap-1 p-1.5">
                 <div class="flex items-center border border-amber-300 rounded overflow-hidden">
@@ -770,9 +773,12 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               </div>
             </div>
             <div x-data="{ qty:{{ (int)$p->wholesale_min_qty }} }" class="rounded-lg border border-amber-400 overflow-hidden">
-              <div class="flex items-center justify-between px-2 py-1 bg-amber-50 border-b border-amber-100">
-                <span class="text-[10px] font-bold text-amber-700 uppercase">Mayor · mín {{ (int)$p->wholesale_min_qty }} {{ $p->wholesale_unit }}</span>
-                <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
+              <div class="px-2 pt-1.5 pb-1 bg-amber-50 border-b border-amber-100">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-amber-700 uppercase">Mayorista</span>
+                  <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
+                </div>
+                <p class="text-[9px] text-amber-500 mt-0.5">Mín. {{ (int)$p->wholesale_min_qty }} unid.{{ $p->wholesale_unit ? ' · '.$p->wholesale_unit : '' }}</p>
               </div>
               <div class="flex items-center gap-1 p-1.5">
                 <div class="flex items-center border border-amber-300 rounded overflow-hidden">
