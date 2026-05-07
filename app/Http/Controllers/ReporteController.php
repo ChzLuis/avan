@@ -121,6 +121,7 @@ class ReporteController extends Controller
         $estado   = $request->get('estado', '');
 
         $query = Order::allProjects()
+            ->with('items')
             ->where('project_id', $project->id)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
             ->orderByDesc('created_at');
@@ -131,10 +132,15 @@ class ReporteController extends Controller
 
         $ordenes = $query->get();
 
+        $ordenesActivas = $ordenes->whereNotIn('status', ['cancelled']);
+        $ordenesWa      = $ordenesActivas->where('sales_channel', 'whatsapp');
+
         $totales = [
-            'count'    => $ordenes->count(),
-            'ingresos' => $ordenes->whereNotIn('status', ['cancelled'])->sum('total'),
-            'cancelados' => $ordenes->where('status', 'cancelled')->count(),
+            'count'       => $ordenes->count(),
+            'ingresos'    => $ordenesActivas->sum('total'),
+            'cancelados'  => $ordenes->where('status', 'cancelled')->count(),
+            'whatsapp'    => $ordenesWa->count(),
+            'ingresos_wa' => $ordenesWa->sum('total'),
         ];
 
         $porDia = $ordenes->whereNotIn('status', ['cancelled'])
@@ -146,13 +152,16 @@ class ReporteController extends Controller
 
         if ($request->get('export') === 'csv') {
             return $this->exportCsv('ventas-' . $desde . '-' . $hasta,
-                ['Fecha', 'Cliente', 'Canal', 'Total', 'Estado'],
+                ['Fecha', 'Cliente', 'Teléfono/WA', 'Canal', 'Productos', 'Total', 'Estado', 'Estado Bot'],
                 $ordenes->map(fn($o) => [
                     $o->created_at->format('d/m/Y H:i'),
                     $o->client_name,
+                    $o->wa_number ?? $o->client_phone ?? '-',
                     $o->sales_channel ?? '-',
+                    $o->items->map(fn($i) => $i->quantity . 'x ' . $i->name)->implode(' | '),
                     $o->total,
                     $o->status,
+                    $o->wa_status ?? '-',
                 ])->toArray()
             );
         }
