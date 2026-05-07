@@ -34,6 +34,9 @@ $logoHeight       = (int)($settings['logo_height'] ?? 40);
 $headerBg         = $settings['header_bg_color']   ?? '#ffffff';
 $headerText       = $settings['header_text_color'] ?? '#111827';
 $headerHeight     = (int)($settings['header_height'] ?? 72);
+$footerBg         = $settings['footer_bg_color']   ?? '#111827';
+$footerText       = $settings['footer_text_color'] ?? '#9ca3af';
+$footerLogoH      = max(24, (int)($settings['footer_logo_height'] ?? 60));
 $seoTitle         = ($settings['seo_title'] ?? null) ?: ($project->name . ' — Catálogo Online');
 $seoDesc          = ($settings['seo_description'] ?? null) ?: ($project->description ?? '');
 $currency         = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
@@ -844,16 +847,16 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 
 {{-- ─── FOOTER ─────────────────────────────────────────────────────────────── --}}
-<footer class="bg-gray-900 mt-10 py-10">
+<footer style="background:{{ $footerBg }}" class="mt-10 py-10">
   <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
     <div>
       @if($logoUrl)
       <img src="{{ $logoUrl }}" alt="{{ $project->name }}"
-           style="max-height:60px; max-width:200px" class="object-contain w-auto mb-3" loading="lazy">
+           style="max-height:{{ $footerLogoH }}px; max-width:{{ $footerLogoH * 4 }}px" class="object-contain w-auto mb-3" loading="lazy">
       @else
-      <p class="text-white font-bold text-lg mb-3">{{ $project->name }}</p>
+      <p class="font-bold text-lg mb-3" style="color:{{ $footerText }}">{{ $project->name }}</p>
       @endif
-      @if($seoDesc)<p class="text-gray-400 text-sm leading-relaxed">{{ $seoDesc }}</p>@endif
+      @if($seoDesc)<p class="text-sm leading-relaxed" style="color:{{ $footerText }}; opacity:0.7">{{ $seoDesc }}</p>@endif
       @if($project->whatsapp)
       <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}" target="_blank" rel="noopener"
          class="inline-flex items-center gap-2 mt-4 bg-[#25D366] text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-[#20ba5a] transition">
@@ -865,12 +868,12 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @endif
     </div>
     <div>
-      <p class="text-gray-500 text-xs uppercase tracking-widest mb-4">Categorías</p>
+      <p class="text-xs uppercase tracking-widest mb-4" style="color:{{ $footerText }}; opacity:0.6">Categorías</p>
       <ul class="space-y-2">
         @foreach($categories as $cat)
         <li>
           <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-                  class="text-gray-400 hover:text-white text-sm transition text-left">
+                  class="text-sm transition text-left hover:opacity-100" style="color:{{ $footerText }}; opacity:0.75">
             {{ $cat->name }}
           </button>
         </li>
@@ -878,8 +881,8 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </ul>
     </div>
     <div>
-      <p class="text-gray-500 text-xs uppercase tracking-widest mb-4">Contacto</p>
-      <ul class="space-y-2 text-sm text-gray-400">
+      <p class="text-xs uppercase tracking-widest mb-4" style="color:{{ $footerText }}; opacity:0.6">Contacto</p>
+      <ul class="space-y-2 text-sm" style="color:{{ $footerText }}; opacity:0.75">
         @if($project->phone)
         <li class="flex items-center gap-2">
           <svg class="w-4 h-4 opacity-40 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -904,8 +907,8 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </ul>
     </div>
   </div>
-  <div class="border-t border-gray-800 mt-8 pt-6 text-center">
-    <p class="text-gray-600 text-xs">{{ $footerCopyright }}</p>
+  <div class="border-t mt-8 pt-6 text-center" style="border-color:{{ $footerText }}20">
+    <p class="text-xs" style="color:{{ $footerText }}; opacity:0.5">{{ $footerCopyright }}</p>
   </div>
 </footer>
 

@@ -197,6 +197,9 @@
   $headerBg        = $settings['header_bg_color']   ?? '#ffffff';
   $headerText      = $settings['header_text_color'] ?? '#111827';
   $headerHeight    = (int)($settings['header_height'] ?? 72);
+  $footerBg        = $settings['footer_bg_color']   ?? '#111827';
+  $footerText      = $settings['footer_text_color'] ?? '#9ca3af';
+  $footerLogoH     = max(24, (int)($settings['footer_logo_height'] ?? 60));
   $heroHeightMap   = ['small'=>'300px','medium'=>'480px','large'=>'600px','full'=>'100vh'];
   $heroHeightCss   = $heroHeightMap[$heroHeight] ?? '480px';
   $heroAlignClass  = ['left'=>'text-left items-start','center'=>'text-center items-center','right'=>'text-right items-end'][$heroAlign] ?? 'text-center items-center';
@@ -1709,7 +1712,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- ═══════════════════════════════════════════
      FOOTER
 ═══════════════════════════════════════════ --}}
-<footer class="bg-gray-900 text-gray-400" itemscope itemtype="https://schema.org/WPFooter">
+<footer style="background:{{ $footerBg }}; color:{{ $footerText }}" itemscope itemtype="https://schema.org/WPFooter">
   <div class="max-w-[1400px] mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-3 gap-10">
 
     <div>
@@ -1717,18 +1720,18 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         @if($logoSrc)
         <img src="{{ $logoSrc }}"
              alt="Logo {{ $project->name }}"
-             style="max-height:60px; max-width:200px"
+             style="max-height:{{ $footerLogoH }}px; max-width:{{ $footerLogoH * 4 }}px"
              class="object-contain w-auto"
              loading="lazy">
         @else
         <div class="h-10 w-10 rounded-xl btn-p flex items-center justify-center text-white font-black text-lg">
           {{ strtoupper(substr($project->name,0,1)) }}
         </div>
-        <span class="text-white font-black text-lg">{{ $project->name }}</span>
+        <span class="font-black text-lg" style="color:{{ $footerText }}">{{ $project->name }}</span>
         @endif
       </div>
       @if($project->description)
-      <p class="text-sm leading-relaxed text-gray-500 line-clamp-4">{{ $project->description }}</p>
+      <p class="text-sm leading-relaxed line-clamp-4" style="color:{{ $footerText }}; opacity:0.7">{{ $project->description }}</p>
       @endif
       @if($project->whatsapp)
       <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}"
@@ -1743,8 +1746,8 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </div>
 
     <div>
-      <h4 class="text-white font-bold mb-4 text-sm uppercase tracking-wider">Contacto</h4>
-      <div class="space-y-3 text-sm">
+      <h4 class="font-bold mb-4 text-sm uppercase tracking-wider" style="color:{{ $footerText }}">Contacto</h4>
+      <div class="space-y-3 text-sm" style="color:{{ $footerText }}; opacity:0.8">
         @if($project->phone)
         <div class="flex items-center gap-2">
           <svg class="w-4 h-4 opacity-50 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1766,7 +1769,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </div>
 
     <div>
-      <h4 class="text-white font-bold mb-4 text-sm uppercase tracking-wider">Síguenos</h4>
+      <h4 class="font-bold mb-4 text-sm uppercase tracking-wider" style="color:{{ $footerText }}">Síguenos</h4>
       <div class="flex flex-wrap gap-2">
         @php
           $footerSocials = [
@@ -1792,10 +1795,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </div>
 
   </div>
-  <div class="border-t border-gray-800 py-5 text-center text-xs text-gray-600">
-    <span>&copy; {{ date('Y') }} <strong class="text-gray-500">{{ $project->name }}</strong>.</span>
+  <div class="border-t py-5 text-center text-xs" style="border-color:{{ $footerText }}20; color:{{ $footerText }}; opacity:0.6">
+    <span>&copy; {{ date('Y') }} <strong>{{ $project->name }}</strong>.</span>
     <span class="mx-2">·</span>
-    <span>Catálogo online por <strong class="text-gray-500">AVAN</strong></span>
+    <span>Catálogo online por <strong>AVAN</strong></span>
   </div>
 </footer>
 
