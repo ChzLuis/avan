@@ -195,6 +195,7 @@
   $logoHeight      = (int)($settings['logo_height'] ?? '40');
   $headerBg        = $settings['header_bg_color']   ?? '#ffffff';
   $headerText      = $settings['header_text_color'] ?? '#111827';
+  $headerHeight    = (int)($settings['header_height'] ?? 72);
   $heroHeightMap   = ['small'=>'300px','medium'=>'480px','large'=>'600px','full'=>'100vh'];
   $heroHeightCss   = $heroHeightMap[$heroHeight] ?? '480px';
   $heroAlignClass  = ['left'=>'text-left items-start','center'=>'text-center items-center','right'=>'text-right items-end'][$heroAlign] ?? 'text-center items-center';
@@ -332,7 +333,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      HEADER PRINCIPAL
 ═══════════════════════════════════════════ --}}
 <header class="shadow-sm sticky top-0 z-30 border-b border-gray-100" style="background:{{ $headerBg }}">
-  <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4 min-h-[72px]" style="color:{{ $headerText }}">
+  <div class="max-w-[1400px] mx-auto px-4 flex items-center gap-4" style="color:{{ $headerText }}; min-height:{{ $headerHeight }}px">
 
     {{-- Logo --}}
     @php $logoSrc = $logoUrl ?: ($project->logo_url ? asset('storage/'.$project->logo_url) : null); @endphp

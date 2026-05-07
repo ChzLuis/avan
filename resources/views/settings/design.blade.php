@@ -446,6 +446,13 @@
               <input type="number" name="logo_height" class="input" min="20" max="120"
                      placeholder="40" value="{{ $project->setting('logo_height', '40') }}">
             </div>
+            {{-- Altura header --}}
+            <div>
+              <label class="label">Altura del encabezado (px)</label>
+              <input type="number" name="header_height" class="input" min="48" max="160"
+                     placeholder="72" value="{{ $project->setting('header_height', '72') }}">
+              <p class="text-xs text-gray-400 mt-1">Altura mínima del header del catálogo público</p>
+            </div>
             {{-- Favicon --}}
             <div>
               <label class="label">Favicon</label>

@@ -33,6 +33,7 @@ $logoUrl          = $logoRaw ? (str_starts_with($logoRaw, 'http') ? $logoRaw : a
 $logoHeight       = (int)($settings['logo_height'] ?? 40);
 $headerBg         = $settings['header_bg_color']   ?? '#ffffff';
 $headerText       = $settings['header_text_color'] ?? '#111827';
+$headerHeight     = (int)($settings['header_height'] ?? 72);
 $seoTitle         = ($settings['seo_title'] ?? null) ?: ($project->name . ' — Catálogo Online');
 $seoDesc          = ($settings['seo_description'] ?? null) ?: ($project->description ?? '');
 $currency         = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
@@ -399,7 +400,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- ─── HEADER ─────────────────────────────────────────────────────────────── --}}
 <header class="border-b border-gray-200 sticky top-0 z-40 shadow-sm" style="background:{{ $headerBg }}">
-  <div class="max-w-7xl mx-auto px-4 py-2 flex items-center gap-4 min-h-[56px]" style="color:{{ $headerText }}">
+  <div class="max-w-7xl mx-auto px-4 flex items-center gap-4" style="color:{{ $headerText }}; min-height:{{ $headerHeight }}px">
 
     {{-- Logo --}}
     <a href="{{ $canonicalUrl }}" class="flex items-center gap-2.5 flex-shrink-0">
