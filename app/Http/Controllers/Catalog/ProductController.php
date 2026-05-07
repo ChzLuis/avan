@@ -298,22 +298,25 @@ class ProductController extends Controller
             }
         }
         $instrucciones = [
-            ['nombre',             'Nombre del producto. Texto libre, máx. 200 caracteres.',                          'Arroz Premium 1kg',  true],
-            ['sku',                'Tu código interno. Déjalo vacío si no tienes.',                                   'ARR-001',            false],
-            ['codigo_barras',      'EAN o UPC del producto.',                                                         '7501234567890',      false],
-            ['categoria',          'Categoría padre. Ver hoja "Categorías" para opciones válidas.',                   'Abarrotes',          false],
-            ['subcategoria',       'Subcategoría (opcional). Debe pertenecer a la categoría padre.',                  'Granos y Cereales',  false],
-            ['precio',             'Precio unitario con punto decimal.',                                              '15.90',              true],
-            ['precio_comparacion', 'Se muestra tachado como precio anterior. Vacío si no aplica.',                    '19.90',              false],
-            ['precio_mayorista',   'Precio especial por volumen. Dejar vacío si no aplica.',                          '12.00',              false],
-            ['cantidad_mayorista', 'Cantidad mínima para activar el precio mayorista. Obligatorio si hay precio_mayorista.', '25',          false],
-            ['unidad_mayorista',   'Descripción de la presentación mayorista. Ej: saco 25kg, caja x12.',              'saco 25kg',          false],
-            ['costo',              'Tu costo o precio de compra. Solo interno.',                                      '10.00',              false],
-            ['unidad',             'unidad / kg / lt / caja / par / docena',                                          'unidad',             false],
-            ['stock',              'Cantidad en inventario. 0 si no controlas stock.',                                '100',                false],
-            ['disponible',         'Escribe exactamente "si" o "no".',                                                'si',                 false],
-            ['descripcion',        'Descripción que verá el cliente en la tienda.',                                   'Arroz de...',        false],
-            ['notas',              'Solo para tu equipo, no se muestra en tienda.',                                   '',                   false],
+            // [columna, descripción, ejemplo, obligatorio]
+            // — Columnas del Excel (en el mismo orden que aparecen) —
+            ['nombre',             'Nombre del producto. Texto libre, máx. 200 caracteres. Obligatorio.',              'Arroz Premium 1kg',  true],
+            ['sku',                'Tu código interno. Si coincide con un producto existente, se actualiza en lugar de crear uno nuevo.', 'ARR-001', false],
+            ['categoria',          'Nombre exacto de la categoría padre. Ver hoja "Categorías" para las opciones válidas.', 'Abarrotes',    false],
+            ['subcategoria',       'Nombre exacto de la subcategoría. Si se completa, la categoría padre es ignorada.', 'Granos y Cereales', false],
+            ['unidad',             'Unidad de medida: unidad / kg / lt / caja / par / docena / etc.',                  'unidad',             false],
+            ['precio',             'Precio minorista (unitario) con punto decimal. Obligatorio.',                      '15.90',              true],
+            ['precio_comparacion', 'Precio anterior o precio de referencia. Se muestra tachado en la tienda. Déjalo vacío si no aplica.', '19.90', false],
+            ['unidad_mayorista',   'Descripción de la presentación para precio mayorista. Ej: saco 25kg, caja x12.',   'saco 25kg',          false],
+            ['precio_mayorista',   'Precio especial por volumen. Se activa cuando la cantidad mínima es alcanzada.',    '12.00',              false],
+            ['cantidad_mayorista', 'Cantidad mínima de unidades para activar el precio mayorista.',                    '25',                 false],
+            ['costo',              'Tu precio de compra o costo interno. No se muestra en la tienda.',                 '10.00',              false],
+            ['stock',              'Unidades disponibles en inventario. Deja vacío o 0 si no controlas stock.',        '100',                false],
+            ['disponible',         'Visibilidad en la tienda. Escribe exactamente: si → visible, no → oculto.',        'si',                 false],
+            ['descripcion',        'Descripción del producto que verá el cliente.',                                    'Arroz de grano largo, seleccionado.', false],
+            ['notas',              'Notas internas de tu equipo. No se muestran en la tienda.',                        'Stock en bodega 2',  false],
+            // — Columna adicional aceptada al importar (no aparece en el Excel exportado) —
+            ['codigo_barras',      'Columna opcional: EAN / UPC / código de barras del producto. Puedes agregarla al Excel si la necesitas.', '7501234567890', false],
         ];
         $sheet2 = $spreadsheet->createSheet();
         $sheet2->setTitle('Instrucciones');
@@ -324,17 +327,30 @@ class ProductController extends Controller
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D6F42']],
         ]);
         $sheet2->getRowDimension(1)->setRowHeight(28);
-        foreach (['A2' => 'Columna', 'B2' => '¿Qué escribir?', 'C2' => '¿Obligatorio?', 'D2' => 'Ejemplo'] as $cell => $val) {
+
+        // Fila 2: notas generales
+        $sheet2->mergeCells('A2:D2');
+        $sheet2->setCellValue('A2', '• Las columnas se detectan por su nombre (fila oculta gris de la hoja Productos) — no importa el orden.  • Si el SKU ya existe, el producto se actualiza. Si no hay SKU, se busca por nombre.  • La columna "disponible" acepta: si → visible, no → oculto.');
+        $sheet2->getStyle('A2')->applyFromArray([
+            'font'      => ['size' => 8, 'italic' => true, 'color' => ['rgb' => '374151']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0FDF4']],
+            'alignment' => ['wrapText' => true, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $sheet2->getRowDimension(2)->setRowHeight(36);
+
+        foreach (['A3' => 'Columna', 'B3' => '¿Qué escribir?', 'C3' => '¿Obligatorio?', 'D3' => 'Ejemplo'] as $cell => $val) {
             $sheet2->setCellValue($cell, $val);
         }
-        $sheet2->getStyle('A2:D2')->applyFromArray([
+        $sheet2->getStyle('A3:D3')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '155534']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
         foreach ($instrucciones as $i => $instr) {
-            $row = $i + 3;
+            $row = $i + 4;
             $bg  = $i % 2 === 0 ? 'FFFFFF' : 'F6FBF8';
+            // Resaltar la última fila (codigo_barras — columna opcional no en el Excel)
+            if ($instr[0] === 'codigo_barras') $bg = 'FFFBEB';
             $sheet2->setCellValue('A' . $row, $instr[0]);
             $sheet2->setCellValue('B' . $row, $instr[1]);
             $sheet2->setCellValue('C' . $row, $instr[3] ? 'Sí' : 'No');
@@ -345,7 +361,7 @@ class ProductController extends Controller
             ]);
         }
         $sheet2->getColumnDimension('A')->setWidth(22);
-        $sheet2->getColumnDimension('B')->setWidth(55);
+        $sheet2->getColumnDimension('B')->setWidth(60);
         $sheet2->getColumnDimension('C')->setWidth(14);
         $sheet2->getColumnDimension('D')->setWidth(22);
 
