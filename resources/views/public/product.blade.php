@@ -20,12 +20,13 @@
   $seoDescRaw   = strip_tags($product->description ?? $project->description ?? '');
   $seoDesc      = Str::limit($seoDescRaw ?: 'Ver detalles del producto.', 160);
   $mainImg      = $product->mainImage ?? $product->images->first();
-  $ogImage      = $mainImg ? asset('storage/'.$mainImg->url)
+  $imgUrl       = fn($img) => $img ? (str_starts_with($img->url, 'http') ? $img->url : asset('storage/'.$img->url)) : null;
+  $ogImage      = $mainImg ? $imgUrl($mainImg)
                            : ($project->logo_url ? asset('storage/'.$project->logo_url) : asset('img/og-default.png'));
   $discount     = ($product->compare_price && $product->compare_price > $product->price)
       ? round((($product->compare_price - $product->price) / $product->compare_price) * 100)
       : 0;
-  $schemaImages = $product->images->map(fn($img) => asset('storage/'.$img->url))->toJson();
+  $schemaImages = $product->images->map(fn($img) => $imgUrl($img))->toJson();
   $searchIndex  = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
       'id'    => $p->id,
       'name'  => $p->name,
@@ -281,7 +282,7 @@
       <div class="relative bg-white rounded-2xl overflow-hidden border border-gray-200 mb-3" style="aspect-ratio:1/1;">
         @if($product->images->count())
           @foreach($product->images as $i => $img)
-          <img src="{{ asset('storage/'.$img->url) }}"
+          <img src="{{ $imgUrl($img) }}"
                alt="{{ $product->name }}"
                x-show="activeImg === {{ $i }}"
                class="w-full h-full object-contain p-4"
@@ -307,7 +308,7 @@
         <button @click="activeImg = {{ $i }}"
                 :class="activeImg === {{ $i }} ? 'ring-2 ring-offset-1 ring-p' : 'ring-1 ring-gray-200 hover:ring-gray-300'"
                 class="w-14 h-14 rounded-lg overflow-hidden bg-white flex-shrink-0 transition">
-          <img src="{{ asset('storage/'.$img->url) }}" alt="{{ $product->name }}" class="w-full h-full object-cover" loading="lazy">
+          <img src="{{ $imgUrl($img) }}" alt="{{ $product->name }}" class="w-full h-full object-cover" loading="lazy">
         </button>
         @endforeach
       </div>
