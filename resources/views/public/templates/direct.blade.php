@@ -848,10 +848,8 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
     <div>
       @if($logoUrl)
-      <div class="bg-white rounded-xl p-1.5 inline-flex mb-3">
-        <img src="{{ $logoUrl }}" alt="{{ $project->name }}"
-             style="max-height:52px; max-width:160px" class="object-contain w-auto" loading="lazy">
-      </div>
+      <img src="{{ $logoUrl }}" alt="{{ $project->name }}"
+           style="max-height:60px; max-width:200px" class="object-contain w-auto mb-3" loading="lazy">
       @else
       <p class="text-white font-bold text-lg mb-3">{{ $project->name }}</p>
       @endif

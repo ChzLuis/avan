@@ -1715,13 +1715,11 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     <div>
       <div class="flex items-center gap-3 mb-4">
         @if($logoSrc)
-        <div class="bg-white rounded-xl p-1.5 inline-flex">
-          <img src="{{ $logoSrc }}"
-               alt="Logo {{ $project->name }}"
-               style="max-height:52px; max-width:160px"
-               class="object-contain w-auto"
-               loading="lazy">
-        </div>
+        <img src="{{ $logoSrc }}"
+             alt="Logo {{ $project->name }}"
+             style="max-height:60px; max-width:200px"
+             class="object-contain w-auto"
+             loading="lazy">
         @else
         <div class="h-10 w-10 rounded-xl btn-p flex items-center justify-center text-white font-black text-lg">
           {{ strtoupper(substr($project->name,0,1)) }}
