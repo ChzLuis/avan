@@ -1329,11 +1329,14 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-10">
 
     <div>
-      @if($project->logo_url)
-      <img src="{{ asset('storage/'.$project->logo_url) }}" alt="{{ $project->name }}"
-           class="h-10 object-contain mb-4 brightness-0 invert" loading="lazy">
+      @php $footerLogo = ($settings['logo_url'] ?? '') ?: ($project->logo_url ?? ''); $footerLogoSrc = $footerLogo ? (str_starts_with($footerLogo,'http') ? $footerLogo : asset('storage/'.$footerLogo)) : ''; @endphp
+      @if($footerLogoSrc)
+      <div class="bg-white rounded-xl p-1.5 inline-flex mb-4">
+        <img src="{{ $footerLogoSrc }}" alt="{{ $project->name }}"
+             style="max-height:52px; max-width:160px" class="object-contain w-auto" loading="lazy">
+      </div>
       @else
-      <p class="text-white font-bold text-xl mb-4">ðŸŒ¿ {{ $project->name }}</p>
+      <p class="text-white font-bold text-xl mb-4">🌿 {{ $project->name }}</p>
       @endif
       <p class="text-white/60 text-sm leading-relaxed">{{ $seoDesc }}</p>
       @if($project->whatsapp)

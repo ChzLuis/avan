@@ -1017,8 +1017,12 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="max-w-6xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-12">
     {{-- Col 1: marca --}}
     <div>
-      @if($project->logo_url)
-      <img src="{{ asset('storage/'.$project->logo_url) }}" alt="{{ $project->name }}" class="h-8 object-contain mb-5 opacity-60" loading="lazy">
+      @php $footerLogo = ($settings['logo_url'] ?? '') ?: ($project->logo_url ?? ''); $footerLogoSrc = $footerLogo ? (str_starts_with($footerLogo,'http') ? $footerLogo : asset('storage/'.$footerLogo)) : ''; @endphp
+      @if($footerLogoSrc)
+      <div class="bg-white rounded-xl p-1.5 inline-flex mb-5">
+        <img src="{{ $footerLogoSrc }}" alt="{{ $project->name }}"
+             style="max-height:52px; max-width:160px" class="object-contain w-auto" loading="lazy">
+      </div>
       @else
       <p class="font-serif text-lg tracking-widest uppercase mb-5 text-gray-600">{{ $project->name }}</p>
       @endif
