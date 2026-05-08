@@ -295,6 +295,28 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     public function cancelar(RifaVenta $venta)
     {
         $venta->update(['status' => 'cancelado']);
+
+        // Notificar al cliente por WhatsApp
+        if ($venta->wa_number) {
+            $mensaje = "Muchas gracias por su interés 🙏\n\n"
+                . "En esta ocasión no pudimos procesar su solicitud porque el comprobante de pago no fue adjuntado o no se visualiza correctamente.\n\n"
+                . "Si desea intentarlo nuevamente, escribe *hola* y con gusto le ayudamos 😊\n\n"
+                . "_Quedamos atentos para cualquier consulta._";
+
+            try {
+                $project = app('active_project');
+                $botPort = $project->setting('bot_port') ?? 3003;
+                $response = \Illuminate\Support\Facades\Http::timeout(5)->post("http://127.0.0.1:{$botPort}/action", [
+                    'token'     => 'wa-bot-secret-2024',
+                    'action'    => 'send_message',
+                    'wa_number' => $venta->wa_number,
+                    'message'   => $mensaje,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Bot notify cancelar failed: ' . $e->getMessage());
+            }
+        }
+
         return response()->json(['ok' => true]);
     }
 
