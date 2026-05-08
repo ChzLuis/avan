@@ -62,6 +62,15 @@ class CategoryController extends Controller
         $data['type']       = $data['type'] ?? 'product';
         $data['is_active']  = true;
         $data['sort_order'] = $project->categories()->max('sort_order') + 1;
+
+        // Verificar que el parent_id pertenece al mismo proyecto
+        if (!empty($data['parent_id'])) {
+            abort_unless(
+                Category::where('id', $data['parent_id'])->where('project_id', $project->id)->exists(),
+                422, 'La categoría padre no pertenece a este proyecto.'
+            );
+        }
+
         $category = Category::create($data);
         return response()->json($category->load('children')->loadCount(['products', 'services']));
     }

@@ -25,4 +25,18 @@ class Product extends Model {
         return asset('storage/' . $url);
     }
     public function approvedReviews() { return $this->hasMany(Review::class)->where('is_approved', true)->latest(); }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $product) {
+            if ($product->category_id && $product->project_id) {
+                $catProjectId = Category::where('id', $product->category_id)->value('project_id');
+                if ($catProjectId && $catProjectId !== $product->project_id) {
+                    throw new \RuntimeException(
+                        "category_id {$product->category_id} pertenece al proyecto {$catProjectId}, no al proyecto {$product->project_id}."
+                    );
+                }
+            }
+        });
+    }
 }
