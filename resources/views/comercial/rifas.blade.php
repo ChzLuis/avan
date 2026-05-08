@@ -279,7 +279,7 @@ function abrirDetalle(id) {
     acciones.innerHTML += '<button onclick="activarEdicion()" class="text-xs bg-gray-100 text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-200 transition">✏️ Editar datos</button>';
     acciones.innerHTML += '<button onclick="rifaEliminar(' + id + ')" class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-xl hover:bg-red-100 transition">🗑️ Eliminar</button>';
 
-    if (v.status === 'pendiente') {
+    if (v.status === 'pendiente' || v.status === 'comprobante') {
         acciones.innerHTML += '<button onclick="rifaValidarSinTicket(' + id + ')" class="flex-1 text-sm bg-green-600 text-white px-4 py-2.5 rounded-xl hover:bg-green-700 transition font-semibold">✓ Validar pago</button>';
         acciones.innerHTML += '<button onclick="rifaCancelar(' + id + ')" class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-xl hover:bg-red-100 transition">✕ Cancelar</button>';
     }
