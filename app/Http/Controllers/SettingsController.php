@@ -416,9 +416,6 @@ class SettingsController extends Controller
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
-        // Crear categorías y subcategorías predefinidas de la plantilla
-        CatalogTemplates::applyCategories($project, $templateKey);
-
         return response()->json(['ok' => true, 'template' => $templateKey]);
     }
 
