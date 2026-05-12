@@ -13,6 +13,7 @@
   $footerLogoH    = max(24, (int)($settings['footer_logo_height'] ?? 60));
   $logoRaw        = $settings['logo_url'] ?? $project->logo_url ?? '';
   $logoSrc        = $logoRaw ? (str_starts_with($logoRaw,'http') ? $logoRaw : asset('storage/'.$logoRaw)) : '';
+  $logoHeight     = (int)($settings['logo_height'] ?? 40);
   $faviconRaw     = $settings['favicon_url'] ?? '';
   $faviconUrl     = $faviconRaw ? (str_starts_with($faviconRaw,'http') ? $faviconRaw : asset('storage/'.$faviconRaw)) : '';
   $isQuoteOnly    = ($settings['store_mode'] ?? 'direct') === 'quote_only';
