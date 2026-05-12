@@ -101,7 +101,7 @@ class ProductController extends Controller
         $product->update($data);
 
         if ($request->expectsJson()) {
-            $product->loadMissing('category');
+            $product->load('category');
             return response()->json(['product' => $this->productRow($product)]);
         }
         return back()->with('success', 'Producto actualizado.');

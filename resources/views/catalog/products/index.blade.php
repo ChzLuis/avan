@@ -259,8 +259,8 @@ document.addEventListener('alpine:init', () => {
                 this.select(data.product);
             } else {
                 const idx = this.products.findIndex(p => p.id === data.product.id);
-                if (idx > -1) this.products[idx] = data.product;
-                this.selected = data.product;
+                if (idx > -1) this.products.splice(idx, 1, { ...data.product });
+                this.selected = { ...data.product };
                 this.form = { ...data.product };
             }
             this.creating = false;
@@ -635,8 +635,7 @@ document.addEventListener('alpine:init', () => {
                                 <a href="{{ route('categories.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
                             <select class="input"
-                                    @change="form.category_id = $event.target.value"
-                                    x-effect="$nextTick(() => { $el.value = form.category_id ?? '' })"
+                                    x-model="form.category_id">
                                 <option value="">Sin categoría</option>
                                 <template x-for="c in categories" :key="c.id">
                                     <template x-if="c.children && c.children.length > 0">
