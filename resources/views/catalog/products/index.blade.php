@@ -141,7 +141,7 @@ window.__productPageData = {
         'has_tax'          => false,
         'tax_rate'         => 18,
         'is_available'     => (bool)$p->is_available,
-        'category_id'      => $p->category_id,
+        'category_id'      => $p->category_id ? (string)$p->category_id : '',
         'brand_catalog_id' => $p->brand_catalog_id,
         'category_name'    => $p->category?->name ?? '',
         'images'           => $p->images->map(fn($i) => ['id'=>$i->id,'url'=>$i->url,'is_main'=>$i->is_main])->values()->toArray(),
@@ -171,6 +171,7 @@ document.addEventListener('alpine:init', () => {
         csrf:       window.__productPageData.csrf,
         search: '',
         filterCat: null,
+        filterNoCat: false,
         filterStatus: '',
         filterStock: false,
         filterLowStock: false,
@@ -187,10 +188,11 @@ document.addEventListener('alpine:init', () => {
             return this.products.filter(p => {
                 if (this.search && !p.name.toLowerCase().includes(this.search.toLowerCase())
                     && !(p.sku||'').toLowerCase().includes(this.search.toLowerCase())) return false;
+                if (this.filterNoCat && p.category_id) return false;
                 if (this.filterCat !== null) {
-                    const cat = this.categories.find(c => c.id === this.filterCat);
-                    const childIds = cat ? (cat.children||[]).map(s => s.id) : [];
-                    if (p.category_id !== this.filterCat && !childIds.includes(p.category_id)) return false;
+                    const cat = this.categories.find(c => String(c.id) === String(this.filterCat));
+                    const childIds = cat ? (cat.children||[]).map(s => String(s.id)) : [];
+                    if (String(p.category_id) !== String(this.filterCat) && !childIds.includes(String(p.category_id))) return false;
                 }
                 if (this.filterStatus === 'active'   && !p.is_available) return false;
                 if (this.filterStatus === 'inactive' &&  p.is_available) return false;
@@ -221,12 +223,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         clearFilters() {
-            this.search = ''; this.filterCat = null; this.filterStatus = ''; this.filterStock = false; this.filterLowStock = false;
+            this.search = ''; this.filterCat = null; this.filterNoCat = false; this.filterStatus = ''; this.filterStock = false; this.filterLowStock = false;
         },
 
         select(p) {
             this.selected = p; this.creating = false; this.tab = 'info';
-            this.form = { ...p };
+            this.form = { ...p, category_id: p.category_id ? String(p.category_id) : '' };
         },
 
         openNew() {
@@ -395,38 +397,14 @@ document.addEventListener('alpine:init', () => {
         <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">Limpiar filtros</span>
     </div>
 
-    <div class="w-6 border-t border-gray-200 my-1"></div>
-
-    {{-- Categorías --}}
-    <div class="relative group">
-        <button @click="filterCat = null"
-                :class="filterCat===null ? 'bg-indigo-100 text-indigo-700' : 'text-gray-400 hover:text-gray-600'"
-                class="w-9 h-9 flex items-center justify-center rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-        </button>
-        <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">Todas las categorías</span>
-    </div>
-    @foreach($categories as $cat)
-    <div class="relative group">
-        <button @click="filterCat = filterCat==={{ $cat->id }} ? null : {{ $cat->id }}"
-                :class="filterCat==={{ $cat->id }} ? 'bg-indigo-100 text-indigo-700 font-bold' : 'text-gray-400 hover:text-gray-600'"
-                class="w-9 h-9 flex items-center justify-center rounded-lg text-xs font-black transition">
-            {{ mb_substr($cat->name, 0, 2) }}
-        </button>
-        <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
-            {{ $cat->name }}
-        </span>
-    </div>
-    @endforeach
 </div>
 
 {{-- ─── LISTA CENTRAL ─────────────────────────────────────────────── --}}
-<div class="w-72 border-r border-gray-200 flex-col bg-white flex-shrink-0"
-     :class="panel==='list' ? 'flex w-full md:w-72' : 'hidden md:flex md:w-72'">
+<div class="w-full border-r border-gray-200 flex-col bg-white flex-shrink-0"
+     :style="window.innerWidth >= 768 ? 'width:320px;flex-shrink:0' : ''"
+     :class="panel==='list' ? 'flex' : 'hidden md:flex'">
     {{-- Búsqueda --}}
-    <div class="p-3 border-b border-gray-200 flex-shrink-0">
+    <div class="px-3 pt-3 pb-2 border-b border-gray-200 flex-shrink-0 space-y-2">
         <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
             <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -438,6 +416,36 @@ document.addEventListener('alpine:init', () => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
+        </div>
+        {{-- Dropdown categorías --}}
+        <div class="relative" x-data="{ openCat: false }">
+            <button @click="openCat=!openCat" @click.outside="openCat=false"
+                    :class="(filterCat!==null||filterNoCat) ? 'bg-indigo-50 text-indigo-700 border-indigo-300' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300'"
+                    class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-xl transition">
+                <svg class="w-3.5 h-3.5 flex-shrink-0" :class="(filterCat!==null||filterNoCat)?'text-indigo-500':'text-orange-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+                <span class="flex-1 text-left truncate"
+                      x-text="filterNoCat ? 'Sin categoría' : (filterCat!==null ? (categories.find(c=>c.id===filterCat)?.name || 'Categoría') : 'Todas las categorías')"></span>
+                <svg class="w-3.5 h-3.5 flex-shrink-0 transition-transform" :class="openCat?'rotate-180':''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="openCat" x-cloak
+                 class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 max-h-56 overflow-y-auto">
+                <button @click="filterCat=null; filterNoCat=false; openCat=false"
+                        :class="filterCat===null&&!filterNoCat ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'"
+                        class="w-full text-left px-3 py-2 text-sm">Todas las categorías</button>
+                <button @click="filterNoCat=true; filterCat=null; openCat=false"
+                        :class="filterNoCat ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'"
+                        class="w-full text-left px-3 py-2 text-sm border-t border-gray-100">Sin categoría</button>
+                <template x-for="cat in categories" :key="cat.id">
+                    <button @click="filterCat=cat.id; filterNoCat=false; openCat=false"
+                            :class="filterCat===cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'"
+                            class="w-full text-left px-3 py-2 text-sm border-t border-gray-100 truncate"
+                            x-text="cat.name"></button>
+                </template>
+            </div>
         </div>
     </div>
 
@@ -626,18 +634,21 @@ document.addEventListener('alpine:init', () => {
                                 Categoria
                                 <a href="{{ route('categories.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
-                            <select x-model.number="form.category_id" class="input">
+                            <select class="input"
+                                    @change="form.category_id = $event.target.value"
+                                    x-effect="$nextTick(() => { $el.value = form.category_id ?? '' })"
                                 <option value="">Sin categoría</option>
                                 <template x-for="c in categories" :key="c.id">
                                     <template x-if="c.children && c.children.length > 0">
                                         <optgroup :label="c.name">
+                                            <option :value="String(c.id)" x-text="c.name"></option>
                                             <template x-for="s in c.children" :key="s.id">
-                                                <option :value="s.id" x-text="'  └ ' + s.name"></option>
+                                                <option :value="String(s.id)" x-text="'  └ ' + s.name"></option>
                                             </template>
                                         </optgroup>
                                     </template>
                                     <template x-if="!c.children || c.children.length === 0">
-                                        <option :value="c.id" x-text="c.name"></option>
+                                        <option :value="String(c.id)" x-text="c.name"></option>
                                     </template>
                                 </template>
                             </select>
