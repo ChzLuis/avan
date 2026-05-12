@@ -5,7 +5,7 @@
     <a href="{{ $canonicalUrl }}" class="flex items-center gap-2.5 flex-shrink-0">
       @if($logoUrl ?? $logoSrc ?? null)
         <img src="{{ $logoUrl ?? $logoSrc }}" alt="{{ $project->name }}"
-             style="height:{{ $logoHeight }}px; max-width:300px" class="object-contain w-auto">
+             style="height:{{ $logoHeight ?? 40 }}px; max-width:300px" class="object-contain w-auto">
       @else
         <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--c)">
           <span class="text-white font-black text-sm">{{ mb_strtoupper(mb_substr($project->name,0,1)) }}</span>
