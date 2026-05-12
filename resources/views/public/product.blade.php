@@ -110,108 +110,44 @@
 </head>
 <body class="bg-gray-50 min-h-screen" x-data="productStore()">
 
-{{-- ─── TOP BAR ─── --}}
-<div class="bg-gray-900 text-gray-300 text-xs py-2 px-4 hidden md:block">
-  <div class="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-    <div class="flex items-center gap-6">
-      @if($project->phone)
-      <span class="flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-        </svg>
-        {{ $project->phone }}
-      </span>
-      @endif
-      @if($project->address)
-      <span class="flex items-center gap-1.5 opacity-80">
-        <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-        {{ $project->address }}
-      </span>
-      @endif
-    </div>
-    <div class="flex items-center gap-4">
-      @php
-        $topSocials = [
-          'facebook_url'  => 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z',
-          'instagram_url' => 'M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01M6.5 19.5h11a3 3 0 003-3v-11a3 3 0 00-3-3h-11a3 3 0 00-3 3v11a3 3 0 003 3z',
-          'tiktok_url'    => 'M9 12a4 4 0 104 4V4a5 5 0 005 5',
-          'twitter_url'   => 'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z',
-        ];
-      @endphp
-      @foreach($topSocials as $key => $icon)
-      @if($settings[$key] ?? null)
-      <a href="{{ $settings[$key] }}" target="_blank" rel="noopener" class="hover:text-white transition">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}"/>
-        </svg>
-      </a>
-      @endif
-      @endforeach
-    </div>
-  </div>
-</div>
-
 {{-- ─── HEADER PRINCIPAL ─── --}}
-<header class="shadow-sm sticky top-0 z-30 border-b border-gray-100" style="background:{{ $headerBg }}; color:{{ $headerText }}">
-  <div class="max-w-[1400px] mx-auto px-4 flex items-center gap-4" style="min-height:{{ $headerHeight }}px">
+<header class="border-b border-gray-200 sticky top-0 z-40 shadow-sm" style="background:{{ $headerBg }}">
+  <div class="max-w-7xl mx-auto px-4 flex items-center gap-4" style="color:{{ $headerText }}; min-height:{{ $headerHeight }}px">
 
     {{-- Logo --}}
-    <a href="{{ $catalogUrl }}" class="flex items-center gap-2.5 flex-shrink-0" aria-label="{{ $project->name }}">
+    <a href="{{ $catalogUrl }}" class="flex items-center gap-2.5 flex-shrink-0">
       @if($logoSrc)
-        <img src="{{ $logoSrc }}"
-             alt="Logo {{ $project->name }}"
-             class="object-contain w-auto"
-             style="height:{{ min($headerHeight - 16, 56) }}px; max-width:240px">
+        <img src="{{ $logoSrc }}" alt="{{ $project->name }}"
+             style="height:{{ $logoHeight ?? 40 }}px; max-width:300px" class="object-contain w-auto">
       @else
-        <div class="h-11 w-11 rounded-xl btn-p flex items-center justify-center text-white font-black text-xl select-none">
-          {{ strtoupper(substr($project->name,0,1)) }}
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--c)">
+          <span class="text-white font-black text-sm">{{ mb_strtoupper(mb_substr($project->name,0,1)) }}</span>
         </div>
-        <span class="font-black text-xl tracking-tight hidden sm:block" style="color:{{ $headerText }}">{{ $project->name }}</span>
+        <span class="font-bold text-gray-800 text-sm hidden sm:block truncate max-w-[140px]">{{ $project->name }}</span>
       @endif
     </a>
 
-    {{-- Buscador central con predicción --}}
-    <div class="flex-1 max-w-2xl mx-auto relative" @click.outside="searchOpen=false">
-      <div class="flex items-stretch bg-gray-50 rounded-xl border-2 border-gray-200 overflow-hidden focus-within:border-[var(--c)] focus-within:bg-white transition-all">
-        @if($categories->count())
-        <select x-model="searchCat"
-                class="bg-transparent text-sm text-gray-600 pl-4 pr-2 border-r border-gray-200 outline-none cursor-pointer hidden lg:block min-w-[150px] font-medium">
-          <option value="">Todas las categorías</option>
-          @foreach($categories as $cat)
-          <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-          @endforeach
-        </select>
-        @endif
-        <input x-model="search"
-               @input="searchOpen = search.trim().length >= 2; searchIdx = -1"
-               @keydown.escape="searchOpen=false; search=''; searchIdx=-1"
-               @keydown.arrow-down.prevent="if(suggestions.length) searchIdx=Math.min(searchIdx+1,suggestions.length-1)"
-               @keydown.arrow-up.prevent="searchIdx=Math.max(searchIdx-1,-1)"
-               @keydown.enter.prevent="suggestions[searchIdx] ? selectSuggestion(suggestions[searchIdx]) : goSearch()"
-               type="search"
-               placeholder="Buscar productos, marcas..."
-               autocomplete="off"
-               class="flex-1 bg-transparent px-4 py-3 text-sm outline-none min-w-0 placeholder-gray-400">
-        <button @click="goSearch()" class="btn-p px-5 py-3 text-sm font-semibold flex-shrink-0 flex items-center gap-1.5 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
-          </svg>
-          <span class="hidden sm:block">Buscar</span>
-        </button>
-      </div>
-      {{-- Dropdown predictivo --}}
+    {{-- Buscador central --}}
+    <div class="flex-1 max-w-lg mx-auto relative" @click.outside="searchOpen=false">
+      <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+      </svg>
+      <input type="text" x-model="search" placeholder="Buscar producto..."
+             @input="searchOpen = search.trim().length >= 2; searchIdx = -1"
+             @keydown.arrow-down.prevent="if(suggestions.length){searchIdx=(searchIdx+1)%suggestions.length}"
+             @keydown.arrow-up.prevent="if(suggestions.length){searchIdx=(searchIdx-1+suggestions.length)%suggestions.length}"
+             @keydown.enter.prevent="if(searchIdx>=0){selectSuggestion(suggestions[searchIdx])}else{searchOpen=false}"
+             @keydown.escape="searchOpen=false;searchIdx=-1"
+             class="w-full border border-gray-200 rounded-full py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-[var(--c)] transition bg-gray-50 focus:bg-white">
       <div x-show="searchOpen && suggestions.length > 0" x-cloak
            x-transition:enter="transition ease-out duration-100"
-           x-transition:enter-start="opacity-0 -translate-y-1"
-           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:enter-start="opacity-0 scale-95"
+           x-transition:enter-end="opacity-100 scale-100"
            class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-[200] overflow-hidden">
         <template x-for="(p, i) in suggestions" :key="p.id">
           <button @click="selectSuggestion(p)"
-                  :class="searchIdx===i ? 'bg-indigo-50' : 'hover:bg-gray-50'"
-                  class="flex items-center gap-3 w-full px-4 py-2.5 transition-colors text-left border-b border-gray-100 last:border-0">
+                  :class="searchIdx===i?'bg-gray-50':''"
+                  class="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-gray-50 transition text-left border-b border-gray-100 last:border-0">
             <div class="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
               <img x-show="p.img" :src="p.img" class="w-full h-full object-cover">
               <div x-show="!p.img" class="w-full h-full flex items-center justify-center">
@@ -222,51 +158,20 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-gray-800 truncate" x-html="_highlight(p.name)"></p>
-              <p class="text-xs text-gray-400 truncate" x-text="p.cat"></p>
+              <p class="text-xs text-gray-400" x-text="p.cat"></p>
             </div>
-            <div class="text-right flex-shrink-0 ml-2">
-              <p class="text-sm font-bold" style="color:var(--c)" x-text="'{{ $currency }} ' + p.price.toFixed(2)"></p>
-              <p x-show="p.cp && p.cp > p.price" class="text-xs text-gray-400 line-through" x-text="'{{ $currency }} ' + (p.cp||0).toFixed(2)"></p>
-            </div>
-            <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
+            <p class="text-sm font-bold flex-shrink-0" style="color:var(--c)" x-text="'{{ $currency }} ' + p.price.toFixed(2)"></p>
           </button>
         </template>
-        <button @click="goSearch()"
-                class="flex items-center justify-between w-full px-4 py-2.5 bg-gray-50 border-t border-gray-100 hover:bg-gray-100 transition-colors text-left">
-          <span class="text-xs font-semibold text-gray-600">Ver todos los resultados
-            <span style="color:var(--c)" x-text="'(' + suggestions.length + ')'"></span>
-          </span>
-          <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
       </div>
     </div>
 
-    {{-- Acciones --}}
-    <div class="flex items-center gap-2 flex-shrink-0">
-      @if($project->whatsapp)
-      <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}?text={{ urlencode('Hola, me interesa: '.$product->name) }}"
-         target="_blank" rel="noopener"
-         class="flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba5a] text-white text-sm font-semibold px-3 py-2.5 rounded-xl transition">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.901 0-3.681-.506-5.215-1.389l-.375-.222-3.516.922.938-3.428-.244-.394A9.957 9.957 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
-        </svg>
-        <span class="hidden md:block">WhatsApp</span>
-      </a>
-      @endif
-      <button @click="drawerOpen=true"
-              class="relative p-2.5 hover:bg-gray-100 rounded-xl transition"
-              aria-label="Ver carrito">
-        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-        </svg>
-        <span x-show="cartCount > 0" x-text="cartCount" x-cloak
-              class="absolute -top-0.5 -right-0.5 badge-p text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center leading-none"></span>
-      </button>
-    </div>
+    {{-- Carrito --}}
+    <a href="{{ $catalogUrl }}" class="relative flex-shrink-0 p-2 rounded-lg hover:bg-gray-100 transition" style="color:var(--c)" title="Volver al catálogo">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+      </svg>
+    </a>
 
   </div>
 </header>
