@@ -238,6 +238,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/payments', [SettingsController::class, 'payments'])->name('settings.payments');
         Route::post('/settings/payments',[SettingsController::class, 'updatePayments'])->name('settings.payments.update');
         Route::get('/settings/modules',  [SettingsController::class, 'modules'])->name('settings.modules');
+        Route::get('/settings/qr',       [SettingsController::class, 'qr'])->name('settings.qr');
         Route::get('/settings/seo',      [SettingsController::class, 'seo'])->name('settings.seo');
         Route::post('/settings/seo',     [SettingsController::class, 'updateSeo'])->name('settings.seo.update');
         Route::post('/settings/modules', [SettingsController::class, 'updateModules'])->name('settings.modules.update');

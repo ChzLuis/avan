@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cotización — Mercado Mayorista + Prueba Tu Suerte — BIXO</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  body { font-family:'Segoe UI', Arial, sans-serif; background:#f4f6f9; }
+
+  .page {
+    width:210mm; min-height:297mm;
+    margin:24px auto; background:#fff;
+    box-shadow:0 4px 28px rgba(0,0,0,0.13);
+    overflow:hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background:#0f172a;
+    padding:36px 48px 28px;
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .brand-name {
+    font-size:28px; font-weight:800; color:#fff; letter-spacing:2px;
+  }
+  .brand-tag {
+    font-size:11px; color:#94a3b8; letter-spacing:3px; text-transform:uppercase; margin-top:2px;
+  }
+  .doc-block { text-align:right; }
+  .doc-label { font-size:10px; color:#64748b; letter-spacing:3px; text-transform:uppercase; }
+  .doc-titulo { font-size:26px; font-weight:800; color:#10b981; letter-spacing:1px; line-height:1; margin-top:2px; }
+  .doc-num { font-size:11px; color:#94a3b8; margin-top:6px; }
+
+  /* ── FRANJA VERDE ── */
+  .accent-bar {
+    height:4px;
+    background:linear-gradient(90deg, #10b981, #059669, #0f172a);
+  }
+
+  /* ── DATOS CLIENTE ── */
+  .client-section {
+    background:#f8fafc;
+    padding:18px 48px;
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    gap:24px; border-bottom:1px solid #e2e8f0;
+  }
+  .client-field label {
+    display:block; font-size:9px; font-weight:700; color:#10b981;
+    text-transform:uppercase; letter-spacing:2px; margin-bottom:4px;
+  }
+  .client-value {
+    font-size:13px; font-weight:600; color:#0f172a;
+    border-bottom:1.5px solid #cbd5e1; padding-bottom:4px; min-height:22px;
+  }
+
+  /* ── BODY ── */
+  .body { padding:24px 48px; }
+
+  /* ── INTRO ── */
+  .intro-box {
+    background:linear-gradient(135deg,#f0fdf4,#ecfdf5);
+    border:1px solid #bbf7d0; border-radius:12px;
+    padding:14px 18px; margin-bottom:22px;
+    font-size:12px; color:#166534; line-height:1.6;
+  }
+  .intro-box strong { color:#14532d; }
+
+  /* ── SECCIÓN ── */
+  .section { margin-bottom:20px; }
+  .section-header {
+    display:flex; align-items:center; gap:10px; margin-bottom:10px;
+  }
+  .section-dot {
+    width:10px; height:10px; border-radius:50%; flex-shrink:0;
+  }
+  .dot-green  { background:#10b981; }
+  .dot-purple { background:#8b5cf6; }
+  .dot-blue   { background:#3b82f6; }
+  .dot-orange { background:#f97316; }
+  .section-title {
+    font-size:11px; font-weight:800; color:#0f172a;
+    text-transform:uppercase; letter-spacing:2px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px;
+    background:#fff;
+  }
+  .card-subtitle {
+    font-size:12px; font-weight:600; color:#475569; margin-bottom:12px;
+    padding-bottom:8px; border-bottom:1px dashed #e2e8f0;
+  }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; }
+  .item {
+    display:flex; align-items:flex-start; gap:8px;
+    padding:4px 0; border-bottom:1px dashed #f1f5f9; font-size:11.5px; color:#334155;
+  }
+  .item:last-child { border-bottom:none; }
+  .check { font-size:12px; font-weight:700; flex-shrink:0; }
+  .check-green  { color:#10b981; }
+  .check-purple { color:#8b5cf6; }
+
+  /* ── SISTEMA BADGE ── */
+  .sys-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px;
+    padding:3px 10px; border-radius:20px; margin-bottom:10px;
+  }
+  .badge-green  { background:#dcfce7; color:#15803d; }
+  .badge-purple { background:#ede9fe; color:#7c3aed; }
+
+  /* ── PRECIO PAQUETE ── */
+  .precio-card {
+    background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius:14px; padding:22px 28px;
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+  }
+  .precio-label { font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:2px; }
+  .precio-nombre { font-size:14px; font-weight:700; color:#fff; margin-top:3px; }
+  .precio-inc { font-size:10px; color:#64748b; margin-top:2px; }
+  .precio-right { text-align:right; }
+  .precio-amount { font-size:38px; font-weight:900; color:#10b981; line-height:1; }
+  .precio-currency { font-size:14px; color:#94a3b8; }
+
+  /* ── SOPORTE MENSUAL ── */
+  .soporte-card {
+    background:#f8fafc; border:2px dashed #e2e8f0; border-radius:12px;
+    padding:16px 20px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .soporte-left { display:flex; align-items:center; gap:14px; }
+  .soporte-icon { font-size:24px; }
+  .soporte-titulo { font-size:13px; font-weight:700; color:#0f172a; }
+  .soporte-desc { font-size:11px; color:#64748b; margin-top:2px; line-height:1.4; }
+  .soporte-price-label { font-size:10px; color:#94a3b8; text-align:right; text-transform:uppercase; letter-spacing:1px; }
+  .soporte-price-amount { font-size:28px; font-weight:900; color:#0f172a; line-height:1; text-align:right; }
+  .soporte-price-period { font-size:10px; color:#94a3b8; text-align:right; }
+
+  /* ── FORMA DE PAGO ── */
+  .pago-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+  .pago-item {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+    padding:12px 16px; display:flex; align-items:center; gap:12px;
+  }
+  .pago-pct { font-size:22px; font-weight:900; color:#10b981; }
+  .pago-desc { font-size:11px; color:#64748b; line-height:1.4; }
+
+  /* ── INFO BOXES ── */
+  .info-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px; }
+  .info-box {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+    padding:12px 14px; display:flex; align-items:center; gap:10px;
+  }
+  .info-icon { font-size:20px; }
+  .info-title { font-size:9.5px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; }
+  .info-value { font-size:12px; font-weight:700; color:#0f172a; margin-top:2px; }
+
+  /* ── FIRMAS ── */
+  .firma-section { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:10px; }
+  .firma-line { border-top:1.5px solid #cbd5e1; margin-bottom:8px; }
+  .firma-label { font-size:10px; color:#94a3b8; text-align:center; }
+  .firma-name { font-size:12px; font-weight:700; color:#0f172a; text-align:center; margin-top:2px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background:#0f172a; margin-top:24px;
+    padding:14px 48px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .footer-brand { font-size:13px; font-weight:800; color:#fff; letter-spacing:1px; }
+  .footer-sub { font-size:10px; color:#475569; margin-top:1px; }
+  .footer-note { font-size:10px; color:#475569; text-align:right; line-height:1.6; }
+
+  @media print {
+    body { background:#fff !important; }
+    .page { margin:0 !important; box-shadow:none !important; width:100% !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="brand-name">BIXO</div>
+      <div class="brand-tag">Soluciones Digitales</div>
+    </div>
+    <div class="doc-block">
+      <div class="doc-label">Documento</div>
+      <div class="doc-titulo">COTIZACIÓN</div>
+      <div class="doc-num">N° COT-2026-003 &nbsp;|&nbsp; Fecha: 14 / 05 / 2026</div>
+    </div>
+  </div>
+  <div class="accent-bar"></div>
+
+  <!-- DATOS CLIENTE -->
+  <div class="client-section">
+    <div class="client-field">
+      <label>Cliente</label>
+      <div class="client-value">&nbsp;</div>
+    </div>
+    <div class="client-field">
+      <label>Empresa / Negocio</label>
+      <div class="client-value">&nbsp;</div>
+    </div>
+    <div class="client-field">
+      <label>Teléfono / WhatsApp</label>
+      <div class="client-value">&nbsp;</div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- INTRO -->
+    <div class="intro-box">
+      Propuesta que incluye el desarrollo de <strong>2 sistemas</strong>: un catálogo con ruleta/sorteo de premios
+      (<strong>Prueba Tu Suerte</strong>) y un catálogo de ventas mayoristas (<strong>Mercado Mayorista</strong>),
+      más un servicio de soporte mensual con <strong>2 bots de atención 24/7</strong>.
+    </div>
+
+    <!-- SISTEMA 1: MERCADO MAYORISTA -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot dot-green"></div>
+        <div class="section-title">Sistema 1 — Mercado Mayorista</div>
+      </div>
+      <div class="card">
+        <div class="sys-badge badge-green">📦 Catálogo de ventas mayoristas</div>
+        <div class="grid-2">
+          <div>
+            <div class="item"><span class="check check-green">✓</span> Catálogo virtual en la nube</div>
+            <div class="item"><span class="check check-green">✓</span> Panel de administración</div>
+            <div class="item"><span class="check check-green">✓</span> Gestión de inventario y precios</div>
+            <div class="item"><span class="check check-green">✓</span> Registro de ventas y pedidos</div>
+            <div class="item"><span class="check check-green">✓</span> Generación de cotizaciones</div>
+          </div>
+          <div>
+            <div class="item"><span class="check check-green">✓</span> Gestión de clientes y proveedores</div>
+            <div class="item"><span class="check check-green">✓</span> POS de ventas</div>
+            <div class="item"><span class="check check-green">✓</span> Reportes de rentabilidad</div>
+            <div class="item"><span class="check check-green">✓</span> Acceso desde cualquier dispositivo</div>
+            <div class="item"><span class="check check-green">✓</span> Personalización del catálogo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SISTEMA 2: PRUEBA TU SUERTE -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot dot-purple"></div>
+        <div class="section-title">Sistema 2 — Prueba Tu Suerte</div>
+      </div>
+      <div class="card">
+        <div class="sys-badge badge-purple">🎰 Catálogo con ruleta de premios</div>
+        <div class="grid-2">
+          <div>
+            <div class="item"><span class="check check-purple">✓</span> Catálogo de productos con ruleta</div>
+            <div class="item"><span class="check check-purple">✓</span> Configuración de premios y probabilidades</div>
+            <div class="item"><span class="check check-purple">✓</span> Panel de administración</div>
+            <div class="item"><span class="check check-purple">✓</span> Registro de participantes</div>
+            <div class="item"><span class="check check-purple">✓</span> Control de premios entregados</div>
+          </div>
+          <div>
+            <div class="item"><span class="check check-purple">✓</span> Diseño personalizado</div>
+            <div class="item"><span class="check check-purple">✓</span> Acceso desde cualquier dispositivo</div>
+            <div class="item"><span class="check check-purple">✓</span> SSL y alojamiento en la nube</div>
+            <div class="item"><span class="check check-purple">✓</span> Reportes de actividad</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVERSIÓN -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot dot-blue"></div>
+        <div class="section-title">Inversión</div>
+      </div>
+
+      <!-- Paquete único -->
+      <div class="precio-card">
+        <div>
+          <div class="precio-label">Paquete completo</div>
+          <div class="precio-nombre">2 Sistemas · Precio único de desarrollo</div>
+          <div class="precio-inc">Precio único · Incluye IGV</div>
+        </div>
+        <div class="precio-right">
+          <div class="precio-currency">S/</div>
+          <div class="precio-amount">500.00</div>
+        </div>
+      </div>
+
+      <!-- Soporte mensual -->
+      <div class="soporte-card">
+        <div class="soporte-left">
+          <div class="soporte-icon">🤖</div>
+          <div>
+            <div class="soporte-titulo">Soporte mensual + 2 Bots 24/7</div>
+            <div class="soporte-desc">
+              Mantenimiento de ambos sistemas · 2 bots de atención automática por WhatsApp activos las 24 horas<br>
+              Actualizaciones · Monitoreo · Soporte técnico continuo
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="soporte-price-label">Mensual</div>
+          <div class="soporte-price-amount">S/ 100</div>
+          <div class="soporte-price-period">/ mes</div>
+        </div>
+      </div>
+
+      <!-- Forma de pago -->
+      <div class="pago-grid">
+        <div class="pago-item">
+          <div class="pago-pct">50%</div>
+          <div class="pago-desc">Pago inicial para inicio del desarrollo</div>
+        </div>
+        <div class="pago-item">
+          <div class="pago-pct">50%</div>
+          <div class="pago-desc">Contra entrega y conformidad del cliente</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="info-icon">⏱️</div>
+        <div>
+          <div class="info-title">Tiempo de entrega</div>
+          <div class="info-value">7 a 10 días hábiles</div>
+        </div>
+      </div>
+      <div class="info-box">
+        <div class="info-icon">📅</div>
+        <div>
+          <div class="info-title">Vigencia</div>
+          <div class="info-value">7 días calendario</div>
+        </div>
+      </div>
+      <div class="info-box">
+        <div class="info-icon">🤖</div>
+        <div>
+          <div class="info-title">Bots incluidos</div>
+          <div class="info-value">2 bots · 24/7</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIRMAS -->
+    <div class="firma-section">
+      <div>
+        <div class="firma-line"></div>
+        <div class="firma-label">Firma y sello del proveedor</div>
+        <div class="firma-name">BIXO Soluciones Digitales</div>
+      </div>
+      <div>
+        <div class="firma-line"></div>
+        <div class="firma-label">Firma y conformidad del cliente</div>
+        <div class="firma-name">&nbsp;</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      <div class="footer-brand">BIXO Soluciones Digitales</div>
+      <div class="footer-sub">Transformación digital para tu negocio</div>
+    </div>
+    <div class="footer-note">
+      Sujeto a entrega de información y aprobación del cliente<br>
+      Esta cotización es válida por 7 días calendario
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -343,6 +343,13 @@ class SettingsController extends Controller
         return back()->with('success', 'Configuración guardada.');
     }
 
+    public function qr()
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        return view('settings.qr', compact('project'));
+    }
+
     public function payments()
     {
         /** @var \App\Models\Project $project */

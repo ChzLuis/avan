@@ -203,6 +203,9 @@
             ['l'=>'Módulos',    'h'=>$pid?route('settings.modules'):'#',     'r'=>'settings.modules',
              'i'=>'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
              'perm' => null],
+            ['l'=>'QR',         'h'=>$pid?route('settings.qr'):'#',          'r'=>'settings.qr',
+             'i'=>'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z',
+             'perm' => null],
             ['l'=>'Roles',      'h'=>$pid?route('roles.index'):'#',          'r'=>'roles.index',
              'i'=>'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
              'perm' => null],
@@ -237,6 +240,7 @@
                 'settings.design'   => request()->routeIs('settings.design*'),
                 'settings.payments' => request()->routeIs('settings.payments*'),
                 'settings.modules'  => request()->routeIs('settings.modules*'),
+                'settings.qr'       => request()->routeIs('settings.qr*'),
                 'catalogs.index'    => request()->routeIs('catalogs*'),
                 default             => request()->routeIs($item['r'].'*'),
             };
