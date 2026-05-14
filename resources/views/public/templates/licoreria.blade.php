@@ -83,31 +83,31 @@ $footerCopyright = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $
 :root {
   --gold: {{ $primaryColor }};
   --gold2: {{ $secondaryColor }};
-  --navy: #0d1117;
-  --navy2: #161b22;
-  --navy3: #1c2430;
+  --navy: #ffffff;
+  --navy2: #f8f9fa;
+  --navy3: #f1f3f5;
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-sans: 'Inter', sans-serif;
 }
 *, body { font-family: var(--font-sans); }
 .serif { font-family: var(--font-serif); }
-.btn-gold { background: var(--gold); color: #0d1117; font-weight: 700; }
+.btn-gold { background: var(--gold); color: #fff; font-weight: 700; }
 .btn-gold:hover { background: var(--gold2); }
 .btn-outline-gold { border: 1.5px solid var(--gold); color: var(--gold); }
-.btn-outline-gold:hover { background: var(--gold); color: #0d1117; }
+.btn-outline-gold:hover { background: var(--gold); color: #fff; }
 .text-gold { color: var(--gold); }
 .border-gold { border-color: var(--gold); }
 .bg-gold { background: var(--gold); }
 [x-cloak] { display:none!important; }
 
 /* Drawer */
-.drawer-overlay { position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:40;backdrop-filter:blur(4px); }
-.drawer { position:fixed;top:0;right:0;height:100%;width:420px;max-width:96vw;background:#fff;z-index:50;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,.3); }
+.drawer-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;backdrop-filter:blur(4px); }
+.drawer { position:fixed;top:0;right:0;height:100%;width:420px;max-width:96vw;background:#fff;z-index:50;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,.15); }
 @media(max-width:640px){ .drawer{ width:100%; } }
 
 /* Cards */
 .lic-card { transition: transform .3s ease, box-shadow .3s ease; }
-.lic-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.5); }
+.lic-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.12); }
 .lic-card .lic-overlay { opacity: 0; transition: opacity .3s; }
 .lic-card:hover .lic-overlay { opacity: 1; }
 .lic-card .lic-img img { transition: transform .5s ease; }
@@ -123,10 +123,10 @@ $footerCopyright = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $
 /* Badge oferta rojo */
 .badge-oferta { background: #dc2626; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; letter-spacing: .05em; }
 
-/* Input search dark */
-.search-dark { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); color: #fff; }
-.search-dark::placeholder { color: rgba(255,255,255,.4); }
-.search-dark:focus { background: rgba(255,255,255,.1); border-color: var(--gold); outline: none; }
+/* Input search */
+.search-dark { background: #f1f3f5; border: 1px solid #e2e8f0; color: #1a202c; }
+.search-dark::placeholder { color: #94a3b8; }
+.search-dark:focus { background: #fff; border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 15%, transparent); }
 </style>
 
 @php
@@ -161,7 +161,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 })->values();
 @endphp
 </head>
-<body class="text-gray-100" style="background:var(--navy);" x-data="store()" x-cloak>
+<body class="text-gray-800" style="background:var(--navy);" x-data="store()" x-cloak>
 
 {{-- TOAST --}}
 <div x-show="toastShow" x-cloak
@@ -176,11 +176,11 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </div>
 
 {{-- ═══ TOP BAR ═══ --}}
-<div style="background:#080c10;" class="text-xs py-2 border-b border-white/5">
+<div style="background:#1a1a1a;" class="text-xs py-2 border-b border-black/10">
   <div class="max-w-[1400px] mx-auto px-4 flex items-center justify-between gap-4">
     <div class="flex items-center gap-5">
       @if($project->phone)
-      <span class="flex items-center gap-1.5 text-gray-400">
+      <span class="flex items-center gap-1.5 text-gray-300">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
         {{ $project->phone }}
       </span>
@@ -189,7 +189,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <span class="text-gold font-semibold hidden sm:inline">🚚 Envío gratis desde {{ $currency }} {{ number_format($shippingFreeFrom,0) }}</span>
       @endif
     </div>
-    <div class="flex items-center gap-3 text-gray-500">
+    <div class="flex items-center gap-3 text-gray-400">
       @foreach(['facebook_url'=>'FB','instagram_url'=>'IG','tiktok_url'=>'TK'] as $key=>$lbl)
       @if($settings[$key] ?? null)
       <a href="{{ $settings[$key] }}" target="_blank" rel="noopener" class="hover:text-gold transition text-xs font-semibold">{{ $lbl }}</a>
@@ -200,7 +200,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </div>
 
 {{-- ═══ HEADER ═══ --}}
-<header style="background:var(--navy2);border-bottom:1px solid rgba(184,151,58,.15);" class="sticky top-0 z-30">
+<header style="background:#fff;border-bottom:1px solid #e9ecef;" class="sticky top-0 z-30">
   <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4">
 
     {{-- Logo --}}
@@ -218,13 +218,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     {{-- Categorías nav --}}
     <nav class="flex-1 hidden lg:flex items-center justify-center gap-1 no-scroll overflow-x-auto">
       <button @click="filterCat=''; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-              :class="filterCat==='' ? 'text-gold border-b border-gold' : 'text-gray-400 hover:text-gray-200 border-b border-transparent'"
+              :class="filterCat==='' ? 'text-gold border-b border-gold' : 'text-gray-500 hover:text-gray-800 border-b border-transparent'"
               class="px-3 py-1.5 text-sm font-medium whitespace-nowrap transition">
         Todo
       </button>
       @foreach($categories as $cat)
       <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-              :class="filterCat==='{{ $cat->id }}' ? 'text-gold border-b border-gold' : 'text-gray-400 hover:text-gray-200 border-b border-transparent'"
+              :class="filterCat==='{{ $cat->id }}' ? 'text-gold border-b border-gold' : 'text-gray-500 hover:text-gray-800 border-b border-transparent'"
               class="px-3 py-1.5 text-sm font-medium whitespace-nowrap transition">
         {{ $cat->name }}
       </button>
@@ -248,23 +248,23 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
              x-transition:enter="transition ease-out duration-100"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
-             style="background:var(--navy2);border:1px solid rgba(184,151,58,.2);"
-             class="absolute left-0 top-full mt-1 rounded-xl shadow-2xl z-[200] overflow-hidden min-w-[300px]">
+             style="background:#fff;border:1px solid #e9ecef;"
+             class="absolute left-0 top-full mt-1 rounded-xl shadow-xl z-[200] overflow-hidden min-w-[300px]">
           <template x-for="(p,i) in suggestions" :key="p.id">
-            <button @click="selectSuggestion(p)" :class="searchIdx===i?'bg-white/5':''"
-                    class="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-white/5 transition text-left border-b border-white/5 last:border-0">
-              <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
+            <button @click="selectSuggestion(p)" :class="searchIdx===i?'bg-gray-50':''"
+                    class="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-gray-50 transition text-left border-b border-gray-100 last:border-0">
+              <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                 <img x-show="p.img" :src="p.img" class="w-full h-full object-cover">
-                <div x-show="!p.img" class="w-full h-full flex items-center justify-center text-gray-600 text-xs">🍾</div>
+                <div x-show="!p.img" class="w-full h-full flex items-center justify-center text-gray-400 text-xs">🍾</div>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-200 truncate" x-html="_highlight(p.name)"></p>
+                <p class="text-sm font-semibold text-gray-800 truncate" x-html="_highlight(p.name)"></p>
                 <p class="text-xs text-gray-500" x-text="p.cat"></p>
               </div>
               <p class="text-sm font-bold text-gold flex-shrink-0" x-text="'{{ $currency }} '+p.price.toFixed(2)"></p>
             </button>
           </template>
-          <div class="px-4 py-2 text-center border-t border-white/5">
+          <div class="px-4 py-2 text-center border-t border-gray-100">
             <button @click="searchOpen=false;_scrollToCatalog()" class="text-xs font-semibold text-gold">Ver todos los resultados →</button>
           </div>
         </div>
@@ -289,40 +289,41 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   </div>
 
   {{-- Nav móvil categorías --}}
-  <div class="lg:hidden flex gap-1 px-4 pb-2 no-scroll overflow-x-auto">
+  <div class="lg:hidden flex gap-1 px-4 pb-2 no-scroll overflow-x-auto border-t border-gray-100">
     <button @click="filterCat=''; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-            :class="filterCat===''?'bg-gold text-gray-900':'bg-white/5 text-gray-400'"
-            class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition">Todo</button>
+            :class="filterCat===''?'bg-gold text-white':'bg-gray-100 text-gray-500'"
+            class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition mt-2">Todo</button>
     @foreach($categories as $cat)
     <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-            :class="filterCat==='{{ $cat->id }}'?'bg-gold text-gray-900':'bg-white/5 text-gray-400'"
-            class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition">{{ $cat->name }}</button>
+            :class="filterCat==='{{ $cat->id }}'?'bg-gold text-white':'bg-gray-100 text-gray-500'"
+            class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition mt-2">{{ $cat->name }}</button>
     @endforeach
   </div>
 </header>
 
 {{-- ═══ HERO ═══ --}}
-<section class="relative overflow-hidden flex items-end" style="min-height:520px;background:{{ $heroBg }};">
-  {{-- Fondo decorativo --}}
-  <div class="absolute inset-0" style="background:linear-gradient(135deg,#080c10 0%,#1a1000 50%,#080c10 100%);"></div>
-  <div class="absolute inset-0 opacity-[0.03]" style="background-image:repeating-linear-gradient(45deg,#b8973a 0,#b8973a 1px,transparent 0,transparent 50%);background-size:40px 40px;"></div>
+<section class="relative overflow-hidden flex items-end" style="min-height:480px;background:{{ $heroBg && $heroBg !== '#0d1117' ? $heroBg : '#fafafa' }};">
+  {{-- Fondo decorativo sutil --}}
+  <div class="absolute inset-0 opacity-[0.04]" style="background-image:repeating-linear-gradient(45deg,#b8973a 0,#b8973a 1px,transparent 0,transparent 50%);background-size:40px 40px;"></div>
   {{-- Círculo decorativo dorado --}}
-  <div class="absolute right-0 top-0 w-[600px] h-[600px] rounded-full opacity-5" style="background:radial-gradient(circle,var(--gold) 0%,transparent 70%);transform:translate(30%,-30%);"></div>
+  <div class="absolute right-0 top-0 w-[600px] h-[600px] rounded-full opacity-[0.08]" style="background:radial-gradient(circle,var(--gold) 0%,transparent 70%);transform:translate(30%,-30%);"></div>
+  {{-- Franja dorada izquierda --}}
+  <div class="absolute left-0 top-0 bottom-0 w-1.5" style="background:linear-gradient(to bottom, var(--gold), var(--gold2));"></div>
   {{-- Texto hero --}}
   <div class="relative z-10 max-w-[1400px] mx-auto px-6 pb-16 pt-20 w-full">
     <div class="max-w-2xl">
       @if($heroBadge)
-      <div class="inline-flex items-center gap-2 mb-5 border border-gold/30 px-4 py-1.5 rounded-full">
+      <div class="inline-flex items-center gap-2 mb-5 border px-4 py-1.5 rounded-full" style="border-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,transparent)">
         <span class="text-[11px] font-bold uppercase tracking-[.2em] text-gold">{{ $heroBadge }}</span>
       </div>
       @endif
-      <h1 class="serif font-black text-5xl md:text-7xl leading-none text-white mb-4">
+      <h1 class="serif font-black text-5xl md:text-7xl leading-none text-gray-900 mb-4">
         {{ $heroTitle }}
       </h1>
-      <p class="text-gray-400 text-lg mb-8 leading-relaxed max-w-lg">{{ $heroSub }}</p>
+      <p class="text-gray-500 text-lg mb-8 leading-relaxed max-w-lg">{{ $heroSub }}</p>
       <div class="flex flex-wrap gap-3">
         <button @click="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-                class="btn-gold px-7 py-3 rounded-full text-sm font-bold uppercase tracking-wide transition">
+                class="btn-gold px-7 py-3 rounded-full text-sm font-bold uppercase tracking-wide transition shadow-md">
           Ver catálogo completo
         </button>
         @if($onSale->count())
@@ -335,29 +336,29 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </div>
   </div>
   {{-- Divisor ondulado --}}
-  <div class="absolute bottom-0 left-0 right-0" style="height:40px;background:var(--navy);clip-path:ellipse(55% 100% at 50% 100%);"></div>
+  <div class="absolute bottom-0 left-0 right-0" style="height:40px;background:#ffffff;clip-path:ellipse(55% 100% at 50% 100%);"></div>
 </section>
 
 {{-- ═══ CATEGORÍAS CON ICONOS ═══ --}}
 @if($categories->count() > 1)
-<section class="py-10 border-b border-white/5">
+<section class="py-10 border-b border-gray-100">
   <div class="max-w-[1400px] mx-auto px-6">
     <div class="flex gap-4 no-scroll overflow-x-auto pb-1">
       @php
         $catIcons = ['🥃','🍾','🍷','🍺','🍸','🥂','🍻','🫗','🧉','🍹'];
       @endphp
       <button @click="filterCat=''"
-              :class="filterCat===''?'border-gold bg-gold/10':'border-white/10 hover:border-gold/40'"
+              :class="filterCat===''?'border-gold bg-gold/10':'border-gray-200 hover:border-gold/40'"
               class="flex-shrink-0 flex flex-col items-center gap-2 px-5 py-4 rounded-2xl border transition min-w-[90px]">
         <span class="text-2xl">🍾</span>
-        <span :class="filterCat===''?'text-gold':'text-gray-400'" class="text-xs font-semibold">Todo</span>
+        <span :class="filterCat===''?'text-gold':'text-gray-500'" class="text-xs font-semibold">Todo</span>
       </button>
       @foreach($categories as $i => $cat)
       <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-              :class="filterCat==='{{ $cat->id }}'?'border-gold bg-gold/10':'border-white/10 hover:border-gold/40'"
+              :class="filterCat==='{{ $cat->id }}'?'border-gold bg-gold/10':'border-gray-200 hover:border-gold/40'"
               class="flex-shrink-0 flex flex-col items-center gap-2 px-5 py-4 rounded-2xl border transition min-w-[90px]">
         <span class="text-2xl">{{ $catIcons[$i % count($catIcons)] }}</span>
-        <span :class="filterCat==='{{ $cat->id }}'?'text-gold':'text-gray-400'" class="text-xs font-semibold text-center leading-tight">{{ $cat->name }}</span>
+        <span :class="filterCat==='{{ $cat->id }}'?'text-gold':'text-gray-500'" class="text-xs font-semibold text-center leading-tight">{{ $cat->name }}</span>
       </button>
       @endforeach
     </div>
@@ -371,7 +372,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="flex items-center justify-between mb-6">
     <div class="flex items-center gap-3">
       <span class="badge-oferta rounded-sm font-black text-xs px-2 py-1">OFERTA</span>
-      <h2 class="serif font-bold text-2xl text-white">Precios especiales de hoy</h2>
+      <h2 class="serif font-bold text-2xl text-gray-900">Precios especiales de hoy</h2>
     </div>
     <button @click="onSaleFilter=true; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
             class="text-gold text-sm font-semibold hover:text-gold/80 transition hidden sm:block">Ver todos →</button>
@@ -380,13 +381,13 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
     @foreach($onSale->take(5) as $p)
     @php $pct = $p->compare_price > 0 ? round((($p->compare_price - $p->price) / $p->compare_price) * 100) : 0; @endphp
-    <article class="lic-card group cursor-pointer rounded-2xl overflow-hidden" style="background:var(--navy2);border:1px solid rgba(255,255,255,.06);"
+    <article class="lic-card group cursor-pointer rounded-2xl overflow-hidden" style="background:#fff;border:1px solid #e9ecef;"
              id="oferta-{{ $p->id }}">
       <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="lic-img block relative overflow-hidden" style="aspect-ratio:1/1;">
         @if($p->mainImage)
-        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-contain p-4 bg-white/5">
+        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-contain p-4 bg-gray-50">
         @else
-        <div class="w-full h-full flex items-center justify-center bg-white/5">
+        <div class="w-full h-full flex items-center justify-center bg-gray-50">
           <span class="text-5xl opacity-30">🍾</span>
         </div>
         @endif
@@ -403,11 +404,11 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         </div>
       </a>
       <div class="p-3">
-        <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="text-gray-200 text-sm font-semibold line-clamp-2 leading-snug hover:text-gold transition block mb-2">{{ $p->name }}</a>
+        <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="text-gray-800 text-sm font-semibold line-clamp-2 leading-snug hover:text-gold transition block mb-2">{{ $p->name }}</a>
         @if(!$isQuoteOnly || $quotePriceDisp==='show')
         <div class="flex items-baseline gap-2">
           <span class="text-gold font-black text-lg">{{ $currency }} {{ number_format($p->price,2) }}</span>
-          <span class="text-gray-500 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
+          <span class="text-gray-400 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
         </div>
         @endif
       </div>
@@ -418,7 +419,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 @endif
 
 {{-- ═══ BUSCADOR MÓVIL ═══ --}}
-<div class="md:hidden px-4 py-2 sticky top-[105px] z-10 border-b border-white/5" style="background:var(--navy2);">
+<div class="md:hidden px-4 py-2 sticky top-[105px] z-10 border-b border-gray-100 bg-white">
   <div class="relative" @click.outside="searchOpen=false">
     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     <input x-model="search" type="search" placeholder="Buscar licores, marcas..."
@@ -435,7 +436,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="flex items-center justify-between mb-6">
     <div class="flex items-center gap-3">
       <div class="w-1 h-7 rounded-full bg-gold"></div>
-      <h2 class="serif font-bold text-2xl text-white">
+      <h2 class="serif font-bold text-2xl text-gray-900">
         <span x-show="filterCat===''">Catálogo completo</span>
         @foreach($categories as $cat)
         <span x-show="filterCat==='{{ $cat->id }}'">{{ $cat->name }}</span>
@@ -447,14 +448,14 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </div>
     <div class="flex items-center gap-2">
       <button @click="filterOpen=true"
-              class="flex items-center gap-1.5 text-xs font-semibold border border-white/10 rounded-lg px-3 py-1.5 hover:border-gold/40 transition relative text-gray-400">
+              class="flex items-center gap-1.5 text-xs font-semibold border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gold/60 transition relative text-gray-600">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
         Filtros
         <span x-show="priceFilter!==''||onSaleFilter"
               class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center text-gray-900 bg-gold"
               x-text="(priceFilter!==''?1:0)+(onSaleFilter?1:0)"></span>
       </button>
-      <select x-model="sortBy" class="text-xs border border-white/10 px-2 py-1.5 rounded-lg outline-none text-gray-400 cursor-pointer hover:border-gold/40 transition" style="background:var(--navy2);">
+      <select x-model="sortBy" class="text-xs border border-gray-200 px-2 py-1.5 rounded-lg outline-none text-gray-600 cursor-pointer hover:border-gold/60 transition bg-white">
         <option value="default">Ordenar</option>
         <option value="price_asc">Precio ↑</option>
         <option value="price_desc">Precio ↓</option>
@@ -478,16 +479,16 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <p class="text-[11px] font-bold uppercase tracking-[.2em] text-gold mb-3">Categorías</p>
         <div class="space-y-0.5">
           <button @click="filterCat=''"
-                  :class="filterCat===''?'text-gold font-bold':'text-gray-500 hover:text-gray-300'"
+                  :class="filterCat===''?'text-gold font-bold':'text-gray-500 hover:text-gray-800'"
                   class="block w-full text-left text-sm py-1.5 transition">
             Todo el catálogo
           </button>
           @foreach($categories as $cat)
           <button @click="filterCat='{{ $cat->id }}'"
-                  :class="filterCat==='{{ $cat->id }}'?'text-gold font-bold':'text-gray-500 hover:text-gray-300'"
+                  :class="filterCat==='{{ $cat->id }}'?'text-gold font-bold':'text-gray-500 hover:text-gray-800'"
                   class="block w-full text-left text-sm py-1.5 transition flex items-center justify-between">
             <span>{{ $cat->name }}</span>
-            <span class="text-xs text-gray-700">{{ $cat->products->count() }}</span>
+            <span class="text-xs text-gray-300">{{ $cat->products->count() }}</span>
           </button>
           @endforeach
         </div>
@@ -497,7 +498,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <p class="text-[11px] font-bold uppercase tracking-[.2em] text-gold mb-3">Precio</p>
         <div class="space-y-2">
           @foreach(['' => 'Todos', '0-50' => 'Hasta '.$currency.' 50', '50-150' => $currency.' 50–150', '150-500' => $currency.' 150–500', '500+' => 'Más de '.$currency.' 500'] as $val => $label)
-          <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer hover:text-gray-300 transition">
+          <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer hover:text-gray-800 transition">
             <input type="radio" x-model="priceFilter" value="{{ $val }}" class="w-3.5 h-3.5" style="accent-color:var(--gold)">
             {{ $label }}
           </label>
@@ -506,7 +507,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </div>
 
       <div>
-        <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer hover:text-gray-300 transition">
+        <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer hover:text-gray-800 transition">
           <input type="checkbox" x-model="onSaleFilter" class="w-3.5 h-3.5 rounded" style="accent-color:var(--gold)">
           Solo en oferta
         </label>
@@ -520,9 +521,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @if($catAllProducts->count())
       <div x-show="filterCat==='' || filterCat==='{{ $cat->id }}'" class="mb-12">
         <div class="flex items-center gap-3 mb-5">
-          <h3 class="serif font-bold text-white text-lg">{{ $cat->name }}</h3>
-          <div class="flex-1 border-t border-white/5"></div>
-          <span class="text-xs text-gray-600">{{ $catAllProducts->count() }} productos</span>
+          <h3 class="serif font-bold text-gray-900 text-lg">{{ $cat->name }}</h3>
+          <div class="flex-1 border-t border-gray-100"></div>
+          <span class="text-xs text-gray-400">{{ $catAllProducts->count() }} productos</span>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4" data-products-grid>
@@ -532,7 +533,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
             $pct2 = ($p->compare_price && $p->compare_price > $p->price) ? round((($p->compare_price - $p->price)/$p->compare_price)*100) : 0;
           @endphp
           <article class="lic-card group cursor-pointer rounded-2xl overflow-hidden"
-                   style="background:var(--navy2);border:1px solid rgba(255,255,255,.06);"
+                   style="background:#fff;border:1px solid #e9ecef;"
                    id="producto-{{ $p->id }}"
                    x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}) && ({{ $loop->index }} < 8 || expandedCats['{{ $cat->id }}'])"
                    data-price="{{ $p->price }}"
@@ -542,10 +543,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
             <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="lic-img block relative overflow-hidden" style="aspect-ratio:1/1;">
               @if($p->mainImage)
-              <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-contain p-4" style="background:rgba(255,255,255,.04);">
+              <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}" loading="lazy" class="w-full h-full object-contain p-4 bg-gray-50">
               @else
-              <div class="w-full h-full flex items-center justify-center" style="background:rgba(255,255,255,.03);">
-                <span class="text-5xl opacity-20">🍾</span>
+              <div class="w-full h-full flex items-center justify-center bg-gray-50">
+                <span class="text-5xl opacity-30">🍾</span>
               </div>
               @endif
 
@@ -576,7 +577,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               <p class="text-[10px] text-gold/60 uppercase tracking-widest mb-1 font-semibold">{{ $p->category->name }}</p>
               @endif
               <a href="{{ route('public.product', [$project->slug, $p->id]) }}"
-                 class="text-gray-200 text-sm font-semibold line-clamp-2 leading-snug hover:text-gold transition block mb-2">{{ $p->name }}</a>
+                 class="text-gray-800 text-sm font-semibold line-clamp-2 leading-snug hover:text-gold transition block mb-2">{{ $p->name }}</a>
               @if(isset($productRatings[$p->id]))
               <div class="flex items-center gap-1 mb-1.5">
                 <span class="text-amber-400 text-[11px]">{{ str_repeat('★', floor($productRatings[$p->id]->avg_rating)) }}{{ str_repeat('☆', 5-floor($productRatings[$p->id]->avg_rating)) }}</span>
@@ -587,11 +588,11 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               <div class="flex items-baseline gap-2">
                 <span class="text-gold font-black">{{ $currency }} {{ number_format($p->price,2) }}</span>
                 @if($p->compare_price && $p->compare_price > $p->price)
-                <span class="text-gray-600 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
+                <span class="text-gray-400 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
                 @endif
               </div>
               @else
-              <p class="text-xs text-gray-600 italic">Precio a consultar</p>
+              <p class="text-xs text-gray-400 italic">Precio a consultar</p>
               @endif
             </div>
           </article>
@@ -612,7 +613,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
       <div x-show="noResults" class="text-center py-20">
         <p class="text-5xl mb-4">🔍</p>
-        <p class="serif font-bold text-white text-xl mb-2">Sin resultados</p>
+        <p class="serif font-bold text-gray-900 text-xl mb-2">Sin resultados</p>
         <p class="text-gray-500 text-sm mb-5">Intenta con otro término o categoría</p>
         <button @click="search='';filterCat='';priceFilter='';onSaleFilter=false"
                 class="btn-gold px-6 py-2.5 rounded-full text-sm font-bold transition">
@@ -624,7 +625,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </section>
 
 {{-- ═══ FOOTER ═══ --}}
-<footer style="background:#080c10;border-top:1px solid rgba(184,151,58,.15);">
+<footer style="background:#1a1a1a;border-top:1px solid rgba(184,151,58,.15);">
   <div class="max-w-[1400px] mx-auto px-6 py-14 grid grid-cols-1 md:grid-cols-3 gap-10">
     <div class="md:col-span-1">
       @if($project->logo_url)
@@ -633,7 +634,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       <p class="serif font-black text-2xl text-gold mb-2">{{ $project->name }}</p>
       @endif
       @if($footerTagline)
-      <p class="text-sm text-gray-600 leading-relaxed mb-4">{{ $footerTagline }}</p>
+      <p class="text-sm text-gray-400 leading-relaxed mb-4">{{ $footerTagline }}</p>
       @endif
       @if($project->whatsapp)
       <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}" target="_blank" rel="noopener"
@@ -687,7 +688,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <div class="flex flex-wrap gap-1.5">
           @foreach($acceptedPayments as $pk)
           @if(isset($paymentMeta[$pk]))
-          <span class="text-xs px-2 py-1 rounded-lg text-gray-500 border border-white/5">{{ $paymentMeta[$pk]['emoji'] }} {{ $paymentMeta[$pk]['label'] }}</span>
+          <span class="text-xs px-2 py-1 rounded-lg text-gray-400 border border-white/10">{{ $paymentMeta[$pk]['emoji'] }} {{ $paymentMeta[$pk]['label'] }}</span>
           @endif
           @endforeach
         </div>
@@ -695,7 +696,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @endif
     </div>
   </div>
-  <div style="border-top:1px solid rgba(255,255,255,.05);" class="py-4 text-center text-xs text-gray-700">
+  <div style="border-top:1px solid rgba(255,255,255,.08);" class="py-4 text-center text-xs text-gray-500">
     {{ $footerCopyright }} &mdash; Catálogo online por <span class="text-gold font-semibold">AVAN</span>
   </div>
 </footer>
@@ -704,17 +705,17 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 <div x-show="filterOpen" x-cloak class="xl:hidden fixed inset-0 z-50 flex flex-col justify-end">
   <div @click="filterOpen=false" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
   <div class="relative rounded-t-3xl shadow-2xl max-h-[80vh] flex flex-col"
-       style="background:var(--navy2);border-top:1px solid rgba(184,151,58,.2);"
+       style="background:#fff;border-top:3px solid var(--gold);"
        x-transition:enter="transition ease-out duration-300 transform"
        x-transition:enter-start="translate-y-full"
        x-transition:enter-end="translate-y-0"
        x-transition:leave="transition ease-in duration-200 transform"
        x-transition:leave-start="translate-y-0"
        x-transition:leave-end="translate-y-full">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0">
-      <h3 class="font-black text-white">Filtros</h3>
-      <button @click="filterOpen=false" class="p-1.5 rounded-lg hover:bg-white/10 transition">
-        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+      <h3 class="font-black text-gray-900">Filtros</h3>
+      <button @click="filterOpen=false" class="p-1.5 rounded-lg hover:bg-gray-100 transition">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
     <div class="overflow-y-auto flex-1 px-5 py-4 space-y-6">
@@ -723,34 +724,34 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <div class="grid grid-cols-2 gap-2">
           @foreach(['' => 'Todos', '0-50' => 'Hasta '.$currency.' 50', '50-150' => $currency.' 50–150', '150-500' => $currency.' 150–500', '500+' => 'Más de '.$currency.' 500'] as $val => $label)
           <button @click="priceFilter='{{ $val }}'"
-                  :class="priceFilter==='{{ $val }}' ? 'border-gold text-gold font-bold' : 'border-white/10 text-gray-400'"
-                  class="border rounded-xl px-3 py-2 text-sm text-left transition {{ $val==='' ? '' : '' }}">{{ $label }}</button>
+                  :class="priceFilter==='{{ $val }}' ? 'border-gold text-gold font-bold bg-gold/5' : 'border-gray-200 text-gray-600'"
+                  class="border rounded-xl px-3 py-2 text-sm text-left transition">{{ $label }}</button>
           @endforeach
         </div>
       </div>
       <div>
-        <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border border-white/10 transition"
-               :class="onSaleFilter?'border-gold bg-gold/10':''">
+        <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition"
+               :class="onSaleFilter?'border-gold bg-gold/5':'border-gray-200'">
           <input type="checkbox" x-model="onSaleFilter" class="w-4 h-4 rounded" style="accent-color:var(--gold)">
-          <span class="text-sm font-medium text-gray-300">Solo productos en oferta</span>
+          <span class="text-sm font-medium text-gray-700">Solo productos en oferta</span>
         </label>
       </div>
       <div>
         <p class="font-bold text-gold text-sm mb-3">Ordenar por</p>
         <div class="space-y-2">
           @foreach([['default','Relevancia'],['price_asc','Precio: menor a mayor'],['price_desc','Precio: mayor a menor'],['newest','Más nuevos primero'],['name_az','Nombre A→Z']] as [$val,$lbl])
-          <label class="flex items-center gap-3 p-3 border border-white/10 rounded-xl cursor-pointer transition"
-                 :class="sortBy==='{{ $val }}'?'border-gold bg-gold/10':''">
+          <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition"
+                 :class="sortBy==='{{ $val }}'?'border-gold bg-gold/5':'border-gray-200'">
             <input type="radio" x-model="sortBy" value="{{ $val }}" class="w-4 h-4" style="accent-color:var(--gold)">
-            <span class="text-sm font-medium text-gray-300">{{ $lbl }}</span>
+            <span class="text-sm font-medium text-gray-700">{{ $lbl }}</span>
           </label>
           @endforeach
         </div>
       </div>
     </div>
-    <div class="flex gap-3 px-5 py-4 border-t border-white/5 flex-shrink-0">
+    <div class="flex gap-3 px-5 py-4 border-t border-gray-100 flex-shrink-0">
       <button @click="priceFilter='';priceMin=0;priceMax=0;onSaleFilter=false;sortBy='default'"
-              class="flex-1 py-3 rounded-xl text-sm font-bold border border-white/10 text-gray-400 hover:bg-white/5 transition">
+              class="flex-1 py-3 rounded-xl text-sm font-bold border border-gray-200 text-gray-500 hover:bg-gray-50 transition">
         Limpiar
       </button>
       <button @click="filterOpen=false"
