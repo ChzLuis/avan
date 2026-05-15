@@ -65,6 +65,8 @@ class PublicController extends Controller
             'fresh'      => 'public.templates.fresh',
             'porto'      => 'public.templates.porto',
             'licoreria'  => 'public.templates.licoreria',
+            'farma'      => 'public.templates.farma',
+            'ecommerce'  => 'public.templates.ecommerce',
         ];
         $view = isset($tplViews[$template]) && view()->exists($tplViews[$template])
             ? $tplViews[$template]
