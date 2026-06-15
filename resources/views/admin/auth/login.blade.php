@@ -114,7 +114,12 @@
         </form>
     </div>
 
-    <p class="text-center text-xs text-gray-600 mt-6">
+    <p class="text-center text-xs mt-4">
+        <a href="{{ route('admin.password.request') }}" class="text-gray-500 hover:text-gray-700 transition underline">
+            ¿Olvidaste tu contraseña?
+        </a>
+    </p>
+    <p class="text-center text-xs text-gray-600 mt-2">
         Acceso restringido — Solo administradores autorizados
     </p>
 </div>

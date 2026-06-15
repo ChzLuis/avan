@@ -35,6 +35,13 @@ class AdminProjectController extends Controller
         return back()->with('success', "Proyecto \"{$project->name}\" {$status}.");
     }
 
+    public function updateSubdomain(Request $request, Project $project)
+    {
+        $request->validate(['custom_domain' => 'nullable|string|max:253|regex:/^[a-z0-9][a-z0-9\-\.]*[a-z0-9]$/i']);
+        $project->update(['custom_domain' => $request->input('custom_domain') ?: null]);
+        return back()->with('success', 'Dominio/subdominio actualizado.');
+    }
+
     public function updateModules(Request $request, Project $project)
     {
         $moduleIds = $request->input('module_ids', []);

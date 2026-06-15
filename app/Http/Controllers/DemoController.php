@@ -21,7 +21,13 @@ class DemoController extends Controller
     {
         $rubros = collect(array_keys($this->allRubros()))->mapWithKeys(function ($key) {
             $cfg = DemoRequest::rubroConfig($key);
-            return [$key => ['label' => $cfg['label'], 'emoji' => $cfg['emoji']]];
+            return [$key => [
+                'label'          => $cfg['label'],
+                'emoji'          => $cfg['emoji'],
+                'tagline'        => $cfg['tagline'] ?? '',
+                'problems'       => $cfg['problems'] ?? [],
+                'detail_modules' => $cfg['detail_modules'] ?? [],
+            ]];
         });
         return view('demo.index', compact('rubros'));
     }

@@ -182,23 +182,69 @@
                         <p class="text-xs font-semibold text-gray-700">Datos de tu cuenta (el cliente los verá al pagar)</p>
                     </div>
                     <div class="p-4 space-y-4 bg-white">
-                        <div>
-                            <label class="label text-xs">Yape — Número o nombre</label>
-                            <input type="text" name="payment_yape_number" class="input text-sm"
-                                   placeholder="Ej: 955 354 646 — Juan García"
-                                   value="{{ $project->setting('payment_yape_number') }}">
+                        {{-- Yape --}}
+                        <div class="border border-purple-200 rounded-lg p-3 bg-purple-50 space-y-2">
+                            <p class="text-xs font-bold text-purple-700">Yape</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="label text-xs">Número celular Yape</label>
+                                    <input type="text" name="payment_yape_number" class="input text-sm"
+                                           placeholder="Ej: 987654321"
+                                           value="{{ $project->setting('payment_yape_number') }}">
+                                </div>
+                                <div>
+                                    <label class="label text-xs">Nombre del titular</label>
+                                    <input type="text" name="payment_yape_name" class="input text-sm"
+                                           placeholder="Ej: Juan García"
+                                           value="{{ $project->setting('payment_yape_name') }}">
+                                </div>
+                            </div>
+                            {{-- QR Yape --}}
+                            <div>
+                                <label class="label text-xs">QR de Yape <span class="text-gray-400 font-normal">(descárgalo desde tu app Yape → Cobrar → Compartir QR)</span></label>
+                                @php $yapeQrUrl = $project->setting('payment_yape_qr'); @endphp
+                                <div class="flex items-center gap-3 mt-1">
+                                    <div class="w-20 h-20 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                        @if($yapeQrUrl)
+                                            <img src="{{ $yapeQrUrl }}" alt="QR Yape" class="w-full h-full object-contain">
+                                        @else
+                                            <span class="text-gray-300 text-3xl">📷</span>
+                                        @endif
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 text-xs font-semibold hover:bg-purple-100 transition">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                            Subir QR
+                                            <input type="file" accept="image/*" style="display:none" onchange="uploadYapeQr(this)">
+                                        </label>
+                                        @if($yapeQrUrl)
+                                        <button type="button" onclick="removeYapeQr()" class="text-xs text-red-500 hover:text-red-700 text-left">Quitar QR</button>
+                                        @endif
+                                    </div>
+                                </div>
+                                <input type="hidden" name="payment_yape_qr" id="payment_yape_qr" value="{{ $yapeQrUrl }}">
+                            </div>
                         </div>
+                        {{-- Plin --}}
                         <div>
-                            <label class="label text-xs">Plin — Número o nombre</label>
+                            <label class="label text-xs">Plin — Número</label>
                             <input type="text" name="payment_plin_number" class="input text-sm"
-                                   placeholder="Ej: 955 354 646 — Juan García"
+                                   placeholder="Ej: 987654321"
                                    value="{{ $project->setting('payment_plin_number') }}">
                         </div>
-                        <div>
-                            <label class="label text-xs">Transferencia bancaria — Datos de cuenta</label>
-                            <textarea name="payment_bank_details" class="input text-sm" rows="3"
-                                      placeholder="Ej: BCP — Cta Corriente: 123-456789-0-01&#10;CCI: 002-123-456789-01">{{ $project->setting('payment_bank_details') }}</textarea>
+                        {{-- Bancos --}}
+                        <div class="space-y-2">
+                            <p class="text-xs font-semibold text-gray-600">Transferencias bancarias — datos de cuenta por banco</p>
+                            @foreach(['bcp'=>'BCP','interbank'=>'Interbank','bbva'=>'BBVA','nacion'=>'Banco de la Nación','scotiabank'=>'Scotiabank'] as $key=>$label)
+                            <div>
+                                <label class="label text-xs">{{ $label }}</label>
+                                <input type="text" name="payment_bank_{{ $key }}" class="input text-sm"
+                                       placeholder="Cta: 123-456789-0-01 / CCI: 002-123-456789-01"
+                                       value="{{ $project->setting('payment_bank_'.$key) }}">
+                            </div>
+                            @endforeach
                         </div>
+                        {{-- Instrucciones --}}
                         <div>
                             <label class="label text-xs">Instrucciones adicionales (opcional)</label>
                             <input type="text" name="payment_manual_instructions" class="input text-sm"
@@ -369,3 +415,32 @@
 </div>
 </x-slot>
 </x-app-layout>
+<script>
+async function uploadYapeQr(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('type', 'yape_qr');
+    fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+    const res = await fetch('{{ route("settings.upload-logo") }}', { method:'POST', body:fd });
+    const data = await res.json();
+    if (data.url) {
+        document.getElementById('payment_yape_qr').value = data.url;
+        const img = input.closest('div').previousElementSibling.querySelector('img') || (() => {
+            const el = document.createElement('img');
+            el.className = 'w-full h-full object-contain';
+            input.closest('div').previousElementSibling.innerHTML = '';
+            input.closest('div').previousElementSibling.appendChild(el);
+            return el;
+        })();
+        img.src = data.url;
+        img.style.display = 'block';
+    }
+}
+function removeYapeQr() {
+    document.getElementById('payment_yape_qr').value = '';
+    const preview = document.querySelector('[alt="QR Yape"]');
+    if (preview) preview.src = '';
+}
+</script>

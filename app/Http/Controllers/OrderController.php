@@ -142,4 +142,57 @@ class OrderController extends Controller
         app()->instance('active_project', $project);
         return $this->update($request, $order);
     }
+
+    // Vista de cocina — muestra pedidos activos con estado de preparación
+    public function kitchen()
+    {
+        $project = app('active_project')
+            ?? \App\Models\Project::find(session('comercial_project_id'));
+        abort_unless($project, 403);
+
+        $orders = $project->orders()
+            ->whereIn('status', ['pending', 'process'])
+            ->whereIn('kitchen_status', ['pending', 'cooking', 'ready'])
+            ->with('items')
+            ->latest()
+            ->get();
+
+        $ordersJson = $orders->map(function ($o) {
+            return [
+                'id'             => $o->id,
+                'client_name'    => $o->client_name,
+                'table_number'   => $o->table_number,
+                'order_type'     => $o->order_type,
+                'kitchen_status' => $o->kitchen_status,
+                'notes'          => $o->notes,
+                'created_at'     => $o->created_at->toISOString(),
+                'kitchen_at'     => $o->kitchen_at?->toISOString(),
+                'ready_at'       => $o->ready_at?->toISOString(),
+                'items'          => $o->items->map(function ($i) {
+                    return ['name' => $i->name, 'quantity' => $i->quantity];
+                })->values()->all(),
+            ];
+        })->values()->all();
+
+        return view('orders.kitchen', compact('orders', 'ordersJson', 'project'));
+    }
+
+    // PATCH /bixosales/pedidos/{order}/kitchen
+    public function updateKitchen(Request $request, Order $order)
+    {
+        $project = app('active_project')
+            ?? \App\Models\Project::find(session('comercial_project_id'));
+        abort_unless($project && $order->project_id === $project->id, 403);
+
+        $status = $request->input('kitchen_status');
+        abort_unless(in_array($status, ['pending','cooking','ready','served']), 422);
+
+        $data = ['kitchen_status' => $status];
+        if ($status === 'cooking' && !$order->kitchen_at) $data['kitchen_at'] = now();
+        if ($status === 'ready'   && !$order->ready_at)   $data['ready_at']   = now();
+
+        $order->update($data);
+
+        return response()->json(['ok' => true, 'kitchen_status' => $order->kitchen_status]);
+    }
 }

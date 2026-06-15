@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminProjectController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminImportController;
 use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\AdminTurnosController;
 use App\Http\Controllers\DemoController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/login',  [AdminAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
+
+    Route::get('/forgot-password', fn() => redirect()->route('portal.password.request', 'admin'))->name('password.request');
 
     // ── Rutas protegidas ──────────────────────────────────────────────────────
     Route::middleware(['auth', 'superadmin'])->group(function () {
@@ -28,11 +31,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/projects',                        [AdminProjectController::class, 'index'])->name('projects');
         Route::patch('/projects/{project}/toggle',     [AdminProjectController::class, 'toggle'])->name('projects.toggle');
         Route::patch('/projects/{project}/modules',    [AdminProjectController::class, 'updateModules'])->name('projects.modules');
+        Route::patch('/projects/{project}/subdomain',  [AdminProjectController::class, 'updateSubdomain'])->name('projects.subdomain');
         Route::get('/projects/{project}',              [AdminProjectController::class, 'show'])->name('projects.show');
 
         // Usuarios
         Route::get('/users',                           [AdminUserController::class, 'index'])->name('users');
         Route::patch('/users/{user}/toggle-admin',     [AdminUserController::class, 'toggleAdmin'])->name('users.toggle-admin');
+        Route::post('/users/{user}/reset-password',    [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
 
         // Cargas masivas
         Route::get('/imports',                         [AdminImportController::class, 'index'])->name('imports');
@@ -40,6 +45,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/imports/clients',                [AdminImportController::class, 'importClients'])->name('imports.clients');
         Route::post('/imports/employees',              [AdminImportController::class, 'importEmployees'])->name('imports.employees');
         Route::get('/imports/template/{type}',         [AdminImportController::class, 'downloadTemplate'])->name('imports.template');
+
+        // Gestión de Turnos
+        Route::get('/projects/{project}/turnos',                              [AdminTurnosController::class, 'index'])->name('turnos.index');
+        Route::post('/projects/{project}/turnos/{employee}/save',             [AdminTurnosController::class, 'saveEmployee'])->name('turnos.save-employee');
+        Route::post('/projects/{project}/turnos/bulk',                        [AdminTurnosController::class, 'saveBulk'])->name('turnos.save-bulk');
+        Route::get('/projects/{project}/turnos/active-now',                   [AdminTurnosController::class, 'activeNow'])->name('turnos.active-now');
 
         // Configuración global
         Route::get('/settings',                        [AdminSettingsController::class, 'index'])->name('settings');

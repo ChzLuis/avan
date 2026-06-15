@@ -48,20 +48,66 @@
                         {{ $user->created_at->format('d/m/Y') }}
                     </td>
                     <td class="px-5 py-4 text-center">
-                        @if($user->id !== auth()->id())
-                        <form method="POST" action="{{ route('admin.users.toggle-admin', $user) }}">
-                            @csrf @method('PATCH')
-                            <button type="submit"
-                                    class="text-xs px-3 py-1.5 rounded-lg border transition-colors
-                                           {{ $user->is_superadmin
-                                               ? 'text-red-400 border-red-500/30 hover:bg-red-500/10'
-                                               : 'text-purple-400 border-purple-500/30 hover:bg-purple-500/10' }}">
-                                {{ $user->is_superadmin ? 'Quitar admin' : 'Hacer admin' }}
-                            </button>
-                        </form>
-                        @else
-                        <span class="text-xs text-gray-600">Tú</span>
-                        @endif
+                        <div class="flex items-center justify-center gap-2">
+                            @if($user->id !== auth()->id())
+                            <form method="POST" action="{{ route('admin.users.toggle-admin', $user) }}">
+                                @csrf @method('PATCH')
+                                <button type="submit"
+                                        class="text-xs px-3 py-1.5 rounded-lg border transition-colors
+                                               {{ $user->is_superadmin
+                                                   ? 'text-red-400 border-red-500/30 hover:bg-red-500/10'
+                                                   : 'text-purple-400 border-purple-500/30 hover:bg-purple-500/10' }}">
+                                    {{ $user->is_superadmin ? 'Quitar admin' : 'Hacer admin' }}
+                                </button>
+                            </form>
+                            @else
+                            <span class="text-xs text-gray-600">Tú</span>
+                            @endif
+
+                            {{-- Cambiar contraseña --}}
+                            <div x-data="{ open: false }">
+                                <button @click="open=true"
+                                        class="text-xs px-3 py-1.5 rounded-lg border text-blue-400 border-blue-500/30 hover:bg-blue-500/10 transition-colors">
+                                    Cambiar clave
+                                </button>
+                                <div x-show="open" x-cloak
+                                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                                     @click.self="open=false">
+                                    <div class="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                                        <h3 class="text-white font-semibold mb-1">Cambiar contraseña</h3>
+                                        <p class="text-gray-400 text-xs mb-4">{{ $user->name }} ({{ $user->username ?? $user->email }})</p>
+                                        @if(session('success'))
+                                        <div class="mb-3 text-xs text-green-400">{{ session('success') }}</div>
+                                        @endif
+                                        <form method="POST" action="{{ route('admin.users.reset-password', $user) }}">
+                                            @csrf
+                                            <div class="mb-3">
+                                                <label class="block text-xs text-gray-400 mb-1">Nueva contraseña</label>
+                                                <input type="password" name="password" required minlength="6"
+                                                       class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                       placeholder="Mínimo 6 caracteres">
+                                            </div>
+                                            <div class="mb-4">
+                                                <label class="block text-xs text-gray-400 mb-1">Confirmar contraseña</label>
+                                                <input type="password" name="password_confirmation" required
+                                                       class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                       placeholder="Repite la contraseña">
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button type="button" @click="open=false"
+                                                        class="flex-1 py-2 text-sm text-gray-400 border border-white/10 rounded-lg hover:bg-white/5 transition">
+                                                    Cancelar
+                                                </button>
+                                                <button type="submit"
+                                                        class="flex-1 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
+                                                    Guardar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 @empty

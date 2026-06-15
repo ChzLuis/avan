@@ -1,232 +1,281 @@
 <x-portal-layout layout="comercial" :project="$project" pageTitle="Pedidos Bot">
-<div class="flex h-full overflow-hidden">
+<div style="display:flex;height:100%;overflow:hidden;">
 
-<div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+<div style="display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden;">
 
-<div class="px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
-    <div class="flex items-center justify-between mb-3">
+{{-- Header --}}
+<div style="padding:14px 20px;border-bottom:1px solid #E5E8EF;background:#fff;flex-shrink:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div>
-            <h1 class="text-base font-semibold text-gray-800">Pedidos Bot</h1>
-            <p class="text-xs text-gray-400 mt-0.5">{{ $project->name }}</p>
+            <h1 style="font-size:15px;font-weight:700;color:#111827;margin:0;">Pedidos Bot</h1>
+            <p style="font-size:11px;color:#9CA3AF;margin:2px 0 0;">{{ $project->name }}</p>
         </div>
-        <div class="flex items-center gap-3 text-xs text-gray-500">
-            <span>Total: <strong id="cnt-total">{{ $ventas->count() }}</strong></span>
-            <span class="text-yellow-600">Pendientes: <strong id="cnt-pend">{{ $ventas->where('status','pendiente')->count() }}</strong></span>
-            <span class="text-blue-600">Pagados: <strong id="cnt-pago">{{ $ventas->where('status','pagado')->count() }}</strong></span>
-            <span class="text-green-600">Enviados: <strong id="cnt-envi">{{ $ventas->where('status','enviado')->count() }}</strong></span>
-            <button onclick="location.reload()" class="ml-2 text-gray-400 hover:text-gray-600">↻</button>
+        <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:#6B7280;">
+            <span>Total: <strong id="cnt-total" style="color:#111827;">{{ $ventas->count() }}</strong></span>
+            <span style="color:#D97706;">Pendientes: <strong id="cnt-pend">{{ $ventas->where('status','pendiente')->count() }}</strong></span>
+            <span style="color:#2563EB;">Pagados: <strong id="cnt-pago">{{ $ventas->where('status','pagado')->count() }}</strong></span>
+            <span style="color:#16A34A;">Enviados: <strong id="cnt-envi">{{ $ventas->where('status','enviado')->count() }}</strong></span>
+            <button onclick="location.reload()"
+                    style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:16px;line-height:1;"
+                    onmouseover="this.style.color='#6B7280'" onmouseout="this.style.color='#9CA3AF'">↻</button>
         </div>
     </div>
-    <div class="flex items-center gap-2 flex-wrap">
+    {{-- Filtros --}}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         @php $hoy = now()->format('Y-m-d'); $hace30 = now()->subDays(30)->format('Y-m-d'); @endphp
-        <input type="date" id="f-desde" value="{{ $hace30 }}" class="text-xs border rounded-lg px-2 py-1.5">
-        <span>→</span>
-        <input type="date" id="f-hasta" value="{{ $hoy }}" class="text-xs border rounded-lg px-2 py-1.5">
-        <select id="f-estado" class="text-xs border rounded-lg px-2 py-1.5">
+        <input type="date" id="f-desde" value="{{ $hace30 }}"
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+        <span style="color:#9CA3AF;font-size:12px;">→</span>
+        <input type="date" id="f-hasta" value="{{ $hoy }}"
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+        <select id="f-estado"
+                style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;background:#fff;font-family:inherit;">
             <option value="">Todos</option>
             <option value="pendiente">Pendiente</option>
             <option value="pagado">Pagado</option>
             <option value="enviado">Enviado</option>
             <option value="cancelado">Cancelado</option>
         </select>
-        <input type="text" id="f-buscar" placeholder="Nombre, DNI o celular" class="text-xs border rounded-lg px-3 py-1.5 w-48">
-        <button onclick="aplicarFiltros()" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg">Buscar</button>
+        <input type="text" id="f-buscar" placeholder="Nombre, DNI o celular"
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 12px;outline:none;width:200px;font-family:inherit;">
+        <button onclick="aplicarFiltros()"
+                style="font-size:12px;background:#2563EB;color:#fff;padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:600;">
+            Buscar
+        </button>
     </div>
 </div>
 
-<div class="flex-1 overflow-y-auto p-4 bg-gray-50/30">
-@if($ventas->isEmpty())
-<div class="text-center py-20 text-gray-400">
-    <div class="text-5xl mb-3">🎟️</div>
-    <p class="text-sm">Aún no hay ventas registradas</p>
-</div>
-@else
-<div class="space-y-2">
-@foreach($ventas as $v)
-@php
-$statusClass = match($v->status) {
-    'pendiente' => 'bg-yellow-100 text-yellow-700',
-    'pagado'    => 'bg-blue-100 text-blue-700',
-    'enviado'   => 'bg-green-100 text-green-700',
-    'cancelado' => 'bg-red-100 text-red-700',
-    default     => 'bg-gray-100 text-gray-500',
-};
-$statusLabel = match($v->status) {
-    'pendiente' => 'Pendiente',
-    'pagado'    => 'Pagado',
-    'enviado'   => 'Enviado ✓',
-    'cancelado' => 'Cancelado',
-    default     => $v->status,
-};
-@endphp
-<div class="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 cursor-pointer hover:border-blue-300 hover:shadow-sm transition"
-     onclick="abrirDetalle({{ $v->id }})" id="rv-{{ $v->id }}">
-
-    <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-sm font-semibold text-gray-800">{{ $v->nombre ?? '—' }}</span>
-            @if($v->dni)<span class="text-xs text-gray-400">· DNI {{ $v->dni }}</span>@endif
-            @if($v->ciudad)<span class="text-xs text-gray-400">· 📍 {{ Str::limit($v->ciudad, 20) }}</span>@endif
-            <span class="text-xs text-gray-400">· 📱 +{{ preg_replace('/\D/','',$v->wa_number) }}</span>
-        </div>
-        <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span class="text-xs text-purple-700">{{ $v->rifa?->nombre ?? $v->plan_nombre }}</span>
-            <span class="text-xs text-gray-500">{{ $v->tickets }} ticket(s)</span>
-            <span class="text-xs font-bold text-gray-700">S/ {{ number_format($v->monto, 2) }}</span>
-            <span class="text-xs text-gray-400">{{ $v->created_at->timezone('America/Lima')->format('d/m H:i') }}</span>
-            @if($v->status === 'enviado' && $v->ticket_code)
-                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-mono">🎫 {{ $v->ticket_code }}</span>
-            @endif
-        </div>
+{{-- Lista --}}
+<div style="flex:1;overflow-y:auto;padding:12px;background:#F8F9FB;">
+    @if($ventas->isEmpty())
+    <div style="text-align:center;padding:60px 20px;color:#9CA3AF;">
+        <div style="font-size:40px;margin-bottom:10px;">🎟️</div>
+        <p style="font-size:13px;">Aún no hay ventas registradas</p>
     </div>
+    @else
+    <div style="display:flex;flex-direction:column;gap:6px;">
+    @foreach($ventas as $v)
+    @php
+    $statusStyle = match($v->status) {
+        'pendiente' => 'background:#FFFBEB;color:#D97706;border-color:#FDE68A;',
+        'pagado'    => 'background:#DBEAFE;color:#2563EB;border-color:#BFDBFE;',
+        'enviado'   => 'background:#DCFCE7;color:#16A34A;border-color:#BBF7D0;',
+        'cancelado' => 'background:#FEE2E2;color:#EF4444;border-color:#FECACA;',
+        default     => 'background:#F3F4F6;color:#6B7280;border-color:#E5E7EB;',
+    };
+    $statusLabel = match($v->status) {
+        'pendiente' => 'Pendiente',
+        'pagado'    => 'Pagado',
+        'enviado'   => 'Enviado ✓',
+        'cancelado' => 'Cancelado',
+        default     => $v->status,
+    };
+    @endphp
+    <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .12s,box-shadow .12s;"
+         onclick="abrirDetalle({{ $v->id }})" id="rv-{{ $v->id }}"
+         onmouseover="this.style.borderColor='#2563EB';this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)'"
+         onmouseout="this.style.borderColor='#E5E8EF';this.style.boxShadow='none'">
 
-    <span class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 {{ $statusClass }}">{{ $statusLabel }}</span>
-    @if($v->payment_proof)<span class="text-xs text-indigo-500 flex-shrink-0">🧾</span>@endif
-    <span class="text-gray-300 flex-shrink-0">›</span>
-</div>
-@endforeach
-</div>
-@endif
+        <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:700;color:#111827;">{{ $v->nombre ?? '—' }}</span>
+                @if($v->dni)
+                <span style="font-size:11px;color:#9CA3AF;">· DNI {{ $v->dni }}</span>
+                @endif
+                @if($v->ciudad)
+                <span style="font-size:11px;color:#9CA3AF;">· 📍 {{ Str::limit($v->ciudad, 20) }}</span>
+                @endif
+                <span style="font-size:11px;color:#9CA3AF;">· 📱 +{{ preg_replace('/\D/','',$v->wa_number) }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;">
+                <span style="font-size:11px;color:#7C3AED;">{{ $v->rifa?->nombre ?? $v->plan_nombre }}</span>
+                <span style="font-size:11px;color:#6B7280;">{{ $v->tickets }} ticket(s)</span>
+                <span style="font-size:11px;font-weight:700;color:#374151;">S/ {{ number_format($v->monto, 2) }}</span>
+                <span style="font-size:11px;color:#9CA3AF;">{{ $v->created_at->timezone('America/Lima')->format('d/m H:i') }}</span>
+                @if($v->status === 'enviado' && $v->ticket_code)
+                <span style="font-size:11px;background:#DCFCE7;color:#16A34A;padding:2px 8px;border-radius:99px;font-family:monospace;">🎫 {{ $v->ticket_code }}</span>
+                @endif
+            </div>
+        </div>
+
+        <span style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:99px;border:1px solid;flex-shrink:0;{{ $statusStyle }}">{{ $statusLabel }}</span>
+        @if($v->payment_proof)
+        <span style="font-size:12px;color:#6366F1;flex-shrink:0;">🧾</span>
+        @endif
+        <span style="color:#D1D5DB;flex-shrink:0;font-size:16px;">›</span>
+    </div>
+    @endforeach
+    </div>
+    @endif
 </div>
 
 </div>
 
-{{-- PANEL BOT WA --}}
-<div id="bot-panel" style="position:fixed; top:48px; right:0; bottom:0; z-index:40; transition:width .2s ease; width:220px; border-left:1px solid #e5e7eb; background:#fff; display:flex;">
-    <button id="bot-panel-toggle" onclick="toggleBotPanel()" style="width:22px; background:#f8fafc; border-right:1px solid #e5e7eb; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-        <span style="writing-mode:vertical-lr; font-size:10px; font-weight:600; text-transform:uppercase; color:#64748b; transform:rotate(180deg);">BOT</span>
-        <svg id="bot-chevron" style="width:12px;height:12px;transform:rotate(180deg);transition:transform .2s" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+{{-- Panel Bot WA --}}
+<div id="bot-panel" style="position:fixed;top:52px;right:0;bottom:0;z-index:40;transition:width .2s ease;width:220px;border-left:1px solid #E5E8EF;background:#fff;display:flex;">
+    <button id="bot-panel-toggle" onclick="toggleBotPanel()"
+            style="width:22px;background:#F8F9FB;border-right:1px solid #E5E8EF;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;">
+        <span style="writing-mode:vertical-lr;font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;transform:rotate(180deg);letter-spacing:.06em;">BOT</span>
+        <svg id="bot-chevron" style="width:12px;height:12px;transform:rotate(180deg);transition:transform .2s;margin-top:6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
     </button>
-    <div id="bot-panel-content" class="flex-1 flex flex-col overflow-hidden p-3 gap-3">
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">WhatsApp Bot</p>
-
-        {{-- Badge de estado --}}
-        <div class="flex items-center gap-2">
-            <span id="bot-dot" style="width:9px;height:9px;border-radius:50%;background:#d1d5db;flex-shrink:0;display:inline-block;"></span>
-            <span id="bot-status-text" class="text-xs font-medium text-gray-500">Verificando...</span>
+    <div id="bot-panel-content" style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:12px;gap:10px;">
+        <p style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0;">WhatsApp Bot</p>
+        <div style="display:flex;align-items:center;gap:7px;">
+            <span id="bot-dot" style="width:9px;height:9px;border-radius:50%;background:#D1D5DB;flex-shrink:0;display:inline-block;"></span>
+            <span id="bot-status-text" style="font-size:11px;font-weight:600;color:#6B7280;">Verificando...</span>
         </div>
-
-        {{-- QR o estado --}}
-        <div id="bot-qr-wrap" class="flex flex-col items-center gap-2">
-            <div id="bot-qr-spinner" class="flex flex-col items-center gap-1 py-2">
-                <div class="w-6 h-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                <p class="text-xs text-gray-400">Cargando...</p>
+        <div id="bot-qr-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div id="bot-qr-spinner" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0;">
+                <div style="width:22px;height:22px;border:2px solid #E5E8EF;border-top-color:#2563EB;border-radius:50%;animation:spin .8s linear infinite;"></div>
+                <p style="font-size:11px;color:#9CA3AF;margin:0;">Cargando...</p>
             </div>
-            <img id="bot-qr-img" src="" class="w-40 h-40 rounded-xl border border-gray-200" style="display:none">
-            <p id="bot-qr-hint" class="text-xs text-gray-400 text-center leading-snug" style="display:none">WhatsApp → Dispositivos vinculados → Vincular dispositivo</p>
-            <p id="bot-connected-msg" class="text-xs text-green-600 font-medium text-center" style="display:none">✓ WhatsApp conectado</p>
-            <p id="bot-offline-msg" class="text-xs text-gray-400 text-center" style="display:none">Bot no iniciado</p>
+            <img id="bot-qr-img" src="" style="width:160px;height:160px;border-radius:12px;border:1px solid #E5E8EF;display:none;" alt="QR">
+            <p id="bot-qr-hint" style="font-size:10px;color:#9CA3AF;text-align:center;line-height:1.4;display:none;">WhatsApp → Dispositivos vinculados → Vincular dispositivo</p>
+            <p id="bot-connected-msg" style="font-size:11px;color:#16A34A;font-weight:600;text-align:center;display:none;">✓ WhatsApp conectado</p>
+            <p id="bot-offline-msg" style="font-size:11px;color:#9CA3AF;text-align:center;display:none;">Bot no iniciado</p>
         </div>
     </div>
 </div>
 
 </div>
 
-{{-- MODAL DETALLE --}}
-<div id="modal-detalle" class="fixed inset-0 z-50 items-center justify-center bg-black/50" style="display:none">
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="px-5 py-4 border-b flex justify-between items-center sticky top-0 bg-white">
+{{-- Modal Detalle --}}
+<div id="modal-detalle" style="position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;background:rgba(0,0,0,.5);display:none;">
+    <div style="width:100%;max-width:480px;background:#fff;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.15);margin:0 16px;max-height:90vh;overflow-y:auto;">
+        <div style="padding:14px 20px;border-bottom:1px solid #E5E8EF;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2;">
             <div>
-                <span class="font-semibold text-gray-800" id="md-titulo">Pedido</span>
-                <span id="md-status-badge" class="ml-2 text-xs px-2 py-0.5 rounded-full"></span>
+                <span style="font-size:15px;font-weight:700;color:#111827;" id="md-titulo">Pedido</span>
+                <span id="md-status-badge" style="font-size:11px;padding:2px 8px;border-radius:99px;margin-left:8px;border:1px solid;"></span>
             </div>
-            <button onclick="cerrarDetalle()" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+            <button onclick="cerrarDetalle()" style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:18px;">✕</button>
         </div>
-        <div class="p-5 space-y-4">
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
             <div id="md-vista">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">DATOS DEL PARTICIPANTE</p>
-                <div class="grid grid-cols-2 gap-3 mt-2">
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-400 mb-1">Nombre completo</p>
-                        <p class="text-base font-semibold select-all" id="md-nombre">—</p>
+                <p style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;">Datos del participante</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div style="background:#F8F9FB;border-radius:10px;padding:10px;">
+                        <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">Nombre completo</p>
+                        <p style="font-size:14px;font-weight:600;color:#111827;margin:0;user-select:all;" id="md-nombre">—</p>
                     </div>
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-400 mb-1">DNI</p>
-                        <p class="text-base font-semibold select-all" id="md-dni">—</p>
+                    <div style="background:#F8F9FB;border-radius:10px;padding:10px;">
+                        <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">DNI</p>
+                        <p style="font-size:14px;font-weight:600;color:#111827;margin:0;user-select:all;" id="md-dni">—</p>
                     </div>
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-400 mb-1">Celular / WhatsApp</p>
-                        <p class="text-base font-semibold select-all" id="md-celular">—</p>
+                    <div style="background:#F8F9FB;border-radius:10px;padding:10px;">
+                        <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">Celular / WhatsApp</p>
+                        <p style="font-size:14px;font-weight:600;color:#111827;margin:0;user-select:all;" id="md-celular">—</p>
                     </div>
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-400 mb-1">Ciudad / Dirección</p>
-                        <p class="text-base font-semibold select-all" id="md-ciudad">—</p>
-                    </div>
-                </div>
-                <div class="bg-purple-50 rounded-xl p-3 mt-3">
-                    <p class="text-xs text-gray-400 mb-1">Plan / Producto</p>
-                    <p class="text-base font-semibold text-purple-800 select-all" id="md-plan">—</p>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mt-3">
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-400 mb-1">Tickets</p>
-                        <p class="text-base font-semibold" id="md-tickets">—</p>
-                    </div>
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-400 mb-1">Monto</p>
-                        <p class="text-base font-semibold" id="md-monto">—</p>
+                    <div style="background:#F8F9FB;border-radius:10px;padding:10px;">
+                        <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">Ciudad / Dirección</p>
+                        <p style="font-size:14px;font-weight:600;color:#111827;margin:0;user-select:all;" id="md-ciudad">—</p>
                     </div>
                 </div>
-                <div id="md-ticket-code-row" class="hidden bg-green-50 rounded-xl p-3 mt-3">
-                    <p class="text-xs text-gray-400 mb-1">N° de Membresía</p>
-                    <p class="text-base font-bold text-green-700 font-mono select-all" id="md-ticket-code">—</p>
+                <div style="background:#F5F3FF;border-radius:10px;padding:10px;margin-top:8px;">
+                    <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">Plan / Producto</p>
+                    <p style="font-size:14px;font-weight:600;color:#6D28D9;margin:0;user-select:all;" id="md-plan">—</p>
                 </div>
-                <p class="text-xs text-gray-400 pt-2" id="md-fecha">—</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                    <div style="background:#F8F9FB;border-radius:10px;padding:10px;">
+                        <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">Tickets</p>
+                        <p style="font-size:14px;font-weight:600;color:#111827;margin:0;" id="md-tickets">—</p>
+                    </div>
+                    <div style="background:#F8F9FB;border-radius:10px;padding:10px;">
+                        <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">Monto</p>
+                        <p style="font-size:14px;font-weight:600;color:#111827;margin:0;" id="md-monto">—</p>
+                    </div>
+                </div>
+                <div id="md-ticket-code-row" style="background:#DCFCE7;border-radius:10px;padding:10px;margin-top:8px;display:none;">
+                    <p style="font-size:10px;color:#9CA3AF;margin:0 0 4px;">N° de Membresía</p>
+                    <p style="font-size:15px;font-weight:800;color:#16A34A;margin:0;font-family:monospace;user-select:all;" id="md-ticket-code">—</p>
+                </div>
+                <p style="font-size:11px;color:#9CA3AF;margin:8px 0 0;" id="md-fecha">—</p>
             </div>
 
-            {{-- FORM ENVIAR TICKETS --}}
-            <div id="md-validar-form" class="hidden space-y-3 border-t pt-4">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">N° de Tickets a enviar</p>
-                <div id="vf-tickets-campos" class="space-y-2"></div>
-                <p class="text-xs text-gray-400">Se enviarán al cliente por WhatsApp automáticamente</p>
-                <div class="flex gap-2">
-                    <button onclick="rifaEnviarTickets()" class="flex-1 bg-green-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-green-700 transition">🎟️ Enviar tickets</button>
-                    <button onclick="ocultarFormValidar()" class="px-4 text-gray-500 hover:text-gray-700 text-sm">Cancelar</button>
+            {{-- Form enviar tickets --}}
+            <div id="md-validar-form" style="display:none;flex-direction:column;gap:10px;border-top:1px solid #E5E8EF;padding-top:14px;">
+                <p style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0;">N° de Tickets a enviar</p>
+                <div id="vf-tickets-campos" style="display:flex;flex-direction:column;gap:7px;"></div>
+                <p style="font-size:11px;color:#9CA3AF;margin:0;">Se enviarán al cliente por WhatsApp automáticamente</p>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="rifaEnviarTickets()"
+                            style="flex:1;font-size:13px;font-weight:600;background:#16A34A;color:#fff;padding:10px;border-radius:10px;border:none;cursor:pointer;">
+                        🎟️ Enviar tickets
+                    </button>
+                    <button onclick="ocultarFormValidar()"
+                            style="font-size:12px;color:#6B7280;background:none;border:none;cursor:pointer;padding:0 12px;">
+                        Cancelar
+                    </button>
                 </div>
             </div>
 
-            <div id="md-edit" class="hidden space-y-3">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Editar datos</p>
+            {{-- Form editar --}}
+            <div id="md-edit" style="display:none;flex-direction:column;gap:10px;">
+                <p style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0;">Editar datos</p>
                 <div>
-                    <label class="block text-xs text-gray-500 mb-1">Nombre completo</label>
-                    <input type="text" id="ef-nombre" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400">
+                    <label style="display:block;font-size:11px;color:#6B7280;margin-bottom:4px;">Nombre completo</label>
+                    <input type="text" id="ef-nombre"
+                           style="width:100%;border:1px solid #E5E8EF;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:inherit;">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">DNI</label>
-                        <input type="text" id="ef-dni" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400">
+                        <label style="display:block;font-size:11px;color:#6B7280;margin-bottom:4px;">DNI</label>
+                        <input type="text" id="ef-dni"
+                               style="width:100%;border:1px solid #E5E8EF;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:inherit;">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">Ciudad</label>
-                        <input type="text" id="ef-ciudad" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400">
+                        <label style="display:block;font-size:11px;color:#6B7280;margin-bottom:4px;">Ciudad</label>
+                        <input type="text" id="ef-ciudad"
+                               style="width:100%;border:1px solid #E5E8EF;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:inherit;">
                     </div>
                 </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="guardarEdicion()" class="flex-1 bg-blue-600 text-white rounded-xl py-3 text-sm font-medium hover:bg-blue-700 transition">Guardar</button>
-                    <button onclick="cancelarEdicion()" class="px-4 text-gray-500 hover:text-gray-700 text-sm transition">Cancelar</button>
+                <div style="display:flex;gap:8px;margin-top:4px;">
+                    <button onclick="guardarEdicion()"
+                            style="flex:1;font-size:13px;font-weight:600;background:#2563EB;color:#fff;padding:10px;border-radius:10px;border:none;cursor:pointer;">
+                        Guardar
+                    </button>
+                    <button onclick="cancelarEdicion()"
+                            style="font-size:12px;color:#6B7280;background:none;border:none;cursor:pointer;padding:0 12px;">
+                        Cancelar
+                    </button>
                 </div>
             </div>
 
-            <div id="md-comprobante-wrap" class="hidden">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">COMPROBANTE DE PAGO</p>
-                <img id="md-comprobante-img" src="" alt="Comprobante" class="w-full rounded-xl border border-gray-200 cursor-zoom-in" onclick="window.open(this.src,'_blank')">
-                <p class="text-xs text-gray-400 mt-1 text-center">Toca la imagen para abrir en pantalla completa</p>
+            {{-- Comprobante --}}
+            <div id="md-comprobante-wrap" style="display:none;">
+                <p style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px;">Comprobante de pago</p>
+                <img id="md-comprobante-img" src="" alt="Comprobante"
+                     style="width:100%;border-radius:12px;border:1px solid #E5E8EF;cursor:zoom-in;"
+                     onclick="window.open(this.src,'_blank')">
+                <p style="font-size:10px;color:#9CA3AF;margin:4px 0 0;text-align:center;">Toca la imagen para abrir en pantalla completa</p>
             </div>
         </div>
-        <div id="md-acciones" class="sticky bottom-0 bg-white px-5 py-3 border-t border-gray-100 flex flex-wrap gap-2"></div>
+        <div id="md-acciones" style="position:sticky;bottom:0;background:#fff;padding:12px 20px;border-top:1px solid #E5E8EF;display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
 </div>
 
-<div id="toast" class="fixed bottom-6 right-6 hidden z-[60]">
-    <div id="toast-inner" class="px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white bg-gray-800"></div>
+{{-- Toast --}}
+<div id="toast" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:none;">
+    <div id="toast-inner" style="padding:10px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);font-size:13px;font-weight:500;color:#fff;background:#374151;"></div>
 </div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 
 <script>
 const csrf = '{{ csrf_token() }}';
 const ventas = @json($ventasJson);
 let activeId = null;
+
+const statusStyles = {
+    pendiente: 'background:#FFFBEB;color:#D97706;border-color:#FDE68A;',
+    pagado:    'background:#DBEAFE;color:#2563EB;border-color:#BFDBFE;',
+    enviado:   'background:#DCFCE7;color:#16A34A;border-color:#BBF7D0;',
+    cancelado: 'background:#FEE2E2;color:#EF4444;border-color:#FECACA;',
+};
+const statusLabels = { pendiente:'Pendiente', pagado:'Pagado', enviado:'Enviado', cancelado:'Cancelado' };
 
 function abrirDetalle(id) {
     activeId = id;
@@ -235,17 +284,14 @@ function abrirDetalle(id) {
 
     document.getElementById('md-titulo').innerHTML = 'Pedido #' + id;
 
-    const statusBadge = document.getElementById('md-status-badge');
-    const statusLabels = {pendiente:'Pendiente', pagado:'Pagado', enviado:'Enviado', cancelado:'Cancelado'};
-    const statusColors = {pendiente:'bg-yellow-100 text-yellow-700', pagado:'bg-blue-100 text-blue-700', enviado:'bg-green-100 text-green-700', cancelado:'bg-red-100 text-red-700'};
-    statusBadge.innerHTML = statusLabels[v.status] || v.status;
-    statusBadge.className = 'ml-2 text-xs px-2 py-0.5 rounded-full ' + (statusColors[v.status] || 'bg-gray-100');
+    const badge = document.getElementById('md-status-badge');
+    badge.innerHTML = statusLabels[v.status] || v.status;
+    badge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:99px;margin-left:8px;border:1px solid;' + (statusStyles[v.status] || 'background:#F3F4F6;color:#6B7280;border-color:#E5E7EB;');
 
     document.getElementById('md-nombre').innerHTML = v.nombre || '—';
     document.getElementById('md-dni').innerHTML = v.dni || '—';
     const rawNum = (v.wa_number || '').replace(/\D/g,'');
-    const fmtNum = rawNum.length >= 10 ? '+' + rawNum : rawNum;
-    document.getElementById('md-celular').innerHTML = fmtNum || '—';
+    document.getElementById('md-celular').innerHTML = (rawNum.length >= 10 ? '+' + rawNum : rawNum) || '—';
     document.getElementById('md-ciudad').innerHTML = v.ciudad || '—';
     document.getElementById('md-plan').innerHTML = v.plan_nombre || '—';
     document.getElementById('md-tickets').innerHTML = v.tickets + ' ticket(s)';
@@ -255,39 +301,37 @@ function abrirDetalle(id) {
     const codeRow = document.getElementById('md-ticket-code-row');
     if (v.ticket_code && v.status === 'enviado') {
         document.getElementById('md-ticket-code').innerHTML = v.ticket_code;
-        codeRow.classList.remove('hidden');
+        codeRow.style.display = 'block';
     } else {
-        codeRow.classList.add('hidden');
+        codeRow.style.display = 'none';
     }
 
     const compWrap = document.getElementById('md-comprobante-wrap');
     if (v.payment_proof) {
         document.getElementById('md-comprobante-img').src = v.payment_proof;
-        compWrap.classList.remove('hidden');
+        compWrap.style.display = 'block';
     } else {
-        compWrap.classList.add('hidden');
+        compWrap.style.display = 'none';
     }
 
-    document.getElementById('md-vista').classList.remove('hidden');
-    document.getElementById('md-edit').classList.add('hidden');
-    document.getElementById('md-validar-form').classList.add('hidden');
-
-
+    document.getElementById('md-vista').style.display = 'block';
+    document.getElementById('md-edit').style.display = 'none';
+    document.getElementById('md-validar-form').style.display = 'none';
 
     const acciones = document.getElementById('md-acciones');
     acciones.innerHTML = '';
-    acciones.innerHTML += '<button onclick="activarEdicion()" class="text-xs bg-gray-100 text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-200 transition">✏️ Editar datos</button>';
-    acciones.innerHTML += '<button onclick="rifaEliminar(' + id + ')" class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-xl hover:bg-red-100 transition">🗑️ Eliminar</button>';
+    acciones.innerHTML += `<button onclick="activarEdicion()" style="font-size:11px;background:#F3F4F6;color:#374151;padding:7px 12px;border-radius:8px;border:none;cursor:pointer;">✏️ Editar datos</button>`;
+    acciones.innerHTML += `<button onclick="rifaEliminar(${id})" style="font-size:11px;background:#FEE2E2;color:#EF4444;padding:7px 12px;border-radius:8px;border:none;cursor:pointer;">🗑️ Eliminar</button>`;
 
     if (v.status === 'pendiente' || v.status === 'comprobante') {
-        acciones.innerHTML += '<button onclick="rifaValidarSinTicket(' + id + ')" class="flex-1 text-sm bg-green-600 text-white px-4 py-2.5 rounded-xl hover:bg-green-700 transition font-semibold">✓ Validar pago</button>';
-        acciones.innerHTML += '<button onclick="rifaCancelar(' + id + ')" class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-xl hover:bg-red-100 transition">✕ Cancelar</button>';
+        acciones.innerHTML += `<button onclick="rifaValidarSinTicket(${id})" style="flex:1;font-size:13px;font-weight:600;background:#16A34A;color:#fff;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">✓ Validar pago</button>`;
+        acciones.innerHTML += `<button onclick="rifaCancelar(${id})" style="font-size:11px;background:#FEE2E2;color:#EF4444;padding:7px 12px;border-radius:8px;border:none;cursor:pointer;">✕ Cancelar</button>`;
     }
     if (v.status === 'pagado') {
-        acciones.innerHTML += '<button onclick="mostrarFormValidar()" class="flex-1 text-sm bg-green-600 text-white px-4 py-2.5 rounded-xl hover:bg-green-700 transition font-semibold">🎟️ Enviar ticket</button>';
+        acciones.innerHTML += `<button onclick="mostrarFormValidar()" style="flex:1;font-size:13px;font-weight:600;background:#16A34A;color:#fff;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">🎟️ Enviar ticket</button>`;
     }
     if (v.status === 'enviado') {
-        acciones.innerHTML += '<a href="/rifas/' + id + '/ticket-preview" target="_blank" class="text-xs bg-gray-100 text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-200 transition">👁️ Ver boleto</a>';
+        acciones.innerHTML += `<a href="/rifas/${id}/ticket-preview" target="_blank" style="font-size:11px;background:#F3F4F6;color:#374151;padding:7px 12px;border-radius:8px;text-decoration:none;">👁️ Ver boleto</a>`;
     }
 
     document.getElementById('modal-detalle').style.display = 'flex';
@@ -301,21 +345,21 @@ function mostrarFormValidar() {
     campos.innerHTML = '';
     for (let i = 0; i < cantidad; i++) {
         campos.innerHTML += `
-            <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-400 w-6 text-right">${i+1}.</span>
-                <input type="text" id="vf-t-${i}" value="${existentes[i] || ''}"
-                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400"
-                    placeholder="N° ticket ${i+1}" autocomplete="off">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;color:#9CA3AF;width:20px;text-align:right;">${i+1}.</span>
+                <input type="text" id="vf-t-${i}" value="${existentes[i]||''}"
+                       style="flex:1;border:1px solid #E5E8EF;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;"
+                       placeholder="N° ticket ${i+1}" autocomplete="off">
             </div>`;
     }
-    document.getElementById('md-validar-form').classList.remove('hidden');
-    document.getElementById('md-acciones').classList.add('hidden');
+    document.getElementById('md-validar-form').style.display = 'flex';
+    document.getElementById('md-acciones').style.display = 'none';
     setTimeout(() => document.getElementById('vf-t-0')?.focus(), 100);
 }
 
 function ocultarFormValidar() {
-    document.getElementById('md-validar-form').classList.add('hidden');
-    document.getElementById('md-acciones').classList.remove('hidden');
+    document.getElementById('md-validar-form').style.display = 'none';
+    document.getElementById('md-acciones').style.display = 'flex';
 }
 
 async function rifaEnviarTickets() {
@@ -367,7 +411,6 @@ function cerrarDetalle() {
     document.getElementById('modal-detalle').style.display = 'none';
     activeId = null;
 }
-
 document.getElementById('modal-detalle')?.addEventListener('click', function(e) {
     if (e.target === this) cerrarDetalle();
 });
@@ -377,15 +420,13 @@ function activarEdicion() {
     document.getElementById('ef-nombre').value = v.nombre || '';
     document.getElementById('ef-dni').value = v.dni || '';
     document.getElementById('ef-ciudad').value = v.ciudad || '';
-    document.getElementById('md-vista').classList.add('hidden');
-    document.getElementById('md-edit').classList.remove('hidden');
+    document.getElementById('md-vista').style.display = 'none';
+    document.getElementById('md-edit').style.display = 'flex';
 }
-
 function cancelarEdicion() {
-    document.getElementById('md-vista').classList.remove('hidden');
-    document.getElementById('md-edit').classList.add('hidden');
+    document.getElementById('md-vista').style.display = 'block';
+    document.getElementById('md-edit').style.display = 'none';
 }
-
 async function guardarEdicion() {
     const id = activeId;
     const nombre = document.getElementById('ef-nombre').value;
@@ -426,8 +467,8 @@ async function rifaEliminar(id) {
 }
 
 function aplicarFiltros() {
-    const desde = document.getElementById('f-desde').value;
-    const hasta = document.getElementById('f-hasta').value;
+    const desde  = document.getElementById('f-desde').value;
+    const hasta  = document.getElementById('f-hasta').value;
     const estado = document.getElementById('f-estado').value;
     const buscar = document.getElementById('f-buscar').value.toLowerCase();
     document.querySelectorAll('[id^="rv-"]').forEach(row => {
@@ -436,7 +477,7 @@ function aplicarFiltros() {
         if (!v) { row.style.display = 'none'; return; }
         const fechaParts = v.created_at ? v.created_at.split(' ')[0].split('/') : [];
         const fecha = fechaParts.length === 3 ? `${fechaParts[2]}-${fechaParts[1]}-${fechaParts[0]}` : '';
-        const okFecha = (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
+        const okFecha  = (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
         const okEstado = !estado || v.status === estado;
         const okBuscar = !buscar || (v.nombre + ' ' + (v.dni||'') + ' ' + (v.wa_number||'')).toLowerCase().includes(buscar);
         row.style.display = (okFecha && okEstado && okBuscar) ? '' : 'none';
@@ -451,10 +492,10 @@ document.getElementById('f-hasta')?.addEventListener('change', aplicarFiltros);
 let botPanelOpen = true;
 function toggleBotPanel() {
     botPanelOpen = !botPanelOpen;
-    const panel = document.getElementById('bot-panel');
+    const panel   = document.getElementById('bot-panel');
     const content = document.getElementById('bot-panel-content');
     const chevron = document.getElementById('bot-chevron');
-    panel.style.width = botPanelOpen ? '220px' : '22px';
+    panel.style.width   = botPanelOpen ? '220px' : '22px';
     content.style.display = botPanelOpen ? 'flex' : 'none';
     chevron.style.transform = botPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)';
 }
@@ -463,46 +504,38 @@ function checkBotStatus() {
     fetch('/bot-status?bot=rifa')
         .then(r => r.json())
         .then(d => {
-            const dot      = document.getElementById('bot-dot');
-            const txt      = document.getElementById('bot-status-text');
-            const spinner  = document.getElementById('bot-qr-spinner');
-            const qrImg    = document.getElementById('bot-qr-img');
-            const qrHint   = document.getElementById('bot-qr-hint');
-            const connMsg  = document.getElementById('bot-connected-msg');
-            const offMsg   = document.getElementById('bot-offline-msg');
+            const dot     = document.getElementById('bot-dot');
+            const txt     = document.getElementById('bot-status-text');
+            const spinner = document.getElementById('bot-qr-spinner');
+            const qrImg   = document.getElementById('bot-qr-img');
+            const qrHint  = document.getElementById('bot-qr-hint');
+            const connMsg = document.getElementById('bot-connected-msg');
+            const offMsg  = document.getElementById('bot-offline-msg');
 
-            spinner.style.display  = 'none';
-            qrImg.style.display    = 'none';
-            qrHint.style.display   = 'none';
-            connMsg.style.display  = 'none';
-            offMsg.style.display   = 'none';
+            spinner.style.display = qrImg.style.display = qrHint.style.display =
+            connMsg.style.display = offMsg.style.display = 'none';
 
             if (d.status === 'connected') {
-                dot.style.background = '#22c55e';
-                txt.innerHTML = 'Conectado ✓';
-                txt.className = 'text-xs font-medium text-green-600';
+                dot.style.background = '#22C55E';
+                txt.innerHTML = 'Conectado ✓'; txt.style.color = '#16A34A';
                 connMsg.style.display = 'block';
             } else if (d.status === 'qr' && d.qr) {
-                dot.style.background = '#f59e0b';
-                txt.innerHTML = 'Escanear QR';
-                txt.className = 'text-xs font-medium text-yellow-600';
-                qrImg.src = d.qr;
-                qrImg.style.display = 'block';
+                dot.style.background = '#F59E0B';
+                txt.innerHTML = 'Escanear QR'; txt.style.color = '#D97706';
+                qrImg.src = d.qr; qrImg.style.display = 'block';
                 qrHint.style.display = 'block';
             } else if (d.status === 'qr' || d.status === 'starting') {
-                dot.style.background = '#3b82f6';
-                txt.innerHTML = 'Iniciando...';
-                txt.className = 'text-xs font-medium text-blue-600';
+                dot.style.background = '#3B82F6';
+                txt.innerHTML = 'Iniciando...'; txt.style.color = '#2563EB';
                 spinner.style.display = 'flex';
             } else {
-                dot.style.background = '#d1d5db';
-                txt.innerHTML = 'Offline';
-                txt.className = 'text-xs font-medium text-gray-400';
+                dot.style.background = '#D1D5DB';
+                txt.innerHTML = 'Offline'; txt.style.color = '#9CA3AF';
                 offMsg.style.display = 'block';
             }
         })
         .catch(() => {
-            document.getElementById('bot-dot').style.background = '#d1d5db';
+            document.getElementById('bot-dot').style.background = '#D1D5DB';
             document.getElementById('bot-status-text').innerHTML = 'Sin conexión';
         });
 }
@@ -512,11 +545,11 @@ setInterval(checkBotStatus, 8000);
 
 function showToast(msg, type = 'info') {
     const inner = document.getElementById('toast-inner');
-    const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-gray-800' };
-    inner.className = `px-4 py-3 rounded-xl shadow-lg text-white ${colors[type] || colors.info}`;
+    const colors = { success:'#16A34A', error:'#EF4444', info:'#374151' };
+    inner.style.background = colors[type] || colors.info;
     inner.innerHTML = msg;
-    document.getElementById('toast').classList.remove('hidden');
-    setTimeout(() => document.getElementById('toast').classList.add('hidden'), 3000);
+    document.getElementById('toast').style.display = 'block';
+    setTimeout(() => { document.getElementById('toast').style.display = 'none'; }, 3000);
 }
 </script>
 

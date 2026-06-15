@@ -1,0 +1,126 @@
+<?php
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use App\Models\Project;
+
+class MesaController extends Controller
+{
+    private function project(): Project
+    {
+        return Project::findOrFail(session('comercial_project_id'));
+    }
+
+    private function s(Project $project, string $key, $default = null)
+    {
+        return $project->settings()->where('key', $key)->value('value') ?? $default;
+    }
+
+    public function index()
+    {
+        $project    = $this->project();
+        $catalogUrl = $project->custom_domain
+            ? 'https://' . $project->custom_domain
+            : url('/' . $project->slug);
+
+        $tableCount = (int) ($this->s($project, 'qr_table_count', 10));
+        $sectores   = json_decode($this->s($project, 'qr_sectores', '["Salón"]'), true) ?? ['Salón'];
+
+        // Construir lista de mesas estáticas
+        $mesas = [];
+        for ($i = 1; $i <= $tableCount; $i++) {
+            $mesas[] = ['numero' => (string)$i, 'sector' => $sectores[0] ?? 'Salón'];
+        }
+        // Agregar mesas adicionales desde pedidos activos (VIP, T1..., B1...)
+        $pedidosActivos = $project->orders()
+            ->whereNotNull('table_number')
+            ->whereIn('status', ['pending', 'process'])
+            ->whereNotIn('kitchen_status', ['served'])
+            ->pluck('table_number')
+            ->unique()
+            ->values();
+        $numerosEstaticos = array_column($mesas, 'numero');
+        foreach ($pedidosActivos as $num) {
+            if (in_array((string)$num, $numerosEstaticos)) continue;
+            // Detectar sector por prefijo
+            if (str_starts_with($num, 'T'))   $sec = 'Terraza';
+            elseif (str_starts_with($num, 'B')) $sec = 'Barra';
+            else $sec = $sectores[0] ?? 'Salón';
+            $mesas[] = ['numero' => (string)$num, 'sector' => $sec];
+        }
+
+        // Pedidos activos (no cancelados, no entregados)
+        $pedidosRaw = $project->orders()
+            ->whereNotNull('table_number')
+            ->whereIn('status', ['pending', 'process'])
+            ->whereNotIn('kitchen_status', ['served'])
+            ->with('items')
+            ->orderBy('created_at')
+            ->get();
+
+        $pedidos = $pedidosRaw->map(function ($o) {
+            return [
+                'id'             => $o->id,
+                'table_number'   => $o->table_number,
+                'client_name'    => $o->client_name,
+                'status'         => $o->status,
+                'kitchen_status' => $o->kitchen_status ?? 'pending',
+                'total'          => $o->total,
+                'notes'          => $o->notes,
+                'created_at'     => $o->created_at->toISOString(),
+                'items'          => $o->items->map(function ($i) {
+                    return [
+                        'id'       => $i->id,
+                        'name'     => $i->name,
+                        'quantity' => $i->quantity,
+                        'price'    => (float) $i->price,
+                    ];
+                })->values()->all(),
+            ];
+        })->values()->all();
+
+        $mesasData = [
+            'mesas'   => $mesas,
+            'sectores'=> $sectores,
+            'pedidos' => $pedidos,
+        ];
+
+        return view('comercial.mesas', compact('project', 'mesasData', 'catalogUrl'));
+    }
+
+    // GET /bixosales/mesas/data — polling JSON
+    public function data()
+    {
+        $project = $this->project();
+
+        $pedidos = $project->orders()
+            ->whereNotNull('table_number')
+            ->whereIn('status', ['pending', 'process'])
+            ->whereNotIn('kitchen_status', ['served'])
+            ->with('items')
+            ->orderBy('created_at')
+            ->get()
+            ->map(function ($o) {
+                return [
+                    'id'             => $o->id,
+                    'table_number'   => $o->table_number,
+                    'client_name'    => $o->client_name,
+                    'status'         => $o->status,
+                    'kitchen_status' => $o->kitchen_status ?? 'pending',
+                    'total'          => $o->total,
+                    'notes'          => $o->notes,
+                    'created_at'     => $o->created_at->toISOString(),
+                    'items'          => $o->items->map(function ($i) {
+                        return [
+                            'id'       => $i->id,
+                            'name'     => $i->name,
+                            'quantity' => $i->quantity,
+                            'price'    => (float) $i->price,
+                        ];
+                    })->values()->all(),
+                ];
+            })->values()->all();
+
+        return response()->json(['pedidos' => $pedidos]);
+    }
+}

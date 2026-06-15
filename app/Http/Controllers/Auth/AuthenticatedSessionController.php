@@ -44,10 +44,13 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        if ($inactivity) {
-            return redirect()->route('login')->with('inactivity', true);
-        }
+        $redirect = $inactivity
+            ? redirect()->route('login')->with('inactivity', true)
+            : redirect()->route('login');
 
-        return redirect('/');
+        return $redirect->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma'        => 'no-cache',
+        ]);
     }
 }

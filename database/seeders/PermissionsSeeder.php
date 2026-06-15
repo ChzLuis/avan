@@ -21,6 +21,7 @@ class PermissionsSeeder extends Seeder
 
         // Catálogo — productos, servicios, categorías
         'catalog.ver', 'catalog.crear', 'catalog.editar', 'catalog.eliminar', 'catalog.importar',
+        'catalog.resenas',
 
         // Pedidos y POS
         'orders.ver', 'orders.crear', 'orders.editar', 'orders.eliminar', 'orders.cancelar',
@@ -60,7 +61,7 @@ class PermissionsSeeder extends Seeder
         'settings.ver', 'settings.editar',
 
         // Configuración limitada (asignable a empleados)
-        'settings.negocio', 'settings.diseno', 'settings.pagos', 'settings.catalogos',
+        'settings.negocio', 'settings.diseno', 'settings.pagos', 'settings.catalogos', 'settings.qr',
 
         // Roles y miembros del equipo
         'roles.ver', 'roles.gestionar',
@@ -89,7 +90,7 @@ class PermissionsSeeder extends Seeder
             'inventory.ver', 'inventory.editar',
             'proveedores.ver', 'proveedores.editar',
             'rifas.ver',   'rifas.validar', 'rifas.cancelar',
-            'settings.ver', 'settings.negocio', 'settings.diseno', 'settings.pagos', 'settings.catalogos',
+            'settings.ver', 'settings.negocio', 'settings.diseno', 'settings.pagos', 'settings.catalogos', 'settings.qr',
             'roles.ver',
         ],
 

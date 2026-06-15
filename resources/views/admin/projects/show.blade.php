@@ -50,6 +50,39 @@
             </form>
         </div>
 
+        {{-- Subdominio / dominio personalizado --}}
+        <div class="lg:col-span-3 rounded-2xl border p-6" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.08);">
+            <h3 class="text-sm font-semibold text-white mb-1">Subdominio / Dominio personalizado</h3>
+            <p class="text-xs text-gray-500 mb-4">Asigna un subdominio (ej: <span class="text-gray-400">mitienda.arindg.com</span>) o dominio propio (ej: <span class="text-gray-400">mitienda.com</span>). El catálogo público estará disponible en esa URL.</p>
+
+            <form method="POST" action="{{ route('admin.projects.subdomain', $project) }}" class="flex items-end gap-3">
+                @csrf @method('PATCH')
+                <div class="flex-1">
+                    <label class="text-xs text-gray-400 mb-1 block">Dominio</label>
+                    <input type="text" name="custom_domain"
+                           value="{{ $project->custom_domain ?? '' }}"
+                           placeholder="mitienda.arindg.com"
+                           class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit"
+                        class="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors flex-shrink-0"
+                        style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+                    Guardar
+                </button>
+            </form>
+
+            @if($project->custom_domain)
+            <div class="mt-3 flex items-center gap-2">
+                <span class="text-xs text-gray-500">URL del catálogo:</span>
+                <a href="https://{{ $project->custom_domain }}/{{ $project->slug }}"
+                   target="_blank"
+                   class="text-xs text-indigo-400 hover:text-indigo-300 underline">
+                    https://{{ $project->custom_domain }}/{{ $project->slug }}
+                </a>
+            </div>
+            @endif
+        </div>
+
         {{-- Módulos --}}
         <div class="lg:col-span-2 rounded-2xl border p-6" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.08);">
             <h3 class="text-sm font-semibold text-white mb-4">Módulos activos</h3>
@@ -81,6 +114,23 @@
                     Guardar módulos
                 </button>
             </form>
+        </div>
+    </div>
+
+    {{-- Acciones rápidas del proyecto --}}
+    <div class="mt-6 rounded-2xl border p-5" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.08);">
+        <h3 class="text-sm font-semibold text-white mb-4">Gestión operativa</h3>
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ route('admin.turnos.index', $project) }}"
+               class="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all"
+               style="background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.3);color:#a5b4fc;"
+               onmouseover="this.style.background='rgba(99,102,241,.2)'" onmouseout="this.style.background='rgba(99,102,241,.1)'">
+                <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Gestión de Turnos
+            </a>
         </div>
     </div>
 

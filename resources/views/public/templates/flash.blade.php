@@ -115,6 +115,18 @@ body { background: #f5f5f5; }
 /* No scrollbar */
 .no-scroll { overflow-x:auto; scrollbar-width:none; }
 .no-scroll::-webkit-scrollbar { display:none; }
+/* Flash cat arrows */
+.flsh-cat-outer { display:flex; align-items:center; gap:0; flex:1; min-width:0; }
+.flsh-cat-track { display:flex; align-items:center; gap:4px; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; flex:1; }
+.flsh-cat-track::-webkit-scrollbar { display:none; }
+.flsh-arrow { flex-shrink:0; width:28px; height:32px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer; color:#9ca3af; transition:color .2s; }
+.flsh-arrow:hover { color:#ef4444; }
+.flsh-arrow.f-hidden { opacity:0; pointer-events:none; }
+/* Flash sub dropdown */
+.flsh-cat-wrap { position:static; flex-shrink:0; }
+#flsh-sub-dropdown { display:none; position:fixed; min-width:150px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.1); z-index:9999; overflow:hidden; }
+#flsh-sub-dropdown button { display:block; width:100%; text-align:left; padding:8px 14px; font-size:12px; font-weight:600; color:#4b5563; background:none; border:none; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
+#flsh-sub-dropdown button:hover { background:#fef2f2; color:#ef4444; }
 
 /* Blink animation */
 @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
@@ -430,19 +442,30 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
   {{-- Barra filtros sticky --}}
   <div class="sticky top-16 z-20 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl px-4 py-3 mb-5 flex items-center gap-3 flex-wrap shadow-sm border-b border-gray-100">
-    <div class="flex items-center gap-2 no-scroll flex-1 min-w-0">
-      <button @click="filterCat=''"
-              :class="filterCat==='' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-              class="px-3 py-1.5 text-xs font-bold rounded-full transition whitespace-nowrap flex-shrink-0">
-        Todo
+    <div class="flsh-cat-outer flex-1 min-w-0">
+      <button class="flsh-arrow f-hidden" id="flsh-cat-prev" onclick="flshCatScroll(-1)" aria-label="Anterior">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      @foreach($categories as $cat)
-      <button @click="filterCat='{{ $cat->id }}'"
-              :class="filterCat==='{{ $cat->id }}' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-              class="px-3 py-1.5 text-xs font-bold rounded-full transition whitespace-nowrap flex-shrink-0">
-        {{ $cat->name }}
+      <div class="flsh-cat-track" id="flsh-cats-track">
+        <button @click="filterCat=''"
+                :class="filterCat==='' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                class="px-3 py-1.5 text-xs font-bold rounded-full transition whitespace-nowrap flex-shrink-0">
+          Todo
+        </button>
+        @foreach($categories as $cat)
+        <div class="flsh-cat-wrap" data-cat-id="{{ $cat->id }}"@if($cat->children->count()) data-has-sub="1"@endif>
+          <button @click="filterCat='{{ $cat->id }}'"
+                  :class="filterCat==='{{ $cat->id }}' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                  class="px-3 py-1.5 text-xs font-bold rounded-full transition whitespace-nowrap">
+            {{ $cat->name }}@if($cat->children->count()) <span style="font-size:9px;opacity:.5;margin-left:2px;">▾</span>@endif
+          </button>
+        </div>
+        @endforeach
+        <div id="flsh-sub-dropdown"></div>
+      </div>
+      <button class="flsh-arrow" id="flsh-cat-next" onclick="flshCatScroll(1)" aria-label="Siguiente">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
       </button>
-      @endforeach
     </div>
 
     {{-- Filtros adicionales --}}
@@ -1573,6 +1596,46 @@ function store() {
     {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
+<script>
+(function(){
+  var track = document.getElementById('flsh-cats-track');
+  var prev  = document.getElementById('flsh-cat-prev');
+  var next  = document.getElementById('flsh-cat-next');
+  var drop  = document.getElementById('flsh-sub-dropdown');
+  if(!track) return;
+  function update(){
+    prev.classList.toggle('f-hidden', track.scrollLeft <= 4);
+    next.classList.toggle('f-hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+  window.flshCatScroll = function(dir){ track.scrollBy({left: dir * 200, behavior:'smooth'}); };
+  track.addEventListener('scroll', update, {passive:true});
+  setTimeout(update, 150);
+
+  var SUBS = @json($categories->mapWithKeys(fn($c) => [(string)$c->id => $c->children->map(fn($s) => ['id'=>(string)$s->id,'name'=>$s->name])->values()]));
+  var hideT = null;
+  function showDrop(wrap){
+    var subs = SUBS[wrap.dataset.catId]; if(!subs||!subs.length) return;
+    clearTimeout(hideT);
+    drop.innerHTML = subs.map(function(s){ return '<button onclick="flshPickSub(\''+s.id+'\')">'+s.name+'</button>'; }).join('');
+    var r = wrap.getBoundingClientRect();
+    drop.style.top = r.bottom+'px'; drop.style.left = r.left+'px'; drop.style.display='block';
+  }
+  function hideDrop(){ hideT = setTimeout(function(){ drop.style.display='none'; }, 150); }
+  window.flshPickSub = function(id){
+    var root = document.querySelector('[x-data]');
+    if(root && root._x_dataStack && root._x_dataStack[0]) root._x_dataStack[0].filterCat = id;
+    drop.style.display='none';
+  };
+  track.querySelectorAll('.flsh-cat-wrap[data-has-sub]').forEach(function(w){
+    w.addEventListener('mouseenter', function(){ showDrop(w); });
+    w.addEventListener('mouseleave', hideDrop);
+  });
+  if(drop){
+    drop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+    drop.addEventListener('mouseleave', hideDrop);
+  }
+})();
+</script>
 </body>
 </html>
 

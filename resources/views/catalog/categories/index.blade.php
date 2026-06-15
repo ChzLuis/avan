@@ -56,7 +56,7 @@ document.addEventListener('alpine:init', () => {
         isNew: false,
         expandedIds: {},
         form: { name: '', image_url: '', color: '#f97316', is_active: true, type: window.__categoryPageData.activeType, parent_id: null },
-        importLog: { show: false, created: 0, updated: 0, errors: [] },
+        importLog: { show: false, created: 0, createdSub: 0, updated: 0, updatedSub: 0, errors: [], reloadOnClose: false },
 
         get filtered() {
             const q = this.search.toLowerCase();
@@ -168,8 +168,7 @@ document.addEventListener('alpine:init', () => {
                 const res  = await fetch(this.importUrl, { method:'POST', headers:{'Accept':'application/json'}, body: fd });
                 const data = await res.json();
                 event.target.value = '';
-                this.importLog = { show: true, created: data.created||0, updated: data.updated||0, errors: data.errors||[] };
-                if ((data.created||0)+(data.updated||0) > 0) window.location.reload();
+                this.importLog = { show: true, created: data.created||0, createdSub: data.createdSub||0, updated: data.updated||0, updatedSub: data.updatedSub||0, errors: data.errors||[], reloadOnClose: (data.created||0)+(data.createdSub||0)+(data.updated||0)+(data.updatedSub||0) > 0 };
             } catch(e) {
                 event.target.value = '';
                 this.importLog = { show: true, created: 0, updated: 0, errors: ['Error de red al importar.'] };
@@ -557,18 +556,30 @@ document.addEventListener('alpine:init', () => {
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h3 class="font-bold text-gray-800">Resultado de importación</h3>
-            <button @click="importLog.show=false" class="text-gray-400 hover:text-gray-600">
+            <button @click="importLog.show=false; if(importLog.reloadOnClose) window.location.reload()" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
         <div class="px-6 py-4 grid grid-cols-2 gap-3">
-            <div class="rounded-xl bg-green-50 border border-green-200 px-3 py-3 text-center">
-                <div class="text-2xl font-bold text-green-700" x-text="importLog.created"></div>
-                <div class="text-xs text-green-600 mt-0.5">Creadas</div>
+            <div class="rounded-xl bg-green-50 border border-green-200 px-3 py-3 text-center col-span-2">
+                <div class="text-2xl font-bold text-green-700" x-text="importLog.created + importLog.createdSub"></div>
+                <div class="text-xs text-green-600 mt-0.5">Total creadas</div>
             </div>
-            <div class="rounded-xl bg-blue-50 border border-blue-200 px-3 py-3 text-center">
-                <div class="text-2xl font-bold text-blue-700" x-text="importLog.updated"></div>
-                <div class="text-xs text-blue-600 mt-0.5">Actualizadas</div>
+            <div class="rounded-xl bg-green-50 border border-green-100 px-3 py-2 text-center">
+                <div class="text-lg font-bold text-green-700" x-text="importLog.created"></div>
+                <div class="text-xs text-green-500 mt-0.5">Categorías</div>
+            </div>
+            <div class="rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2 text-center">
+                <div class="text-lg font-bold text-indigo-700" x-text="importLog.createdSub"></div>
+                <div class="text-xs text-indigo-500 mt-0.5">Subcategorías</div>
+            </div>
+            <div x-show="importLog.updated + importLog.updatedSub > 0" class="rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-center">
+                <div class="text-lg font-bold text-blue-700" x-text="importLog.updated"></div>
+                <div class="text-xs text-blue-500 mt-0.5">Cat. actualizadas</div>
+            </div>
+            <div x-show="importLog.updated + importLog.updatedSub > 0" class="rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-center">
+                <div class="text-lg font-bold text-blue-700" x-text="importLog.updatedSub"></div>
+                <div class="text-xs text-blue-500 mt-0.5">Sub. actualizadas</div>
             </div>
         </div>
         <div x-show="importLog.errors.length > 0" class="px-6 pb-4">
@@ -583,7 +594,7 @@ document.addEventListener('alpine:init', () => {
             </ul>
         </div>
         <div class="px-6 py-4 border-t border-gray-100 flex justify-end">
-            <button @click="importLog.show=false"
+            <button @click="importLog.show=false; if(importLog.reloadOnClose) window.location.reload()"
                     class="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-lg transition">
                 Entendido
             </button>

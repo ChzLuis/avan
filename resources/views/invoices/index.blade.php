@@ -118,8 +118,8 @@
             </div>
             <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
-                {{-- Tipo y serie --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {{-- Tipo, serie y correlativo --}}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                         <label class="label">Tipo</label>
                         <select x-model="form.type" @change="autoSerie()" class="input">
@@ -131,7 +131,11 @@
                     </div>
                     <div>
                         <label class="label">Serie</label>
-                        <input x-model="form.serie" type="text" maxlength="10" placeholder="B001" class="input">
+                        <input x-model="form.serie" type="text" maxlength="10" placeholder="E001" class="input">
+                    </div>
+                    <div>
+                        <label class="label">Correlativo</label>
+                        <input x-model="form.correlativo" type="number" min="1" placeholder="Auto" class="input">
                     </div>
                 </div>
 
@@ -542,7 +546,7 @@ function invoicesApp() {
         saving: false,
         saveError: '',
         form: {
-            type: 'boleta', serie: 'B001', issue_date: '', due_date: '',
+            type: 'boleta', serie: '{{ $serieBoleta }}', correlativo: '', issue_date: '', due_date: '',
             client_name: '', client_phone: '', client_email: '',
             client_doc_type: '', client_doc_number: '', client_address: '',
             payment_method: '', currency: 'PEN', notes: '',
@@ -584,7 +588,7 @@ function invoicesApp() {
             this.panel = 'detail';
             const today = new Date().toISOString().slice(0,10);
             this.form = {
-                type: 'boleta', serie: 'B001', issue_date: today, due_date: '',
+                type: 'boleta', serie: '{{ $serieBoleta }}', correlativo: '', issue_date: today, due_date: '',
                 client_name: '', client_phone: '', client_email: '',
                 client_doc_type: '', client_doc_number: '', client_address: '',
                 payment_method: '', currency: 'PEN', notes: '',
@@ -595,8 +599,8 @@ function invoicesApp() {
         },
 
         autoSerie() {
-            if (this.form.type === 'factura') this.form.serie = 'F001';
-            else if (this.form.type === 'boleta') this.form.serie = 'B001';
+            if (this.form.type === 'factura') this.form.serie = '{{ $serieFactura }}';
+            else if (this.form.type === 'boleta') this.form.serie = '{{ $serieBoleta }}';
         },
 
         addItem() {

@@ -118,6 +118,18 @@ h1,h2,h3,h4,.font-jost { font-family: var(--font-title); }
 /* Category scroll */
 .cat-scroll { overflow-x: auto; scrollbar-width: none; }
 .cat-scroll::-webkit-scrollbar { display:none; }
+/* Cat bar arrows - ella */
+.ella-cat-outer { display:flex; align-items:center; flex:1; gap:2px; overflow:hidden; }
+.ella-cat-track { display:flex; align-items:center; gap:4px; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; flex:1; }
+.ella-cat-track::-webkit-scrollbar { display:none; }
+.ella-arrow { flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; background:transparent; border:1px solid #e5e7eb; border-radius:50%; cursor:pointer; color:#9ca3af; transition:all .2s; }
+.ella-arrow:hover { border-color:#111; color:#111; }
+.ella-arrow.e-hidden { opacity:0; pointer-events:none; }
+/* Ella sub dropdown — global fixed */
+.ella-cat-wrap { position:static; flex-shrink:0; }
+#ella-sub-dropdown { display:none; position:fixed; min-width:150px; background:#fff; border:1px solid #f0f0f0; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,.1); z-index:9999; overflow:hidden; }
+#ella-sub-dropdown button { display:block; width:100%; text-align:left; padding:9px 14px; font-size:13px; color:#6b7280; background:none; border:none; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
+#ella-sub-dropdown button:hover { background:#f9fafb; color:#111; }
 </style>
 
 @php
@@ -191,19 +203,32 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </a>
 
     {{-- Nav categorias (centro) --}}
-    <nav class="flex-1 flex items-center justify-center gap-1 hidden md:flex overflow-x-auto cat-scroll">
-      <button @click="filterCat=''; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-              :class="filterCat==='' ? 'font-bold text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-900'"
-              class="px-3 py-1 text-sm whitespace-nowrap transition border-b-2 border-transparent">
-        Todo
-      </button>
-      @foreach($categories as $cat)
-      <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-              :class="filterCat==='{{ $cat->id }}' ? 'font-bold text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-900'"
-              class="px-3 py-1 text-sm whitespace-nowrap transition border-b-2 border-transparent">
-        {{ $cat->name }}
-      </button>
-      @endforeach
+    <nav class="flex-1 hidden md:flex items-center justify-center">
+      <div class="ella-cat-outer">
+        <button class="ella-arrow e-hidden" id="ella-cat-prev" onclick="ellaCatScroll(-1)" aria-label="Anterior">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="ella-cat-track" id="ella-cats-track">
+          <button @click="filterCat=''; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
+                  :class="filterCat==='' ? 'font-bold text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-900'"
+                  class="px-3 py-1 text-sm whitespace-nowrap transition border-b-2 border-transparent flex-shrink-0">
+            Todo
+          </button>
+          @foreach($categories as $cat)
+          <div class="ella-cat-wrap" data-cat-id="{{ $cat->id }}"@if($cat->children->count()) data-has-sub="1"@endif>
+            <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
+                    :class="filterCat==='{{ $cat->id }}' ? 'font-bold text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-900'"
+                    class="px-3 py-1 text-sm whitespace-nowrap transition border-b-2 border-transparent">
+              {{ $cat->name }}@if($cat->children->count()) <span style="font-size:9px;opacity:.4;margin-left:2px;">▾</span>@endif
+            </button>
+          </div>
+          @endforeach
+        </div>
+        <div id="ella-sub-dropdown"></div>
+        <button class="ella-arrow" id="ella-cat-next" onclick="ellaCatScroll(1)" aria-label="Siguiente">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
     </nav>
 
     {{-- Acciones --}}
@@ -1744,6 +1769,46 @@ function store() {
     {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
+<script>
+(function(){
+  var track = document.getElementById('ella-cats-track');
+  var prev  = document.getElementById('ella-cat-prev');
+  var next  = document.getElementById('ella-cat-next');
+  var drop  = document.getElementById('ella-sub-dropdown');
+  if(!track) return;
+  function update(){
+    prev.classList.toggle('e-hidden', track.scrollLeft <= 4);
+    next.classList.toggle('e-hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+  window.ellaCatScroll = function(dir){ track.scrollBy({left: dir * 200, behavior:'smooth'}); };
+  track.addEventListener('scroll', update, {passive:true});
+  setTimeout(update, 150);
+
+  var SUBS = @json($categories->mapWithKeys(fn($c) => [(string)$c->id => $c->children->map(fn($s) => ['id'=>(string)$s->id,'name'=>$s->name])->values()]));
+  var hideT = null;
+  function showDrop(wrap){
+    var subs = SUBS[wrap.dataset.catId]; if(!subs||!subs.length) return;
+    clearTimeout(hideT);
+    drop.innerHTML = subs.map(function(s){ return '<button onclick="ellaPickSub(\''+s.id+'\')">'+s.name+'</button>'; }).join('');
+    var r = wrap.getBoundingClientRect();
+    drop.style.top = r.bottom+'px'; drop.style.left = r.left+'px'; drop.style.display='block';
+  }
+  function hideDrop(){ hideT = setTimeout(function(){ drop.style.display='none'; }, 150); }
+  window.ellaPickSub = function(id){
+    var root = document.querySelector('[x-data]');
+    if(root && root._x_dataStack && root._x_dataStack[0]) root._x_dataStack[0].filterCat = id;
+    drop.style.display='none';
+  };
+  track.querySelectorAll('.ella-cat-wrap[data-has-sub]').forEach(function(w){
+    w.addEventListener('mouseenter', function(){ showDrop(w); });
+    w.addEventListener('mouseleave', hideDrop);
+  });
+  if(drop){
+    drop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+    drop.addEventListener('mouseleave', hideDrop);
+  }
+})();
+</script>
 </body>
 </html>
 

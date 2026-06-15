@@ -25,8 +25,9 @@
   if ($quoteWaRaw) {
       $quoteWa = str_starts_with($quoteWaRaw, $quoteWaCountry) ? $quoteWaRaw : $quoteWaCountry.$quoteWaRaw;
   }
-  $canonicalUrl = url('/' . $project->slug . '/p/' . $product->id);
-  $catalogUrl   = url('/' . $project->slug);
+  $baseUrl      = ($settings['seo_canonical'] ?? null) ?: ($project->custom_domain ? 'https://'.$project->custom_domain : url('/'.$project->slug));
+  $canonicalUrl = $baseUrl . '/p/' . $product->id;
+  $catalogUrl   = $baseUrl;
   $seoTitle     = $product->name . ' — ' . $project->name;
   $seoDescRaw   = strip_tags($product->description ?? $project->description ?? '');
   $seoDesc      = Str::limit($seoDescRaw ?: 'Ver detalles del producto.', 160);

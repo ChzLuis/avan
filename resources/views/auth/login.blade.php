@@ -108,4 +108,10 @@
 
     </form>
 
+    <p class="mt-5 text-center text-xs">
+        <a href="{{ route('portal.password.request', 'admin') }}" class="text-gray-500 hover:text-gray-700 transition underline">
+            ¿Olvidaste tu contraseña?
+        </a>
+    </p>
+
 </x-guest-layout>

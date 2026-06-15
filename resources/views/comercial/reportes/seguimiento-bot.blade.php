@@ -1,19 +1,19 @@
-<x-portal-layout layout="comercial" :project="$project" pageTitle="Reporte · Seguimiento Bot">
-<div class="flex flex-col h-full overflow-hidden">
+<x-portal-layout layout="comercial" :project="$project" pageTitle="Seguimiento Bot">
+<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;background:#F8F9FB;">
 
 {{-- Header --}}
-<div class="px-6 py-4 border-b border-gray-200 bg-white flex items-center justify-between flex-shrink-0 flex-wrap gap-3">
+<div style="padding:14px 20px;border-bottom:1px solid #E5E8EF;background:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;flex-shrink:0;">
     <div>
-        <h1 class="text-base font-semibold text-gray-800">Seguimiento de pedidos Bot</h1>
-        <p class="text-xs text-gray-400 mt-0.5">Estado individual de cada participante</p>
+        <h1 style="font-size:15px;font-weight:700;color:#111827;margin:0;">Seguimiento de pedidos Bot</h1>
+        <p style="font-size:11px;color:#9CA3AF;margin:2px 0 0;">Estado individual de cada participante</p>
     </div>
-    <form method="GET" class="flex items-center gap-2 flex-wrap">
+    <form method="GET" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <input type="date" name="desde" value="{{ $desde }}"
-               class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-400">
-        <span class="text-xs text-gray-400">→</span>
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+        <span style="font-size:11px;color:#9CA3AF;">→</span>
         <input type="date" name="hasta" value="{{ $hasta }}"
-               class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-400">
-        <select name="status" class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-400">
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+        <select name="status" style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;background:#fff;font-family:inherit;">
             <option value="">Todos</option>
             <option value="pendiente" @selected($status==='pendiente')>Pendiente</option>
             <option value="pagado"    @selected($status==='pagado')>Pagado</option>
@@ -21,83 +21,93 @@
             <option value="cancelado" @selected($status==='cancelado')>Cancelado</option>
         </select>
         <input type="text" name="buscar" value="{{ $buscar }}" placeholder="Nombre, DNI o celular"
-               class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-400 w-44">
-        <button type="submit" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">Buscar</button>
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 12px;outline:none;font-family:inherit;width:180px;">
+        <button type="submit" style="font-size:12px;font-weight:600;background:#2563EB;color:#fff;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;">Buscar</button>
     </form>
 </div>
 
-{{-- Stat rápida --}}
-<div class="px-6 py-2 bg-white border-b border-gray-100 flex items-center gap-6 text-xs text-gray-500 flex-shrink-0">
-    <span>{{ $ventas->count() }} resultado(s)</span>
-    <span class="text-yellow-600">{{ $ventas->where('status','pendiente')->count() }} pendientes</span>
-    <span class="text-blue-600">{{ $ventas->where('status','pagado')->count() }} pagados</span>
-    <span class="text-green-600">{{ $ventas->where('status','enviado')->count() }} enviados</span>
+{{-- Stats rápidas --}}
+<div style="padding:8px 20px;background:#fff;border-bottom:1px solid #E5E8EF;display:flex;align-items:center;gap:16px;font-size:11px;flex-shrink:0;">
+    <span style="color:#6B7280;">{{ $ventas->count() }} resultado(s)</span>
+    <span style="color:#D97706;">{{ $ventas->where('status','pendiente')->count() }} pendientes</span>
+    <span style="color:#2563EB;">{{ $ventas->where('status','pagado')->count() }} pagados</span>
+    <span style="color:#16A34A;">{{ $ventas->where('status','enviado')->count() }} enviados</span>
     @if($tiempoPromedio)
-    <span class="text-purple-600">⏱ Tiempo promedio validación: {{ round($tiempoPromedio, 1) }}h</span>
+    <span style="color:#7C3AED;">⏱ Tiempo promedio: {{ round($tiempoPromedio, 1) }}h</span>
     @endif
-    <a href="{{ route('bixosales.reportes.ventas') }}" class="ml-auto text-blue-500 hover:underline">← Volver al resumen</a>
+    <a href="{{ route('bixosales.reportes.ventas') }}"
+       style="margin-left:auto;color:#2563EB;font-size:11px;text-decoration:none;"
+       onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+       ← Volver al resumen
+    </a>
 </div>
 
 {{-- Tabla --}}
-<div class="flex-1 overflow-auto p-6">
+<div style="flex:1;overflow:auto;padding:16px;">
     @if($ventas->isEmpty())
-    <div class="text-center py-20 text-gray-400">
-        <p class="text-4xl mb-3">📭</p>
-        <p class="text-sm">No hay pedidos con esos filtros</p>
+    <div style="text-align:center;padding:60px 20px;color:#9CA3AF;">
+        <p style="font-size:36px;margin-bottom:10px;">📭</p>
+        <p style="font-size:13px;">No hay pedidos con esos filtros</p>
     </div>
     @else
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table class="w-full text-xs">
+    <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;overflow:hidden;">
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
             <thead>
-                <tr class="border-b border-gray-100 bg-gray-50">
-                    <th class="text-left px-4 py-2.5 text-gray-500 font-medium">Participante</th>
-                    <th class="text-left px-4 py-2.5 text-gray-500 font-medium">Plan</th>
-                    <th class="text-left px-4 py-2.5 text-gray-500 font-medium">Monto</th>
-                    <th class="text-left px-4 py-2.5 text-gray-500 font-medium">Tickets</th>
-                    <th class="text-left px-4 py-2.5 text-gray-500 font-medium">Fecha</th>
-                    <th class="text-left px-4 py-2.5 text-gray-500 font-medium">Estado</th>
-                    <th class="text-left px-4 py-2.5 text-gray-500 font-medium">Comprobante</th>
+                <tr style="background:#F8F9FB;border-bottom:1px solid #E5E8EF;">
+                    <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Participante</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Plan</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Monto</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tickets</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Estado</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Comprobante</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-50">
+            <tbody>
                 @foreach($ventas as $v)
                 @php
-                $sc = match($v->status) {
-                    'pendiente' => 'bg-yellow-100 text-yellow-700',
-                    'pagado'    => 'bg-blue-100 text-blue-700',
-                    'enviado'   => 'bg-green-100 text-green-700',
-                    'cancelado' => 'bg-red-100 text-red-700',
-                    default     => 'bg-gray-100 text-gray-500',
+                $statusStyle = match($v->status) {
+                    'pendiente' => 'background:#FFFBEB;color:#D97706;border-color:#FDE68A;',
+                    'pagado'    => 'background:#DBEAFE;color:#2563EB;border-color:#BFDBFE;',
+                    'enviado'   => 'background:#DCFCE7;color:#16A34A;border-color:#BBF7D0;',
+                    'cancelado' => 'background:#FEE2E2;color:#EF4444;border-color:#FECACA;',
+                    default     => 'background:#F3F4F6;color:#6B7280;border-color:#E5E7EB;',
                 };
-                $sl = match($v->status) {
+                $statusLabel = match($v->status) {
                     'pendiente' => 'Pendiente', 'pagado' => 'Pagado',
                     'enviado'   => 'Enviado ✓', 'cancelado' => 'Cancelado', default => $v->status,
                 };
                 @endphp
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-4 py-3">
-                        <p class="font-medium text-gray-800">{{ $v->nombre ?? '—' }}</p>
-                        <p class="text-gray-400">DNI: {{ $v->dni ?? '—' }} · {{ $v->wa_number }}</p>
-                        @if($v->ciudad)<p class="text-gray-400">📍 {{ $v->ciudad }}</p>@endif
-                    </td>
-                    <td class="px-4 py-3 text-purple-700 font-medium">{{ $v->plan_nombre }}</td>
-                    <td class="px-4 py-3 font-bold text-gray-800">S/ {{ number_format($v->monto, 2) }}</td>
-                    <td class="px-4 py-3 text-gray-600">
-                        {{ $v->tickets }}
-                        @if($v->ticket_numbers)
-                        <br><span class="text-indigo-500">#{{ implode(', #', array_map(fn($n) => str_pad($n,5,'0',STR_PAD_LEFT), $v->ticket_numbers)) }}</span>
+                <tr style="border-bottom:1px solid #F3F4F6;"
+                    onmouseover="this.style.background='#F8F9FB'" onmouseout="this.style.background='#fff'">
+                    <td style="padding:10px 14px;">
+                        <p style="font-size:13px;font-weight:600;color:#111827;margin:0;">{{ $v->nombre ?? '—' }}</p>
+                        <p style="font-size:11px;color:#9CA3AF;margin:2px 0 0;">DNI: {{ $v->dni ?? '—' }} · {{ $v->wa_number }}</p>
+                        @if($v->ciudad)
+                        <p style="font-size:11px;color:#9CA3AF;margin:1px 0 0;">📍 {{ $v->ciudad }}</p>
                         @endif
                     </td>
-                    <td class="px-4 py-3 text-gray-400">{{ $v->created_at->format('d/m/Y H:i') }}</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full font-medium {{ $sc }}">{{ $sl }}</span>
+                    <td style="padding:10px 14px;font-weight:600;color:#7C3AED;">{{ $v->plan_nombre }}</td>
+                    <td style="padding:10px 14px;font-weight:700;color:#111827;">S/ {{ number_format($v->monto, 2) }}</td>
+                    <td style="padding:10px 14px;color:#374151;">
+                        {{ $v->tickets }}
+                        @if($v->ticket_numbers)
+                        <br><span style="color:#6366F1;font-size:10px;">#{{ implode(', #', array_map(fn($n) => str_pad($n,5,'0',STR_PAD_LEFT), $v->ticket_numbers)) }}</span>
+                        @endif
                     </td>
-                    <td class="px-4 py-3">
+                    <td style="padding:10px 14px;color:#9CA3AF;white-space:nowrap;">{{ $v->created_at->format('d/m/Y H:i') }}</td>
+                    <td style="padding:10px 14px;">
+                        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid;{{ $statusStyle }}">{{ $statusLabel }}</span>
+                    </td>
+                    <td style="padding:10px 14px;">
                         @if($v->payment_proof)
                         <a href="{{ asset($v->payment_proof) }}" target="_blank"
-                           class="text-indigo-500 hover:underline">🧾 Ver</a>
+                           style="font-size:11px;color:#6366F1;text-decoration:none;"
+                           onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                            🧾 Ver
+                        </a>
                         @else
-                        <span class="text-gray-300">—</span>
+                        <span style="color:#D1D5DB;">—</span>
                         @endif
                     </td>
                 </tr>

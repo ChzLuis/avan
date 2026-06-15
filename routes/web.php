@@ -28,9 +28,16 @@ use App\Http\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\WaWebhookController;
+use App\Http\Controllers\ComboController;
+use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\WaBotController;
 use App\Http\Controllers\RifaController;
+use App\Http\Controllers\MesaController;
+use App\Http\Controllers\ReservaController;
+use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\CajaController;
 use App\Http\Controllers\BotStatusController;
+use App\Http\Controllers\OperationalMapController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\Comunicaciones\AuthController as ComWaAuthController;
 use App\Http\Controllers\Comunicaciones\BandejaController;
@@ -39,7 +46,22 @@ use App\Http\Controllers\Comunicaciones\CanalesController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Redirect raíz ───────────────────────────────────────────────────────────
-Route::get('/', fn() => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
+Route::get('/', fn() => redirect('/login'));
+
+// ─── BIXO Design System Prototype ─────────────────────────────────────────────
+Route::middleware(['auth'])->group(function () {
+    Route::get('/bixo/screen-1', fn() => view('bixo.screen-1-business-center'))->name('bixo.screen1');
+    Route::get('/bixo/screen-1-v2', fn() => view('bixo.screen-1-negocio-centro-v2'))->name('bixo.screen1v2');
+    Route::get('/bixo/screen-2', fn() => view('bixo.screen-2-capability-operar'))->name('bixo.screen2');
+    Route::get('/bixo/screen-3', fn() => view('bixo.screen-3-tool-inventario'))->name('bixo.screen3');
+    Route::get('/bixo/screen-4', fn() => view('bixo.screen-4-object-producto'))->name('bixo.screen4');
+    Route::get('/bixo/screen-5', fn() => view('bixo.screen-5-business-switch'))->name('bixo.screen5');
+    Route::get('/bixo/demo', fn() => view('bixo.demo-prototype'))->name('bixo.demo');
+    Route::get('/bixo/sidebar', fn() => view('bixo.sidebar-demo'))->name('bixo.sidebar');
+    Route::get('/bixo/app', fn() => view('bixo.aplicacion-bixo'))->name('bixo.app');
+    Route::get('/bixo/app-v3', fn() => view('bixo.aplicacion-bixo-v3'))->name('bixo.appv3');
+    Route::get('/bixo/app-v4', fn() => view('bixo.aplicacion-bixo-v4'))->name('bixo.appv4');
+});
 
 // ─── Demo onboarding (público) ───────────────────────────────────────────────
 Route::get('/demo',                 [DemoController::class, 'index'])->name('demo.index');
@@ -220,6 +242,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/company/proveedores/export',             [ProveedorController::class, 'export'])->name('proveedores.export');
         Route::post('/company/proveedores/import',            [ProveedorController::class, 'import'])->name('proveedores.import');
 
+        // Combos
+        Route::get('/combos',                        [ComboController::class, 'index'])->name('combos.index');
+        Route::post('/combos',                       [ComboController::class, 'store'])->name('combos.store');
+        Route::put('/combos/{combo}',                [ComboController::class, 'update'])->name('combos.update');
+        Route::delete('/combos/{combo}',             [ComboController::class, 'destroy'])->name('combos.destroy');
+        Route::patch('/combos/{combo}/toggle',       [ComboController::class, 'toggleAvailable'])->name('combos.toggle');
+
+        // Promociones
+        Route::get('/promotions',                    [PromotionController::class, 'index'])->name('promotions.index');
+        Route::post('/promotions',                   [PromotionController::class, 'store'])->name('promotions.store');
+        Route::put('/promotions/{promotion}',        [PromotionController::class, 'update'])->name('promotions.update');
+        Route::delete('/promotions/{promotion}',     [PromotionController::class, 'destroy'])->name('promotions.destroy');
+        Route::patch('/promotions/{promotion}/toggle',[PromotionController::class, 'toggle'])->name('promotions.toggle');
+
         // Comunicaciones / WhatsApp — redirige al portal bixocrm o a settings
         Route::prefix('bixocrm')->group(function () {
             Route::get('/configuracion', fn() => redirect()->route('settings', ['s' => 'whatsapp']));
@@ -238,7 +274,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/payments', [SettingsController::class, 'payments'])->name('settings.payments');
         Route::post('/settings/payments',[SettingsController::class, 'updatePayments'])->name('settings.payments.update');
         Route::get('/settings/modules',  [SettingsController::class, 'modules'])->name('settings.modules');
-        Route::get('/settings/qr',       [SettingsController::class, 'qr'])->name('settings.qr');
+        Route::get('/settings/qr',        [SettingsController::class, 'qr'])->name('settings.qr');
+        Route::post('/settings/qr',       [SettingsController::class, 'updateQr'])->name('settings.qr.save');
         Route::get('/settings/seo',      [SettingsController::class, 'seo'])->name('settings.seo');
         Route::post('/settings/seo',     [SettingsController::class, 'updateSeo'])->name('settings.seo.update');
         Route::post('/settings/modules', [SettingsController::class, 'updateModules'])->name('settings.modules.update');
@@ -272,13 +309,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store')->middleware(['module:orders', 'can:pos.usar']);
 
         // Facturas
-        Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index')->middleware(['module:invoices', 'can:invoices.ver']);
-        Route::post('/invoices',              [InvoiceController::class, 'store'])->name('invoices.store')->middleware(['module:invoices', 'can:invoices.crear']);
-        Route::get('/invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show')->middleware(['module:invoices', 'can:invoices.ver']);
-        Route::put('/invoices/{invoice}',     [InvoiceController::class, 'update'])->name('invoices.update')->middleware(['module:invoices', 'can:invoices.editar']);
-        Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy')->middleware(['module:invoices', 'can:invoices.anular']);
-        Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf')->middleware(['module:invoices', 'can:invoices.ver']);
-        Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat')->middleware(['module:invoices', 'can:invoices.ver']);
+        Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index');
+        Route::post('/invoices',              [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::get('/invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::put('/invoices/{invoice}',     [InvoiceController::class, 'update'])->name('invoices.update');
+        Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+        Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+        Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat');
 
         // Cotizaciones
         Route::resource('quotes', QuoteController::class)
@@ -307,18 +344,33 @@ Route::middleware(['auth'])->group(function () {
 // ─── Verificación pública de certificados ────────────────────────────────────
 Route::get('/cert/{codigo}', [CertificadoController::class, 'verificar'])->name('cert.verificar');
 
+// ─── Sitemap/robots para custom domains (sin slug en URL) ────────────────────
+Route::get('/sitemap.xml', function () {
+    $project = app('custom_domain_project') ?? null;
+    if (!$project) abort(404);
+    return app(\App\Http\Controllers\PublicController::class)->sitemap($project->slug);
+});
+Route::get('/robots.txt', function () {
+    $project = app('custom_domain_project') ?? null;
+    if (!$project) abort(404);
+    return app(\App\Http\Controllers\PublicController::class)->robots($project->slug);
+});
+
 // ─── Catálogo público ─────────────────────────────────────────────────────────
 $reserved = 'login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|wa|cert';
-Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::get('/{slug}/p/{id}',   [PublicController::class, 'product'])->name('public.product')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->where('id', '[0-9]+');
-Route::post('/{slug}/order',   [PublicController::class, 'storeOrder'])->name('public.order')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::get('/{slug}/thanks/{order}', [PublicController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->where('order', '[0-9]+');
-Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->where('product', '[0-9]+');
-Route::post('/{slug}/quote',   [PublicController::class, 'storeQuote'])->name('public.quote')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::get('/{slug}/book',     [PublicController::class, 'book'])->name('public.book')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::post('/{slug}/book',    [PublicController::class, 'storeBook'])->name('public.book.store')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
+Route::get('/{slug}/sitemap.xml', [PublicController::class, 'sitemap'])->name('public.sitemap')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/robots.txt',  [PublicController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/p/{id}',   [PublicController::class, 'product'])->name('public.product')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('id', '[0-9]+');
+Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/thanks/{order}', [PublicController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('order', '[0-9]+');
+Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('product', '[0-9]+');
+Route::post('/{slug}/quote',   [PublicController::class, 'storeQuote'])->name('public.quote')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/book',     [PublicController::class, 'book'])->name('public.book')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/book',    [PublicController::class, 'storeBook'])->name('public.book.store')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 
 // ─── WhatsApp Bot API (sin auth, validada por token interno) ─────────────────
 Route::get('/wa/config',                        [WaBotController::class, 'getConfig'])->name('wa.config');
@@ -426,6 +478,13 @@ use App\Http\Controllers\Facturacion\AuthController as FacAuthController;
 use App\Http\Controllers\Facturacion\DashboardController as FacDashController;
 use App\Http\Controllers\Comercial\AuthController as ComAuthController;
 use App\Http\Controllers\Comercial\DashboardController as ComDashController;
+use App\Http\Controllers\PasswordResetPortalController;
+
+// ─── Reset de contraseña — portales ──────────────────────────────────────────
+Route::get('/portal/{portal}/forgot-password',         [PasswordResetPortalController::class, 'showForgot'])->name('portal.password.request')->where('portal', 'comercial|comunicaciones|facturacion|admin');
+Route::post('/portal/{portal}/forgot-password',        [PasswordResetPortalController::class, 'sendReset'])->name('portal.password.send')->middleware('throttle:5,1')->where('portal', 'comercial|comunicaciones|facturacion|admin');
+Route::get('/portal/{portal}/reset-password/{token}', [PasswordResetPortalController::class, 'showReset'])->name('portal.password.reset')->where('portal', 'comercial|comunicaciones|facturacion|admin');
+Route::post('/portal/{portal}/reset-password',         [PasswordResetPortalController::class, 'updatePassword'])->name('portal.password.update')->where('portal', 'comercial|comunicaciones|facturacion|admin');
 
 
 // ─── BixoFact — login genérico con desplegable de negocios ──────────────────
@@ -443,10 +502,11 @@ Route::prefix('f/{slug}')->name('facturacion.')->group(function () {
         Route::get('/pos',  [PosController::class, 'indexPortal'])->name('pos');
         Route::post('/pos', [PosController::class, 'storePortal'])->name('pos.store');
 
-        Route::get('/pedidos',         [OrderController::class, 'indexPortal'])->name('pedidos');
-        Route::post('/pedidos',        [OrderController::class, 'storePortal'])->name('pedidos.store');
-        Route::get('/pedidos/{order}', [OrderController::class, 'showPortal'])->name('pedidos.show');
-        Route::put('/pedidos/{order}', [OrderController::class, 'updatePortal'])->name('pedidos.update');
+        Route::get('/pedidos',            [OrderController::class, 'indexPortal'])->name('pedidos');
+        Route::post('/pedidos',           [OrderController::class, 'storePortal'])->name('pedidos.store');
+        Route::get('/pedidos/{order}',    [OrderController::class, 'showPortal'])->name('pedidos.show');
+        Route::put('/pedidos/{order}',    [OrderController::class, 'updatePortal'])->name('pedidos.update');
+        Route::delete('/pedidos/{order}', [OrderController::class, 'destroy'])->name('pedidos.destroy');
 
         Route::get('/cotizaciones',                       [QuoteController::class, 'indexPortal'])->name('cotizaciones');
         Route::get('/cotizaciones/create',                [QuoteController::class, 'createPortal'])->name('cotizaciones.create');
@@ -539,8 +599,51 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/pedidos',               [OrderController::class, 'store'])->name('pedidos.store');
         Route::get('/pedidos/{order}',        [OrderController::class, 'show'])->name('pedidos.show');
         Route::put('/pedidos/{order}',        [OrderController::class, 'update'])->name('pedidos.update');
+        Route::delete('/pedidos/{order}',     [OrderController::class, 'destroy'])->name('pedidos.destroy');
         Route::post('/pedidos/{order}/wa-action',   [WaBotController::class, 'portalAction'])->name('pedidos.wa.action');
         Route::post('/pedidos/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('pedidos.wa.delivery');
+        Route::patch('/pedidos/{order}/kitchen',    [OrderController::class, 'updateKitchen'])->name('pedidos.kitchen');
+        Route::get('/cocina',                       [OrderController::class, 'kitchen'])->name('cocina');
+        Route::get('/mesas',                        [MesaController::class, 'index'])->name('mesas');
+        Route::get('/mesas/data',                   [MesaController::class, 'data'])->name('mesas.data');
+
+        // ── MAPA OPERATIVO ────────────────────────────────────────────────────
+        Route::prefix('mapa')->name('mapa.')->group(function () {
+            Route::get('/',                                   [OperationalMapController::class, 'index'])->name('index');
+            Route::get('/maps/{map}/objects',                 [OperationalMapController::class, 'objects'])->name('objects');
+            Route::post('/maps',                              [OperationalMapController::class, 'storemap'])->name('maps.store');
+            Route::post('/maps/{map}/objects',               [OperationalMapController::class, 'storeObject'])->name('objects.store');
+            Route::patch('/objects/{object}/move',            [OperationalMapController::class, 'move'])->name('objects.move');
+            Route::patch('/objects/{object}/status',          [OperationalMapController::class, 'changeStatus'])->name('objects.status');
+            Route::patch('/objects/{object}/amount',          [OperationalMapController::class, 'updateAmount'])->name('objects.amount');
+            Route::patch('/objects/{object}/responsible',     [OperationalMapController::class, 'assignResponsible'])->name('objects.responsible');
+            Route::post('/objects/{object}/alerts',           [OperationalMapController::class, 'addAlert'])->name('objects.alerts.add');
+            Route::delete('/objects/{object}/alerts',         [OperationalMapController::class, 'clearAlerts'])->name('objects.alerts.clear');
+            Route::post('/objects/{object}/requests',         [OperationalMapController::class, 'createRequest'])->name('objects.requests.store');
+            Route::get('/objects/{object}/history',           [OperationalMapController::class, 'history'])->name('objects.history');
+            Route::put('/objects/{object}',                   [OperationalMapController::class, 'updateObject'])->name('objects.update');
+            Route::delete('/objects/{object}',                [OperationalMapController::class, 'destroyObject'])->name('objects.destroy');
+        });
+
+        // Reservas
+        Route::get('/reservas',                     [ReservaController::class, 'index'])->name('reservas');
+        Route::post('/reservas',                    [ReservaController::class, 'store'])->name('reservas.store');
+        Route::put('/reservas/{appointment}',       [ReservaController::class, 'update'])->name('reservas.update');
+        Route::delete('/reservas/{appointment}',    [ReservaController::class, 'destroy'])->name('reservas.destroy');
+        Route::get('/reservas/calendar',            [ReservaController::class, 'calendar'])->name('reservas.calendar');
+
+        // Delivery
+        Route::get('/delivery',                     [DeliveryController::class, 'index'])->name('delivery');
+        Route::get('/delivery/data',                [DeliveryController::class, 'data'])->name('delivery.data');
+        Route::post('/delivery',                    [DeliveryController::class, 'store'])->name('delivery.store');
+        Route::put('/delivery/{order}/status',      [DeliveryController::class, 'updateStatus'])->name('delivery.status');
+
+        // Caja / Tesorería
+        Route::get('/caja',                         [CajaController::class, 'index'])->name('caja');
+        Route::post('/caja/abrir',                  [CajaController::class, 'abrir'])->name('caja.abrir');
+        Route::post('/caja/{caja}/cerrar',          [CajaController::class, 'cerrar'])->name('caja.cerrar');
+        Route::post('/caja/{caja}/movimiento',      [CajaController::class, 'movimiento'])->name('caja.movimiento');
+        Route::get('/caja/{caja}/data',             [CajaController::class, 'data'])->name('caja.data');
 
         Route::get('/cotizaciones',           [QuoteController::class, 'index'])->name('cotizaciones');
         Route::post('/cotizaciones',          [QuoteController::class, 'store'])->name('cotizaciones.store');
@@ -568,6 +671,7 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/reportes/top-productos', [ReporteController::class, 'topProductos'])->name('reportes.top.productos');
         Route::get('/reportes/rentabilidad',  [ReporteController::class, 'rentabilidad'])->name('reportes.rentabilidad');
         Route::get('/reportes/dashboard-data',[ReporteController::class, 'dashboardData'])->name('reportes.dashboard.data');
+        Route::get('/reportes/inventario',    [ReporteController::class, 'inventario'])->name('reportes.inventario');
     });
 });
 

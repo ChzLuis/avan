@@ -107,11 +107,17 @@ class CategoryController extends Controller
 
     public function export()
     {
-        $project    = app('active_project');
-        $categories = $project->categories()->orderBy('sort_order')->get()->map(fn($c) => [
-            'nombre' => $c->name,
-            'activo' => $c->is_active ? 'si' : 'no',
-        ])->toArray();
+        $project = app('active_project');
+        // Primero padres, luego subcategorías agrupadas bajo su padre
+        $padres = $project->categories()->whereNull('parent_id')->with('children')->orderBy('sort_order')->get();
+        $rows = [];
+        foreach ($padres as $padre) {
+            $rows[] = ['nombre' => $padre->name, 'subcategoria_de' => '', 'activo' => $padre->is_active ? 'si' : 'no'];
+            foreach ($padre->children()->orderBy('sort_order')->get() as $hijo) {
+                $rows[] = ['nombre' => $hijo->name, 'subcategoria_de' => $padre->name, 'activo' => $hijo->is_active ? 'si' : 'no'];
+            }
+        }
+        $categories = $rows;
 
         $filename = 'categorias_' . $project->slug . '_' . now()->format('Ymd') . '.xlsx';
         return $this->buildXlsx($filename, $categories);
@@ -127,9 +133,10 @@ class CategoryController extends Controller
 
         // Encabezados
         $sheet1->setCellValue('A1', 'nombre');
-        $sheet1->setCellValue('B1', 'activo');
+        $sheet1->setCellValue('B1', 'subcategoria_de');
+        $sheet1->setCellValue('C1', 'activo');
 
-        $sheet1->getStyle('A1:B1')->applyFromArray([
+        $sheet1->getStyle('A1:C1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E65100']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
@@ -137,25 +144,44 @@ class CategoryController extends Controller
         ]);
 
         $sheet1->getColumnDimension('A')->setWidth(35);
-        $sheet1->getColumnDimension('B')->setWidth(15);
+        $sheet1->getColumnDimension('B')->setWidth(30);
+        $sheet1->getColumnDimension('C')->setWidth(12);
 
         // Fila ejemplo si no hay datos
         if (empty($data)) {
-            $sheet1->setCellValue('A2', 'Electrónica');
-            $sheet1->setCellValue('B2', 'si');
-            $sheet1->getStyle('A2:B2')->applyFromArray([
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFF3E0']],
-            ]);
+            $ejemplos = [
+                ['Cervezas',       '',         'si'],
+                ['Pilsen',         'Cervezas', 'si'],
+                ['Cristal',        'Cervezas', 'si'],
+                ['Whiskies',       '',         'si'],
+                ['Johnnie Walker', 'Whiskies', 'si'],
+            ];
+            foreach ($ejemplos as $ei => $ej) {
+                $r = $ei + 2;
+                $isSubEj = !empty($ej[1]);
+                $sheet1->setCellValue('A'.$r, $ej[0]);
+                $sheet1->setCellValue('B'.$r, $ej[1]);
+                $sheet1->setCellValue('C'.$r, $ej[2]);
+                $sheet1->getStyle("A{$r}:C{$r}")->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $isSubEj ? 'EFF6FF' : 'FFF3E0']],
+                    'font' => $isSubEj ? ['color' => ['rgb' => '3B82F6'], 'italic' => true] : ['bold' => true],
+                ]);
+            }
         } else {
             $row = 2;
             foreach ($data as $i => $item) {
-                $bg = $i % 2 === 0 ? 'FFFFFF' : 'FFF8F5';
-                $sheet1->setCellValue('A' . $row, $item['nombre']);
-                $sheet1->setCellValue('B' . $row, $item['activo']);
-                $sheet1->getStyle("A{$row}:B{$row}")->applyFromArray([
+                $isSubcat = !empty($item['subcategoria_de']);
+                $nombreDisplay = $item['nombre'];
+                $bg = $isSubcat ? 'EFF6FF' : 'FFFFFF';
+                $sheet1->setCellValue('A' . $row, $nombreDisplay);
+                $sheet1->setCellValue('B' . $row, $item['subcategoria_de'] ?? '');
+                $sheet1->setCellValue('C' . $row, $item['activo']);
+                $style = [
                     'fill'    => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
                     'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E5E7EB']]],
-                ]);
+                    'font'    => $isSubcat ? ['color' => ['rgb' => '3B82F6'], 'italic' => true] : ['bold' => true],
+                ];
+                $sheet1->getStyle("A{$row}:C{$row}")->applyFromArray($style);
                 $row++;
             }
         }
@@ -185,8 +211,9 @@ class CategoryController extends Controller
         ]);
 
         $instrucciones = [
-            ['nombre', 'Nombre de la categoría (obligatorio). Texto libre, máx. 100 caracteres.', 'Electrónica'],
-            ['activo',  'Escribe "si" para que sea visible en la tienda, "no" para ocultarla.', 'si'],
+            ['nombre',          'Nombre de la categoría o subcategoría (obligatorio).', 'Cervezas'],
+            ['subcategoria_de', 'Si es subcategoría, escribe aquí el nombre exacto de su categoría padre. Déjalo vacío si es categoría principal.', 'Cervezas'],
+            ['activo',          'Escribe "si" para que sea visible en la tienda, "no" para ocultarla.', 'si'],
         ];
 
         foreach ($instrucciones as $i => $instr) {
@@ -229,21 +256,20 @@ class CategoryController extends Controller
         $rows        = $sheet->toArray(null, true, true, false);
 
         $header  = null;
-        $created = 0;
-        $updated = 0;
+        $created = 0; $createdSub = 0;
+        $updated = 0; $updatedSub = 0;
         $errors  = [];
+        $catCache = $project->categories()->get()->keyBy('name');
 
         foreach ($rows as $i => $row) {
             $cleaned = array_map(fn($v) => trim((string)($v ?? '')), $row);
             $lower   = array_map('strtolower', $cleaned);
 
             if (!$header) {
-                if (in_array('nombre', $lower)) {
-                    $header = $lower;
-                }
+                if (in_array('nombre', $lower)) { $header = $lower; }
                 continue;
             }
-
+            // Saltar filas de encabezado repetido
             if (in_array('nombre', $lower)) continue;
 
             $data   = array_combine($header, array_pad($cleaned, count($header), ''));
@@ -251,25 +277,46 @@ class CategoryController extends Controller
             if ($nombre === '') continue;
 
             try {
+                $parentNombre = trim($data['subcategoria_de'] ?? '');
+                $parentId = null;
+
+                if ($parentNombre !== '') {
+                    if (!isset($catCache[$parentNombre])) {
+                        $parent = Category::create([
+                            'project_id' => $project->id,
+                            'name'       => $parentNombre,
+                            'is_active'  => true,
+                            'sort_order' => $project->categories()->max('sort_order') + 1,
+                        ]);
+                        $catCache[$parentNombre] = $parent;
+                        $created++;
+                    }
+                    $parentId = $catCache[$parentNombre]->id;
+                }
+
                 $payload = [
                     'project_id' => $project->id,
                     'name'       => $nombre,
+                    'parent_id'  => $parentId,
                     'is_active'  => strtolower($data['activo'] ?? 'si') === 'si',
                 ];
-                $existing = Category::where('project_id', $project->id)->where('name', $nombre)->first();
+
+                $existing = isset($catCache[$nombre]) ? $catCache[$nombre] : null;
                 if ($existing) {
                     $existing->update($payload);
-                    $updated++;
+                    $catCache[$nombre] = $existing->fresh();
+                    if ($parentId) $updatedSub++; else $updated++;
                 } else {
-                    Category::create($payload + ['sort_order' => $project->categories()->max('sort_order') + 1]);
-                    $created++;
+                    $new = Category::create($payload + ['sort_order' => $project->categories()->max('sort_order') + 1]);
+                    $catCache[$nombre] = $new;
+                    if ($parentId) $createdSub++; else $created++;
                 }
             } catch (\Exception $e) {
                 $errors[] = '"' . $nombre . '" (fila ' . $i . '): ' . $e->getMessage();
             }
         }
 
-        return response()->json(['created' => $created, 'updated' => $updated, 'errors' => $errors]);
+        return response()->json(['created' => $created, 'createdSub' => $createdSub, 'updated' => $updated, 'updatedSub' => $updatedSub, 'errors' => $errors]);
     }
 
     private function parseFileToRows(string $content): array

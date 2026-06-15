@@ -116,6 +116,18 @@ $b2Sub          = $settings['banner2_sub'] ?? 'Hasta 50% de descuento selecciona
   /* Scrollbar hide */
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  /* Porto cat arrows */
+  .prt-cat-outer { display:flex; align-items:center; flex:1; }
+  .prt-cat-track { display:flex; align-items:center; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; flex:1; }
+  .prt-cat-track::-webkit-scrollbar { display:none; }
+  .prt-arrow { flex-shrink:0; width:28px; height:32px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.1); border:none; cursor:pointer; color:rgba(255,255,255,.7); transition:color .2s,background .2s; }
+  .prt-arrow:hover { color:#fff; background:rgba(255,255,255,.2); }
+  .prt-arrow.p-hidden { opacity:0; pointer-events:none; }
+  /* Porto sub dropdown */
+  .prt-cat-wrap { position:static; flex-shrink:0; }
+  #prt-sub-dropdown { display:none; position:fixed; min-width:160px; background:#fff; border:1px solid #e5e7eb; box-shadow:0 8px 24px rgba(0,0,0,.14); z-index:9999; }
+  #prt-sub-dropdown button { display:block; width:100%; text-align:left; padding:9px 14px; font-size:13px; color:#374151; background:none; border:none; cursor:pointer; white-space:nowrap; transition:background .15s; }
+  #prt-sub-dropdown button:hover { background:#f9fafb; }
 
   /* Hero */
   .hero-slide { min-height: 460px; }
@@ -670,13 +682,24 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     </div>
 
     <!-- Links rÃ¡pidos de categorÃ­as -->
-    <div class="flex items-center overflow-x-auto scrollbar-hide flex-1">
-      @foreach($categories as $cat)
-      <button @click="filterCat='{{ $cat->id }}';document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-        class="text-white/85 hover:text-white text-sm py-3 px-3 whitespace-nowrap hover:bg-black/10 transition flex-shrink-0">
-        {{ $cat->name }}
+    <div class="prt-cat-outer">
+      <button class="prt-arrow p-hidden" id="prt-cat-prev" onclick="prtCatScroll(-1)" aria-label="Anterior">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      @endforeach
+      <div class="prt-cat-track" id="prt-cats-track">
+        @foreach($categories as $cat)
+        <div class="prt-cat-wrap" data-cat-id="{{ $cat->id }}"@if($cat->children->count()) data-has-sub="1"@endif>
+          <button @click="filterCat='{{ $cat->id }}';document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
+            class="text-white/85 hover:text-white text-sm py-3 px-3 whitespace-nowrap hover:bg-black/10 transition">
+            {{ $cat->name }}@if($cat->children->count()) <span style="font-size:9px;opacity:.5;margin-left:2px;">▾</span>@endif
+          </button>
+        </div>
+        @endforeach
+        <div id="prt-sub-dropdown"></div>
+      </div>
+      <button class="prt-arrow" id="prt-cat-next" onclick="prtCatScroll(1)" aria-label="Siguiente">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
     </div>
   </div>
 </nav>
@@ -1948,6 +1971,46 @@ function store() {
   </button>
 </div>
 
+<script>
+(function(){
+  var track = document.getElementById('prt-cats-track');
+  var prev  = document.getElementById('prt-cat-prev');
+  var next  = document.getElementById('prt-cat-next');
+  var drop  = document.getElementById('prt-sub-dropdown');
+  if(!track) return;
+  function update(){
+    prev.classList.toggle('p-hidden', track.scrollLeft <= 4);
+    next.classList.toggle('p-hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+  window.prtCatScroll = function(dir){ track.scrollBy({left: dir * 200, behavior:'smooth'}); };
+  track.addEventListener('scroll', update, {passive:true});
+  setTimeout(update, 150);
+
+  var SUBS = @json($categories->mapWithKeys(fn($c) => [(string)$c->id => $c->children->map(fn($s) => ['id'=>(string)$s->id,'name'=>$s->name])->values()]));
+  var hideT = null;
+  function showDrop(wrap){
+    var subs = SUBS[wrap.dataset.catId]; if(!subs||!subs.length) return;
+    clearTimeout(hideT);
+    drop.innerHTML = subs.map(function(s){ return '<button onclick="prtPickSub(\''+s.id+'\')">'+s.name+'</button>'; }).join('');
+    var r = wrap.getBoundingClientRect();
+    drop.style.top = r.bottom+'px'; drop.style.left = r.left+'px'; drop.style.display='block';
+  }
+  function hideDrop(){ hideT = setTimeout(function(){ drop.style.display='none'; }, 150); }
+  window.prtPickSub = function(id){
+    var root = document.querySelector('[x-data]');
+    if(root && root._x_dataStack && root._x_dataStack[0]) root._x_dataStack[0].filterCat = id;
+    drop.style.display='none';
+  };
+  track.querySelectorAll('.prt-cat-wrap[data-has-sub]').forEach(function(w){
+    w.addEventListener('mouseenter', function(){ showDrop(w); });
+    w.addEventListener('mouseleave', hideDrop);
+  });
+  if(drop){
+    drop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+    drop.addEventListener('mouseleave', hideDrop);
+  }
+})();
+</script>
 </body>
 </html>
 

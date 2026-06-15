@@ -38,7 +38,7 @@ class Invoice extends Model
     /** Genera el número formateado: B001-00000001 */
     public static function buildNumero(string $serie, int $correlativo): string
     {
-        return $serie . '-' . str_pad($correlativo, 8, '0', STR_PAD_LEFT);
+        return $serie . '-' . $correlativo;
     }
 
     /** Siguiente correlativo para la serie dada dentro del proyecto */

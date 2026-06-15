@@ -153,6 +153,18 @@ body { background: #f9fffe; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 html { scroll-behavior: smooth; }
+/* Fresh cat arrows */
+.frsh-cat-outer { display:flex; align-items:flex-start; gap:4px; }
+.frsh-cat-track { display:flex; gap:20px; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; flex:1; padding-bottom:8px; }
+.frsh-cat-track::-webkit-scrollbar { display:none; }
+.frsh-arrow { flex-shrink:0; margin-top:18px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; background:transparent; border:1.5px solid #16a34a; border-radius:50%; cursor:pointer; color:#16a34a; transition:all .2s; }
+.frsh-arrow:hover { background:#16a34a; color:#fff; }
+.frsh-arrow.r-hidden { opacity:0; pointer-events:none; }
+/* Fresh sub dropdown */
+.frsh-cat-item { position:static; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:8px; }
+#frsh-sub-dropdown { display:none; position:fixed; min-width:140px; background:#fff; border:1px solid #dcfce7; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.1); z-index:9999; overflow:hidden; }
+#frsh-sub-dropdown button { display:block; width:100%; text-align:left; padding:8px 12px; font-size:12px; color:#166534; background:none; border:none; cursor:pointer; white-space:nowrap; transition:background .15s; }
+#frsh-sub-dropdown button:hover { background:#f0fdf4; }
 </style>
 
 @php
@@ -874,21 +886,30 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â”€â”€â”€ ÃCONOS CATEGORÃAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
 @if($categories->count() > 0)
 <section class="max-w-6xl mx-auto px-4 pt-10 pb-6">
-  <div class="flex gap-5 overflow-x-auto scrollbar-hide pb-2 justify-start md:justify-center">
-    <div class="flex flex-col items-center gap-2 flex-shrink-0">
-      <button @click="filterCat=''"
-              :class="filterCat==='' ? 'active' : ''"
-              class="cat-circle">âœ¦</button>
-      <span class="text-xs text-green-700 font-medium">Todo</span>
+  <div class="frsh-cat-outer">
+    <button class="frsh-arrow r-hidden" id="frsh-cat-prev" onclick="frshCatScroll(-1)" aria-label="Anterior">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="frsh-cat-track" id="frsh-cats-track">
+      <div class="frsh-cat-item">
+        <button @click="filterCat=''"
+                :class="filterCat==='' ? 'active' : ''"
+                class="cat-circle">✦</button>
+        <span class="text-xs text-green-700 font-medium">Todo</span>
+      </div>
+      @foreach($categories as $cat)
+      <div class="frsh-cat-item" data-cat-id="{{ $cat->id }}"@if($cat->children->count()) data-has-sub="1"@endif>
+        <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
+                :class="filterCat==='{{ $cat->id }}' ? 'active' : ''"
+                class="cat-circle">{{ mb_strtoupper(mb_substr($cat->name, 0, 1)) }}</button>
+        <span class="text-xs text-green-700 font-medium max-w-[72px] text-center leading-tight">{{ $cat->name }}</span>
+      </div>
+      @endforeach
+      <div id="frsh-sub-dropdown"></div>
     </div>
-    @foreach($categories as $cat)
-    <div class="flex flex-col items-center gap-2 flex-shrink-0">
-      <button @click="filterCat='{{ $cat->id }}'; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})"
-              :class="filterCat==='{{ $cat->id }}' ? 'active' : ''"
-              class="cat-circle">{{ mb_strtoupper(mb_substr($cat->name, 0, 1)) }}</button>
-      <span class="text-xs text-green-700 font-medium max-w-[72px] text-center leading-tight">{{ $cat->name }}</span>
-    </div>
-    @endforeach
+    <button class="frsh-arrow" id="frsh-cat-next" onclick="frshCatScroll(1)" aria-label="Siguiente">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
   </div>
 </section>
 @endif
@@ -2031,6 +2052,46 @@ function store() {
     {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
+<script>
+(function(){
+  var track = document.getElementById('frsh-cats-track');
+  var prev  = document.getElementById('frsh-cat-prev');
+  var next  = document.getElementById('frsh-cat-next');
+  var drop  = document.getElementById('frsh-sub-dropdown');
+  if(!track) return;
+  function update(){
+    prev.classList.toggle('r-hidden', track.scrollLeft <= 4);
+    next.classList.toggle('r-hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+  window.frshCatScroll = function(dir){ track.scrollBy({left: dir * 200, behavior:'smooth'}); };
+  track.addEventListener('scroll', update, {passive:true});
+  setTimeout(update, 150);
+
+  var SUBS = @json($categories->mapWithKeys(fn($c) => [(string)$c->id => $c->children->map(fn($s) => ['id'=>(string)$s->id,'name'=>$s->name])->values()]));
+  var hideT = null;
+  function showDrop(wrap){
+    var subs = SUBS[wrap.dataset.catId]; if(!subs||!subs.length) return;
+    clearTimeout(hideT);
+    drop.innerHTML = subs.map(function(s){ return '<button onclick="frshPickSub(\''+s.id+'\')">'+s.name+'</button>'; }).join('');
+    var r = wrap.getBoundingClientRect();
+    drop.style.top = r.bottom+'px'; drop.style.left = r.left+'px'; drop.style.display='block';
+  }
+  function hideDrop(){ hideT = setTimeout(function(){ drop.style.display='none'; }, 150); }
+  window.frshPickSub = function(id){
+    var root = document.querySelector('[x-data]');
+    if(root && root._x_dataStack && root._x_dataStack[0]) root._x_dataStack[0].filterCat = id;
+    drop.style.display='none';
+  };
+  track.querySelectorAll('.frsh-cat-item[data-has-sub]').forEach(function(w){
+    w.addEventListener('mouseenter', function(){ showDrop(w); });
+    w.addEventListener('mouseleave', hideDrop);
+  });
+  if(drop){
+    drop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+    drop.addEventListener('mouseleave', hideDrop);
+  }
+})();
+</script>
 </body>
 </html>
 

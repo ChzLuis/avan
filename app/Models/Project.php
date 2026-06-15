@@ -49,11 +49,15 @@ class Project extends Model
     public function employees(): HasMany    { return $this->hasMany(Employee::class); }
     public function settings(): HasMany     { return $this->hasMany(ProjectSetting::class); }
     public function sedes(): HasMany        { return $this->hasMany(Sede::class); }
+    public function combos(): HasMany       { return $this->hasMany(Combo::class); }
+    public function promotions(): HasMany   { return $this->hasMany(Promotion::class); }
     public function userGroups(): HasMany   { return $this->hasMany(UserGroup::class); }
     public function proveedores(): HasMany  { return $this->hasMany(Proveedor::class); }
     public function coupons(): HasMany      { return $this->hasMany(Coupon::class); }
     public function reviews(): HasMany      { return $this->hasMany(\App\Models\Review::class); }
     public function proposals(): HasMany   { return $this->hasMany(Proposal::class); }
+    public function operationalMaps(): HasMany    { return $this->hasMany(OperationalMap::class); }
+    public function operationalObjects(): HasMany { return $this->hasMany(OperationalObject::class); }
 
     public function setting(string $key, mixed $default = null): mixed
     {

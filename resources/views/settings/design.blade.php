@@ -2,19 +2,25 @@
 <x-slot name="slot">
 
 @php
-  $s          = request('s', 'plantilla');
+  $isOwnerOrSuper = auth()->user()?->is_superadmin || ($project && $project->owner_id === auth()->id());
+  $s          = request('s', $isOwnerOrSuper ? 'plantilla' : 'marca');
+  $storeUrl   = $project->custom_domain
+    ? 'https://' . $project->custom_domain
+    : url('/' . $project->slug);
   $activeTpl  = $project->setting('catalog_template', 'default') ?: 'default';
   $allTpls    = \App\Support\CatalogTemplates::all();
   $tplInfo    = $allTpls[$activeTpl] ?? $allTpls['default'];
   $tplFields  = [
-    'ella'     => ['announcement','split_banner'],
-    'flash'    => ['announcement','countdown'],
-    'boutique' => ['split_banner'],
-    'urban'    => ['announcement'],
-    'porto'    => ['announcement','tabs_title'],
-    'nordic'   => ['trust_bar'],
-    'fresh'    => ['trust_bar'],
-    'default'  => [],
+    'ella'      => ['announcement','split_banner'],
+    'flash'     => ['announcement','countdown'],
+    'boutique'  => ['split_banner'],
+    'urban'     => ['announcement'],
+    'porto'     => ['announcement','tabs_title'],
+    'nordic'    => ['trust_bar'],
+    'fresh'     => ['trust_bar'],
+    'licoreria' => ['announcement','trust_bar_4','age_gate_field'],
+    'farma'     => ['announcement','trust_bar'],
+    'default'   => [],
   ];
   $extraFields = $tplFields[$activeTpl] ?? [];
   $storeMode   = $project->setting('store_mode', 'direct');
@@ -71,7 +77,7 @@
       <h1 class="text-base font-semibold text-gray-800">Diseño</h1>
       <p class="text-xs text-gray-400 mt-0.5">{{ $project->name }}</p>
     </div>
-    <a href="{{ url('/'.$project->slug) }}" target="_blank"
+    <a href="{{ $storeUrl }}" target="_blank"
        class="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
       Ver tienda ↗
     </a>
@@ -79,13 +85,15 @@
 
   {{-- HORIZONTAL TABS --}}
   <div class="flex border-b border-gray-200 bg-white px-2 overflow-x-auto flex-shrink-0">
-    @foreach([
-      ['k'=>'plantilla','l'=>'Plantilla', 'icon'=>'🎨', 'd'=>'Elige el diseño'],
+    @foreach(array_filter([
+      $isOwnerOrSuper ? ['k'=>'plantilla','l'=>'Plantilla', 'icon'=>'🎨', 'd'=>'Elige el diseño'] : null,
       ['k'=>'marca',    'l'=>'Marca',     'icon'=>'🏷️', 'd'=>'Colores y logo'],
       ['k'=>'portada',  'l'=>'Portada',   'icon'=>'🖼️', 'd'=>'Hero y banners'],
       ['k'=>'catalogo', 'l'=>'Catálogo',  'icon'=>'📦', 'd'=>'Grid y filtros'],
+      ['k'=>'checkout', 'l'=>'Checkout',  'icon'=>'🛒', 'd'=>'Formulario de pedido'],
       ['k'=>'sistema',  'l'=>'Sistema',   'icon'=>'⚙️', 'd'=>'Modo y SEO'],
-    ] as $tab)
+    ]) as $tab)
+    @if(!$tab) @continue @endif
     <a href="{{ route('settings.design') }}?s={{ $tab['k'] }}"
        class="flex items-center gap-2 px-4 py-3 border-b-2 transition whitespace-nowrap
               {{ $s === $tab['k']
@@ -118,12 +126,12 @@
       {{-- ═══════════════════════════════════════ --}}
       {{-- TAB: PLANTILLA --}}
       {{-- ═══════════════════════════════════════ --}}
-      @if($s === 'plantilla')
+      @if($s === 'plantilla' && $isOwnerOrSuper)
       @php
         $allTemplates   = \App\Support\CatalogTemplates::all();
         $grouped        = \App\Support\CatalogTemplates::grouped();
         $activeTemplate = $project->setting('catalog_template', '');
-        $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria'];
+        $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria','farma'];
       @endphp
       <div x-data="{
           selected: '{{ $activeTemplate }}',
@@ -164,7 +172,7 @@
           </div>
           <div class="flex-1">
             <span x-text="appliedMsg"></span>
-            <a href="{{ url('/' . $project->slug) }}" target="_blank"
+            <a href="{{ $storeUrl }}" target="_blank"
                class="ml-2 underline font-semibold hover:text-green-900">Ver ahora ↗</a>
           </div>
         </div>
@@ -838,6 +846,62 @@
         </div>
         @endif
 
+        {{-- Trust bar 4 ítems (Licorería) --}}
+        @if(in_array('trust_bar_4', $extraFields))
+        <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+          <div class="px-4 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+            <p class="text-sm font-semibold text-amber-800">Barra de confianza (4 ítems)</p>
+            <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-700">Licorería</span>
+          </div>
+          <div class="p-4 space-y-3">
+            <p class="text-xs text-gray-500">Cuatro íconos de beneficios bajo el hero (envío, pago, autenticidad, edad).</p>
+            @foreach([1,2,3,4] as $ti)
+            <div class="flex items-center gap-2">
+              <input type="text" name="trust_icon_{{ $ti }}" class="input text-sm w-16 flex-shrink-0 text-center"
+                     placeholder="{{ ['🚚','🔒','✅','🔞'][$ti-1] }}"
+                     value="{{ $project->setting('trust_icon_'.$ti) }}">
+              <input type="text" name="trust_text_{{ $ti }}" class="input text-sm flex-1"
+                     placeholder="{{ ['Envío rápido','Pago seguro','Producto auténtico','Solo +18'][$ti-1] }}"
+                     value="{{ $project->setting('trust_text_'.$ti) }}">
+            </div>
+            @endforeach
+          </div>
+        </div>
+        @endif
+
+        {{-- Age gate (Licorería) --}}
+        @if(in_array('age_gate_field', $extraFields))
+        <div class="bg-white rounded-xl border border-red-200 overflow-hidden">
+          <div class="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
+            <p class="text-sm font-semibold text-red-800">Verificación de edad</p>
+            <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-200 text-red-700">Licorería</span>
+          </div>
+          <div class="p-4">
+            <label class="flex items-center justify-between cursor-pointer select-none gap-4">
+              <div>
+                <p class="text-sm font-semibold text-gray-700">Activar modal de verificación de edad</p>
+                <p class="text-xs text-gray-400 mt-0.5">Muestra un popup pidiendo confirmar mayoría de edad al ingresar.</p>
+              </div>
+              <div class="flex-shrink-0" onclick="
+                var cb=this.querySelector('input[type=checkbox]');
+                var hid=this.querySelector('input[type=hidden]');
+                var track=this.querySelector('.ag-track');
+                var thumb=this.querySelector('.ag-thumb');
+                cb.checked=!cb.checked;
+                hid.value=cb.checked?'1':'0';
+                track.style.background=cb.checked?'#ef4444':'#d1d5db';
+                thumb.style.transform=cb.checked?'translateX(20px)':'translateX(2px)';
+              " style="position:relative;width:40px;height:22px;cursor:pointer;">
+                <input type="checkbox" style="display:none;" {{ $project->setting('age_gate','0')==='1' ? 'checked' : '' }}>
+                <input type="hidden" name="age_gate" value="{{ $project->setting('age_gate','0') }}">
+                <div class="ag-track" style="position:absolute;inset:0;border-radius:11px;background:{{ $project->setting('age_gate','0')==='1' ? '#ef4444' : '#d1d5db' }};transition:background .2s;"></div>
+                <div class="ag-thumb" style="position:absolute;top:3px;left:0;width:16px;height:16px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s;transform:{{ $project->setting('age_gate','0')==='1' ? 'translateX(20px)' : 'translateX(2px)' }};"></div>
+              </div>
+            </label>
+          </div>
+        </div>
+        @endif
+
         {{-- Tabs título (Porto) --}}
         @if(in_array('tabs_title', $extraFields))
         <div class="bg-white rounded-xl border border-orange-200 overflow-hidden">
@@ -1160,7 +1224,7 @@
 
         <div class="flex items-center gap-3">
           <button type="submit" class="btn-primary">Guardar catálogo</button>
-          <a href="{{ url('/' . $project->slug) }}" target="_blank"
+          <a href="{{ $storeUrl }}" target="_blank"
              class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -1177,7 +1241,8 @@
       {{-- ═══════════════════════════════════════ --}}
       @if($s === 'sistema')
       <div class="max-w-2xl mx-auto">
-      <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5">
+      <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5"
+            @submit="$refs.waHidden && ($refs.waHidden.value = country + local.replace(/\D/g,''))">
         @csrf
 
         {{-- Modo de venta --}}
@@ -1243,8 +1308,9 @@
                 </select>
                 <input type="tel" x-model="local" placeholder="999 888 777"
                        class="flex-1 border border-gray-300 rounded-r-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition min-w-0">
-                <input type="hidden" name="quote_whatsapp" :value="country + local.replace(/\D/g,'')">
+                <input type="hidden" name="quote_whatsapp" x-ref="waHidden" :value="country + local.replace(/\D/g,'')">
               </div>
+              <p class="text-xs text-gray-400 mt-1">Número completo: <span x-text="'+' + country + ' ' + local.replace(/\D/g,'')"></span></p>
             </div>
             <div>
               <label class="label">Mensaje plantilla</label>
@@ -1282,6 +1348,15 @@
             <p class="text-sm font-semibold text-gray-800">Footer — Contenido</p>
           </div>
           <div class="p-4 space-y-4">
+
+            {{-- Tagline --}}
+            <div>
+              <label class="label">Eslogan del footer</label>
+              <input type="text" name="footer_tagline" class="input"
+                     placeholder="Ej: Los mejores spirits, directo a tu puerta."
+                     value="{{ $project->setting('footer_tagline') }}">
+              <p class="text-xs text-gray-400 mt-1">Frase breve debajo del logo en el footer.</p>
+            </div>
 
             {{-- Copyright --}}
             <div>
@@ -1532,6 +1607,125 @@
         </div>
       </form>
       </div>{{-- /max-w-2xl --}}
+      @endif
+
+      {{-- ═══════════════════════════════════════ --}}
+      {{-- TAB: CHECKOUT --}}
+      {{-- ═══════════════════════════════════════ --}}
+      @if($s === 'checkout')
+      @php
+        $ckFields = json_decode($project->setting('checkout_fields', 'null'), true) ?? [
+          'fixed'  => [
+            'lname'   => ['label'=>'Apellido',  'enabled'=>true],
+            'email'   => ['label'=>'Email',     'enabled'=>true],
+            'dni'     => ['label'=>'DNI / RUC', 'enabled'=>true],
+            'address' => ['label'=>'Dirección', 'enabled'=>false],
+            'notes'   => ['label'=>'Notas',     'enabled'=>true],
+          ],
+          'custom' => [],
+        ];
+      @endphp
+      <div class="max-w-2xl mx-auto">
+      <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5">
+        @csrf
+
+        {{-- Campos fijos --}}
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden"
+             x-data="{
+               fields: {{ json_encode($ckFields) }},
+               newLabel: '', newType: 'text', newRequired: false,
+               addField() {
+                 if (!this.newLabel.trim()) return;
+                 const key = 'cf_' + Date.now();
+                 this.fields.custom.push({ key, label: this.newLabel.trim(), type: this.newType, required: this.newRequired, enabled: true });
+                 this.newLabel = ''; this.newType = 'text'; this.newRequired = false;
+               },
+               removeCustom(idx) { this.fields.custom.splice(idx, 1); },
+             }">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
+            <p class="text-sm font-semibold text-gray-800">Campos del formulario</p>
+            <p class="text-xs text-gray-400 mt-0.5">Nombre y Celular son siempre obligatorios</p>
+          </div>
+          <input type="hidden" name="checkout_fields" :value="JSON.stringify(fields)">
+          <div class="p-4 space-y-4">
+
+            {{-- Campos estándar --}}
+            <div>
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Campos estándar</p>
+              <div class="space-y-2">
+                @foreach(['fname'=>'Nombre *','phone'=>'Celular *'] as $k=>$l)
+                <div class="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
+                  <span class="text-sm text-gray-500">{{ $l }}</span>
+                  <span class="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">Siempre activo</span>
+                </div>
+                @endforeach
+                <template x-for="(cfg, key) in fields.fixed" :key="key">
+                  <div class="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-100 hover:bg-gray-50 transition">
+                    <span class="text-sm text-gray-700" x-text="cfg.label"></span>
+                    <button type="button" @click="cfg.enabled = !cfg.enabled"
+                            class="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer"
+                            :class="cfg.enabled ? 'bg-indigo-600' : 'bg-gray-300'">
+                      <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                            :class="cfg.enabled ? 'translate-x-4' : 'translate-x-0'"></span>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            {{-- Campos adicionales --}}
+            <div>
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Campos adicionales</p>
+              <div class="space-y-2">
+                <template x-for="(cf, idx) in fields.custom" :key="cf.key">
+                  <div class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 hover:bg-gray-50">
+                    <div class="flex-1 min-w-0">
+                      <span class="text-sm text-gray-700" x-text="cf.label"></span>
+                      <span class="ml-1 text-xs text-gray-400" x-text="'('+cf.type+')'"></span>
+                      <span x-show="cf.required" class="ml-1 text-xs text-red-500">*obligatorio</span>
+                    </div>
+                    <button type="button" @click="cf.enabled = !cf.enabled"
+                            class="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer"
+                            :class="cf.enabled ? 'bg-indigo-600' : 'bg-gray-300'">
+                      <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                            :class="cf.enabled ? 'translate-x-4' : 'translate-x-0'"></span>
+                    </button>
+                    <button type="button" @click="removeCustom(idx)" class="text-red-400 hover:text-red-600 ml-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                </template>
+                <div x-show="fields.custom.length === 0" class="text-xs text-gray-400 text-center py-2">Sin campos adicionales</div>
+              </div>
+              <div class="mt-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100 space-y-2">
+                <p class="text-xs font-semibold text-indigo-700">Agregar campo</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" x-model="newLabel" placeholder="Ej: Empresa, Color favorito..." class="input text-sm col-span-2">
+                  <select x-model="newType" class="input text-sm">
+                    <option value="text">Texto</option>
+                    <option value="number">Número</option>
+                    <option value="date">Fecha</option>
+                    <option value="textarea">Área de texto</option>
+                  </select>
+                  <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" x-model="newRequired" class="rounded"> Obligatorio
+                  </label>
+                </div>
+                <button type="button" @click="addField()"
+                        class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                  + Agregar campo
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <button type="submit" class="btn-primary">Guardar checkout</button>
+        </div>
+      </form>
+      </div>
       @endif
 
     </div>

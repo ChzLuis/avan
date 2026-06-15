@@ -292,6 +292,28 @@ class ReporteController extends Controller
         ]);
     }
 
+    public function inventario()
+    {
+        $project  = Project::findOrFail(session('comercial_project_id'));
+        $products = $project->products()
+            ->with(['category', 'images' => fn($q) => $q->where('is_main', true)])
+            ->orderBy('name')
+            ->get()
+            ->map(fn($p) => [
+                'id'        => $p->id,
+                'name'      => $p->name,
+                'category'  => $p->category?->name ?? '—',
+                'price'     => (float) $p->price,
+                'stock'     => $p->stock,
+                'stock_min' => $p->stock_min,
+                'stock_max' => $p->stock_max,
+                'image'     => $p->images->first()?->url ? asset('storage/' . $p->images->first()->url) : null,
+            ]);
+
+        $pageTitle = 'Inventario';
+        return view('comercial.reportes.inventario', compact('project', 'products', 'pageTitle'));
+    }
+
     /** Helper: exportar array como CSV descargable */
     private function exportCsv(string $filename, array $headers, array $rows): StreamedResponse
     {

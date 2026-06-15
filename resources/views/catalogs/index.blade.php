@@ -1,5 +1,4 @@
-<x-app-layout>
-<x-slot name="slot">
+<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Catálogos">
 
 @php
     $csrf   = csrf_token();
@@ -164,6 +163,27 @@
                  headers: { 'X-CSRF-TOKEN': '{{ $csrf }}', 'Accept': 'application/json' }
              });
              if (res.ok) this.values = this.values.filter(x => x.id !== v.id);
+         },
+
+         dragId: null,
+         dragStart(id) { this.dragId = id; },
+         dragOver(id) {
+             if (this.dragId === null || this.dragId === id) return;
+             const from = this.catalogs.findIndex(c => c.id === this.dragId);
+             const to   = this.catalogs.findIndex(c => c.id === id);
+             if (from === -1 || to === -1) return;
+             const arr = [...this.catalogs];
+             arr.splice(to, 0, arr.splice(from, 1)[0]);
+             this.catalogs = arr;
+         },
+         async dragEnd() {
+             if (this.dragId === null) return;
+             this.dragId = null;
+             await fetch(this.baseUrl + '/reorder', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ $csrf }}' },
+                 body: JSON.stringify({ ids: this.catalogs.map(c => c.id) }),
+             });
          }
      }"
      x-init="if(catalogs.length) select(catalogs[0])">
@@ -200,15 +220,6 @@
                 title="Todos">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-            </svg>
-        </button>
-        {{-- Comercial --}}
-        <button @click="filterGroup='product_category'"
-                :class="filterGroup==='product_category' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-400 hover:bg-gray-100'"
-                class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
-                title="Comercial">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
             </svg>
         </button>
         {{-- RRHH --}}
@@ -266,10 +277,22 @@
         <div class="overflow-y-auto flex-1">
             <template x-for="c in filtered" :key="c.id">
                 <div @click="select(c)"
+                     @dragover.prevent="dragOver(c.id)"
+                     @dragend="dragEnd()"
                      :class="selected && selected.id === c.id
                          ? 'bg-indigo-50 border-l-2 border-indigo-500'
                          : 'border-l-2 border-transparent hover:bg-gray-50'"
                      class="flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors">
+                    {{-- Handle drag --}}
+                    <div draggable="true"
+                         @dragstart="dragStart(c.id)"
+                         @click.stop
+                         class="w-5 flex-shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                         :class="selected?.id === c.id ? 'text-gray-400' : 'text-gray-300 hover:text-gray-500'">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M7 4a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM7 8a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM7 12a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z"/>
+                        </svg>
+                    </div>
                     {{-- Dot de color --}}
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                          :style="'background:' + c.color + '22'">
@@ -566,5 +589,4 @@
 
 </div>{{-- /body --}}
 </div>{{-- /wrapper --}}
-</x-slot>
-</x-app-layout>
+</x-portal-layout>

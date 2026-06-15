@@ -436,6 +436,7 @@ class ProductController extends Controller
         $cleanNum    = fn($v): ?float => ($v !== '' && $v !== null) ? (float) str_replace(',', '.', preg_replace('/[^0-9.,\-]/', '', (string)$v)) : null;
         $header  = null;
         $created = 0; $updated = 0; $skipped = 0; $errors = [];
+        $sinCategoria = 0; $catsNoEncontradas = [];
         foreach ($rows as $i => $row) {
             $cleaned = array_map(fn($v) => trim((string)($v ?? '')), $row);
             $lower   = array_map('strtolower', $cleaned);
@@ -443,7 +444,10 @@ class ProductController extends Controller
                 if (count(array_intersect($lower, $validKeys)) >= 2) { $header = $lower; }
                 continue;
             }
-            if (count(array_intersect($lower, $validKeys)) >= 2) continue;
+            // Saltar filas que son encabezados visuales (todas las celdas en mayúsculas o vacías — p.ej. fila de labels del xlsx exportado)
+            $nonEmpty = array_filter($cleaned, fn($v) => $v !== '');
+            $allUpper = $nonEmpty && count(array_filter($nonEmpty, fn($v) => $v === strtoupper($v) && !is_numeric($v))) === count($nonEmpty);
+            if ($allUpper) continue;
             $data   = array_combine($header, array_pad($cleaned, count($header), ''));
             $nombre = trim($data['nombre'] ?? '');
             if ($nombre === '' || str_starts_with($nombre, '←')) { $skipped++; continue; }
@@ -454,12 +458,12 @@ class ProductController extends Controller
                 $categoryId = null;
                 if ($subNombre && isset($allCats[$subNombre])) {
                     $categoryId = $allCats[$subNombre]->id;
-                } elseif ($subNombre) {
-                    $errors[] = '"' . $nombre . '" (fila ' . $i . '): subcategoría "' . $subNombre . '" no existe — se importó sin categoría.';
                 } elseif ($catNombre && isset($allCats[$catNombre])) {
                     $categoryId = $allCats[$catNombre]->id;
-                } elseif ($catNombre) {
-                    $errors[] = '"' . $nombre . '" (fila ' . $i . '): categoría "' . $catNombre . '" no existe — se importó sin categoría.';
+                } elseif ($subNombre || $catNombre) {
+                    $sinCategoria++;
+                    $catLabel = $subNombre ?: $catNombre;
+                    if (!in_array($catLabel, $catsNoEncontradas)) $catsNoEncontradas[] = $catLabel;
                 }
                 $payload = [
                     'project_id'    => $project->id,
@@ -487,18 +491,24 @@ class ProductController extends Controller
                 $errors[] = '"' . $nombre . '" (fila ' . $i . '): ' . $e->getMessage();
             }
         }
-        ImportLog::create([
-            'project_id' => $project->id,
-            'user_id'    => auth()->id(),
-            'type'       => 'products',
-            'filename'   => $request->file('file')?->getClientOriginalName() ?? '',
-            'created'    => $created,
-            'updated'    => $updated,
-            'skipped'    => $skipped,
-            'errors'     => $errors,
-            'has_errors' => count($errors) > 0,
-        ]);
-        return response()->json(['created' => $created, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors]);
+        try {
+            ImportLog::create([
+                'project_id' => $project->id,
+                'user_id'    => auth()->id(),
+                'type'       => 'products',
+                'filename'   => $request->file('file')?->getClientOriginalName() ?? '',
+                'created'    => $created,
+                'updated'    => $updated,
+                'skipped'    => $skipped,
+                'errors'     => $errors,
+                'has_errors' => count($errors) > 0,
+            ]);
+        } catch (\Exception $e) {}
+        $warnings = [];
+        if ($sinCategoria > 0) {
+            $warnings[] = $sinCategoria . ' producto' . ($sinCategoria > 1 ? 's' : '') . ' importado' . ($sinCategoria > 1 ? 's' : '') . ' sin categoría (no existe en este negocio): ' . implode(', ', $catsNoEncontradas) . '.';
+        }
+        return response()->json(['created' => $created, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors, 'warnings' => $warnings]);
     }
 
     // ── Exportar catálogo estático para GitHub Pages ──────────────────────────

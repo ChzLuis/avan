@@ -4,6 +4,7 @@
 @php
     $s    = request('s', 'datos');
     $selP = $project;
+    $isOwnerOrSuper = auth()->user()?->is_superadmin || ($project && $project->owner_id === auth()->id());
 @endphp
 
 <div class="flex flex-col h-full w-full overflow-hidden"
@@ -97,6 +98,7 @@
         <h1 class="text-lg font-semibold text-gray-800">Negocios</h1>
         <p class="text-xs text-gray-400 mt-0.5" x-text="projects.length + (projects.length === 1 ? ' negocio registrado' : ' negocios registrados')"></p>
     </div>
+    @if($isOwnerOrSuper)
     <button @click="openNew()"
             class="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,11 +106,14 @@
         </svg>
         Nuevo negocio
     </button>
+    @endif
 </div>
 
 {{-- BODY --}}
-<div class="flex flex-1 overflow-hidden" {{-- mv is inherited from outer x-data --}}>
+<div class="flex flex-1 overflow-hidden" {{-- mv is inherited from outer x-data --}}
+     x-init="{{ !$isOwnerOrSuper ? 'mv = \'detail\'' : '' }}">
 
+@if($isOwnerOrSuper)
 {{-- ─── RAIL IZQUIERDA ─────────────────────────────────────────────── --}}
 <div class="w-14 border-r border-gray-200 bg-gray-50 hidden md:flex flex-col items-center py-3 gap-2 flex-shrink-0">
 
@@ -171,6 +176,7 @@
     <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
 
         {{-- Nuevo --}}
+        @if($isOwnerOrSuper)
         <button @click="openNew(); mv = 'detail'"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition text-left"
                 :class="creating ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
@@ -184,6 +190,7 @@
                 <p class="text-xs text-gray-400">Crear negocio</p>
             </div>
         </button>
+        @endif
 
         <template x-for="p in filteredProjects" :key="p.id">
             <button @click="selectProject(p.id); mv = 'detail'"
@@ -208,10 +215,12 @@
         </div>
     </div>
 </div>
+@endif
 
 {{-- ─── PANEL DETALLE ──────────────────────────────────────────────── --}}
-<div class="overflow-hidden bg-white"
+<div class="{{ $isOwnerOrSuper ? 'overflow-hidden bg-white' : 'overflow-hidden bg-gray-50 flex-1' }}"
      :class="mv === 'detail' ? 'flex flex-col flex-1' : 'hidden md:flex md:flex-col md:flex-1'">
+@if(!$isOwnerOrSuper)<div class="w-full max-w-3xl mx-auto bg-white shadow-sm flex flex-col flex-1 overflow-y-auto">@endif
 
     {{-- Botón volver (solo mobile) --}}
     <button @click="mv = 'list'" type="button"
@@ -272,7 +281,21 @@
                         </div>
                         <div>
                             <label class="label">Categoría / Rubro</label>
-                            <input type="text" x-model="form.category" class="input mt-1" placeholder="Tienda, Restaurante, Servicios...">
+                            <select x-model="form.category" class="input mt-1">
+                                <option value="">— Selecciona tu rubro —</option>
+                                <option value="restaurante">🍽️ Restaurante / Cafetería</option>
+                                <option value="peluqueria">✂️ Peluquería / Spa / Salón</option>
+                                <option value="clinica">🏥 Clínica / Consultorio</option>
+                                <option value="retail">🛍️ Tienda / Retail</option>
+                                <option value="whatsapp">🤖 Negocio por WhatsApp</option>
+                                <option value="farmacia">💊 Farmacia / Botica</option>
+                                <option value="veterinaria">🐾 Veterinaria / Pet Shop</option>
+                                <option value="taller">🔧 Taller Mecánico / Técnico</option>
+                                <option value="gimnasio">🏋️ Gimnasio / Fitness</option>
+                                <option value="inmobiliaria">🏘️ Inmobiliaria / Alquileres</option>
+                                <option value="educacion">📚 Educación / Academia</option>
+                                <option value="otro">🏢 Otro tipo de negocio</option>
+                            </select>
                         </div>
                         <div>
                             <label class="label">Moneda</label>
@@ -443,8 +466,27 @@
                     </div>
                     <div>
                         <label class="label">Categoría / Rubro</label>
-                        <input type="text" name="category" class="input mt-1" placeholder="Tienda, Restaurante..."
-                               value="{{ old('category', $selP->category) }}">
+                        <select name="category" class="input mt-1">
+                            <option value="">— Selecciona tu rubro —</option>
+                            @foreach([
+                                'restaurante'  => '🍽️ Restaurante / Cafetería',
+                                'peluqueria'   => '✂️ Peluquería / Spa / Salón',
+                                'clinica'      => '🏥 Clínica / Consultorio',
+                                'retail'       => '🛍️ Tienda / Retail',
+                                'whatsapp'     => '🤖 Negocio por WhatsApp',
+                                'farmacia'     => '💊 Farmacia / Botica',
+                                'veterinaria'  => '🐾 Veterinaria / Pet Shop',
+                                'taller'       => '🔧 Taller Mecánico / Técnico',
+                                'gimnasio'     => '🏋️ Gimnasio / Fitness',
+                                'inmobiliaria' => '🏘️ Inmobiliaria / Alquileres',
+                                'educacion'    => '📚 Educación / Academia',
+                                'otro'         => '🏢 Otro tipo de negocio',
+                            ] as $val => $label)
+                            <option value="{{ $val }}" {{ old('category', $selP->category) === $val ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                            @endforeach
+                        </select>
                     </div>
                     @if(auth()->user()->is_superadmin ?? false)
                     <div class="sm:col-span-2">
@@ -1143,6 +1185,7 @@
         </div>
     </template>
 
+@if(!$isOwnerOrSuper)</div>@endif
 </div>{{-- /panel detalle --}}
 </div>{{-- /body --}}
 </div>{{-- /flex col --}}

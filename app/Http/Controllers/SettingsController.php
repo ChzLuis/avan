@@ -43,9 +43,8 @@ class SettingsController extends Controller
         $isSuperadmin = auth()->user()->is_superadmin ?? false;
         // Permitir editar cualquier proyecto del usuario, no solo el activo
         if ($request->input('project_id')) {
-            $project = $isSuperadmin
-                ? Project::findOrFail($request->input('project_id'))
-                : Project::where('owner_id', $userId)->findOrFail($request->input('project_id'));
+            $project = Project::findOrFail($request->input('project_id'));
+            $this->authorizeProject($project);
         } else {
             /** @var \App\Models\Project $project */
             $project = app('active_project');
@@ -97,7 +96,14 @@ class SettingsController extends Controller
         }
 
         if (!empty($data)) {
+            $oldDomain = $project->custom_domain;
             $project->update($data);
+
+            // Si cambió el custom_domain, configurar nginx+SSL en VPS automáticamente
+            $newDomain = $project->fresh()->custom_domain;
+            if ($newDomain && $newDomain !== $oldDomain) {
+                $this->setupDomainOnVps($newDomain);
+            }
         }
 
         $settingsKeys = [
@@ -280,6 +286,7 @@ class SettingsController extends Controller
             'countdown_label','countdown_end',
             'split_left_title','split_left_sub','split_right_title','split_right_sub',
             'trust_icon_1','trust_text_1','trust_icon_2','trust_text_2','trust_icon_3','trust_text_3',
+            'trust_icon_4','trust_text_4',
             'tab1_label','tab2_label','tab3_label',
             // Catálogo — Grid
             'catalog_section_title','card_style','catalog_cols_desktop','catalog_cols_mobile',
@@ -289,10 +296,13 @@ class SettingsController extends Controller
             // Catálogo — Botones y flotantes
             'btn_cart_text','btn_quote_text','btn_shape','btn_show_icon',
             'float_cart_show','float_cart_pos','float_wa_show','float_wa_tooltip','float_wa_pos',
-            // Sistema — Venta
+            // Sistema — Venta y envío
             'store_mode','quote_price_display','quote_whatsapp','quote_whatsapp_country','quote_wa_msg',
+            'shipping_enabled','shipping_cost','shipping_free_from','require_address',
+            'show_flash_sale','show_testimonials','show_newsletter','show_trust_strip',
             // Sistema — Pagos
-            'payment_yape_number','payment_plin_number','payment_bank_details','payment_manual_instructions',
+            'payment_yape_number','payment_yape_name','payment_yape_qr','payment_plin_number','payment_bank_details','payment_manual_instructions',
+            'payment_bank_bcp','payment_bank_interbank','payment_bank_bbva','payment_bank_nacion','payment_bank_scotiabank',
             'culqi_public_key','culqi_mode',
             // Sistema — Footer y textos
             'footer_tagline','footer_copyright','footer_dev_text',
@@ -305,6 +315,7 @@ class SettingsController extends Controller
             'footer_show_benefits','footer_show_address',
             'cart_title','cart_empty_msg','btn_checkout_text','btn_send_quote_text',
             'txt_no_results','txt_search_placeholder','txt_view_more','txt_all_cats',
+            'checkout_fields',
             // Sistema — Login
             'login_bg_type','login_color1','login_color2','login_bg_image','login_heading','login_subtitle',
             // Sistema — SEO
@@ -315,7 +326,7 @@ class SettingsController extends Controller
         }
 
         // Checkboxes booleanos (on/off)
-        foreach (['payment_manual_enabled', 'culqi_enabled', 'mp_enabled'] as $boolKey) {
+        foreach (['payment_manual_enabled', 'culqi_enabled', 'mp_enabled', 'age_gate'] as $boolKey) {
             $project->settings()->updateOrCreate(
                 ['key' => $boolKey],
                 ['value' => $request->input($boolKey) === '1' ? '1' : '0']
@@ -340,6 +351,9 @@ class SettingsController extends Controller
             }
         }
 
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
         return back()->with('success', 'Configuración guardada.');
     }
 
@@ -348,6 +362,34 @@ class SettingsController extends Controller
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         return view('settings.qr', compact('project'));
+    }
+
+    public function updateQr(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $this->authorizeProject($project);
+
+        $data = $request->validate([
+            'qr_mode'        => 'required|in:catalog,orders',
+            'qr_table_count' => 'required|integer|min:1|max:50',
+            'qr_reception'   => 'required|in:auto,manual',
+            'qr_payment'     => 'required|in:cashier,waiter',
+            'qr_schedule'    => 'nullable|array',
+        ]);
+
+        foreach (['qr_mode','qr_table_count','qr_reception','qr_payment'] as $key) {
+            $project->settings()->updateOrCreate(['key' => $key], ['value' => $data[$key]]);
+        }
+
+        if (!empty($data['qr_schedule'])) {
+            $project->settings()->updateOrCreate(
+                ['key' => 'qr_schedule'],
+                ['value' => json_encode($data['qr_schedule'])]
+            );
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     public function payments()
@@ -364,8 +406,9 @@ class SettingsController extends Controller
         $this->authorizeProject($project);
 
         $keys = [
-            'payment_yape_number','payment_plin_number',
+            'payment_yape_number','payment_yape_name','payment_yape_qr','payment_plin_number',
             'payment_bank_details','payment_manual_instructions',
+            'payment_bank_bcp','payment_bank_interbank','payment_bank_bbva','payment_bank_nacion','payment_bank_scotiabank',
             'culqi_public_key','culqi_mode',
             'store_mode','quote_price_display',
             'quote_whatsapp','quote_whatsapp_country','quote_wa_msg',
@@ -381,14 +424,18 @@ class SettingsController extends Controller
             );
         }
 
-        $project->settings()->updateOrCreate(
-            ['key' => 'accepted_payments'],
-            ['value' => json_encode($request->input('accepted_payments', []))]
-        );
-        $project->settings()->updateOrCreate(
-            ['key' => 'payment_manual_methods'],
-            ['value' => json_encode($request->input('payment_manual_methods', []))]
-        );
+        if ($request->has('accepted_payments') || $request->query('s') === 'methods') {
+            $project->settings()->updateOrCreate(
+                ['key' => 'accepted_payments'],
+                ['value' => json_encode($request->input('accepted_payments', []))]
+            );
+        }
+        if ($request->has('payment_manual_methods') || $request->query('s') === 'manual') {
+            $project->settings()->updateOrCreate(
+                ['key' => 'payment_manual_methods'],
+                ['value' => json_encode($request->input('payment_manual_methods', []))]
+            );
+        }
 
         foreach (['culqi_secret_key', 'mp_access_token'] as $secretKey) {
             $val = $request->input($secretKey, '');
@@ -507,5 +554,26 @@ class SettingsController extends Controller
         abort_unless($canal->project_id === $project->id, 403);
         $canal->delete();
         return response()->json(['ok' => true]);
+    }
+
+    private function setupDomainOnVps(string $domain): void
+    {
+        $domain = preg_replace('/[^a-z0-9\.\-]/', '', strtolower($domain));
+        if (!$domain) return;
+
+        try {
+            $ctx = stream_context_create([
+                'http' => [
+                    'method'  => 'POST',
+                    'header'  => 'Content-Type: application/json',
+                    'content' => json_encode(['domain' => $domain, 'secret' => 'bixo_domain_webhook_2026']),
+                    'timeout' => 3,
+                    'ignore_errors' => true,
+                ],
+            ]);
+            @file_get_contents('http://127.0.0.1:9876/setup-domain', false, $ctx);
+        } catch (\Throwable $e) {
+            // silencioso — no bloquear al usuario
+        }
     }
 }

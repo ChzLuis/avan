@@ -34,7 +34,9 @@ class InvoiceController extends Controller
             ]);
 
         $portalLayout = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
-        return view('invoices.index', compact('project', 'invoices', 'portalLayout'));
+        $serieFactura = $project->setting('serie_factura') ?? 'F001';
+        $serieBoleta  = $project->setting('serie_boleta')  ?? 'B001';
+        return view('invoices.index', compact('project', 'invoices', 'portalLayout', 'serieFactura', 'serieBoleta'));
     }
 
     public function show(Invoice $invoice)
@@ -95,6 +97,7 @@ class InvoiceController extends Controller
         $data = $request->validate([
             'type'                => 'required|in:boleta,factura,nota_credito,nota_debito',
             'serie'               => 'nullable|string|max:10',
+            'correlativo'         => 'nullable|integer|min:1',
             'issue_date'          => 'nullable|date',
             'due_date'            => 'nullable|date',
             'client_name'        => 'required|string|max:200',
@@ -154,8 +157,10 @@ class InvoiceController extends Controller
             ];
         }
 
-        $correlativo = Invoice::nextCorrelativo($project->id, $type, $serie);
-        $numero      = Invoice::buildNumero($serie, $correlativo);
+        $correlativo = $request->filled('correlativo')
+            ? (int) $request->input('correlativo')
+            : Invoice::nextCorrelativo($project->id, $type, $serie);
+        $numero = Invoice::buildNumero($serie, $correlativo);
 
         $invoice = $project->invoices()->create([
             'type'                => $type,

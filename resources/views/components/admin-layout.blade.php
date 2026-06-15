@@ -129,5 +129,113 @@
         </main>
     </div>
 </div>
+
+{{-- CHG-92608: Control de cierre de sesión por inactividad --}}
+<script>
+(function() {
+    var LIMIT_S = 30 * 60, WARN_S = 3 * 60, WARN_AT = LIMIT_S - WARN_S;
+    var LOGOUT  = {!! json_encode(route('admin.logout')) !!};
+    var TOKEN   = function() { return document.querySelector('meta[name="csrf-token"]').content; };
+    var elapsed = 0, phase = 'idle', tick = null, autoOut = null;
+    var elWarn, elExpired, elCd, elBar;
+
+    function buildModals() {
+        elWarn = document.createElement('div');
+        elWarn.setAttribute('style',
+            'display:none;position:fixed;top:0;left:0;width:100%;height:100%;' +
+            'z-index:2147483646;background:rgba(0,0,0,.6);' +
+            'align-items:center;justify-content:center;');
+        elWarn.innerHTML =
+            '<div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px 32px;' +
+            'width:380px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">' +
+              '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+                '<div style="width:40px;height:40px;min-width:40px;border-radius:50%;background:#451a03;' +
+                'display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;">⏰</div>' +
+                '<div>' +
+                  '<p style="font-size:14px;font-weight:700;color:#f1f5f9;margin:0;">Sesión por expirar</p>' +
+                  '<p style="font-size:12px;color:#94a3b8;margin:2px 0 0;">Tu sesión cerrará en ' +
+                    '<strong id="adm-cd" style="color:#f59e0b;"></strong>' +
+                  '</p>' +
+                '</div>' +
+              '</div>' +
+              '<div style="background:#334155;border-radius:99px;height:4px;margin-bottom:20px;overflow:hidden;">' +
+                '<div id="adm-bar" style="width:100%;background:#f59e0b;height:100%;border-radius:99px;transition:width 1s linear;"></div>' +
+              '</div>' +
+              '<div style="display:flex;gap:8px;">' +
+                '<button onclick="admLogout()" style="flex:1;padding:9px;border-radius:9px;border:1px solid #334155;' +
+                'background:transparent;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;">Cerrar sesión</button>' +
+                '<button onclick="admKeep()" style="flex:2;padding:9px;border-radius:9px;border:none;' +
+                'background:#6366f1;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Continuar trabajando</button>' +
+              '</div>' +
+            '</div>';
+        document.body.appendChild(elWarn);
+        elCd  = document.getElementById('adm-cd');
+        elBar = document.getElementById('adm-bar');
+
+        elExpired = document.createElement('div');
+        elExpired.setAttribute('style',
+            'display:none;position:fixed;top:0;left:0;width:100%;height:100%;' +
+            'z-index:2147483647;background:rgba(0,0,0,.8);' +
+            'align-items:center;justify-content:center;');
+        elExpired.innerHTML =
+            '<div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:32px;' +
+            'width:360px;max-width:92vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);">' +
+              '<div style="width:52px;height:52px;min-width:52px;border-radius:50%;background:#450a0a;' +
+              'display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;line-height:1;">🔒</div>' +
+              '<p style="font-size:16px;font-weight:700;color:#f1f5f9;margin:0 0 8px;">Sesión cerrada</p>' +
+              '<p style="font-size:13px;color:#94a3b8;margin:0 0 24px;">Tu sesión expiró por inactividad.</p>' +
+              '<button onclick="admLogout()" style="width:100%;padding:10px;border-radius:10px;border:none;' +
+              'background:#6366f1;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Iniciar sesión</button>' +
+            '</div>';
+        document.body.appendChild(elExpired);
+    }
+
+    function fmtCd(s) { var m=Math.floor(s/60),r=s%60; return m>0?m+' min '+r+' s':r+' s'; }
+
+    function startTick() {
+        clearInterval(tick);
+        tick = setInterval(function() {
+            elapsed++;
+            if (elapsed >= LIMIT_S) {
+                phase = 'expired'; clearInterval(tick);
+                elWarn.style.display = 'none';
+                elExpired.style.display = 'flex';
+                autoOut = setTimeout(admLogout, 8000);
+            } else if (elapsed >= WARN_AT) {
+                if (phase !== 'warn') { phase = 'warn'; elWarn.style.display = 'flex'; }
+                var cd = LIMIT_S - elapsed;
+                if (elCd)  elCd.textContent = fmtCd(cd);
+                if (elBar) elBar.style.width = Math.round(cd/WARN_S*100) + '%';
+            }
+        }, 1000);
+    }
+
+    window.admKeep = function() {
+        fetch('/ping-session', { method:'POST', headers:{ 'X-CSRF-TOKEN': TOKEN(), 'Content-Type':'application/json' } }).catch(function(){});
+        elapsed = 0; phase = 'idle';
+        elWarn.style.display = 'none';
+        if (elBar) elBar.style.width = '100%';
+        startTick();
+    };
+
+    window.admLogout = function() {
+        clearInterval(tick); clearTimeout(autoOut);
+        var f = document.createElement('form'); f.method='POST'; f.action=LOGOUT;
+        var t = document.createElement('input'); t.type='hidden'; t.name='_token'; t.value=TOKEN();
+        f.appendChild(t); document.body.appendChild(f); f.submit();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        buildModals();
+        ['mousemove','keydown','click','scroll','touchstart'].forEach(function(ev) {
+            document.addEventListener(ev, function() {
+                if (phase === 'expired' || phase === 'warn') return;
+                elapsed = 0;
+            }, { passive: true });
+        });
+        startTick();
+    });
+})();
+</script>
 </body>
 </html>

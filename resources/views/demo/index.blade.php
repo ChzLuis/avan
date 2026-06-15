@@ -10,11 +10,95 @@
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 <style>
 [x-cloak]{display:none!important}
-.rubro-card.selected { border-color:#4f46e5!important; background:#ede9fe!important; }
+.rubro-card.selected { border-color:#7C3AED!important; background:#EDE9FE!important; }
 .rubro-card.selected .rubro-check { opacity:1!important; }
-.feature-card.selected { border-color:#4f46e5!important; background:#ede9fe!important; }
+.feature-card.selected { border-color:#7C3AED!important; background:#EDE9FE!important; }
 .step-line { height:2px; background:#e5e7eb; flex:1; }
-.step-line.done { background:#4f46e5; }
+.step-line.done { background:#7C3AED; }
+
+/* Panel de detalle de rubro */
+.rubro-detail-panel {
+    margin-top: 20px;
+    background: #fff;
+    border: 1px solid #E1E4E8;
+    border-left: 4px solid #7C3AED;
+    border-radius: 14px;
+    padding: 22px 24px;
+    animation: slideIn .18s ease;
+}
+@keyframes slideIn {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+.rubro-detail-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #F0F0F0;
+}
+.rubro-detail-emoji { font-size: 38px; line-height: 1; flex-shrink: 0; }
+.rubro-detail-name  { font-size: 17px; font-weight: 800; color: #1A1D23; letter-spacing: -.2px; }
+.rubro-detail-tag   { font-size: 13px; color: #44546F; margin-top: 2px; }
+
+.rubro-detail-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+@media (max-width: 580px) {
+    .rubro-detail-cols { grid-template-columns: 1fr; }
+}
+.rubro-detail-col-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #8590A2;
+    margin-bottom: 10px;
+}
+.rubro-problems {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 6px;
+}
+.rubro-problems li {
+    font-size: 13px;
+    color: #44546F;
+    padding-left: 18px;
+    position: relative;
+    line-height: 1.4;
+}
+.rubro-problems li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #EF4444;
+    font-weight: 900;
+}
+.rubro-modules { display: flex; flex-direction: column; gap: 10px; }
+.rubro-mod-row {}
+.rubro-mod-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7C3AED;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 5px;
+}
+.rubro-mod-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.rubro-mod-tag {
+    font-size: 11px;
+    background: #F4F5F7;
+    color: #44546F;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+}
 </style>
 </head>
 <body class="bg-gray-50 font-sans antialiased" x-data="demoForm()" x-cloak>
@@ -89,11 +173,58 @@
       @endforeach
     </div>
 
-    <div class="mt-8 text-center">
+    {{-- Panel de detalle del rubro seleccionado --}}
+    <div class="rubro-detail-panel" x-show="selectedRubro" x-cloak>
+      <div class="rubro-detail-top">
+        <div class="rubro-detail-emoji" x-text="selectedRubro ? rubrosData[selectedRubro].emoji : ''"></div>
+        <div>
+          <div class="rubro-detail-name" x-text="selectedRubro ? rubrosData[selectedRubro].label : ''"></div>
+          <div class="rubro-detail-tag"  x-text="selectedRubro ? rubrosData[selectedRubro].tagline : ''"></div>
+        </div>
+      </div>
+
+      <div class="rubro-detail-cols">
+        {{-- Problemas --}}
+        <div>
+          <div class="rubro-detail-col-head">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Problemas que resuelve
+          </div>
+          <ul class="rubro-problems">
+            <template x-for="p in currentProblems()" :key="p">
+              <li x-text="p"></li>
+            </template>
+          </ul>
+        </div>
+
+        {{-- Módulos --}}
+        <div>
+          <div class="rubro-detail-col-head">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            Módulos incluidos
+          </div>
+          <div class="rubro-modules">
+            <template x-for="mod in currentModules()" :key="mod.name">
+              <div class="rubro-mod-row">
+                <div class="rubro-mod-name" x-text="mod.name"></div>
+                <div class="rubro-mod-tags">
+                  <template x-for="s in mod.items" :key="s">
+                    <span class="rubro-mod-tag" x-text="s"></span>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 text-center">
       <button type="button" @click="goToStep2()"
         :disabled="!selectedRubro"
-        class="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
-        Continuar
+        class="inline-flex items-center gap-2 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
+        style="background:#7C3AED" onmouseover="this.style.background='#6D28D9'" onmouseout="this.style.background='#7C3AED'">
+        Continuar con este rubro
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
@@ -275,6 +406,7 @@ function demoForm() {
     step: 1,
     selectedRubro: '',
     rubroLabel: '',
+    rubrosData: @json($rubros),
     features: [],
     selectedFeatures: [],
     loadingFeatures: false,
@@ -283,6 +415,17 @@ function demoForm() {
     submitting: false,
     success: false,
     result: {},
+
+    currentProblems() {
+      if (!this.selectedRubro) return [];
+      return this.rubrosData[this.selectedRubro].problems || [];
+    },
+
+    currentModules() {
+      if (!this.selectedRubro) return [];
+      const mods = this.rubrosData[this.selectedRubro].detail_modules || {};
+      return Object.entries(mods).map(([name, items]) => ({ name, items }));
+    },
 
     async selectRubro(key) {
       this.selectedRubro = key;

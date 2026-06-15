@@ -121,6 +121,9 @@ class PublicController extends Controller
             'items.*.name'       => 'nullable|string|max:255',
             'items.*.price'      => 'nullable|numeric|min:0',
             'items.*.quantity'   => 'required|integer|min:1',
+            'payment_method'   => 'nullable|string|max:80',
+            'payment_reference'=> 'nullable|string|max:100',
+            'payment_proof'    => 'nullable|url|max:500',
         ]);
 
         return DB::transaction(function () use ($project, $data) {
@@ -176,6 +179,9 @@ class PublicController extends Controller
                 'total'            => $total,
                 'status'           => 'pending',
                 'sales_channel'    => 'web',
+                'payment_method'   => $data['payment_method'] ?? null,
+                'payment_reference'=> $data['payment_reference'] ?? null,
+                'payment_proof'    => $data['payment_proof'] ?? null,
             ]);
 
             foreach ($data['items'] as $item) {
@@ -200,6 +206,11 @@ class PublicController extends Controller
                 ->where('client_phone', $data['client_phone'])
                 ->whereNull('recovered_at')
                 ->update(['recovered_at' => now()]);
+
+            // Enviar comprobante al WhatsApp del negocio via bot Meta
+            if (!empty($data['payment_proof'])) {
+                $this->sendVoucherToOwner($project, $order, $data['payment_proof']);
+            }
 
             return response()->json(['ok' => true, 'order_id' => $order->id, 'total' => (float) $order->total]);
         });
@@ -239,18 +250,38 @@ class PublicController extends Controller
     {
         $project = $this->project($slug);
         $data = $request->validate([
-            'client_name'  => 'required|string|max:100',
-            'client_phone' => 'required|string|max:30',
-            'notes'        => 'nullable|string',
+            'client_name'       => 'nullable|string|max:100',
+            'client_phone'      => 'nullable|string|max:30',
+            'client_doc_type'   => 'nullable|string|max:20',
+            'client_doc_number' => 'nullable|string|max:20',
+            'notes'             => 'nullable|string',
+            'items'             => 'required|array|min:1',
+            'items.*.description' => 'required|string',
+            'items.*.price'       => 'required|numeric|min:0',
+            'items.*.quantity'    => 'required|numeric|min:1',
         ]);
-        $project->quotes()->create([
-            'client_name'  => $data['client_name'],
-            'client_phone' => $data['client_phone'],
-            'notes'        => $data['notes'] ?? null,
-            'total'        => 0,
-            'status'       => 'draft',
+
+        $total = collect($data['items'])->sum(fn($i) => $i['price'] * $i['quantity']);
+
+        $quote = $project->quotes()->create([
+            'client_name'       => $data['client_name'] ?? 'Cliente web',
+            'client_phone'      => $data['client_phone'] ?? null,
+            'client_doc_type'   => $data['client_doc_type'] ?? null,
+            'client_doc_number' => $data['client_doc_number'] ?? null,
+            'notes'             => $data['notes'] ?? null,
+            'total'             => $total,
+            'status'            => 'sent',
         ]);
-        return response()->json(['ok' => true]);
+
+        foreach ($data['items'] as $item) {
+            $quote->items()->create([
+                'description' => $item['description'],
+                'price'       => $item['price'],
+                'quantity'    => $item['quantity'],
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'quote_id' => $quote->id]);
     }
 
     public function product(string $slug, int $id)
@@ -345,5 +376,112 @@ class PublicController extends Controller
             'status'       => 'pending',
         ]);
         return response()->json(['ok' => true]);
+    }
+
+    private function sendVoucherToOwner($project, $order, string $voucherUrl): void
+    {
+        try {
+            $botPort    = env('VOUCHER_PORT', '3005');
+            $botToken   = env('BOT_TOKEN', 'wa-bot-secret-2024');
+            $ownerPhone = preg_replace('/\D/', '', $project->whatsapp ?? '');
+            if (!$ownerPhone) return;
+
+            // Armar items del pedido
+            $itemLines = $order->items->map(fn($i) =>
+                "  - {$i->name} x{$i->quantity} = S/ " . number_format($i->price * $i->quantity, 2)
+            )->implode("\n");
+
+            $sep = "--------------------";
+            $caption  = "*NUEVO PEDIDO #{$order->id} - {$project->name}*\n";
+            $caption .= "{$sep}\n";
+            $caption .= "*PRODUCTOS:*\n{$itemLines}\n";
+            $caption .= "{$sep}\n";
+            $caption .= "*TOTAL: S/ " . number_format((float)$order->total, 2) . "*\n";
+            $caption .= "{$sep}\n";
+            if ($order->payment_method) $caption .= "*PAGO:* " . strtoupper($order->payment_method) . "\n";
+            if ($order->payment_reference) $caption .= "Nro. operacion: {$order->payment_reference}\n";
+            $caption .= "{$sep}\n";
+            $caption .= "*CLIENTE:*\n";
+            $caption .= "Nombre: {$order->client_name}\n";
+            $caption .= "Celular: {$order->client_phone}\n";
+            if ($order->client_email) $caption .= "Email: {$order->client_email}\n";
+            if ($order->delivery_address) $caption .= "Direccion: {$order->delivery_address}\n";
+            if ($order->notes) $caption .= "Notas: {$order->notes}\n";
+
+            $payload = json_encode([
+                'token'     => $botToken,
+                'to'        => $ownerPhone,
+                'image_url' => $voucherUrl,
+                'caption'   => $caption,
+            ]);
+
+            $ctx = stream_context_create(['http' => [
+                'method'  => 'POST',
+                'header'  => "Content-Type: application/json\r\nContent-Length: " . strlen($payload) . "\r\n",
+                'content' => $payload,
+                'timeout' => 5,
+                'ignore_errors' => true,
+            ]]);
+            @file_get_contents("http://127.0.0.1:{$botPort}/", false, $ctx);
+        } catch (\Throwable $e) {
+            // silencioso
+        }
+    }
+
+    public function uploadVoucher(Request $request, string $slug)
+    {
+        $this->project($slug); // verifica que el proyecto existe y está activo
+
+        $request->validate([
+            'voucher' => 'required|file|image|max:5120', // 5MB max
+        ]);
+
+        $path = $request->file('voucher')->store('vouchers', 'public');
+        $url  = url('storage/' . $path);
+
+        return response()->json(['ok' => true, 'url' => $url]);
+    }
+
+    public function sitemap(string $slug)
+    {
+        $project  = $this->project($slug);
+        $settings = $project->settings()->pluck('value', 'key')->toArray();
+        $baseUrl  = ($settings['seo_canonical'] ?? null)
+            ?: ($project->custom_domain ? 'https://'.$project->custom_domain : url('/'.$slug));
+
+        $products = $project->products()
+            ->where('is_available', true)
+            ->with(['images' => fn($q) => $q->where('is_main', true)])
+            ->get();
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>';
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">';
+        $xml .= '<url><loc>'.e($baseUrl).'</loc><changefreq>daily</changefreq><priority>1.0</priority></url>';
+
+        foreach ($products as $p) {
+            $xml .= '<url>';
+            $xml .= '<loc>'.e($baseUrl.'/p/'.$p->id).'</loc>';
+            $xml .= '<changefreq>weekly</changefreq><priority>0.8</priority>';
+            $img = $p->images->first();
+            if ($img) {
+                $imgUrl = str_starts_with($img->url, 'http') ? $img->url : asset('storage/'.$img->url);
+                $xml .= '<image:image><image:loc>'.e($imgUrl).'</image:loc><image:title>'.e($p->name).'</image:title></image:image>';
+            }
+            $xml .= '</url>';
+        }
+
+        $xml .= '</urlset>';
+        return response($xml, 200)->header('Content-Type', 'application/xml');
+    }
+
+    public function robots(string $slug)
+    {
+        $project  = $this->project($slug);
+        $settings = $project->settings()->pluck('value', 'key')->toArray();
+        $baseUrl  = ($settings['seo_canonical'] ?? null)
+            ?: ($project->custom_domain ? 'https://'.$project->custom_domain : url('/'.$slug));
+
+        $txt = "User-agent: *\nAllow: /\nSitemap: {$baseUrl}/sitemap.xml\n";
+        return response($txt, 200)->header('Content-Type', 'text/plain');
     }
 }

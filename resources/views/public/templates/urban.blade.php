@@ -167,6 +167,18 @@ body { background: #0a0a0a; color: #e5e5e5; }
 /* â”€â”€ Horizontal scroll categories â”€â”€ */
 .cats-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .cats-scroll::-webkit-scrollbar { display: none; }
+/* Arrow nav for cat pills */
+.cat-bar-wrap { display:flex; align-items:center; gap:0; }
+.cat-bar-track { display:flex; align-items:center; gap:8px; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; flex:1; padding:4px 0; }
+.cat-bar-track::-webkit-scrollbar { display:none; }
+.cat-bar-arrow { flex-shrink:0; width:28px; height:32px; display:flex; align-items:center; justify-content:center; background:#1a1a1a; border:1px solid #2a2a2a; cursor:pointer; color:#aaa; transition:color .15s,border-color .15s; }
+.cat-bar-arrow:hover { color:#fff; border-color:#555; }
+.cat-bar-arrow.u-hidden { opacity:0; pointer-events:none; }
+/* Sub dropdown — global fixed */
+.cat-pill-wrap { position:static; flex-shrink:0; }
+#urb-sub-dropdown { display:none; position:fixed; min-width:150px; background:#1a1a1a; border:1px solid #2a2a2a; border-top:2px solid var(--c); z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,.6); }
+#urb-sub-dropdown button { display:block; width:100%; text-align:left; padding:9px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#888; background:none; border:none; cursor:pointer; white-space:nowrap; transition:color .15s,background .15s; }
+#urb-sub-dropdown button:hover { background:#222; color:#fff; }
 </style>
 
 @php
@@ -584,13 +596,27 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       {{-- Filtro categorÃ­as + oferta --}}
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-xs text-white/30 font-bold uppercase tracking-widest mr-2">Cat:</span>
-        <button @click="filterCat=''" :class="filterCat==='' ? 'active' : ''" class="filter-pill">Todo</button>
-        @foreach($categories as $cat)
-        <button @click="filterCat='{{ $cat->id }}'" :class="filterCat==='{{ $cat->id }}' ? 'active' : ''" class="filter-pill">
-          {{ strtoupper($cat->name) }}
-        </button>
-        @endforeach
-        <button @click="onSaleFilter=!onSaleFilter" :class="onSaleFilter ? 'active' : ''" class="filter-pill">
+        {{-- Barra de categorías con flechas --}}
+        <div class="cat-bar-wrap flex-1" style="min-width:0;">
+          <button class="cat-bar-arrow u-hidden" id="urb-cat-prev" onclick="urbCatScroll(-1)" aria-label="Anterior">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="cat-bar-track" id="urb-cats-track">
+            <button @click="filterCat=''" :class="filterCat==='' ? 'active' : ''" class="filter-pill" style="flex-shrink:0;">Todo</button>
+            @foreach($categories as $cat)
+            <div class="cat-pill-wrap" data-cat-id="{{ $cat->id }}"@if($cat->children->count()) data-has-sub="1"@endif>
+              <button @click="filterCat='{{ $cat->id }}'" :class="filterCat==='{{ $cat->id }}' ? 'active' : ''" class="filter-pill">
+                {{ strtoupper($cat->name) }}@if($cat->children->count()) <span style="font-size:9px;opacity:.5;margin-left:2px;">▾</span>@endif
+              </button>
+            </div>
+            @endforeach
+          </div>
+          <div id="urb-sub-dropdown"></div>
+          <button class="cat-bar-arrow" id="urb-cat-next" onclick="urbCatScroll(1)" aria-label="Siguiente">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+        <button @click="onSaleFilter=!onSaleFilter" :class="onSaleFilter ? 'active' : ''" class="filter-pill" style="flex-shrink:0;">
           Solo ofertas
         </button>
         <button x-show="filterCat!=='' || search!=='' || priceFilter!=='' || onSaleFilter"
@@ -1995,6 +2021,45 @@ function store() {
     {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
+<script>
+(function(){
+  var track = document.getElementById('urb-cats-track');
+  var prev  = document.getElementById('urb-cat-prev');
+  var next  = document.getElementById('urb-cat-next');
+  var drop  = document.getElementById('urb-sub-dropdown');
+  if(!track) return;
+  function update(){
+    prev.classList.toggle('u-hidden', track.scrollLeft <= 4);
+    next.classList.toggle('u-hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+  window.urbCatScroll = function(dir){ track.scrollBy({left: dir * 200, behavior:'smooth'}); };
+  track.addEventListener('scroll', update, {passive:true});
+  setTimeout(update, 150);
+
+  // Subcategorías dropdown
+  var SUBS = @json($categories->mapWithKeys(fn($c) => [(string)$c->id => $c->children->map(fn($s) => ['id'=>(string)$s->id,'name'=>$s->name])->values()]));
+  var hideT = null;
+  function urbShowDrop(wrap){
+    var subs = SUBS[wrap.dataset.catId]; if(!subs||!subs.length) return;
+    clearTimeout(hideT);
+    drop.innerHTML = subs.map(function(s){ return '<button onclick="urbPickSub(\''+s.id+'\')">'+s.name.toUpperCase()+'</button>'; }).join('');
+    var r = wrap.getBoundingClientRect();
+    drop.style.top = r.bottom+'px'; drop.style.left = r.left+'px'; drop.style.display='block';
+  }
+  function urbHide(){ hideT = setTimeout(function(){ drop.style.display='none'; }, 150); }
+  window.urbPickSub = function(id){
+    var root = document.querySelector('[x-data]');
+    if(root && root._x_dataStack && root._x_dataStack[0]) root._x_dataStack[0].filterCat = id;
+    drop.style.display='none';
+  };
+  track.querySelectorAll('.cat-pill-wrap[data-has-sub]').forEach(function(w){
+    w.addEventListener('mouseenter', function(){ urbShowDrop(w); });
+    w.addEventListener('mouseleave', urbHide);
+  });
+  drop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+  drop.addEventListener('mouseleave', urbHide);
+})();
+</script>
 </body>
 </html>
 

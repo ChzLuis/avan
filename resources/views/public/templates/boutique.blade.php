@@ -92,6 +92,18 @@ body { font-family: 'Inter', sans-serif; background: #fafaf8; color: #1a1a1a; }
 /* Scrollbar */
 .scrollbar-hide::-webkit-scrollbar { display:none; }
 .scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
+/* Cat bar arrows - boutique */
+.btq-cat-bar { display:flex; align-items:center; gap:0; }
+.btq-cat-track { display:flex; align-items:center; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; flex:1; }
+.btq-cat-track::-webkit-scrollbar { display:none; }
+.btq-arrow { flex-shrink:0; width:32px; height:40px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer; color:#bbb; transition:color .2s; }
+.btq-arrow:hover { color:#111; }
+.btq-arrow.b-hidden { opacity:0; pointer-events:none; }
+/* Boutique sub dropdown — global fixed */
+.btq-cat-wrap { position:static; flex-shrink:0; }
+#btq-sub-dropdown { display:none; position:fixed; min-width:150px; background:#fff; border:1px solid #e5e7eb; box-shadow:0 8px 24px rgba(0,0,0,.1); z-index:9999; }
+#btq-sub-dropdown button { display:block; width:100%; text-align:left; padding:9px 16px; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#888; background:none; border:none; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
+#btq-sub-dropdown button:hover { background:#f9f9f9; color:#111; }
 
 /* Card hover overlay */
 .prod-overlay { position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .35s;display:flex;align-items:center;justify-content:center; }
@@ -834,22 +846,35 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 <section id="catalogo" class="max-w-6xl mx-auto px-4 py-16">
 
   {{-- Tabs de categorÃ­as --}}
-  <div class="flex items-center gap-0 border-b border-gray-100 mb-10 overflow-x-auto scrollbar-hide sticky top-16 z-20 bg-white/95 backdrop-blur-sm shadow-sm -mx-4 px-4">
-    <p class="text-xs text-gray-400 mb-4 w-full" x-show="filterCat!==''||search!==''||priceFilter!==''||onSaleFilter">
+  <div class="border-b border-gray-100 mb-10 sticky top-16 z-20 bg-white/95 backdrop-blur-sm shadow-sm -mx-4 px-2">
+    <p class="text-xs text-gray-400 pt-2 px-2" x-show="filterCat!==''||search!==''||priceFilter!==''||onSaleFilter">
       <span x-text="visibleCount"></span> producto<span x-show="visibleCount!==1">s</span> encontrado<span x-show="visibleCount!==1">s</span>
     </p>
-    <button @click="filterCat=''"
-            :class="filterCat==='' ? 'border-b-2 border-gray-900 text-gray-900' : 'text-[#9a9a9a]'"
-            class="text-[10px] uppercase tracking-widest px-4 pb-3 -mb-px whitespace-nowrap hover:text-gray-700 transition flex-shrink-0">
-      Todo
-    </button>
-    @foreach($categories as $cat)
-    <button @click="filterCat='{{ $cat->id }}'"
-            :class="filterCat==='{{ $cat->id }}' ? 'border-b-2 border-[var(--c)] text-[var(--c)]' : 'text-[#9a9a9a]'"
-            class="text-[10px] uppercase tracking-widest px-4 pb-3 -mb-px whitespace-nowrap hover:text-gray-700 transition flex-shrink-0">
-      {{ $cat->name }}
-    </button>
-    @endforeach
+    <div class="btq-cat-bar">
+      <button class="btq-arrow b-hidden" id="btq-cat-prev" onclick="btqCatScroll(-1)" aria-label="Anterior">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="btq-cat-track" id="btq-cats-track">
+        <button @click="filterCat=''"
+                :class="filterCat==='' ? 'border-b-2 border-gray-900 text-gray-900' : 'text-[#9a9a9a]'"
+                class="text-[10px] uppercase tracking-widest px-4 pb-3 -mb-px whitespace-nowrap hover:text-gray-700 transition flex-shrink-0">
+          Todo
+        </button>
+        @foreach($categories as $cat)
+        <div class="btq-cat-wrap" data-cat-id="{{ $cat->id }}"@if($cat->children->count()) data-has-sub="1"@endif>
+          <button @click="filterCat='{{ $cat->id }}'"
+                  :class="filterCat==='{{ $cat->id }}' ? 'border-b-2 border-[var(--c)] text-[var(--c)]' : 'text-[#9a9a9a]'"
+                  class="text-[10px] uppercase tracking-widest px-4 pb-3 -mb-px whitespace-nowrap hover:text-gray-700 transition">
+            {{ $cat->name }}@if($cat->children->count()) <span style="font-size:9px;opacity:.4;margin-left:2px;">▾</span>@endif
+          </button>
+        </div>
+        @endforeach
+        <div id="btq-sub-dropdown"></div>
+      </div>
+      <button class="btq-arrow" id="btq-cat-next" onclick="btqCatScroll(1)" aria-label="Siguiente">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
   </div>
 
   {{-- Filtros adicionales --}}
@@ -1700,6 +1725,46 @@ function store() {
     {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
+<script>
+(function(){
+  var track = document.getElementById('btq-cats-track');
+  var prev  = document.getElementById('btq-cat-prev');
+  var next  = document.getElementById('btq-cat-next');
+  var drop  = document.getElementById('btq-sub-dropdown');
+  if(!track) return;
+  function update(){
+    prev.classList.toggle('b-hidden', track.scrollLeft <= 4);
+    next.classList.toggle('b-hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+  window.btqCatScroll = function(dir){ track.scrollBy({left: dir * 200, behavior:'smooth'}); };
+  track.addEventListener('scroll', update, {passive:true});
+  setTimeout(update, 150);
+
+  var SUBS = @json($categories->mapWithKeys(fn($c) => [(string)$c->id => $c->children->map(fn($s) => ['id'=>(string)$s->id,'name'=>$s->name])->values()]));
+  var hideT = null;
+  function showDrop(wrap){
+    var subs = SUBS[wrap.dataset.catId]; if(!subs||!subs.length) return;
+    clearTimeout(hideT);
+    drop.innerHTML = subs.map(function(s){ return '<button onclick="btqPickSub(\''+s.id+'\')">'+s.name+'</button>'; }).join('');
+    var r = wrap.getBoundingClientRect();
+    drop.style.top = r.bottom+'px'; drop.style.left = r.left+'px'; drop.style.display='block';
+  }
+  function hideDrop(){ hideT = setTimeout(function(){ drop.style.display='none'; }, 150); }
+  window.btqPickSub = function(id){
+    var root = document.querySelector('[x-data]');
+    if(root && root._x_dataStack && root._x_dataStack[0]) root._x_dataStack[0].filterCat = id;
+    drop.style.display='none';
+  };
+  track.querySelectorAll('.btq-cat-wrap[data-has-sub]').forEach(function(w){
+    w.addEventListener('mouseenter', function(){ showDrop(w); });
+    w.addEventListener('mouseleave', hideDrop);
+  });
+  if(drop){
+    drop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+    drop.addEventListener('mouseleave', hideDrop);
+  }
+})();
+</script>
 </body>
 </html>
 

@@ -35,13 +35,6 @@
             </svg>
             Categorías
         </a>
-        <a href="{{ route('services.index') }}"
-           class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            Servicios
-        </a>
         <button onclick="window.dispatchEvent(new Event('open-new-product'))"
                 class="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,6 +78,7 @@
                     </svg>
                     Exportar Excel
                 </a>
+                @if(auth()->user()?->is_superadmin)
                 <div class="border-t border-gray-100 my-1"></div>
                 <p class="px-4 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Para marketplaces</p>
                 <a href="{{ route('products.export.meli') }}"
@@ -111,6 +105,7 @@
                     </svg>
                     Exportar para GitHub Pages
                 </a>
+                @endif
             </div>
         </div>
     </div>
@@ -145,7 +140,7 @@ window.__productPageData = {
         'brand_catalog_id' => $p->brand_catalog_id,
         'category_name'    => $p->category?->name ?? '',
         'images'           => $p->images->map(fn($i) => ['id'=>$i->id,'url'=>$i->url,'is_main'=>$i->is_main])->values()->toArray(),
-        'main_image'       => $p->mainImage?->url,
+        'main_image'       => $p->main_image_url,
     ])) !!},
     categories: {!! Illuminate\Support\Js::from($categories) !!},
     brands:     {!! Illuminate\Support\Js::from($brands->map(fn($b) => ['id'=>$b->id,'label'=>$b->label])) !!},
@@ -182,7 +177,7 @@ document.addEventListener('alpine:init', () => {
         saving: false,
         importing: false,
         form: {},
-        importLog: { show: false, created: 0, updated: 0, skipped: 0, errors: [], reloadOnClose: false },
+        importLog: { show: false, created: 0, updated: 0, skipped: 0, errors: [], warnings: [], reloadOnClose: false },
 
         get filtered() {
             return this.products.filter(p => {
@@ -316,7 +311,7 @@ document.addEventListener('alpine:init', () => {
                 const res  = await fetch(this.baseUrl + '/products/import', { method:'POST', headers:{'Accept':'application/json'}, body: fd });
                 const data = await res.json();
                 this.importing = false;
-                this.importLog = { show: true, created: data.created||0, updated: data.updated||0, skipped: data.skipped||0, errors: data.errors||[], reloadOnClose: true };
+                this.importLog = { show: true, created: data.created||0, updated: data.updated||0, skipped: data.skipped||0, errors: data.errors||[], warnings: data.warnings||[], reloadOnClose: true };
             } catch(e) {
                 this.importing = false;
                 this.importLog = { show: true, created: 0, updated: 0, skipped: 0, errors: ['Error de red al importar. Verifica que el archivo sea CSV o XLS valido.'] };
@@ -425,8 +420,7 @@ document.addEventListener('alpine:init', () => {
                 <svg class="w-3.5 h-3.5 flex-shrink-0" :class="(filterCat!==null||filterNoCat)?'text-indigo-500':'text-orange-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                 </svg>
-                <span class="flex-1 text-left truncate"
-                      x-text="filterNoCat ? 'Sin categoría' : (filterCat!==null ? (categories.find(c=>c.id===filterCat)?.name || 'Categoría') : 'Todas las categorías')"></span>
+                <span class="flex-1 text-left truncate" x-text="filterNoCat ? 'Sin categoría' : (filterCat!==null ? (categories.find(c=>c.id===filterCat)?.name || categories.flatMap(c=>c.children||[]).find(s=>s.id===filterCat)?.name || 'Categoría') : 'Todas las categorías')"></span>
                 <svg class="w-3.5 h-3.5 flex-shrink-0 transition-transform" :class="openCat?'rotate-180':''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
@@ -440,10 +434,22 @@ document.addEventListener('alpine:init', () => {
                         :class="filterNoCat ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'"
                         class="w-full text-left px-3 py-2 text-sm border-t border-gray-100">Sin categoría</button>
                 <template x-for="cat in categories" :key="cat.id">
-                    <button @click="filterCat=cat.id; filterNoCat=false; openCat=false"
-                            :class="filterCat===cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'"
-                            class="w-full text-left px-3 py-2 text-sm border-t border-gray-100 truncate"
-                            x-text="cat.name"></button>
+                    <div>
+                        <button @click="filterCat=cat.id; filterNoCat=false; openCat=false"
+                                :class="filterCat===cat.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                                class="w-full text-left px-3 py-2 text-sm border-t border-gray-100 truncate flex items-center gap-1.5">
+                            <svg class="w-3 h-3 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <span x-text="cat.name"></span>
+                        </button>
+                        <template x-for="sub in (cat.children||[])" :key="sub.id">
+                            <button @click="filterCat=sub.id; filterNoCat=false; openCat=false"
+                                    :class="filterCat===sub.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'"
+                                    class="w-full text-left pl-7 pr-3 py-1.5 text-xs border-t border-gray-50 truncate flex items-center gap-1.5">
+                                <svg class="w-2.5 h-2.5 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                <span x-text="sub.name"></span>
+                            </button>
+                        </template>
+                    </div>
                 </template>
             </div>
         </div>
@@ -500,10 +506,15 @@ document.addEventListener('alpine:init', () => {
                     @dragend="dragEnd()"
                     class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left cursor-grab active:cursor-grabbing"
                     :class="[selected?.id===p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : '', dragId===p.id ? 'opacity-40' : '']">
-                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                    </svg>
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <template x-if="p.main_image">
+                        <img :src="p.main_image" class="w-8 h-8 object-cover rounded-lg" loading="lazy">
+                    </template>
+                    <template x-if="!p.main_image">
+                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                    </template>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-gray-800 truncate" x-text="p.name"></p>
@@ -595,7 +606,17 @@ document.addEventListener('alpine:init', () => {
                 <button @click="tab='inventario'"
                         :class="tab==='inventario' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                         class="px-4 py-3 text-sm whitespace-nowrap transition">
-                    Inventario
+                    @php
+                        $invTabLabel = match($project->category ?? 'default') {
+                            'restaurante','cafeteria' => 'Disponibilidad',
+                            'peluqueria','salon_belleza' => 'Disponibilidad',
+                            'clinica','veterinaria' => 'Disponibilidad',
+                            'gimnasio' => 'Cupos',
+                            'taller' => 'Stock / Repuestos',
+                            default => 'Inventario',
+                        };
+                    @endphp
+                    {{ $invTabLabel }}
                 </button>
                 <button @click="tab='imagenes'" x-show="!creating"
                         :class="tab==='imagenes' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'"
@@ -608,34 +629,149 @@ document.addEventListener('alpine:init', () => {
             <div class="flex-1 overflow-y-auto">
 
                 {{-- TAB: INFORMACION --}}
+                @php
+                    $infoLabels = match($project->category ?? 'default') {
+                        'restaurante','cafeteria' => [
+                            'nombre'  => 'Nombre del plato *',
+                            'nombre_ph' => 'Ej: Lomo saltado, Pollo a la brasa, Ceviche',
+                            'sku'     => 'Código de plato',
+                            'sku_ph'  => 'PLATO-001',
+                            'barcode' => false,     // ocultar código de barras
+                        ],
+                        'peluqueria','salon_belleza' => [
+                            'nombre'  => 'Nombre del servicio *',
+                            'nombre_ph' => 'Ej: Corte de cabello, Tinte completo, Keratina',
+                            'sku'     => 'Código interno',
+                            'sku_ph'  => 'SRV-001',
+                            'barcode' => false,
+                        ],
+                        'clinica' => [
+                            'nombre'  => 'Nombre del tratamiento *',
+                            'nombre_ph' => 'Ej: Consulta general, Limpieza dental, Radiografía',
+                            'sku'     => 'Código de servicio',
+                            'sku_ph'  => 'CONS-001',
+                            'barcode' => false,
+                        ],
+                        'veterinaria' => [
+                            'nombre'  => 'Nombre del producto / servicio *',
+                            'nombre_ph' => 'Ej: Vacuna antirrábica, Desparasitante, Consulta',
+                            'sku'     => 'Código interno',
+                            'sku_ph'  => 'VET-001',
+                            'barcode' => true,
+                        ],
+                        'gimnasio' => [
+                            'nombre'  => 'Nombre del plan / clase *',
+                            'nombre_ph' => 'Ej: Membresía mensual, Clase de spinning, Yoga',
+                            'sku'     => 'Código de plan',
+                            'sku_ph'  => 'GYM-001',
+                            'barcode' => false,
+                        ],
+                        'educacion' => [
+                            'nombre'  => 'Nombre del curso / material *',
+                            'nombre_ph' => 'Ej: Curso de inglés básico, Manual de matemáticas',
+                            'sku'     => 'Código de curso',
+                            'sku_ph'  => 'CRS-001',
+                            'barcode' => false,
+                        ],
+                        default => [
+                            'nombre'  => 'Nombre del producto *',
+                            'nombre_ph' => 'Ej: Laptop Dell XPS 15, Camisa Oxford, Café 250g',
+                            'sku'     => 'SKU / Código interno',
+                            'sku_ph'  => 'LPT-001',
+                            'barcode' => true,
+                        ],
+                    };
+                @endphp
                 <div x-show="tab==='info'" class="p-6 max-w-2xl space-y-5">
 
                     <div>
-                        <label class="label">Nombre del producto *</label>
-                        <input type="text" x-model="form.name" class="input" placeholder="Ej: Laptop Dell XPS 15, Camisa Oxford, Café 250g">
+                        <label class="label">{{ $infoLabels['nombre'] }}</label>
+                        <input type="text" x-model="form.name" class="input" placeholder="{{ $infoLabels['nombre_ph'] }}">
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="{{ $infoLabels['barcode'] ? 'grid grid-cols-2 gap-4' : '' }}">
                         <div>
-                            <label class="label">SKU / Codigo interno</label>
-                            <input type="text" x-model="form.sku" class="input font-mono text-sm" placeholder="LPT-001">
-                            <p class="text-[10px] text-gray-400 mt-0.5">Identificador unico interno</p>
+                            <label class="label">{{ $infoLabels['sku'] }}</label>
+                            <input type="text" x-model="form.sku" class="input font-mono text-sm" placeholder="{{ $infoLabels['sku_ph'] }}">
+                            <p class="text-[10px] text-gray-400 mt-0.5">Identificador único interno</p>
                         </div>
+                        @if($infoLabels['barcode'])
                         <div>
-                            <label class="label">Codigo de barras</label>
+                            <label class="label">Código de barras</label>
                             <input type="text" x-model="form.barcode" class="input font-mono text-sm" placeholder="7501234567890">
                             <p class="text-[10px] text-gray-400 mt-0.5">EAN, UPC, QR, etc.</p>
                         </div>
+                        @endif
                     </div>
 
+                    @php
+                        $infoCat = $project->category ?? 'default';
+                        $infoExtra = match(true) {
+                            in_array($infoCat, ['restaurante','cafeteria']) => [
+                                'cat_lbl'    => 'Categoría del menú',
+                                'marca'      => false,
+                                'desc_lbl'   => 'Descripción del plato',
+                                'desc_ph'    => 'Ingredientes, preparación, alérgenos...',
+                                'notas_lbl'  => 'Notas de cocina (internas)',
+                                'notas_ph'   => 'Ej: sin TACC, picante medio, no congelar...',
+                            ],
+                            in_array($infoCat, ['peluqueria','salon_belleza']) => [
+                                'cat_lbl'    => 'Tipo de servicio',
+                                'marca'      => false,
+                                'desc_lbl'   => 'Descripción del servicio',
+                                'desc_ph'    => 'Qué incluye, resultado esperado, tiempo...',
+                                'notas_lbl'  => 'Notas del estilista (internas)',
+                                'notas_ph'   => 'Ej: requiere cabello limpio, usar guantes...',
+                            ],
+                            $infoCat === 'clinica' => [
+                                'cat_lbl'    => 'Especialidad',
+                                'marca'      => false,
+                                'desc_lbl'   => 'Descripción del tratamiento',
+                                'desc_ph'    => 'En qué consiste, beneficios, duración...',
+                                'notas_lbl'  => 'Indicaciones médicas (internas)',
+                                'notas_ph'   => 'Ej: requiere ayuno, traer exámenes previos...',
+                            ],
+                            $infoCat === 'veterinaria' => [
+                                'cat_lbl'    => 'Categoría',
+                                'marca'      => true,
+                                'desc_lbl'   => 'Descripción',
+                                'desc_ph'    => 'Para qué sirve, especie indicada, dosis...',
+                                'notas_lbl'  => 'Notas internas',
+                                'notas_ph'   => 'Ej: refrigerar, solo bajo prescripción...',
+                            ],
+                            $infoCat === 'gimnasio' => [
+                                'cat_lbl'    => 'Tipo de plan',
+                                'marca'      => false,
+                                'desc_lbl'   => 'Descripción del plan / clase',
+                                'desc_ph'    => 'Qué incluye, nivel requerido, beneficios...',
+                                'notas_lbl'  => 'Notas internas',
+                                'notas_ph'   => 'Ej: requiere evaluación previa, solo adultos...',
+                            ],
+                            $infoCat === 'educacion' => [
+                                'cat_lbl'    => 'Área / Programa',
+                                'marca'      => false,
+                                'desc_lbl'   => 'Descripción del curso',
+                                'desc_ph'    => 'Contenido, nivel, certificación, duración...',
+                                'notas_lbl'  => 'Notas para el equipo docente',
+                                'notas_ph'   => 'Ej: requiere laptop, modalidad híbrida...',
+                            ],
+                            default => [
+                                'cat_lbl'    => 'Categoría',
+                                'marca'      => true,
+                                'desc_lbl'   => 'Descripción pública',
+                                'desc_ph'    => 'Descripción visible en el catálogo online para tus clientes...',
+                                'notas_lbl'  => 'Notas internas',
+                                'notas_ph'   => 'Notas privadas: proveedor preferido, instrucciones...',
+                            ],
+                        };
+                    @endphp
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="label flex items-center justify-between">
-                                Categoria
+                                {{ $infoExtra['cat_lbl'] }}
                                 <a href="{{ route('categories.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
-                            <select class="input"
-                                    x-model="form.category_id">
+                            <select class="input" x-model="form.category_id">
                                 <option value="">Sin categoría</option>
                                 <template x-for="c in categories" :key="c.id">
                                     <template x-if="c.children && c.children.length > 0">
@@ -651,8 +787,9 @@ document.addEventListener('alpine:init', () => {
                                     </template>
                                 </template>
                             </select>
-                            <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del modulo de categorias</p>
+                            <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del módulo de categorías</p>
                         </div>
+                        @if($infoExtra['marca'])
                         <div>
                             <label class="label flex items-center justify-between">
                                 Marca
@@ -666,46 +803,173 @@ document.addEventListener('alpine:init', () => {
                                             <option :value="b.id" x-text="b.label"></option>
                                         </template>
                                     </select>
-                                    <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del catalogo de configuracion</p>
+                                    <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del catálogo de configuración</p>
                                 </div>
                             </template>
                             <template x-if="brands.length === 0">
                                 <a href="{{ route('catalogs.index') }}"
                                    class="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition text-[11px] text-amber-700 font-medium mt-1">
-                                    + Crear catalogo de marcas
+                                    + Crear catálogo de marcas
                                 </a>
                             </template>
                         </div>
+                        @endif
                     </div>
 
                     <div>
-                        <label class="label">Descripcion publica</label>
+                        <label class="label">{{ $infoExtra['desc_lbl'] }}</label>
                         <textarea x-model="form.description" class="input resize-none" rows="3"
-                                  placeholder="Descripcion visible en el catalogo online para tus clientes..."></textarea>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Aparece en la pagina publica del catalogo</p>
+                                  placeholder="{{ $infoExtra['desc_ph'] }}"></textarea>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Aparece en la página pública del catálogo</p>
                     </div>
 
                     <div>
-                        <label class="label">Notas internas</label>
+                        <label class="label">{{ $infoExtra['notas_lbl'] }}</label>
                         <textarea x-model="form.notes" class="input resize-none" rows="2"
-                                  placeholder="Notas privadas: proveedor preferido, instrucciones..."></textarea>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Solo visible para tu equipo, no aparece en el catalogo</p>
+                                  placeholder="{{ $infoExtra['notas_ph'] }}"></textarea>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Solo visible para tu equipo, no aparece en el catálogo</p>
                     </div>
 
                 </div>
 
-                {{-- TAB: PRECIOS --}}
+                {{-- TAB: PRECIOS (adaptativo por rubro) --}}
+                @php
+                    $pCat = $project->category ?? 'default';
+                    // Rubros donde NO hay venta mayorista
+                    $noWholesale = in_array($pCat, ['restaurante','cafeteria','peluqueria','salon_belleza','clinica','veterinaria','gimnasio','educacion']);
+                    // Configuración de etiquetas de precio
+                    $priceConfig = match(true) {
+                        in_array($pCat, ['restaurante','cafeteria']) => [
+                            'header'      => '🍽️ Precio del plato',
+                            'header_bg'   => 'bg-orange-600',
+                            'header_border'=> 'border-orange-200',
+                            'body_bg'     => 'bg-orange-50',
+                            'precio_lbl'  => 'Precio del plato *',
+                            'precio_hint' => 'Precio que ve el cliente',
+                            'tachado_lbl' => 'Precio sin descuento',
+                            'unidad_lbl'  => 'Porción / presentación',
+                            'unidad_ph'   => 'Ej: plato, 1/2 pollo, ración',
+                            'costo_lbl'   => 'Costo de ingredientes',
+                            'costo_hint'  => 'Costo de producción del plato',
+                        ],
+                        in_array($pCat, ['peluqueria','salon_belleza']) => [
+                            'header'      => '✂️ Precio del servicio',
+                            'header_bg'   => 'bg-pink-600',
+                            'header_border'=> 'border-pink-200',
+                            'body_bg'     => 'bg-pink-50',
+                            'precio_lbl'  => 'Precio del servicio *',
+                            'precio_hint' => 'Precio por sesión',
+                            'tachado_lbl' => 'Precio normal (sin promo)',
+                            'unidad_lbl'  => 'Presentación',
+                            'unidad_ph'   => 'Ej: por sesión, por hora',
+                            'costo_lbl'   => 'Costo de materiales',
+                            'costo_hint'  => 'Productos usados en el servicio',
+                        ],
+                        $pCat === 'clinica' => [
+                            'header'      => '🏥 Precio de consulta / tratamiento',
+                            'header_bg'   => 'bg-blue-700',
+                            'header_border'=> 'border-blue-200',
+                            'body_bg'     => 'bg-blue-50',
+                            'precio_lbl'  => 'Precio de la consulta *',
+                            'precio_hint' => 'Precio por atención',
+                            'tachado_lbl' => 'Precio normal (sin convenio)',
+                            'unidad_lbl'  => 'Modalidad',
+                            'unidad_ph'   => 'Ej: presencial, virtual, domicilio',
+                            'costo_lbl'   => 'Costo operativo',
+                            'costo_hint'  => 'Insumos / tiempo del médico',
+                        ],
+                        $pCat === 'veterinaria' => [
+                            'header'      => '🐾 Precio del producto / servicio',
+                            'header_bg'   => 'bg-teal-600',
+                            'header_border'=> 'border-teal-200',
+                            'body_bg'     => 'bg-teal-50',
+                            'precio_lbl'  => 'Precio de venta *',
+                            'precio_hint' => 'Precio al dueño de mascota',
+                            'tachado_lbl' => 'Precio sin descuento',
+                            'unidad_lbl'  => 'Presentación',
+                            'unidad_ph'   => 'Ej: dosis, frasco, consulta',
+                            'costo_lbl'   => 'Costo de compra',
+                            'costo_hint'  => 'Lo que te cuesta a ti',
+                        ],
+                        $pCat === 'gimnasio' => [
+                            'header'      => '💪 Precio del plan / clase',
+                            'header_bg'   => 'bg-green-700',
+                            'header_border'=> 'border-green-200',
+                            'body_bg'     => 'bg-green-50',
+                            'precio_lbl'  => 'Precio del plan *',
+                            'precio_hint' => 'Precio que paga el miembro',
+                            'tachado_lbl' => 'Precio normal (sin promo)',
+                            'unidad_lbl'  => 'Duración / modalidad',
+                            'unidad_ph'   => 'Ej: mensual, trimestral, por clase',
+                            'costo_lbl'   => 'Costo operativo',
+                            'costo_hint'  => 'Costo estimado por miembro',
+                        ],
+                        $pCat === 'educacion' => [
+                            'header'      => '📚 Precio del curso / material',
+                            'header_bg'   => 'bg-indigo-700',
+                            'header_border'=> 'border-indigo-200',
+                            'body_bg'     => 'bg-indigo-50',
+                            'precio_lbl'  => 'Precio de matrícula *',
+                            'precio_hint' => 'Precio que paga el alumno',
+                            'tachado_lbl' => 'Precio normal (sin beca)',
+                            'unidad_lbl'  => 'Modalidad',
+                            'unidad_ph'   => 'Ej: mensual, ciclo, presencial',
+                            'costo_lbl'   => 'Costo del material',
+                            'costo_hint'  => 'Costo de producción',
+                        ],
+                        default => [
+                            'header'      => '👤 Venta minorista — cliente individual',
+                            'header_bg'   => 'bg-blue-600',
+                            'header_border'=> 'border-blue-200',
+                            'body_bg'     => 'bg-blue-50',
+                            'precio_lbl'  => 'Precio unitario *',
+                            'precio_hint' => 'Precio final al cliente',
+                            'tachado_lbl' => 'Precio anterior (tachado)',
+                            'unidad_lbl'  => 'Unidad de medida',
+                            'unidad_ph'   => 'Ej: unidad, kg, m2',
+                            'costo_lbl'   => 'Costo de compra',
+                            'costo_hint'  => 'Lo que te cuesta a ti — no se muestra al cliente',
+                        ],
+                    };
+                @endphp
                 <div x-show="tab==='precios'" x-cloak class="p-6 max-w-2xl space-y-4">
 
-                    {{-- SECCIÓN MINORISTA --}}
-                    <div class="rounded-xl overflow-hidden border border-blue-200">
-                        <div class="bg-blue-600 px-4 py-2 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            <p class="text-xs font-bold text-white uppercase tracking-wider">Venta Minorista — cliente individual</p>
+                    {{-- SECCIÓN PRECIO PRINCIPAL --}}
+                    <div class="rounded-xl overflow-hidden border {{ $priceConfig['header_border'] }}">
+                        <div class="{{ $priceConfig['header_bg'] }} px-4 py-2 flex items-center gap-2">
+                            <p class="text-xs font-bold text-white uppercase tracking-wider">{{ $priceConfig['header'] }}</p>
                         </div>
-                        <div class="p-4 bg-blue-50 grid grid-cols-3 gap-4">
+                        @php
+                            // Opciones fijas por rubro (ignoran el catálogo genérico de unidades)
+                            $unidadesRubro = match(true) {
+                                in_array($pCat, ['restaurante','cafeteria']) => ['Plato','Porción','1/4 pollo','1/2 pollo','Pollo entero','Ración','Combo','Bandeja','Para llevar'],
+                                in_array($pCat, ['peluqueria','salon_belleza']) => ['Por sesión','Por hora','Tratamiento completo','Paquete','Media sesión'],
+                                $pCat === 'clinica' => ['Consulta','Sesión','Paquete sesiones','Control','Emergencia'],
+                                $pCat === 'veterinaria' => ['Unidad','Dosis','Consulta','Frasco','Caja','Sobre'],
+                                $pCat === 'gimnasio' => ['Mensual','Trimestral','Semestral','Anual','Por clase','Por sesión'],
+                                $pCat === 'educacion' => ['Mensual','Por ciclo','Por módulo','Anual','Por sesión','Presencial','Virtual'],
+                                default => null, // usa el catálogo normal
+                            };
+                        @endphp
+                        <div class="p-4 {{ $priceConfig['body_bg'] }} grid grid-cols-3 gap-4">
                             <div>
-                                <label class="label">Unidad de medida</label>
+                                <label class="label">{{ $priceConfig['unidad_lbl'] }}</label>
+                                @if($unidadesRubro !== null)
+                                {{-- Selector fijo según rubro --}}
+                                <div x-data="{ custom: !['', @foreach($unidadesRubro as $u)'{{ $u }}',@endforeach].includes(form.unit) && form.unit !== '' }">
+                                    <select x-show="!custom" @change="if($event.target.value==='__otro__'){ custom=true; form.unit=''; } else { form.unit=$event.target.value; }" class="input">
+                                        <option value="">Seleccionar</option>
+                                        @foreach($unidadesRubro as $u)
+                                        <option value="{{ $u }}" :selected="form.unit==='{{ $u }}'">{{ $u }}</option>
+                                        @endforeach
+                                        <option value="__otro__">Otra presentación...</option>
+                                    </select>
+                                    <div x-show="custom" class="flex gap-1">
+                                        <input type="text" x-model="form.unit" class="input flex-1" placeholder="{{ $priceConfig['unidad_ph'] }}" x-ref="customUnit" x-init="$watch('custom', v => v && $nextTick(()=>$refs.customUnit.focus()))">
+                                        <button type="button" @click="custom=false; form.unit=''" class="px-2 py-1.5 text-xs text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg">↩</button>
+                                    </div>
+                                </div>
+                                @else
                                 <template x-if="units.length > 0">
                                     <select x-model="form.unit" class="input">
                                         <option value="">Seleccionar</option>
@@ -715,20 +979,20 @@ document.addEventListener('alpine:init', () => {
                                     </select>
                                 </template>
                                 <template x-if="units.length === 0">
-                                    <input type="text" x-model="form.unit" class="input" placeholder="Ej: unidad, kg, litro">
+                                    <input type="text" x-model="form.unit" class="input" placeholder="{{ $priceConfig['unidad_ph'] }}">
                                 </template>
-                                <p class="text-[10px] text-gray-400 mt-0.5">Ej: unidad, kg, m2</p>
+                                @endif
                             </div>
                             <div>
-                                <label class="label">Precio unitario *</label>
+                                <label class="label">{{ $priceConfig['precio_lbl'] }}</label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
                                     <input type="number" x-model="form.price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
                                 </div>
-                                <p class="text-[10px] text-gray-400 mt-0.5">Precio final al cliente</p>
+                                <p class="text-[10px] text-gray-400 mt-0.5">{{ $priceConfig['precio_hint'] }}</p>
                             </div>
                             <div>
-                                <label class="label">Precio anterior (tachado)</label>
+                                <label class="label">{{ $priceConfig['tachado_lbl'] }}</label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
                                     <input type="number" x-model="form.compare_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
@@ -738,7 +1002,8 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     </div>
 
-                    {{-- SECCIÓN MAYORISTA --}}
+                    {{-- SECCIÓN MAYORISTA (solo para rubros que aplica) --}}
+                    @if(!$noWholesale)
                     <div class="rounded-xl overflow-hidden border border-green-200">
                         <div class="bg-green-700 px-4 py-2 flex items-center gap-2">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -773,18 +1038,53 @@ document.addEventListener('alpine:init', () => {
                             </div>
                         </div>
                     </div>
+                    @endif
 
-                    {{-- COSTO --}}
+                    {{-- PRECIO POR PLANES (Gimnasio) --}}
+                    @if($pCat === 'gimnasio')
+                    <div class="rounded-xl overflow-hidden border border-green-200">
+                        <div class="bg-green-600 px-4 py-2">
+                            <p class="text-xs font-bold text-white uppercase tracking-wider">💰 Precios por duración</p>
+                        </div>
+                        <div class="p-4 bg-green-50 grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="label">Precio mensual</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="label">Precio trimestral</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.wholesale_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Precio x 3 meses</p>
+                            </div>
+                            <div>
+                                <label class="label">Precio anual</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.compare_price" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Precio x 12 meses</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- COSTO INTERNO --}}
                     <div class="rounded-xl border border-gray-200 p-4 bg-gray-50">
                         <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Costo interno (privado)</p>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="label">Costo de compra</label>
+                                <label class="label">{{ $priceConfig['costo_lbl'] }}</label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
                                     <input type="number" x-model="form.cost" step="0.01" min="0" class="input pl-10" placeholder="0.00">
                                 </div>
-                                <p class="text-[10px] text-gray-400 mt-0.5">Lo que te cuesta a ti — no se muestra al cliente</p>
+                                <p class="text-[10px] text-gray-400 mt-0.5">{{ $priceConfig['costo_hint'] }}</p>
                             </div>
                         </div>
                     </div>
@@ -853,9 +1153,215 @@ document.addEventListener('alpine:init', () => {
 
                 </div>
 
-                {{-- TAB: INVENTARIO --}}
+                {{-- TAB: INVENTARIO / DISPONIBILIDAD (adaptativo por rubro) --}}
+                @php
+                    $cat = $project->category ?? 'default';
+                    $isRestaurant  = in_array($cat, ['restaurante','cafeteria']);
+                    $isService     = in_array($cat, ['peluqueria','salon_belleza','clinica','veterinaria']);
+                    $isGym         = $cat === 'gimnasio';
+                    $isStock       = in_array($cat, ['retail','farmacia','taller','default','otro','inmobiliaria','educacion','whatsapp']);
+                @endphp
                 <div x-show="tab==='inventario'" x-cloak class="p-6 max-w-2xl space-y-5">
 
+                @if($isRestaurant)
+                    {{-- ══ RESTAURANTE / CAFETERÍA: Disponibilidad diaria ══ --}}
+                    <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3">
+                        <span class="text-2xl">🍽️</span>
+                        <div>
+                            <p class="text-sm font-bold text-orange-800">Disponibilidad diaria del plato</p>
+                            <p class="text-xs text-orange-600 mt-0.5">Controla cuántas porciones preparas por día. Cuando se agoten, el plato se marca como no disponible.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="label">Porciones disponibles hoy</label>
+                        <div class="flex items-center gap-3 mt-1">
+                            <button @click="form.stock = Math.max(0, (parseInt(form.stock)||0) - 1)"
+                                    class="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-lg transition border border-gray-200">-</button>
+                            <input type="number" x-model.number="form.stock" min="0"
+                                   class="input text-center w-28 font-mono font-bold text-xl py-2">
+                            <button @click="form.stock = (parseInt(form.stock)||0) + 1"
+                                    class="w-10 h-10 rounded-xl bg-orange-500 hover:bg-orange-600 flex items-center justify-center text-white font-bold text-lg transition">+</button>
+                            <span class="text-sm text-gray-400">porciones</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1.5">Actualiza cada día antes de abrir. En 0 = plato agotado.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">Producción máxima diaria</label>
+                            <input type="number" x-model.number="form.stock_max" min="0" class="input" placeholder="20">
+                            <p class="text-[10px] text-gray-400 mt-0.5">Máximo que puedes preparar en un día</p>
+                        </div>
+                        <div>
+                            <label class="label">Alerta en (porciones)</label>
+                            <input type="number" x-model.number="form.stock_min" min="0" class="input" placeholder="3">
+                            <p class="text-[10px] text-gray-400 mt-0.5">Avisa cuando quedan pocas porciones</p>
+                        </div>
+                    </div>
+
+                    {{-- Barra visual --}}
+                    <div x-show="form.stock_max > 0" class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex justify-between text-xs text-gray-500 mb-2">
+                            <span>Agotado</span>
+                            <span x-text="(form.stock||0) + ' / ' + (form.stock_max||0) + ' porciones'"></span>
+                            <span x-text="'Máx: ' + form.stock_max"></span>
+                        </div>
+                        <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                            <div :style="'width:' + Math.min(100, ((form.stock||0) / (form.stock_max||1)) * 100) + '%'"
+                                 :class="((form.stock||0)/(form.stock_max||1)) > 0.4 ? 'bg-orange-500' : ((form.stock||0)/(form.stock_max||1)) > 0.15 ? 'bg-amber-400' : 'bg-red-500'"
+                                 class="h-full rounded-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="label">Tiempo de preparación</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" x-model="form.notes" min="0" class="input w-28" placeholder="15">
+                            <span class="text-sm text-gray-500">minutos</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Se muestra al cliente al hacer el pedido</p>
+                    </div>
+
+                    <div>
+                        <label class="label">Proveedor / Ingrediente principal</label>
+                        <template x-if="suppliers.length > 0">
+                            <select x-model="form.supplier" class="input">
+                                <option value="">Sin especificar</option>
+                                <template x-for="s in suppliers" :key="s">
+                                    <option :value="s" x-text="s"></option>
+                                </template>
+                            </select>
+                        </template>
+                        <template x-if="suppliers.length === 0">
+                            <input type="text" x-model="form.supplier" class="input text-sm" placeholder="Ej: Mercado Central, Proveedor cárnico">
+                        </template>
+                    </div>
+
+                @elseif($isService)
+                    {{-- ══ SERVICIOS (Peluquería, Clínica, Veterinaria): Cupos / Sesiones ══ --}}
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                        <span class="text-2xl">📅</span>
+                        <div>
+                            <p class="text-sm font-bold text-blue-800">Control de cupos por servicio</p>
+                            <p class="text-xs text-blue-600 mt-0.5">Define cuántas sesiones o atenciones simultáneas puedes ofrecer. Se conecta con tu agenda de citas.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">Cupos disponibles</label>
+                            <div class="flex items-center gap-2 mt-1">
+                                <button @click="form.stock = Math.max(0, (parseInt(form.stock)||0) - 1)"
+                                        class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold transition border border-gray-200">-</button>
+                                <input type="number" x-model.number="form.stock" min="0" class="input text-center w-20 font-mono font-bold text-lg">
+                                <button @click="form.stock = (parseInt(form.stock)||0) + 1"
+                                        class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white font-bold transition">+</button>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-0.5">Cupos actuales disponibles</p>
+                        </div>
+                        <div>
+                            <label class="label">Cupos máximos por día</label>
+                            <input type="number" x-model.number="form.stock_max" min="0" class="input" placeholder="8">
+                            <p class="text-[10px] text-gray-400 mt-0.5">Máximo de atenciones por día</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="label">Duración del servicio</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="5" step="5" class="input w-28" placeholder="30">
+                            <span class="text-sm text-gray-500">minutos por sesión</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Ayuda a calcular disponibilidad en la agenda</p>
+                    </div>
+
+                    <div>
+                        <label class="label">Profesional asignado</label>
+                        <template x-if="suppliers.length > 0">
+                            <select x-model="form.supplier" class="input">
+                                <option value="">Cualquier profesional</option>
+                                <template x-for="s in suppliers" :key="s">
+                                    <option :value="s" x-text="s"></option>
+                                </template>
+                            </select>
+                        </template>
+                        <template x-if="suppliers.length === 0">
+                            <input type="text" x-model="form.supplier" class="input text-sm" placeholder="Ej: Dra. García, Estilista María">
+                        </template>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Gestiona profesionales desde Catálogos</p>
+                    </div>
+
+                @elseif($isGym)
+                    {{-- ══ GIMNASIO: Cupos por clase / plan ══ --}}
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                        <span class="text-2xl">💪</span>
+                        <div>
+                            <p class="text-sm font-bold text-green-800">Cupos y capacidad</p>
+                            <p class="text-xs text-green-600 mt-0.5">Para clases: define el aforo máximo. Para membresías: define cuántas vendiste vs el límite.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">Cupos disponibles</label>
+                            <div class="flex items-center gap-2 mt-1">
+                                <button @click="form.stock = Math.max(0, (parseInt(form.stock)||0) - 1)"
+                                        class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold transition border border-gray-200">-</button>
+                                <input type="number" x-model.number="form.stock" min="0" class="input text-center w-20 font-mono font-bold text-lg">
+                                <button @click="form.stock = (parseInt(form.stock)||0) + 1"
+                                        class="w-9 h-9 rounded-lg bg-green-600 hover:bg-green-700 flex items-center justify-center text-white font-bold transition">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label">Capacidad máxima</label>
+                            <input type="number" x-model.number="form.stock_max" min="0" class="input" placeholder="20">
+                            <p class="text-[10px] text-gray-400 mt-0.5">Aforo máximo del local / clase</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">Instructor asignado</label>
+                            <template x-if="suppliers.length > 0">
+                                <select x-model="form.supplier" class="input">
+                                    <option value="">Sin asignar</option>
+                                    <template x-for="s in suppliers" :key="s"><option :value="s" x-text="s"></option></template>
+                                </select>
+                            </template>
+                            <template x-if="suppliers.length === 0">
+                                <input type="text" x-model="form.supplier" class="input text-sm" placeholder="Ej: Carlos Pérez">
+                            </template>
+                        </div>
+                        <div>
+                            <label class="label">Sala / Área</label>
+                            <template x-if="locations.length > 0">
+                                <select x-model="form.location" class="input">
+                                    <option value="">Sin asignar</option>
+                                    <template x-for="l in locations" :key="l"><option :value="l" x-text="l"></option></template>
+                                </select>
+                            </template>
+                            <template x-if="locations.length === 0">
+                                <input type="text" x-model="form.location" class="input text-sm" placeholder="Ej: Sala principal, Piscina">
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Barra capacidad --}}
+                    <div x-show="form.stock_max > 0" class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex justify-between text-xs text-gray-500 mb-2">
+                            <span>Disponibles: <strong x-text="form.stock||0"></strong></span>
+                            <span x-text="'Ocupados: ' + Math.max(0,(form.stock_max||0)-(form.stock||0)) + ' / ' + (form.stock_max||0)"></span>
+                        </div>
+                        <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                            <div :style="'width:' + Math.min(100, (Math.max(0,(form.stock_max||0)-(form.stock||0)) / (form.stock_max||1)) * 100) + '%'"
+                                 :class="((form.stock||0)/(form.stock_max||1)) > 0.3 ? 'bg-green-500' : 'bg-amber-400'"
+                                 class="h-full rounded-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                @else
+                    {{-- ══ STOCK FÍSICO (Retail, Farmacia, Taller, Default) ══ --}}
                     <div>
                         <label class="label">Stock actual</label>
                         <div class="flex items-center gap-3 mt-1">
@@ -871,14 +1377,14 @@ document.addEventListener('alpine:init', () => {
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="label">Stock minimo (alerta)</label>
+                            <label class="label">Stock mínimo (alerta)</label>
                             <input type="number" x-model.number="form.stock_min" min="0" class="input" placeholder="5">
                             <p class="text-[10px] text-gray-400 mt-0.5">Alerta cuando baje de este nivel</p>
                         </div>
                         <div>
-                            <label class="label">Stock maximo</label>
+                            <label class="label">Stock máximo</label>
                             <input type="number" x-model.number="form.stock_max" min="0" class="input" placeholder="100">
-                            <p class="text-[10px] text-gray-400 mt-0.5">Capacidad maxima de almacenaje</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5">Capacidad máxima de almacenaje</p>
                         </div>
                     </div>
 
@@ -904,20 +1410,12 @@ document.addEventListener('alpine:init', () => {
                          }"
                          class="rounded-xl p-4 border flex items-center gap-3">
                         <svg class="w-5 h-5 flex-shrink-0"
-                             :class="{
-                                 'text-red-500':   stockStatus.color === 'red',
-                                 'text-amber-500': stockStatus.color === 'amber',
-                                 'text-green-500': stockStatus.color === 'green'
-                             }"
+                             :class="{ 'text-red-500': stockStatus.color==='red', 'text-amber-500': stockStatus.color==='amber', 'text-green-500': stockStatus.color==='green' }"
                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <p class="text-sm font-semibold"
-                           :class="{
-                               'text-red-700':   stockStatus.color === 'red',
-                               'text-amber-700': stockStatus.color === 'amber',
-                               'text-green-700': stockStatus.color === 'green'
-                           }"
+                           :class="{ 'text-red-700': stockStatus.color==='red', 'text-amber-700': stockStatus.color==='amber', 'text-green-700': stockStatus.color==='green' }"
                            x-text="stockStatus.label"></p>
                     </div>
 
@@ -925,18 +1423,18 @@ document.addEventListener('alpine:init', () => {
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="label flex items-center justify-between">
-                                Ubicacion en almacen
+                                Ubicación en almacén
                                 <a href="{{ route('catalogs.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                             </label>
                             <template x-if="locations.length > 0">
                                 <div>
                                     <select x-model="form.location" class="input">
-                                        <option value="">Sin ubicacion</option>
+                                        <option value="">Sin ubicación</option>
                                         <template x-for="l in locations" :key="l">
                                             <option :value="l" x-text="l"></option>
                                         </template>
                                     </select>
-                                    <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del catalogo de configuracion</p>
+                                    <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del catálogo de configuración</p>
                                 </div>
                             </template>
                             <template x-if="locations.length === 0">
@@ -956,7 +1454,7 @@ document.addEventListener('alpine:init', () => {
                                             <option :value="s" x-text="s"></option>
                                         </template>
                                     </select>
-                                    <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del catalogo de configuracion</p>
+                                    <p class="text-[10px] text-green-600 mt-0.5">&#10003; Viene del catálogo de configuración</p>
                                 </div>
                             </template>
                             <template x-if="suppliers.length === 0">
@@ -971,15 +1469,17 @@ document.addEventListener('alpine:init', () => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <div>
-                            <p class="text-sm font-semibold text-blue-800">Configura tus catalogos</p>
+                            <p class="text-sm font-semibold text-blue-800">Configura tus catálogos</p>
                             <p class="text-xs text-blue-600 mt-0.5">
                                 Crea listas de <strong>proveedores</strong>, <strong>ubicaciones</strong> e <strong>impuestos</strong> en
-                                <a href="{{ route('catalogs.index') }}" class="underline font-semibold">Catalogos de configuracion</a>
-                                y apareceran como desplegables aqui automaticamente.
+                                <a href="{{ route('catalogs.index') }}" class="underline font-semibold">Catálogos de configuración</a>
+                                y aparecerán como desplegables aquí automáticamente.
                             </p>
                         </div>
                     </div>
                     @endif
+
+                @endif
 
                 </div>
 
@@ -1129,6 +1629,17 @@ document.addEventListener('alpine:init', () => {
         <div x-show="importLog.created===0 && importLog.updated===0 && importLog.errors.length===0"
              class="px-6 pb-4 text-sm text-gray-500 text-center">
             No se encontraron filas para importar.
+        </div>
+        {{-- Warnings (categorías no encontradas) --}}
+        <div x-show="importLog.warnings && importLog.warnings.length > 0" class="px-6 pb-3">
+            <ul class="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 space-y-1.5">
+                <template x-for="(w, i) in importLog.warnings" :key="i">
+                    <li class="text-xs text-yellow-800 flex gap-2">
+                        <span class="flex-shrink-0">⚠️</span>
+                        <span x-text="w"></span>
+                    </li>
+                </template>
+            </ul>
         </div>
         {{-- Lista de errores --}}
         <div x-show="importLog.errors.length > 0" class="px-6 pb-4">

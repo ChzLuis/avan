@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $project->name ?? 'Facturación' }} — BIXO Facturación</title>
+    <title>{{ $project->name ?? 'Facturación' }} &mdash; BIXO</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -206,5 +206,119 @@
     </div>
 </div>
 
+<script>
+window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+        fetch('/bixofact', { method: 'HEAD', credentials: 'same-origin' })
+            .then(r => { if (r.redirected || r.url.includes('login')) window.location.replace('{{ route("bixofact.login") }}'); })
+            .catch(() => window.location.replace('{{ route("bixofact.login") }}'));
+    }
+});
+</script>
+
+{{-- CHG-92608: Control de cierre de sesión por inactividad --}}
+<div x-data="sessionWatcherFact()" x-init="init()" x-cloak>
+
+    {{-- Modal preventivo (3 min antes) --}}
+    <div x-show="phase==='warn'"
+         style="position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);">
+        <div style="background:#fff;border-radius:16px;padding:28px 32px;width:380px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div style="width:40px;height:40px;min-width:40px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;line-height:1;">
+                    ⏰
+                </div>
+                <div>
+                    <p style="font-size:14px;font-weight:700;color:#111827;margin:0;">Sesión por expirar</p>
+                    <p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">Tu sesión cerrará en <strong x-text="fmtCd()" style="color:#D97706;"></strong></p>
+                </div>
+            </div>
+            <div style="background:#F3F4F6;border-radius:99px;height:4px;margin-bottom:20px;overflow:hidden;">
+                <div :style="'width:'+cdPct+'%;background:#F59E0B;height:100%;border-radius:99px;transition:width 1s linear;'"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button @click="logout()"
+                        style="flex:1;padding:9px;border-radius:9px;border:1px solid #E5E8EF;background:#fff;color:#6B7280;font-size:13px;font-weight:600;cursor:pointer;">
+                    Cerrar sesión
+                </button>
+                <button @click="keep()"
+                        style="flex:2;padding:9px;border-radius:9px;border:none;background:#2563EB;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
+                    Continuar trabajando
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal definitivo (sesión cerrada) --}}
+    <div x-show="phase==='expired'"
+         style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);">
+        <div style="background:#fff;border-radius:16px;padding:32px;width:360px;max-width:92vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+            <div style="width:52px;height:52px;min-width:52px;border-radius:50%;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;line-height:1;">
+                🔒
+            </div>
+            <p style="font-size:16px;font-weight:700;color:#111827;margin:0 0 8px;">Sesión cerrada</p>
+            <p style="font-size:13px;color:#6B7280;margin:0 0 24px;">Tu sesión expiró por inactividad. Inicia sesión nuevamente para continuar.</p>
+            <button @click="logout()"
+                    style="width:100%;padding:10px;border-radius:10px;border:none;background:#2563EB;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">
+                Iniciar sesión
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function sessionWatcherFact() {
+    const LIMIT_S = 30 * 60;
+    const WARN_S  = 3 * 60;
+    const WARN_AT = LIMIT_S - WARN_S;
+    const LOGOUT  = {!! json_encode(route('facturacion.logout', $project->slug)) !!};
+    const TOKEN   = document.querySelector('meta[name="csrf-token"]')?.content;
+    return {
+        phase: 'idle', cd: WARN_S, cdPct: 100, _tick: null, _elapsed: 0,
+        init() {
+            this._startTick();
+            ['mousemove','keydown','click','scroll','touchstart'].forEach(ev =>
+                document.addEventListener(ev, () => this._onActivity(), { passive: true })
+            );
+        },
+        _startTick() {
+            clearInterval(this._tick);
+            this._tick = setInterval(() => this._onTick(), 1000);
+        },
+        _onTick() {
+            this._elapsed++;
+            if (this._elapsed >= LIMIT_S) {
+                this.phase = 'expired';
+                clearInterval(this._tick);
+                setTimeout(() => this.logout(), 8000);
+            } else if (this._elapsed >= WARN_AT) {
+                this.phase = 'warn';
+                this.cd = LIMIT_S - this._elapsed;
+                this.cdPct = Math.round((this.cd / WARN_S) * 100);
+            }
+        },
+        _onActivity() {
+            if (this.phase === 'expired' || this.phase === 'warn') return;
+            this._elapsed = 0;
+        },
+        keep() {
+            fetch('/ping-session', { method:'POST', headers:{ 'X-CSRF-TOKEN': TOKEN, 'Content-Type':'application/json' } }).catch(()=>{});
+            this._elapsed = 0; this.phase = 'idle'; this.cd = WARN_S; this.cdPct = 100;
+            this._startTick();
+        },
+        fmtCd() {
+            const m = Math.floor(this.cd / 60), s = this.cd % 60;
+            return m > 0 ? m + ' min ' + s + ' s' : s + ' s';
+        },
+        logout() {
+            clearInterval(this._tick);
+            const f = document.createElement('form');
+            f.method = 'POST'; f.action = LOGOUT;
+            const t = document.createElement('input'); t.type='hidden'; t.name='_token'; t.value=TOKEN;
+            f.appendChild(t);
+            document.body.appendChild(f); f.submit();
+        }
+    };
+}
+</script>
 </body>
 </html>

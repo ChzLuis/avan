@@ -1,7 +1,12 @@
 <x-app-layout>
 <x-slot name="slot">
 
-@php $s = request('s', 'basico'); @endphp
+@php
+$s = request('s', 'basico');
+$storeUrl = $project->custom_domain
+    ? 'https://' . $project->custom_domain
+    : url('/' . $project->slug);
+@endphp
 
 <div class="flex flex-col h-full w-full overflow-hidden">
 
@@ -133,7 +138,7 @@
                 <p class="text-[13px] text-blue-700 font-medium leading-snug" id="prev-title">
                     {{ $project->setting('seo_title') ?: $project->name.' — Catálogo Online' }}
                 </p>
-                <p class="text-[11px] text-green-700 mt-0.5">{{ url('/'.$project->slug) }}</p>
+                <p class="text-[11px] text-green-700 mt-0.5">{{ $storeUrl }}</p>
                 <p class="text-[12px] text-gray-600 leading-relaxed mt-1" id="prev-desc">
                     {{ $project->setting('seo_description') ?: 'Explora nuestros productos y haz tu pedido en línea.' }}
                 </p>
@@ -173,9 +178,9 @@
             <div>
                 <label class="label">URL Canónica</label>
                 <input type="url" name="seo_canonical" class="input mt-1"
-                       placeholder="{{ url('/'.$project->slug) }}"
-                       value="{{ old('seo_canonical', $project->setting('seo_canonical')) }}">
-                <p class="text-xs text-gray-400 mt-1">Solo si tienes dominio personalizado. Evita contenido duplicado.</p>
+                       placeholder="{{ $storeUrl }}"
+                       value="{{ old('seo_canonical', $project->setting('seo_canonical') ?: ($project->custom_domain ? $storeUrl : '')) }}">
+                <p class="text-xs text-gray-400 mt-1">Evita contenido duplicado en Google.</p>
             </div>
 
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-xs text-indigo-700">

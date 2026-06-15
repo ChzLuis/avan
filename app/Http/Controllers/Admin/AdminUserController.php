@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AdminUserController extends Controller
 {
@@ -14,6 +16,13 @@ class AdminUserController extends Controller
             ->get();
 
         return view('admin.users.index', compact('users'));
+    }
+
+    public function resetPassword(Request $request, User $user)
+    {
+        $request->validate(['password' => 'required|min:6|confirmed']);
+        $user->update(['password' => Hash::make($request->password)]);
+        return back()->with('success', "Contraseña de \"{$user->name}\" actualizada.");
     }
 
     public function toggleAdmin(User $user)

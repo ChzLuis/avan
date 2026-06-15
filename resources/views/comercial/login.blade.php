@@ -298,7 +298,12 @@
                 </form>
             </div>
 
-            <p class="mt-6 text-center text-xs text-gray-400">
+            <p class="mt-5 text-center text-xs">
+                <a href="{{ route('portal.password.request', 'comercial') }}" class="text-gray-400 hover:text-gray-600 transition">
+                    ¿Olvidaste tu contraseña?
+                </a>
+            </p>
+            <p class="mt-2 text-center text-xs text-gray-400">
                 Portal privado — acceso solo para personal autorizado
             </p>
         </div>

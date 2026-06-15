@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\PublicController;
 use App\Models\Project;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,10 +11,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DetectCustomDomain
 {
-    // Dominios propios de la plataforma — nunca se tratan como custom domain
+    // Hosts exactos de la plataforma — nunca se tratan como custom domain
     private const OWN_HOSTS = [
         'localhost',
         '127.0.0.1',
+        'arindg.com',
+        'www.arindg.com',
         'bot.pruebatusuerte.com.pe',
         'admin.mercadosmayoristas.com.pe',
     ];
@@ -22,11 +25,9 @@ class DetectCustomDomain
     {
         $host = strtolower($request->getHost());
 
-        // Si es un dominio propio, no hacer nada
-        foreach (self::OWN_HOSTS as $own) {
-            if ($host === $own || str_ends_with($host, '.' . $own)) {
-                return $next($request);
-            }
+        // Si es un host propio (comparación exacta), no hacer nada
+        if (in_array($host, self::OWN_HOSTS)) {
+            return $next($request);
         }
 
         // Buscar proyecto por custom_domain (con cache de 5 min)
@@ -37,11 +38,44 @@ class DetectCustomDomain
         });
 
         if ($project) {
-            // Forzar este proyecto como activo para toda la request
-            session(['active_project_id' => $project->id]);
-            view()->share('activeProject', $project);
-            app()->instance('active_project', $project);
             app()->instance('custom_domain_project', $project);
+
+            $path = rtrim($request->getPathInfo(), '/');
+
+            // Raíz o slug → servir catálogo directamente sin cambiar URL
+            if ($path === '' || $path === '/' . $project->slug) {
+                $view = app(PublicController::class)->catalog($project->slug);
+                return response()->make($view instanceof Response ? $view->getContent() : $view);
+            }
+
+            // Sitemap y robots en raíz del custom domain
+            if ($path === '/sitemap.xml') {
+                return app(PublicController::class)->sitemap($project->slug);
+            }
+            if ($path === '/robots.txt') {
+                return app(PublicController::class)->robots($project->slug);
+            }
+
+            // Rutas de admin → bloquear
+            if (str_starts_with($path, '/bixoadmin') || str_starts_with($path, '/login') || str_starts_with($path, '/dashboard')) {
+                return redirect("https://{$host}/");
+            }
+
+            // Rutas internas del catálogo con slug → quitar el slug del path
+            if (str_starts_with($path, '/' . $project->slug . '/')) {
+                $newPath = substr($path, strlen('/' . $project->slug));
+                $request->server->set('REQUEST_URI', $newPath . ($request->getQueryString() ? '?' . $request->getQueryString() : ''));
+                return $next($request);
+            }
+
+            // Rutas sin slug (custom domain directo): /p/{id}, /thanks/{id}, /book, etc.
+            // Anteponemos el slug para que el router de Laravel las encuentre
+            $slugRoutes = ['/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher'];
+            $needsSlug = collect($slugRoutes)->contains(fn($r) => str_starts_with($path, $r) || $path === $r);
+            if ($needsSlug || $path === '') {
+                $newPath = '/' . $project->slug . ($path ?: '/');
+                $request->server->set('REQUEST_URI', $newPath . ($request->getQueryString() ? '?' . $request->getQueryString() : ''));
+            }
         }
 
         return $next($request);

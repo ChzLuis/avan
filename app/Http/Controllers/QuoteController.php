@@ -17,8 +17,9 @@ class QuoteController extends Controller
         $quotes            = $project->quotes()->with('client')->latest()->get();
         $paymentMethods    = $this->catValues($project, 'payment_method');
         $paymentConditions = $this->catValues($project, 'payment_condition');
-        $portalLayout = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
-        return view('quotes.index', compact('project', 'quotes', 'paymentMethods', 'paymentConditions', 'portalLayout'));
+        $portalLayout      = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
+        $products          = $project->products()->where('is_available', true)->orderBy('name')->get(['id','name','price','sku']);
+        return view('quotes.index', compact('project', 'quotes', 'paymentMethods', 'paymentConditions', 'portalLayout', 'products'));
     }
 
     private function catValues(Project $project, string $type): \Illuminate\Support\Collection

@@ -30,7 +30,21 @@ class DemoRequest extends Model
         $configs = [
             'restaurante' => [
                 'label'   => 'Restaurante / Cafetería',
-                'emoji'   => '🍔',
+                'emoji'   => '🍽️',
+                'tagline' => 'Gestiona pedidos, menú digital y reservas de mesas',
+                'problems' => [
+                    'Pedidos por WhatsApp sin control',
+                    'Reservas de mesa desordenadas',
+                    'Catálogo desactualizado (PDF o imagen)',
+                    'Sin seguimiento del estado del pedido',
+                ],
+                'detail_modules' => [
+                    'Comercial'   => ['Catálogo de platos', 'Promociones', 'Combos', 'Pedidos'],
+                    'Agenda'      => ['Reservas de mesa', 'Control de mesas'],
+                    'Operaciones' => ['Estado del pedido', 'Delivery'],
+                    'Marketing'   => ['Cupones', 'Campañas WA'],
+                    'Web'         => ['Menú online', 'Reservas online'],
+                ],
                 'modules' => ['store','orders','catalog','clients','agenda','hr'],
                 'features_available' => [
                     ['key' => 'pos',        'label' => 'Punto de venta (POS)',           'default' => true,  'available' => true],
@@ -48,6 +62,19 @@ class DemoRequest extends Model
             'peluqueria' => [
                 'label'   => 'Peluquería / Spa',
                 'emoji'   => '✂️',
+                'tagline' => 'Agenda de citas, servicios y fidelización de clientes',
+                'problems' => [
+                    'Citas por WhatsApp sin organización',
+                    'Sin recordatorio automático al cliente',
+                    'No hay historial de preferencias',
+                    'Difícil gestionar horarios de estilistas',
+                ],
+                'detail_modules' => [
+                    'Agenda'    => ['Citas online', 'Calendario de estilistas', 'Recordatorios'],
+                    'Comercial' => ['Catálogo de servicios', 'Paquetes', 'POS'],
+                    'Clientes'  => ['Historial', 'Segmentos', 'Fidelización'],
+                    'Marketing' => ['Campañas WA', 'Cupones de descuento'],
+                ],
                 'modules' => ['store','orders','catalog','agenda','clients','hr'],
                 'features_available' => [
                     ['key' => 'agenda',        'label' => 'Agenda de citas',                    'default' => true,  'available' => true],
@@ -64,6 +91,19 @@ class DemoRequest extends Model
             'clinica' => [
                 'label'   => 'Clínica / Consultorio',
                 'emoji'   => '🏥',
+                'tagline' => 'Citas médicas, historial y comunicación con pacientes',
+                'problems' => [
+                    'Citas por llamada o WhatsApp sin orden',
+                    'Sin recordatorio automático de citas',
+                    'Historiales en papel difíciles de buscar',
+                    'Comunicación desorganizada con pacientes',
+                ],
+                'detail_modules' => [
+                    'Agenda'    => ['Citas online', 'Calendario médicos', 'Recordatorios'],
+                    'Pacientes' => ['Historial', 'Seguimiento', 'Segmentos'],
+                    'Comercial' => ['Servicios', 'Cotizaciones', 'Facturas'],
+                    'Marketing' => ['Campañas WA', 'Comunicaciones'],
+                ],
                 'modules' => ['store','orders','catalog','agenda','clients','invoices','hr'],
                 'features_available' => [
                     ['key' => 'agenda',      'label' => 'Agenda de citas',              'default' => true,  'available' => true],
@@ -80,6 +120,19 @@ class DemoRequest extends Model
             'retail' => [
                 'label'   => 'Tienda Retail',
                 'emoji'   => '🛍️',
+                'tagline' => 'Catálogo digital, ventas y control de inventario',
+                'problems' => [
+                    'Catálogo desactualizado o en PDF/imágenes',
+                    'Sin sistema de ventas formal',
+                    'Precios y stock difíciles de gestionar',
+                    'Sin historial de clientes frecuentes',
+                ],
+                'detail_modules' => [
+                    'Comercial'   => ['Catálogo', 'Cotizaciones', 'Facturas', 'POS'],
+                    'Operaciones' => ['Inventario', 'Alertas de stock'],
+                    'Web'         => ['Tienda online', 'Catálogo público'],
+                    'Reportes'    => ['Ventas', 'Productos más vendidos'],
+                ],
                 'modules' => ['store','orders','catalog','clients','invoices'],
                 'features_available' => [
                     ['key' => 'pos',       'label' => 'POS con búsqueda rápida',         'default' => true,  'available' => true],
@@ -97,6 +150,19 @@ class DemoRequest extends Model
             'whatsapp' => [
                 'label'   => 'Negocio por WhatsApp',
                 'emoji'   => '🤖',
+                'tagline' => 'Bot automático, catálogo y pedidos por WhatsApp',
+                'problems' => [
+                    'Responder manualmente cada mensaje a toda hora',
+                    'Sin catálogo organizado para compartir',
+                    'Pedidos perdidos o mal anotados',
+                    'Sin seguimiento de clientes y conversaciones',
+                ],
+                'detail_modules' => [
+                    'Bot WA'     => ['Respuestas automáticas 24/7', 'Toma de pedidos', 'Catálogo interactivo'],
+                    'Comercial'  => ['Catálogo con fotos', 'Pedidos', 'POS'],
+                    'Clientes'   => ['CRM básico', 'Historial de chats', 'Segmentos'],
+                    'Marketing'  => ['Campañas masivas WA', 'Respuestas rápidas'],
+                ],
                 'modules' => ['store','orders','catalog','clients'],
                 'features_available' => [
                     ['key' => 'bot',         'label' => 'Bot automático 24/7',               'default' => true,  'available' => true],
@@ -113,6 +179,19 @@ class DemoRequest extends Model
             'farmacia' => [
                 'label'   => 'Farmacia / Botica',
                 'emoji'   => '💊',
+                'tagline' => 'Catálogo, stock y ventas rápidas para farmacias',
+                'problems' => [
+                    'Clientes preguntan disponibilidad por WhatsApp',
+                    'Control de stock manual y desactualizado',
+                    'Sin control de fechas de vencimiento',
+                    'Facturación lenta o sin sistema',
+                ],
+                'detail_modules' => [
+                    'Comercial'   => ['POS rápido', 'Catálogo de productos', 'Pedidos WA'],
+                    'Operaciones' => ['Control de stock', 'Alertas de mínimo', 'Vencimientos'],
+                    'Facturación' => ['Boletas', 'Facturas electrónicas'],
+                    'Reportes'    => ['Productos más vendidos', 'Ventas diarias'],
+                ],
                 'modules' => ['store','orders','catalog','clients','invoices','proveedores'],
                 'features_available' => [
                     ['key' => 'pos',         'label' => 'POS rápido',                      'default' => true,  'available' => true],
@@ -130,6 +209,19 @@ class DemoRequest extends Model
             'veterinaria' => [
                 'label'   => 'Veterinaria / Pet Shop',
                 'emoji'   => '🐾',
+                'tagline' => 'Citas, historial de mascotas y venta de productos',
+                'problems' => [
+                    'Citas de consulta sin organización',
+                    'Sin recordatorio de vacunas o controles',
+                    'Historial de mascotas en papel',
+                    'Venta de productos sin control de stock',
+                ],
+                'detail_modules' => [
+                    'Agenda'    => ['Citas de consulta', 'Control de vacunas', 'Recordatorios WA'],
+                    'Pacientes' => ['Ficha de mascota', 'Historial clínico', 'Dueños'],
+                    'Comercial' => ['Catálogo productos', 'POS', 'Servicios'],
+                    'Marketing' => ['Recordatorios automáticos', 'Campañas WA'],
+                ],
                 'modules' => ['store','orders','catalog','agenda','clients','hr'],
                 'features_available' => [
                     ['key' => 'agenda',      'label' => 'Agenda de consultas',              'default' => true,  'available' => true],
@@ -146,6 +238,19 @@ class DemoRequest extends Model
             'taller' => [
                 'label'   => 'Taller Mecánico / Técnico',
                 'emoji'   => '🔧',
+                'tagline' => 'Órdenes de trabajo, cotizaciones y seguimiento de vehículos',
+                'problems' => [
+                    'Sin control de vehículos en taller',
+                    'Cotizaciones a mano o por WhatsApp',
+                    'Clientes sin actualización del estado',
+                    'Historial del vehículo inexistente',
+                ],
+                'detail_modules' => [
+                    'Operaciones' => ['Orden de trabajo', 'Estado en tiempo real', 'Control de técnicos'],
+                    'Comercial'   => ['Cotizaciones digitales', 'Facturación', 'Repuestos'],
+                    'Clientes'    => ['Historial del vehículo', 'Segmentos'],
+                    'Marketing'   => ['Notificaciones WA al cliente', 'Campañas'],
+                ],
                 'modules' => ['store','orders','catalog','agenda','quotes','clients','invoices','hr'],
                 'features_available' => [
                     ['key' => 'agenda',      'label' => 'Agenda de ingresos',               'default' => true,  'available' => true],

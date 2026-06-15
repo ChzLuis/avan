@@ -132,6 +132,19 @@ body { background: var(--bg); }
 /* Scroll sin scrollbar */
 .no-scrollbar { overflow-x:auto; scrollbar-width:none; }
 .no-scrollbar::-webkit-scrollbar { display:none; }
+
+/* Cat bar arrows */
+.nrd-cat-bar { display:flex; align-items:center; gap:6px; justify-content:center; flex-wrap:wrap; }
+.nrd-cat-track { display:flex; align-items:center; gap:8px; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; }
+.nrd-cat-track::-webkit-scrollbar { display:none; }
+.nrd-arrow { flex-shrink:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center; background:transparent; border:1.5px solid var(--border); border-radius:50%; cursor:pointer; color:var(--text); transition:all .2s; }
+.nrd-arrow:hover { border-color:var(--c); color:var(--c); }
+.nrd-arrow.n-hidden { opacity:0; pointer-events:none; }
+/* Nordic sub dropdown — global fixed */
+.nrd-cat-wrap { position:static; flex-shrink:0; }
+#nrd-sub-dropdown { display:none; position:fixed; min-width:150px; background:#fff; border:1.5px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:9999; overflow:hidden; }
+#nrd-sub-dropdown button { display:block; width:100%; text-align:left; padding:9px 14px; font-size:13px; color:var(--text); background:none; border:none; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
+#nrd-sub-dropdown button:hover { background:var(--c); color:#fff; }
 .scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
 .scrollbar-hide::-webkit-scrollbar { display:none; }
 </style>
@@ -627,19 +640,32 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
     {{-- Filtros barra horizontal --}}
     <div class="flex flex-wrap items-center gap-3 justify-center mb-10 sticky top-16 z-20 bg-white/95 backdrop-blur-sm shadow-sm py-3 px-2 -mx-2 rounded-xl">
-      {{-- CategorÃ­as pills --}}
-      <button @click="filterCat=''"
-              :class="filterCat==='' ? 'active' : ''"
-              class="cat-pill px-4 py-2 text-sm font-medium rounded-full transition">
-        Todo
-      </button>
-      @foreach($categories as $cat)
-      <button @click="filterCat='{{ $cat->id }}'"
-              :class="filterCat==='{{ $cat->id }}' ? 'active' : ''"
-              class="cat-pill px-4 py-2 text-sm font-medium rounded-full transition">
-        {{ $cat->name }}
-      </button>
-      @endforeach
+      {{-- CategorÃ­as pills con flechas --}}
+      <div class="nrd-cat-bar w-full justify-center">
+        <button class="nrd-arrow n-hidden" id="nrd-cat-prev" onclick="nrdCatScroll(-1)" aria-label="Anterior">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="nrd-cat-track" id="nrd-cats-track">
+          <button @click="filterCat=''"
+                  :class="filterCat==='' ? 'active' : ''"
+                  class="cat-pill px-4 py-2 text-sm font-medium rounded-full transition" style="flex-shrink:0;">
+            Todo
+          </button>
+          @foreach($categories as $cat)
+          <div class="nrd-cat-wrap" data-cat-id="{{ $cat->id }}"@if($cat->children->count()) data-has-sub="1"@endif>
+            <button @click="filterCat='{{ $cat->id }}'"
+                    :class="filterCat==='{{ $cat->id }}' ? 'active' : ''"
+                    class="cat-pill px-4 py-2 text-sm font-medium rounded-full transition">
+              {{ $cat->name }}@if($cat->children->count()) <span style="font-size:9px;opacity:.5;margin-left:2px;">▾</span>@endif
+            </button>
+          </div>
+          @endforeach
+        </div>
+        <div id="nrd-sub-dropdown"></div>
+        <button class="nrd-arrow" id="nrd-cat-next" onclick="nrdCatScroll(1)" aria-label="Siguiente">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
 
       {{-- Separador --}}
       <div class="w-[1px] h-6 opacity-20 hidden md:block" style="background:var(--text);"></div>
@@ -1732,6 +1758,46 @@ function store() {
     {{ $isQuoteOnly ? 'Ver cotizaciÃ³n' : 'Ver pedido' }}
   </button>
 </div>
+<script>
+(function(){
+  var track = document.getElementById('nrd-cats-track');
+  var prev  = document.getElementById('nrd-cat-prev');
+  var next  = document.getElementById('nrd-cat-next');
+  var drop  = document.getElementById('nrd-sub-dropdown');
+  if(!track) return;
+  function update(){
+    prev.classList.toggle('n-hidden', track.scrollLeft <= 4);
+    next.classList.toggle('n-hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+  window.nrdCatScroll = function(dir){ track.scrollBy({left: dir * 200, behavior:'smooth'}); };
+  track.addEventListener('scroll', update, {passive:true});
+  setTimeout(update, 150);
+
+  var SUBS = @json($categories->mapWithKeys(fn($c) => [(string)$c->id => $c->children->map(fn($s) => ['id'=>(string)$s->id,'name'=>$s->name])->values()]));
+  var hideT = null;
+  function showDrop(wrap){
+    var subs = SUBS[wrap.dataset.catId]; if(!subs||!subs.length) return;
+    clearTimeout(hideT);
+    drop.innerHTML = subs.map(function(s){ return '<button onclick="nrdPickSub(\''+s.id+'\')">'+s.name+'</button>'; }).join('');
+    var r = wrap.getBoundingClientRect();
+    drop.style.top = r.bottom+'px'; drop.style.left = r.left+'px'; drop.style.display='block';
+  }
+  function hideDrop(){ hideT = setTimeout(function(){ drop.style.display='none'; }, 150); }
+  window.nrdPickSub = function(id){
+    var root = document.querySelector('[x-data]');
+    if(root && root._x_dataStack && root._x_dataStack[0]) root._x_dataStack[0].filterCat = id;
+    drop.style.display='none';
+  };
+  track.querySelectorAll('.nrd-cat-wrap[data-has-sub]').forEach(function(w){
+    w.addEventListener('mouseenter', function(){ showDrop(w); });
+    w.addEventListener('mouseleave', hideDrop);
+  });
+  if(drop){
+    drop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+    drop.addEventListener('mouseleave', hideDrop);
+  }
+})();
+</script>
 </body>
 </html>
 
