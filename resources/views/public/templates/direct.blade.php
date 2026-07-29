@@ -41,12 +41,29 @@ $seoTitle         = ($settings['seo_title'] ?? null) ?: ($project->name . ' — 
 $seoDesc          = ($settings['seo_description'] ?? null) ?: ($project->description ?? '');
 $currency         = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
 $secondaryColor   = $settings['secondary_color'] ?? '#818cf8';
-$fontTitle        = $settings['font_title'] ?? $settings['font'] ?? 'Inter';
-$fontBody         = $settings['font_body']  ?? $settings['font'] ?? 'Inter';
+$fontTitle        = trim($settings['font_title'] ?? $settings['font'] ?? 'Inter') ?: 'Inter';
+$fontBody         = trim($settings['font_body']  ?? $settings['font'] ?? 'Inter') ?: 'Inter';
+$dGoogleFonts     = collect([$fontTitle,$fontBody,'Inter'])->unique()->filter()
+                      ->map(fn($f)=>str_replace(' ','+',$f).':wght@300;400;500;600;700;800')->implode('&family=');
+$heroAlignRaw     = $settings['hero_align'] ?? null;
+$heroAlignValue   = is_string($heroAlignRaw)
+                    ? strtolower(trim($heroAlignRaw))
+                    : '';
+$heroAlign        = in_array($heroAlignValue, ['left', 'center', 'right'], true) ? $heroAlignValue : 'left';
+$heroHeightD      = ['small'=>320,'medium'=>420,'large'=>520][$settings['hero_height'] ?? 'medium'] ?? 420;
+$dSlides          = array_values(array_filter([
+    ['t'=>trim($settings['banner1_title'] ?? ''),'s'=>trim($settings['banner1_sub'] ?? '')],
+    ['t'=>trim($settings['banner2_title'] ?? ''),'s'=>trim($settings['banner2_sub'] ?? '')],
+], fn($b)=>$b['t']!==''||$b['s']!==''));
 $borderRadius     = ['sharp'=>'4px','rounded'=>'8px','pill'=>'20px'][$settings['border_radius'] ?? 'rounded'] ?? '8px';
 $faviconRaw       = $settings['favicon_url'] ?? '';
 $faviconUrl       = $faviconRaw ? (str_starts_with($faviconRaw,'http') ? $faviconRaw : asset('storage/'.$faviconRaw)) : '';
 $footerCopyright  = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $project->name);
+// Textos y carrito personalizables (footer completo va en el partial compartido)
+$txtNoResults = $settings['txt_no_results'] ?? 'No se encontraron productos.';
+$txtViewMore  = $settings['txt_view_more'] ?? 'Ver más';
+$cartTitle    = $settings['cart_title'] ?? 'Tu carrito';
+$cartEmpty    = $settings['cart_empty_msg'] ?? 'Tu carrito está vacío.';
 @endphp
 
 <title>{{ $seoTitle }}</title>
@@ -61,7 +78,8 @@ $footerCopyright  = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . 
 @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family={{ $dGoogleFonts }}&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @if($culqiEnabled && $culqiPublicKey)
@@ -74,8 +92,19 @@ $footerCopyright  = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . 
   --c2: {{ $secondaryColor }};
   --radius: {{ $borderRadius }};
   --font-body: '{{ $fontBody }}', sans-serif;
+  --font-title: '{{ $fontTitle }}', sans-serif;
 }
 * { font-family: var(--font-body); }
+h1,h2,h3,.font-title { font-family: var(--font-title); }
+.d-promo-slider{padding:20px 0;background:linear-gradient(100deg,var(--c),var(--c2))}
+.d-promo-slide{display:flex;flex-wrap:wrap;align-items:center;gap:14px;color:#fff}
+.d-promo-slide strong{font-family:var(--font-title);font-size:clamp(18px,2.4vw,26px)}
+.d-promo-slide span{color:rgba(255,255,255,.86);font-size:14px}
+.d-promo-cta{margin-left:auto;padding:9px 18px;color:var(--c);background:#fff;border-radius:var(--radius);font-size:13px;font-weight:700;white-space:nowrap}
+.d-promo-dots{display:flex;gap:7px;margin-top:12px}
+.d-promo-dots button{width:9px;height:9px;padding:0;background:rgba(255,255,255,.4);border:0;border-radius:999px;cursor:pointer;transition:.2s}
+.d-promo-dots button.is-active{width:22px;background:#fff}
+@media(max-width:640px){.d-promo-slide{justify-content:center;text-align:center}.d-promo-cta{margin:6px auto 0}.d-promo-dots{justify-content:center}}
 [x-cloak] { display: none !important; }
 body { background: #f8fafc; }
 
@@ -192,7 +221,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
   <div class="flex items-center justify-between px-5 py-4 border-b flex-shrink-0">
     <div x-show="drawerStep===1">
-      <h2 class="font-bold text-gray-900">{{ $isQuoteOnly ? 'Mi cotización' : 'Mi pedido' }}</h2>
+      <h2 class="font-bold text-gray-900">{{ $isQuoteOnly ? 'Mi cotización' : $cartTitle }}</h2>
       <p class="text-xs text-gray-400" x-text="cart.reduce((s,i)=>s+i.qty,0) + ' producto(s)'"></p>
     </div>
     <div x-show="drawerStep===2"><h2 class="font-bold text-gray-900">Tus datos</h2></div>
@@ -211,7 +240,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <svg class="w-14 h-14 text-gray-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
         </svg>
-        <p class="text-gray-400 text-sm">{{ $isQuoteOnly ? 'Tu cotización está vacía' : 'Tu carrito está vacío' }}</p>
+        <p class="text-gray-400 text-sm">{{ $isQuoteOnly ? 'Tu cotización está vacía' : $cartEmpty }}</p>
       </div>
     </template>
     <template x-for="item in cart" :key="item.id">
@@ -404,6 +433,28 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- ─── HEADER ─────────────────────────────────────────────────────────────── --}}
 @include('public.partials.header')
+
+{{-- ─── SLIDER PROMOCIONAL (banners del panel de Diseño) ──────────────────── --}}
+@if(count($dSlides))
+<section class="d-promo-slider" aria-label="Promociones" x-data="{ s:0, n:{{ count($dSlides) }} }" x-init="if(n>1){setInterval(()=>{ s=(s+1)%n },5000)}">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="relative">
+      @foreach($dSlides as $i => $slide)
+      <div class="d-promo-slide" x-show="s==={{ $i }}" x-transition.opacity.duration.600ms @if($i>0)style="display:none"@endif>
+        @if($slide['t'])<strong>{{ $slide['t'] }}</strong>@endif
+        @if($slide['s'])<span>{{ $slide['s'] }}</span>@endif
+        <a class="d-promo-cta" href="#catalogo">Ver ofertas</a>
+      </div>
+      @endforeach
+    </div>
+    @if(count($dSlides) > 1)
+    <div class="d-promo-dots">
+      @foreach($dSlides as $i => $slide)<button type="button" :class="s==={{ $i }} && 'is-active'" @click="s={{ $i }}" aria-label="Banner {{ $i+1 }}"></button>@endforeach
+    </div>
+    @endif
+  </div>
+</section>
+@endif
 
 
 {{-- ─── CUERPO: SIDEBAR + CATÁLOGO ─────────────────────────────────────────── --}}
@@ -762,10 +813,10 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
       </svg>
       <p class="font-bold text-gray-700 mb-1">Sin resultados</p>
-      <p class="text-gray-400 text-sm mb-4">Intenta con otro término o categoría</p>
+      <p class="text-gray-400 text-sm mb-4">{{ $txtNoResults }}</p>
       <button @click="search='';filterCat='';priceFilter='';onSaleFilter=false"
               class="btn-outline-gc px-5 py-2 text-sm font-semibold transition">
-        Ver todo el catálogo
+        {{ $txtViewMore }}
       </button>
     </div>
 
@@ -1231,5 +1282,6 @@ function store() {
 }
 </script>
 
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
