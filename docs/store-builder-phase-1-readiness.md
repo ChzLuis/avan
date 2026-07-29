@@ -181,3 +181,11 @@ El último bloqueante de la línea base quedó cerrado. El foco inicial del moda
 La matriz completa está verde: 30/30 escenarios, cero errores JavaScript, recursos esenciales fallidos, imágenes visibles rotas y overflow; drawer 3/3 y plantillas 3/3. Las siete suites aprobaron 46 pruebas y 780 aserciones. El checkout reproducible terminó limpio y todos los procesos temporales fueron detenidos.
 
 Dictamen de línea base: **VERDE / APTO para autorizar la Fase 1**. Esto no inicia la Fase 1 ni autoriza despliegue; ambas acciones continúan requiriendo instrucciones expresas.
+
+## Revisión posterior a la Fase 1A — 2026-07-29
+
+La lectura del Store Builder quedó centralizada en `StorefrontContextBuilder` y `StorefrontContext`. `project_settings`, `store_sections`, navegación, páginas, pop-up, catálogo, URLs y metadatos de plantilla tienen propietarios y precedencia documentados. Ecommerce, Direct, CompuTienda y el Diseñador consumen el mismo contexto; las plantillas heredadas mantienen su fallback.
+
+Las siete suites anteriores y las tres suites nuevas aprobaron **56 pruebas con 889 aserciones**. La matriz real aprobó **30/30 escenarios**, con plantillas 3/3, drawer 3/3, modal 9/9 y cero fallos HTTP, JavaScript, recursos, imágenes u overflow. Las consultas de los ocho escenarios medidos bajaron de 412 a 144.
+
+No se modificaron escrituras, tablas, migraciones ni datos reales; tampoco hubo push o despliegue. Dictamen de Fase 1A: **VERDE / APTO para autorizar la Fase 1B**, que continúa pendiente de aprobación explícita.

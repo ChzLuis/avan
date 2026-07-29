@@ -294,3 +294,20 @@ Resultado global: **ROJO** por foco inicial intermitente. No se creó tag.
 | Siete suites | 46 pruebas, 780 aserciones, 0 fallos |
 
 Resultado global actualizado: **VERDE**.
+
+## Fase 1A — contexto canónico de lectura — 2026-07-29
+
+La rama `refactor/store-builder-canonical-context` incorporó un único `StorefrontContext` para el Diseñador y las tres plantillas oficiales sin modificar escrituras ni datos reales.
+
+| Verificación | Resultado |
+|---|---|
+| Siete suites de regresión | PASS — 46 pruebas, 780 aserciones |
+| Pruebas nuevas del contexto | PASS — 10 pruebas, 109 aserciones |
+| Total requerido | PASS — 56 pruebas, 889 aserciones, 0 fallos |
+| Matriz de navegador | PASS — 30/30 |
+| Aplicación de plantillas | PASS — 3/3 |
+| Drawer / modal | PASS — 3/3 y 9/9 |
+| HTTP / JS / recursos / imágenes / overflow | PASS — 0 incidencias |
+| Checkout reproducible | PASS — Composer, npm, build, rutas y vistas |
+
+Las ocho mediciones bajaron de 412 a 144 consultas. Ecommerce, Direct y CompuTienda quedaron en 15 consultas por vista, sin duplicados registrados. Estado: **VERDE**.
