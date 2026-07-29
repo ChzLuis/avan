@@ -18,10 +18,17 @@ class StorefrontSections
         'blog' => 'Blog informativo',
     ];
 
-    public static function defaults(Project $project): array
+    public static function defaults(Project $project, ?array $settings = null): array
     {
-        $heroTitle = $project->setting('hero_title', 'Encuentra lo que necesitas');
-        $heroBody = $project->setting('hero_subtitle', 'Productos seleccionados y atención personalizada para comprar con confianza.');
+        $setting = static function (string $key, mixed $default = null) use ($project, $settings): mixed {
+            if ($settings !== null && array_key_exists($key, $settings) && $settings[$key] !== null) {
+                return $settings[$key];
+            }
+
+            return $settings !== null ? $default : $project->setting($key, $default);
+        };
+        $heroTitle = $setting('hero_title', 'Encuentra lo que necesitas');
+        $heroBody = $setting('hero_subtitle', 'Productos seleccionados y atención personalizada para comprar con confianza.');
 
         return [
             'hero' => [
@@ -30,16 +37,16 @@ class StorefrontSections
                 'content' => [
                     'mode' => 'single',
                     'single' => [
-                        'desktop_image' => $project->setting('hero_image'),
+                        'desktop_image' => $setting('hero_image'),
                         'mobile_image' => null,
                         'title' => $heroTitle,
                         'body' => $heroBody,
-                        'primary_text' => $project->setting('hero_cta1_text', 'Comprar'),
+                        'primary_text' => $setting('hero_cta1_text', 'Comprar'),
                         'primary_url' => '#catalogo',
-                        'primary_color' => $project->setting('primary_color', '#2563eb'),
-                        'secondary_text' => $project->setting('hero_cta2_text', 'Ver catálogo'),
+                        'primary_color' => $setting('primary_color', '#2563eb'),
+                        'secondary_text' => $setting('hero_cta2_text', 'Ver catálogo'),
                         'secondary_url' => '#catalogo',
-                        'secondary_color' => $project->setting('secondary_color', '#0f172a'),
+                        'secondary_color' => $setting('secondary_color', '#0f172a'),
                     ],
                     'slides' => [],
                     'autoplay' => false,

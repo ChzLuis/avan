@@ -141,7 +141,9 @@ class StorefrontNavigation
     private static function pageUrl(Project $project, StoreMenuItem $item): string
     {
         static $pageKeys = [];
-        $pageKeys[$project->id] ??= $project->storePages()->pluck('key', 'id')->all();
+        $pageKeys[$project->id] ??= $project->relationLoaded('storePages')
+            ? $project->storePages->pluck('key', 'id')->all()
+            : $project->storePages()->pluck('key', 'id')->all();
         $key = $pageKeys[$project->id][$item->destination_id] ?? null;
         return $key ? route('public.page', [$project->slug, $key]) : route('public.catalog', $project->slug);
     }
