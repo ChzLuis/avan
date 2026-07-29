@@ -25,6 +25,22 @@ Thumbs.db
 
 # WhatsApp bot
 whatsbot/node_modules/
+
+# Local tooling and generated QA artifacts
+/.mcp.json
+/composer.phar
+/test-results/
+/test-zoom.html
+/product_images_temp/
+/public/uploads/
+/storage/arin-design-stage/
+/storage/*-qa/
+/storage/edge-*/
+/storage/*.png
+/storage/*.html
+/storage/*.txt
+/storage/*.sql
+/storage/*.php
 whatsbot/.wwebjs_auth/
 whatsbot/*.json
 public/.wwebjs_auth/
