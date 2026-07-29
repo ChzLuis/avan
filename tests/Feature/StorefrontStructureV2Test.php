@@ -5,12 +5,15 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Project;
+use App\Models\ProjectTemplate;
 use App\Models\StoreMenuItem;
 use App\Models\StorePage;
 use App\Models\User;
 use App\Support\StorefrontNavigation;
 use App\Support\StorefrontSections;
+use App\Support\CatalogTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class StorefrontStructureV2Test extends TestCase
@@ -191,25 +194,76 @@ class StorefrontStructureV2Test extends TestCase
         [$owner, $project] = $this->project('selector-tema-v2');
         $project->settings()->updateOrCreate(['key' => 'header_active_color'], ['value' => '#123456']);
 
-        foreach ([
-            'ecommerce' => 'public.templates.ecommerce',
-            'direct' => 'public.templates.direct',
-        ] as $template => $expectedView) {
-            $this->actingAs($owner)
+        foreach (CatalogTemplates::supported() as $template => $definition) {
+            $response = $this->actingAs($owner)
                 ->withSession(['active_project_id' => $project->id])
                 ->postJson(route('settings.design.applyTemplate'), ['template' => $template])
                 ->assertOk()
                 ->assertJsonPath('ok', true)
                 ->assertJsonPath('template', $template)
                 ->assertJsonPath('theme.key', $template)
+                ->assertJsonPath('theme.name', $definition['name'])
+                ->assertJsonPath('theme.description', $definition['short_description'])
                 ->assertJsonPath('public_url', route('public.catalog', $project->slug));
+
+            $response->assertJsonStructure(['ok', 'template', 'preserved', 'theme', 'public_url']);
 
             $this->assertSame($template, $project->fresh()->setting('catalog_template'));
             $this->assertSame('#123456', $project->fresh()->setting('header_active_color'));
             $this->get(route('public.catalog', $project->slug))
                 ->assertOk()
-                ->assertViewIs($expectedView);
+                ->assertViewIs($definition['view']);
         }
+    }
+
+    public function test_unsupported_template_keys_are_rejected_without_mutating_the_project(): void
+    {
+        [$owner, $project] = $this->project('selector-rechazos-v2');
+        [, $other] = $this->project('selector-rechazos-otro-v2');
+        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => 'computienda']);
+        $other->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => 'direct']);
+        $savedTemplate = ProjectTemplate::create([
+            'project_id' => $project->id,
+            'name' => 'Configuración activa',
+            'settings' => ['catalog_template' => 'computienda'],
+            'is_active' => true,
+        ]);
+
+        foreach (['ella', 'editorial', 'luxe', 'bistro', 'inexistente', ''] as $template) {
+            $this->actingAs($owner)
+                ->withSession(['active_project_id' => $project->id])
+                ->postJson(route('settings.design.applyTemplate'), ['template' => $template])
+                ->assertStatus(422)
+                ->assertJsonPath('ok', false)
+                ->assertJsonMissingPath('theme')
+                ->assertJsonMissingPath('public_url');
+
+            $this->assertSame('computienda', $project->fresh()->setting('catalog_template'));
+            $this->assertTrue($savedTemplate->fresh()->is_active);
+            $this->assertSame('direct', $other->fresh()->setting('catalog_template'));
+        }
+    }
+
+    public function test_template_selector_exposes_exactly_the_three_supported_templates_and_legacy_warning(): void
+    {
+        [$owner, $project] = $this->project('catalogo-oficial-v2');
+        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => 'ella']);
+
+        $response = $this->actingAs($owner)
+            ->withSession(['active_project_id' => $project->id])
+            ->get(route('settings.design', ['s' => 'plantilla']))
+            ->assertOk()
+            ->assertSee('Esta tienda utiliza una plantilla heredada que ya no recibe nuevas funciones.')
+            ->assertSee('data-supported-template-card="ecommerce"', false)
+            ->assertSee('data-supported-template-card="direct"', false)
+            ->assertSee('data-supported-template-card="computienda"', false);
+
+        $html = $response->getContent();
+        $this->assertSame(3, substr_count($html, 'data-supported-template-card='));
+        foreach (['ella', 'editorial', 'luxe', 'bistro', 'default', 'nordic', 'flash', 'urban', 'boutique', 'fresh', 'porto', 'licoreria', 'farma', 'lavanderia', 'tecnologia'] as $legacyKey) {
+            $this->assertStringNotContainsString('data-supported-template-card="'.$legacyKey.'"', $html);
+        }
+        $this->assertSame('ella', $project->fresh()->setting('catalog_template'));
     }
 
     public function test_production_templates_load_their_complete_original_views(): void
@@ -281,14 +335,55 @@ class StorefrontStructureV2Test extends TestCase
     public function test_template_admin_confirms_the_applied_v2_theme_and_offers_fresh_preview(): void
     {
         [$owner, $project] = $this->project('confirmacion-tema-v2');
-        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => 'ella']);
+        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => 'ecommerce']);
+
+        $response = $this->actingAs($owner)
+            ->withSession(['active_project_id' => $project->id])
+            ->get(route('settings.design', ['s' => 'plantilla', 'applied' => 'ecommerce']))
+            ->assertOk()
+            ->assertSee('Ecommerce — Tienda online completa aplicada')
+            ->assertSee('Ver cambio en la tienda')
+            ->assertSee('role="status"', false)
+            ->assertSee('aria-live="polite"', false)
+            ->assertSee('rel="noopener noreferrer"', false)
+            ->assertDontSee('Pronto');
+
+        $html = $response->getContent();
+        $this->assertStringContainsString('json.theme.name', $html);
+        $this->assertStringContainsString('json.theme.description', $html);
+        $this->assertStringContainsString('json.public_url', $html);
+        $this->assertStringContainsString("this.feedback = null", $html);
+        $this->assertStringContainsString("type: 'error'", $html);
+        $this->assertSame(1, substr_count($html, 'data-template-feedback="success"'));
+    }
+
+    public function test_template_application_returns_the_active_projects_custom_domain_url(): void
+    {
+        [$owner, $project] = $this->project('dominio-plantilla-v2');
+        $project->update(['custom_domain' => 'tienda-ejemplo.test']);
 
         $this->actingAs($owner)
             ->withSession(['active_project_id' => $project->id])
-            ->get(route('settings.design', ['s' => 'plantilla', 'applied' => 'ella']))
+            ->postJson(route('settings.design.applyTemplate'), ['template' => 'direct'])
             ->assertOk()
-            ->assertSee('Ella — Moda Minimalista aplicada')
-            ->assertSee('Ver cambio en la tienda')
-            ->assertDontSee('Pronto');
+            ->assertJsonPath('theme.key', 'direct')
+            ->assertJsonPath('public_url', 'https://tienda-ejemplo.test');
+    }
+
+    public function test_missing_legacy_template_view_uses_a_logged_compatibility_fallback(): void
+    {
+        [, $project] = $this->project('fallback-heredado-v2');
+        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => 'editorial']);
+        Log::spy();
+
+        $this->get(route('public.catalog', $project->slug))
+            ->assertOk()
+            ->assertDontSee('View [public.templates.editorial] not found');
+
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context) use ($project) {
+            return str_contains($message, 'compatibility fallback')
+                && $context['project_id'] === $project->id
+                && $context['template'] === 'editorial';
+        })->atLeast()->once();
     }
 }
