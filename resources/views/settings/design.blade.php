@@ -7,12 +7,18 @@
   $s = in_array($requestedDesignerSection, ['plantilla', 'templates'], true) && $isOwnerOrSuper
     ? 'plantilla'
     : 'constructor';
-  $storeUrl   = $project->custom_domain
-    ? 'https://' . $project->custom_domain
-    : url('/' . $project->slug);
+  $storeUrl   = \App\Support\StorefrontNavigation::publicUrl($project);
   $activeTpl  = $project->setting('catalog_template', 'default') ?: 'default';
   $allTpls    = \App\Support\CatalogTemplates::all();
-  $tplInfo    = $allTpls[$activeTpl] ?? $allTpls['default'];
+  $tplInfo    = $allTpls[$activeTpl] ?? array_merge($allTpls['default'], [
+    'label' => ucwords(str_replace(['-', '_'], ' ', $activeTpl)),
+  ]);
+  $supportedTemplates = \App\Support\CatalogTemplates::supported();
+  $activeTemplateIsSupported = \App\Support\CatalogTemplates::isSupported($activeTpl);
+  $requestedAppliedTheme = (string) request('applied', '');
+  $initialAppliedTheme = $requestedAppliedTheme === $activeTpl
+    ? \App\Support\CatalogTemplates::supportedTheme($requestedAppliedTheme)
+    : null;
   $templateManifest = \App\Support\CatalogTemplates::manifest($activeTpl);
   $templateComponents = $templateManifest['components'] ?? [];
   $componentCatalog = $templateManifest['component_catalog'] ?? [];
@@ -77,7 +83,7 @@
       <h1 class="text-base font-semibold text-gray-800">Diseño</h1>
       <p class="text-xs text-gray-400 mt-0.5">{{ $project->name }}</p>
     </div>
-    <a href="{{ $storeUrl }}" target="_blank"
+    <a href="{{ $storeUrl }}" target="_blank" rel="noopener noreferrer"
        class="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
       Ver tienda ↗
     </a>
@@ -124,6 +130,8 @@
       {{-- TAB: PLANTILLA --}}
       {{-- ═══════════════════════════════════════ --}}
       @if($s === 'plantilla' && $isOwnerOrSuper)
+      @include('settings.partials.supported-template-selector')
+      @if(false)
       @php
         $allTemplates   = \App\Support\CatalogTemplates::all();
         $grouped        = \App\Support\CatalogTemplates::grouped();
@@ -316,6 +324,7 @@
         </div>
         @endforeach
 
+        @endif
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
           <p class="font-semibold mb-1">¿Qué pasa al aplicar una plantilla?</p>
           <ul class="text-xs text-blue-600 space-y-1 list-disc pl-4 leading-relaxed">
