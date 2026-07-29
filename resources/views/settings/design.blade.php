@@ -3,26 +3,24 @@
 
 @php
   $isOwnerOrSuper = auth()->user()?->is_superadmin || ($project && $project->owner_id === auth()->id());
-  $s          = request('s', $isOwnerOrSuper ? 'plantilla' : 'marca');
+  $requestedDesignerSection = (string) request('s', $isOwnerOrSuper ? 'plantilla' : 'constructor');
+  $s = in_array($requestedDesignerSection, ['plantilla', 'templates'], true) && $isOwnerOrSuper
+    ? 'plantilla'
+    : 'constructor';
   $storeUrl   = $project->custom_domain
     ? 'https://' . $project->custom_domain
     : url('/' . $project->slug);
   $activeTpl  = $project->setting('catalog_template', 'default') ?: 'default';
   $allTpls    = \App\Support\CatalogTemplates::all();
   $tplInfo    = $allTpls[$activeTpl] ?? $allTpls['default'];
-  $tplFields  = [
-    'ella'      => ['announcement','split_banner'],
-    'flash'     => ['announcement','countdown'],
-    'boutique'  => ['split_banner'],
-    'urban'     => ['announcement'],
-    'porto'     => ['announcement','tabs_title'],
-    'nordic'    => ['trust_bar'],
-    'fresh'     => ['trust_bar'],
-    'licoreria' => ['announcement','trust_bar_4','age_gate_field'],
-    'farma'     => ['announcement','trust_bar'],
-    'default'   => [],
-  ];
-  $extraFields = $tplFields[$activeTpl] ?? [];
+  $templateManifest = \App\Support\CatalogTemplates::manifest($activeTpl);
+  $templateComponents = $templateManifest['components'] ?? [];
+  $componentCatalog = $templateManifest['component_catalog'] ?? [];
+  $componentLabels = [];
+  foreach ($componentCatalog as $componentKey => $componentData) {
+      $componentLabels[$componentKey] = $componentData['label'] ?? ucwords(str_replace(['_','-'], ' ', $componentKey));
+  }
+
   $storeMode   = $project->setting('store_mode', 'direct');
   $quotePrice  = $project->setting('quote_price_display', 'show');
   $savedWaFull = preg_replace('/\D/', '', $project->setting('quote_whatsapp', preg_replace('/\D/', '', $project->whatsapp ?? '')));
@@ -53,6 +51,8 @@
     ['key'=>'qr',            'label'=>'Pago con QR',           'icon'=>'📲'],
     ['key'=>'contra_entrega','label'=>'Contra entrega',         'icon'=>'🚚'],
   ];
+  $pc = $project->setting('primary_color', $tplInfo['settings']['primary_color'] ?? '#4f46e5');
+  $sc = $project->setting('secondary_color', $tplInfo['settings']['secondary_color'] ?? '#6366f1');
   $fontOptions = [
     'Inter'              => 'Inter — Moderna y limpia',
     'Poppins'            => 'Poppins — Geométrica',
@@ -69,7 +69,7 @@
   $savedFontBody  = $project->setting('font_body')  ?: $project->setting('font', 'Inter');
 @endphp
 
-<div class="flex flex-col h-full w-full overflow-hidden">
+<div class="flex flex-col h-full w-full overflow-hidden" data-designer-section="{{ $s }}">
 
   {{-- TOP BAR --}}
   <div class="px-6 py-3 border-b border-gray-200 bg-white flex items-center justify-between flex-shrink-0">
@@ -86,15 +86,12 @@
   {{-- HORIZONTAL TABS --}}
   <div class="flex border-b border-gray-200 bg-white px-2 overflow-x-auto flex-shrink-0">
     @foreach(array_filter([
-      $isOwnerOrSuper ? ['k'=>'plantilla','l'=>'Plantilla', 'icon'=>'🎨', 'd'=>'Elige el diseño'] : null,
-      ['k'=>'marca',    'l'=>'Marca',     'icon'=>'🏷️', 'd'=>'Colores y logo'],
-      ['k'=>'portada',  'l'=>'Portada',   'icon'=>'🖼️', 'd'=>'Hero y banners'],
-      ['k'=>'catalogo', 'l'=>'Catálogo',  'icon'=>'📦', 'd'=>'Grid y filtros'],
-      ['k'=>'checkout', 'l'=>'Checkout',  'icon'=>'🛒', 'd'=>'Formulario de pedido'],
-      ['k'=>'sistema',  'l'=>'Sistema',   'icon'=>'⚙️', 'd'=>'Modo y SEO'],
+      $isOwnerOrSuper ? ['k'=>'plantilla','l'=>'Plantillas', 'icon'=>'🎨', 'd'=>'Elige el diseño'] : null,
+      ['k'=>'constructor','l'=>'Constructor visual', 'icon'=>'🧩', 'd'=>'Configura la tienda'],
     ]) as $tab)
-    @if(!$tab) @continue @endif
-    <a href="{{ route('settings.design') }}?s={{ $tab['k'] }}"
+    <a href="{{ route('settings.design', ['s' => $tab['k'], 'p' => $project->id]) }}"
+       data-primary-designer-tab="{{ $tab['k'] }}"
+       @if($s === $tab['k']) aria-current="page" @endif
        class="flex items-center gap-2 px-4 py-3 border-b-2 transition whitespace-nowrap
               {{ $s === $tab['k']
                  ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50'
@@ -120,7 +117,7 @@
   @endif
 
   {{-- CONTENT AREA --}}
-  <div class="flex-1 overflow-y-auto bg-gray-50/30" id="design-content">
+  <div class="flex-1 overflow-y-auto bg-gray-50/30" id="design-content" data-design-scroll-container style="overflow-anchor:none">
     <div class="px-6 py-6 space-y-5">
 
       {{-- ═══════════════════════════════════════ --}}
@@ -131,34 +128,86 @@
         $allTemplates   = \App\Support\CatalogTemplates::all();
         $grouped        = \App\Support\CatalogTemplates::grouped();
         $activeTemplate = $project->setting('catalog_template', '');
-        $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria','farma'];
+        $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria','farma','lavanderia'];
       @endphp
-      <div x-data="{
+        <div x-data="{
           selected: '{{ $activeTemplate }}',
           applying: false,
           applyingKey: '',
           appliedMsg: '',
+          filter: 'all',
+          pending: null,
+          requestTemplate(key) { this.pending = key; },
           async applyTemplate(key) {
-              if (this.applying) return;
-              this.applying = true;
-              this.applyingKey = key;
-              this.appliedMsg = '';
-              const res = await fetch('{{ route('settings.design.applyTemplate') }}', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                  body: JSON.stringify({ template: key })
-              });
-              const json = await res.json();
-              this.applying = false;
-              this.applyingKey = '';
-              if (json.ok) {
-                  this.selected = key;
-                  this.appliedMsg = '¡Plantilla aplicada! Tu catálogo ya usa el nuevo diseño.';
-                  setTimeout(() => this.appliedMsg = '', 6000);
-              }
+            if (this.applying) return;
+            this.applying = true;
+            this.applyingKey = key;
+            this.appliedMsg = '';
+            const res = await fetch('{{ route('settings.design.applyTemplate') }}', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+              body: JSON.stringify({ template: key })
+            });
+            const json = await res.json();
+            this.applying = false;
+            this.applyingKey = '';
+            if (json.ok) {
+              this.selected = key;
+              this.appliedMsg = 'Plantilla aplicada. Se conservaron todos tus ajustes globales.';
+              setTimeout(() => this.appliedMsg = '', 6000);
+            } else if (json && json.message) {
+              alert('Error: ' + json.message);
+            }
           }
-      }">
+        }">
 
+          <div class="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-violet-50 p-5 shadow-sm">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div><p class="text-xs font-bold uppercase tracking-wider text-indigo-600">Plantilla activa</p><h2 class="mt-1 text-xl font-bold text-slate-900">{{ $tplInfo['label'] }}</h2><p class="mt-1 text-sm text-slate-500">Tus colores, logo, portada, catálogo, checkout y contenido son globales y se conservan al cambiar de plantilla.</p></div>
+              <div class="flex flex-wrap gap-2"><a href="{{ $storeUrl }}" target="_blank" class="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Vista previa ↗</a><a href="{{ route('settings.experience') }}" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Configurar inicio</a></div>
+            </div>
+          </div>
+          <div class="mt-5 flex gap-2 overflow-x-auto pb-1">
+            <button @click="filter='all'" :class="filter==='all'?'bg-indigo-600 text-white':'bg-white text-slate-600'" class="rounded-full border px-3 py-1.5 text-xs font-semibold">Todas</button>
+            @foreach(array_keys($grouped) as $group)<button @click="filter=@js($group)" :class="filter===@js($group)?'bg-indigo-600 text-white':'bg-white text-slate-600'" class="whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold">{{ $group }}</button>@endforeach
+          </div>
+
+          {{-- Gestión de plantillas personalizadas del proyecto (creadas por el admin) --}}
+          <div class="mt-6 bg-white rounded-xl border border-gray-200 p-4">
+            <h4 class="text-sm font-semibold">Plantillas del proyecto</h4>
+            <p class="text-xs text-gray-400">Crea y gestiona plantillas personalizadas para este proyecto.</p>
+            <div class="mt-3 space-y-3">
+              @php $projectTemplates = \App\Models\ProjectTemplate::where('project_id', $project->id)->orderByDesc('is_active')->get(); @endphp
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                @foreach($projectTemplates as $pt)
+                <div class="p-3 border rounded-lg flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-medium">{{ $pt->name }} {!! $pt->is_active ? '<span class="ml-2 text-xs text-green-600">(activa)</span>' : '' !!}</div>
+                    <div class="text-xs text-gray-400">{{ $pt->description }}</div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button type="button" class="text-sm px-2 py-1 bg-indigo-600 text-white rounded" @click="(async()=>{ const res=await fetch('{{ route('settings.design.applyProjectTemplate') }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({id:{{ $pt->id }},apply_to_project:'1'})}); const j=await res.json(); if(j.ok) location.reload(); else alert(j.message||'Error'); })()">Aplicar</button>
+                    <form method="POST" action="{{ route('settings.design.projectTemplates.destroy', $pt->id) }}" onsubmit="return confirm('Eliminar plantilla?');">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="text-sm px-2 py-1 bg-red-50 text-red-700 border border-red-100 rounded">Eliminar</button>
+                    </form>
+                  </div>
+                </div>
+                @endforeach
+              </div>
+
+              <form method="POST" action="{{ route('settings.design.projectTemplates.store') }}" class="mt-2 flex gap-2">
+                @csrf
+                <input type="text" name="name" placeholder="Nombre de plantilla" class="input flex-1" required>
+                <input type="hidden" name="settings" value='{{ json_encode($project->settings()->pluck("value","key")->toArray()) }}'>
+                <button type="submit" class="btn-primary">Crear desde ajustes actuales</button>
+              </form>
+            </div>
+          </div>
+
+        <div x-show="pending" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div @click.outside="pending=null" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><h3 class="text-lg font-bold text-slate-900">Cambiar plantilla</h3><p class="mt-2 text-sm text-slate-600">Cambiará la estructura visual, pero se conservarán todos tus ajustes, productos, categorías y contenido.</p><div class="mt-5 flex justify-end gap-2"><button @click="pending=null" class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button><button @click="let k=pending;pending=null;applyTemplate(k)" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Continuar</button></div></div>
+        </div>
         {{-- Toast éxito Alpine --}}
         <div x-show="appliedMsg" x-cloak
              x-transition:enter="transition ease-out duration-300"
@@ -192,7 +241,8 @@
             <div class="relative group rounded-2xl border-2 overflow-hidden transition-all duration-200 cursor-pointer
                         {{ $activeTemplate === $key ? 'border-indigo-500 shadow-md shadow-indigo-100' : 'border-gray-200 hover:border-indigo-300 hover:shadow-sm' }}"
                  :class="selected === '{{ $key }}' ? 'border-indigo-500 shadow-md shadow-indigo-100' : 'border-gray-200 hover:border-indigo-300'"
-                 @click="applyTemplate('{{ $key }}')">
+                 x-show="filter === 'all' || filter === @js($categoryName)"
+                 @click="requestTemplate('{{ $key }}')">
 
               {{-- Preview visual --}}
               <div class="relative overflow-hidden" style="height:88px; background: {{ $tpl['preview_bg'] }}">
@@ -275,18 +325,45 @@
             <li>Todos los cambios son editables desde las otras secciones de diseño</li>
           </ul>
         </div>
-
-      </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
+          <p class="font-semibold mb-2">Componentes compatibles con <span class="font-semibold text-gray-900">{{ $tplInfo['label'] }}</span></p>
+          <p class="text-xs text-gray-400">Estas son las opciones de diseño que el panel mostrará para esta plantilla.</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            @forelse($templateComponents as $component)
+              <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-[11px] font-semibold">
+                {{ $componentLabels[$component] ?? ucwords(str_replace(['_','-'], ' ', $component)) }}
+              </span>
+            @empty
+              <span class="text-xs text-gray-500">Plantilla sin opciones adicionales configuradas.</span>
+            @endforelse
+          </div>
+        </div>
       @endif
 
-      {{-- ═══════════════════════════════════════ --}}
-      {{-- TAB: MARCA --}}
-      {{-- ═══════════════════════════════════════ --}}
-      @if($s === 'marca')
-      @php $pc = $project->setting('primary_color','#4f46e5'); $sc = $project->setting('secondary_color','#6b7280'); @endphp
+      @if($s === 'constructor')
+      <nav class="sticky top-0 z-20 -mx-1 mb-5 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-2 shadow-sm" data-constructor-nav aria-label="Secciones del constructor visual">
+        @foreach([
+          'inicio' => 'Inicio',
+          'marca' => 'Marca',
+          'portada' => 'Portada',
+          'catalogo' => 'Catálogo',
+          'checkout' => 'Checkout',
+          'sistema' => 'Sistema',
+        ] as $builderKey => $builderLabel)
+        <a href="#constructor-{{ $builderKey }}" class="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-indigo-50 hover:text-indigo-700">{{ $builderLabel }}</a>
+        @endforeach
+      </nav>
+
+      <section id="constructor-inicio" class="scroll-mt-20">
+        @include('settings.store-experience')
+      </section>
+
+      <section id="constructor-marca" class="scroll-mt-20">
+
       <div class="max-w-2xl mx-auto">
       <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5" id="marca-form">
         @csrf
+        <input type="hidden" name="_design_tab" value="marca">
 
         {{-- Colores de marca (paletas + pickers unificados) --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -423,6 +500,16 @@
                   fetch('{{ route('settings.upload-logo') }}', { method: 'POST', body: fd })
                       .then(r => r.json())
                       .then(d => { if (d.url) { this.faviPreview = d.url; document.getElementById('favicon_url_input').value = d.path; } });
+              },
+              quitarLogo() {
+                  if (!confirm('¿Quitar el logo del negocio?')) return;
+                  this.logoPreview = '';
+                  document.getElementById('logo_url_input').value = '';
+              },
+              quitarFavi() {
+                  if (!confirm('¿Quitar el favicon?')) return;
+                  this.faviPreview = '';
+                  document.getElementById('favicon_url_input').value = '';
               }
           }">
             {{-- Logo --}}
@@ -438,11 +525,19 @@
                   </template>
                 </div>
                 <div class="flex-1">
-                  <label class="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg cursor-pointer transition w-fit">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    Subir imagen
-                    <input type="file" accept="image/*" class="hidden" @change="uploadLogo($event)">
-                  </label>
+                  <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg cursor-pointer transition w-fit">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                      Subir imagen
+                      <input type="file" accept="image/*" class="hidden" @change="uploadLogo($event)">
+                    </label>
+                    {{-- Quitar logo: solo si hay uno --}}
+                    <button type="button" x-show="logoPreview" @click="quitarLogo()"
+                            class="flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium rounded-lg transition">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      Quitar
+                    </button>
+                  </div>
                   <p class="text-xs text-gray-400 mt-1.5">PNG transparente recomendado · Máx 2MB</p>
                   <input type="hidden" name="logo_url" id="logo_url_input" value="{{ $project->setting('logo_url') }}">
                 </div>
@@ -474,11 +569,19 @@
                   </template>
                 </div>
                 <div class="flex-1">
-                  <label class="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg cursor-pointer transition w-fit">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    Subir favicon
-                    <input type="file" accept="image/*" class="hidden" @change="uploadFavi($event)">
-                  </label>
+                  <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg cursor-pointer transition w-fit">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                      Subir favicon
+                      <input type="file" accept="image/*" class="hidden" @change="uploadFavi($event)">
+                    </label>
+                    {{-- Quitar favicon: solo si hay uno --}}
+                    <button type="button" x-show="faviPreview" @click="quitarFavi()"
+                            class="flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium rounded-lg transition">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      Quitar
+                    </button>
+                  </div>
                   <p class="text-xs text-gray-400 mt-1.5">32×32 px · ICO o PNG</p>
                   <input type="hidden" name="favicon_url" id="favicon_url_input" value="{{ $project->setting('favicon_url') }}">
                 </div>
@@ -586,6 +689,7 @@
           </div>
         </div>
 
+        @if(true)
         {{-- WhatsApp --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
@@ -599,22 +703,25 @@
             <p class="text-xs text-gray-400 mt-1">Se envía cuando el cliente hace clic en el botón flotante de WhatsApp</p>
           </div>
         </div>
+        @endif
 
         <div>
           <button type="submit" class="btn-primary">Guardar marca</button>
         </div>
       </form>
       </div>{{-- /max-w-2xl --}}
-      @endif
+      </section>
 
       {{-- ═══════════════════════════════════════ --}}
       {{-- TAB: PORTADA --}}
       {{-- ═══════════════════════════════════════ --}}
-      @if($s === 'portada')
+      <section id="constructor-portada" class="scroll-mt-20">
       <div class="max-w-2xl mx-auto">
       <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5">
         @csrf
+        <input type="hidden" name="_design_tab" value="portada">
 
+        @if(true)
         {{-- Banner principal (Hero) --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-gray-100"
@@ -733,9 +840,19 @@
             </div>
           </div>
         </div>
+        @else
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-100">
+            <p class="text-sm font-semibold text-gray-800">Banner principal (Hero)</p>
+          </div>
+          <div class="p-4 text-sm text-gray-500">
+            Esta plantilla no incluye sección Hero. Las opciones de portada están controladas por la plantilla activa.
+          </div>
+        </div>
+        @endif
 
         {{-- Announcement bar --}}
-        @if(in_array('announcement', $extraFields))
+        @if(true)
         <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
           <div class="px-4 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
             <p class="text-sm font-semibold text-amber-800">Barra de anuncio</p>
@@ -762,7 +879,7 @@
         @endif
 
         {{-- Countdown --}}
-        @if(in_array('countdown', $extraFields))
+        @if(true)
         <div class="bg-white rounded-xl border border-red-200 overflow-hidden">
           <div class="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
             <p class="text-sm font-semibold text-red-800">Contador regresivo</p>
@@ -786,7 +903,7 @@
         @endif
 
         {{-- Split banner --}}
-        @if(in_array('split_banner', $extraFields))
+        @if(true)
         <div class="bg-white rounded-xl border border-purple-200 overflow-hidden">
           <div class="px-4 py-3 bg-purple-50 border-b border-purple-100 flex items-center gap-2">
             <p class="text-sm font-semibold text-purple-800">Banner dividido 50/50</p>
@@ -825,7 +942,7 @@
         @endif
 
         {{-- Trust bar --}}
-        @if(in_array('trust_bar', $extraFields))
+        @if(true)
         <div class="bg-white rounded-xl border border-green-200 overflow-hidden">
           <div class="px-4 py-3 bg-green-50 border-b border-green-100 flex items-center gap-2">
             <p class="text-sm font-semibold text-green-800">Barra de confianza</p>
@@ -833,12 +950,12 @@
           </div>
           <div class="p-4 space-y-3">
             <p class="text-xs text-gray-500">Iconos de beneficios bajo el hero (envío gratis, garantía, etc.).</p>
-            @foreach([1,2,3] as $ti)
+            @foreach([1,2,3,4] as $ti)
             <div class="flex items-center gap-2">
               <input type="text" name="trust_icon_{{ $ti }}" class="input text-sm w-16 flex-shrink-0 text-center"
                      placeholder="🚚" value="{{ $project->setting('trust_icon_'.$ti) }}">
               <input type="text" name="trust_text_{{ $ti }}" class="input text-sm flex-1"
-                     placeholder="{{ ['Envío rápido', 'Garantía 30 días', 'Pago seguro'][$ti-1] }}"
+                     placeholder="{{ ['Envío rápido', 'Garantía 30 días', 'Pago seguro', 'Atención personalizada'][$ti-1] }}"
                      value="{{ $project->setting('trust_text_'.$ti) }}">
             </div>
             @endforeach
@@ -847,7 +964,7 @@
         @endif
 
         {{-- Trust bar 4 ítems (Licorería) --}}
-        @if(in_array('trust_bar_4', $extraFields))
+        @if(false)
         <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
           <div class="px-4 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
             <p class="text-sm font-semibold text-amber-800">Barra de confianza (4 ítems)</p>
@@ -870,7 +987,7 @@
         @endif
 
         {{-- Age gate (Licorería) --}}
-        @if(in_array('age_gate_field', $extraFields))
+        @if(true)
         <div class="bg-white rounded-xl border border-red-200 overflow-hidden">
           <div class="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
             <p class="text-sm font-semibold text-red-800">Verificación de edad</p>
@@ -903,7 +1020,7 @@
         @endif
 
         {{-- Tabs título (Porto) --}}
-        @if(in_array('tabs_title', $extraFields))
+        @if(true)
         <div class="bg-white rounded-xl border border-orange-200 overflow-hidden">
           <div class="px-4 py-3 bg-orange-50 border-b border-orange-100 flex items-center gap-2">
             <p class="text-sm font-semibold text-orange-800">Tabs de productos</p>
@@ -976,12 +1093,12 @@
         </div>
       </form>
       </div>{{-- /max-w-2xl --}}
-      @endif
+      </section>
 
       {{-- ═══════════════════════════════════════ --}}
       {{-- TAB: CATALOGO --}}
       {{-- ═══════════════════════════════════════ --}}
-      @if($s === 'catalogo')
+      <section id="constructor-catalogo" class="scroll-mt-20">
       @php
         $cardStylesAll = \App\Support\CatalogTemplates::cardStyles();
         $activeTplCat  = $project->setting('catalog_template', 'default') ?: 'default';
@@ -991,6 +1108,7 @@
       <div class="max-w-2xl mx-auto">
       <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5">
         @csrf
+        <input type="hidden" name="_design_tab" value="catalogo">
 
         {{-- Catálogo --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -1234,16 +1352,17 @@
         </div>
       </form>
       </div>{{-- /max-w-2xl --}}
-      @endif
+      </section>
 
       {{-- ═══════════════════════════════════════ --}}
       {{-- TAB: SISTEMA --}}
       {{-- ═══════════════════════════════════════ --}}
-      @if($s === 'sistema')
+      <section id="constructor-sistema" class="scroll-mt-20">
       <div class="max-w-2xl mx-auto">
       <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5"
             @submit="$refs.waHidden && ($refs.waHidden.value = country + local.replace(/\D/g,''))">
         @csrf
+        <input type="hidden" name="_design_tab" value="sistema">
 
         {{-- Modo de venta --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -1342,6 +1461,7 @@
           </div>
         </div>
 
+        @if(true)
         {{-- Footer --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
@@ -1372,6 +1492,29 @@
               <input type="text" name="footer_dev_text" class="input"
                      placeholder="Desarrollado por AVAN"
                      value="{{ $project->setting('footer_dev_text', 'Desarrollado por AVAN') }}">
+            </div>
+
+            {{-- Contacto en footer --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t pt-4">
+              <div>
+                <label class="label">Correo de contacto</label>
+                <input type="email" name="contact_email" class="input"
+                       placeholder="contacto@tuempresa.com"
+                       value="{{ $project->setting('contact_email') }}">
+              </div>
+              <div>
+                <label class="label">Teléfono de contacto</label>
+                <input type="text" name="contact_phone" class="input"
+                       placeholder="999 888 777"
+                       value="{{ $project->setting('contact_phone') }}">
+              </div>
+              <div class="md:col-span-2">
+                <label class="label">Horario de atención</label>
+                <input type="text" name="business_hours" class="input"
+                       placeholder="Lunes a sábado, 9am – 6pm"
+                       value="{{ $project->setting('business_hours') }}">
+                <p class="text-xs text-gray-400 mt-1">Opcional. Se muestra en el footer de algunas plantillas.</p>
+              </div>
             </div>
 
             {{-- Beneficios (barra superior del footer) --}}
@@ -1451,6 +1594,16 @@
 
           </div>
         </div>
+        @else
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
+            <p class="text-sm font-semibold text-gray-800">Footer — Contenido</p>
+          </div>
+          <div class="p-4 text-sm text-gray-500">
+            La plantilla activa no incluye un footer adicional editable desde este panel.
+          </div>
+        </div>
+        @endif
 
         {{-- Textos del sistema --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -1607,12 +1760,12 @@
         </div>
       </form>
       </div>{{-- /max-w-2xl --}}
-      @endif
+      </section>
 
       {{-- ═══════════════════════════════════════ --}}
       {{-- TAB: CHECKOUT --}}
       {{-- ═══════════════════════════════════════ --}}
-      @if($s === 'checkout')
+      <section id="constructor-checkout" class="scroll-mt-20">
       @php
         $ckFields = json_decode($project->setting('checkout_fields', 'null'), true) ?? [
           'fixed'  => [
@@ -1628,6 +1781,7 @@
       <div class="max-w-2xl mx-auto">
       <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5">
         @csrf
+        <input type="hidden" name="_design_tab" value="checkout">
 
         {{-- Campos fijos --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden"
@@ -1726,6 +1880,7 @@
         </div>
       </form>
       </div>
+      </section>
       @endif
 
     </div>
@@ -1734,9 +1889,32 @@
 </div>
 
 <script>
-document.addEventListener('alpine:initialized', function() {
-    var el = document.getElementById('design-content');
-    if (el) el.scrollTop = 0;
+document.addEventListener('DOMContentLoaded', function() {
+    const scroller = document.querySelector('[data-design-scroll-container]');
+    if (!scroller) return;
+
+    const outerTop = window.scrollY;
+    const resetOuterScroll = () => requestAnimationFrame(() => window.scrollTo({ top: outerTop, left: 0, behavior: 'auto' }));
+    const moveInsideEditor = (target, smooth) => {
+        const top = Math.max(0, target.offsetTop - 16);
+        scroller.scrollTo({ top: top, behavior: smooth ? 'smooth' : 'auto' });
+        resetOuterScroll();
+    };
+
+    document.querySelectorAll('[data-constructor-nav] a[href^="#"]').forEach(function(link) {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            const target = document.querySelector(link.getAttribute('href'));
+            if (!target) return;
+            history.replaceState(null, '', link.getAttribute('href'));
+            moveInsideEditor(target, true);
+        });
+    });
+
+    if (window.location.hash) {
+        const target = document.querySelector(window.location.hash);
+        if (target && scroller.contains(target)) requestAnimationFrame(() => moveInsideEditor(target, false));
+    }
 });
 </script>
 

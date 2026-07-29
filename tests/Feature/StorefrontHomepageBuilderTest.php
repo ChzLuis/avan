@@ -203,10 +203,26 @@ class StorefrontHomepageBuilderTest extends TestCase
         $html = app(SettingsController::class)->design()->render();
         $this->assertStringContainsString('?s=plantilla', $html);
         $this->assertStringContainsString('?s=constructor', $html);
+        $this->assertSame(2, substr_count($html, 'data-primary-designer-tab='));
+        $this->assertStringContainsString('data-primary-designer-tab="constructor"', $html);
+        $this->assertStringContainsString('aria-current="page"', $html);
+        $this->assertStringContainsString('?s=constructor&amp;p='.$project->id, $html);
         $this->assertStringNotContainsString('?s=marca', $html);
         $this->assertStringNotContainsString('?s=portada', $html);
         $this->assertStringContainsString('id="constructor-inicio"', $html);
         $this->assertStringContainsString('id="constructor-checkout"', $html);
+
+        request()->merge(['s' => 'templates']);
+        $this->assertStringContainsString(
+            'data-designer-section="plantilla"',
+            app(SettingsController::class)->design()->render()
+        );
+
+        request()->merge(['s' => 'valor-desconocido']);
+        $this->assertStringContainsString(
+            'data-designer-section="constructor"',
+            app(SettingsController::class)->design()->render()
+        );
     }
 
     public function test_builder_navigation_keeps_scroll_inside_the_editor_and_returns_to_the_saved_section(): void
