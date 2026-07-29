@@ -8,8 +8,10 @@ use App\Models\Module;
 use App\Models\Coupon;
 use App\Models\WaCanal;
 use App\Support\CatalogTemplates;
+use App\Support\StorefrontSections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\ProjectTemplate;
 
 class SettingsController extends Controller
 {
@@ -109,6 +111,7 @@ class SettingsController extends Controller
         $settingsKeys = [
             'ruc', 'razon_social', 'email', 'country', 'currency', 'sunat_url', 'sunat_url_prod',
             'nubefact_url', 'nubefact_token', 'serie_factura', 'serie_boleta', 'apiperu_token',
+            'billing_provider', 'apisperu_token', 'apisperu_ubigeo',
             // Redes sociales
             'facebook_url', 'instagram_url', 'tiktok_url', 'youtube_url', 'twitter_url', 'linkedin_url',
             // SEO
@@ -225,7 +228,40 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        return view('settings.design', compact('project'));
+        StorefrontSections::ensure($project);
+        $sections = $project->storeSections()
+            ->orderBy('page')
+            ->orderByRaw('COALESCE(draft_sort_order, sort_order)')
+            ->orderBy('id')
+            ->get();
+        $homeSections = $sections->where('page', 'home')->values();
+        $storeSectionNames = StorefrontSections::COMPONENTS;
+        $storeCategories = $project->categories()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+        $storeProducts = $project->products()
+            ->where('is_available', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+        $pages = $project->storePages()->orderBy('key')->get();
+        $popup = $project->storePopups()->latest()->first();
+        $messages = $project->contactMessages()->latest()->take(20)->get();
+        $complaints = $project->complaints()->latest()->take(20)->get();
+        return view('settings.design', compact(
+            'project',
+            'sections',
+            'homeSections',
+            'storeSectionNames',
+            'storeCategories',
+            'storeProducts',
+            'pages',
+            'popup',
+            'messages',
+            'complaints'
+        ));
     }
 
     public function uploadLogo(Request $request)
@@ -306,6 +342,7 @@ class SettingsController extends Controller
             'culqi_public_key','culqi_mode',
             // Sistema — Footer y textos
             'footer_tagline','footer_copyright','footer_dev_text',
+            'contact_email','contact_phone','business_hours',
             'footer_benefit_1_icon','footer_benefit_1_text',
             'footer_benefit_2_icon','footer_benefit_2_text',
             'footer_benefit_3_icon','footer_benefit_3_text',
@@ -325,8 +362,14 @@ class SettingsController extends Controller
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
-        // Checkboxes booleanos (on/off)
-        foreach (['payment_manual_enabled', 'culqi_enabled', 'mp_enabled', 'age_gate'] as $boolKey) {
+        // Guardar también el estado apagado, pero solo para la pestaña enviada.
+        $booleanKeysByTab = [
+            'portada' => ['hero_cta1_show','hero_cta2_show','age_gate'],
+            'catalogo' => ['catalog_filter_price','catalog_filter_cats','catalog_filter_sale','catalog_filter_search','catalog_show_ratings','catalog_quick_view','catalog_show_sku','catalog_show_stock','wholesale_enabled','btn_show_icon','float_cart_show','float_wa_show'],
+            'sistema' => ['shipping_enabled','require_address','show_flash_sale','show_testimonials','show_newsletter','show_trust_strip','footer_show_social','footer_show_categories','footer_show_newsletter','footer_show_benefits','footer_show_address','payment_manual_enabled','culqi_enabled','mp_enabled'],
+        ];
+        $designTab = (string) $request->input('_design_tab', '');
+        foreach ($booleanKeysByTab[$designTab] ?? [] as $boolKey) {
             $project->settings()->updateOrCreate(
                 ['key' => $boolKey],
                 ['value' => $request->input($boolKey) === '1' ? '1' : '0']
@@ -334,14 +377,16 @@ class SettingsController extends Controller
         }
 
         // Arrays de checkboxes
-        $project->settings()->updateOrCreate(
-            ['key' => 'accepted_payments'],
-            ['value' => json_encode($request->input('accepted_payments', []))]
-        );
-        $project->settings()->updateOrCreate(
-            ['key' => 'payment_manual_methods'],
-            ['value' => json_encode($request->input('payment_manual_methods', []))]
-        );
+        if ($designTab === 'sistema') {
+            $project->settings()->updateOrCreate(
+                ['key' => 'accepted_payments'],
+                ['value' => json_encode($request->input('accepted_payments', []))]
+            );
+            $project->settings()->updateOrCreate(
+                ['key' => 'payment_manual_methods'],
+                ['value' => json_encode($request->input('payment_manual_methods', []))]
+            );
+        }
 
         // Llaves secretas: solo guardar si se envió algo que no sea la máscara
         foreach (['culqi_secret_key', 'mp_access_token'] as $secretKey) {
@@ -361,7 +406,15 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        return view('settings.qr', compact('project'));
+        $baseUrl = $project->custom_domain
+            ? 'https://' . $project->custom_domain
+            : rtrim((string) config('app.url'), '/') . '/' . $project->slug;
+        $host = parse_url($baseUrl, PHP_URL_HOST);
+        $isIp = $host && filter_var($host, FILTER_VALIDATE_IP);
+        $isPublicUrl = $host && !in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            && (!$isIp || (bool) filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE));
+
+        return view('settings.qr', compact('project', 'baseUrl', 'isPublicUrl'));
     }
 
     public function updateQr(Request $request)
@@ -376,10 +429,34 @@ class SettingsController extends Controller
             'qr_reception'   => 'required|in:auto,manual',
             'qr_payment'     => 'required|in:cashier,waiter',
             'qr_schedule'    => 'nullable|array',
+            'qr_size'         => 'nullable|integer|min:160|max:1200',
+            'qr_margin'       => 'nullable|integer|min:0|max:12',
+            'qr_foreground'   => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'qr_background'   => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'qr_header_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'qr_top_text'     => 'nullable|string|max:120',
+            'qr_bottom_text'  => 'nullable|string|max:120',
+            'qr_share_message'=> 'nullable|string|max:500',
+            'qr_preset'       => 'nullable|in:classic,brand,orange,dark,minimal',
+            'qr_quality'      => 'nullable|in:standard,high',
+            'qr_show_logo'    => 'nullable|boolean',
+            'qr_show_url'     => 'nullable|boolean',
         ]);
 
         foreach (['qr_mode','qr_table_count','qr_reception','qr_payment'] as $key) {
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $data[$key]]);
+        }
+
+        foreach (['qr_size','qr_margin','qr_foreground','qr_background','qr_header_color',
+                  'qr_top_text','qr_bottom_text','qr_share_message','qr_preset','qr_quality'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $project->settings()->updateOrCreate(['key' => $key], ['value' => $data[$key]]);
+            }
+        }
+        foreach (['qr_show_logo', 'qr_show_url'] as $key) {
+            $project->settings()->updateOrCreate([
+                'key' => $key,
+            ], ['value' => $request->boolean($key) ? '1' : '0']);
         }
 
         if (!empty($data['qr_schedule'])) {
@@ -462,15 +539,222 @@ class SettingsController extends Controller
 
         // Guardar la clave de plantilla activa
         $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $templateKey]);
+        ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
 
-        // Aplicar todos los settings de la plantilla (sin sobrescribir llaves secretas)
+        // La plantilla solo aporta valores iniciales. Los ajustes del proyecto son
+        // globales y siempre deben sobrevivir a un cambio de plantilla.
         $skip = ['culqi_secret_key', 'mp_access_token', 'culqi_public_key'];
+        $preserved = 0;
         foreach ($template['settings'] as $key => $value) {
             if (in_array($key, $skip)) continue;
+            $existing = $project->settings()->where('key', $key)->value('value');
+            if ($existing !== null && $existing !== '') {
+                $preserved++;
+                continue;
+            }
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
-        return response()->json(['ok' => true, 'template' => $templateKey]);
+        // Si se solicita, guardar esta configuración como plantilla personalizada del proyecto
+        if ($request->input('save_as_template') === '1') {
+            $name = $request->input('template_name') ?: ('Plantilla ' . ucfirst($templateKey));
+            // Desactivar otras plantillas activas del proyecto
+            \App\Models\ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+            \App\Models\ProjectTemplate::create([
+                'project_id' => $project->id,
+                'name'       => $name,
+                'description'=> 'Generada desde aplicación de plantilla ' . $templateKey,
+                'settings'   => $template['settings'],
+                'is_active'  => true,
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'template' => $templateKey, 'preserved' => $preserved]);
+    }
+
+    /** Aplicar una plantilla guardada del propio proyecto o activarla */
+    public function applyProjectTemplate(Request $request)
+    {
+        $project = app('active_project');
+        $this->authorizeProject($project);
+
+        $id = (int) $request->input('id');
+        $template = ProjectTemplate::where('project_id', $project->id)->find($id);
+        if (!$template) {
+            return response()->json(['ok' => false, 'message' => 'Plantilla no encontrada.'], 404);
+        }
+
+        // Activar la plantilla para el proyecto
+        ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+        $template->is_active = true; $template->save();
+
+        // Una plantilla personalizada puede cambiar la estructura activa, pero
+        // sus valores guardados no deben borrar la configuración global actual.
+        $templateSettings = (array) $template->settings;
+        $templateKey = $templateSettings['catalog_template'] ?? null;
+        if ($templateKey && CatalogTemplates::get($templateKey)) {
+            $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $templateKey]);
+        }
+
+        // Si se solicita aplicar la plantilla, solo completar valores vacíos.
+        if ($request->input('apply_to_project') === '1') {
+            $skip = ['culqi_secret_key', 'mp_access_token', 'culqi_public_key'];
+            foreach ($templateSettings as $key => $value) {
+                if (in_array($key, $skip)) continue;
+                if ($key === 'catalog_template') continue;
+                $existing = $project->settings()->where('key', $key)->value('value');
+                if ($existing !== null && $existing !== '') continue;
+                $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
+            }
+        }
+
+        return response()->json(['ok' => true, 'id' => $template->id]);
+    }
+
+    public function storeProjectTemplate(Request $request)
+    {
+        $project = app('active_project');
+        $this->authorizeProject($project);
+
+        $data = $request->validate([
+            'name' => 'required|string|max:150',
+            'description' => 'nullable|string',
+        ]);
+
+        // Tomar settings del request (JSON string) o del proyecto actual
+        if ($request->filled('settings')) {
+            $settings = json_decode($request->input('settings'), true) ?: [];
+        } else {
+            $settings = $project->settings()->pluck('value', 'key')->toArray();
+        }
+
+        ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+        $tpl = ProjectTemplate::create([
+            'project_id' => $project->id,
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'settings' => $settings,
+            'is_active' => true,
+        ]);
+
+        return back()->with('success', 'Plantilla creada.');
+    }
+
+    public function updateProjectTemplate(Request $request, $id)
+    {
+        $project = app('active_project');
+        $this->authorizeProject($project);
+        $tpl = ProjectTemplate::where('project_id', $project->id)->findOrFail($id);
+
+        $data = $request->validate([
+            'name' => 'sometimes|required|string|max:150',
+            'description' => 'nullable|string',
+            'settings' => 'nullable',
+        ]);
+
+        if (isset($data['name'])) $tpl->name = $data['name'];
+        if (array_key_exists('description', $data)) $tpl->description = $data['description'];
+        if ($request->filled('settings')) $tpl->settings = json_decode($request->input('settings'), true) ?: $tpl->settings;
+        $tpl->save();
+
+        return back()->with('success', 'Plantilla actualizada.');
+    }
+
+    public function destroyProjectTemplate(Request $request, $id)
+    {
+        $project = app('active_project');
+        $this->authorizeProject($project);
+        $tpl = ProjectTemplate::where('project_id', $project->id)->findOrFail($id);
+        $tpl->delete();
+        return back()->with('success', 'Plantilla eliminada.');
+    }
+
+    /** Guardar el flujo de estados activo del proyecto (según su rubro). */
+    public function updateFlow(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $this->authorizeProject($project);
+
+        // Estados marcados (los vacíos vienen de toggles apagados)
+        $states = array_filter((array) $request->input('states', []));
+
+        // Filtrar a estados válidos del rubro + forzar los "core"
+        $valid = array_keys(\App\Support\OrderFlow::catalog($project));
+        $states = array_values(array_intersect($states, $valid));
+        foreach (\App\Support\OrderFlow::coreKeys($project) as $core) {
+            if (!in_array($core, $states)) $states[] = $core;
+        }
+
+        // Guardar en clave nueva (order_flow) y también en legacy para compat.
+        $project->settings()->updateOrCreate(['key' => 'order_flow'],   ['value' => json_encode(array_values($states))]);
+        $project->settings()->updateOrCreate(['key' => 'laundry_flow'], ['value' => json_encode(array_values($states))]);
+
+        // Config por estado: 3 tiempos (objetivo/alerta/crítico), alerta, color, aviso WA y mensaje
+        $target  = (array) $request->input('time_target', []);
+        $warn    = (array) $request->input('time_warn', []);
+        $crit    = (array) $request->input('time_critical', []);
+        $alert   = (array) $request->input('alert', []);
+        $color   = (array) $request->input('color', []);
+        $notify  = (array) $request->input('notify', []);
+        $waMsg   = (array) $request->input('wa_message', []);
+
+        $intOrNull = fn($v) => (isset($v) && $v !== '' && (int) $v > 0) ? (int) $v : null;
+
+        $config = [];
+        foreach ($valid as $key) {
+            $entry = [];
+            if ($t = $intOrNull($target[$key] ?? null)) $entry['time_target']   = $t;
+            if ($w = $intOrNull($warn[$key]   ?? null)) $entry['time_warn']     = $w;
+            if ($c = $intOrNull($crit[$key]   ?? null)) $entry['time_critical'] = $c;
+            if (!empty($alert[$key]))  $entry['alert']  = true;
+            if (!empty($color[$key]))  $entry['color']  = substr((string) $color[$key], 0, 7);
+            if (isset($notify[$key]))  $entry['notify'] = !empty($notify[$key]);
+            if (!empty($waMsg[$key]))  $entry['wa_message'] = mb_substr((string) $waMsg[$key], 0, 500);
+            if ($entry) $config[$key] = $entry;
+        }
+
+        $project->settings()->updateOrCreate(['key' => 'order_flow_config'],   ['value' => json_encode($config)]);
+        $project->settings()->updateOrCreate(['key' => 'laundry_flow_config'], ['value' => json_encode($config)]);
+
+        return back()->with('success', 'Flujo de estados actualizado.');
+    }
+
+    /** Guardar el diagrama (posiciones de nodos + transiciones dibujadas). */
+    public function updateDiagram(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $this->authorizeProject($project);
+
+        $valid = array_keys(\App\Support\OrderFlow::catalog($project));
+
+        // Posiciones: { key: {x, y} }
+        $positions = [];
+        foreach ((array) $request->input('positions', []) as $key => $pos) {
+            if (!in_array($key, $valid)) continue;
+            $positions[$key] = [
+                'x' => (int) ($pos['x'] ?? 0),
+                'y' => (int) ($pos['y'] ?? 0),
+            ];
+        }
+
+        // Transiciones: [ {from, to}, ... ]
+        $transitions = [];
+        foreach ((array) $request->input('transitions', []) as $t) {
+            $from = $t['from'] ?? null;
+            $to   = $t['to'] ?? null;
+            if ($from && $to && in_array($from, $valid) && in_array($to, $valid) && $from !== $to) {
+                $transitions[] = ['from' => $from, 'to' => $to];
+            }
+        }
+
+        $project->settings()->updateOrCreate(
+            ['key' => 'order_flow_diagram'],
+            ['value' => json_encode(['positions' => $positions, 'transitions' => $transitions])]
+        );
+
+        return response()->json(['ok' => true, 'message' => 'Diagrama guardado.']);
     }
 
     public function storeCoupon(Request $request)
