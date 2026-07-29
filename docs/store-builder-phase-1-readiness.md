@@ -141,3 +141,11 @@ Los dos contratos pendientes quedaron resueltos y el catálogo administrativo se
 Las cinco suites auditadas están verdes: **37 tests, 675 aserciones y 0 fallos**. El Paso 4 queda **VERDE**.
 
 Esto no habilita automáticamente la Fase 1 completa. Persisten condiciones previamente documentadas y un hallazgo manual nuevo: a 375 px la barra lateral del layout administrativo recorta el contenido del Diseñador. Debe corregirse mediante una autorización responsive separada antes de considerar el sistema listo para una fase amplia o despliegue.
+
+## Revisión posterior al Paso 5 — 2026-07-28
+
+La autorización responsive separada quedó implementada y validada. A menos de 768 px el sidebar administrativo funciona como drawer accesible sin reservar ancho; Plantillas, Constructor visual y una pantalla normal de Configuración cumplen `scrollWidth <= innerWidth + 1` en 375 × 812 y 375 × 900. Tablet y escritorio conservan el sidebar relativo sin overlay ni bloqueo del `body`.
+
+Las cinco suites anteriores y la nueva prueba contractual están verdes: **41 tests, 719 aserciones y 0 fallos**. El bloqueante responsive de 375 px queda cerrado.
+
+El sistema sigue **NO AUTORIZADO** para iniciar automáticamente la Fase 1 o desplegar: deben respetarse las aprobaciones por paso y los riesgos estructurales todavía documentados. El estado específico del Paso 5 es **VERDE**.

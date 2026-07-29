@@ -216,3 +216,17 @@ Resultados finales individuales:
 Los dos métodos anteriormente pendientes aprobaron por separado con 48 y 13 aserciones. Ejecución conjunta final: **37 tests aprobados, 675 aserciones y 0 fallos**.
 
 Estado del contrato: **VERDE**. Riesgo visual fuera de alcance: la barra lateral global recorta el Diseñador a 375 px; se recomienda tratarla antes de la Fase 1.
+
+## Paso 5 — shell administrativo responsive — 2026-07-28
+
+Se corrigió exclusivamente el layout administrativo global y el contenedor responsive del Diseñador. El sidebar móvil ahora es un drawer accesible y el editor ya no reserva ancho ni recorta formularios a 375 px.
+
+Resultados:
+
+- Cinco suites previas: **37 tests, 675 aserciones, 0 fallos**.
+- `AdminResponsiveLayoutTest.php`: **4 tests, 44 aserciones, 0 fallos**.
+- Ejecución conjunta: **41 tests, 719 aserciones, 0 fallos**.
+- Pruebas de navegador: 15 combinaciones de vista/viewport, todas con `scrollWidth <= innerWidth + 1`.
+- Interacciones móviles aprobadas: abrir, cerrar, overlay, Escape, navegación, bloqueo de scroll, foco y resize a escritorio.
+
+Estado del Paso 5: **VERDE**. No se ejecutaron migraciones, `npm build`, cambios públicos ni despliegue. El detalle está en `docs/store-builder-admin-responsive-report.md`.
