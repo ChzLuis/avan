@@ -118,7 +118,10 @@ class StorefrontSections
 
     public static function ensure(Project $project): void
     {
-        $defaults = self::defaults($project);
+        $loadedSettings = $project->relationLoaded('settings')
+            ? $project->settings->pluck('value', 'key')->all()
+            : null;
+        $defaults = self::defaults($project, $loadedSettings);
         $existing = $project->storeSections()->where('page', 'home')->orderBy('id')->get()->groupBy('component');
 
         foreach (array_keys(self::COMPONENTS) as $index => $component) {

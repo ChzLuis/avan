@@ -235,6 +235,7 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
+        $project->loadMissing('settings');
         StorefrontSections::ensure($project);
         $storefrontContext = $this->storefrontContexts->forProject($project, [
             'preview' => true,
