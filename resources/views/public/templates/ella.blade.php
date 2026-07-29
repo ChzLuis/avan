@@ -308,7 +308,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </header>
 
 {{-- â•â•â• HERO FULL WIDTH â•â•â• --}}
-<section class="relative flex items-center overflow-hidden" style="height:75vh;min-height:480px;background:{{ $settings['hero_bg_color'] ?? '#1a1a2e' }};">
+<section class="relative flex items-center overflow-hidden" data-store-native-section="hero" style="height:75vh;min-height:480px;background:{{ $settings['hero_bg_color'] ?? '#1a1a2e' }};">
   <div class="absolute inset-0 bg-black/40"></div>
   {{-- DecoraciÃ³n geomÃ©trica --}}
   <div class="absolute inset-0 opacity-5" style="background-image:repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%);background-size:30px 30px;"></div>
@@ -338,7 +338,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â•â•â• CATEGORÃAS SCROLL â•â•â• --}}
 @if($categories->count() > 1)
-<section class="py-12 border-b border-gray-100">
+<section class="py-12 border-b border-gray-100" data-store-native-section="featured_categories">
   <div class="max-w-[1400px] mx-auto px-6">
     <h2 class="font-jost font-black text-2xl text-gray-900 mb-6">Comprar por categorÃ­a</h2>
     <div class="flex gap-4 cat-scroll pb-2">
@@ -369,7 +369,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â•â•â• NEW ARRIVALS â•â•â• --}}
 @if($newArrivals->count())
-<section class="py-14 max-w-[1400px] mx-auto px-6">
+<section class="py-14 max-w-[1400px] mx-auto px-6" data-store-native-section="featured_products">
   <div class="flex items-end justify-between mb-8">
     <div>
       <p class="text-xs font-bold uppercase tracking-[.2em] text-gray-400 mb-1">Lo Ãºltimo</p>
@@ -449,7 +449,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 @endif
 
 {{-- â•â•â• BANNER SPLIT 50/50 â•â•â• --}}
-<section class="max-w-[1400px] mx-auto px-6 py-4 mb-10">
+<section class="max-w-[1400px] mx-auto px-6 py-4 mb-10" data-store-native-section="announcements">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-0 overflow-hidden">
     {{-- Izquierda: color + pattern --}}
     <div class="relative flex items-center justify-center p-12 min-h-[260px] overflow-hidden"
@@ -479,7 +479,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â•â•â• EN OFERTA â•â•â• --}}
 @if($onSale->count())
-<section class="py-14 max-w-[1400px] mx-auto px-6">
+<section class="py-14 max-w-[1400px] mx-auto px-6" data-store-native-section="discounts">
   <div class="flex items-end justify-between mb-8">
     <div>
       <p class="text-xs font-bold uppercase tracking-[.2em] text-gray-400 mb-1">Precios rebajados</p>
@@ -548,7 +548,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 @endif
 
 {{-- â•â•â• BANNER 2 â•â•â• --}}
-<section class="max-w-[1400px] mx-auto px-6 py-4 mb-10">
+<section class="max-w-[1400px] mx-auto px-6 py-4 mb-10" data-store-native-section="announcements">
   <div class="relative overflow-hidden flex items-center justify-between px-12 py-14 min-h-[200px]"
        style="background:#111;">
     <div class="absolute inset-0 opacity-5 pointer-events-none"
@@ -1809,7 +1809,6 @@ function store() {
   }
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
-
-

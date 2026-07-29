@@ -1124,5 +1124,6 @@ function store() {
 }
 </script>
 
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>

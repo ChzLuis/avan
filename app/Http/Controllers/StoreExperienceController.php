@@ -1,0 +1,406 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\StorePage;
+use App\Models\StorePopup;
+use App\Models\StoreSection;
+use App\Support\StorefrontSections;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
+
+class StoreExperienceController extends Controller
+{
+    private function project()
+    {
+        return app('active_project');
+    }
+
+    private function redirectToBuilder(string $message, string $fragment = 'constructor-inicio')
+    {
+        return redirect()->route('settings.design', ['s' => 'constructor'])
+            ->withFragment($fragment)
+            ->with('success', $message);
+    }
+
+    public function index()
+    {
+        return redirect()->route('settings.design', ['s' => 'constructor'])
+            ->withFragment('constructor-inicio');
+    }
+
+    public function saveHomeSection(Request $request, string $component)
+    {
+        abort_unless(array_key_exists($component, StorefrontSections::COMPONENTS), 404);
+        $project = $this->project();
+        StorefrontSections::ensure($project);
+        $section = $project->storeSections()->where('page', 'home')->where('component', $component)->oldest('id')->firstOrFail();
+        $action = $request->input('action', 'draft');
+
+        if ($action === 'reset') {
+            $default = StorefrontSections::definition($project, $component);
+            $section->update([
+                'draft_content' => $default['content'],
+                'draft_variant' => $default['variant'],
+                'draft_is_enabled' => $default['enabled'],
+                'draft_sort_order' => $section->sort_order,
+                'has_draft' => true,
+            ]);
+            return $this->redirectToBuilder(
+                'Valores predeterminados restaurados como borrador. Revisa la vista previa antes de publicar.',
+                'home-section-'.$component
+            );
+        }
+
+        $data = $request->validate($this->rulesFor($component, $project->id));
+        $oldContent = $section->contentForPreview();
+        $content = $this->mergeImages($request, $component, $data['content'] ?? [], $oldContent);
+        $variant = $this->variantFor($component, $content);
+        $enabled = $request->boolean('is_enabled');
+        $sortOrder = max(0, (int) ($data['sort_order'] ?? $section->draft_sort_order ?? $section->sort_order));
+
+        if ($component === 'daily_offer' && $request->boolean('content.quick_24')) {
+            $content['ends_at'] = now()->addDay()->format('Y-m-d\TH:i');
+        }
+        unset($content['quick_24']);
+
+        if ($action === 'publish') {
+            $section->fill([
+                'variant' => $variant,
+                'content' => $content,
+                'sort_order' => $sortOrder,
+                'is_enabled' => $enabled,
+                'show_desktop' => $request->boolean('show_desktop'),
+                'show_tablet' => $request->boolean('show_tablet'),
+                'show_mobile' => $request->boolean('show_mobile'),
+                'publish_from' => $data['publish_from'] ?? null,
+                'publish_until' => $data['publish_until'] ?? null,
+                'draft_variant' => null,
+                'draft_content' => null,
+                'draft_sort_order' => null,
+                'draft_is_enabled' => null,
+                'has_draft' => false,
+                'published_at' => now(),
+            ])->save();
+            return $this->redirectToBuilder(
+                StorefrontSections::COMPONENTS[$component].' publicado correctamente.',
+                'home-section-'.$component
+            );
+        }
+
+        $section->fill([
+            'draft_variant' => $variant,
+            'draft_content' => $content,
+            'draft_sort_order' => $sortOrder,
+            'draft_is_enabled' => $enabled,
+            'show_desktop' => $request->boolean('show_desktop'),
+            'show_tablet' => $request->boolean('show_tablet'),
+            'show_mobile' => $request->boolean('show_mobile'),
+            'has_draft' => true,
+        ])->save();
+
+        return $this->redirectToBuilder(
+            'Borrador guardado. La tienda publicada no cambió.',
+            'home-section-'.$component
+        );
+    }
+
+    public function reorderHome(Request $request)
+    {
+        $project = $this->project();
+        $data = $request->validate(['order' => ['required', 'array'], 'order.*' => ['required', 'string', Rule::in(array_keys(StorefrontSections::COMPONENTS))]]);
+        foreach (array_values(array_unique($data['order'])) as $index => $component) {
+            $project->storeSections()->where('page', 'home')->where('component', $component)->update([
+                'draft_sort_order' => ($index + 1) * 10,
+                'has_draft' => true,
+            ]);
+        }
+        return $this->redirectToBuilder('Nuevo orden guardado como borrador.');
+    }
+
+    public function publishAll(Request $request)
+    {
+        $project = $this->project();
+        $sections = $project->storeSections()->where('page', 'home')->get();
+        foreach ($sections as $section) {
+            if (!$section->has_draft) continue;
+            $section->update([
+                'content' => $section->draft_content ?? $section->content,
+                'variant' => $section->draft_variant ?? $section->variant,
+                'sort_order' => $section->draft_sort_order ?? $section->sort_order,
+                'is_enabled' => $section->draft_is_enabled ?? $section->is_enabled,
+                'draft_content' => null,
+                'draft_variant' => null,
+                'draft_sort_order' => null,
+                'draft_is_enabled' => null,
+                'has_draft' => false,
+                'published_at' => now(),
+            ]);
+        }
+        return $this->redirectToBuilder('Todos los borradores fueron publicados.');
+    }
+
+    public function preview()
+    {
+        $project = $this->project();
+        return app(PublicController::class)->previewStorefront($project);
+    }
+
+    private function rulesFor(string $component, int $projectId): array
+    {
+        $rules = [
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_enabled' => ['nullable', 'boolean'],
+            'show_desktop' => ['nullable', 'boolean'],
+            'show_tablet' => ['nullable', 'boolean'],
+            'show_mobile' => ['nullable', 'boolean'],
+            'publish_from' => ['nullable', 'date'],
+            'publish_until' => ['nullable', 'date', 'after_or_equal:publish_from'],
+            'content' => ['required', 'array'],
+        ];
+        $text = ['nullable', 'string', 'max:500'];
+        $url = ['nullable', 'string', 'max:500'];
+        $image = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:6144'];
+
+        $specific = match ($component) {
+            'hero' => [
+                'content.mode' => ['required', Rule::in(['single', 'slider'])],
+                'content.autoplay' => ['nullable', 'boolean'], 'content.interval' => ['nullable', 'integer', 'min:3', 'max:30'],
+                'content.single' => ['required', 'array'], 'content.single.title' => ['nullable', 'string', 'max:180'],
+                'content.single.body' => ['nullable', 'string', 'max:1000'], 'content.single.desktop_image' => $url,
+                'content.single.mobile_image' => $url, 'content.single.desktop_upload' => $image, 'content.single.mobile_upload' => $image,
+                'content.single.primary_text' => $text, 'content.single.primary_url' => $url,
+                'content.single.primary_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+                'content.single.secondary_text' => $text, 'content.single.secondary_url' => $url,
+                'content.single.secondary_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+                'content.slides' => ['nullable', 'array', 'max:12'], 'content.slides.*.key' => ['nullable', 'string', 'max:60'],
+                'content.slides.*.sort_order' => ['nullable', 'integer', 'min:0'],
+                'content.slides.*.enabled' => ['nullable', 'boolean'], 'content.slides.*.title' => ['nullable', 'string', 'max:180'],
+                'content.slides.*.body' => ['nullable', 'string', 'max:1000'], 'content.slides.*.desktop_image' => $url,
+                'content.slides.*.mobile_image' => $url, 'content.slides.*.desktop_upload' => $image, 'content.slides.*.mobile_upload' => $image,
+                'content.slides.*.primary_text' => $text, 'content.slides.*.primary_url' => $url,
+                'content.slides.*.primary_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+                'content.slides.*.secondary_text' => $text, 'content.slides.*.secondary_url' => $url,
+                'content.slides.*.secondary_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            ],
+            'benefits' => [
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.body' => ['nullable', 'string', 'max:1000'],
+                'content.items' => ['required', 'array', 'max:4'], 'content.items.*.key' => ['nullable', 'string', 'max:60'],
+                'content.items.*.sort_order' => ['nullable', 'integer', 'min:0'],
+                'content.items.*.enabled' => ['nullable', 'boolean'], 'content.items.*.title' => ['required', 'string', 'max:120'],
+                'content.items.*.description' => ['nullable', 'string', 'max:500'], 'content.items.*.icon' => ['nullable', 'string', 'max:40'],
+                'content.items.*.image' => $url, 'content.items.*.image_upload' => $image,
+            ],
+            'announcements' => [
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.quantity' => ['required', 'integer', 'min:1', 'max:4'],
+                'content.items' => ['nullable', 'array', 'max:4'], 'content.items.*.key' => ['nullable', 'string', 'max:60'],
+                'content.items.*.sort_order' => ['nullable', 'integer', 'min:0'],
+                'content.items.*.enabled' => ['nullable', 'boolean'], 'content.items.*.title' => ['nullable', 'string', 'max:180'],
+                'content.items.*.description' => ['nullable', 'string', 'max:1000'], 'content.items.*.image' => $url,
+                'content.items.*.image_upload' => $image, 'content.items.*.url' => $url, 'content.items.*.button_text' => $text,
+                'content.items.*.starts_at' => ['nullable', 'date'], 'content.items.*.ends_at' => ['nullable', 'date'],
+            ],
+            'featured_categories' => [
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.display' => ['required', Rule::in(['icons', 'images', 'buttons'])],
+                'content.limit' => ['required', 'integer', 'min:1', 'max:12'], 'content.category_ids' => ['nullable', 'array', 'max:20'],
+                'content.category_ids.*' => ['integer', Rule::exists('categories', 'id')->where('project_id', $projectId)],
+            ],
+            'daily_offer' => [
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.body' => ['nullable', 'string', 'max:1000'],
+                'content.ends_at' => ['nullable', 'date'], 'content.quick_24' => ['nullable', 'boolean'], 'content.image' => $url,
+                'content.image_upload' => $image, 'content.background_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+                'content.button_text' => $text, 'content.button_url' => $url,
+                'content.expired_action' => ['required', Rule::in(['hide', 'message'])], 'content.expired_message' => $text,
+            ],
+            'discounts' => [
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.limit' => ['required', 'integer', 'min:1', 'max:24'],
+                'content.layout' => ['required', Rule::in(['grid', 'carousel'])], 'content.columns_desktop' => ['required', 'integer', 'min:1', 'max:6'],
+                'content.columns_tablet' => ['required', 'integer', 'min:1', 'max:4'], 'content.columns_mobile' => ['required', 'integer', 'min:1', 'max:2'],
+                'content.selection' => ['required', Rule::in(['automatic', 'manual'])], 'content.product_ids' => ['nullable', 'array', 'max:50'],
+                'content.product_ids.*' => ['integer', Rule::exists('products', 'id')->where('project_id', $projectId)],
+                'content.show_old_price' => ['nullable', 'boolean'], 'content.show_current_price' => ['nullable', 'boolean'],
+                'content.show_percentage' => ['nullable', 'boolean'],
+            ],
+            'featured_products' => [
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.limit' => ['required', 'integer', 'min:1', 'max:24'],
+                'content.selection' => ['required', Rule::in(['automatic', 'manual'])], 'content.product_ids' => ['nullable', 'array', 'max:50'],
+                'content.product_ids.*' => ['integer', Rule::exists('products', 'id')->where('project_id', $projectId)],
+                'content.show_arrows' => ['nullable', 'boolean'], 'content.allow_swipe' => ['nullable', 'boolean'],
+                'content.autoplay' => ['nullable', 'boolean'], 'content.autoplay_seconds' => ['nullable', 'integer', 'min:3', 'max:30'],
+            ],
+            'blog' => [
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.limit' => ['required', 'integer', 'min:2', 'max:3'],
+                'content.all_text' => $text, 'content.all_url' => $url, 'content.items' => ['nullable', 'array', 'max:6'],
+                'content.items.*.key' => ['nullable', 'string', 'max:60'], 'content.items.*.enabled' => ['nullable', 'boolean'],
+                'content.items.*.sort_order' => ['nullable', 'integer', 'min:0'],
+                'content.items.*.image' => $url, 'content.items.*.image_upload' => $image,
+                'content.items.*.tag' => ['nullable', 'string', 'max:80'], 'content.items.*.title' => ['nullable', 'string', 'max:180'],
+                'content.items.*.summary' => ['nullable', 'string', 'max:1000'], 'content.items.*.date' => ['nullable', 'date'],
+                'content.items.*.button_text' => $text, 'content.items.*.url' => $url,
+            ],
+        };
+
+        return array_merge($rules, $specific);
+    }
+
+    private function mergeImages(Request $request, string $component, array $content, array $old): array
+    {
+        $store = fn ($file) => $file->store('store-sections/' . $this->project()->id, 'public');
+
+        if ($component === 'hero') {
+            foreach (['desktop', 'mobile'] as $device) {
+                $path = "content.single.{$device}_upload";
+                $content['single']["{$device}_image"] = $request->hasFile($path)
+                    ? $store($request->file($path))
+                    : ($content['single']["{$device}_image"] ?? data_get($old, "single.{$device}_image"));
+                unset($content['single']["{$device}_upload"]);
+            }
+            $content['slides'] = $this->mergeItemImages($request, $content['slides'] ?? [], $old['slides'] ?? [], ['desktop', 'mobile'], $store, 'slides');
+        } elseif (in_array($component, ['benefits', 'announcements', 'blog'], true)) {
+            $content['items'] = $this->mergeItemImages($request, $content['items'] ?? [], $old['items'] ?? [], [''], $store, 'items');
+        } elseif ($component === 'daily_offer') {
+            $content['image'] = $request->hasFile('content.image_upload')
+                ? $store($request->file('content.image_upload'))
+                : ($content['image'] ?? $old['image'] ?? null);
+            unset($content['image_upload']);
+        }
+
+        $content = $this->normalizeBooleans($component, $content);
+        foreach (['slides', 'items'] as $collection) {
+            if (isset($content[$collection]) && is_array($content[$collection])) {
+                $content[$collection] = collect($content[$collection])->sortBy('sort_order')->values()->all();
+            }
+        }
+        return $content;
+    }
+
+    private function mergeItemImages(Request $request, array $items, array $oldItems, array $devices, callable $store, string $collection): array
+    {
+        $oldByKey = collect($oldItems)->keyBy('key');
+        foreach ($items as $index => &$item) {
+            $item['key'] = $item['key'] ?? ('item-' . $index . '-' . substr(md5((string) microtime(true)), 0, 6));
+            $old = $oldByKey->get($item['key'], []);
+            foreach ($devices as $device) {
+                $prefix = $device ? "{$device}_" : '';
+                $uploadKey = "content.{$collection}.{$index}.{$prefix}upload";
+                $imageKey = "{$prefix}image";
+                $item[$imageKey] = $request->hasFile($uploadKey) ? $store($request->file($uploadKey)) : ($item[$imageKey] ?? $old[$imageKey] ?? null);
+                unset($item["{$prefix}upload"]);
+            }
+        }
+        unset($item);
+        return array_values($items);
+    }
+
+    private function normalizeBooleans(string $component, array $content): array
+    {
+        foreach (['autoplay', 'show_old_price', 'show_current_price', 'show_percentage', 'show_arrows', 'allow_swipe'] as $key) {
+            if (array_key_exists($key, $content)) $content[$key] = filter_var($content[$key], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($content['items'])) {
+            foreach ($content['items'] as &$item) $item['enabled'] = filter_var($item['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            unset($item);
+        }
+        if ($component === 'hero' && isset($content['slides'])) {
+            foreach ($content['slides'] as &$slide) $slide['enabled'] = filter_var($slide['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            unset($slide);
+        }
+        return $content;
+    }
+
+    private function variantFor(string $component, array $content): string
+    {
+        return match ($component) {
+            'hero' => $content['mode'] ?? 'single',
+            'announcements' => 'auto',
+            'featured_categories' => $content['display'] ?? 'images',
+            'discounts' => $content['layout'] ?? 'grid',
+            default => StorefrontSections::defaults($this->project())[$component]['variant'] ?? 'default',
+        };
+    }
+
+    // Compatibilidad con el formulario anterior.
+    public function section(Request $request)
+    {
+        $project = $this->project();
+        $data = $request->validate([
+            'page' => 'required|string|max:40', 'component' => 'required|string|max:80', 'variant' => 'nullable|string|max:60',
+            'title' => 'nullable|string|max:180', 'body' => 'nullable|string|max:4000', 'button_text' => 'nullable|string|max:80',
+            'button_url' => 'nullable|string|max:500', 'image' => 'nullable|image|max:4096', 'sort_order' => 'nullable|integer|min:0',
+            'publish_from' => 'nullable|date', 'publish_until' => 'nullable|date|after_or_equal:publish_from',
+        ]);
+        $old = $request->integer('id') ? $project->storeSections()->findOrFail($request->integer('id')) : null;
+        $image = data_get($old?->content, 'image');
+        if ($request->hasFile('image')) $image = $request->file('image')->store('store-sections', 'public');
+        StoreSection::updateOrCreate(['id' => $request->integer('id'), 'project_id' => $project->id], [
+            'page' => $data['page'], 'component' => $data['component'], 'variant' => $data['variant'] ?? null,
+            'content' => ['title' => $data['title'] ?? '', 'body' => $data['body'] ?? '', 'button_text' => $data['button_text'] ?? '', 'button_url' => $data['button_url'] ?? '', 'image' => $image],
+            'sort_order' => $data['sort_order'] ?? 0, 'publish_from' => $data['publish_from'] ?? null,
+            'publish_until' => $data['publish_until'] ?? null, 'is_enabled' => $request->boolean('is_enabled'),
+            'show_desktop' => $request->boolean('show_desktop'), 'show_tablet' => $request->boolean('show_tablet'),
+            'show_mobile' => $request->boolean('show_mobile'), 'published_at' => now(),
+        ]);
+        return back()->with('success', 'Sección guardada.');
+    }
+
+    public function deleteSection($id)
+    {
+        $this->project()->storeSections()->findOrFail($id)->delete();
+        return back()->with('success', 'Sección eliminada.');
+    }
+
+    public function page(Request $request)
+    {
+        $project = $this->project();
+        $data = $request->validate([
+            'key' => ['required','string','max:50','regex:/^[a-z0-9-]+$/'], 'title' => 'required|string|max:160', 'body' => 'nullable|string|max:12000',
+            'history' => 'nullable|string|max:12000', 'mission' => 'nullable|string|max:3000', 'vision' => 'nullable|string|max:3000',
+            'values' => 'nullable|string|max:5000', 'team' => 'nullable|string|max:8000', 'image' => 'nullable|image|max:4096',
+            'gallery_images' => ['nullable','array','max:8'], 'gallery_images.*' => ['image','mimes:jpg,jpeg,png,webp','max:4096'],
+            'button_heading' => 'nullable|string|max:160', 'button_body' => 'nullable|string|max:500',
+            'button_text' => 'nullable|string|max:80', 'button_url' => ['nullable','string','max:500',function($attribute,$value,$fail){if($value&&!str_starts_with($value,'/')&&!(filter_var($value,FILTER_VALIDATE_URL)&&in_array(strtolower((string)parse_url($value,PHP_URL_SCHEME)),['http','https'],true)))$fail('El enlace debe ser interno o comenzar con http:// o https://.');}],
+            'phone' => 'nullable|string|max:40', 'whatsapp' => 'nullable|string|max:40', 'email' => 'nullable|email|max:160',
+            'address' => 'nullable|string|max:255', 'hours' => 'nullable|string|max:255',
+            'map_url' => 'nullable|url:http,https|max:1000', 'confirmation_message' => 'nullable|string|max:500',
+            'facebook_url' => 'nullable|url:http,https|max:500', 'instagram_url' => 'nullable|url:http,https|max:500',
+            'linkedin_url' => 'nullable|url:http,https|max:500', 'tiktok_url' => 'nullable|url:http,https|max:500',
+        ]);
+        $existing = StorePage::where('project_id', $project->id)->where('key', $data['key'])->first();
+        $image = data_get($existing?->content, 'image');
+        if ($request->hasFile('image')) $image = $request->file('image')->store('store-pages', 'public');
+        $gallery = collect(data_get($existing?->content,'gallery',[]));
+        foreach ($request->file('gallery_images',[]) as $file) $gallery->push($file->store('store-pages/gallery','public'));
+        unset($data['image'],$data['gallery_images']);
+        foreach (['show_history','show_mission','show_vision','show_values','show_team','show_gallery','show_cta','require_phone','require_email'] as $key) $data[$key]=$request->boolean($key);
+        StorePage::updateOrCreate(['project_id' => $project->id, 'key' => $data['key']], [
+            'title' => $data['title'], 'content' => array_merge($data, ['image' => $image, 'gallery'=>$gallery->values()->all()]),
+            'is_enabled' => $request->boolean('is_enabled'),
+        ]);
+        return back()->with('success', 'Página guardada.');
+    }
+
+    public function popup(Request $request)
+    {
+        $project = $this->project();
+        $data = $request->validate([
+            'title' => 'nullable|string|max:160', 'description' => 'nullable|string|max:4000', 'image' => 'nullable|image|max:4096',
+            'button_text' => 'nullable|string|max:80', 'button_url' => 'nullable|string|max:500', 'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date|after_or_equal:starts_at', 'delay_seconds' => 'nullable|integer|min:0|max:60',
+            'frequency' => 'required|in:session,day,always',
+        ]);
+        $popup = $project->storePopups()->latest()->first() ?: new StorePopup(['project_id' => $project->id]);
+        if ($request->hasFile('image')) $data['image_path'] = $request->file('image')->store('store-popups', 'public');
+        unset($data['image']);
+        $popup->fill($data + ['is_enabled' => $request->boolean('is_enabled'), 'show_desktop' => $request->boolean('show_desktop'), 'show_mobile' => $request->boolean('show_mobile')]);
+        $popup->save();
+        return back()->with('success', 'Pop-up guardado.');
+    }
+
+    public function complaintStatus(Request $request, $id)
+    {
+        $complaint = $this->project()->hasMany(\App\Models\Complaint::class)->findOrFail($id);
+        $complaint->update($request->validate(['status' => 'required|in:received,in_review,resolved,closed']));
+        return back()->with('success', 'Estado del reclamo actualizado.');
+    }
+}

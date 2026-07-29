@@ -14,6 +14,9 @@ $showCats        = ($settings['footer_show_categories'] ?? '1') === '1';
 $showSocial      = ($settings['footer_show_social']     ?? '1') === '1';
 $showNewsletter  = ($settings['footer_show_newsletter'] ?? '1') === '1';
 $showAddress     = ($settings['footer_show_address']    ?? '1') === '1';
+$contactEmail    = $settings['contact_email']           ?? $project->email ?? null;
+$contactPhone    = $settings['contact_phone']           ?? $project->phone ?? null;
+$businessHours   = $settings['business_hours']          ?? '';
 $copyright       = $settings['footer_copyright']        ?? ('© ' . date('Y') . ' ' . $project->name . '. Todos los derechos reservados.');
 $devText         = $settings['footer_dev_text']         ?? 'Desarrollado por AVAN';
 $newsletterTitle = $settings['footer_newsletter_title'] ?? 'Boletín';
@@ -108,16 +111,41 @@ if ($waNum && !str_starts_with($waNum, $waCountry)) $waNum = $waCountry . $waNum
             </div>
           </div>
           @endif
-          @if($project->email ?? null)
+          @if($contactEmail)
           <div class="flex items-start gap-3">
             <svg class="w-5 h-5 flex-shrink-0 mt-0.5 opacity-60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
             </svg>
             <div>
               <p class="text-xs opacity-60 mb-0.5">Contáctanos</p>
-              <a href="mailto:{{ $project->email }}" class="font-bold hover:opacity-80 transition" style="color:{{ $fText }}">
-                {{ $project->email }}
+              <a href="mailto:{{ $contactEmail }}" class="font-bold hover:opacity-80 transition" style="color:{{ $fText }}">
+                {{ $contactEmail }}
               </a>
+            </div>
+          </div>
+          @endif
+          @if($contactPhone)
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5 opacity-60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 4.5l3 3c.86.86 2.25 1.2 3.47.8l1.4-.46a.75.75 0 01.8.24l2.37 2.96a.75.75 0 01-.04 1.02l-1.32 1.31c-.66.66-.74 1.72-.21 2.5l1.84 3.06c.52.87 1.59 1.2 2.48.78l2.99-1.23a2.25 2.25 0 001.35-2.74l-1.27-4.15a2.25 2.25 0 00-2.03-1.58l-1.73-.1a.75.75 0 01-.7-.5l-.66-1.76a.75.75 0 01.3-.84l1.97-1.42a2.25 2.25 0 00.8-3.17L16.5 2.25"/>
+            </svg>
+            <div>
+              <p class="text-xs opacity-60 mb-0.5">Teléfono</p>
+              <a href="tel:{{ $contactPhone }}" class="font-bold hover:opacity-80 transition" style="color:{{ $fText }}">
+                {{ $contactPhone }}
+              </a>
+            </div>
+          </div>
+          @endif
+          @if($businessHours)
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5 opacity-60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+              <p class="text-xs opacity-60 mb-0.5">Horario</p>
+              <p class="font-bold leading-snug" style="color:{{ $fText }}">{{ $businessHours }}</p>
             </div>
           </div>
           @endif

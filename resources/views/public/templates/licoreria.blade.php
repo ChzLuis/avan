@@ -610,7 +610,7 @@ label.checked .check-box { border-color:var(--gold); background:var(--gold); col
 </header>
 
 {{-- HERO --}}
-<section class="hero">
+<section class="hero" data-store-native-section="hero">
   <div id="heroTrack" class="hero-track">
 
     {{-- Slide 1 --}}
@@ -718,7 +718,7 @@ label.checked .check-box { border-color:var(--gold); background:var(--gold); col
 </section>
 
 {{-- TRUST STRIP --}}
-<section class="trust-strip">
+<section class="trust-strip" data-store-native-section="benefits">
   <div class="container">
     <div class="trust-item">
       <div class="ti-ico">{{ $trustIcon1 }}</div>
@@ -904,7 +904,7 @@ label.checked .check-box { border-color:var(--gold); background:var(--gold); col
 
 {{-- OFFERS SECTION --}}
 @if($onSale->count() > 0)
-<section class="section" style="background:var(--bg-1);padding:48px 0;">
+<section class="section" data-store-native-section="discounts" style="background:var(--bg-1);padding:48px 0;">
   <div class="container">
     <div class="section-head">
       <div>
@@ -1608,5 +1608,6 @@ function licStore() {
 }
 </script>
 
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>

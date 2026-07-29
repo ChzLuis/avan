@@ -340,7 +340,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 @endif
 
 {{-- â•â•â• HERO CAROUSEL â•â•â• --}}
-<section x-data="{ slide: 0, playing: true }"
+<section data-store-native-section="hero" x-data="{ slide: 0, playing: true }"
          x-init="setInterval(() => { if(playing) slide = slide === 0 ? 1 : 0; }, 4000)"
          class="relative overflow-hidden" style="height:50vh;min-height:360px;">
 
@@ -406,7 +406,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </section>
 
 {{-- â•â•â• 3 BANNERS â•â•â• --}}
-<section class="max-w-[1400px] mx-auto px-4 py-6">
+<section class="max-w-[1400px] mx-auto px-4 py-6" data-store-native-section="announcements">
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <div class="bg-red-500 rounded-2xl p-6 text-white relative overflow-hidden cursor-pointer hover:bg-red-600 transition"
          @click="onSaleFilter=true; document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">
@@ -1636,7 +1636,6 @@ function store() {
   }
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
-
-

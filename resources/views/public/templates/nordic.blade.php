@@ -317,7 +317,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 </header>
 
 {{-- â•â•â• HERO â•â•â• --}}
-<section class="relative flex items-center justify-center overflow-hidden text-center"
+<section class="relative flex items-center justify-center overflow-hidden text-center" data-store-native-section="hero"
          style="height:60vh;min-height:400px;background:{{ $settings['hero_bg_color'] ?? '#e8e0d6' }};">
   <div class="absolute inset-0" style="background:rgba(247,243,238,.65);"></div>
   <div class="relative z-10 max-w-2xl mx-auto px-6">
@@ -350,7 +350,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â•â•â• CATEGORÃAS GRID 3 COL â•â•â• --}}
 @if($categories->count() > 1)
-<section class="max-w-[1200px] mx-auto px-6 py-16">
+<section class="max-w-[1200px] mx-auto px-6 py-16" data-store-native-section="featured_categories">
   <div class="text-center mb-10">
     <span class="text-xs font-semibold uppercase tracking-[.25em] opacity-50">Navegar</span>
     <h2 class="font-bold text-3xl mt-1">CategorÃ­as</h2>
@@ -383,7 +383,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â•â•â• DESTACADOS 3 COLUMNAS â•â•â• --}}
 @if($featured->count())
-<section class="py-16" style="background:var(--card);">
+<section class="py-16" data-store-native-section="featured_products" style="background:var(--card);">
   <div class="max-w-[1200px] mx-auto px-6">
     <div class="text-center mb-10">
       <span class="text-xs font-semibold uppercase tracking-[.25em] opacity-50">SelecciÃ³n especial</span>
@@ -469,7 +469,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 @endif
 
 {{-- â•â•â• BANNER BEIGE CENTRADO â•â•â• --}}
-<section class="py-20 text-center" style="background:var(--border);">
+<section class="py-20 text-center" data-store-native-section="announcements" style="background:var(--border);">
   <div class="max-w-[700px] mx-auto px-6">
     {{-- DecoraciÃ³n de lÃ­neas --}}
     <div class="flex items-center gap-6 justify-center mb-6 opacity-30">
@@ -500,7 +500,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â•â•â• NOVEDADES â•â•â• --}}
 @if($newArrivals->count())
-<section class="max-w-[1200px] mx-auto px-6 py-16">
+<section class="max-w-[1200px] mx-auto px-6 py-16" data-store-native-section="featured_products">
   <div class="text-center mb-10">
     <span class="text-xs font-semibold uppercase tracking-[.25em] opacity-50">ReciÃ©n llegados</span>
     <h2 class="font-bold text-3xl mt-1">Novedades</h2>
@@ -1798,7 +1798,6 @@ function store() {
   }
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
-
-

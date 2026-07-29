@@ -58,6 +58,13 @@ class Project extends Model
     public function proposals(): HasMany   { return $this->hasMany(Proposal::class); }
     public function operationalMaps(): HasMany    { return $this->hasMany(OperationalMap::class); }
     public function operationalObjects(): HasMany { return $this->hasMany(OperationalObject::class); }
+    public function storeSections(): HasMany      { return $this->hasMany(StoreSection::class); }
+    public function storePages(): HasMany         { return $this->hasMany(StorePage::class); }
+    public function storePopups(): HasMany        { return $this->hasMany(StorePopup::class); }
+    public function storeMenus(): HasMany         { return $this->hasMany(StoreMenu::class); }
+    public function storeMenuItems(): HasMany     { return $this->hasMany(StoreMenuItem::class); }
+    public function contactMessages(): HasMany    { return $this->hasMany(ContactMessage::class); }
+    public function complaints(): HasMany         { return $this->hasMany(Complaint::class); }
 
     public function setting(string $key, mixed $default = null): mixed
     {

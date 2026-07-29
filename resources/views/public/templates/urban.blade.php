@@ -353,7 +353,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      HERO
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section class="hero-section" style="background:{{ $heroBg }};">
+<section class="hero-section" data-store-native-section="hero" style="background:{{ $heroBg }};">
   {{-- Textura sutil de fondo --}}
   <div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image:repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%);background-size:20px 20px;"></div>
 
@@ -392,7 +392,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      CATEGORÃAS (scroll horizontal)
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @if($categories->count() > 1)
-<section class="py-12" style="background:#000;">
+<section class="py-12" data-store-native-section="featured_categories" style="background:#000;">
   <div class="max-w-[1400px] mx-auto px-4">
     <div class="flex items-center justify-between mb-6">
       <h2 class="section-title text-2xl">CategorÃ­as</h2>
@@ -423,7 +423,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      DROPS â€” Novedades
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @if($newArrivals->count())
-<section class="py-14" style="background:#0a0a0a;">
+<section class="py-14" data-store-native-section="featured_products" style="background:#0a0a0a;">
   <div class="max-w-[1400px] mx-auto px-4">
     <div class="flex items-center gap-4 mb-8">
       <h2 class="section-title">DROPS</h2>
@@ -487,7 +487,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      BANNER FULL-WIDTH OFERTA
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section id="seccion-ofertas" style="background:var(--c);">
+<section id="seccion-ofertas" data-store-native-section="daily_offer" style="background:var(--c);">
   <div class="max-w-[1400px] mx-auto px-4 py-16 flex flex-col md:flex-row items-center justify-between gap-6">
     <div>
       <p class="text-black/60 text-sm font-bold uppercase tracking-widest mb-2">Ofertas especiales</p>
@@ -508,7 +508,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      BEST SELLERS â€” Destacados
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @if($featured->count())
-<section class="py-14" style="background:#000;">
+<section class="py-14" data-store-native-section="featured_products" style="background:#000;">
   <div class="max-w-[1400px] mx-auto px-4">
     <div class="flex items-center gap-4 mb-8">
       <h2 class="section-title">BEST SELLERS</h2>
@@ -2060,7 +2060,6 @@ function store() {
   drop.addEventListener('mouseleave', urbHide);
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
-
-

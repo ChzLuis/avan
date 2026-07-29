@@ -468,7 +468,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- ═══════════════════════════════════════════
      HERO + BANNERS
 ═══════════════════════════════════════════ --}}
-<section class="max-w-[1400px] mx-auto px-4 py-5">
+<section class="max-w-[1400px] mx-auto px-4 py-5" data-store-native-section="hero">
   <div class="flex gap-4">
 
     {{-- Sidebar Categorías --}}
@@ -548,7 +548,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      TOP CATEGORÍAS (cards)
 ═══════════════════════════════════════════ --}}
 @if($categories->count() > 1)
-<section class="max-w-[1400px] mx-auto px-4 pb-6" aria-label="Explorar categorías">
+<section class="max-w-[1400px] mx-auto px-4 pb-6" data-store-native-section="featured_categories" aria-label="Explorar categorías">
   <div class="flex items-center justify-between mb-3">
     <h2 class="font-black text-gray-900 text-lg">Explorar categorías</h2>
   </div>
@@ -572,7 +572,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- ═══════════════════════════════════════════
      TABS: NOVEDADES / OFERTAS / TODOS
 ═══════════════════════════════════════════ --}}
-<section id="tabs-section" class="max-w-[1400px] mx-auto px-4 pb-8" x-data="{ tab: 'new' }">
+<section id="tabs-section" class="max-w-[1400px] mx-auto px-4 pb-8" data-store-native-section="featured_products discounts" x-data="{ tab: 'new' }">
   {{-- Header --}}
   <div class="flex items-center gap-6 border-b-2 border-gray-200 mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4">
     <button @click="tab='new'"
@@ -2161,5 +2161,6 @@ function store() {
   };
 }
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>

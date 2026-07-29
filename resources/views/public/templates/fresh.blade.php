@@ -852,7 +852,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 
 {{-- â”€â”€â”€ HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
-<section class="relative flex items-center" style="min-height:65vh; background:{{ $heroBg }};">
+<section class="relative flex items-center" data-store-native-section="hero" style="min-height:65vh; background:{{ $heroBg }};">
   {{-- DecoraciÃ³n ondas --}}
   <svg class="absolute bottom-0 left-0 right-0 w-full" viewBox="0 0 1440 60" preserveAspectRatio="none" fill="#f9fffe" xmlns="http://www.w3.org/2000/svg">
     <path d="M0,40 C360,0 1080,60 1440,20 L1440,60 L0,60 Z"/>
@@ -885,7 +885,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â”€â”€â”€ ÃCONOS CATEGORÃAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
 @if($categories->count() > 0)
-<section class="max-w-6xl mx-auto px-4 pt-10 pb-6">
+<section class="max-w-6xl mx-auto px-4 pt-10 pb-6" data-store-native-section="featured_categories">
   <div class="frsh-cat-outer">
     <button class="frsh-arrow r-hidden" id="frsh-cat-prev" onclick="frshCatScroll(-1)" aria-label="Anterior">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
@@ -917,7 +917,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 {{-- â”€â”€â”€ SECCIÃ“N PRODUCTOS FRESCOS (newArrivals) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
 @if($newArrivals->count() > 0)
-<section id="frescos" class="max-w-6xl mx-auto px-4 pb-14">
+<section id="frescos" class="max-w-6xl mx-auto px-4 pb-14" data-store-native-section="featured_products">
   <div class="flex items-center gap-3 mb-7">
     <span class="text-2xl">ðŸŒ¿</span>
     <h2 class="text-xl font-bold text-green-800">Productos Frescos</h2>
@@ -999,7 +999,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 
 {{-- â”€â”€â”€ TRUST BADGES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
-<section class="bg-[#f0fdf4] py-12 px-4">
+<section class="bg-[#f0fdf4] py-12 px-4" data-store-native-section="benefits">
   <div class="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
     <div>
       <div class="text-4xl mb-2">ðŸšš</div>
@@ -1026,7 +1026,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 
 
 {{-- â”€â”€â”€ BANNER CENTRAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
-<section class="py-16 px-4" style="background:{{ $heroBg }};">
+<section class="py-16 px-4" data-store-native-section="announcements" style="background:{{ $heroBg }};">
   <div class="max-w-2xl mx-auto text-center">
     <h2 class="text-white font-bold text-3xl mb-3">{{ $b1Title }}</h2>
     @if($b1Sub)
@@ -2092,7 +2092,6 @@ function store() {
   }
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
-
-

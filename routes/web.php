@@ -269,6 +269,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/design',   [SettingsController::class, 'design'])->name('settings.design');
         Route::post('/settings/design',  [SettingsController::class, 'updateDesign'])->name('settings.design.update');
         Route::post('/settings/design/apply-template', [SettingsController::class, 'applyTemplate'])->name('settings.design.applyTemplate');
+        Route::post('/settings/design/apply-project-template', [SettingsController::class, 'applyProjectTemplate'])->name('settings.design.applyProjectTemplate');
+        Route::post('/settings/design/project-templates', [SettingsController::class, 'storeProjectTemplate'])->name('settings.design.projectTemplates.store');
+        Route::put('/settings/design/project-templates/{id}', [SettingsController::class, 'updateProjectTemplate'])->name('settings.design.projectTemplates.update');
+        Route::delete('/settings/design/project-templates/{id}', [SettingsController::class, 'destroyProjectTemplate'])->name('settings.design.projectTemplates.destroy');
+        Route::get('/settings/experience', [\App\Http\Controllers\StoreExperienceController::class, 'index'])->name('settings.experience');
+        Route::post('/settings/experience/home/reorder', [\App\Http\Controllers\StoreExperienceController::class, 'reorderHome'])->name('settings.experience.home.reorder');
+        Route::post('/settings/experience/home/publish-all', [\App\Http\Controllers\StoreExperienceController::class, 'publishAll'])->name('settings.experience.home.publishAll');
+        Route::post('/settings/experience/home/{component}', [\App\Http\Controllers\StoreExperienceController::class, 'saveHomeSection'])->name('settings.experience.home.save');
+        Route::get('/settings/experience/preview', [\App\Http\Controllers\StoreExperienceController::class, 'preview'])->name('settings.experience.preview');
+        Route::post('/settings/experience/section', [\App\Http\Controllers\StoreExperienceController::class, 'section'])->name('settings.experience.section');
+        Route::delete('/settings/experience/section/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'deleteSection'])->name('settings.experience.section.delete');
+        Route::post('/settings/experience/page', [\App\Http\Controllers\StoreExperienceController::class, 'page'])->name('settings.experience.page');
+        Route::post('/settings/experience/popup', [\App\Http\Controllers\StoreExperienceController::class, 'popup'])->name('settings.experience.popup');
+        Route::post('/settings/storefront/header', [\App\Http\Controllers\StoreNavigationController::class, 'updateHeader'])->name('settings.storefront.header');
+        Route::post('/settings/storefront/publish', [\App\Http\Controllers\StoreNavigationController::class, 'publishStructure'])->name('settings.storefront.publish');
+        Route::post('/settings/storefront/menu/items', [\App\Http\Controllers\StoreNavigationController::class, 'storeItem'])->name('settings.storefront.menu.items.store');
+        Route::put('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'updateItem'])->name('settings.storefront.menu.items.update');
+        Route::delete('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'destroyItem'])->name('settings.storefront.menu.items.destroy');
+        Route::post('/settings/storefront/menu/reorder', [\App\Http\Controllers\StoreNavigationController::class, 'reorder'])->name('settings.storefront.menu.reorder');
+        Route::patch('/settings/experience/complaints/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'complaintStatus'])->name('settings.experience.complaint.status');
         Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo');
         Route::get('/notifications/imports',  [SettingsController::class, 'importLogs'])->name('notifications.imports');
         Route::get('/settings/payments', [SettingsController::class, 'payments'])->name('settings.payments');
@@ -358,8 +378,25 @@ Route::get('/robots.txt', function () {
 
 // ─── Catálogo público ─────────────────────────────────────────────────────────
 $reserved = 'login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|wa|cert';
+Route::get('/storefront-preview/{project}', function (\App\Models\Project $project) {
+    abort_unless($project->is_active, 404);
+    if (request('page') === 'shop') {
+        request()->attributes->set('storefront_preview', true);
+        return app(\App\Http\Controllers\PublicController::class)->shop(request(), $project->slug);
+    }
+    return app(\App\Http\Controllers\PublicController::class)->previewStorefront($project);
+})->middleware('signed')->name('public.storefront.preview');
 Route::get('/{slug}/sitemap.xml', [PublicController::class, 'sitemap'])->name('public.sitemap')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/robots.txt',  [PublicController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/nosotros', [\App\Http\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/blog', [\App\Http\Controllers\StorePageController::class, 'blog'])->name('public.blog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/blog/{key}', [\App\Http\Controllers\StorePageController::class, 'blogPost'])->name('public.blog.show')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-zA-Z0-9_-]+');
+Route::post('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-z0-9-]+');
+Route::get('/{slug}/tienda', [PublicController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/p/{id}',   [PublicController::class, 'product'])->name('public.product')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('id', '[0-9]+');
 Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');

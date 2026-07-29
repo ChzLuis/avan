@@ -708,7 +708,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
      â•‘  HERO â€” 2 slides Alpine auto-rotando            â•‘
      â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section x-data="{
+<section data-store-native-section="hero" x-data="{
   slide: 0,
   slides: [
     {title:'{{ addslashes($heroTitle) }}', sub:'{{ addslashes($heroSub) }}', badge:'{{ addslashes($heroBadge) }}', bg:'{{ $heroBg }}'},
@@ -760,7 +760,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
      â•‘  3 BANNERS FILA                                 â•‘
      â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section class="max-w-7xl mx-auto px-4 py-7">
+<section class="max-w-7xl mx-auto px-4 py-7" data-store-native-section="announcements">
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <!-- Banner 1 â€” color primario -->
     <div class="bg-accent rounded-xl p-7 text-white relative overflow-hidden flex flex-col justify-between min-h-[130px]">
@@ -796,7 +796,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
      â•‘  NEW ARRIVALS con TABS                          â•‘
      â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section id="novedades" class="max-w-7xl mx-auto px-4 py-8" x-data="{tab:'new'}">
+<section id="novedades" class="max-w-7xl mx-auto px-4 py-8" data-store-native-section="featured_products" x-data="{tab:'new'}">
   <div class="flex items-center gap-1 border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
     <h2 class="font-bold text-gray-800 text-xl mr-5 whitespace-nowrap">Productos</h2>
     <button @click="tab='new'"
@@ -1008,7 +1008,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
      â•‘  BANNER FULL WIDTH                              â•‘
      â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section class="py-20 px-4 bg-accent relative overflow-hidden my-4">
+<section class="py-20 px-4 bg-accent relative overflow-hidden my-4" data-store-native-section="daily_offer">
   <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(circle at 80% 50%, #fff 2px, transparent 2px);background-size:50px 50px;"></div>
   <div class="relative text-center max-w-2xl mx-auto">
     <p class="text-white font-extrabold text-3xl md:text-4xl mb-3">Ofertas Especiales</p>
@@ -1024,7 +1024,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      â•‘  BEST SELLERS                                   â•‘
      â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @if($featured->count() > 0)
-<section class="max-w-7xl mx-auto px-4 py-8">
+<section class="max-w-7xl mx-auto px-4 py-8" data-store-native-section="featured_products">
   <div class="flex items-center justify-between mb-6">
     <h2 class="font-bold text-gray-800 text-xl">MÃ¡s vendidos</h2>
     <a href="#catalogo" class="text-xs accent font-semibold hover:opacity-70 transition">Ver todo â†’</a>
@@ -1099,7 +1099,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
      â•‘  TRUST ROW                                      â•‘
      â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section class="bg-white border-y border-gray-100 py-10 my-4">
+<section class="bg-white border-y border-gray-100 py-10 my-4" data-store-native-section="benefits">
   <div class="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
     <div class="flex flex-col items-center gap-2.5">
       <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-2xl">ðŸšš</div>
@@ -2011,7 +2011,6 @@ function store() {
   }
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
-
-

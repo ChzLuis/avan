@@ -42,10 +42,25 @@ class DetectCustomDomain
 
             $path = rtrim($request->getPathInfo(), '/');
 
-            // Raíz o slug → servir catálogo directamente sin cambiar URL
+            // Raíz o slug → servir catálogo (inicio) directamente sin cambiar URL
             if ($path === '' || $path === '/' . $project->slug) {
                 $view = app(PublicController::class)->catalog($project->slug);
                 return response()->make($view instanceof Response ? $view->getContent() : $view);
+            }
+
+            // /tienda → catálogo completo con filtros (modo tienda)
+            if ($path === '/tienda') {
+                $view = app(PublicController::class)->shop($request, $project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            // /nosotros y /contacto → páginas institucionales
+            if ($path === '/nosotros') {
+                $view = app(\App\Http\Controllers\StorePageController::class)->about($project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            if ($path === '/contacto' && $request->isMethod('get')) {
+                $view = app(\App\Http\Controllers\StorePageController::class)->contact($project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
             }
 
             // Sitemap y robots en raíz del custom domain
@@ -68,9 +83,9 @@ class DetectCustomDomain
                 return $next($request);
             }
 
-            // Rutas sin slug (custom domain directo): /p/{id}, /thanks/{id}, /book, etc.
+            // Rutas sin slug (custom domain directo): /tienda, /nosotros, /p/{id}, etc.
             // Anteponemos el slug para que el router de Laravel las encuentre
-            $slugRoutes = ['/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher'];
+            $slugRoutes = ['/tienda', '/nosotros', '/contacto', '/blog', '/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher'];
             $needsSlug = collect($slugRoutes)->contains(fn($r) => str_starts_with($path, $r) || $path === $r);
             if ($needsSlug || $path === '') {
                 $newPath = '/' . $project->slug . ($path ?: '/');

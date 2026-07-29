@@ -688,7 +688,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      HERO â€” 85vh
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section class="relative flex items-center justify-center overflow-hidden" style="height:85vh;background:{{ $heroBg }};">
+<section class="relative flex items-center justify-center overflow-hidden" data-store-native-section="hero" style="height:85vh;background:{{ $heroBg }};">
   <div class="text-center px-6 max-w-3xl mx-auto relative z-10">
     @if($heroBadge)
     <p class="font-serif italic text-white/50 text-sm mb-5 tracking-wide">{{ $heroBadge }}</p>
@@ -707,7 +707,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      CATEGORÃAS â€” grid 2 cols desktop
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @if($categories->count() > 0)
-<section class="max-w-6xl mx-auto px-4 py-16">
+<section class="max-w-6xl mx-auto px-4 py-16" data-store-native-section="featured_categories">
   @php
     $catBgs = ['#1a1a1a','#2d1b69','#0d3b2e','#3b1a1a','#1a2d3b','#2a2a2a','#1a3b2d','#3b2d1a'];
   @endphp
@@ -737,7 +737,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
      NUEVOS INGRESOS
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @if($newArrivals && $newArrivals->count() > 0)
-<section class="max-w-6xl mx-auto px-4 py-8">
+<section class="max-w-6xl mx-auto px-4 py-8" data-store-native-section="featured_products">
   <div class="flex items-center gap-4 mb-10">
     <span class="text-[10px] uppercase tracking-widest text-[#9a9a9a]">Nuevos Ingresos</span>
     <div class="flex-1 h-px bg-gray-100"></div>
@@ -805,7 +805,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      BANNER SPLIT 50/50
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<section class="my-4">
+<section class="my-4" data-store-native-section="announcements">
   <div class="grid grid-cols-1 md:grid-cols-2">
     {{-- Lado izquierdo: fondo heroBg + SVG lÃ­neas diagonales --}}
     <div class="relative flex items-center justify-center py-24 px-10 overflow-hidden" style="background:{{ $heroBg }};">
@@ -1765,7 +1765,6 @@ function store() {
   }
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
-
-

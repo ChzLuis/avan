@@ -20,6 +20,11 @@ $footerTagline    = $settings['footer_tagline']  ?? '';
 $footerCopyright  = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $project->name);
 $heroTitle     = $settings['hero_title']    ?? $project->name;
 $heroSub       = $settings['hero_subtitle'] ?? '';
+// Tipografías del panel de Diseño (si no se configuran, usa el par por defecto de la plantilla)
+$ecFontTitle   = trim($settings['font_title'] ?? $settings['font'] ?? '') ?: 'Space Grotesk';
+$ecFontBody    = trim($settings['font_body']  ?? $settings['font'] ?? '') ?: 'DM Sans';
+$ecGoogleFonts = collect([$ecFontTitle, $ecFontBody])->unique()->filter()
+                   ->map(fn($f)=>str_replace(' ','+',$f).':wght@300;400;500;600;700')->implode('&family=');
 $isQuoteOnly   = ($settings['store_mode'] ?? 'direct') === 'quote_only';
 $culqiEnabled  = ($settings['culqi_enabled'] ?? '0') === '1';
 $culqiPublicKey= $settings['culqi_public_key'] ?? '';
@@ -123,8 +128,8 @@ if (!empty($project->whatsapp)) $schema['contactPoint'] = ['@type'=>'ContactPoin
 <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family={{ $ecGoogleFonts }}&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ $ecGoogleFonts }}&display=swap"></noscript>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
 :root {
@@ -149,8 +154,8 @@ if (!empty($project->whatsapp)) $schema['contactPoint'] = ['@type'=>'ContactPoin
   --shadow-sm: 0 1px 2px rgba(14,14,16,.04);
   --shadow-md: 0 4px 12px rgba(14,14,16,.06), 0 2px 4px rgba(14,14,16,.04);
   --shadow-lg: 0 20px 40px rgba(14,14,16,.10), 0 6px 14px rgba(14,14,16,.06);
-  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-display: '{{ $ecFontTitle }}', system-ui, -apple-system, sans-serif;
+  --font-body: '{{ $ecFontBody }}', system-ui, -apple-system, sans-serif;
   --topbar-h: 36px;
   --header-h: {{ $settings['header_height'] ?? 64 }}px;
   --logo-h: {{ $settings['logo_height'] ?? 40 }}px;
@@ -1025,7 +1030,7 @@ html{scroll-behavior:smooth;}
 <main id="content" x-show="page==='home'" class="page page-pad fade-in">
 
   {{-- HERO --}}
-  <section class="hero" @mouseenter="heroPaused=true" @mouseleave="heroPaused=false">
+  <section class="hero" data-store-native-section="hero" @mouseenter="heroPaused=true" @mouseleave="heroPaused=false">
     <div class="hero-slide" :class="{active:heroIdx===0}">
       <div class="hero-text">
         <span class="eyebrow hero-eyebrow">{{ $settings['hero_badge'] ?? 'Bienvenido' }}</span>
@@ -1071,7 +1076,7 @@ html{scroll-behavior:smooth;}
   </section>
 
   {{-- TRUST STRIP --}}
-  <div class="trust-strip" style="margin-top:0;margin-bottom:0">
+  <div class="trust-strip" data-store-native-section="benefits" style="margin-top:0;margin-bottom:0">
     <div class="trust-item"><span class="ti-icon">{{ $trustIcon1 }}</span><div><div class="ti-title">{{ $trustText1 }}</div></div></div>
     <div class="trust-item"><span class="ti-icon">{{ $trustIcon2 }}</span><div><div class="ti-title">{{ $trustText2 }}</div></div></div>
     <div class="trust-item"><span class="ti-icon">{{ $trustIcon3 }}</span><div><div class="ti-title">{{ $trustText3 }}</div></div></div>
@@ -1079,7 +1084,7 @@ html{scroll-behavior:smooth;}
   </div>
 
   {{-- CATEGORY GRID --}}
-  <section>
+  <section data-store-native-section="featured_categories">
     <div class="sect-head">
       <div>
         <h2 class="sect-title">Explorar categorías</h2>
@@ -1101,7 +1106,7 @@ html{scroll-behavior:smooth;}
   </section>
 
   {{-- FEATURED PRODUCTS RAIL --}}
-  <section>
+  <section data-store-native-section="featured_products">
     <div class="sect-head">
       <div>
         <h2 class="sect-title">{{ $settings['catalog_section_title'] ?? 'Productos destacados' }}</h2>
@@ -4869,5 +4874,6 @@ function culqi() {
     </div>
   </div>
 </div>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>

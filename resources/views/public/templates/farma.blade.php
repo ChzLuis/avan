@@ -433,7 +433,7 @@ window._allProducts = @json($_allProducts);
 {{-- ══════════════════════════════════════ --}}
 {{-- HERO --}}
 {{-- ══════════════════════════════════════ --}}
-<section class="relative overflow-hidden" style="min-height:520px;background:{{ $heroBg }};">
+<section class="relative overflow-hidden" data-store-native-section="hero" style="min-height:520px;background:{{ $heroBg }};">
   {{-- Fondo decorativo con gradiente --}}
   <div class="absolute inset-0" style="background:linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, white) 0%, color-mix(in srgb, var(--secondary) 12%, white) 100%);"></div>
   {{-- Círculo decorativo --}}
@@ -485,7 +485,7 @@ window._allProducts = @json($_allProducts);
 {{-- ══════════════════════════════════════ --}}
 {{-- TRUST BAR --}}
 {{-- ══════════════════════════════════════ --}}
-<section class="py-10 border-b border-gray-100">
+<section class="py-10 border-b border-gray-100" data-store-native-section="benefits">
   <div class="max-w-7xl mx-auto px-6">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
       @foreach([
@@ -510,7 +510,7 @@ window._allProducts = @json($_allProducts);
 {{-- PRODUCTOS DESTACADOS (carrusel) --}}
 {{-- ══════════════════════════════════════ --}}
 @if($featured->count())
-<section class="py-14 max-w-7xl mx-auto px-6">
+<section class="py-14 max-w-7xl mx-auto px-6" data-store-native-section="featured_products">
   <div class="flex items-center justify-between mb-8">
     <div>
       <p class="text-xs font-bold uppercase tracking-widest mb-1" style="color:var(--primary)">Destacados</p>
@@ -566,7 +566,7 @@ window._allProducts = @json($_allProducts);
 {{-- BANNER PROMO --}}
 {{-- ══════════════════════════════════════ --}}
 @if($onSale->count())
-<section class="py-10 px-6" style="background:linear-gradient(135deg, color-mix(in srgb, var(--primary) 6%, white), color-mix(in srgb, var(--secondary) 8%, white))">
+<section class="py-10 px-6" data-store-native-section="discounts" style="background:linear-gradient(135deg, color-mix(in srgb, var(--primary) 6%, white), color-mix(in srgb, var(--secondary) 8%, white))">
   <div class="max-w-7xl mx-auto">
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -1022,5 +1022,6 @@ window._allProducts = @json($_allProducts);
   }
 })();
 </script>
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
 </body>
 </html>
