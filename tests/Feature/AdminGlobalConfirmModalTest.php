@@ -12,6 +12,20 @@ class AdminGlobalConfirmModalTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function modalSource(): string
+    {
+        $source = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $marker = strpos($source, 'data-global-confirm-modal');
+        $start = strrpos(substr($source, 0, $marker), '<div x-data="{');
+        $end = strpos($source, '{{-- Flash messages', $marker);
+
+        $this->assertNotFalse($marker);
+        $this->assertNotFalse($start);
+        $this->assertNotFalse($end);
+
+        return substr($source, $start, $end - $start);
+    }
+
     private function designer(string $section = 'plantilla')
     {
         $owner = User::factory()->create();
@@ -79,6 +93,32 @@ class AdminGlobalConfirmModalTest extends TestCase
             ->assertSee('document.body.style.overflow = this._previousOverflow;', false);
     }
 
+    public function test_initial_focus_is_synchronized_bounded_and_cancelable(): void
+    {
+        $response = $this->designer()->assertOk();
+        $html = $response->getContent();
+        $modal = $this->modalSource();
+
+        $this->assertSame(1, substr_count($html, 'x-ref="cancelButton"'));
+        $this->assertSame(1, substr_count($modal, 'focusInitial() {'));
+        $this->assertStringContainsString('this.$nextTick(() => this.focusInitial());', $modal);
+        $this->assertLessThan(
+            strpos($modal, 'this.$nextTick(() => this.focusInitial());'),
+            strpos($modal, 'this.show = true;')
+        );
+        $this->assertStringContainsString('_maxFocusAttempts: 4', $modal);
+        $this->assertStringContainsString('this._focusAttempts < this._maxFocusAttempts', $modal);
+        $this->assertStringContainsString('requestAnimationFrame(() => {', $modal);
+        $this->assertStringContainsString('cancelAnimationFrame(this._focusFrame);', $modal);
+        $this->assertStringContainsString('this.cancelPendingFocus();', $modal);
+        $this->assertStringContainsString("!cancelButton.closest('[inert]')", $modal);
+        $this->assertStringContainsString('getComputedStyle(modal).display', $modal);
+        $this->assertStringContainsString('dialog.contains(document.activeElement)', $modal);
+        $this->assertStringContainsString('cancelButton.focus({ preventScroll: true });', $modal);
+        $this->assertStringNotContainsString('setTimeout(', $modal);
+        $this->assertStringNotContainsString('setInterval(', $modal);
+    }
+
     public function test_modal_accessibility_and_designer_shell_contract_remain_present(): void
     {
         $response = $this->designer()->assertOk();
@@ -93,7 +133,9 @@ class AdminGlobalConfirmModalTest extends TestCase
             ->assertSee('@keydown.tab.prevent="show && trapFocus($event)"', false)
             ->assertSee('type="button" x-ref="cancelButton"', false)
             ->assertSee('type="button" x-ref="confirmButton"', false)
-            ->assertSee('this.$nextTick(() => this.$refs.cancelButton?.focus());', false)
+            ->assertSee('this.$nextTick(() => this.focusInitial());', false)
+            ->assertSee('this.markInteracted();', false)
+            ->assertSee('this.cancelPendingFocus();', false)
             ->assertSee('this.$nextTick(() => previousFocus.focus());', false)
             ->assertSee('data-admin-shell', false);
 
