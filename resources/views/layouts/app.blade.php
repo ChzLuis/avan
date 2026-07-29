@@ -1165,6 +1165,10 @@
             _confirmHandler: null,
             _previousFocus: null,
             _previousOverflow: '',
+            _focusFrame: null,
+            _focusAttempts: 0,
+            _maxFocusAttempts: 4,
+            _userInteracted: false,
             init() {
                 this._confirmHandler = (opts) => this.open(opts);
                 window.__confirm = this._confirmHandler;
@@ -1173,6 +1177,7 @@
                 if (window.__confirm === this._confirmHandler) {
                     delete window.__confirm;
                 }
+                this.cancelPendingFocus();
                 if (this._resolve) this._settle(false, false);
             },
             open(opts) {
@@ -1206,14 +1211,62 @@
                     ? document.activeElement
                     : null;
                 this._previousOverflow = document.body.style.overflow;
+                this.cancelPendingFocus();
+                this._focusAttempts = 0;
+                this._userInteracted = false;
                 document.body.style.overflow = 'hidden';
                 this.show = true;
-                this.$nextTick(() => this.$refs.cancelButton?.focus());
+                this.$nextTick(() => this.focusInitial());
                 return new Promise(r => this._resolve = r);
+            },
+            focusInitial() {
+                if (!this.show || this._userInteracted) return false;
+
+                this._focusAttempts += 1;
+                const dialog = this.$refs.dialog;
+                const cancelButton = this.$refs.cancelButton;
+                const modal = this.$root;
+                const rect = cancelButton?.getBoundingClientRect();
+                const style = cancelButton ? getComputedStyle(cancelButton) : null;
+                const canFocus = !!(
+                    dialog && cancelButton && !cancelButton.disabled && !cancelButton.hidden &&
+                    !cancelButton.closest('[inert]') && rect && rect.width > 0 && rect.height > 0 &&
+                    style?.display !== 'none' && style?.visibility !== 'hidden' &&
+                    getComputedStyle(modal).display !== 'none'
+                );
+
+                if (canFocus) {
+                    try {
+                        cancelButton.focus({ preventScroll: true });
+                    } catch (error) {
+                        cancelButton.focus();
+                    }
+                    if (dialog.contains(document.activeElement)) return true;
+                }
+
+                if (this.show && !this._userInteracted && this._focusAttempts < this._maxFocusAttempts) {
+                    this._focusFrame = requestAnimationFrame(() => {
+                        this._focusFrame = null;
+                        this.focusInitial();
+                    });
+                }
+                return false;
+            },
+            cancelPendingFocus() {
+                if (this._focusFrame !== null) {
+                    cancelAnimationFrame(this._focusFrame);
+                    this._focusFrame = null;
+                }
+            },
+            markInteracted() {
+                this._userInteracted = true;
+                this.cancelPendingFocus();
             },
             _settle(value, restoreFocus = true) {
                 const resolve = this._resolve;
                 this._resolve = null;
+                this.cancelPendingFocus();
+                this._userInteracted = true;
                 this.show = false;
                 document.body.style.overflow = this._previousOverflow;
                 const previousFocus = this._previousFocus;
@@ -1226,6 +1279,7 @@
             confirm() { this._settle(true); },
             cancel() { this._settle(false); },
             trapFocus(event) {
+                this.markInteracted();
                 const controls = [this.$refs.cancelButton, this.$refs.confirmButton]
                     .filter(control => control && !control.disabled);
                 if (!controls.length) return;
@@ -1245,7 +1299,8 @@
          @keydown.tab.prevent="show && trapFocus($event)"
          class="fixed inset-0 z-[9998] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/40" @click="cancel()"></div>
-        <div x-ref="dialog" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+        <div x-ref="dialog" @pointerdown="markInteracted()"
+             class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
              x-transition:enter="transition ease-out duration-150"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
