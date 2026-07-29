@@ -8,8 +8,10 @@ use App\Models\Module;
 use App\Models\Coupon;
 use App\Models\WaCanal;
 use App\Support\CatalogTemplates;
+use App\Support\StorefrontNavigation;
 use App\Support\StorefrontSections;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\ProjectTemplate;
 
@@ -530,46 +532,67 @@ class SettingsController extends Controller
         $project = app('active_project');
         $this->authorizeProject($project);
 
-        $templateKey = $request->input('template');
-        $template    = CatalogTemplates::get($templateKey);
+        $requestedTemplate = $request->input('template');
+        $templateKey = is_string($requestedTemplate) ? trim($requestedTemplate) : '';
 
-        if (!$template) {
-            return response()->json(['ok' => false, 'message' => 'Plantilla no encontrada.'], 422);
+        if (!CatalogTemplates::isSupported($templateKey)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'La plantilla seleccionada no está disponible. Elige Ecommerce, Catálogo Directo o CompuTienda.',
+                'errors' => ['template' => ['La plantilla seleccionada no está soportada.']],
+            ], 422);
         }
 
-        // Guardar la clave de plantilla activa
-        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $templateKey]);
-        ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+        $template = CatalogTemplates::get($templateKey);
 
-        // La plantilla solo aporta valores iniciales. Los ajustes del proyecto son
-        // globales y siempre deben sobrevivir a un cambio de plantilla.
-        $skip = ['culqi_secret_key', 'mp_access_token', 'culqi_public_key'];
-        $preserved = 0;
-        foreach ($template['settings'] as $key => $value) {
-            if (in_array($key, $skip)) continue;
-            $existing = $project->settings()->where('key', $key)->value('value');
-            if ($existing !== null && $existing !== '') {
-                $preserved++;
-                continue;
+        [$preserved, $effectiveKey] = DB::transaction(function () use ($project, $request, $template, $templateKey) {
+            $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $templateKey]);
+            ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+
+            // La plantilla solo aporta valores iniciales. Los ajustes del proyecto son
+            // globales y siempre deben sobrevivir a un cambio de plantilla.
+            $skip = ['culqi_secret_key', 'mp_access_token', 'culqi_public_key'];
+            $preserved = 0;
+            foreach ($template['settings'] as $key => $value) {
+                if (in_array($key, $skip, true)) {
+                    continue;
+                }
+                $existing = $project->settings()->where('key', $key)->value('value');
+                if ($existing !== null && $existing !== '') {
+                    $preserved++;
+                    continue;
+                }
+                $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
             }
-            $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
-        }
 
-        // Si se solicita, guardar esta configuración como plantilla personalizada del proyecto
-        if ($request->input('save_as_template') === '1') {
-            $name = $request->input('template_name') ?: ('Plantilla ' . ucfirst($templateKey));
-            // Desactivar otras plantillas activas del proyecto
-            \App\Models\ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
-            \App\Models\ProjectTemplate::create([
-                'project_id' => $project->id,
-                'name'       => $name,
-                'description'=> 'Generada desde aplicación de plantilla ' . $templateKey,
-                'settings'   => $template['settings'],
-                'is_active'  => true,
-            ]);
-        }
+            if ($request->input('save_as_template') === '1') {
+                $name = $request->input('template_name') ?: ('Plantilla ' . ucfirst($templateKey));
+                ProjectTemplate::create([
+                    'project_id' => $project->id,
+                    'name' => $name,
+                    'description' => 'Generada desde aplicación de plantilla ' . $templateKey,
+                    'settings' => $template['settings'],
+                    'is_active' => true,
+                ]);
+            }
 
-        return response()->json(['ok' => true, 'template' => $templateKey, 'preserved' => $preserved]);
+            $effectiveKey = (string) $project->fresh()->setting('catalog_template', '');
+            if (!CatalogTemplates::isSupported($effectiveKey)) {
+                throw new \RuntimeException('No se pudo confirmar la plantilla aplicada.');
+            }
+
+            return [$preserved, $effectiveKey];
+        });
+
+        $activeProject = $project->fresh();
+
+        return response()->json([
+            'ok' => true,
+            'template' => $effectiveKey,
+            'preserved' => $preserved,
+            'theme' => CatalogTemplates::supportedTheme($effectiveKey),
+            'public_url' => StorefrontNavigation::publicUrl($activeProject),
+        ]);
     }
 
     /** Aplicar una plantilla guardada del propio proyecto o activarla */

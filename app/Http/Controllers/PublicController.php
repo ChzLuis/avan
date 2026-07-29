@@ -9,9 +9,42 @@ use App\Models\Product;
 use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Support\StorefrontNavigation;
+use App\Support\StorefrontTheme;
+use App\Models\StoreSection;
+use App\Models\StorePopup;
+use App\Models\ProjectTemplate;
 
 class PublicController extends Controller
 {
+    /**
+     * Plantillas completas que ya existen en producción.
+     *
+     * Estas vistas no deben sustituirse por el layout genérico de la
+     * estructura V2: al seleccionarlas, se renderiza su diseño Blade real.
+     */
+    public const PRODUCTION_TEMPLATE_VIEWS = [
+        'default'     => 'public.catalog',
+        'direct'      => 'public.templates.direct',
+        'ella'        => 'public.templates.ella',
+        'editorial'   => 'public.templates.editorial',
+        'nordic'      => 'public.templates.nordic',
+        'luxe'        => 'public.templates.luxe',
+        'flash'       => 'public.templates.flash',
+        'bistro'      => 'public.templates.bistro',
+        'urban'       => 'public.templates.urban',
+        'boutique'    => 'public.templates.boutique',
+        'fresh'       => 'public.templates.fresh',
+        'porto'       => 'public.templates.porto',
+        'licoreria'   => 'public.templates.licoreria',
+        'farma'       => 'public.templates.farma',
+        'lavanderia'  => 'public.templates.lavanderia',
+        'ecommerce'   => 'public.templates.ecommerce',
+        'tecnologia'  => 'public.templates.tecnologia',
+        'computienda' => 'public.templates.computienda',
+    ];
+
     private function project(string $slug): Project
     {
         return Project::where('slug', $slug)->where('is_active', true)->firstOrFail();
@@ -19,17 +52,205 @@ class PublicController extends Controller
 
     public function catalog(string $slug)
     {
-        $project    = $this->project($slug);
-        $settings   = $project->settings()->pluck('value', 'key');
+        $project = $this->project($slug);
 
-        // Cargar árbol: padres con hijos, cada nodo con sus productos
+        // Las plantillas de producción conservan su estructura visual propia,
+        // incluso cuando el proyecto utiliza el constructor V2.
+        if ($this->productionTemplateView($project)) {
+            [$view, $data] = $this->prepararCatalogo($project);
+            return view($view, $data);
+        }
+
+        if ($project->setting('storefront_structure_v2', '0') === '1') {
+            return $this->renderStorefrontHome($project);
+        }
+        [$view, $data] = $this->prepararCatalogo($project);
+        return view($view, $data);
+    }
+
+    public function previewStorefront(Project $project)
+    {
+        if ($this->productionTemplateView($project)) {
+            [$view, $data] = $this->prepararCatalogo($project, true);
+            return view($view, $data);
+        }
+
+        return $this->renderStorefrontHome($project, true);
+    }
+
+    private function productionTemplateView(Project $project): ?string
+    {
+        $template = (string) $project->setting('catalog_template', 'default');
+        $view = self::PRODUCTION_TEMPLATE_VIEWS[$template] ?? null;
+
+        if ($view && !view()->exists($view)) {
+            Log::warning('Storefront template view is unavailable; using the compatibility fallback.', [
+                'project_id' => $project->id,
+                'template' => $template,
+                'view' => $view,
+            ]);
+
+            return null;
+        }
+
+        return $view;
+    }
+
+    public function shop(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+
+        // Plantillas de producción (computienda, etc.): su /tienda usa la MISMA
+        // plantilla que el inicio, pero en modo "tienda" (catálogo con filtros).
+        if ($this->productionTemplateView($project)) {
+            [$view, $data] = $this->prepararCatalogo($project, false, 'tienda');
+            return view($view, $data);
+        }
+
+        abort_unless($project->setting('storefront_structure_v2', '0') === '1' || $request->attributes->get('storefront_preview') === true, 404);
+        $data = $this->storefrontBaseData($project);
+        $categories = $project->categories()->where('is_active', true)
+            ->with(['children' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')])
+            ->whereNull('parent_id')->orderBy('sort_order')->orderBy('name')->get();
+
+        $query = $project->products()->where('is_available', true)->with(['mainImage', 'category']);
+        $search = trim((string) $request->query('q', ''));
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
+                $builder->where('name', 'like', $like)->orWhere('sku', 'like', $like)->orWhere('description', 'like', $like);
+            });
+        }
+
+        $categoryId = $request->integer('category');
+        $selectedCategory = null;
+        if ($categoryId) {
+            $selectedCategory = $project->categories()->where('is_active', true)->find($categoryId);
+            if ($selectedCategory) {
+                $ids = $selectedCategory->parent_id ? [$selectedCategory->id] : $selectedCategory->children()->where('is_active', true)->pluck('id')->prepend($selectedCategory->id)->all();
+                $query->whereIn('category_id', $ids);
+            }
+        }
+        if ($request->boolean('sale')) $query->whereNotNull('compare_price')->whereColumn('compare_price', '>', 'price');
+        if (is_numeric($request->query('min_price'))) $query->where('price', '>=', max(0, (float) $request->query('min_price')));
+        if (is_numeric($request->query('max_price'))) $query->where('price', '<=', max(0, (float) $request->query('max_price')));
+
+        match ($request->query('sort', 'recommended')) {
+            'price_asc' => $query->orderBy('price')->orderBy('id'),
+            'price_desc' => $query->orderByDesc('price')->orderByDesc('id'),
+            'name' => $query->orderBy('name'),
+            'newest' => $query->latest(),
+            default => $query->orderBy('sort_order')->orderByDesc('id'),
+        };
+        $perPage = in_array($request->integer('per_page'), [12, 24, 48], true) ? $request->integer('per_page') : 12;
+        $products = $query->paginate($perPage)->withQueryString();
+
+        return view('public.storefront.shop', $data + compact('categories', 'products', 'search', 'selectedCategory'));
+    }
+
+    private function renderStorefrontHome(Project $project, bool $preview = false)
+    {
+        $data = $this->storefrontBaseData($project, $preview);
+        $view = match ($data['storefrontTheme']['key'] ?? 'default') {
+            'computienda' => 'public.storefront.templates.computienda',
+            'ecommerce' => 'public.storefront.templates.ecommerce',
+            'direct' => 'public.storefront.templates.direct',
+            'default' => 'public.storefront.templates.classic',
+            default => 'public.storefront.home',
+        };
+
+        return view($view, $data);
+    }
+
+    public function storefrontBaseData(Project $project, bool $preview = false): array
+    {
+        $settings = $project->settings()->pluck('value', 'key')->all();
+        $projectTemplate = ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->first();
+        if ($projectTemplate && is_array($projectTemplate->settings)) $settings = array_merge($projectTemplate->settings, $settings);
+
+        $sectionsQuery = StoreSection::where('project_id', $project->id)->where('page', 'home');
+        if (!$preview) {
+            $sectionsQuery->where('is_enabled', true)
+                ->where(fn ($query) => $query->whereNull('publish_from')->orWhere('publish_from', '<=', now()))
+                ->where(fn ($query) => $query->whereNull('publish_until')->orWhere('publish_until', '>=', now()));
+        }
+        $sections = $sectionsQuery->orderBy('sort_order')->get()->groupBy('component')->map->first();
+        if ($preview) {
+            $sections = $sections->filter->enabledForPreview()->map(function ($section) {
+                $section->content = $section->contentForPreview();
+                $section->variant = $section->variantForPreview();
+                $section->sort_order = $section->draft_sort_order ?? $section->sort_order;
+                return $section;
+            })->sortBy('sort_order')->values();
+        } else $sections = $sections->sortBy('sort_order')->values();
+
+        $popup = StorePopup::where('project_id', $project->id)->where('is_enabled', true)
+            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+            ->latest()->first();
+        $storeMenu = StorefrontNavigation::menu($project) ?: StorefrontNavigation::ensure($project)->load(['rootItems.children']);
+        $headerSettings = StorefrontNavigation::headerSettings($project);
+        $storefrontTheme = StorefrontTheme::resolve($settings);
+
+        $previewMode = $preview;
+        return compact('project', 'settings', 'sections', 'popup', 'storeMenu', 'headerSettings', 'storefrontTheme', 'previewMode');
+    }
+
+    /**
+     * Prepara TODOS los datos que necesitan las plantillas de tienda
+     * (categorías con productos, secciones, settings de diseño) y decide
+     * qué plantilla usar. Reutilizable: la tienda pública y el catálogo del
+     * revendedor comparten exactamente la misma vista y datos.
+     *
+     * @return array{0:string,1:array}  [nombre de la vista, datos]
+     */
+    public function prepararCatalogo(\App\Models\Project $project, bool $preview = false, string $storeView = 'home'): array
+    {
+        // Cargar settings del proyecto como arreglo clave=>valor
+        $settingsCollection = $project->settings()->pluck('value', 'key');
+        $settings = $settingsCollection->toArray();
+
+        $popup = \App\Models\StorePopup::where('project_id', $project->id)
+            ->where('is_enabled', true)
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+            ->latest()->first();
+        $sectionsQuery = \App\Models\StoreSection::where('project_id', $project->id)->where('page', 'home');
+        if (!$preview) {
+            $sectionsQuery->where('is_enabled', true)
+                ->where(fn ($q) => $q->whereNull('publish_from')->orWhere('publish_from', '<=', now()))
+                ->where(fn ($q) => $q->whereNull('publish_until')->orWhere('publish_until', '>=', now()));
+        }
+        $sections = $sectionsQuery->orderBy('sort_order')->get()->groupBy('component')->map->first();
+        if ($preview) {
+            $sections = $sections->filter->enabledForPreview()->map(function ($section) {
+                $section->content = $section->contentForPreview();
+                $section->variant = $section->variantForPreview();
+                $section->sort_order = $section->draft_sort_order ?? $section->sort_order;
+                return $section;
+            })->sortBy('sort_order')->values();
+        } else {
+            $sections = $sections->sortBy('sort_order')->values();
+        }
+        $aboutPage = \App\Models\StorePage::where('project_id', $project->id)->where('key', 'nosotros')->where('is_enabled', true)->first();
+
+        // Si el proyecto tiene una plantilla activa, fusionar defaults de la plantilla
+        $projectTemplate = \App\Models\ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->first();
+        if ($projectTemplate && is_array($projectTemplate->settings)) {
+            // Template settings actúan como valores por defecto; los settings del proyecto sobrescriben.
+            $settings = array_merge($projectTemplate->settings, $settings);
+        }
+
+        // Cargar árbol: padres con hijos, cada nodo con sus productos y servicios
         $categories = $project->categories()
             ->where('is_active', true)
             ->whereNull('parent_id')
             ->with([
                 'products' => fn($q) => $q->where('is_available', true)->with('mainImage')->orderBy('sort_order'),
+                'services' => fn($q) => $q->where('is_available', true)->orderBy('sort_order'),
                 'children' => fn($q) => $q->where('is_active', true)->with([
                     'products' => fn($q2) => $q2->where('is_available', true)->with('mainImage')->orderBy('sort_order'),
+                    'services' => fn($q2) => $q2->where('is_available', true)->orderBy('sort_order'),
                 ])->orderBy('sort_order'),
             ])
             ->orderBy('sort_order')->get();
@@ -51,28 +272,57 @@ class PublicController extends Controller
 
         // Detectar plantilla activa y cargar vista correspondiente
         $template  = $settings['catalog_template'] ?? 'default';
-        $tplViews  = [
-            'default'    => 'public.catalog',
-            'direct'     => 'public.templates.direct',
-            'ella'       => 'public.templates.ella',
-            'editorial'  => 'public.templates.editorial',
-            'nordic'     => 'public.templates.nordic',
-            'luxe'       => 'public.templates.luxe',
-            'flash'      => 'public.templates.flash',
-            'bistro'     => 'public.templates.bistro',
-            'urban'      => 'public.templates.urban',
-            'boutique'   => 'public.templates.boutique',
-            'fresh'      => 'public.templates.fresh',
-            'porto'      => 'public.templates.porto',
-            'licoreria'  => 'public.templates.licoreria',
-            'farma'      => 'public.templates.farma',
-            'ecommerce'  => 'public.templates.ecommerce',
-        ];
+        $tplViews = self::PRODUCTION_TEMPLATE_VIEWS;
         $view = isset($tplViews[$template]) && view()->exists($tplViews[$template])
             ? $tplViews[$template]
             : 'public.catalog';
 
-        return view($view, compact('project','categories','settings','newArrivals','onSale','featured','productRatings'));
+        // Negocios de servicios (ej. lavandería): fusionar servicios dentro de
+        // la relación 'products' para que las plantillas los muestren igual,
+        // sin duplicar la lógica de la vista. Los servicios de subcategorías se
+        // suben a la categoría padre (la vista solo recorre el primer nivel).
+        $svcToProduct = function ($s) {
+            $p = new \App\Models\Product([
+                'name'         => $s->name,
+                'description'  => $s->description,
+                'price'        => $s->price,
+                'category_id'  => $s->category_id,
+                'is_available' => $s->is_available,
+                'sort_order'   => $s->sort_order,
+            ]);
+            $p->id = 'svc-' . $s->id;   // id no numérico para distinguirlo
+            $p->setRelation('mainImage', null);
+            return $p;
+        };
+
+        foreach ($categories as $cat) {
+            $svc = collect();
+            if ($cat->relationLoaded('services')) {
+                $svc = $svc->concat($cat->services);
+            }
+            if ($cat->relationLoaded('children')) {
+                foreach ($cat->children as $child) {
+                    if ($child->relationLoaded('services')) {
+                        $svc = $svc->concat($child->services);
+                    }
+                }
+            }
+            if ($svc->isNotEmpty()) {
+                $asProducts = $svc->map($svcToProduct);
+                $cat->setRelation('products', $cat->products->concat($asProducts)->sortBy('sort_order')->values());
+            }
+        }
+
+        // Secciones destacadas: si no hay productos, usar los servicios fusionados
+        if ($featured->isEmpty()) {
+            $featured = $categories->flatMap->products->take(8)->values();
+        }
+
+        // Menú del Constructor (para que las plantillas lo usen en su navegación)
+        $storeMenu = \App\Support\StorefrontNavigation::menu($project)
+            ?: \App\Support\StorefrontNavigation::ensure($project)->load(['rootItems.children']);
+
+        return [$view, compact('project','categories','settings','newArrivals','onSale','featured','productRatings','popup','sections','aboutPage','storeMenu','storeView')];
     }
 
     public function validateCoupon(Request $request, string $slug)
@@ -303,6 +553,9 @@ class PublicController extends Controller
             ->orderBy('sort_order')->get();
         $reviews    = $product->approvedReviews()->get();
         $avgRating  = $reviews->count() ? round($reviews->avg('rating'), 1) : null;
+        if ($project->setting('storefront_structure_v2', '0') === '1') {
+            return view('public.storefront.product', $this->storefrontBaseData($project) + compact('product', 'related', 'reviews', 'avgRating'));
+        }
         return view('public.product', compact('project', 'product', 'settings', 'related', 'categories', 'reviews', 'avgRating'));
     }
 
