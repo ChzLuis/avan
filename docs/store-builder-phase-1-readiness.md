@@ -157,3 +157,11 @@ La autorización responsive separada quedó implementada y validada. A menos de 
 Las cinco suites anteriores y la nueva prueba contractual están verdes: **41 tests, 719 aserciones y 0 fallos**. El bloqueante responsive de 375 px queda cerrado.
 
 El sistema sigue **NO AUTORIZADO** para iniciar automáticamente la Fase 1 o desplegar: deben respetarse las aprobaciones por paso y los riesgos estructurales todavía documentados. El estado específico del Paso 5 es **VERDE**.
+
+## Revisión posterior al Paso 7 — 2026-07-29
+
+El error conocido del modal global fue corregido sin ampliar el alcance. La inicialización ya no retorna una función ejecutable accidentalmente y `window.__confirm()` sin argumentos resuelve `false` sin abrir el modal. Se preserva `Promise<boolean>`, confirmar/cancelar, y se aseguran los requisitos de accesibilidad.
+
+El checkout limpio, las instalaciones, el build, las 481 rutas, la caché de vistas y las siete suites están verdes: **45 pruebas, 759 aserciones y 0 fallos**.
+
+La sesión no proporcionó un navegador controlable, de modo que siguen pendientes las 21 comprobaciones y la confirmación de cero errores JavaScript administrativos/públicos. Por la regla de cierre aprobada, el Paso 7 queda **ROJO**, no existe tag green nuevo y el dictamen permanece **NO APTO** para iniciar la Fase 1 hasta completar esa única verificación pendiente.

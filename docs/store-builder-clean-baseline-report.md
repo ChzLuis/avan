@@ -108,3 +108,11 @@ Después de Composer, npm, build, caché de vistas, pruebas, servidor temporal y
 El repositorio ya demuestra instalación limpia, build, rutas, vistas y 41 pruebas con 719 aserciones. Sin embargo, el requisito explícito de navegador “sin errores JavaScript” falla en el shell administrativo. Por la regla del Paso 6, el estado es **ROJO** y **NO APTO** para autorizar la Fase 1.
 
 Recomendación: aprobar un paso correctivo mínimo y separado para el modal global; después recrear otro worktree desde el nuevo HEAD, repetir instalación, seis suites y 21 comprobaciones de navegador. Solo si queda sin errores se debe crear el tag local green.
+
+## Paso 7 — corrección del modal global — 2026-07-29
+
+El defecto de inicialización quedó corregido en `d5c3a32` y su contrato automatizado en `35cbfca`. Se recreó un checkout limpio en `C:\Users\luich\AppData\Local\Temp\avan-store-builder-step7-clean-20260729-013135`; Composer (119 paquetes), npm (160 paquetes), Vite, 481 rutas y caché de vistas finalizaron correctamente.
+
+Las siete suites aprobaron **45 pruebas y 759 aserciones, con 0 fallos**. El checkout terminó sin cambios rastreados y `git diff --check` no produjo salida.
+
+La conexión de navegador disponible en esta ejecución no expuso ningún navegador, por lo que no pudieron repetirse válidamente las 21 comprobaciones ni certificarse los errores JavaScript finales. Conforme al criterio aprobado, el estado permanece **ROJO** y no se crearon tag ni rama green. Detalle: `docs/store-builder-global-modal-fix-report.md`.

@@ -240,3 +240,21 @@ Resultados:
 - Interacciones móviles aprobadas: abrir, cerrar, overlay, Escape, navegación, bloqueo de scroll, foco y resize a escritorio.
 
 Estado del Paso 5: **VERDE**. No se ejecutaron migraciones, `npm build`, cambios públicos ni despliegue. El detalle está en `docs/store-builder-admin-responsive-report.md`.
+
+## Paso 7 — resultado automatizado — 2026-07-29
+
+HEAD comprobado en checkout limpio: `35cbfca2cab57bcf8fc63de458310b6fb0406076`.
+
+| Verificación | Resultado |
+|---|---|
+| Composer desde lock | PASS — 119 instalaciones |
+| npm ci | PASS — 160 paquetes |
+| npm run build | PASS |
+| route:list | PASS — 481 rutas |
+| view:clear / view:cache | PASS |
+| node --check del contrato Alpine | PASS |
+| Siete suites | PASS — 45 pruebas, 759 aserciones, 0 fallos |
+| Checkout final | PASS — status vacío, diff check limpio |
+| 21 pruebas de navegador | NO EJECUTADAS — navegador no disponible en la sesión |
+
+La prueba `AdminGlobalConfirmModalTest.php` aporta 4 casos y 40 aserciones. El estado global no se declara verde porque falta la validación JavaScript real en navegador. No se creó el tag.
