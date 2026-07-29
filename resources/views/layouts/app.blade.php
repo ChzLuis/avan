@@ -37,7 +37,7 @@
             border-right: 1px solid var(--sb-border);
             display: flex;
             flex-direction: column;
-            transition: width .22s cubic-bezier(.4,0,.2,1);
+            transition: width .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
             overflow: hidden;
             min-height: 0;
         }
@@ -54,15 +54,8 @@
         }
 
         /* ── HEADER (solo mobile) ── */
-        .sb-header {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            padding: 0 14px;
-            height: 48px;
-            border-bottom: 1px solid var(--sb-border);
-            gap: 10px;
-        }
+        .sb-header { display:none !important; }
+        .sb-mobile-header { display:none; }
         .sb-logo {
             width: 30px; height: 30px;
             background: var(--sb-purple);
@@ -73,10 +66,6 @@
         }
         .sb-brand-name { font-size:13px; font-weight:800; color:var(--sb-text-1); line-height:1; }
         .sb-brand-sub  { font-size:9px;  font-weight:700; color:var(--sb-purple); text-transform:uppercase; letter-spacing:.1em; margin-top:2px; }
-
-        @media (min-width:1024px) {
-            .sb-header { display:none!important; }
-        }
 
         /* ── TOGGLE DESKTOP ── */
         .sb-toggle-btn {
@@ -97,7 +86,7 @@
             font-weight: 600;
             gap: 6px;
         }
-        @media (min-width:1024px) { .sb-toggle-btn { display:flex; } }
+        @media (min-width:768px) { .sb-toggle-btn { display:flex; } }
         .sb-toggle-btn:hover { background: var(--sb-bg-hover); color: var(--sb-text-2); }
 
         /* ── NAV SCROLL ── */
@@ -272,7 +261,7 @@
         .sb-logout-btn:hover { background:#FEE2E2; color:#EF4444; }
 
         /* ── MOBILE ── */
-        @media (max-width:1023px) {
+        @media (max-width:767px) {
             .mob-bottom-nav {
                 display:flex!important; position:fixed!important;
                 bottom:0!important; left:0!important; right:0!important;
@@ -288,7 +277,7 @@
             .mob-bottom-nav a.active, .mob-bottom-nav a:hover { color:var(--sb-purple)!important; }
             .mob-main { padding-bottom:60px!important; }
         }
-        @media (min-width:1024px) { .mob-bottom-nav { display:none!important; } }
+        @media (min-width:768px) { .mob-bottom-nav { display:none!important; } }
 
         /* ── BIXO HEADER (top bar) ── */
         .bx-header {
@@ -378,35 +367,137 @@
             transition:background .15s;
         }
         .bx-hdr-logout:hover { background:#FEF2F2; }
+
+        .admin-menu-trigger {
+            display:none;
+            width:44px;
+            height:44px;
+            flex:0 0 44px;
+            align-items:center;
+            justify-content:center;
+            border:0;
+            border-radius:9px;
+            background:transparent;
+            color:#374151;
+            cursor:pointer;
+        }
+        .admin-menu-trigger:hover { background:#F3F4F6; color:#111827; }
+        .admin-menu-trigger:focus-visible,
+        .sb-mobile-close:focus-visible,
+        .sb-toggle-btn:focus-visible {
+            outline:3px solid rgba(79,70,229,.35);
+            outline-offset:2px;
+        }
+        body.admin-sidebar-open { overflow:hidden; }
+        [data-admin-shell],
+        [data-admin-main],
+        .mob-main,
+        .mob-main > * { min-width:0; max-width:100%; }
+
+        @media (max-width:767px) {
+            .admin-menu-trigger { display:flex; }
+            .bx-header { gap:6px; padding:0 10px; }
+            .bx-hdr-logo-txt,
+            .bx-hdr-sep,
+            .bx-hdr-pagetitle,
+            .bx-hdr-action-item,
+            .bx-hdr-nav-link,
+            .bx-hdr-user-name,
+            .bx-hdr-logout { display:none; }
+            .sb-bixo {
+                position:fixed;
+                inset:0 auto 0 0;
+                width:min(20rem, calc(100vw - 3rem));
+                max-width:calc(100vw - 3rem);
+                height:100dvh !important;
+                transform:translateX(-100%);
+                box-shadow:0 24px 64px rgba(15,23,42,.24);
+            }
+            .sb-bixo.is-mobile-open { transform:translateX(0); }
+            .sb-mobile-header {
+                display:flex;
+                min-height:56px;
+                align-items:center;
+                gap:10px;
+                padding:8px 10px 8px 14px;
+                border-bottom:1px solid var(--sb-border);
+                flex-shrink:0;
+            }
+            .sb-mobile-title { min-width:0; flex:1; font-size:13px; font-weight:800; color:var(--sb-text-1); }
+            .sb-mobile-close {
+                display:flex;
+                width:44px;
+                height:44px;
+                align-items:center;
+                justify-content:center;
+                border:0;
+                border-radius:9px;
+                background:transparent;
+                color:var(--sb-text-2);
+                cursor:pointer;
+            }
+            .sb-mobile-close:hover { background:var(--sb-bg-hover); color:var(--sb-text-1); }
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+            .sb-bixo,
+            .sb-toggle-btn,
+            .admin-menu-trigger,
+            .sb-mobile-close { transition:none !important; }
+        }
     </style>
 </head>
 
-<body class="font-sans antialiased overflow-hidden" style="background:#f1f5f9;display:flex;flex-direction:column;height:100vh;"
+<body class="font-sans antialiased overflow-hidden" style="background:#f1f5f9;display:flex;flex-direction:column;height:100vh;max-width:100%;"
       x-data="{
           open: localStorage.getItem('sb_open') !== null
                     ? localStorage.getItem('sb_open') !== 'false'
                     : window.innerWidth >= 1280,
-          mob: false,
-          isMob(){ return window.innerWidth < 1024 },
+          sidebarOpen: false,
+          sidebarTrigger: null,
+          isMob(){ return window.innerWidth < 768 },
           toggleSidebar(){
-              if(this.isMob()){ this.mob = !this.mob }
+              if(this.isMob()){
+                  this.sidebarOpen ? this.closeSidebar() : this.openSidebar();
+              }
               else { this.open = !this.open; localStorage.setItem('sb_open', this.open) }
+          },
+          openSidebar(){
+              if(!this.isMob()) return;
+              this.sidebarTrigger = this.$refs.sidebarTrigger;
+              this.sidebarOpen = true;
+              this.syncBodyLock();
+              this.$nextTick(() => this.$refs.sidebarClose?.focus());
+          },
+          closeSidebar(restoreFocus = true){
+              if(!this.sidebarOpen) return;
+              this.sidebarOpen = false;
+              this.syncBodyLock();
+              if(restoreFocus){
+                  this.$nextTick(() => (this.sidebarTrigger || this.$refs.sidebarTrigger)?.focus());
+              }
+          },
+          syncBodyLock(){
+              document.body.classList.toggle('admin-sidebar-open', this.sidebarOpen && this.isMob());
           },
           handleResize(){
               if(!this.isMob()){
-                  this.mob = false;
+                  this.closeSidebar(false);
+                  document.body.classList.remove('admin-sidebar-open');
                   if(localStorage.getItem('sb_open') === null){
                       this.open = window.innerWidth >= 1280;
                   }
               }
           },
-          init(){ this.$watch('open', () => {}); }
+          init(){ this.handleResize(); }
       }"
-      @resize.window.debounce.150ms="handleResize()">
+      @resize.window.debounce.150ms="handleResize()"
+      @keydown.escape.window="closeSidebar()">
 
 {{-- Overlay mobile --}}
-<div x-show="mob" x-cloak @click="mob=false"
-     class="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"></div>
+<div x-show="sidebarOpen && isMob()" x-cloak @click="closeSidebar()"
+     data-mobile-sidebar-overlay aria-hidden="true"
+     class="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"></div>
 
 
     @php
@@ -424,6 +515,19 @@
     @endphp
 
     <header class="bx-header">
+
+        <button type="button"
+                x-ref="sidebarTrigger"
+                @click="openSidebar()"
+                class="admin-menu-trigger"
+                data-mobile-sidebar-trigger
+                aria-label="Abrir navegación principal"
+                aria-controls="admin-sidebar"
+                :aria-expanded="sidebarOpen.toString()">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
 
         {{-- LOGO BIXO --}}
         <div class="bx-hdr-logo">
@@ -567,23 +671,42 @@
 
     </header>
 
-<div class="flex flex-1 overflow-hidden">
+<div class="flex flex-1 overflow-hidden min-w-0 w-full" data-admin-shell>
 
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      SIDEBAR - BIXO CUSTOM
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<aside class="sb-bixo flex-shrink-0 flex flex-col z-50 fixed lg:relative lg:translate-x-0"
+<aside id="admin-sidebar"
+       x-ref="sidebarDrawer"
+       aria-label="Navegación principal"
+       :aria-hidden="isMob() ? (!sidebarOpen).toString() : 'false'"
+       :inert="isMob() && !sidebarOpen"
+       @click="if (isMob() && $event.target.closest('a')) closeSidebar(false)"
+       class="sb-bixo flex-shrink-0 flex flex-col z-50 md:relative md:translate-x-0"
        style="height:100%;"
        :class="{
-           'w-[240px]': (open && !isMob()) || mob,
+           'is-mobile-open': sidebarOpen && isMob(),
+           'w-[240px]': open && !isMob(),
            'w-[52px]':  !open && !isMob(),
-           'w-0':       !mob && isMob()
+           'w-0':       isMob()
        }">
+
+    <div class="sb-mobile-header">
+        <div class="sb-logo" aria-hidden="true">B</div>
+        <div class="sb-mobile-title">Navegación</div>
+        <button type="button" x-ref="sidebarClose" @click="closeSidebar()"
+                class="sb-mobile-close" data-mobile-sidebar-close
+                aria-label="Cerrar navegación principal">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
 
     {{-- Mobile header --}}
     <div class="sb-header">
         <div class="sb-logo">B</div>
-        <div x-show="mob" x-cloak>
+        <div x-show="sidebarOpen" x-cloak>
             <div class="sb-brand-name">BIXO</div>
             <div class="sb-brand-sub">Business OS</div>
         </div>
@@ -789,13 +912,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-                <span class="sb-mod-title" x-show="open || mob" x-cloak>Configuración</span>
-                <svg class="sb-mod-arrow" x-show="open || mob" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="sb-mod-title" x-show="open || sidebarOpen" x-cloak>Configuración</span>
+                <svg class="sb-mod-arrow" x-show="open || sidebarOpen" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                 </svg>
-                <span class="sb-mod-tip" x-show="!open && !mob" x-cloak>Configuración</span>
+                <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>Configuración</span>
             </button>
-            <div class="sb-sub-list" x-show="(open || mob) && sec.cfg" x-collapse>
+            <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.cfg" x-collapse>
             @foreach($cfgVisible as $item)
             @php
                 $ia = match($item['r']) {
@@ -823,13 +946,13 @@
                 <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                 </svg>
-                <span class="sb-mod-title" x-show="open || mob" x-cloak>{{ $sbLabels['empresa'] }}</span>
-                <svg class="sb-mod-arrow" x-show="open || mob" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="sb-mod-title" x-show="open || sidebarOpen" x-cloak>{{ $sbLabels['empresa'] }}</span>
+                <svg class="sb-mod-arrow" x-show="open || sidebarOpen" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                 </svg>
-                <span class="sb-mod-tip" x-show="!open && !mob" x-cloak>{{ $sbLabels['empresa'] }}</span>
+                <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>{{ $sbLabels['empresa'] }}</span>
             </button>
-            <div class="sb-sub-list" x-show="(open || mob) && sec.emp" x-collapse>
+            <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.emp" x-collapse>
             @if($activeProject && $activeProject->hasModule('clients') && (auth()->user()?->is_superadmin || $activeProject->owner_id===auth()->id() || auth()->user()?->can('clients.ver')))
                 <a href="{{ $pid?route('clients'):'#' }}" class="sb-sub-item {{ request()->routeIs('clients*') ? 'active' : '' }}">{{ $sbLabels['clientes'] }}</a>
                 <a href="{{ $pid?route('groups.index',['type'=>'client']):'#' }}" class="sb-sub-item {{ (request()->routeIs('groups.*') && request()->get('type','client')==='client') ? 'active' : '' }}">Segmentos</a>
@@ -855,13 +978,13 @@
                 <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                 </svg>
-                <span class="sb-mod-title" x-show="open || mob" x-cloak>{{ $sbLabels['catalogo'] }}</span>
-                <svg class="sb-mod-arrow" x-show="open || mob" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="sb-mod-title" x-show="open || sidebarOpen" x-cloak>{{ $sbLabels['catalogo'] }}</span>
+                <svg class="sb-mod-arrow" x-show="open || sidebarOpen" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                 </svg>
-                <span class="sb-mod-tip" x-show="!open && !mob" x-cloak>{{ $sbLabels['catalogo'] }}</span>
+                <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>{{ $sbLabels['catalogo'] }}</span>
             </button>
-            <div class="sb-sub-list" x-show="(open || mob) && sec.cat" x-collapse>
+            <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.cat" x-collapse>
                 @if($sbLabels['productos'] !== null)
                 <a href="{{ $pid?route('products.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('products.*') ? 'active' : '' }}">{{ $sbLabels['productos'] }}</a>
                 @endif
@@ -882,13 +1005,13 @@
                 <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
-                <span class="sb-mod-title" x-show="open || mob" x-cloak>Comercial</span>
-                <svg class="sb-mod-arrow" x-show="open || mob" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="sb-mod-title" x-show="open || sidebarOpen" x-cloak>Comercial</span>
+                <svg class="sb-mod-arrow" x-show="open || sidebarOpen" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                 </svg>
-                <span class="sb-mod-tip" x-show="!open && !mob" x-cloak>Comercial</span>
+                <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>Comercial</span>
             </button>
-            <div class="sb-sub-list" x-show="(open || mob) && sec.com" x-collapse>
+            <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.com" x-collapse>
             @if($pid)
                 <a href="{{ route('bixosales.mapa.index') }}"
                    class="sb-sub-item {{ request()->routeIs('bixosales.mapa*') ? 'active' : '' }}"
@@ -925,13 +1048,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
                 </svg>
-                <span class="sb-mod-title" x-show="open || mob" x-cloak>Logística</span>
-                <svg class="sb-mod-arrow" x-show="open || mob" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="sb-mod-title" x-show="open || sidebarOpen" x-cloak>Logística</span>
+                <svg class="sb-mod-arrow" x-show="open || sidebarOpen" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                 </svg>
-                <span class="sb-mod-tip" x-show="!open && !mob" x-cloak>Logística</span>
+                <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>Logística</span>
             </button>
-            <div class="sb-sub-list" x-show="(open || mob) && sec.log" x-collapse>
+            <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.log" x-collapse>
             @if($isOwnerOrSuper)
                 <a href="{{ $pid?route('bixosales.reportes.ventas.general'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.reportes*') ? 'active' : '' }}">Reportes</a>
             @endif
@@ -944,7 +1067,7 @@
     </nav>
 
     {{-- COPILOT --}}
-    <div class="sb-copilot" x-show="open || mob" x-cloak>
+    <div class="sb-copilot" x-show="open || sidebarOpen" x-cloak>
         <div class="sb-copilot-header">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#7C3AED" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -958,11 +1081,11 @@
     {{-- USER FOOTER --}}
     <div class="sb-user-footer">
         <div class="sb-user-avatar" style="background:{{ $uBg2 }}">{{ $uInit2 }}</div>
-        <div style="flex:1;min-width:0;" x-show="open || mob" x-cloak>
+        <div style="flex:1;min-width:0;" x-show="open || sidebarOpen" x-cloak>
             <div class="sb-user-name">{{ $uName2 }}</div>
             <div class="sb-user-email">{{ $uEmail2 }}</div>
         </div>
-        <form method="POST" action="{{ route('logout') }}" x-show="open || mob" x-cloak>
+        <form method="POST" action="{{ route('logout') }}" x-show="open || sidebarOpen" x-cloak>
             @csrf
             <button type="submit" class="sb-logout-btn" title="Cerrar sesión">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -976,7 +1099,7 @@
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MAIN
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<div class="flex flex-col flex-1 overflow-hidden min-w-0">
+<div class="flex flex-col flex-1 overflow-hidden min-w-0 max-w-full" data-admin-main>
 
     {{-- â”€â”€ Header â”€â”€ --}}
 
@@ -1103,7 +1226,7 @@
     @endif
 
     {{-- Content --}}
-    <div class="flex flex-1 min-h-0 mob-main" style="overflow:hidden;align-items:stretch">
+    <div class="flex flex-1 min-h-0 min-w-0 max-w-full mob-main" style="overflow:hidden;align-items:stretch">
         {{ $slot }}
     </div>
 </div>
@@ -1224,4 +1347,3 @@
 
 </body>
 </html>
-
