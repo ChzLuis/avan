@@ -1,5 +1,15 @@
 # Resultados de pruebas del Store Builder
 
+## Paso 6 — checkout limpio reproducible — 2026-07-29
+
+Se creó un worktree independiente desde `c38f991`, se instalaron 119 paquetes Composer y 160 paquetes npm desde sus lockfiles, y Vite construyó los assets correctamente. Laravel 12.54.1 cargó 481 rutas y compiló todas las vistas.
+
+Resultado de las seis suites: **41 pruebas, 719 aserciones y 0 fallos**. El worktree siguió sin modificaciones fuente después de instalación y pruebas.
+
+La auditoría Chrome sobre 21 combinaciones confirmó HTTP 200, cero overflow, cero 404 indispensables, cero imágenes rotas visibles y aplicación correcta de CompuTienda, Ecommerce y Direct. No obstante, las nueve vistas administrativas emiten un error JavaScript reproducible en el modal global: `open(opts)` recibe `undefined` desde `x-init` y lee `opts.title`.
+
+El Paso 6 queda **ROJO** por el criterio obligatorio “sin errores JavaScript”. No se creó tag green, no se modificó funcionalidad, no se hizo push ni despliegue. Detalle: `docs/store-builder-clean-baseline-report.md`.
+
 Fecha de ejecución: 2026-07-28. Cada archivo se ejecutó por separado con `--stop-on-failure`, usando PHP 8.2.12 de XAMPP. Las pruebas usan SQLite en memoria conforme a `phpunit.xml`; no escribieron en la base MySQL inventariada.
 
 ## Resumen

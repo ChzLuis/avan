@@ -1,5 +1,13 @@
 # Preparación para la Fase 1 del Store Builder
 
+## Revisión posterior al Paso 6 — 2026-07-29
+
+La dependencia de archivos locales del Store Builder quedó resuelta: el checkout limpio instala Composer/npm, construye assets, carga 481 rutas, compila vistas y aprueba **41 pruebas con 719 aserciones**. Las vistas heredadas `tecnologia` y `lavanderia`, que faltaban en Git y eran necesarias para compatibilidad, ya están rastreadas.
+
+La verificación de navegador encontró un bloqueante independiente: el modal global del shell administrativo genera `TypeError: Cannot read properties of undefined (reading 'title')` en cada carga. El responsive, el drawer, las tres plantillas y sus páginas públicas sí aprobaron.
+
+Por la política del Paso 6, no se corrigió funcionalidad ni se creó el tag de recuperación green. Estado: **ROJO**. Dictamen: **NO APTO** para autorizar la Fase 1 hasta aprobar y validar una corrección mínima del modal y repetir el checkout limpio completo.
+
 Fecha: 2026-07-28. Dictamen: **NO APTO** para iniciar o desplegar la Fase 1 sobre el árbol actual.
 
 La conclusión no invalida el diseño propuesto. Significa que antes debe existir una base reproducible: árbol controlado, pruebas verdes o fallos aceptados explícitamente, vistas productivas resolubles y una única precedencia de configuración.
