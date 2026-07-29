@@ -1,7 +1,7 @@
 @php
     use App\Support\StorefrontNavigation;
-    $headerSettings = $headerSettings ?? StorefrontNavigation::headerSettings($project);
-    $storeMenu = $storeMenu ?? StorefrontNavigation::menu($project);
+    $headerSettings = $headerSettings ?? StorefrontNavigation::headerDefaults();
+    $storeMenu = $storeMenu ?? null;
     $routeName = request()->route()?->getName() ?? '';
     $selectedCategory = request()->integer('category') ?: null;
     $logoPath = $headerSettings['header_logo_url'] ?: ($settings['logo_url'] ?? $project->logo_url ?? '');

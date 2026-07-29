@@ -2,8 +2,7 @@
 @php
     // Fuente de verdad: los ajustes guardados desde el diseñador.
     // Esto evita que una plantilla personalizada activa sobrescriba cambios nuevos.
-    $liveProjectSettings = $project->settings()->pluck('value', 'key')->toArray();
-    $settings = array_merge((array) ($settings ?? []), $liveProjectSettings);
+    $settings = isset($storefrontContext) ? $storefrontContext->globalSettings() : (array) ($settings ?? []);
     $color = static fn ($v, $fallback) => is_string($v) && preg_match('/^#[0-9a-fA-F]{6}$/', $v) ? $v : $fallback;
     $assetUrl = static function ($value) {
         if (blank($value)) return null;

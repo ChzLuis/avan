@@ -1191,10 +1191,7 @@ html{scroll-behavior:smooth;}
       </div>
     </div>
     <div class="testimonials-grid">
-      @php
-        $reviews = \App\Models\Review::where('project_id', $project->id)
-          ->where('is_approved', true)->orderByDesc('rating')->take(3)->get();
-      @endphp
+      @php $reviews = collect($testimonials ?? []); @endphp
       @if($reviews->count() > 0)
         @foreach($reviews as $rv)
         <div class="testi-card">

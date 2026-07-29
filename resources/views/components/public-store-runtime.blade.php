@@ -64,12 +64,14 @@
     $effectiveHeroCtaUrl = data_get($managedHeroSlide, 'primary_url') ?: '#catalogo';
     $needsFeaturedContent = $sections->contains('component', 'featured');
     $needsCategoryContent = $sections->contains('component', 'categories');
-    $sectionProducts = $needsFeaturedContent ? $project->products()->where('is_available', true)->with('mainImage')->orderBy('sort_order')->take(8)->get() : collect();
-    $sectionServices = $needsFeaturedContent && $sectionProducts->isEmpty() ? $project->services()->where('is_available', true)->orderBy('sort_order')->take(8)->get() : collect();
-    $sectionCategories = $needsCategoryContent ? $project->categories()->where('is_active', true)->whereNull('parent_id')->orderBy('sort_order')->take(12)->get() : collect();
-    $footerCategories = $enabled('footer_show_categories')
-        ? $project->categories()->where('is_active', true)->whereNull('parent_id')->orderBy('sort_order')->take(8)->get()
+    $contextProducts = $project->relationLoaded('storefrontProducts') ? $project->getRelation('storefrontProducts') : collect();
+    $contextCategories = $project->relationLoaded('storefrontCategories') ? $project->getRelation('storefrontCategories') : collect();
+    $sectionProducts = $needsFeaturedContent ? $contextProducts->take(8)->values() : collect();
+    $sectionServices = $needsFeaturedContent && $sectionProducts->isEmpty()
+        ? $contextCategories->flatMap->products->filter(fn ($item) => str_starts_with((string) $item->id, 'svc-'))->take(8)->values()
         : collect();
+    $sectionCategories = $needsCategoryContent ? $contextCategories->take(12)->values() : collect();
+    $footerCategories = $enabled('footer_show_categories') ? $contextCategories->take(8)->values() : collect();
     $parseFooterLinks = static fn ($value) => collect(preg_split('/\r\n|\r|\n/', (string) $value))
         ->map(fn ($line) => array_map('trim', explode('|', $line, 2)))
         ->filter(fn ($parts) => filled($parts[0] ?? null));
@@ -337,7 +339,7 @@
     // omitimos 'featured_products' aquí para no duplicarla.
     $homeSections = $ownFooter ? collect($sections)->reject(fn($s) => ($s->component ?? '') === 'featured_products') : $sections;
 @endphp
-<x-storefront-home-sections :project="$project" :settings="$settings" :sections="$homeSections" />
+<x-storefront-home-sections :project="$project" :settings="$settings" :sections="$homeSections" :products="$contextProducts" :categories="$contextCategories" />
 @endif
 
 {{-- Compatibilidad del renderer anterior: no genera duplicados con el constructor visual. --}}

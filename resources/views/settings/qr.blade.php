@@ -2,7 +2,7 @@
 <x-slot name="slot">
 
 @php
-  $s = fn($k) => $project->settings()->where('key',$k)->value('value') ?? '';
+  $s = fn($k) => $storefrontContext->setting($k, '');
 
   $catalogUrl   = $project->custom_domain ? 'https://'.$project->custom_domain : url('/'.$project->slug);
   $logoUrl      = $s('logo_url');

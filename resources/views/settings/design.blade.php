@@ -2,13 +2,14 @@
 <x-slot name="slot">
 
 @php
+  $setting = fn ($key, $default = null) => $storefrontContext->setting($key, $default);
   $isOwnerOrSuper = auth()->user()?->is_superadmin || ($project && $project->owner_id === auth()->id());
   $requestedDesignerSection = (string) request('s', $isOwnerOrSuper ? 'plantilla' : 'constructor');
   $s = in_array($requestedDesignerSection, ['plantilla', 'templates'], true) && $isOwnerOrSuper
     ? 'plantilla'
     : 'constructor';
   $storeUrl   = \App\Support\StorefrontNavigation::publicUrl($project);
-  $activeTpl  = $project->setting('catalog_template', 'default') ?: 'default';
+  $activeTpl  = $setting('catalog_template', 'default') ?: 'default';
   $allTpls    = \App\Support\CatalogTemplates::all();
   $tplInfo    = $allTpls[$activeTpl] ?? array_merge($allTpls['default'], [
     'label' => ucwords(str_replace(['-', '_'], ' ', $activeTpl)),
@@ -27,10 +28,10 @@
       $componentLabels[$componentKey] = $componentData['label'] ?? ucwords(str_replace(['_','-'], ' ', $componentKey));
   }
 
-  $storeMode   = $project->setting('store_mode', 'direct');
-  $quotePrice  = $project->setting('quote_price_display', 'show');
-  $savedWaFull = preg_replace('/\D/', '', $project->setting('quote_whatsapp', preg_replace('/\D/', '', $project->whatsapp ?? '')));
-  $savedCountry= $project->setting('quote_whatsapp_country', '51');
+  $storeMode   = $setting('store_mode', 'direct');
+  $quotePrice  = $setting('quote_price_display', 'show');
+  $savedWaFull = preg_replace('/\D/', '', $setting('quote_whatsapp', preg_replace('/\D/', '', $project->whatsapp ?? '')));
+  $savedCountry= $setting('quote_whatsapp_country', '51');
   $localWaNum  = str_starts_with($savedWaFull, $savedCountry) ? substr($savedWaFull, strlen($savedCountry)) : $savedWaFull;
   $countries   = [
     ['code'=>'51',  'flag'=>'🇵🇪', 'name'=>'Perú'],
@@ -47,7 +48,7 @@
     ['code'=>'34',  'flag'=>'🇪🇸', 'name'=>'España'],
     ['code'=>'55',  'flag'=>'🇧🇷', 'name'=>'Brasil'],
   ];
-  $savedPayments  = json_decode($project->setting('accepted_payments', '[]'), true) ?? [];
+  $savedPayments  = json_decode($setting('accepted_payments', '[]'), true) ?? [];
   $paymentOptions = [
     ['key'=>'efectivo',      'label'=>'Efectivo',              'icon'=>'💵'],
     ['key'=>'yape',          'label'=>'Yape',                  'icon'=>'🟣'],
@@ -57,8 +58,8 @@
     ['key'=>'qr',            'label'=>'Pago con QR',           'icon'=>'📲'],
     ['key'=>'contra_entrega','label'=>'Contra entrega',         'icon'=>'🚚'],
   ];
-  $pc = $project->setting('primary_color', $tplInfo['settings']['primary_color'] ?? '#4f46e5');
-  $sc = $project->setting('secondary_color', $tplInfo['settings']['secondary_color'] ?? '#6366f1');
+  $pc = $setting('primary_color', $tplInfo['settings']['primary_color'] ?? '#4f46e5');
+  $sc = $setting('secondary_color', $tplInfo['settings']['secondary_color'] ?? '#6366f1');
   $fontOptions = [
     'Inter'              => 'Inter — Moderna y limpia',
     'Poppins'            => 'Poppins — Geométrica',
@@ -71,8 +72,8 @@
     'Nunito'             => 'Nunito — Redondeada',
     'Oswald'             => 'Oswald — Bold condensada',
   ];
-  $savedFontTitle = $project->setting('font_title') ?: $project->setting('font', 'Inter');
-  $savedFontBody  = $project->setting('font_body')  ?: $project->setting('font', 'Inter');
+  $savedFontTitle = $setting('font_title') ?: $setting('font', 'Inter');
+  $savedFontBody  = $setting('font_body')  ?: $setting('font', 'Inter');
 @endphp
 
 <style>
@@ -169,7 +170,7 @@
       @php
         $allTemplates   = \App\Support\CatalogTemplates::all();
         $grouped        = \App\Support\CatalogTemplates::grouped();
-        $activeTemplate = $project->setting('catalog_template', '');
+        $activeTemplate = $setting('catalog_template', '');
         $tplHasView = ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria','farma','lavanderia'];
       @endphp
         <div x-data="{
@@ -219,7 +220,6 @@
             <h4 class="text-sm font-semibold">Plantillas del proyecto</h4>
             <p class="text-xs text-gray-400">Crea y gestiona plantillas personalizadas para este proyecto.</p>
             <div class="mt-3 space-y-3">
-              @php $projectTemplates = \App\Models\ProjectTemplate::where('project_id', $project->id)->orderByDesc('is_active')->get(); @endphp
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 @foreach($projectTemplates as $pt)
                 <div class="p-3 border rounded-lg flex items-center justify-between">
@@ -241,7 +241,7 @@
               <form method="POST" action="{{ route('settings.design.projectTemplates.store') }}" class="mt-2 flex gap-2">
                 @csrf
                 <input type="text" name="name" placeholder="Nombre de plantilla" class="input flex-1" required>
-                <input type="hidden" name="settings" value='{{ json_encode($project->settings()->pluck("value","key")->toArray()) }}'>
+                <input type="hidden" name="settings" value='{{ json_encode($storefrontContext->globalSettings()) }}'>
                 <button type="submit" class="btn-primary">Crear desde ajustes actuales</button>
               </form>
             </div>
@@ -522,8 +522,8 @@
             <p class="text-xs text-gray-400 mt-0.5">Imágenes de identidad del negocio</p>
           </div>
           <div class="p-4 space-y-4" x-data="{
-              logoPreview: '{{ $project->setting('logo_url') ? (str_starts_with($project->setting('logo_url'), 'http') ? $project->setting('logo_url') : asset('storage/'.$project->setting('logo_url'))) : '' }}',
-              faviPreview: '{{ $project->setting('favicon_url') ? (str_starts_with($project->setting('favicon_url'), 'http') ? $project->setting('favicon_url') : asset('storage/'.$project->setting('favicon_url'))) : '' }}',
+              logoPreview: '{{ $setting('logo_url') ? (str_starts_with($setting('logo_url'), 'http') ? $setting('logo_url') : asset('storage/'.$setting('logo_url'))) : '' }}',
+              faviPreview: '{{ $setting('favicon_url') ? (str_starts_with($setting('favicon_url'), 'http') ? $setting('favicon_url') : asset('storage/'.$setting('favicon_url'))) : '' }}',
               uploadLogo(e) {
                   const file = e.target.files[0]; if (!file) return;
                   const fd = new FormData();
@@ -582,7 +582,7 @@
                     </button>
                   </div>
                   <p class="text-xs text-gray-400 mt-1.5">PNG transparente recomendado · Máx 2MB</p>
-                  <input type="hidden" name="logo_url" id="logo_url_input" value="{{ $project->setting('logo_url') }}">
+                  <input type="hidden" name="logo_url" id="logo_url_input" value="{{ $setting('logo_url') }}">
                 </div>
               </div>
             </div>
@@ -590,13 +590,13 @@
             <div>
               <label class="label">Altura del logo (px)</label>
               <input type="number" name="logo_height" class="input" min="20" max="300"
-                     placeholder="40" value="{{ $project->setting('logo_height', '40') }}">
+                     placeholder="40" value="{{ $setting('logo_height', '40') }}">
             </div>
             {{-- Altura header --}}
             <div>
               <label class="label">Altura del encabezado (px)</label>
               <input type="number" name="header_height" class="input" min="48" max="400"
-                     placeholder="72" value="{{ $project->setting('header_height', '72') }}">
+                     placeholder="72" value="{{ $setting('header_height', '72') }}">
               <p class="text-xs text-gray-400 mt-1">Altura mínima del header del catálogo público</p>
             </div>
             {{-- Favicon --}}
@@ -626,7 +626,7 @@
                     </button>
                   </div>
                   <p class="text-xs text-gray-400 mt-1.5">32×32 px · ICO o PNG</p>
-                  <input type="hidden" name="favicon_url" id="favicon_url_input" value="{{ $project->setting('favicon_url') }}">
+                  <input type="hidden" name="favicon_url" id="favicon_url_input" value="{{ $setting('favicon_url') }}">
                 </div>
               </div>
             </div>
@@ -670,9 +670,9 @@
               <div class="grid grid-cols-3 gap-2 mt-1">
                 @foreach(['sharp'=>'Cuadrado', 'rounded'=>'Redondeado', 'pill'=>'Píldora'] as $br_v => $br_l)
                 <label class="text-center p-3 rounded-xl border-2 cursor-pointer transition
-                    {{ $project->setting('border_radius', 'rounded') === $br_v ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300' }}">
+                    {{ $setting('border_radius', 'rounded') === $br_v ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300' }}">
                   <input type="radio" name="border_radius" value="{{ $br_v }}"
-                         {{ $project->setting('border_radius', 'rounded') === $br_v ? 'checked' : '' }} class="sr-only">
+                         {{ $setting('border_radius', 'rounded') === $br_v ? 'checked' : '' }} class="sr-only">
                   <div class="h-7 bg-indigo-400 flex items-center justify-center text-white text-xs font-bold mb-1
                       {{ $br_v === 'sharp' ? 'rounded-none' : ($br_v === 'rounded' ? 'rounded-lg' : 'rounded-full') }}">Btn</div>
                   <span class="text-xs text-gray-600 font-medium">{{ $br_l }}</span>
@@ -684,7 +684,7 @@
               <label class="label">Color del encabezado (header)</label>
               <div class="flex items-center gap-3 mt-1">
                 <input type="color" name="header_bg_color"
-                       value="{{ $project->setting('header_bg_color', '#ffffff') }}"
+                       value="{{ $setting('header_bg_color', '#ffffff') }}"
                        class="h-9 w-14 rounded-lg border border-gray-300 cursor-pointer p-0.5">
                 <span class="text-xs text-gray-400">Fondo del header del catálogo público</span>
               </div>
@@ -693,7 +693,7 @@
               <label class="label">Color del texto del encabezado</label>
               <div class="flex items-center gap-3 mt-1">
                 <input type="color" name="header_text_color"
-                       value="{{ $project->setting('header_text_color', '#111827') }}"
+                       value="{{ $setting('header_text_color', '#111827') }}"
                        class="h-9 w-14 rounded-lg border border-gray-300 cursor-pointer p-0.5">
                 <span class="text-xs text-gray-400">Color del texto e íconos en el header</span>
               </div>
@@ -702,7 +702,7 @@
               <label class="label">Color del pie de página (footer)</label>
               <div class="flex items-center gap-3 mt-1">
                 <input type="color" name="footer_bg_color"
-                       value="{{ $project->setting('footer_bg_color', '#111827') }}"
+                       value="{{ $setting('footer_bg_color', '#111827') }}"
                        class="h-9 w-14 rounded-lg border border-gray-300 cursor-pointer p-0.5">
                 <span class="text-xs text-gray-400">Fondo del footer del catálogo público</span>
               </div>
@@ -711,7 +711,7 @@
               <label class="label">Color del texto del pie de página</label>
               <div class="flex items-center gap-3 mt-1">
                 <input type="color" name="footer_text_color"
-                       value="{{ $project->setting('footer_text_color', '#9ca3af') }}"
+                       value="{{ $setting('footer_text_color', '#9ca3af') }}"
                        class="h-9 w-14 rounded-lg border border-gray-300 cursor-pointer p-0.5">
                 <span class="text-xs text-gray-400">Color del texto en el footer</span>
               </div>
@@ -719,13 +719,13 @@
             <div>
               <label class="label">Alto del logo en el footer (px)</label>
               <input type="number" name="footer_logo_height" class="input" min="24" max="200"
-                     placeholder="60" value="{{ $project->setting('footer_logo_height', '60') }}">
+                     placeholder="60" value="{{ $setting('footer_logo_height', '60') }}">
             </div>
             <div>
               <label class="label">Símbolo de moneda</label>
               <select name="currency_symbol" class="input">
                 @foreach(['S/'=>'S/ — Sol peruano','Soles'=>'Soles — Sol peruano (palabra)','$'=>'$ — Dólar','€'=>'€ — Euro','COP$'=>'COP$ — Peso colombiano','CLP$'=>'CLP$ — Peso chileno','ARS$'=>'ARS$ — Peso argentino','MXN$'=>'MXN$ — Peso mexicano','Bs.'=>'Bs. — Boliviano'] as $cs_v => $cs_l)
-                <option value="{{ $cs_v }}" {{ $project->setting('currency_symbol', 'S/') === $cs_v ? 'selected' : '' }}>{{ $cs_l }}</option>
+                <option value="{{ $cs_v }}" {{ $setting('currency_symbol', 'S/') === $cs_v ? 'selected' : '' }}>{{ $cs_l }}</option>
                 @endforeach
               </select>
             </div>
@@ -742,7 +742,7 @@
             <label class="label">Mensaje de WhatsApp</label>
             <input type="text" name="whatsapp_msg" class="input mt-1"
                    placeholder="Hola, vi tu catálogo y me interesa..."
-                   value="{{ $project->setting('whatsapp_msg') }}">
+                   value="{{ $setting('whatsapp_msg') }}">
             <p class="text-xs text-gray-400 mt-1">Se envía cuando el cliente hace clic en el botón flotante de WhatsApp</p>
           </div>
         </div>
@@ -777,21 +777,21 @@
               <label class="label">Título principal</label>
               <input type="text" name="hero_title" class="input"
                      placeholder="{{ $tplInfo['settings']['hero_title'] ?? 'Ej: Bienvenido a nuestra tienda' }}"
-                     value="{{ $project->setting('hero_title') }}">
+                     value="{{ $setting('hero_title') }}">
             </div>
             <div>
               <label class="label">Subtítulo</label>
               <input type="text" name="hero_subtitle" class="input"
                      placeholder="{{ $tplInfo['settings']['hero_subtitle'] ?? 'Ej: Encuentra todo lo que necesitas al mejor precio' }}"
-                     value="{{ $project->setting('hero_subtitle') }}">
+                     value="{{ $setting('hero_subtitle') }}">
             </div>
             <div>
               <label class="label">Badge / etiqueta sobre el título</label>
               <input type="text" name="hero_badge" class="input"
                      placeholder="{{ $tplInfo['settings']['hero_badge'] ?? 'Ej: ¡Nuevos productos!' }}"
-                     value="{{ $project->setting('hero_badge') }}">
+                     value="{{ $setting('hero_badge') }}">
             </div>
-            <div x-data="{ color: '{{ $project->setting('hero_bg_color', $tplInfo['preview_bg']) }}' }">
+            <div x-data="{ color: '{{ $setting('hero_bg_color', $tplInfo['preview_bg']) }}' }">
               <label class="label">Color de fondo del hero</label>
               <div class="flex items-center gap-3 mt-1">
                 <input type="color" name="hero_bg_color" x-model="color"
@@ -806,10 +806,10 @@
               <label class="label">Imagen de fondo del hero (URL)</label>
               <input type="url" name="hero_image" class="input"
                      placeholder="https://images.unsplash.com/photo-..."
-                     value="{{ $project->setting('hero_image') }}">
+                     value="{{ $setting('hero_image') }}">
               <p class="text-xs text-gray-400 mt-1">Aparece sobre el color de fondo. Mínimo 1920×600 px recomendado.</p>
             </div>
-            <div x-data="{ ov: {{ (int)($project->setting('hero_overlay', '50')) }} }">
+            <div x-data="{ ov: {{ (int)($setting('hero_overlay', '50')) }} }">
               <label class="label flex items-center justify-between">
                 <span>Opacidad del overlay oscuro</span>
                 <span class="font-mono text-indigo-600 text-sm" x-text="ov + '%'"></span>
@@ -822,18 +822,18 @@
               <div>
                 <label class="label">Alineación del contenido</label>
                 <select name="hero_align" class="input">
-                  <option value="left"   {{ $project->setting('hero_align', 'left') === 'left'   ? 'selected' : '' }}>Izquierda</option>
-                  <option value="center" {{ $project->setting('hero_align', 'left') === 'center' ? 'selected' : '' }}>Centrado</option>
-                  <option value="right"  {{ $project->setting('hero_align', 'left') === 'right'  ? 'selected' : '' }}>Derecha</option>
+                  <option value="left"   {{ $setting('hero_align', 'left') === 'left'   ? 'selected' : '' }}>Izquierda</option>
+                  <option value="center" {{ $setting('hero_align', 'left') === 'center' ? 'selected' : '' }}>Centrado</option>
+                  <option value="right"  {{ $setting('hero_align', 'left') === 'right'  ? 'selected' : '' }}>Derecha</option>
                 </select>
               </div>
               <div>
                 <label class="label">Altura del hero</label>
                 <select name="hero_height" class="input">
-                  <option value="small"  {{ $project->setting('hero_height', 'medium') === 'small'  ? 'selected' : '' }}>Pequeño (300px)</option>
-                  <option value="medium" {{ $project->setting('hero_height', 'medium') === 'medium' ? 'selected' : '' }}>Mediano (480px)</option>
-                  <option value="large"  {{ $project->setting('hero_height', 'medium') === 'large'  ? 'selected' : '' }}>Grande (600px)</option>
-                  <option value="full"   {{ $project->setting('hero_height', 'medium') === 'full'   ? 'selected' : '' }}>Pantalla completa</option>
+                  <option value="small"  {{ $setting('hero_height', 'medium') === 'small'  ? 'selected' : '' }}>Pequeño (300px)</option>
+                  <option value="medium" {{ $setting('hero_height', 'medium') === 'medium' ? 'selected' : '' }}>Mediano (480px)</option>
+                  <option value="large"  {{ $setting('hero_height', 'medium') === 'large'  ? 'selected' : '' }}>Grande (600px)</option>
+                  <option value="full"   {{ $setting('hero_height', 'medium') === 'full'   ? 'selected' : '' }}>Pantalla completa</option>
                 </select>
               </div>
             </div>
@@ -841,7 +841,7 @@
             <div class="border-t border-gray-200 pt-4 space-y-3">
               <p class="text-sm font-semibold text-gray-700">Botones de acción (CTAs)</p>
               <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2"
-                   x-data="{ on: {{ ($project->setting('hero_cta1_show', '1') === '1') ? 'true' : 'false' }} }">
+                   x-data="{ on: {{ ($setting('hero_cta1_show', '1') === '1') ? 'true' : 'false' }} }">
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium text-gray-700">CTA principal</span>
                   <div class="flex-shrink-0">
@@ -857,11 +857,11 @@
                 <div x-show="on">
                   <input type="text" name="hero_cta1_text" class="input text-sm"
                          placeholder="Ver catálogo"
-                         value="{{ $project->setting('hero_cta1_text', 'Ver catálogo') }}">
+                         value="{{ $setting('hero_cta1_text', 'Ver catálogo') }}">
                 </div>
               </div>
               <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2"
-                   x-data="{ on: {{ ($project->setting('hero_cta2_show', '0') === '1') ? 'true' : 'false' }} }">
+                   x-data="{ on: {{ ($setting('hero_cta2_show', '0') === '1') ? 'true' : 'false' }} }">
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium text-gray-700">CTA secundario</span>
                   <div class="flex-shrink-0">
@@ -877,7 +877,7 @@
                 <div x-show="on">
                   <input type="text" name="hero_cta2_text" class="input text-sm"
                          placeholder="Contáctanos"
-                         value="{{ $project->setting('hero_cta2_text', 'Contáctanos') }}">
+                         value="{{ $setting('hero_cta2_text', 'Contáctanos') }}">
                 </div>
               </div>
             </div>
@@ -906,10 +906,10 @@
               <label class="label">Texto del anuncio</label>
               <input type="text" name="announcement_text" class="input"
                      placeholder="Ej: Envío gratis en pedidos mayores a S/ 100"
-                     value="{{ $project->setting('announcement_text') }}">
+                     value="{{ $setting('announcement_text') }}">
               <p class="text-xs text-gray-400 mt-1">Aparece en la barra superior de la tienda. Ideal para promociones y avisos.</p>
             </div>
-            <div x-data="{ color: '{{ $project->setting('announcement_bg', $tplInfo['preview_accent'] ?? '#4f46e5') }}' }">
+            <div x-data="{ color: '{{ $setting('announcement_bg', $tplInfo['preview_accent'] ?? '#4f46e5') }}' }">
               <label class="label">Color de fondo</label>
               <div class="flex items-center gap-3 mt-1">
                 <input type="color" name="announcement_bg" x-model="color"
@@ -933,12 +933,12 @@
               <label class="label">Texto del countdown</label>
               <input type="text" name="countdown_label" class="input"
                      placeholder="Ej: ¡Oferta termina en:"
-                     value="{{ $project->setting('countdown_label', '¡Oferta termina en:') }}">
+                     value="{{ $setting('countdown_label', '¡Oferta termina en:') }}">
             </div>
             <div>
               <label class="label">Fecha de fin de oferta</label>
               <input type="datetime-local" name="countdown_end" class="input"
-                     value="{{ $project->setting('countdown_end') }}">
+                     value="{{ $setting('countdown_end') }}">
               <p class="text-xs text-gray-400 mt-1">Cuando llegue a cero el contador desaparecerá automáticamente.</p>
             </div>
           </div>
@@ -959,25 +959,25 @@
                 <label class="label text-xs">Lado izquierdo — Título</label>
                 <input type="text" name="split_left_title" class="input text-sm"
                        placeholder="Ej: Nueva colección"
-                       value="{{ $project->setting('split_left_title') }}">
+                       value="{{ $setting('split_left_title') }}">
               </div>
               <div>
                 <label class="label text-xs">Lado izquierdo — Subtítulo</label>
                 <input type="text" name="split_left_sub" class="input text-sm"
                        placeholder="Ej: Piezas únicas"
-                       value="{{ $project->setting('split_left_sub') }}">
+                       value="{{ $setting('split_left_sub') }}">
               </div>
               <div>
                 <label class="label text-xs">Lado derecho — Título</label>
                 <input type="text" name="split_right_title" class="input text-sm"
                        placeholder="Ej: Accesorios"
-                       value="{{ $project->setting('split_right_title') }}">
+                       value="{{ $setting('split_right_title') }}">
               </div>
               <div>
                 <label class="label text-xs">Lado derecho — Subtítulo</label>
                 <input type="text" name="split_right_sub" class="input text-sm"
                        placeholder="Ej: Completa tu look"
-                       value="{{ $project->setting('split_right_sub') }}">
+                       value="{{ $setting('split_right_sub') }}">
               </div>
             </div>
           </div>
@@ -996,10 +996,10 @@
             @foreach([1,2,3,4] as $ti)
             <div class="flex items-center gap-2">
               <input type="text" name="trust_icon_{{ $ti }}" class="input text-sm w-16 flex-shrink-0 text-center"
-                     placeholder="🚚" value="{{ $project->setting('trust_icon_'.$ti) }}">
+                     placeholder="🚚" value="{{ $setting('trust_icon_'.$ti) }}">
               <input type="text" name="trust_text_{{ $ti }}" class="input text-sm flex-1"
                      placeholder="{{ ['Envío rápido', 'Garantía 30 días', 'Pago seguro', 'Atención personalizada'][$ti-1] }}"
-                     value="{{ $project->setting('trust_text_'.$ti) }}">
+                     value="{{ $setting('trust_text_'.$ti) }}">
             </div>
             @endforeach
           </div>
@@ -1019,10 +1019,10 @@
             <div class="flex items-center gap-2">
               <input type="text" name="trust_icon_{{ $ti }}" class="input text-sm w-16 flex-shrink-0 text-center"
                      placeholder="{{ ['🚚','🔒','✅','🔞'][$ti-1] }}"
-                     value="{{ $project->setting('trust_icon_'.$ti) }}">
+                     value="{{ $setting('trust_icon_'.$ti) }}">
               <input type="text" name="trust_text_{{ $ti }}" class="input text-sm flex-1"
                      placeholder="{{ ['Envío rápido','Pago seguro','Producto auténtico','Solo +18'][$ti-1] }}"
-                     value="{{ $project->setting('trust_text_'.$ti) }}">
+                     value="{{ $setting('trust_text_'.$ti) }}">
             </div>
             @endforeach
           </div>
@@ -1052,10 +1052,10 @@
                 track.style.background=cb.checked?'#ef4444':'#d1d5db';
                 thumb.style.transform=cb.checked?'translateX(20px)':'translateX(2px)';
               " style="position:relative;width:40px;height:22px;cursor:pointer;">
-                <input type="checkbox" style="display:none;" {{ $project->setting('age_gate','0')==='1' ? 'checked' : '' }}>
-                <input type="hidden" name="age_gate" value="{{ $project->setting('age_gate','0') }}">
-                <div class="ag-track" style="position:absolute;inset:0;border-radius:11px;background:{{ $project->setting('age_gate','0')==='1' ? '#ef4444' : '#d1d5db' }};transition:background .2s;"></div>
-                <div class="ag-thumb" style="position:absolute;top:3px;left:0;width:16px;height:16px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s;transform:{{ $project->setting('age_gate','0')==='1' ? 'translateX(20px)' : 'translateX(2px)' }};"></div>
+                <input type="checkbox" style="display:none;" {{ $setting('age_gate','0')==='1' ? 'checked' : '' }}>
+                <input type="hidden" name="age_gate" value="{{ $setting('age_gate','0') }}">
+                <div class="ag-track" style="position:absolute;inset:0;border-radius:11px;background:{{ $setting('age_gate','0')==='1' ? '#ef4444' : '#d1d5db' }};transition:background .2s;"></div>
+                <div class="ag-thumb" style="position:absolute;top:3px;left:0;width:16px;height:16px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s;transform:{{ $setting('age_gate','0')==='1' ? 'translateX(20px)' : 'translateX(2px)' }};"></div>
               </div>
             </label>
           </div>
@@ -1076,19 +1076,19 @@
                 <label class="label text-xs">Tab 1</label>
                 <input type="text" name="tab1_label" class="input text-sm"
                        placeholder="Destacados"
-                       value="{{ $project->setting('tab1_label', 'Destacados') }}">
+                       value="{{ $setting('tab1_label', 'Destacados') }}">
               </div>
               <div>
                 <label class="label text-xs">Tab 2</label>
                 <input type="text" name="tab2_label" class="input text-sm"
                        placeholder="Nuevos"
-                       value="{{ $project->setting('tab2_label', 'Nuevos') }}">
+                       value="{{ $setting('tab2_label', 'Nuevos') }}">
               </div>
               <div>
                 <label class="label text-xs">Tab 3</label>
                 <input type="text" name="tab3_label" class="input text-sm"
                        placeholder="Ofertas"
-                       value="{{ $project->setting('tab3_label', 'Ofertas') }}">
+                       value="{{ $setting('tab3_label', 'Ofertas') }}">
               </div>
             </div>
           </div>
@@ -1107,25 +1107,25 @@
                 <label class="label text-xs">Banner 1 — Título</label>
                 <input type="text" name="banner1_title" class="input text-sm"
                        placeholder="{{ $tplInfo['settings']['banner1_title'] ?? 'Nuevos productos' }}"
-                       value="{{ $project->setting('banner1_title') }}">
+                       value="{{ $setting('banner1_title') }}">
               </div>
               <div>
                 <label class="label text-xs">Banner 1 — Descripción</label>
                 <input type="text" name="banner1_sub" class="input text-sm"
                        placeholder="{{ $tplInfo['settings']['banner1_sub'] ?? 'Descubre lo último' }}"
-                       value="{{ $project->setting('banner1_sub') }}">
+                       value="{{ $setting('banner1_sub') }}">
               </div>
               <div>
                 <label class="label text-xs">Banner 2 — Título</label>
                 <input type="text" name="banner2_title" class="input text-sm"
                        placeholder="{{ $tplInfo['settings']['banner2_title'] ?? 'Ofertas especiales' }}"
-                       value="{{ $project->setting('banner2_title') }}">
+                       value="{{ $setting('banner2_title') }}">
               </div>
               <div>
                 <label class="label text-xs">Banner 2 — Descripción</label>
                 <input type="text" name="banner2_sub" class="input text-sm"
                        placeholder="{{ $tplInfo['settings']['banner2_sub'] ?? 'Precios imperdibles' }}"
-                       value="{{ $project->setting('banner2_sub') }}">
+                       value="{{ $setting('banner2_sub') }}">
               </div>
             </div>
           </div>
@@ -1144,7 +1144,7 @@
       <section id="constructor-catalogo" class="scroll-mt-20">
       @php
         $cardStylesAll = \App\Support\CatalogTemplates::cardStyles();
-        $activeTplCat  = $project->setting('catalog_template', 'default') ?: 'default';
+        $activeTplCat  = $setting('catalog_template', 'default') ?: 'default';
         $allTplsCat    = \App\Support\CatalogTemplates::all();
         $tplInfoCat    = $allTplsCat[$activeTplCat] ?? $allTplsCat['default'];
       @endphp
@@ -1164,14 +1164,14 @@
               <label class="label">Título de la sección de productos</label>
               <input type="text" name="catalog_section_title" class="input"
                      placeholder="Nuestros productos"
-                     value="{{ $project->setting('catalog_section_title', 'Nuestros productos') }}">
+                     value="{{ $setting('catalog_section_title', 'Nuestros productos') }}">
             </div>
             <div>
               <label class="label">Estilo de tarjeta de producto</label>
               <select name="card_style" class="input">
                 @foreach($cardStylesAll as $cs_key => $cs_label)
                 <option value="{{ $cs_key }}"
-                    {{ $project->setting('card_style', $tplInfoCat['settings']['card_style'] ?? 'minimal') === $cs_key ? 'selected' : '' }}>
+                    {{ $setting('card_style', $tplInfoCat['settings']['card_style'] ?? 'minimal') === $cs_key ? 'selected' : '' }}>
                   {{ ucfirst($cs_key) }} — {{ $cs_label }}
                 </option>
                 @endforeach
@@ -1183,7 +1183,7 @@
                 <label class="label">Columnas en escritorio</label>
                 <select name="catalog_cols_desktop" class="input">
                   @foreach(['2'=>'2 columnas','3'=>'3 columnas','4'=>'4 columnas'] as $cv=>$cl)
-                  <option value="{{ $cv }}" {{ $project->setting('catalog_cols_desktop', '3') === $cv ? 'selected' : '' }}>{{ $cl }}</option>
+                  <option value="{{ $cv }}" {{ $setting('catalog_cols_desktop', '3') === $cv ? 'selected' : '' }}>{{ $cl }}</option>
                   @endforeach
                 </select>
               </div>
@@ -1191,7 +1191,7 @@
                 <label class="label">Columnas en móvil</label>
                 <select name="catalog_cols_mobile" class="input">
                   @foreach(['1'=>'1 columna','2'=>'2 columnas'] as $cv=>$cl)
-                  <option value="{{ $cv }}" {{ $project->setting('catalog_cols_mobile', '2') === $cv ? 'selected' : '' }}>{{ $cl }}</option>
+                  <option value="{{ $cv }}" {{ $setting('catalog_cols_mobile', '2') === $cv ? 'selected' : '' }}>{{ $cl }}</option>
                   @endforeach
                 </select>
               </div>
@@ -1214,7 +1214,7 @@
             ] as $ff)
             <label class="flex items-center justify-between cursor-pointer py-1">
               <span class="text-sm text-gray-700">{{ $ff['label'] }}</span>
-              <div x-data="{ on: {{ ($project->setting($ff['key'], $ff['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
+              <div x-data="{ on: {{ ($setting($ff['key'], $ff['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
                 <input type="hidden" name="{{ $ff['key'] }}" :value="on ? '1' : '0'">
                 <button type="button" @click="on = !on"
                         :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
@@ -1245,7 +1245,7 @@
               <label class="label text-xs">{{ $bg['label'] }}</label>
               <input type="text" name="{{ $bg['key'] }}" class="input text-sm"
                      placeholder="{{ $bg['def'] }}"
-                     value="{{ $project->setting($bg['key'], $bg['def']) }}">
+                     value="{{ $setting($bg['key'], $bg['def']) }}">
             </div>
             @endforeach
           </div>
@@ -1266,7 +1266,7 @@
             ] as $fo)
             <label class="flex items-center justify-between cursor-pointer py-1">
               <span class="text-sm text-gray-700">{{ $fo['label'] }}</span>
-              <div x-data="{ on: {{ ($project->setting($fo['key'], $fo['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
+              <div x-data="{ on: {{ ($setting($fo['key'], $fo['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
                 <input type="hidden" name="{{ $fo['key'] }}" :value="on ? '1' : '0'">
                 <button type="button" @click="on = !on"
                         :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
@@ -1290,22 +1290,22 @@
               <label class="label">Texto "Agregar al carrito"</label>
               <input type="text" name="btn_cart_text" class="input"
                      placeholder="Agregar al carrito"
-                     value="{{ $project->setting('btn_cart_text', 'Agregar al carrito') }}">
+                     value="{{ $setting('btn_cart_text', 'Agregar al carrito') }}">
             </div>
             <div>
               <label class="label">Texto "Cotizar"</label>
               <input type="text" name="btn_quote_text" class="input"
                      placeholder="Cotizar"
-                     value="{{ $project->setting('btn_quote_text', 'Cotizar') }}">
+                     value="{{ $setting('btn_quote_text', 'Cotizar') }}">
             </div>
             <div>
               <label class="label">Forma global de botones</label>
               <div class="grid grid-cols-3 gap-2 mt-1">
                 @foreach(['sharp'=>'Cuadrado', 'rounded'=>'Redondeado', 'pill'=>'Píldora'] as $bs_v => $bs_l)
                 <label class="text-center p-3 rounded-xl border-2 cursor-pointer transition
-                    {{ $project->setting('btn_shape', 'rounded') === $bs_v ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300' }}">
+                    {{ $setting('btn_shape', 'rounded') === $bs_v ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300' }}">
                   <input type="radio" name="btn_shape" value="{{ $bs_v }}"
-                         {{ $project->setting('btn_shape', 'rounded') === $bs_v ? 'checked' : '' }} class="sr-only">
+                         {{ $setting('btn_shape', 'rounded') === $bs_v ? 'checked' : '' }} class="sr-only">
                   <div class="h-7 bg-indigo-500 flex items-center justify-center text-white text-xs font-bold mb-1
                       {{ $bs_v === 'sharp' ? 'rounded-none' : ($bs_v === 'rounded' ? 'rounded-lg' : 'rounded-full') }}">Btn</div>
                   <span class="text-xs text-gray-600 font-medium">{{ $bs_l }}</span>
@@ -1315,7 +1315,7 @@
             </div>
             <label class="flex items-center justify-between cursor-pointer py-1">
               <span class="text-sm text-gray-700">Mostrar ícono en el botón del carrito</span>
-              <div x-data="{ on: {{ ($project->setting('btn_show_icon', '1') === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
+              <div x-data="{ on: {{ ($setting('btn_show_icon', '1') === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
                 <input type="hidden" name="btn_show_icon" :value="on ? '1' : '0'">
                 <button type="button" @click="on = !on"
                         :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
@@ -1336,7 +1336,7 @@
           <div class="p-4 space-y-4">
             <label class="flex items-center justify-between cursor-pointer py-1">
               <span class="text-sm text-gray-700">Mostrar carrito flotante</span>
-              <div x-data="{ on: {{ ($project->setting('float_cart_show', '1') === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
+              <div x-data="{ on: {{ ($setting('float_cart_show', '1') === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
                 <input type="hidden" name="float_cart_show" :value="on ? '1' : '0'">
                 <button type="button" @click="on = !on"
                         :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
@@ -1349,14 +1349,14 @@
             <div>
               <label class="label">Posición del carrito flotante</label>
               <select name="float_cart_pos" class="input">
-                <option value="bottom-right" {{ $project->setting('float_cart_pos', 'bottom-right') === 'bottom-right' ? 'selected' : '' }}>Abajo derecha</option>
-                <option value="bottom-left"  {{ $project->setting('float_cart_pos', 'bottom-right') === 'bottom-left'  ? 'selected' : '' }}>Abajo izquierda</option>
+                <option value="bottom-right" {{ $setting('float_cart_pos', 'bottom-right') === 'bottom-right' ? 'selected' : '' }}>Abajo derecha</option>
+                <option value="bottom-left"  {{ $setting('float_cart_pos', 'bottom-right') === 'bottom-left'  ? 'selected' : '' }}>Abajo izquierda</option>
               </select>
             </div>
             <div class="border-t border-gray-100 pt-4 space-y-3">
               <label class="flex items-center justify-between cursor-pointer py-1">
                 <span class="text-sm text-gray-700">Mostrar botón de WhatsApp flotante</span>
-                <div x-data="{ on: {{ ($project->setting('float_wa_show', '1') === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
+                <div x-data="{ on: {{ ($setting('float_wa_show', '1') === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
                   <input type="hidden" name="float_wa_show" :value="on ? '1' : '0'">
                   <button type="button" @click="on = !on"
                           :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
@@ -1370,13 +1370,13 @@
                 <label class="label">Tooltip del botón WA</label>
                 <input type="text" name="float_wa_tooltip" class="input"
                        placeholder="¿Necesitas ayuda?"
-                       value="{{ $project->setting('float_wa_tooltip', '¿Necesitas ayuda?') }}">
+                       value="{{ $setting('float_wa_tooltip', '¿Necesitas ayuda?') }}">
               </div>
               <div>
                 <label class="label">Posición del botón WA</label>
                 <select name="float_wa_pos" class="input">
-                  <option value="bottom-right" {{ $project->setting('float_wa_pos', 'bottom-right') === 'bottom-right' ? 'selected' : '' }}>Abajo derecha</option>
-                  <option value="bottom-left"  {{ $project->setting('float_wa_pos', 'bottom-right') === 'bottom-left'  ? 'selected' : '' }}>Abajo izquierda</option>
+                  <option value="bottom-right" {{ $setting('float_wa_pos', 'bottom-right') === 'bottom-right' ? 'selected' : '' }}>Abajo derecha</option>
+                  <option value="bottom-left"  {{ $setting('float_wa_pos', 'bottom-right') === 'bottom-left'  ? 'selected' : '' }}>Abajo izquierda</option>
                 </select>
               </div>
             </div>
@@ -1477,7 +1477,7 @@
             <div>
               <label class="label">Mensaje plantilla</label>
               <textarea name="quote_wa_msg" class="input" rows="2"
-                        placeholder="Ej: Hola, me interesa cotizar los siguientes productos:">{{ $project->setting('quote_wa_msg', 'Hola, me interesa cotizar los siguientes productos:') }}</textarea>
+                        placeholder="Ej: Hola, me interesa cotizar los siguientes productos:">{{ $setting('quote_wa_msg', 'Hola, me interesa cotizar los siguientes productos:') }}</textarea>
             </div>
           </div>
         </div>
@@ -1517,7 +1517,7 @@
               <label class="label">Eslogan del footer</label>
               <input type="text" name="footer_tagline" class="input"
                      placeholder="Ej: Los mejores spirits, directo a tu puerta."
-                     value="{{ $project->setting('footer_tagline') }}">
+                     value="{{ $setting('footer_tagline') }}">
               <p class="text-xs text-gray-400 mt-1">Frase breve debajo del logo en el footer.</p>
             </div>
 
@@ -1526,7 +1526,7 @@
               <label class="label">Copyright</label>
               <input type="text" name="footer_copyright" class="input"
                      placeholder="© 2026 Mi Tienda. Todos los derechos reservados."
-                     value="{{ $project->setting('footer_copyright', '© ' . date('Y') . ' ' . $project->name . '. Todos los derechos reservados.') }}">
+                     value="{{ $setting('footer_copyright', '© ' . date('Y') . ' ' . $project->name . '. Todos los derechos reservados.') }}">
             </div>
 
             {{-- Texto desarrollado por --}}
@@ -1534,7 +1534,7 @@
               <label class="label">Texto "Desarrollado por"</label>
               <input type="text" name="footer_dev_text" class="input"
                      placeholder="Desarrollado por AVAN"
-                     value="{{ $project->setting('footer_dev_text', 'Desarrollado por AVAN') }}">
+                     value="{{ $setting('footer_dev_text', 'Desarrollado por AVAN') }}">
             </div>
 
             {{-- Contacto en footer --}}
@@ -1543,19 +1543,19 @@
                 <label class="label">Correo de contacto</label>
                 <input type="email" name="contact_email" class="input"
                        placeholder="contacto@tuempresa.com"
-                       value="{{ $project->setting('contact_email') }}">
+                       value="{{ $setting('contact_email') }}">
               </div>
               <div>
                 <label class="label">Teléfono de contacto</label>
                 <input type="text" name="contact_phone" class="input"
                        placeholder="999 888 777"
-                       value="{{ $project->setting('contact_phone') }}">
+                       value="{{ $setting('contact_phone') }}">
               </div>
               <div class="md:col-span-2">
                 <label class="label">Horario de atención</label>
                 <input type="text" name="business_hours" class="input"
                        placeholder="Lunes a sábado, 9am – 6pm"
-                       value="{{ $project->setting('business_hours') }}">
+                       value="{{ $setting('business_hours') }}">
                 <p class="text-xs text-gray-400 mt-1">Opcional. Se muestra en el footer de algunas plantillas.</p>
               </div>
             </div>
@@ -1568,10 +1568,10 @@
               <div class="grid grid-cols-3 gap-2 mb-2">
                 <input type="text" name="footer_benefit_{{ $bn }}_icon" class="input text-xs"
                        placeholder="Ícono (ej: tienda)"
-                       value="{{ $project->setting('footer_benefit_'.$bn.'_icon', ['1'=>'tienda','2'=>'envio','3'=>'pago'][$bn] ?? '') }}">
+                       value="{{ $setting('footer_benefit_'.$bn.'_icon', ['1'=>'tienda','2'=>'envio','3'=>'pago'][$bn] ?? '') }}">
                 <input type="text" name="footer_benefit_{{ $bn }}_text" class="input text-xs col-span-2"
                        placeholder="Texto del beneficio"
-                       value="{{ $project->setting('footer_benefit_'.$bn.'_text') }}">
+                       value="{{ $setting('footer_benefit_'.$bn.'_text') }}">
               </div>
               @endforeach
             </div>
@@ -1581,7 +1581,7 @@
               <label class="label font-semibold">Columna "Información" — páginas y enlaces</label>
               <p class="text-xs text-gray-400 mb-2">Título | URL (una por línea). Ej: Políticas de privacidad | /privacidad</p>
               <textarea name="footer_pages" class="input text-xs font-mono" rows="6"
-                        placeholder="Políticas de privacidad | /privacidad&#10;Términos y condiciones | /terminos&#10;Condiciones de entrega | /entrega&#10;Cambios y devoluciones | /devoluciones&#10;Preguntas frecuentes | /faq&#10;Formas de pago | /pagos">{{ $project->setting('footer_pages') }}</textarea>
+                        placeholder="Políticas de privacidad | /privacidad&#10;Términos y condiciones | /terminos&#10;Condiciones de entrega | /entrega&#10;Cambios y devoluciones | /devoluciones&#10;Preguntas frecuentes | /faq&#10;Formas de pago | /pagos">{{ $setting('footer_pages') }}</textarea>
             </div>
 
             {{-- Columna: Menú tienda --}}
@@ -1589,7 +1589,7 @@
               <label class="label font-semibold">Columna "{{ $project->name }}" — menú de la tienda</label>
               <p class="text-xs text-gray-400 mb-2">Título | URL (una por línea). Ej: ¿Quiénes somos? | /nosotros</p>
               <textarea name="footer_store_pages" class="input text-xs font-mono" rows="4"
-                        placeholder="¿Quiénes somos? | /nosotros&#10;Contáctanos | /contacto">{{ $project->setting('footer_store_pages') }}</textarea>
+                        placeholder="¿Quiénes somos? | /nosotros&#10;Contáctanos | /contacto">{{ $setting('footer_store_pages') }}</textarea>
             </div>
 
             {{-- Newsletter --}}
@@ -1600,13 +1600,13 @@
                   <label class="label text-xs">Título del boletín</label>
                   <input type="text" name="footer_newsletter_title" class="input text-sm"
                          placeholder="Boletín"
-                         value="{{ $project->setting('footer_newsletter_title', 'Boletín') }}">
+                         value="{{ $setting('footer_newsletter_title', 'Boletín') }}">
                 </div>
                 <div>
                   <label class="label text-xs">URL de suscripción (form action)</label>
                   <input type="text" name="footer_newsletter_url" class="input text-sm"
                          placeholder="https://..."
-                         value="{{ $project->setting('footer_newsletter_url') }}">
+                         value="{{ $setting('footer_newsletter_url') }}">
                 </div>
               </div>
             </div>
@@ -1622,7 +1622,7 @@
               ] as $ft)
               <label class="flex items-center justify-between cursor-pointer py-1">
                 <span class="text-sm text-gray-700">{{ $ft['label'] }}</span>
-                <div x-data="{ on: {{ ($project->setting($ft['key'], $ft['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
+                <div x-data="{ on: {{ ($setting($ft['key'], $ft['def']) === '1') ? 'true' : 'false' }} }" class="flex-shrink-0">
                   <input type="hidden" name="{{ $ft['key'] }}" :value="on ? '1' : '0'">
                   <button type="button" @click="on = !on"
                           :class="on ? 'bg-indigo-600' : 'bg-gray-200'"
@@ -1669,7 +1669,7 @@
               <label class="label text-xs">{{ $tx['label'] }}</label>
               <input type="text" name="{{ $tx['key'] }}" class="input text-sm"
                      placeholder="{{ $tx['def'] }}"
-                     value="{{ $project->setting($tx['key'], $tx['def']) }}">
+                     value="{{ $setting($tx['key'], $tx['def']) }}">
             </div>
             @endforeach
           </div>
@@ -1678,9 +1678,9 @@
         {{-- Pantalla de Login --}}
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden"
              x-data="{
-               bgType: '{{ $project->setting('login_bg_type', 'gradient') }}',
-               color1: '{{ $project->setting('login_color1', '#4f46e5') }}',
-               color2: '{{ $project->setting('login_color2', '#7c3aed') }}'
+               bgType: '{{ $setting('login_bg_type', 'gradient') }}',
+               color1: '{{ $setting('login_color1', '#4f46e5') }}',
+               color2: '{{ $setting('login_color2', '#7c3aed') }}'
              }">
           <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
             <p class="text-sm font-semibold text-gray-800">Pantalla de Login</p>
@@ -1746,7 +1746,7 @@
               <label class="label">URL de la imagen de fondo</label>
               <input type="url" name="login_bg_image" class="input mt-1"
                      placeholder="https://images.unsplash.com/photo-..."
-                     value="{{ $project->setting('login_bg_image') }}">
+                     value="{{ $setting('login_bg_image') }}">
               <p class="text-xs text-gray-400 mt-1">Usa una imagen de alta resolución (mínimo 1920×1080).</p>
             </div>
             <div class="border-t border-gray-100 pt-4 space-y-3">
@@ -1754,13 +1754,13 @@
                 <label class="label">Título de bienvenida</label>
                 <input type="text" name="login_heading" class="input"
                        placeholder="Bienvenido de vuelta"
-                       value="{{ $project->setting('login_heading', 'Bienvenido de vuelta') }}">
+                       value="{{ $setting('login_heading', 'Bienvenido de vuelta') }}">
               </div>
               <div>
                 <label class="label">Subtítulo</label>
                 <input type="text" name="login_subtitle" class="input"
                        placeholder="Ingresa a tu panel de gestión"
-                       value="{{ $project->setting('login_subtitle', 'Ingresa a tu panel de gestión') }}">
+                       value="{{ $setting('login_subtitle', 'Ingresa a tu panel de gestión') }}">
               </div>
             </div>
           </div>
@@ -1777,7 +1777,7 @@
               <label class="label">Título para buscadores (SEO Title)</label>
               <input type="text" name="seo_title" class="input"
                      placeholder="Ej: {{ $project->name }} — Catálogo Online"
-                     value="{{ $project->setting('seo_title') }}"
+                     value="{{ $setting('seo_title') }}"
                      maxlength="70">
               <p class="text-xs text-gray-400 mt-1">Máximo 60–70 caracteres. Aparece en la pestaña y en Google.</p>
             </div>
@@ -1785,14 +1785,14 @@
               <label class="label">Descripción para buscadores (Meta description)</label>
               <textarea name="seo_description" class="input" rows="3"
                         placeholder="Ej: Explora el catálogo de {{ $project->name }}. Encuentra productos de calidad y haz tu pedido en línea."
-                        maxlength="160">{{ $project->setting('seo_description') }}</textarea>
+                        maxlength="160">{{ $setting('seo_description') }}</textarea>
               <p class="text-xs text-gray-400 mt-1">Máximo 155–160 caracteres. Es el texto que Google muestra bajo el título.</p>
             </div>
             <div>
               <label class="label">Palabras clave (Keywords)</label>
               <input type="text" name="seo_keywords" class="input"
                      placeholder="Ej: tienda online, {{ $project->name }}, productos, Lima"
-                     value="{{ $project->setting('seo_keywords') }}">
+                     value="{{ $setting('seo_keywords') }}">
               <p class="text-xs text-gray-400 mt-1">Separadas por coma.</p>
             </div>
           </div>
@@ -1810,7 +1810,7 @@
       {{-- ═══════════════════════════════════════ --}}
       <section id="constructor-checkout" class="scroll-mt-20">
       @php
-        $ckFields = json_decode($project->setting('checkout_fields', 'null'), true) ?? [
+        $ckFields = json_decode($setting('checkout_fields', 'null'), true) ?? [
           'fixed'  => [
             'lname'   => ['label'=>'Apellido',  'enabled'=>true],
             'email'   => ['label'=>'Email',     'enabled'=>true],

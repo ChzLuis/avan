@@ -1,4 +1,4 @@
-@props(['project', 'settings' => [], 'sections' => collect()])
+@props(['project', 'settings' => [], 'sections' => collect(), 'products' => collect(), 'categories' => collect()])
 
 @php
     $assetUrl = static function ($path) {
@@ -9,17 +9,17 @@
     $sectionMap = $sections->keyBy('component');
     $currency = $settings['currency_symbol'] ?? 'S/';
     $safeColor = static fn ($value, $fallback = '#0f172a') => is_string($value) && preg_match('/^#[0-9a-fA-F]{6}$/', $value) ? $value : $fallback;
-    $loadProducts = static function ($section, bool $discounts = false) use ($project) {
+    $loadProducts = static function ($section, bool $discounts = false) use ($products) {
         if (!$section) return collect();
         $content = $section->content ?? [];
         $limit = max(1, min(24, (int) ($content['limit'] ?? 8)));
-        $query = $project->products()->where('is_available', true)->with(['mainImage', 'category']);
+        $available = collect($products)->filter(fn ($product) => $product->is_available && !str_starts_with((string) $product->id, 'svc-'));
         if (($content['selection'] ?? 'automatic') === 'manual' && !empty($content['product_ids'])) {
             $ids = array_values(array_map('intval', $content['product_ids']));
-            return $query->whereIn('id', $ids)->get()->sortBy(fn ($product) => array_search($product->id, $ids, true))->take($limit)->values();
+            return $available->whereIn('id', $ids)->sortBy(fn ($product) => array_search($product->id, $ids, true))->take($limit)->values();
         }
-        if ($discounts) $query->whereNotNull('compare_price')->whereColumn('compare_price', '>', 'price');
-        return $query->orderBy('sort_order')->orderByDesc('id')->take($limit)->get();
+        if ($discounts) $available = $available->filter(fn ($product) => $product->compare_price !== null && (float) $product->compare_price > (float) $product->price);
+        return $available->sortBy([['sort_order', 'asc'], ['id', 'desc']])->take($limit)->values();
     };
     $discountProducts = $loadProducts($sectionMap->get('discounts'), true);
     $featuredProducts = $loadProducts($sectionMap->get('featured_products'));
@@ -96,8 +96,8 @@
     @elseif($section->component === 'featured_categories')
         @php
             $ids = array_values(array_map('intval',$content['category_ids'] ?? [])); $limit=max(1,min(12,(int)($content['limit'] ?? 5)));
-            $catQuery=$project->categories()->where('is_active',true)->whereNull('parent_id');
-            $cats=$ids ? $catQuery->whereIn('id',$ids)->get()->sortBy(fn($cat)=>array_search($cat->id,$ids,true))->take($limit)->values() : $catQuery->orderBy('sort_order')->take($limit)->get();
+            $availableCategories=collect($categories)->filter(fn($cat)=>$cat->is_active && $cat->parent_id===null);
+            $cats=$ids ? $availableCategories->whereIn('id',$ids)->sortBy(fn($cat)=>array_search($cat->id,$ids,true))->take($limit)->values() : $availableCategories->sortBy('sort_order')->take($limit)->values();
         @endphp
         @if($cats->isNotEmpty())<section class="sf-home-section {{ $deviceClass }}" data-store-home-section="featured_categories" data-store-placement="before-catalog"><div class="sf-home-container"><div class="sf-home-heading"><h2>{{ $content['title'] ?? 'Encuentra lo que buscas' }}</h2></div><div class="sf-category-grid">
             @foreach($cats as $cat)<a class="sf-card sf-category" href="{{ route('public.shop',[$project->slug,'category'=>$cat->id]) }}"><span class="sf-category-media">@if(($content['display'] ?? 'images')==='images' && $cat->image_url)<img loading="lazy" src="{{ $assetUrl($cat->image_url) }}" alt="{{ $cat->name }}">@else<span>{{ mb_strtoupper(mb_substr($cat->name,0,1)) }}</span>@endif</span><strong>{{ $cat->name }}</strong></a>@endforeach
