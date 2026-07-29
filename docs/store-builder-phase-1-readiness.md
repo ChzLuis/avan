@@ -133,3 +133,11 @@ Cuatro suites están completamente verdes. La quinta, `StorefrontStructureV2Test
 Resultado conjunto: 30 tests observados, 28 aprobados y 2 fallidos. Por la regla “no declarar verde si alguna prueba falla”, el estado sigue siendo **ROJO** y el dictamen continúa **NO APTO** para la siguiente etapa.
 
 Próxima acción recomendada: aprobar una estabilización adicional limitada a esos dos contratos, sin iniciar todavía unificación de configuraciones, adaptación masiva de plantillas, migraciones, rediseño general ni despliegue.
+
+## Revisión posterior al Paso 4 — 2026-07-28
+
+Los dos contratos pendientes quedaron resueltos y el catálogo administrativo se redujo a `ecommerce`, `direct` y `computienda` desde una única fuente. Las plantillas heredadas conservan compatibilidad pública, no se migraron automáticamente y ya no pueden aplicarse mediante el selector ni el endpoint oficial.
+
+Las cinco suites auditadas están verdes: **37 tests, 675 aserciones y 0 fallos**. El Paso 4 queda **VERDE**.
+
+Esto no habilita automáticamente la Fase 1 completa. Persisten condiciones previamente documentadas y un hallazgo manual nuevo: a 375 px la barra lateral del layout administrativo recorta el contenido del Diseñador. Debe corregirse mediante una autorización responsive separada antes de considerar el sistema listo para una fase amplia o despliegue.

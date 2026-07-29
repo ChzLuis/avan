@@ -198,3 +198,21 @@ C:\Users\luich\AppData\Local\Temp\store-builder-five-suites-20260728.log
 No quedaron procesos de prueba activos. Estado posterior: **ROJO**.
 
 Validaciones adicionales correctas: 561 rutas, `view:clear`, `view:cache` y `php -l` de todos los archivos modificados. El detalle completo está en `docs/store-builder-stabilization-report.md`.
+
+## Paso 4 — catálogo oficial y aplicación de plantillas — 2026-07-28
+
+Se definieron como oficialmente seleccionables `ecommerce`, `direct` y `computienda`. El endpoint rechaza claves heredadas antes de escribir, devuelve los metadatos efectivos de `theme` y la `public_url`, y el Diseñador presenta confirmación accesible construida con esa respuesta.
+
+Resultados finales individuales:
+
+| Suite | Resultado |
+|---|---|
+| `CatalogTemplatesManifestTest.php` | PASS — 4 tests, 26 aserciones |
+| `PublicTemplateRuntimeTest.php` | PASS — 5 tests, 201 aserciones |
+| `GlobalTemplateSettingsTest.php` | PASS — 2 tests, 35 aserciones |
+| `StorefrontHomepageBuilderTest.php` | PASS — 9 tests, 109 aserciones |
+| `StorefrontStructureV2Test.php` | PASS — 17 tests, 304 aserciones |
+
+Los dos métodos anteriormente pendientes aprobaron por separado con 48 y 13 aserciones. Ejecución conjunta final: **37 tests aprobados, 675 aserciones y 0 fallos**.
+
+Estado del contrato: **VERDE**. Riesgo visual fuera de alcance: la barra lateral global recorta el Diseñador a 375 px; se recomienda tratarla antes de la Fase 1.
