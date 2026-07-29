@@ -275,3 +275,22 @@ La prueba `AdminGlobalConfirmModalTest.php` aporta 4 casos y 40 aserciones. El e
 | Siete suites | 45 pruebas, 759 aserciones, 0 fallos |
 
 Resultado global: **ROJO** por foco inicial intermitente. No se creó tag.
+
+## Paso 9 — validación definitiva — 2026-07-29
+
+| Verificación | Resultado |
+|---|---|
+| Reproducción anterior | 78/90 foco correcto; 12 fallos por `display:none` |
+| Prueba dirigida posterior | 180/180; máximo 17,4 ms; máximo 2 intentos |
+| Regresión completa del modal | 9/9 |
+| Tab / Shift+Tab | 9/9 |
+| Cierre pendiente / reapertura inmediata | 9/9 |
+| Matriz total | 30/30 escenarios |
+| Drawer móvil | 3/3 |
+| Plantillas | 3/3 |
+| Page errors / unhandled / console.error | 0 / 0 / 0 |
+| Recursos esenciales / imágenes visibles / overflow | 0 / 0 / 0 |
+| Repetición adicional | 45/45 |
+| Siete suites | 46 pruebas, 780 aserciones, 0 fallos |
+
+Resultado global actualizado: **VERDE**.

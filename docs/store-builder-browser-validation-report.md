@@ -160,3 +160,11 @@ Las siete suites terminaron con **45 pruebas, 759 aserciones y 0 fallos**:
 - Rama `baseline/store-builder-green`: no creada.
 
 Dictamen: **ROJO / NO APTO para iniciar la Fase 1**. Se requiere autorización separada para corregir el foco inicial intermitente del modal y repetir el PASO 8.
+
+## PASO 9 — corrección y repetición — 2026-07-29
+
+La carrera de foco quedó reproducida en 90 aperturas: 78 correctas y 12 fallidas. El intento único ocurría en ocasiones mientras `x-show` conservaba `display:none`; el modal se hacía visible en el frame siguiente sin volver a intentar el foco.
+
+La corrección sincroniza `focusInitial()` con el DOM visible, permite hasta cuatro intentos por `requestAnimationFrame` y cancela cualquier frame pendiente al cerrar o interactuar. Resultado posterior: 180/180 aperturas dirigidas, máximo 17,4 ms y dos intentos usados; estabilidad adicional 45/45.
+
+Se repitieron los 30 escenarios completos: cero errores JavaScript, recursos esenciales fallidos, imágenes visibles rotas y overflow; drawer 3/3, modal 9/9 y plantillas 3/3. Las siete suites aprobaron 46 pruebas y 780 aserciones. Estado actualizado: **VERDE**. Detalle: `docs/store-builder-modal-focus-report.md`.

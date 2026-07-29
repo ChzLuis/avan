@@ -173,3 +173,11 @@ La matriz real de navegador fue ejecutada con Chrome estable sobre 30 escenarios
 El único bloqueante es el foco inicial intermitente del modal: 7/9 escenarios correctos en la pasada definitiva. Confirmar, cancelar, Escape, clic exterior, concurrencia y restauración posterior funcionan; el defecto aparece exclusivamente al intentar llevar el foco inicial al botón Cancelar.
 
 Por el criterio explícito de accesibilidad, el estado continúa **ROJO** y **NO APTO** para iniciar la Fase 1. Se necesita un paso correctivo separado y una repetición de la matriz antes de crear el tag o la rama green.
+
+## Revisión posterior al Paso 9 — 2026-07-29
+
+El último bloqueante de la línea base quedó cerrado. El foco inicial del modal es determinista mediante verificación del DOM visible y reintentos por frame limitados y cancelables. Los resultados fueron 180/180 aperturas dirigidas, regresión 9/9 y estabilidad adicional 45/45.
+
+La matriz completa está verde: 30/30 escenarios, cero errores JavaScript, recursos esenciales fallidos, imágenes visibles rotas y overflow; drawer 3/3 y plantillas 3/3. Las siete suites aprobaron 46 pruebas y 780 aserciones. El checkout reproducible terminó limpio y todos los procesos temporales fueron detenidos.
+
+Dictamen de línea base: **VERDE / APTO para autorizar la Fase 1**. Esto no inicia la Fase 1 ni autoriza despliegue; ambas acciones continúan requiriendo instrucciones expresas.

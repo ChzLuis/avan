@@ -122,3 +122,9 @@ La conexión de navegador disponible en esta ejecución no expuso ningún navega
 La validación se repitió con Chrome estable mediante un harness CDP temporal. Los 30 escenarios quedaron en HTTP 200, sin errores JavaScript, recursos esenciales fallidos, imágenes visibles rotas, overflow ni diferencias de plantilla. Drawer: 3/3. Aplicación de Ecommerce, Direct y CompuTienda: 3/3.
 
 El foco inicial del modal fue correcto en 7/9 escenarios autenticados y falló intermitentemente en dos. Las siete suites continuaron verdes con **45 pruebas y 759 aserciones**. El checkout quedó limpio y los procesos fueron detenidos. Estado: **ROJO**, sin tag green.
+
+## Paso 9 — línea base green — 2026-07-29
+
+La causa del último bloqueante fue reproducida en 90 aperturas y corregida con un foco inicial sincronizado, limitado y cancelable. La prueba posterior aprobó 180/180 aperturas, la matriz completa 30/30 y una repetición adicional 45/45.
+
+El checkout `avan-store-builder-step9-clean-20260729-161500` instaló 119 paquetes Composer y 160 npm, compiló Vite, enumeró 481 rutas, compiló vistas y aprobó siete suites con **46 pruebas, 780 aserciones y 0 fallos**. Terminó limpio, sin servidor ni Chrome temporal. Estado: **VERDE**.

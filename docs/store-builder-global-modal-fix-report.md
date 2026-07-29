@@ -109,3 +109,9 @@ Chrome estable `147.0.7727.116` permitió ejecutar una matriz ampliada de 30 esc
 El modal aprobó sin argumentos, cancelar, confirmar, Escape, clic exterior y concurrencia en las nueve pantallas autenticadas. Sin embargo, el foco inicial solo se trasladó dentro del diálogo en 7 de 9 casos de la ejecución definitiva. El fallo es intermitente y apareció en Constructor móvil y Plantillas escritorio después de una espera de dos segundos.
 
 El estado permanece **ROJO**. No se creó tag ni rama green. Detalle completo: `docs/store-builder-browser-validation-report.md`.
+
+## PASO 9 — foco inicial determinista — 2026-07-29
+
+La intermitencia fue una carrera entre el `$nextTick` de `open()` y `x-show`: 12 de 90 intentos ocurrieron cuando el modal aún tenía `display:none`. No hubo robo posterior de foco ni competencia con el drawer o el focus trap.
+
+El modal ahora valida el estado real del DOM y reintenta por frame de forma limitada y cancelable. Aprobó 180/180 aperturas dirigidas, toda la regresión 9/9, la matriz de 30 escenarios y 45/45 aperturas adicionales. Las siete suites finalizaron con 46 pruebas, 780 aserciones y 0 fallos. Estado: **VERDE**. Detalle: `docs/store-builder-modal-focus-report.md`.
