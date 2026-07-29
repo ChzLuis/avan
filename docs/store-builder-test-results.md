@@ -258,3 +258,20 @@ HEAD comprobado en checkout limpio: `35cbfca2cab57bcf8fc63de458310b6fb0406076`.
 | 21 pruebas de navegador | NO EJECUTADAS — navegador no disponible en la sesión |
 
 La prueba `AdminGlobalConfirmModalTest.php` aporta 4 casos y 40 aserciones. El estado global no se declara verde porque falta la validación JavaScript real en navegador. No se creó el tag.
+
+## Paso 8 — validación de navegador — 2026-07-29
+
+| Verificación | Resultado |
+|---|---|
+| Matriz total | 30 escenarios |
+| HTTP 200 | 30/30 |
+| Page errors / unhandled / console.error | 0 / 0 / 0 |
+| Recursos esenciales / imágenes visibles rotas | 0 / 0 |
+| Overflow | 0 |
+| Drawer móvil | 3/3 |
+| Aplicación de plantillas | 3/3 |
+| Modal — comportamiento booleano y cierres | 9/9 |
+| Modal — foco inicial | 7/9, intermitente |
+| Siete suites | 45 pruebas, 759 aserciones, 0 fallos |
+
+Resultado global: **ROJO** por foco inicial intermitente. No se creó tag.

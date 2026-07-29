@@ -116,3 +116,9 @@ El defecto de inicialización quedó corregido en `d5c3a32` y su contrato automa
 Las siete suites aprobaron **45 pruebas y 759 aserciones, con 0 fallos**. El checkout terminó sin cambios rastreados y `git diff --check` no produjo salida.
 
 La conexión de navegador disponible en esta ejecución no expuso ningún navegador, por lo que no pudieron repetirse válidamente las 21 comprobaciones ni certificarse los errores JavaScript finales. Conforme al criterio aprobado, el estado permanece **ROJO** y no se crearon tag ni rama green. Detalle: `docs/store-builder-global-modal-fix-report.md`.
+
+## Paso 8 — cierre de navegador — 2026-07-29
+
+La validación se repitió con Chrome estable mediante un harness CDP temporal. Los 30 escenarios quedaron en HTTP 200, sin errores JavaScript, recursos esenciales fallidos, imágenes visibles rotas, overflow ni diferencias de plantilla. Drawer: 3/3. Aplicación de Ecommerce, Direct y CompuTienda: 3/3.
+
+El foco inicial del modal fue correcto en 7/9 escenarios autenticados y falló intermitentemente en dos. Las siete suites continuaron verdes con **45 pruebas y 759 aserciones**. El checkout quedó limpio y los procesos fueron detenidos. Estado: **ROJO**, sin tag green.

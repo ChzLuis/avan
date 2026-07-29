@@ -165,3 +165,11 @@ El error conocido del modal global fue corregido sin ampliar el alcance. La inic
 El checkout limpio, las instalaciones, el build, las 481 rutas, la caché de vistas y las siete suites están verdes: **45 pruebas, 759 aserciones y 0 fallos**.
 
 La sesión no proporcionó un navegador controlable, de modo que siguen pendientes las 21 comprobaciones y la confirmación de cero errores JavaScript administrativos/públicos. Por la regla de cierre aprobada, el Paso 7 queda **ROJO**, no existe tag green nuevo y el dictamen permanece **NO APTO** para iniciar la Fase 1 hasta completar esa única verificación pendiente.
+
+## Revisión posterior al Paso 8 — 2026-07-29
+
+La matriz real de navegador fue ejecutada con Chrome estable sobre 30 escenarios. Las rutas, layouts, recursos, imágenes, JavaScript, overflow, drawer y las tres plantillas oficiales están validados. Las siete suites también permanecen verdes con 45 pruebas y 759 aserciones.
+
+El único bloqueante es el foco inicial intermitente del modal: 7/9 escenarios correctos en la pasada definitiva. Confirmar, cancelar, Escape, clic exterior, concurrencia y restauración posterior funcionan; el defecto aparece exclusivamente al intentar llevar el foco inicial al botón Cancelar.
+
+Por el criterio explícito de accesibilidad, el estado continúa **ROJO** y **NO APTO** para iniciar la Fase 1. Se necesita un paso correctivo separado y una repetición de la matriz antes de crear el tag o la rama green.
