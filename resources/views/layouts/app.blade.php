@@ -1159,24 +1159,93 @@
             title: '',
             msg: '',
             confirmLabel: 'Eliminar',
+            cancelLabel: 'Cancelar',
             confirmClass: 'bg-red-600 hover:bg-red-700 text-white',
             _resolve: null,
+            _confirmHandler: null,
+            _previousFocus: null,
+            _previousOverflow: '',
+            init() {
+                this._confirmHandler = (opts) => this.open(opts);
+                window.__confirm = this._confirmHandler;
+            },
+            destroy() {
+                if (window.__confirm === this._confirmHandler) {
+                    delete window.__confirm;
+                }
+                if (this._resolve) this._settle(false, false);
+            },
             open(opts) {
-                this.title        = opts.title || 'Â¿Confirmar acciÃ³n?';
-                this.msg          = opts.msg || '';
-                this.confirmLabel = opts.confirmLabel || 'Confirmar';
-                this.confirmClass = opts.confirmClass || 'bg-red-600 hover:bg-red-700 text-white';
+                const options = opts !== null && typeof opts === 'object' && !Array.isArray(opts)
+                    ? opts
+                    : null;
+                if (!options) return Promise.resolve(false);
+
+                if (this._resolve) this._settle(false, false);
+
+                const title = typeof options.title === 'string' ? options.title.trim() : '';
+                const message = typeof options.msg === 'string'
+                    ? options.msg
+                    : (typeof options.message === 'string' ? options.message : '');
+                const confirmText = typeof options.confirmLabel === 'string'
+                    ? options.confirmLabel.trim()
+                    : (typeof options.confirmText === 'string' ? options.confirmText.trim() : '');
+                const cancelText = typeof options.cancelLabel === 'string'
+                    ? options.cancelLabel.trim()
+                    : (typeof options.cancelText === 'string' ? options.cancelText.trim() : '');
+                const confirmClass = typeof options.confirmClass === 'string'
+                    ? options.confirmClass.trim()
+                    : '';
+
+                this.title        = title || 'Â¿Confirmar acciÃ³n?';
+                this.msg          = message;
+                this.confirmLabel = confirmText || 'Confirmar';
+                this.cancelLabel  = cancelText || 'Cancelar';
+                this.confirmClass = confirmClass || 'bg-red-600 hover:bg-red-700 text-white';
+                this._previousFocus = document.activeElement instanceof HTMLElement
+                    ? document.activeElement
+                    : null;
+                this._previousOverflow = document.body.style.overflow;
+                document.body.style.overflow = 'hidden';
                 this.show = true;
+                this.$nextTick(() => this.$refs.cancelButton?.focus());
                 return new Promise(r => this._resolve = r);
             },
-            confirm() { this.show=false; this._resolve && this._resolve(true);  },
-            cancel()  { this.show=false; this._resolve && this._resolve(false); }
+            _settle(value, restoreFocus = true) {
+                const resolve = this._resolve;
+                this._resolve = null;
+                this.show = false;
+                document.body.style.overflow = this._previousOverflow;
+                const previousFocus = this._previousFocus;
+                this._previousFocus = null;
+                if (restoreFocus && previousFocus) {
+                    this.$nextTick(() => previousFocus.focus());
+                }
+                if (resolve) resolve(value);
+            },
+            confirm() { this._settle(true); },
+            cancel() { this._settle(false); },
+            trapFocus(event) {
+                const controls = [this.$refs.cancelButton, this.$refs.confirmButton]
+                    .filter(control => control && !control.disabled);
+                if (!controls.length) return;
+                const current = controls.indexOf(document.activeElement);
+                const next = event.shiftKey
+                    ? (current <= 0 ? controls.length - 1 : current - 1)
+                    : (current === controls.length - 1 ? 0 : current + 1);
+                controls[next].focus();
+            }
          }"
-         x-init="window.__confirm = (opts) => open(opts)"
          x-show="show" x-cloak
+         data-global-confirm-modal
+         role="dialog" aria-modal="true"
+         aria-labelledby="global-confirm-title"
+         aria-describedby="global-confirm-message"
+         @keydown.escape.window="show && cancel()"
+         @keydown.tab.prevent="show && trapFocus($event)"
          class="fixed inset-0 z-[9998] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/40" @click="cancel()"></div>
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+        <div x-ref="dialog" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
              x-transition:enter="transition ease-out duration-150"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
@@ -1187,16 +1256,15 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-900" x-text="title"></h3>
-                    <p class="text-xs text-gray-500 mt-1 leading-relaxed" x-text="msg"></p>
+                    <h3 id="global-confirm-title" class="text-sm font-semibold text-gray-900" x-text="title"></h3>
+                    <p id="global-confirm-message" class="text-xs text-gray-500 mt-1 leading-relaxed" x-text="msg"></p>
                 </div>
             </div>
             <div class="flex gap-2 justify-end">
-                <button @click="cancel()"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
-                    Cancelar
-                </button>
-                <button @click="confirm()"
+                <button type="button" x-ref="cancelButton" @click="cancel()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                        x-text="cancelLabel"></button>
+                <button type="button" x-ref="confirmButton" @click="confirm()"
                         class="px-4 py-2 text-sm font-medium rounded-lg transition"
                         :class="confirmClass"
                         x-text="confirmLabel">
