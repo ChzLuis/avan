@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\Project;
+use App\Models\ProjectTemplate;
+
 /**
  * Plantillas de catálogo por rubro.
  * Cada plantilla define: colores, fuente, hero, layout, card_style y textos por defecto.
@@ -11,6 +14,18 @@ namespace App\Support;
  */
 class CatalogTemplates
 {
+    /**
+     * Plantillas que el panel permite seleccionar y aplicar.
+     *
+     * El resto de entradas de all() se conserva exclusivamente para mantener
+     * compatibilidad con proyectos existentes.
+     */
+    public const SUPPORTED_KEYS = [
+        'ecommerce',
+        'direct',
+        'computienda',
+    ];
+
     public static function all(): array
     {
         return [
@@ -20,12 +35,19 @@ class CatalogTemplates
             // ══════════════════════════════════════════════════════
 
             'ecommerce' => [
+                'key'            => 'ecommerce',
+                'name'           => 'Ecommerce',
+                'short_description' => 'Tienda online completa',
+                'view'           => 'public.templates.ecommerce',
+                'supported'      => true,
+                'capabilities'   => ['catalog', 'filters', 'cart', 'checkout', 'responsive'],
                 'label'          => 'Ecommerce — Tienda Completa',
                 'category'       => 'General',
                 'icon'           => '🛒',
                 'description'    => 'Diseño moderno de tienda ecommerce completa. Topbar, header con búsqueda, nav con flyouts, hero, catálogo con filtros, PDP y checkout fullscreen.',
                 'preview_bg'     => '#f7f7f5',
                 'preview_accent' => '#3340ff',
+                'components'     => ['hero','announcement','catalog','cart','whatsapp','footer','newsletter','trust_bar'],
                 'settings' => [
                     'primary_color'        => '#3340ff',
                     'secondary_color'      => '#1f2bd6',
@@ -77,6 +99,7 @@ class CatalogTemplates
                 'description'    => 'Diseño original del sistema. Limpio, funcional y versátil para cualquier rubro.',
                 'preview_bg'     => '#1e293b',
                 'preview_accent' => '#4f46e5',
+                'components'     => ['hero','catalog','cart','whatsapp','footer'],
                 'settings' => [
                     'primary_color'      => '#4f46e5',
                     'secondary_color'    => '#6366f1',
@@ -119,12 +142,19 @@ class CatalogTemplates
             ],
 
             'direct' => [
+                'key'            => 'direct',
+                'name'           => 'Catálogo Directo',
+                'short_description' => 'Catálogo simple para ventas y cotizaciones',
+                'view'           => 'public.templates.direct',
+                'supported'      => true,
+                'capabilities'   => ['catalog', 'quotes', 'whatsapp', 'responsive'],
                 'label'          => 'Directo — Solo Catálogo',
                 'category'       => 'General',
                 'icon'           => '📋',
                 'description'    => 'Sin banner ni hero. Entra directo al catálogo de productos. Ideal para negocios que quieren simplicidad.',
                 'preview_bg'     => '#f8fafc',
                 'preview_accent' => '#4f46e5',
+                'components'     => ['catalog','cart','whatsapp','footer'],
                 'settings' => [
                     'primary_color'        => '#4f46e5',
                     'secondary_color'      => '#6366f1',
@@ -353,26 +383,71 @@ class CatalogTemplates
                 ],
             ],
 
+            'computienda' => [
+                'key'            => 'computienda',
+                'name'           => 'CompuTienda',
+                'short_description' => 'Tienda especializada en tecnología',
+                'view'           => 'public.templates.computienda',
+                'supported'      => true,
+                'capabilities'   => ['catalog', 'advanced_filters', 'cart', 'checkout', 'responsive'],
+                'label'          => 'CompuTienda — Informática Pro',
+                'category'       => 'Tecnología',
+                'icon'           => '🖥️',
+                'description'    => 'Tienda corporativa de tecnología con una presentación sobria, buscador, catálogo ordenado, asesoría comercial y compra segura.',
+                'preview_bg'     => '#0f172a',
+                'preview_accent' => '#2563eb',
+                'components'     => ['hero','announcement','catalog','cart','whatsapp','footer','newsletter','trust_bar'],
+                'settings' => [
+                    'primary_color'   => '#1e50a0',
+                    'secondary_color' => '#0e1a30',
+                    'hero_title'      => 'Tecnología para cada pasión',
+                    'hero_subtitle'   => 'Los mejores equipos y accesorios al mejor precio. Garantía y soporte técnico.',
+                    'announcement_text' => 'COMPRA ONLINE Y AHORRA TIEMPO Y DINERO',
+                    'currency_symbol' => 'S/',
+                    'card_style'      => 'tech',
+                    'font'            => 'Manrope',
+                    'footer_tagline'  => 'somos tu tienda de tecnología de confianza',
+                ],
+            ],
+
             'tecnologia' => [
-                'label'          => 'Tech — Electrónica',
+                'label'          => 'Tech Store — Informática',
                 'category'       => 'Tecnología',
                 'icon'           => '💻',
-                'description'    => 'Celulares, computadoras, accesorios tech. Moderno y funcional.',
-                'preview_bg'     => '#0f172a',
-                'preview_accent' => '#6366f1',
+                'description'    => 'Tienda de informática y tecnología estilo retail: header azul con buscador, mega-menú de categorías, banner de ofertas y footer con métodos de pago. Ideal para venta de computadoras, laptops y accesorios.',
+                'preview_bg'     => '#1e50a0',
+                'preview_accent' => '#e01e2b',
+                'components'     => ['hero','announcement','catalog','cart','whatsapp','footer','trust_bar'],
                 'settings' => [
-                    'primary_color'   => '#6366f1',
-                    'hero_bg_color'   => '#0f172a',
-                    'hero_badge'      => '⚡ Envío en 24h',
-                    'hero_title'      => 'Tech al mejor precio',
-                    'hero_subtitle'   => 'Los mejores equipos y accesorios. Garantía oficial y soporte técnico.',
-                    'banner1_title'   => 'Gaming & Periféricos',
-                    'banner1_sub'     => 'Setup completo aquí',
-                    'banner2_title'   => 'Smartphones',
-                    'banner2_sub'     => 'Últimos modelos disponibles',
+                    'primary_color'   => '#1e50a0',
+                    'secondary_color' => '#e01e2b',
+                    'hero_bg_color'   => '#1e50a0',
+                    'hero_badge'      => '⚡ Envío a todo el Perú',
+                    'hero_title'      => 'Tecnología para cada pasión',
+                    'hero_subtitle'   => 'Laptops, PCs, monitores e impresoras. Garantía oficial, soporte técnico y compra segura.',
+                    'hero_cta1_show'  => '1',
+                    'hero_cta1_text'  => 'Ver ofertas',
+                    'banner1_title'   => 'Productos Reacondicionados',
+                    'banner1_sub'     => 'Calidad garantizada, mejor precio',
+                    'banner2_title'   => 'Ofertas y Novedades',
+                    'banner2_sub'     => 'Hasta 30% de descuento',
                     'catalog_layout'  => 'grid',
                     'card_style'      => 'tech',
                     'font'            => 'Inter',
+                    'currency_symbol' => 'S/',
+                    'catalog_cols_desktop' => '4',
+                    'catalog_cols_mobile'  => '2',
+                    'catalog_section_title' => 'Productos destacados',
+                    'catalog_badge_sale'   => 'OFERTA',
+                    'catalog_badge_new'    => 'NUEVO',
+                    'announcement_text'    => '🛒 Compra online y ahorra tiempo y dinero',
+                    'trust_icon_1'    => '🏬', 'trust_text_1' => 'Retiro en tienda',
+                    'trust_icon_2'    => '🚚', 'trust_text_2' => 'Envíos a todo el Perú',
+                    'trust_icon_3'    => '🔧', 'trust_text_3' => 'Soporte Técnico',
+                    'trust_icon_4'    => '⚡', 'trust_text_4' => 'Entrega Exprés',
+                    'float_cart_show' => '1',
+                    'float_wa_show'   => '1',
+                    'footer_tagline'  => 'Somos una empresa dedicada a la venta de computadoras y laptops, por mayor y menor. Además brindamos soporte técnico de equipos informáticos.',
                 ],
             ],
 
@@ -1036,6 +1111,68 @@ class CatalogTemplates
                 ],
             ],
 
+            // ══════════════════════════════════════════════════════
+            // GRUPO: SERVICIOS & PROFESIONALES
+            // ══════════════════════════════════════════════════════
+
+            'lavanderia' => [
+                'label'          => 'Lavandería — Lavado & Planchado',
+                'category'       => 'Servicios & Profesionales',
+                'icon'           => '🧺',
+                'description'    => 'Azul turquesa fresco y limpio. Servicios de lavado por kilo, planchado y prendas especiales. Ideal para lavanderías y tintorerías con recojo y entrega.',
+                'preview_bg'     => '#0e2a3a',
+                'preview_accent' => '#06b6d4',
+                'settings' => [
+                    'primary_color'        => '#06b6d4',
+                    'secondary_color'      => '#0891b2',
+                    'hero_bg_color'        => '#0e2a3a',
+                    'hero_badge'           => '🧺 Recojo y entrega a domicilio',
+                    'hero_title'           => 'Ropa limpia, sin complicarte',
+                    'hero_subtitle'        => 'Lavado por kilo, planchado y prendas especiales. Recogemos, lavamos y te lo devolvemos listo.',
+                    'hero_align'           => 'left',
+                    'hero_height'          => 'large',
+                    'hero_overlay'         => '45',
+                    'hero_cta1_show'       => '1',
+                    'hero_cta1_text'       => 'Ver servicios',
+                    'hero_cta2_show'       => '1',
+                    'hero_cta2_text'       => 'Agendar recojo',
+                    'banner1_title'        => 'Lavado por kilo',
+                    'banner1_sub'          => 'Lavado, secado y doblado desde S/ 8/kg',
+                    'banner2_title'        => 'Prendas especiales',
+                    'banner2_sub'          => 'Ternos, edredones, cortinas y más',
+                    'catalog_layout'       => 'cards',
+                    'card_style'           => 'service',
+                    'font'                 => 'Poppins',
+                    'font_title'           => 'Poppins',
+                    'font_body'            => 'Inter',
+                    'border_radius'        => 'rounded',
+                    'currency_symbol'      => 'S/',
+                    'catalog_cols_desktop' => '3',
+                    'catalog_cols_mobile'  => '1',
+                    'catalog_section_title' => 'Nuestros servicios',
+                    'catalog_badge_sale'   => 'PROMO',
+                    'catalog_badge_new'    => 'NUEVO',
+                    'trust_icon_1'         => '🚚',
+                    'trust_text_1'         => 'Recojo y entrega gratis',
+                    'trust_icon_2'         => '⚡',
+                    'trust_text_2'         => 'Entrega en 24-48h',
+                    'trust_icon_3'         => '✨',
+                    'trust_text_3'         => 'Prendas como nuevas',
+                    'trust_icon_4'         => '💧',
+                    'trust_text_4'         => 'Insumos hipoalergénicos',
+                    'float_cart_show'      => '1',
+                    'float_wa_show'        => '1',
+                    'float_wa_tooltip'     => '¿Agendamos tu recojo?',
+                    'btn_cart_text'        => 'Solicitar servicio',
+                    'btn_quote_text'       => 'Cotizar',
+                    'btn_shape'            => 'rounded',
+                    'announcement_text'    => '🧺 Recojo y entrega gratis en pedidos desde S/ 30',
+                    'announcement_bg'      => '#0891b2',
+                    'footer_tagline'       => 'Tu ropa en las mejores manos.',
+                    'footer_copyright'     => '',
+                ],
+            ],
+
         ];
     }
 
@@ -1045,6 +1182,53 @@ class CatalogTemplates
     public static function get(string $key): ?array
     {
         return static::all()[$key] ?? null;
+    }
+
+    /**
+     * Claves oficialmente seleccionables en el panel administrativo.
+     */
+    public static function supportedKeys(): array
+    {
+        return self::SUPPORTED_KEYS;
+    }
+
+    /**
+     * Catálogo oficial. Las entradas heredadas permanecen disponibles en
+     * all(), pero nunca se filtran hacia el selector desde este método.
+     */
+    public static function supported(): array
+    {
+        return array_intersect_key(static::all(), array_flip(self::SUPPORTED_KEYS));
+    }
+
+    public static function isSupported(?string $key): bool
+    {
+        return is_string($key) && in_array($key, self::SUPPORTED_KEYS, true);
+    }
+
+    /**
+     * Metadatos públicos y estables usados por API y Diseñador.
+     */
+    public static function supportedTheme(string $key): ?array
+    {
+        if (!static::isSupported($key)) {
+            return null;
+        }
+
+        $template = static::get($key);
+        if (!$template || ($template['supported'] ?? false) !== true) {
+            return null;
+        }
+
+        return [
+            'key' => $template['key'],
+            'name' => $template['name'],
+            'description' => $template['short_description'],
+            'view' => $template['view'],
+            'preview' => $template['preview_image'] ?? null,
+            'supported' => true,
+            'capabilities' => array_values($template['capabilities'] ?? []),
+        ];
     }
 
     /**
@@ -1078,6 +1262,210 @@ class CatalogTemplates
             'flash'     => 'Badge de oferta siempre visible, precio tachado',
             'nordic'    => 'Beige/crema, bordes suaves, mucho espacio',
         ];
+    }
+
+    public static function components(string $templateKey): array
+    {
+        $template = static::get($templateKey);
+        if (!$template) {
+            return [];
+        }
+        if (!empty($template['components']) && is_array($template['components'])) {
+            return $template['components'];
+        }
+        return static::inferComponents($template);
+    }
+
+    protected static function inferComponents(array $template): array
+    {
+        $components = [];
+        $settings = $template['settings'] ?? [];
+
+        if (!empty($settings['hero_title']) || !empty($settings['hero_subtitle']) || !empty($settings['hero_badge'])) {
+            $components[] = 'hero';
+        }
+        if (!empty($settings['announcement_text']) || !empty($settings['announcement_bg'])) {
+            $components[] = 'announcement';
+        }
+        if (!empty($settings['countdown_end']) || !empty($settings['countdown_label'])) {
+            $components[] = 'countdown';
+        }
+        if (!empty($settings['split_left_title']) || !empty($settings['split_right_title'])) {
+            $components[] = 'split_banner';
+        }
+        if (!empty($settings['trust_icon_1']) || !empty($settings['trust_text_1'])) {
+            $components[] = 'trust_bar';
+        }
+        if (!empty($settings['trust_icon_4']) || !empty($settings['trust_text_4'])) {
+            $components[] = 'trust_bar_4';
+        }
+        if (array_key_exists('age_gate', $settings)) {
+            $components[] = 'age_gate_field';
+        }
+        if (!empty($settings['tab1_label']) || !empty($settings['tab2_label']) || !empty($settings['tab3_label'])) {
+            $components[] = 'tabs_title';
+        }
+        if (!empty($settings['catalog_layout']) || !empty($settings['card_style'])) {
+            $components[] = 'catalog';
+        }
+        if (!empty($settings['float_wa_show']) || !empty($settings['float_cart_show']) || !empty($settings['quote_whatsapp'])) {
+            $components[] = 'whatsapp';
+            $components[] = 'cart';
+        }
+        if (!empty($settings['footer_tagline']) || !empty($settings['footer_pages']) || array_key_exists('footer_store_pages', $settings)
+            || !empty($settings['contact_email']) || !empty($settings['contact_phone']) || !empty($settings['business_hours'])) {
+            $components[] = 'footer';
+        }
+        if (!empty($settings['footer_newsletter_title']) || !empty($settings['footer_newsletter_url'])) {
+            $components[] = 'newsletter';
+        }
+
+        return array_values(array_unique($components));
+    }
+
+    public static function componentCatalog(): array
+    {
+        return [
+            'hero' => [
+                'label' => 'Hero',
+                'description' => 'Sección principal del inicio con título, subtítulo, fondo y CTAs.',
+                'page' => 'home',
+                'fields' => ['hero_title','hero_subtitle','hero_badge','hero_bg_color','hero_align','hero_height','hero_overlay','hero_cta1_show','hero_cta1_text','hero_cta2_show','hero_cta2_text','hero_image'],
+                'variants' => ['default','split','banner'],
+            ],
+            'announcement' => [
+                'label' => 'Banner simple',
+                'description' => 'Texto de anuncio o promoción debajo del header.',
+                'page' => 'home',
+                'fields' => ['announcement_text','announcement_bg'],
+                'variants' => ['strip','floating'],
+            ],
+            'countdown' => [
+                'label' => 'Contador regresivo',
+                'description' => 'Sección de oferta con fecha de fin visible.',
+                'page' => 'home',
+                'fields' => ['countdown_label','countdown_end'],
+                'variants' => ['inline','banner'],
+            ],
+            'split_banner' => [
+                'label' => 'Banner dividido',
+                'description' => 'Sección de dos columnas con texto y llamado a la acción.',
+                'page' => 'home',
+                'fields' => ['split_left_title','split_left_sub','split_right_title','split_right_sub'],
+                'variants' => ['50/50','image-left','image-right'],
+            ],
+            'trust_bar' => [
+                'label' => 'Barra de confianza',
+                'description' => 'Tres beneficios destacando envíos, garantía o soporte.',
+                'page' => 'home',
+                'fields' => ['trust_icon_1','trust_text_1','trust_icon_2','trust_text_2','trust_icon_3','trust_text_3'],
+                'variants' => ['3-items'],
+            ],
+            'trust_bar_4' => [
+                'label' => 'Barra de confianza 4 ítems',
+                'description' => 'Cuatro beneficios destacados en el home.',
+                'page' => 'home',
+                'fields' => ['trust_icon_1','trust_text_1','trust_icon_2','trust_text_2','trust_icon_3','trust_text_3','trust_icon_4','trust_text_4'],
+                'variants' => ['4-items'],
+            ],
+            'age_gate_field' => [
+                'label' => 'Verificación de edad',
+                'description' => 'Popup de confirmación de mayoría de edad.',
+                'page' => 'home',
+                'fields' => ['age_gate'],
+                'variants' => ['popup'],
+            ],
+            'tabs_title' => [
+                'label' => 'Tabs de productos',
+                'description' => 'Etiquetas para secciones de productos en pestañas.',
+                'page' => 'home',
+                'fields' => ['tab1_label','tab2_label','tab3_label'],
+                'variants' => ['tabs'],
+            ],
+            'catalog' => [
+                'label' => 'Catálogo',
+                'description' => 'Listado de productos con layout de grid, lista o cards.',
+                'page' => 'catalog',
+                'fields' => ['catalog_layout','card_style','catalog_cols_desktop','catalog_cols_mobile','catalog_section_title','catalog_badge_sale','catalog_badge_new','catalog_badge_featured','catalog_badge_sold_out','catalog_show_ratings','catalog_quick_view','catalog_show_sku','catalog_show_stock','wholesale_enabled','catalog_filter_price','catalog_filter_cats','catalog_filter_sale','catalog_filter_search'],
+                'variants' => ['grid','list','cards'],
+            ],
+            'cart' => [
+                'label' => 'Carrito',
+                'description' => 'Drawer o modal de carrito para pedidos.',
+                'page' => 'catalog',
+                'fields' => ['float_cart_show','float_cart_pos'],
+                'variants' => ['drawer','slide'],
+            ],
+            'whatsapp' => [
+                'label' => 'WhatsApp',
+                'description' => 'Botón flotante para contacto y cotizaciones.',
+                'page' => 'global',
+                'fields' => ['float_wa_show','float_wa_pos','float_wa_tooltip','quote_whatsapp','quote_whatsapp_country','quote_wa_msg','whatsapp_msg'],
+                'variants' => ['floating','button'],
+            ],
+            'footer' => [
+                'label' => 'Footer',
+                'description' => 'Pie de página con datos de contacto y enlaces legales.',
+                'page' => 'global',
+                'fields' => ['footer_tagline','footer_copyright','footer_dev_text','contact_email','contact_phone','business_hours','footer_benefit_1_icon','footer_benefit_1_text','footer_benefit_2_icon','footer_benefit_2_text','footer_benefit_3_icon','footer_benefit_3_text','footer_pages','footer_store_pages','footer_show_social','footer_show_categories','footer_show_newsletter','footer_show_benefits','footer_show_address','footer_newsletter_title','footer_newsletter_url'],
+                'variants' => ['simple','detailed'],
+            ],
+            'newsletter' => [
+                'label' => 'Newsletter',
+                'description' => 'Formulario de suscripción al boletín.',
+                'page' => 'global',
+                'fields' => ['footer_newsletter_title','footer_newsletter_url'],
+                'variants' => ['inline','popup'],
+            ],
+        ];
+    }
+
+    public static function manifest(string $templateKey): array
+    {
+        $template = static::get($templateKey) ?: static::get('default');
+        return [
+            'template' => $templateKey,
+            'key' => $template['key'] ?? $templateKey,
+            'name' => $template['name'] ?? ($template['label'] ?? ucfirst($templateKey)),
+            'label' => $template['label'] ?? ucfirst($templateKey),
+            'description' => $template['short_description'] ?? ($template['description'] ?? ''),
+            'view' => $template['view'] ?? null,
+            'preview' => $template['preview_image'] ?? null,
+            'supported' => static::isSupported($templateKey) && ($template['supported'] ?? false) === true,
+            'capabilities' => array_values($template['capabilities'] ?? []),
+            'components' => static::components($templateKey),
+            'component_catalog' => static::componentCatalog(),
+            'settings' => $template['settings'] ?? [],
+        ];
+    }
+
+    public static function componentFields(string $componentKey): array
+    {
+        $catalog = static::componentCatalog();
+        return $catalog[$componentKey]['fields'] ?? [];
+    }
+
+    public static function createProjectTemplate(Project $project, string $templateKey = 'default', ?string $name = null, bool $activate = true): ?ProjectTemplate
+    {
+        $template = static::get($templateKey);
+        if (!$template) {
+            return null;
+        }
+
+        // Establecer la plantilla activa del proyecto para el frontend.
+        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $templateKey]);
+
+        if ($activate) {
+            ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+        }
+
+        return ProjectTemplate::create([
+            'project_id'  => $project->id,
+            'name'        => $name ?? ('Plantilla ' . ucfirst($templateKey)),
+            'description' => 'Plantilla generada automáticamente desde el catálogo de templates.',
+            'settings'    => $template['settings'] ?? [],
+            'is_active'   => $activate,
+        ]);
     }
 
     /**
@@ -1220,6 +1608,14 @@ class CatalogTemplates
                 ['name' => 'CERVEZAS',             'type' => 'product', 'children' => ['Nacional', 'Importada', 'Artesanal', 'Sin alcohol']],
                 ['name' => 'LICORES & DIGESTIVOS', 'type' => 'product', 'children' => ['Amaretto', 'Baileys', 'Kahlúa', 'Aperol', 'Sambuca']],
                 ['name' => 'ACCESORIOS',           'type' => 'product', 'children' => ['Copas y vasos', 'Coctelería', 'Hielo y enfriadores']],
+            ],
+
+            'lavanderia' => [
+                ['name' => 'LAVADO POR KILO',      'type' => 'service', 'children' => ['Lavado + Secado', 'Lavado + Secado + Doblado', 'Solo Secado', 'Lavado Express 24h']],
+                ['name' => 'PLANCHADO',            'type' => 'service', 'children' => ['Planchado por kilo', 'Planchado por prenda', 'Camisas y Blusas']],
+                ['name' => 'PRENDAS ESPECIALES',   'type' => 'service', 'children' => ['Ternos y Sacos', 'Vestidos y Ternos de gala', 'Edredones y Frazadas', 'Cortinas', 'Zapatillas']],
+                ['name' => 'LAVADO EN SECO',       'type' => 'service', 'children' => ['Terno completo', 'Abrigos', 'Prendas delicadas']],
+                ['name' => 'DELIVERY',             'type' => 'service', 'children' => ['Recojo a domicilio', 'Entrega a domicilio']],
             ],
 
         ];
