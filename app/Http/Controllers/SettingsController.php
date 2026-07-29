@@ -14,9 +14,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\ProjectTemplate;
+use App\Storefront\StorefrontContextBuilder;
 
 class SettingsController extends Controller
 {
+    public function __construct(private readonly StorefrontContextBuilder $storefrontContexts)
+    {
+    }
+
     public function index(Request $request)
     {
         $userId = auth()->id();
@@ -231,25 +236,21 @@ class SettingsController extends Controller
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         StorefrontSections::ensure($project);
-        $sections = $project->storeSections()
-            ->orderBy('page')
-            ->orderByRaw('COALESCE(draft_sort_order, sort_order)')
-            ->orderBy('id')
-            ->get();
+        $storefrontContext = $this->storefrontContexts->forProject($project, [
+            'preview' => true,
+            'include_disabled' => true,
+            'include_catalog' => true,
+            'include_project_templates' => true,
+            'store_view' => 'designer',
+        ]);
+        $sections = $storefrontContext->sections();
         $homeSections = $sections->where('page', 'home')->values();
         $storeSectionNames = StorefrontSections::COMPONENTS;
-        $storeCategories = $project->categories()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-        $storeProducts = $project->products()
-            ->where('is_available', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-        $pages = $project->storePages()->orderBy('key')->get();
-        $popup = $project->storePopups()->latest()->first();
+        $storeCategories = $storefrontContext->categories();
+        $storeProducts = $storefrontContext->products();
+        $pages = $storefrontContext->pages()->values();
+        $popup = $storefrontContext->popup();
+        $projectTemplates = $storefrontContext->projectTemplates();
         $messages = $project->contactMessages()->latest()->take(20)->get();
         $complaints = $project->complaints()->latest()->take(20)->get();
         return view('settings.design', compact(
@@ -262,7 +263,9 @@ class SettingsController extends Controller
             'pages',
             'popup',
             'messages',
-            'complaints'
+            'complaints',
+            'storefrontContext',
+            'projectTemplates'
         ));
     }
 
@@ -408,6 +411,7 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
+        $storefrontContext = $this->storefrontContexts->forProject($project, ['store_view' => 'qr']);
         $baseUrl = $project->custom_domain
             ? 'https://' . $project->custom_domain
             : rtrim((string) config('app.url'), '/') . '/' . $project->slug;
@@ -416,7 +420,7 @@ class SettingsController extends Controller
         $isPublicUrl = $host && !in_array($host, ['localhost', '127.0.0.1', '::1'], true)
             && (!$isIp || (bool) filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE));
 
-        return view('settings.qr', compact('project', 'baseUrl', 'isPublicUrl'));
+        return view('settings.qr', compact('project', 'baseUrl', 'isPublicUrl', 'storefrontContext'));
     }
 
     public function updateQr(Request $request)

@@ -15,9 +15,16 @@ use App\Support\StorefrontTheme;
 use App\Models\StoreSection;
 use App\Models\StorePopup;
 use App\Models\ProjectTemplate;
+use App\Storefront\StorefrontContext;
+use App\Storefront\StorefrontContextBuilder;
+use App\Support\CatalogTemplates;
 
 class PublicController extends Controller
 {
+    public function __construct(private readonly StorefrontContextBuilder $storefrontContexts)
+    {
+    }
+
     /**
      * Plantillas completas que ya existen en producción.
      *
@@ -53,39 +60,41 @@ class PublicController extends Controller
     public function catalog(string $slug)
     {
         $project = $this->project($slug);
+        $context = $this->storefrontContexts->forProject($project, ['include_catalog' => true]);
 
         // Las plantillas de producción conservan su estructura visual propia,
         // incluso cuando el proyecto utiliza el constructor V2.
-        if ($this->productionTemplateView($project)) {
-            [$view, $data] = $this->prepararCatalogo($project);
+        if ($this->productionTemplateView($context)) {
+            [$view, $data] = $this->prepararCatalogo($project, false, 'home', $context);
             return view($view, $data);
         }
 
-        if ($project->setting('storefront_structure_v2', '0') === '1') {
-            return $this->renderStorefrontHome($project);
+        if ($context->setting('storefront_structure_v2', '0') === '1') {
+            return $this->renderStorefrontHome($project, false, $context);
         }
-        [$view, $data] = $this->prepararCatalogo($project);
+        [$view, $data] = $this->prepararCatalogo($project, false, 'home', $context);
         return view($view, $data);
     }
 
     public function previewStorefront(Project $project)
     {
-        if ($this->productionTemplateView($project)) {
-            [$view, $data] = $this->prepararCatalogo($project, true);
+        $context = $this->storefrontContexts->forProject($project, ['preview' => true, 'include_catalog' => true]);
+        if ($this->productionTemplateView($context)) {
+            [$view, $data] = $this->prepararCatalogo($project, true, 'home', $context);
             return view($view, $data);
         }
 
-        return $this->renderStorefrontHome($project, true);
+        return $this->renderStorefrontHome($project, true, $context);
     }
 
-    private function productionTemplateView(Project $project): ?string
+    private function productionTemplateView(StorefrontContext $context): ?string
     {
-        $template = (string) $project->setting('catalog_template', 'default');
+        $template = $context->templateKey();
         $view = self::PRODUCTION_TEMPLATE_VIEWS[$template] ?? null;
 
         if ($view && !view()->exists($view)) {
             Log::warning('Storefront template view is unavailable; using the compatibility fallback.', [
-                'project_id' => $project->id,
+                'project_id' => $context->project->id,
                 'template' => $template,
                 'view' => $view,
             ]);
@@ -99,16 +108,17 @@ class PublicController extends Controller
     public function shop(Request $request, string $slug)
     {
         $project = $this->project($slug);
+        $context = $this->storefrontContexts->forProject($project, ['include_catalog' => true, 'store_view' => 'tienda']);
 
         // Plantillas de producción (computienda, etc.): su /tienda usa la MISMA
         // plantilla que el inicio, pero en modo "tienda" (catálogo con filtros).
-        if ($this->productionTemplateView($project)) {
-            [$view, $data] = $this->prepararCatalogo($project, false, 'tienda');
+        if ($this->productionTemplateView($context)) {
+            [$view, $data] = $this->prepararCatalogo($project, false, 'tienda', $context);
             return view($view, $data);
         }
 
-        abort_unless($project->setting('storefront_structure_v2', '0') === '1' || $request->attributes->get('storefront_preview') === true, 404);
-        $data = $this->storefrontBaseData($project);
+        abort_unless($context->setting('storefront_structure_v2', '0') === '1' || $request->attributes->get('storefront_preview') === true, 404);
+        $data = $context->toViewData();
         $categories = $project->categories()->where('is_active', true)
             ->with(['children' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')])
             ->whereNull('parent_id')->orderBy('sort_order')->orderBy('name')->get();
@@ -148,9 +158,10 @@ class PublicController extends Controller
         return view('public.storefront.shop', $data + compact('categories', 'products', 'search', 'selectedCategory'));
     }
 
-    private function renderStorefrontHome(Project $project, bool $preview = false)
+    private function renderStorefrontHome(Project $project, bool $preview = false, ?StorefrontContext $context = null)
     {
-        $data = $this->storefrontBaseData($project, $preview);
+        $context ??= $this->storefrontContexts->forProject($project, ['preview' => $preview, 'include_catalog' => true]);
+        $data = $context->toViewData();
         $view = match ($data['storefrontTheme']['key'] ?? 'default') {
             'computienda' => 'public.storefront.templates.computienda',
             'ecommerce' => 'public.storefront.templates.ecommerce',
@@ -164,36 +175,10 @@ class PublicController extends Controller
 
     public function storefrontBaseData(Project $project, bool $preview = false): array
     {
-        $settings = $project->settings()->pluck('value', 'key')->all();
-        $projectTemplate = ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->first();
-        if ($projectTemplate && is_array($projectTemplate->settings)) $settings = array_merge($projectTemplate->settings, $settings);
-
-        $sectionsQuery = StoreSection::where('project_id', $project->id)->where('page', 'home');
-        if (!$preview) {
-            $sectionsQuery->where('is_enabled', true)
-                ->where(fn ($query) => $query->whereNull('publish_from')->orWhere('publish_from', '<=', now()))
-                ->where(fn ($query) => $query->whereNull('publish_until')->orWhere('publish_until', '>=', now()));
-        }
-        $sections = $sectionsQuery->orderBy('sort_order')->get()->groupBy('component')->map->first();
-        if ($preview) {
-            $sections = $sections->filter->enabledForPreview()->map(function ($section) {
-                $section->content = $section->contentForPreview();
-                $section->variant = $section->variantForPreview();
-                $section->sort_order = $section->draft_sort_order ?? $section->sort_order;
-                return $section;
-            })->sortBy('sort_order')->values();
-        } else $sections = $sections->sortBy('sort_order')->values();
-
-        $popup = StorePopup::where('project_id', $project->id)->where('is_enabled', true)
-            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
-            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
-            ->latest()->first();
-        $storeMenu = StorefrontNavigation::menu($project) ?: StorefrontNavigation::ensure($project)->load(['rootItems.children']);
-        $headerSettings = StorefrontNavigation::headerSettings($project);
-        $storefrontTheme = StorefrontTheme::resolve($settings);
-
-        $previewMode = $preview;
-        return compact('project', 'settings', 'sections', 'popup', 'storeMenu', 'headerSettings', 'storefrontTheme', 'previewMode');
+        return $this->storefrontContexts->forProject($project, [
+            'preview' => $preview,
+            'include_catalog' => true,
+        ])->toViewData();
     }
 
     /**
@@ -204,8 +189,23 @@ class PublicController extends Controller
      *
      * @return array{0:string,1:array}  [nombre de la vista, datos]
      */
-    public function prepararCatalogo(\App\Models\Project $project, bool $preview = false, string $storeView = 'home'): array
+    public function prepararCatalogo(\App\Models\Project $project, bool $preview = false, string $storeView = 'home', ?StorefrontContext $context = null): array
     {
+        $context ??= $this->storefrontContexts->forProject($project, [
+            'preview' => $preview,
+            'include_catalog' => true,
+            'store_view' => $storeView,
+        ]);
+        $template = $context->templateKey();
+        $view = isset(self::PRODUCTION_TEMPLATE_VIEWS[$template]) && view()->exists(self::PRODUCTION_TEMPLATE_VIEWS[$template])
+            ? self::PRODUCTION_TEMPLATE_VIEWS[$template]
+            : 'public.catalog';
+
+        if (CatalogTemplates::isSupported($template)) {
+            return [$view, $context->toViewData()];
+        }
+
+        // Las plantillas heredadas conservan su preparación anterior durante 1A.
         // Cargar settings del proyecto como arreglo clave=>valor
         $settingsCollection = $project->settings()->pluck('value', 'key');
         $settings = $settingsCollection->toArray();
@@ -537,26 +537,20 @@ class PublicController extends Controller
     public function product(string $slug, int $id)
     {
         $project = $this->project($slug);
+        $context = $this->storefrontContexts->forProject($project, ['include_catalog' => true, 'store_view' => 'product']);
         $product = $project->products()
             ->where('is_available', true)
             ->with(['images', 'category', 'mainImage'])
             ->findOrFail($id);
-        $settings   = $project->settings()->pluck('value', 'key');
-        $related    = $project->products()
-            ->where('is_available', true)
-            ->where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id)
-            ->with('mainImage')
-            ->take(6)->get();
-        $categories = $project->categories()->where('is_active', true)
-            ->with(['products' => fn($q) => $q->where('is_available', true)->with('mainImage')])
-            ->orderBy('sort_order')->get();
+        $settings = $context->globalSettings();
+        $related = $context->products()->where('category_id', $product->category_id)->where('id', '!=', $product->id)->take(6)->values();
+        $categories = $context->categories();
         $reviews    = $product->approvedReviews()->get();
         $avgRating  = $reviews->count() ? round($reviews->avg('rating'), 1) : null;
-        if ($project->setting('storefront_structure_v2', '0') === '1') {
-            return view('public.storefront.product', $this->storefrontBaseData($project) + compact('product', 'related', 'reviews', 'avgRating'));
+        if ($context->setting('storefront_structure_v2', '0') === '1') {
+            return view('public.storefront.product', $context->toViewData() + compact('product', 'related', 'reviews', 'avgRating'));
         }
-        return view('public.product', compact('project', 'product', 'settings', 'related', 'categories', 'reviews', 'avgRating'));
+        return view('public.product', $context->toViewData() + compact('product', 'related', 'categories', 'reviews', 'avgRating'));
     }
 
     public function storeReview(Request $request, string $slug, int $productId)
