@@ -50,6 +50,20 @@ class ProductController extends Controller
         return view('catalog.products.index', compact('project', 'categories', 'products', 'brands', 'units', 'suppliers', 'locations', 'taxes', 'allCatalogs'));
     }
 
+    /** "S, M, L" → options.sizes (conserva otras claves de options). */
+    private function applySizes(array $data, ?Product $product = null): array
+    {
+        if (!array_key_exists('sizes', $data)) return $data;
+        $sizes = array_values(array_filter(array_map('trim', preg_split('/[,;]+/', (string) ($data['sizes'] ?? '')))));
+        $options = (array) ($product?->options ?? []);
+        if ($sizes) $options['sizes'] = array_slice($sizes, 0, 20);
+        else unset($options['sizes']);
+        $data['options'] = $options ?: null;
+        unset($data['sizes']);
+
+        return $data;
+    }
+
     private function rules(): array
     {
         return [
@@ -61,6 +75,9 @@ class ProductController extends Controller
             'description'      => 'nullable|string',
             'notes'            => 'nullable|string',
             'price'             => 'required|numeric|min:0',
+            'price_suggested'  => 'nullable|numeric|min:0',
+            'price_min'        => 'nullable|numeric|min:0',
+            'price_max'        => 'nullable|numeric|min:0',
             'compare_price'    => 'nullable|numeric|min:0',
             'wholesale_price'  => 'nullable|numeric|min:0',
             'wholesale_min_qty'=> 'nullable|integer|min:1',
@@ -71,6 +88,7 @@ class ProductController extends Controller
             'stock_min'        => 'nullable|integer|min:0',
             'stock_max'        => 'nullable|integer|min:0',
             'is_available'     => 'boolean',
+            'sizes'            => 'nullable|string|max:300',
         ];
     }
 
@@ -81,6 +99,7 @@ class ProductController extends Controller
         $data = $request->validate($this->rules());
         $data['project_id']   = $project->id;
         $data['is_available'] = $request->boolean('is_available', true);
+        $data = $this->applySizes($data);
 
         $product = Product::create($data);
 
@@ -98,6 +117,7 @@ class ProductController extends Controller
 
         $data = $request->validate($this->rules());
         $data['is_available'] = $request->boolean('is_available');
+        $data = $this->applySizes($data, $product);
         $product->update($data);
 
         if ($request->expectsJson()) {
@@ -118,6 +138,42 @@ class ProductController extends Controller
             return response()->json(['ok' => true]);
         }
         return back()->with('success', 'Producto eliminado.');
+    }
+
+    /** Vacía TODO el catálogo del proyecto activo — solo superadmin, acción irreversible. */
+    public function purgeAll(Request $request)
+    {
+        abort_unless(auth()->user()?->is_superadmin, 403);
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $request->validate(['confirm_slug' => 'required|string']);
+        abort_unless($request->input('confirm_slug') === $project->slug, 422, 'La confirmación no coincide con el proyecto.');
+
+        $productIds = $project->products()->pluck('id');
+        $count = $productIds->count();
+
+        if ($count > 0) {
+            \App\Models\ProductImage::whereIn('product_id', $productIds)->get()->each(function (ProductImage $image) {
+                $relativePath = ltrim(str_replace('/avan/public/', '', parse_url($image->url, PHP_URL_PATH)), '/');
+                $fullPath = public_path($relativePath);
+                if (file_exists($fullPath)) @unlink($fullPath);
+            });
+
+            \App\Models\CatalogIntegrationItem::where('local_type', Product::class)
+                ->whereIn('local_id', $productIds)->delete();
+
+            Product::whereIn('id', $productIds)->delete();
+        }
+
+        \Illuminate\Support\Facades\Log::warning('Catálogo vaciado por superadmin', [
+            'project_id' => $project->id, 'project_slug' => $project->slug,
+            'user_id' => auth()->id(), 'products_deleted' => $count,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'deleted' => $count]);
+        }
+        return back()->with('success', "Catálogo vaciado: {$count} producto(s) eliminado(s).");
     }
 
     public function reorder(Request $request)
@@ -714,35 +770,9 @@ class ProductController extends Controller
         $filename = time() . '_' . uniqid() . '.jpg';
         $destPath = $dir . '/' . $filename;
 
-        // Convertir cualquier formato a JPG con GD y redimensionar a 600x600
-        $mime = $file->getMimeType();
-        $src  = match(true) {
-            str_contains($mime, 'png')  => imagecreatefrompng($file->getRealPath()),
-            str_contains($mime, 'gif')  => imagecreatefromgif($file->getRealPath()),
-            str_contains($mime, 'webp') => imagecreatefromwebp($file->getRealPath()),
-            default                     => imagecreatefromjpeg($file->getRealPath()),
-        };
-
-        $size   = 600;
-        $w      = imagesx($src);
-        $h      = imagesy($src);
-        $canvas = imagecreatetruecolor($size, $size);
-
-        // Fondo blanco (para imágenes con transparencia)
-        $white = imagecolorallocate($canvas, 255, 255, 255);
-        imagefill($canvas, 0, 0, $white);
-
-        // Contain: imagen completa visible, centrada, sin recortar
-        $scale = min($size / $w, $size / $h);
-        $newW  = (int)($w * $scale);
-        $newH  = (int)($h * $scale);
-        $offX  = (int)(($size - $newW) / 2);
-        $offY  = (int)(($size - $newH) / 2);
-        imagecopyresampled($canvas, $src, $offX, $offY, 0, 0, $newW, $newH, $w, $h);
-        imagedestroy($src);
-
-        imagejpeg($canvas, $destPath, 90);
-        imagedestroy($canvas);
+        // Normalización central: cualquier formato → JPG cuadrado 800x800 con
+        // fondo blanco (contain, sin recortar). Así todas las cards cuadran.
+        abort_unless(\App\Support\SquareImage::toFile($file->getRealPath(), $destPath, 800), 422, 'No se pudo procesar la imagen.');
 
         $url = asset('uploads/products/' . $product->id . '/' . $filename);
 
@@ -800,8 +830,12 @@ class ProductController extends Controller
             'description'      => $p->description,
             'notes'            => $p->notes,
             'price'            => (float)$p->price,
+            'price_suggested'  => $p->price_suggested !== null ? (float)$p->price_suggested : null,
+            'price_min'        => $p->price_min !== null ? (float)$p->price_min : null,
+            'price_max'        => $p->price_max !== null ? (float)$p->price_max : null,
             'compare_price'    => $p->compare_price !== null ? (float)$p->compare_price : null,
             'wholesale_price'  => $p->wholesale_price !== null ? (float)$p->wholesale_price : null,
+            'sizes'            => implode(', ', $p->sizes),
             'wholesale_min_qty'=> $p->wholesale_min_qty,
             'wholesale_unit'   => $p->wholesale_unit,
             'cost'             => $p->cost !== null ? (float)$p->cost : null,

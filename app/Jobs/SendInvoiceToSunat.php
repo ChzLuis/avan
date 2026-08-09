@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Invoice;
 use App\Support\NubefactService;
+use App\Support\ApisPeruService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -26,6 +27,22 @@ class SendInvoiceToSunat implements ShouldQueue
 
         app()->instance('active_project', $invoice->project);
 
-        (new NubefactService())->enviar($invoice);
+        // Proveedor de facturación según config del proyecto (default: nubefact)
+        $provider = $invoice->project->setting('billing_provider', 'nubefact');
+
+        $result = match ($provider) {
+            'apisperu' => (new ApisPeruService())->enviar($invoice),
+            default    => (new NubefactService())->enviar($invoice),
+        };
+
+        // Si el envío falló antes de llegar a la API (p.ej. credenciales sin
+        // configurar), el servicio retorna el motivo pero no siempre lo persiste.
+        // Sin esto, el comprobante quedaba en "pending" para siempre sin explicación.
+        if (is_array($result) && ($result['ok'] ?? false) === false && !in_array($invoice->fresh()->sunat_status, ['accepted', 'error'], true)) {
+            $invoice->update([
+                'sunat_status' => 'error',
+                'sunat_error'  => $result['message'] ?? 'Error desconocido al enviar a SUNAT.',
+            ]);
+        }
     }
 }

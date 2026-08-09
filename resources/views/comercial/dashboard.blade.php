@@ -2,21 +2,25 @@
 @php
 $cat = $project->category ?? 'default';
 $esRest = in_array($cat, ['restaurante','cafeteria']);
+$esLavanderia = \App\Support\OrderFlow::supportsFlow($cat); // "tiene flujo de estados" (cualquier rubro)
+$lavStates = $esLavanderia ? \App\Support\OrderFlow::activeStates($project) : [];
+$lavOverdue = $esLavanderia ? \App\Support\OrderFlow::overdueCount($project) : 0;
 
 // KPI labels por rubro
 $kpi = match(true) {
-    in_array($cat, ['restaurante','cafeteria']) => ['v'=>'Ventas hoy','p'=>'Pedidos / Mesas','pend'=>'En cocina','acc'=>'Nueva orden','acc_route'=>'bixosales.pos'],
+    in_array($cat, ['restaurante','cafeteria']) => ['v'=>'Ventas hoy','p'=>'Pedidos / Mesas','pend'=>'En cocina','acc'=>'Vender','acc_route'=>'bixosales.pos'],
     in_array($cat, ['peluqueria','salon_belleza']) => ['v'=>'Facturación hoy','p'=>'Atenciones hoy','pend'=>'Por atender','acc'=>'Cobrar servicio','acc_route'=>'bixosales.pos'],
     $cat==='clinica'    => ['v'=>'Facturación hoy','p'=>'Atenciones hoy','pend'=>'Por atender','acc'=>'Cobrar atención','acc_route'=>'bixosales.pos'],
     $cat==='gimnasio'   => ['v'=>'Cobros hoy','p'=>'Membresías hoy','pend'=>'Por cobrar','acc'=>'Cobrar membresía','acc_route'=>'bixosales.pos'],
-    $cat==='taller'     => ['v'=>'Facturación hoy','p'=>'Órdenes hoy','pend'=>'En taller','acc'=>'Nueva orden','acc_route'=>'bixosales.pos'],
+    $cat==='taller'     => ['v'=>'Facturación hoy','p'=>'Órdenes hoy','pend'=>'En taller','acc'=>'Vender','acc_route'=>'bixosales.pos'],
+    in_array($cat, ['comercial','rifa','sorteo']) => ['v'=>'Cobrado hoy','p'=>'Ventas hoy','pend'=>'Por confirmar','acc'=>'Ver ventas','acc_route'=>'bixosales.rifas'],
     default             => ['v'=>'Ventas hoy','p'=>'Pedidos hoy','pend'=>'Por atender','acc'=>'Nueva venta','acc_route'=>'bixosales.pos'],
 };
 
 // Semáforo — lógica real simple
 $semV = $varVentas === null ? 'gray' : ($varVentas >= 0 ? 'green' : ($varVentas >= -10 ? 'yellow' : 'red'));
 $semP = $pendientes === 0 ? 'green' : ($pendientes <= 5 ? 'yellow' : 'red');
-$semScore = 87; // TODO: calcular dinámico
+$semScore = $semScore ?? 87;
 
 // Score ring deg
 $scoreDeg = round($semScore * 3.6);
@@ -31,7 +35,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
     {{-- ── SECCIÓN 1: AVAN SCORE + SEMÁFORO ── --}}
     <div class="co-header">
 
-        {{-- AVAN Score --}}
+        {{-- BIXO Score --}}
         <div class="score-card">
             <div class="score-ring-lg" style="background: conic-gradient({{ $scoreColor }} {{ $scoreDeg }}deg, #E5E8EF 0);">
                 <div class="score-inner-lg">
@@ -40,7 +44,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                 </div>
             </div>
             <div class="score-info">
-                <p class="score-title">AVAN Score</p>
+                <p class="score-title">BIXO Score</p>
                 <p class="score-sub">
                     @if($varVentas !== null)
                         <span style="color:{{ $varVentas >= 0 ? '#10B981' : '#EF4444' }}">
@@ -202,13 +206,13 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                     <canvas id="chartEstados"></canvas>
                 </div>
                 <div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">
-                    @foreach(['Nuevos'=>'#F59E0B','En proceso'=>'#3B82F6','Completados'=>'#10B981','Cancelados'=>'#EF4444'] as $lbl=>$col)
+                    @foreach($donaLabels as $i => $lbl)
                     <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px;">
                         <div style="display:flex; align-items:center; gap:5px;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:{{ $col }};display:inline-block;"></span>
+                            <span style="width:8px;height:8px;border-radius:50%;background:{{ $donaColors[$i] ?? '#9CA3AF' }};display:inline-block;"></span>
                             <span style="color:var(--muted);">{{ $lbl }}</span>
                         </div>
-                        <span style="font-weight:600;color:var(--text);">{{ $donaData[array_search($lbl,array_keys(['Nuevos'=>'','En proceso'=>'','Completados'=>'','Cancelados'=>'']))] }}</span>
+                        <span style="font-weight:600;color:var(--text);">{{ $donaData[$i] ?? 0 }}</span>
                     </div>
                     @endforeach
                 </div>
@@ -218,11 +222,117 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
     </div>
 
     {{-- ── SECCIÓN 3: OBJETOS OPERATIVOS ── --}}
-    <div class="co-section">
+    {{-- ══ PAGOS POR APROBAR (Yape/Plin reportados en el bot) ══ --}}
+    <div class="co-section" x-data="pagosAprobar()" x-init="cargar()" x-show="pedidos.length > 0" x-cloak>
         <div class="co-section-header">
             <div>
-                <p class="section-label">OBJETOS OPERATIVOS</p>
-                <h2 class="section-title">Activos ahora</h2>
+                <p class="section-label">PAGOS REPORTADOS</p>
+                <h2 class="section-title">
+                    💳 Por aprobar
+                    <span x-text="'(' + pedidos.length + ')'"
+                          style="background:#FEF3C7;color:#B45309;font-size:12px;padding:2px 10px;border-radius:999px;margin-left:6px;"></span>
+                </h2>
+            </div>
+            <button @click="cargar()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:500;">↻ Actualizar</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <template x-for="p in pedidos" :key="p.id">
+                <div style="background:#fff;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:12px;padding:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:200px;">
+                        <p style="font-weight:700;color:#111827;margin:0;">
+                            <span x-text="p.cliente"></span>
+                            <span style="font-weight:400;color:#6B7280;font-size:12px;" x-text="' · ' + p.telefono"></span>
+                        </p>
+                        <p style="margin:3px 0 0;font-size:13px;color:#6B7280;">
+                            Pedido #<span x-text="p.id"></span> · <span x-text="p.metodo"></span> · <span x-text="p.fecha"></span>
+                        </p>
+                    </div>
+                    <p style="font-size:20px;font-weight:800;color:#059669;margin:0;" x-text="'S/ ' + p.total.toFixed(2)"></p>
+                    <div style="display:flex;gap:8px;">
+                        <button @click="aprobar(p)" :disabled="cargando"
+                                style="background:#059669;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;">
+                            ✅ Aprobar
+                        </button>
+                        <button @click="rechazar(p)" :disabled="cargando"
+                                style="background:#fff;color:#DC2626;border:1px solid #FCA5A5;padding:9px 16px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;">
+                            Rechazar
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <template x-if="mensaje">
+            <div style="margin-top:12px;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:12px;">
+                <p style="margin:0 0 6px;font-size:12px;color:#065F46;font-weight:700;">Mensaje para enviar al cliente:</p>
+                <p style="margin:0;font-size:13px;color:#065F46;white-space:pre-wrap;" x-text="mensaje"></p>
+                <button @click="copiar()" style="margin-top:8px;background:#059669;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;"
+                        x-text="copiado ? '¡Copiado!' : 'Copiar mensaje'"></button>
+            </div>
+        </template>
+    </div>
+
+    <script>
+    function pagosAprobar() {
+        return {
+            pedidos: [], cargando: false, mensaje: '', copiado: false,
+            async cargar() {
+                try {
+                    const r = await fetch('{{ route("bixosales.pagos.pendientes") }}', {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]')?.content,'Accept':'application/json'},
+                        body: '{}'
+                    });
+                    const d = await r.json();
+                    this.pedidos = d.pedidos || [];
+                } catch(e) { this.pedidos = []; }
+            },
+            async aprobar(p) { await this.accion('{{ route("bixosales.pagos.aprobar") }}', { order_id: p.id }); },
+            async rechazar(p) {
+                const motivo = prompt('¿Por qué rechazas el pago? (el cliente lo verá)', 'No pudimos validar el comprobante');
+                if (motivo === null) return;
+                await this.accion('{{ route("bixosales.pagos.rechazar") }}', { order_id: p.id, motivo });
+            },
+            async accion(url, body) {
+                this.cargando = true;
+                try {
+                    const r = await fetch(url, {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]')?.content,'Accept':'application/json'},
+                        body: JSON.stringify(body)
+                    });
+                    const d = await r.json();
+                    if (d.ok) { this.mensaje = d.mensaje_cliente || ''; await this.cargar(); }
+                } catch(e) {}
+                this.cargando = false;
+            },
+            async copiar() {
+                try { await navigator.clipboard.writeText(this.mensaje); this.copiado = true; setTimeout(()=>this.copiado=false, 1500); } catch(e) {}
+            },
+        }
+    }
+    </script>
+
+    <div class="co-section">
+        <div class="co-section-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div>
+                    <p class="section-label">OBJETOS OPERATIVOS</p>
+                    <h2 class="section-title">Activos ahora</h2>
+                </div>
+                @if($esLavanderia && $lavOverdue > 0)
+                <div x-data="{ n: {{ $lavOverdue }} }" x-init="
+                        try { const s=new AudioContext(); const o=s.createOscillator(); const g=s.createGain();
+                              o.connect(g); g.connect(s.destination); o.frequency.value=880; g.gain.value=0.05;
+                              o.start(); setTimeout(()=>o.stop(), 250); } catch(e){}"
+                     style="display:flex; align-items:center; gap:6px; background:#FEE2E2; color:#B91C1C;
+                            padding:5px 12px; border-radius:999px; font-size:12px; font-weight:700;
+                            animation:pulse 1.5s ease-in-out infinite;">
+                    🔴 <span x-text="n"></span> pedido{{ $lavOverdue > 1 ? 's' : '' }} atrasado{{ $lavOverdue > 1 ? 's' : '' }}
+                </div>
+                <style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }</style>
+                @endif
             </div>
             <a href="{{ route('bixosales.pedidos') }}"
                style="font-size:12px; color:var(--blue); text-decoration:none; font-weight:500;">
@@ -235,16 +345,22 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
             {{-- Pedidos activos --}}
             @forelse($pedidosRecientes->whereIn('status',['pending','process'])->take(8) as $o)
             @php
-                $mins = $o->created_at->diffInMinutes(now());
-                $urgencia = $mins >= 30 ? 'red' : ($mins >= 15 ? 'yellow' : 'green');
-                $statusLabel = match($o->status) {
-                    'pending' => 'Nuevo',
-                    'process' => match(true) {
-                        $esRest => 'En cocina',
-                        default => 'En proceso',
-                    },
-                    default => 'Activo',
-                };
+                if ($esLavanderia && $o->laundry_status) {
+                    // Lavandería: tiempo en el estado actual + SLA configurado
+                    $sla = \App\Support\LaundryFlow::slaStatus($project, $o);
+                    $mins = $sla['minutes'];
+                    $urgencia = $sla['level'] === 'over' ? 'red' : ($sla['level'] === 'warn' ? 'yellow' : 'green');
+                    $statusLabel = $lavStates[$o->laundry_status]['label'] ?? ucfirst($o->laundry_status);
+                } else {
+                    $mins = (int) $o->created_at->diffInMinutes(now());
+                    $urgencia = $mins >= 30 ? 'red' : ($mins >= 15 ? 'yellow' : 'green');
+                    $statusLabel = match($o->status) {
+                        'pending' => 'Nuevo',
+                        'process' => $esRest ? 'En cocina' : 'En proceso',
+                        default => 'Activo',
+                    };
+                }
+                $tiempoLabel = $mins < 60 ? $mins.'m' : intdiv($mins,60).'h '.($mins%60).'m';
             @endphp
             <a href="{{ route('bixosales.pedidos') }}" class="obj-card obj-{{ $urgencia }}">
                 <div class="obj-header">
@@ -268,7 +384,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                         <p class="obj-sub">{{ $o->client_name }}</p>
                     </div>
                     <div class="timer timer-{{ $urgencia }}">
-                        ⏱ {{ $mins }}m
+                        ⏱ {{ $tiempoLabel }}
                     </div>
                 </div>
                 <div class="obj-body">
@@ -317,7 +433,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
         {{-- Top productos --}}
         <div class="co-card">
             <div class="co-card-header">
-                <p class="section-label">TOP PRODUCTOS HOY</p>
+                <p class="section-label">TOP PLANES MÁS VENDIDOS</p>
             </div>
             @forelse($topProductos as $i => $p)
             <div class="top-item">
@@ -326,12 +442,12 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                     <p class="top-name">{{ $p->name }}</p>
                     <div class="top-bar-wrap">
                         <div class="top-bar-fill"
-                             style="width:{{ $topProductos->first()->qty > 0 ? round(($p->qty/$topProductos->first()->qty)*100) : 0 }}%">
+                             style="width:{{ $topProductos->first()->total > 0 ? round(($p->total/$topProductos->first()->total)*100) : 0 }}%">
                         </div>
                     </div>
                 </div>
                 <div class="top-nums">
-                    <p class="top-qty">{{ $p->qty }} uds</p>
+                    <p class="top-qty">{{ $p->qty }} {{ isset($semScore) ? ($p->qty == 1 ? 'ticket' : 'tickets') : 'uds' }}</p>
                     <p class="top-total">S/ {{ number_format($p->total, 0) }}</p>
                 </div>
             </div>
@@ -361,8 +477,28 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
             </div>
             @forelse($pedidosRecientes->take(8) as $o)
             @php
-                $sc = ['pending'=>['#FEF9C3','#92400E'], 'process'=>['#DBEAFE','#1E40AF'], 'done'=>['#D1FAE5','#065F46'], 'cancelled'=>['#FEE2E2','#991B1B']];
-                $sl = ['pending'=>'Nuevo','process'=>'En proceso','done'=>'Completado','cancelled'=>'Cancelado'];
+                $sc = [
+                    'pending'     => ['#FEF9C3','#92400E'],
+                    'process'     => ['#DBEAFE','#1E40AF'],
+                    'done'        => ['#D1FAE5','#065F46'],
+                    'cancelled'   => ['#FEE2E2','#991B1B'],
+                    'pendiente'   => ['#F3F4F6','#6B7280'],
+                    'comprobante' => ['#FEF3C7','#B45309'],
+                    'pagado'      => ['#DBEAFE','#1D4ED8'],
+                    'enviado'     => ['#DCFCE7','#15803D'],
+                    'cancelado'   => ['#FEE2E2','#DC2626'],
+                ];
+                $sl = [
+                    'pending'     => 'Nuevo',
+                    'process'     => 'En proceso',
+                    'done'        => 'Completado',
+                    'cancelled'   => 'Cancelado',
+                    'pendiente'   => 'Sin pago',
+                    'comprobante' => 'Por validar',
+                    'pagado'      => 'Pago confirmado',
+                    'enviado'     => 'Completado',
+                    'cancelado'   => 'Cancelado',
+                ];
                 [$bg,$tc] = $sc[$o->status] ?? ['#F3F4F6','#6B7280'];
             @endphp
             <div style="display:flex; align-items:center; gap:10px;
@@ -372,7 +508,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                         {{ $o->client_name }}
                     </p>
                     <p style="font-size:10px; color:var(--muted-light);">
-                        {{ $o->created_at->diffForHumans() }}
+                        {{ \Carbon\Carbon::parse($o->created_at)->locale('es')->diffForHumans() }}
                     </p>
                 </div>
                 <p style="font-size:12px; font-weight:700; color:var(--text); white-space:nowrap;">
@@ -592,7 +728,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
 }
 .top-info { flex: 1; min-width: 0; }
 .top-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.top-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 4px; }
+.top-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
 .top-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
 .top-nums { text-align: right; flex-shrink: 0; }
 .top-qty   { font-size: 11px; font-weight: 700; color: var(--text); }
@@ -648,12 +784,13 @@ if (ctxV) {
 // ── Chart estados (dona) ─────────────────────────────────
 const ctxE = document.getElementById('chartEstados');
 if (ctxE) {
+    @php $donaColorsSafe = $donaColors ?? ['#FCD34D', '#60A5FA', '#34D399', '#F87171']; @endphp
     new Chart(ctxE, {
         type: 'doughnut',
         data: {
             labels: @json($donaLabels),
             datasets: [{ data: @json($donaData),
-                backgroundColor: ['#FCD34D','#60A5FA','#34D399','#F87171'],
+                backgroundColor: @json($donaColorsSafe),
                 borderWidth: 0 }]
         },
         options: { responsive: true, maintainAspectRatio: false,

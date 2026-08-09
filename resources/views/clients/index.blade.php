@@ -19,6 +19,20 @@
         <p class="text-xs text-gray-400 mt-0.5" id="client-count-label">Cargando...</p>
     </div>
     <div class="flex items-center gap-2">
+        @isset($leadStats)
+        <div class="hidden md:flex items-center gap-1.5 mr-2 text-xs">
+            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#fef2f2;color:#b91c1c" title="Leads calientes">🔥 {{ $leadStats['caliente'] }}</span>
+            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#fffbeb;color:#b45309" title="Leads tibios">🟡 {{ $leadStats['tibio'] }}</span>
+            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#eff6ff;color:#1d4ed8" title="Leads fríos">🔵 {{ $leadStats['frio'] }}</span>
+        </div>
+        @endisset
+        @if(Route::has('clients.pipeline'))
+        <a href="{{ route('clients.pipeline') }}"
+           class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h4v12H4zM10 6h4v8h-4zM16 6h4v5h-4z"/></svg>
+            Pipeline
+        </a>
+        @endif
         <button @click="openNew()"
                 class="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 @php
+// Perfil de catálogo activo: sus overrides visuales pisan la identidad global.
+if (!empty($activeProfile) && method_exists($activeProfile, 'settingOverrides')) {
+    $settings = array_merge((array) $settings, $activeProfile->settingOverrides());
+}
 $primaryColor  = $settings['primary_color']  ?? '#3340ff';
 $currency      = $settings['currency_symbol'] ?? 'S/';
 $seoTitle      = ($settings['seo_title'] ?? null) ?: $project->name;
@@ -70,8 +74,9 @@ $trustIcon2 = $settings['trust_icon_2'] ?? '🔒'; $trustText2 = $settings['trus
 $trustIcon3 = $settings['trust_icon_3'] ?? '✅'; $trustText3 = $settings['trust_text_3'] ?? 'Garantía';
 $trustIcon4 = $settings['trust_icon_4'] ?? '💬'; $trustText4 = $settings['trust_text_4'] ?? 'Soporte 24/7';
 
-// Flat product search index
+// Flat product search index (Fase 1E-A: solo se materializa/serializa en la Tienda)
 $searchIndex = [];
+if(($storeView ?? 'home') === 'tienda') {
 foreach($categories as $_cat) {
     foreach($_cat->products as $_p) {
         $searchIndex[] = ['id'=>$_p->id,'name'=>$_p->name,'price'=>(float)$_p->price,'cp'=>$_p->compare_price?(float)$_p->compare_price:null,'img'=>$_p->mainImage?$_p->main_image_url:null,'cat'=>$_cat->name,'catId'=>(string)$_cat->id,'parentId'=>null,'stock'=>$_p->stock];
@@ -81,6 +86,7 @@ foreach($categories as $_cat) {
             $searchIndex[] = ['id'=>$_p->id,'name'=>$_p->name,'price'=>(float)$_p->price,'cp'=>$_p->compare_price?(float)$_p->compare_price:null,'img'=>$_p->mainImage?$_p->main_image_url:null,'cat'=>$_sub->name,'catId'=>(string)$_sub->id,'parentId'=>(string)$_cat->id,'stock'=>$_p->stock];
         }
     }
+}
 }
 $paymentMeta = ['yape'=>['label'=>'Yape','emoji'=>'🟣'],'plin'=>['label'=>'Plin','emoji'=>'🔵'],'transferencia'=>['label'=>'Transferencia','emoji'=>'🏦'],'efectivo'=>['label'=>'Efectivo','emoji'=>'💵'],'tarjeta'=>['label'=>'Tarjeta','emoji'=>'💳'],'contra_entrega'=>['label'=>'Contra entrega','emoji'=>'🚚']];
 @endphp
@@ -345,6 +351,10 @@ input,select,textarea{font:inherit;color:inherit;}
 /* PRODUCT CARD */
 .grid-products{display:grid;gap:var(--grid-gap);grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));}
 .card{background:var(--bg-surface);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--border);transition:all var(--t-base) var(--ease);position:relative;cursor:pointer;group:true;}
+/* Fase 2B: accesibilidad y consistencia (usa variables configurables) */
+.card:focus-visible,.btn:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.btn:disabled{opacity:.6;cursor:progress}
+@media(prefers-reduced-motion:reduce){.card{transition:none}}
 .card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(14,14,16,.10),0 4px 8px rgba(14,14,16,.06);border-color:transparent;}
 .card-media{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--bg-inset);}
 .card-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;transition:transform 400ms var(--ease);padding:6px;background:var(--bg-inset);}
@@ -847,6 +857,33 @@ html{scroll-behavior:smooth;}
   .footer-bottom{flex-direction:column;gap:8px;text-align:center;}
   .fc-pay{justify-content:center;}
 }
+/* ═══════════ Fase 2B-B: rediseño comercial versátil (usa variables configurables) ═══════════ */
+:root{--rd-space:clamp(52px,6vw,96px);--rd-radius:18px;--rd-shadow:0 4px 18px -6px rgba(17,24,39,.12);--rd-shadow-hover:0 20px 44px -14px rgba(17,24,39,.22);}
+body{background:#fafafa}
+.container,.wrap,main{max-width:1240px}
+section{padding-block:var(--rd-space)}
+h1{letter-spacing:-.02em}
+h2{font-size:clamp(26px,3vw,36px);font-weight:800;letter-spacing:-.02em}
+.hero,.hero-section{min-height:clamp(440px,52vh,580px)}
+.card{border-radius:var(--rd-radius)!important;border:1px solid #ececec!important;box-shadow:var(--rd-shadow)!important;transition:transform .24s cubic-bezier(.2,.7,.3,1),box-shadow .24s ease}
+.card:hover{transform:translateY(-6px);box-shadow:var(--rd-shadow-hover)!important}
+.card-media{aspect-ratio:4/5;background:#f4f4f5;overflow:hidden}
+.card-media img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
+.card:hover .card-media img{transform:scale(1.05)}
+.card-name{font-weight:600;color:#1f2937;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em}
+.price-now{font-size:18px;font-weight:800;color:#111827}
+.price-was{color:#9ca3af;text-decoration:line-through;font-size:12px}
+.badge-sale,.badge{border-radius:999px;font-weight:700;letter-spacing:.02em}
+.badge-sale{background:var(--primary)!important;color:#fff}
+.btn,.btn-primary{border-radius:12px!important;font-weight:600;letter-spacing:.01em}
+.btn-primary{box-shadow:0 8px 20px -8px color-mix(in srgb,var(--primary) 60%,transparent)}
+.category-tile,.cat-tile{border-radius:var(--rd-radius);overflow:hidden;transition:transform .22s ease,box-shadow .22s ease}
+.category-tile:hover,.cat-tile:hover{transform:translateY(-4px);box-shadow:var(--rd-shadow-hover)}
+footer{border-top:1px solid rgba(0,0,0,.06)}
+.official-whatsapp-float{box-shadow:0 10px 28px -6px rgba(37,211,102,.5)!important;border-radius:50%!important}
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
+@media(max-width:640px){section{padding-block:clamp(36px,8vw,52px)}.hero,.hero-section{min-height:clamp(360px,58vh,480px)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body x-data="ecStore()" x-init="init()" @scroll.window="onScroll">
@@ -968,6 +1005,13 @@ html{scroll-behavior:smooth;}
 @endphp
 <nav class="nav" aria-label="Categorías">
   <div class="nav-inner">
+    @if(!empty($catalogProfiles) && $catalogProfiles->count())
+      <a class="nav-item {{ empty($activeProfile) ? 'active' : '' }}" href="{{ route('public.shop', $project->slug) }}" style="text-decoration:none">Todo</a>
+      @foreach($catalogProfiles as $cp)
+        <a class="nav-item {{ (!empty($activeProfile) && $activeProfile->id === $cp->id) ? 'active' : '' }}" href="{{ route('public.shop.profile', [$project->slug, $cp->slug]) }}" style="text-decoration:none">{{ $cp->menu_label ?: $cp->name }}</a>
+      @endforeach
+      <span style="width:1px;height:20px;background:var(--border);margin:0 6px;align-self:center"></span>
+    @endif
     <div class="nav-item" :class="{active:page==='home'}" @click="page='home';filterCat=null">Inicio</div>
 
     {{-- Primeras 6 categorías --}}
@@ -1191,7 +1235,10 @@ html{scroll-behavior:smooth;}
       </div>
     </div>
     <div class="testimonials-grid">
-      @php $reviews = collect($testimonials ?? []); @endphp
+      @php
+        $reviews = \App\Models\Review::where('project_id', $project->id)
+          ->where('is_approved', true)->orderByDesc('rating')->take(3)->get();
+      @endphp
       @if($reviews->count() > 0)
         @foreach($reviews as $rv)
         <div class="testi-card">
@@ -1540,8 +1587,15 @@ html{scroll-behavior:smooth;}
         </template>
       </div>
 
+      {{-- Fase 2A: loading / cargar más --}}
+      <div x-show="catLoading" x-cloak style="text-align:center;padding:24px;color:var(--text-secondary)">Cargando…</div>
+      <div x-show="catError" x-cloak style="text-align:center;padding:16px;color:#dc2626">No pudimos cargar más productos. <button type="button" @click="catLoadMore()" style="text-decoration:underline">Reintentar</button></div>
+      <div x-show="catHasMore && !catLoading" x-cloak style="text-align:center;padding:24px">
+        <button class="btn btn-primary" type="button" @click="catLoadMore()" :disabled="catLoading">{{ $settings['txt_view_more'] ?? 'Cargar más' }}</button>
+      </div>
+
       {{-- EMPTY STATE --}}
-      <div x-show="catalogProducts.length===0" style="text-align:center;padding:72px 24px;background:var(--bg-surface);border-radius:var(--radius-xl);border:1px solid var(--border);margin-top:8px">
+      <div x-show="catTotal===0 && !catLoading" style="text-align:center;padding:72px 24px;background:var(--bg-surface);border-radius:var(--radius-xl);border:1px solid var(--border);margin-top:8px">
         <div style="font-size:52px;margin-bottom:16px">🔍</div>
         <h3 class="h3" style="margin-bottom:8px">Sin resultados</h3>
         <p style="color:var(--text-secondary);font-size:14px;margin-bottom:8px">No encontramos productos con estos filtros.</p>
@@ -3020,7 +3074,7 @@ document.addEventListener('qv-open-product', function(e) {
   <div style="padding:12px 16px;border-top:1px solid var(--border);margin-top:8px">
     <a href="https://wa.me/{{ $quoteWa }}" target="_blank" rel="noopener"
       style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:#25d366;color:white;border-radius:12px;font-weight:600;font-size:14px;text-decoration:none">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm5.6 14.2c-.2.6-1.2 1.1-1.7 1.2-.4 0-1 .1-1.6-.1-.4-.1-.9-.3-1.6-.6-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.4-1.1-2.6 0-1.3.6-1.9.9-2.1.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.8 1.8c.1.2.1.4 0 .6l-.3.4-.3.4c-.1.1-.2.3-.1.5.1.2.6 1 1.3 1.6.9.8 1.7 1 1.9 1.1.2.1.3.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.2.1.3.2.4.3 0 .1 0 .8-.2 1.4z"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
       Consultar por WhatsApp
     </a>
   </div>
@@ -4289,7 +4343,12 @@ function twLum(hex) {
 @endif{{-- /tweaks: solo visible si eres el dueño del proyecto --}}
 
 <script>
-const EC_PRODUCTS = @json($searchIndex);
+// Fase 2A: solo la primera página; el resto se pide vía AJAX (server-side).
+const EC_PRODUCTS = @json(($storeView ?? 'home') === 'tienda' ? ($catalogCards ?? []) : []);
+const EC_SHOP_ENDPOINT = @json(route('public.shop', $project->slug));
+const EC_MAX_PRICE = @json($catalogMaxPrice ?? 0);
+const EC_TOTAL = @json(isset($catalogPage) ? $catalogPage->total() : 0);
+const EC_HAS_MORE = @json(isset($catalogPage) ? $catalogPage->hasMorePages() : false);
 const EC_CURRENCY = @json($currency);
 const EC_SLUG     = @json($project->slug);
 const EC_ORDER_ROUTE = @json(route('public.order', $project->slug));
@@ -4348,7 +4407,7 @@ function ecStore() {
     quotePopupProduct: null,
     quotePopupQty: 1,
     openQuotePopup(productId) {
-      const p = EC_PRODUCTS.find(x => x.id == productId);
+      const p = this.findLoadedProduct(productId);
       if (!p) return;
       this.quotePopupProduct = p;
       this.quotePopupQty = 1;
@@ -4424,32 +4483,48 @@ function ecStore() {
       return EC_PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q)).slice(0, 6);
     },
 
-    get catalogProducts() {
-      let out = EC_PRODUCTS.slice();
-      // categoria / subcategoria
-      if (this.filterSubCat) {
-        out = out.filter(p => p.catId == this.filterSubCat);
-      } else if (this.filterCat) {
-        out = out.filter(p => p.catId == this.filterCat || p.parentId == this.filterCat);
-      }
-      // precio
-      if (this.priceMin > 0)             out = out.filter(p => p.price >= this.priceMin);
-      if (this.priceMax < this.maxPrice) out = out.filter(p => p.price <= this.priceMax);
-      // disponibilidad
-      if (this.filterInStock) out = out.filter(p => p.stock === null || p.stock > 0);
-      if (this.filterOnSale)  out = out.filter(p => p.cp && p.cp > p.price);
-      // búsqueda
-      if (this.searchQ && this.page === 'catalog') {
-        const q = this.searchQ.toLowerCase();
-        out = out.filter(p => p.name.toLowerCase().includes(q));
-      }
-      switch(this.sortBy) {
-        case 'price-asc':  out.sort((a,b) => a.price-b.price); break;
-        case 'price-desc': out.sort((a,b) => b.price-a.price); break;
-        case 'name':       out.sort((a,b) => a.name.localeCompare(b.name)); break;
-      }
-      return out;
+    // Fase 2A: catálogo server-side. catalogProducts es estado alimentado por AJAX.
+    catalogItems: EC_PRODUCTS.slice(),
+    catTotal: EC_TOTAL || EC_PRODUCTS.length,
+    catPage: 1, catHasMore: EC_HAS_MORE, catLoading: false, catError: false, _catCtrl: null, _catT: null, _catIds: new Set(EC_PRODUCTS.map(p=>p.id)),
+    get catalogProducts() { return this.catalogItems; },
+    _catSort() {
+      return ({'price-asc':'price_asc','price-desc':'price_desc','name':'name','newest':'newest'})[this.sortBy] || 'recommended';
     },
+    catQuery(page) {
+      const u = new URLSearchParams();
+      if (this.searchQ) u.set('q', this.searchQ);
+      if (this.filterSubCat) u.set('category', this.filterSubCat);
+      else if (this.filterCat) u.set('category', this.filterCat);
+      if (this.filterOnSale) u.set('sale','1');
+      if (this.priceMin>0) u.set('min_price', this.priceMin);
+      if (this.priceMax>0 && this.priceMax<this.maxPrice) u.set('max_price', this.priceMax);
+      u.set('sort', this._catSort()); u.set('page', page); u.set('format','json');
+      return u;
+    },
+    async catFetch(page, append) {
+      if (this._catCtrl) this._catCtrl.abort();
+      this._catCtrl = new AbortController();
+      this.catLoading = true; this.catError = false;
+      try {
+        const res = await fetch(EC_SHOP_ENDPOINT + '?' + this.catQuery(page).toString(), {signal:this._catCtrl.signal, headers:{'Accept':'application/json'}});
+        if (!res.ok) throw new Error('http');
+        const d = await res.json();
+        if (!append) { this.catalogItems = []; this._catIds.clear(); }
+        for (const p of d.products) { if(!this._catIds.has(p.id)){ this._catIds.add(p.id); this.catalogItems.push(p); } }
+        this.catTotal = d.total; this.catPage = d.current_page; this.catHasMore = d.has_more;
+      } catch(e) { if (e.name!=='AbortError') this.catError = true; }
+      finally { this.catLoading = false; }
+    },
+    catApply() {
+      if (this._catT) clearTimeout(this._catT);
+      this._catT = setTimeout(()=>{ this.catSyncUrl(); this.catFetch(1,false); }, 300);
+    },
+    catSyncUrl() {
+      const u = this.catQuery(1); u.delete('format'); u.delete('page');
+      try { history.replaceState({}, '', location.pathname + (u.toString()?('?'+u.toString()):'')); } catch(e){}
+    },
+    catLoadMore() { if (this.catHasMore && !this.catLoading) this.catFetch(this.catPage+1, true); },
 
     get cartCount() { return this.cart.reduce((s,i) => s+i.qty, 0); },
     get subtotal()  { return this.cart.reduce((s,i) => s+i.price*i.qty, 0); },
@@ -4466,15 +4541,18 @@ function ecStore() {
       this.loadCart();
       this.startHero();
       this.loadSavedForm();
-      this.maxPrice = EC_PRODUCTS.reduce((m, p) => Math.max(m, p.price), 0);
-      this.maxPrice = Math.ceil(this.maxPrice / 10) * 10 || 1000;
+      this.maxPrice = Math.ceil((Number(EC_MAX_PRICE)||1000) / 10) * 10 || 1000;
       this.priceMax = this.maxPrice;
+      // Fase 2A: al cambiar filtros, pedir la primera página al servidor.
+      ['searchQ','filterCat','filterSubCat','filterOnSale','filterInStock','priceMin','priceMax','sortBy'].forEach(f=>{
+        this.$watch(f, ()=>{ if(this.page==='catalog') this.catApply(); });
+      });
 
       // Restaurar página al recargar (producto, carrito, etc.)
       try {
         const saved = JSON.parse(localStorage.getItem('ec_state_'+EC_SLUG) || 'null');
         if (saved && saved.page === 'product' && saved.productId) {
-          const p = EC_PRODUCTS.find(x => x.id == saved.productId);
+          const p = this.findLoadedProduct(saved.productId);
           if (p) {
             this.pdp = p;
             this.page = 'product';
@@ -4513,7 +4591,7 @@ function ecStore() {
       window.addEventListener('popstate', (e) => {
         if (e.state && e.state.page === 'product') {
           // Estaban viendo un producto, popstate significa que venían de antes
-          const p = EC_PRODUCTS.find(x => x.id == e.state.productId);
+          const p = this.findLoadedProduct(e.state.productId);
           if (p) { this.pdp = p; this.page = 'product'; }
         } else {
           // Volver al catálogo/home anterior
@@ -4562,7 +4640,7 @@ function ecStore() {
     },
 
     addToCart(productId) {
-      const p = EC_PRODUCTS.find(x => x.id == productId);
+      const p = this.findLoadedProduct(productId);
       if (!p) return;
       const existing = this.cart.find(i => i.id == productId);
       if (existing) { existing.qty++; }
@@ -4574,7 +4652,7 @@ function ecStore() {
 
     addToCartQty(productId, qty) {
       const q = parseInt(qty) || 1;
-      const p = EC_PRODUCTS.find(x => x.id == productId);
+      const p = this.findLoadedProduct(productId);
       if (!p) return;
       const existing = this.cart.find(i => i.id == productId);
       if (existing) { existing.qty += q; }
@@ -4681,14 +4759,31 @@ function ecStore() {
       return msg;
     },
 
+    // Busca un producto en TODAS las fuentes cargadas (catálogo AJAX + iniciales).
+    // Fase 2A: EC_PRODUCTS sólo trae la primera página, así que hay que mirar
+    // también catalogItems (lo que llegó por "Cargar más").
+    findLoadedProduct(id) {
+      const pools = [];
+      if (Array.isArray(this.catalogItems)) pools.push(this.catalogItems);
+      pools.push(EC_PRODUCTS);
+      for (const pool of pools) {
+        const found = pool.find(x => x.id == id);
+        if (found) return found;
+      }
+      return null;
+    },
     openProduct(id) {
-      const p = EC_PRODUCTS.find(x => x.id == id);
-      if (!p) return;
+      let p = this.findLoadedProduct(id);
+      // Si el producto no está cargado (llegó por "Cargar más" en una página que
+      // se recargó, o enlace directo), navega a su página real, que renderiza
+      // cualquier producto sin depender del array en memoria.
+      if (!p) { window.location.href = EC_SLUG ? ('/'+EC_SLUG+'/p/'+id) : ('/p/'+id); return; }
       this.prevPage = this.page;
       this.pdp = p;
       this.page = 'product';
-      // Productos relacionados: misma categoría, máx 4, excluyendo el actual
-      this.relatedProducts = EC_PRODUCTS.filter(x => x.catId === p.catId && x.id != p.id).slice(0, 4);
+      // Relacionados: de lo ya cargado, misma categoría, máx 4.
+      const all = (Array.isArray(this.catalogItems) && this.catalogItems.length) ? this.catalogItems : EC_PRODUCTS;
+      this.relatedProducts = all.filter(x => x.catId === p.catId && x.id != p.id).slice(0, 4);
       window.scrollTo({top:0,behavior:'smooth'});
       history.pushState({page: 'product', productId: id, prevPage: this.prevPage}, '', window.location.pathname);
       try { localStorage.setItem('ec_state_'+EC_SLUG, JSON.stringify({page:'product', productId: id})); } catch(e){}
@@ -4871,6 +4966,6 @@ function culqi() {
     </div>
   </div>
 </div>
-<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" />
+<x-public-store-runtime :project="$project" :settings="$settings" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" :own-whatsapp="true" />
 </body>
 </html>

@@ -10,7 +10,14 @@
     {{-- Header --}}
     <div class="flex flex-col border-b border-gray-100 flex-shrink-0">
         {{-- Tabs --}}
-        <div class="flex border-b border-gray-100 px-4 pt-2 gap-4">
+        <div class="flex items-center border-b border-gray-100 px-4 pt-2 gap-4">
+            {{-- Toggle "Vender fácil" (Modo Revendedor) --}}
+            <button @click="resellerMode = !resellerMode"
+                    :class="resellerMode ? 'bg-green-500 text-white border-green-500 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-green-400'"
+                    class="ml-auto order-last mb-1 flex items-center gap-1.5 px-3 py-1.5 border-2 rounded-full text-xs font-bold transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span x-text="resellerMode ? 'Vender fácil: ON' : 'Vender fácil'"></span>
+            </button>
             <button @click="catalogTab='products'"
                     :class="catalogTab==='products' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-400 hover:text-gray-600'"
                     class="pb-2 text-sm transition flex items-center gap-1.5">
@@ -72,7 +79,7 @@
             </template>
             <div class="grid gap-2.5" style="grid-template-columns: repeat(auto-fill, minmax(120px,1fr));">
                 <template x-for="p in filteredProducts" :key="p.id">
-                    <button @click="addToCart(p)"
+                    <button @click="resellerMode ? openQuickSale(p) : addToCart(p)"
                             :disabled="p.stock !== null && p.stock !== undefined && p.stock <= 0"
                             :class="(p.stock !== null && p.stock !== undefined && p.stock <= 0) ? 'opacity-40 cursor-not-allowed' : 'hover:border-indigo-400 hover:shadow-lg active:scale-95 active:bg-indigo-50'"
                             class="relative bg-white border-2 border-gray-100 rounded-2xl p-2.5 text-left transition-all group">
@@ -153,23 +160,40 @@
      :class="{ 'hidden md:flex': posTab !== 'cart' }">
 
     {{-- Header carrito --}}
-    <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 flex-shrink-0">
-        <h2 class="font-bold text-gray-800 flex items-center gap-2">
-            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            Nueva venta
-            <span x-show="cart.length > 0"
-                  class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full"
-                  x-text="cart.reduce((s,i)=>s+i.qty,0) + ' ítem' + (cart.reduce((s,i)=>s+i.qty,0)!==1?'s':'')"></span>
-        </h2>
-        <button @click="clearCart()" x-show="cart.length > 0"
-                class="text-xs text-gray-400 hover:text-red-500 transition flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-50">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-            Vaciar
-        </button>
+    <div class="flex flex-col gap-2 px-4 py-3 bg-white border-b border-gray-200 flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <h2 class="font-bold text-gray-800 flex items-center gap-2">
+                <svg class="w-4 h-4" :class="mode==='quote' ? 'text-amber-500' : 'text-indigo-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span x-text="mode==='quote' ? 'Cotización' : 'Nueva venta'"></span>
+                <span x-show="cart.length > 0"
+                      class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full"
+                      x-text="cart.reduce((s,i)=>s+i.qty,0) + ' ítem' + (cart.reduce((s,i)=>s+i.qty,0)!==1?'s':'')"></span>
+            </h2>
+            <button @click="clearCart()" x-show="cart.length > 0"
+                    class="text-xs text-gray-400 hover:text-red-500 transition flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-50">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Vaciar
+            </button>
+        </div>
+        {{-- Toggle Venta directa / Cotización --}}
+        <div class="grid grid-cols-2 gap-1 bg-gray-100 rounded-xl p-1">
+            <button @click="mode='sale'"
+                    :class="mode==='sale' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+                    class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Venta directa
+            </button>
+            <button @click="mode='quote'"
+                    :class="mode==='quote' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+                    class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Cotización
+            </button>
+        </div>
     </div>
 
     {{-- Items del carrito --}}
@@ -188,10 +212,38 @@
             <div class="bg-white rounded-xl border border-gray-100 px-2.5 py-2 space-y-1.5"
                  :class="item.type==='service' ? 'border-l-4 border-l-purple-400' : 'border-l-4 border-l-indigo-400'">
                 <div class="flex items-center gap-2">
-                    {{-- Nombre --}}
+                    {{-- Nombre + precio editable --}}
                     <div class="flex-1 min-w-0">
                         <p class="text-xs font-semibold text-gray-800 leading-snug truncate" x-text="item.name"></p>
-                        <p class="text-[11px] text-gray-400" x-text="'S/ ' + item.price.toFixed(2) + ' c/u'"></p>
+                        <div class="flex items-center gap-1 mt-0.5">
+                            <span class="text-[11px] text-gray-400" x-text="resellerMode ? 'Mi precio S/' : 'S/'"></span>
+                            <input type="number" min="0" step="0.10" x-model.number="item.price"
+                                   @focus="$event.target.select()"
+                                   :class="(item.min != null && item.price < item.min) ? 'text-red-600 border-red-300 bg-red-50'
+                                           : (item.basePrice != null && item.price != item.basePrice ? 'text-indigo-600 border-indigo-300' : 'text-gray-600 border-gray-200')"
+                                   class="w-16 text-[11px] font-semibold text-center border rounded-md px-1 py-0.5 focus:ring-1 focus:ring-indigo-400 outline-none">
+                            <span class="text-[10px] text-gray-300">c/u</span>
+                            {{-- Modo normal: marca "referencial"/"ref." --}}
+                            <template x-if="!resellerMode">
+                                <span>
+                                    <span x-show="item.basePrice != null && item.price == item.basePrice"
+                                          class="text-[9px] text-amber-500 bg-amber-50 border border-amber-100 rounded px-1 leading-tight whitespace-nowrap">referencial</span>
+                                    <span x-show="item.basePrice != null && item.price != item.basePrice"
+                                          class="text-[9px] text-indigo-400 whitespace-nowrap" x-text="'ref. S/ ' + item.basePrice.toFixed(2)"></span>
+                                </span>
+                            </template>
+                        </div>
+                        {{-- Ganancia (modo revendedor) o aviso de mínimo --}}
+                        <template x-if="item.min != null && item.price < item.min">
+                            <p class="text-[9px] text-red-600 font-bold mt-0.5">⚠️ Mín. S/ <span x-text="item.min.toFixed(2)"></span></p>
+                        </template>
+                        <template x-if="resellerMode && (item.min == null || item.price >= item.min) && profitUnit(item.price, item) !== null">
+                            <p class="text-[10px] font-bold mt-0.5"
+                               :class="priceTone(item.price,item)==='low' ? 'text-amber-600' : 'text-green-600'">
+                                <span x-text="priceTone(item.price,item)==='low' ? '🟡' : '🟢'"></span>
+                                Ganas +S/ <span x-text="(profitUnit(item.price,item)*item.qty).toFixed(2)"></span>
+                            </p>
+                        </template>
                     </div>
                     {{-- Controles cantidad compactos --}}
                     <div class="flex items-center gap-1 flex-shrink-0">
@@ -214,8 +266,8 @@
                                 class="text-[10px] text-gray-300 hover:text-red-500 transition">×</button>
                     </div>
                 </div>
-                {{-- Fila descuento por ítem --}}
-                <div class="flex items-center gap-1.5 pt-0.5 border-t border-gray-50">
+                {{-- Fila descuento por ítem (oculta en Modo Revendedor: concepto técnico) --}}
+                <div x-show="!resellerMode" class="flex items-center gap-1.5 pt-0.5 border-t border-gray-50">
                     <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap">Desc. ítem:</span>
                     <div class="flex items-center gap-1 flex-1">
                         <input type="number" x-model.number="item.discount" min="0" placeholder="0"
@@ -285,6 +337,25 @@
             </div>
             <span class="text-lg font-black text-gray-900" x-text="'S/ ' + cartTotal.toFixed(2)"></span>
         </div>
+
+        {{-- Ganancia total (Modo Revendedor) --}}
+        <template x-if="resellerMode && cart.length > 0 && cartProfit > 0">
+            <div class="flex justify-between items-center bg-green-50 rounded-xl px-3 py-1.5">
+                <span class="text-xs font-bold text-green-700">🟢 Tu ganancia</span>
+                <span class="text-base font-black text-green-700" x-text="'+S/ ' + cartProfit.toFixed(2)"></span>
+            </div>
+        </template>
+
+        {{-- Aviso: hay ítems bajo el mínimo --}}
+        <template x-if="hasBelowMin">
+            <div class="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                <span class="text-base">⚠️</span>
+                <p class="text-xs font-bold text-red-700">Hay productos por debajo del precio mínimo. Ajústalos para continuar.</p>
+            </div>
+        </template>
+
+        {{-- Bloque de pago (solo en modo Venta directa) --}}
+        <div x-show="mode==='sale'" class="space-y-1.5">
 
         {{-- Toggle pago dividido --}}
         <div class="flex items-center justify-between">
@@ -399,52 +470,78 @@
             </div>
         </div>
 
-        {{-- Mesa (si viene ?mesa=N o se escribe) --}}
-        <div x-show="paymentForm.table_number || showClientFields"
-             class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-            <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 5v14M14 5v14"/>
-            </svg>
-            <label class="text-xs font-semibold text-amber-700 whitespace-nowrap">Mesa Nº</label>
-            <input x-model="paymentForm.table_number" type="number" min="1" placeholder="—"
-                   class="w-16 text-sm font-black text-center border border-amber-300 bg-white rounded-lg px-2 py-1 focus:ring-2 focus:ring-amber-400 outline-none">
-            <span class="text-[11px] text-amber-600 ml-auto" x-show="paymentForm.table_number">
-                Pedido irá a cocina
-            </span>
-        </div>
+        </div> {{-- /Bloque de pago --}}
 
-        {{-- Cliente (opcional) --}}
-        <div x-show="showClientFields" class="space-y-1">
-            <div class="flex gap-1.5">
-                <input x-model="paymentForm.client_name" type="text" placeholder="Nombre cliente"
-                       class="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
-                <input x-model="paymentForm.client_phone" type="text" placeholder="Teléfono"
-                       class="w-28 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+        {{-- ═══ DATOS DEL CLIENTE ═══ --}}
+        {{-- En COTIZACIÓN: siempre visibles y el nombre es obligatorio (para saber a quién se envía). --}}
+        {{-- En VENTA: opcionales, se abren con el botón. --}}
+
+        {{-- Bloque cliente en modo COTIZACIÓN (siempre visible) --}}
+        <div x-show="mode==='quote'" class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 space-y-2">
+            <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <p class="text-xs font-bold text-amber-700">¿Para quién es la cotización?</p>
             </div>
-            <input x-model="paymentForm.notes" type="text" placeholder="Notas"
-                   class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+            <input x-model="paymentForm.client_name" type="text" placeholder="Nombre del cliente *"
+                   :class="quoteNameMissing ? 'border-red-400 ring-1 ring-red-300' : 'border-amber-200'"
+                   class="w-full text-sm border rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-amber-400 outline-none">
+            <input x-model="paymentForm.client_phone" type="text" placeholder="Teléfono / WhatsApp (recomendado)"
+                   class="w-full text-sm border border-amber-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-amber-400 outline-none">
+            <input x-model="paymentForm.notes" type="text" placeholder="Notas (opcional)"
+                   class="w-full text-xs border border-amber-200 rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-amber-400 outline-none">
+            <p x-show="quoteNameMissing" class="text-[11px] text-red-600 font-semibold">Escribe el nombre del cliente para generar la cotización.</p>
         </div>
-        <button @click="showClientFields=!showClientFields"
-                class="text-[11px] text-gray-400 hover:text-indigo-500 transition flex items-center gap-1">
-            <svg class="w-3 h-3 transition-transform" :class="showClientFields?'rotate-180':''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-            <span x-text="showClientFields ? 'Ocultar datos cliente' : '+ Mesa / Datos de cliente'"></span>
-        </button>
 
-        {{-- Botón cobrar --}}
-        <button @click="charge()"
-                :disabled="cart.length === 0 || !paymentForm.method || processing || (splitPayment && Math.abs((paymentForm.amount1+paymentForm.amount2)-cartTotal)>=0.01)"
-                :class="cart.length > 0 && paymentForm.method && !processing && !(splitPayment && Math.abs((paymentForm.amount1+paymentForm.amount2)-cartTotal)>=0.01)
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 active:scale-[0.98]'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
+        {{-- Bloque cliente/mesa en modo VENTA (opcional, colapsable) --}}
+        <template x-if="mode==='sale'">
+            <div class="space-y-1.5">
+                {{-- Mesa --}}
+                <div x-show="paymentForm.table_number || showClientFields"
+                     class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                    <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 5v14M14 5v14"/>
+                    </svg>
+                    <label class="text-xs font-semibold text-amber-700 whitespace-nowrap">Mesa Nº</label>
+                    <input x-model="paymentForm.table_number" type="number" min="1" placeholder="—"
+                           class="w-16 text-sm font-black text-center border border-amber-300 bg-white rounded-lg px-2 py-1 focus:ring-2 focus:ring-amber-400 outline-none">
+                    <span class="text-[11px] text-amber-600 ml-auto" x-show="paymentForm.table_number">Pedido irá a cocina</span>
+                </div>
+                {{-- Datos cliente --}}
+                <div x-show="showClientFields" class="space-y-1">
+                    <div class="flex gap-1.5">
+                        <input x-model="paymentForm.client_name" type="text" placeholder="Nombre cliente"
+                               class="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <input x-model="paymentForm.client_phone" type="text" placeholder="Teléfono"
+                               class="w-28 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <input x-model="paymentForm.notes" type="text" placeholder="Notas"
+                           class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <button @click="showClientFields=!showClientFields"
+                        class="text-[11px] text-gray-400 hover:text-indigo-500 transition flex items-center gap-1">
+                    <svg class="w-3 h-3 transition-transform" :class="showClientFields?'rotate-180':''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                    <span x-text="showClientFields ? 'Ocultar datos cliente' : '+ Mesa / Datos de cliente'"></span>
+                </button>
+            </div>
+        </template>
+
+        {{-- Botón principal: Cobrar (venta) o Generar cotización --}}
+        <button @click="mode==='quote' ? createQuote() : charge()"
+                :disabled="cart.length === 0 || processing || hasBelowMin || quoteNameMissing || (mode==='sale' && (!paymentForm.method || (splitPayment && Math.abs((paymentForm.amount1+paymentForm.amount2)-cartTotal)>=0.01)))"
+                :class="cart.length === 0 || processing || hasBelowMin || quoteNameMissing || (mode==='sale' && (!paymentForm.method || (splitPayment && Math.abs((paymentForm.amount1+paymentForm.amount2)-cartTotal)>=0.01)))
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : (mode==='quote'
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200 active:scale-[0.98]'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 active:scale-[0.98]')"
                 class="w-full py-2.5 rounded-2xl font-black text-base transition-all flex items-center justify-center gap-2">
             <template x-if="!processing">
                 <span class="flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                     </svg>
-                    Cobrar S/ <span x-text="cartTotal.toFixed(2)"></span>
+                    <span x-text="mode==='quote' ? 'Generar cotización' : 'Cobrar'"></span> S/ <span x-text="cartTotal.toFixed(2)"></span>
                 </span>
             </template>
             <template x-if="processing">
@@ -543,6 +640,159 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════
+     POPUP — Venta Rápida (Modo Revendedor)
+     "¿Cuánto quiero cobrar y cuánto gano?"
+══════════════════════════════════════════════════════ --}}
+<div x-show="quickSale.open" x-cloak
+     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4"
+     @click.self="quickSale.open = false">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-5 sm:p-6" @click.stop x-show="quickSale.item">
+        <template x-if="quickSale.item">
+            <div>
+                {{-- Nombre --}}
+                <div class="flex items-start justify-between gap-2 mb-4">
+                    <h3 class="text-xl font-black text-gray-900 leading-tight" x-text="quickSale.item.name"></h3>
+                    <button @click="quickSale.open=false" class="text-gray-300 hover:text-gray-500 text-2xl leading-none flex-shrink-0">×</button>
+                </div>
+
+                {{-- Precio sugerido --}}
+                <div class="flex items-center justify-between text-sm mb-2">
+                    <span class="text-gray-400 font-medium">Precio sugerido</span>
+                    <span class="text-gray-500 font-bold" x-text="'S/ ' + (quickSale.item.suggested ?? quickSale.item.price).toFixed(2)"></span>
+                </div>
+
+                {{-- MI PRECIO (protagonista) --}}
+                <div class="rounded-2xl border-2 p-4 mb-3 transition-colors"
+                     :class="{
+                        'border-red-300 bg-red-50':    priceTone(quickSale.price, quickSale.item)==='blocked',
+                        'border-amber-300 bg-amber-50': priceTone(quickSale.price, quickSale.item)==='low',
+                        'border-yellow-200 bg-yellow-50':priceTone(quickSale.price, quickSale.item)==='mid',
+                        'border-green-300 bg-green-50': priceTone(quickSale.price, quickSale.item)==='ok'
+                     }">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Mi precio</p>
+                    <div class="flex items-center justify-center gap-3">
+                        <span class="text-2xl font-black text-gray-400">S/</span>
+                        <input type="number" min="0" step="0.10" x-model.number="quickSale.price"
+                               @focus="$event.target.select()"
+                               class="w-32 text-center text-4xl font-black bg-transparent outline-none"
+                               :class="qsBlocked ? 'text-red-600' : 'text-gray-900'">
+                    </div>
+
+                    {{-- Botones rápidos --}}
+                    <div class="flex items-center justify-center gap-1.5 mt-3">
+                        <button @click="qsAdjust(-5)" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-black text-gray-600 hover:bg-gray-50 active:scale-95 transition">−5</button>
+                        <button @click="qsAdjust(-1)" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-black text-gray-600 hover:bg-gray-50 active:scale-95 transition">−1</button>
+                        <button @click="qsUseSuggested()" class="px-3 py-2 rounded-xl bg-indigo-100 text-indigo-700 text-xs font-black hover:bg-indigo-200 active:scale-95 transition">Sugerido</button>
+                        <button @click="qsAdjust(1)" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-black text-gray-600 hover:bg-gray-50 active:scale-95 transition">+1</button>
+                        <button @click="qsAdjust(5)" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-black text-gray-600 hover:bg-gray-50 active:scale-95 transition">+5</button>
+                    </div>
+
+                    {{-- Slider (fácil para tercera edad) --}}
+                    <template x-if="quickSale.item.min != null && quickSale.item.max != null">
+                        <input type="range" :min="quickSale.item.min" :max="quickSale.item.max" step="0.5"
+                               x-model.number="quickSale.price"
+                               class="w-full mt-3 accent-green-600">
+                    </template>
+                </div>
+
+                {{-- GANANCIA (el foco del revendedor) --}}
+                <template x-if="profitUnit(quickSale.price, quickSale.item) !== null">
+                    <div class="flex items-center justify-between rounded-2xl px-4 py-3 mb-3"
+                         :class="qsBlocked ? 'bg-red-50' : (priceTone(quickSale.price,quickSale.item)==='low' ? 'bg-amber-50' : 'bg-green-50')">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl" x-text="qsBlocked ? '🔴' : (priceTone(quickSale.price,quickSale.item)==='low' ? '🟡' : '🟢')"></span>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Tu ganancia por unidad</p>
+                                <p class="text-2xl font-black"
+                                   :class="qsBlocked ? 'text-red-600' : 'text-green-700'"
+                                   x-text="'+S/ ' + Math.max(0, profitUnit(quickSale.price, quickSale.item)).toFixed(2)"></p>
+                            </div>
+                        </div>
+                        <span class="text-sm font-black px-2 py-1 rounded-lg"
+                              :class="qsBlocked ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'"
+                              x-text="(profitPct(quickSale.price, quickSale.item) ?? 0).toFixed(0) + '%'"></span>
+                    </div>
+                </template>
+
+                {{-- Aviso de bloqueo por mínimo --}}
+                <template x-if="qsBlocked">
+                    <div class="flex items-center gap-2 bg-red-100 border border-red-200 rounded-xl px-3 py-2 mb-3">
+                        <span class="text-lg">⚠️</span>
+                        <p class="text-xs font-bold text-red-700 leading-snug">
+                            No puedes vender por debajo de <span x-text="'S/ ' + quickSale.item.min.toFixed(2)"></span>
+                        </p>
+                    </div>
+                </template>
+
+                {{-- Cantidad --}}
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm font-bold text-gray-600">Cantidad</span>
+                    <div class="flex items-center gap-3">
+                        <button @click="quickSale.qty = Math.max(1, quickSale.qty-1)"
+                                class="w-11 h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-2xl font-black text-gray-600 active:scale-95 transition">−</button>
+                        <span class="w-10 text-center text-2xl font-black" x-text="quickSale.qty"></span>
+                        <button @click="quickSale.qty++"
+                                class="w-11 h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center text-2xl font-black active:scale-95 transition">+</button>
+                    </div>
+                </div>
+
+                {{-- Total + Agregar --}}
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <span class="text-sm text-gray-500 font-medium">Total</span>
+                    <span class="text-2xl font-black text-gray-900" x-text="'S/ ' + (quickSale.price * quickSale.qty).toFixed(2)"></span>
+                </div>
+                <button @click="confirmQuickSale()"
+                        :disabled="qsBlocked"
+                        :class="qsBlocked ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200 active:scale-[0.98]'"
+                        class="w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    Agregar
+                </button>
+            </div>
+        </template>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════
+     MODAL — Cotización generada
+══════════════════════════════════════════════════════ --}}
+<div x-show="quoteModal" x-cloak
+     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+     @click.self="quoteModal = false">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center" @click.stop>
+        <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+        </div>
+        <h3 class="text-2xl font-black text-gray-900 mb-1">¡Cotización lista!</h3>
+        <p class="text-3xl font-black text-amber-600 my-2" x-text="'S/ ' + lastTotal.toFixed(2)"></p>
+        <p class="text-gray-400 text-sm mb-4">Comparte el enlace con tu cliente</p>
+
+        <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-4">
+            <input type="text" readonly :value="lastQuoteUrl" @focus="$event.target.select()"
+                   class="flex-1 text-xs text-gray-600 bg-transparent outline-none truncate">
+            <button @click="copyQuoteLink()"
+                    class="text-xs font-bold px-2 py-1 rounded-lg transition flex-shrink-0"
+                    :class="copied ? 'bg-green-100 text-green-700' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'"
+                    x-text="copied ? '¡Copiado!' : 'Copiar'"></button>
+        </div>
+
+        <div class="flex gap-2">
+            <a :href="'https://wa.me/?text=' + encodeURIComponent('Le comparto su cotización: ' + lastQuoteUrl)" target="_blank"
+               class="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-2xl transition text-sm flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                WhatsApp
+            </a>
+            <button @click="quoteModal = false; clearCart(); mode='sale'"
+                    class="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition text-sm">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════
      MODAL — Historial transacciones
 ══════════════════════════════════════════════════════ --}}
 <div x-show="showTransactions" x-cloak
@@ -627,11 +877,17 @@ function posApp() {
         filterCat: null,
         catalogTab: 'products',
         cart: [],
+        mode: 'sale',          // 'sale' = venta directa | 'quote' = cotización
+        resellerMode: false,   // "Vender fácil" — experiencia enfocada en el revendedor
+        quickSale: { open: false, item: null, price: 0, qty: 1 },  // popup Venta Rápida
         processing: false,
         showCustom: false,
         showClientFields: false,
         showTransactions: false,
         successModal: false,
+        quoteModal: false,
+        lastQuoteUrl: '',
+        copied: false,
         lastTotal: 0,
         lastChange: 0,
         splitPayment: false,
@@ -656,6 +912,9 @@ function posApp() {
             @else
             this.paymentForm.method = 'Efectivo';
             @endif
+            // Recordar preferencia de "Vender fácil"
+            this.resellerMode = localStorage.getItem('pos_reseller_mode') === '1';
+            this.$watch('resellerMode', v => localStorage.setItem('pos_reseller_mode', v ? '1' : '0'));
             if (this.products.length === 0 && this.services.length > 0) {
                 this.catalogTab = 'services';
             }
@@ -701,6 +960,22 @@ function posApp() {
             return this.cart.reduce((s, i) => s + this.itemTotal(i), 0);
         },
 
+        // Ganancia total del carrito (suma de (precio−costo)×cantidad, solo ítems con costo).
+        get cartProfit() {
+            return this.cart.reduce((s, i) => {
+                if (i.cost == null) return s;
+                return s + (i.price - i.cost) * i.qty;
+            }, 0);
+        },
+        // ¿Hay algún ítem por debajo de su precio mínimo? (bloquea la venta)
+        get hasBelowMin() {
+            return this.cart.some(i => i.min != null && i.price < i.min);
+        },
+        // En cotización el nombre del cliente es obligatorio (para saber a quién enviarla).
+        get quoteNameMissing() {
+            return this.mode === 'quote' && !(this.paymentForm.client_name || '').trim();
+        },
+
         get todayTotal() {
             return this.transactions.reduce((s, t) => s + parseFloat(t.total), 0);
         },
@@ -732,12 +1007,90 @@ function posApp() {
                     service_id:   item.type === 'service' ? item.id : null,
                     type:         item.type || 'product',
                     name:         item.name,
-                    price:        item.price,
+                    price:        item.suggested ?? item.price,
+                    basePrice:    item.suggested ?? item.price,   // precio sugerido del catálogo
+                    cost:         item.cost ?? null,
+                    min:          item.min ?? null,
+                    max:          item.max ?? null,
                     qty:          1,
                     discount:     0,
                     discountType: 'pct',
                 });
             }
+        },
+
+        // ── Ganancia / semáforo (para el revendedor) ──────────────────────
+        // Ganancia por unidad = precio de venta − costo. Si no hay costo, null.
+        profitUnit(price, item) {
+            if (!item || item.cost == null) return null;
+            return price - item.cost;
+        },
+        profitPct(price, item) {
+            if (!item || item.cost == null || item.cost <= 0) return null;
+            return ((price - item.cost) / item.cost) * 100;
+        },
+        // Semáforo: rojo bajo el mínimo, amarillo poca ganancia, verde buena.
+        priceTone(price, item) {
+            if (!item) return 'ok';
+            if (item.min != null && price < item.min) return 'blocked';
+            const pct = this.profitPct(price, item);
+            if (pct == null) return 'ok';
+            if (pct < 5)  return 'low';
+            if (pct < 15) return 'mid';
+            return 'ok';
+        },
+
+        // ── Popup Venta Rápida (Modo Revendedor) ──────────────────────────
+        openQuickSale(item) {
+            this.quickSale = {
+                open: true,
+                item: item,
+                price: item.suggested ?? item.price,
+                qty: 1,
+            };
+        },
+        qsAdjust(delta) {
+            const it = this.quickSale.item;
+            let np = Math.round((this.quickSale.price + delta) * 100) / 100;
+            if (it && it.min != null && np < it.min) np = it.min;   // no bajar del mínimo
+            if (it && it.max != null && np > it.max) np = it.max;   // no pasar el máximo
+            this.quickSale.price = Math.max(0, np);
+        },
+        qsUseSuggested() {
+            const it = this.quickSale.item;
+            this.quickSale.price = it.suggested ?? it.price;
+        },
+        get qsBlocked() {
+            const it = this.quickSale.item;
+            return it && it.min != null && this.quickSale.price < it.min;
+        },
+        confirmQuickSale() {
+            if (this.qsBlocked) return;
+            const it = this.quickSale.item;
+            const key = (it.type || 'product') + '_' + it.id;
+            const existing = this.cart.find(i => i._key === key);
+            if (existing) {
+                existing.price = this.quickSale.price;
+                existing.qty  += this.quickSale.qty;
+            } else {
+                this.cart.push({
+                    _key: key,
+                    product_id: it.type === 'service' ? null : it.id,
+                    service_id: it.type === 'service' ? it.id : null,
+                    type: it.type || 'product',
+                    name: it.name,
+                    price: this.quickSale.price,
+                    basePrice: it.suggested ?? it.price,
+                    cost: it.cost ?? null,
+                    min: it.min ?? null,
+                    max: it.max ?? null,
+                    qty: this.quickSale.qty,
+                    discount: 0,
+                    discountType: 'pct',
+                });
+            }
+            this.quickSale.open = false;
+            // En móvil, saltar al carrito para revisar/cobrar
         },
 
         addCustomItem() {
@@ -818,12 +1171,53 @@ function posApp() {
                     this.showClientFields = false;
                     this.splitPayment = false;
                 } else {
-                    alert('Error al registrar la venta.');
+                    alert(data.error || 'Error al registrar la venta.');
                 }
             } catch (e) {
                 alert('Error de conexión.');
             }
             this.processing = false;
+        },
+
+        async createQuote() {
+            if (this.cart.length === 0 || this.processing) return;
+            this.processing = true;
+            try {
+                const res = await fetch('{{ route("pos.quote", $project) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        client_name:  this.paymentForm.client_name || null,
+                        client_phone: this.paymentForm.client_phone || null,
+                        notes:        this.paymentForm.notes || null,
+                        items: this.cart.map(i => ({
+                            name:     i.name,
+                            price:    this.itemTotal(i) / i.qty,
+                            quantity: i.qty,
+                        })),
+                    }),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.lastTotal   = parseFloat(data.total);
+                    this.lastQuoteUrl = data.url;
+                    this.quoteModal  = true;
+                } else {
+                    alert('No se pudo generar la cotización.');
+                }
+            } catch (e) {
+                alert('Error de conexión.');
+            }
+            this.processing = false;
+        },
+
+        async copyQuoteLink() {
+            try { await navigator.clipboard.writeText(this.lastQuoteUrl); this.copied = true; setTimeout(() => this.copied = false, 1500); }
+            catch (e) { window.prompt('Copia el enlace:', this.lastQuoteUrl); }
         },
 
         printTicket() {

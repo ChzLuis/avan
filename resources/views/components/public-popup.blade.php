@@ -50,6 +50,11 @@
 .bixo-popup-close{position:absolute;z-index:5;top:14px;right:14px;display:grid;width:40px;height:40px;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:22px;cursor:pointer;transition:.18s}
 .bixo-popup-close:hover{background:rgba(255,255,255,.18)}
 @media(max-width:640px){.bixo-popup-grid{grid-template-columns:1fr}.bixo-popup-media{min-height:180px;order:-1}.bixo-popup-media:after{background:linear-gradient(0deg,var(--pp-bg) 0%,transparent 55%)}.bixo-popup-copy{padding:26px 22px}.bixo-popup-strip{flex-direction:column}.bixo-popup-strip>div+div{border-left:0;border-top:1px solid rgba(255,255,255,.08)}}
+@if(($popup->position ?? 'center') === 'bottom_right')
+#bixo-store-popup{align-items:flex-end;justify-content:flex-end;background:transparent;backdrop-filter:none;pointer-events:none;padding:22px}
+.bixo-popup-card{pointer-events:auto;width:min(420px,100%);box-shadow:0 24px 70px rgba(2,6,23,.45)}
+.bixo-popup-media{display:none}
+@endif
 </style>
 <div id="bixo-store-popup" hidden role="dialog" aria-modal="true" aria-labelledby="bixo-popup-title">
   <article class="bixo-popup-card">
@@ -83,6 +88,6 @@
   </article>
 </div>
 <script>
-(()=>{const modal=document.getElementById('bixo-store-popup');if(!modal)return;const key=@json($popupKey),frequency=@json($popup->frequency),desktop=@json((bool)$popup->show_desktop),mobile=@json((bool)$popup->show_mobile),storage=frequency==='session'?sessionStorage:localStorage;if((innerWidth>=768&&!desktop)||(innerWidth<768&&!mobile)||(frequency!=='always'&&storage.getItem(key)))return;const show=()=>{modal.hidden=false;document.body.style.overflow='hidden';modal.querySelector('[data-popup-close]')?.focus()};const close=()=>{modal.hidden=true;document.body.style.overflow='';if(frequency!=='always')storage.setItem(key,'1')};setTimeout(show,{{ (int)$popup->delay_seconds*1000 }});modal.querySelectorAll('[data-popup-close]').forEach(b=>b.addEventListener('click',close));modal.addEventListener('click',e=>{if(e.target===modal)close()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)close()})})();
+(()=>{const modal=document.getElementById('bixo-store-popup');if(!modal)return;const key=@json($popupKey),frequency=@json($popup->frequency),desktop=@json((bool)$popup->show_desktop),mobile=@json((bool)$popup->show_mobile),storage=frequency==='session'?sessionStorage:localStorage;if((innerWidth>=768&&!desktop)||(innerWidth<768&&!mobile)||(frequency!=='always'&&storage.getItem(key)))return;const show=()=>{modal.hidden=false;document.body.style.overflow='hidden';modal.querySelector('[data-popup-close]')?.focus()};const close=()=>{modal.hidden=true;document.body.style.overflow='';if(frequency!=='always')storage.setItem(key,'1')};const trigger=@json($popup->trigger ?? 'delay');if(trigger==='exit'&&innerWidth>=768){let armed=false;setTimeout(()=>armed=true,1500);document.addEventListener('mouseout',e=>{if(armed&&!e.relatedTarget&&e.clientY<=0&&modal.hidden)show()});}else{setTimeout(show,{{ (int)$popup->delay_seconds*1000 }});}modal.querySelectorAll('[data-popup-close]').forEach(b=>b.addEventListener('click',close));modal.addEventListener('click',e=>{if(e.target===modal)close()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)close()})})();
 </script>
 @endif

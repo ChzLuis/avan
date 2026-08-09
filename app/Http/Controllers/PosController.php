@@ -30,6 +30,11 @@ class PosController extends Controller
 
         $paymentMethods = $this->catValues($project, 'payment_method');
 
+        // Precios propios del revendedor logueado (si los tiene): el POS arranca con SU precio.
+        $misPrecios = \App\Models\ResellerPrice::where('project_id', $project->id)
+            ->where('user_id', auth()->id())
+            ->pluck('price', 'product_id');
+
         // Transactions today
         $transactions = $project->orders()
             ->where('sales_channel', 'pos')
@@ -39,13 +44,18 @@ class PosController extends Controller
             ->get();
 
         $productsJs = $products->map(fn($p) => [
-            'id'     => $p->id,
-            'type'   => 'product',
-            'name'   => $p->name,
-            'price'  => (float) $p->price,
-            'cat_id' => $p->category_id,
-            'stock'  => $p->stock,
-            'image'  => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null,
+            'id'        => $p->id,
+            'type'      => 'product',
+            'name'      => $p->name,
+            'price'     => (float) $p->price,
+            // Si el revendedor puso su precio, ese es el que ve; si no, el sugerido.
+            'suggested' => (float) ($misPrecios[$p->id] ?? $p->price_suggested ?? $p->price),
+            'min'       => $p->price_min !== null ? (float) $p->price_min : null,
+            'max'       => $p->price_max !== null ? (float) $p->price_max : null,
+            'cost'      => $p->cost !== null ? (float) $p->cost : null,
+            'cat_id'    => $p->category_id,
+            'stock'     => $p->stock,
+            'image'     => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null,
         ])->values();
 
         $servicesJs = $services->map(fn($s) => [
@@ -90,6 +100,19 @@ class PosController extends Controller
             'items.*.quantity'   => 'required|integer|min:1',
         ]);
 
+        // Seguridad: ningún ítem puede venderse por debajo de su precio mínimo.
+        foreach ($data['items'] as $it) {
+            if (!empty($it['product_id'])) {
+                $min = Product::where('project_id', $project->id)->where('id', $it['product_id'])->value('price_min');
+                if ($min !== null && (float) $it['price'] < (float) $min - 0.001) {
+                    return response()->json([
+                        'ok' => false,
+                        'error' => "El producto \"{$it['name']}\" no puede venderse por debajo de S/ " . number_format($min, 2) . '.',
+                    ], 422);
+                }
+            }
+        }
+
         $total       = collect($data['items'])->sum(fn($i) => $i['price'] * $i['quantity']);
         $hasMesa     = !empty($data['table_number']);
 
@@ -99,7 +122,8 @@ class PosController extends Controller
             'payment_method' => $data['payment_method'],
             'sales_channel'  => 'pos',
             'status'         => $hasMesa ? 'process' : 'done',
-            'kitchen_status' => $hasMesa ? 'pending' : null,
+            // Sin mesa no hay flujo de cocina → 'done' (la columna es NOT NULL en producción).
+            'kitchen_status' => $hasMesa ? 'pending' : 'done',
             'table_number'   => $data['table_number'] ?? null,
             'order_type'     => $data['order_type'] ?? null,
             'notes'          => $data['notes'] ?? null,
@@ -151,7 +175,7 @@ class PosController extends Controller
         $paymentMethods = $this->catValues($project, 'payment_method');
         $transactions   = $project->orders()->where('sales_channel', 'pos')->whereDate('created_at', today())->latest()->limit(50)->get();
 
-        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'cat_id' => $p->category_id, 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
+        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'suggested' => (float) ($p->price_suggested ?? $p->price), 'min' => $p->price_min !== null ? (float) $p->price_min : null, 'max' => $p->price_max !== null ? (float) $p->price_max : null, 'cost' => $p->cost !== null ? (float) $p->cost : null, 'cat_id' => $p->category_id, 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
         $servicesJs     = $services->map(fn($s) => ['id' => $s->id, 'type' => 'service', 'name' => $s->name, 'price' => (float) $s->price, 'cat_id' => $s->category_id, 'image' => null, 'duration_min' => $s->duration_min])->values();
         $categoriesJs   = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values();
         $transactionsJs = $transactions->map(fn($t) => ['id' => $t->id, 'client_name' => $t->client_name, 'payment_method' => $t->payment_method ?? '—', 'total' => $t->total, 'created_at' => $t->created_at->format('H:i')])->values();
@@ -172,7 +196,7 @@ class PosController extends Controller
         $paymentMethods = $this->catValues($project, 'payment_method');
         $transactions   = $project->orders()->where('sales_channel', 'pos')->whereDate('created_at', today())->latest()->limit(50)->get();
 
-        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'cat_id' => $p->category_id, 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
+        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'suggested' => (float) ($p->price_suggested ?? $p->price), 'min' => $p->price_min !== null ? (float) $p->price_min : null, 'max' => $p->price_max !== null ? (float) $p->price_max : null, 'cost' => $p->cost !== null ? (float) $p->cost : null, 'cat_id' => $p->category_id, 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
         $servicesJs     = $services->map(fn($s) => ['id' => $s->id, 'type' => 'service', 'name' => $s->name, 'price' => (float) $s->price, 'cat_id' => $s->category_id, 'image' => null, 'duration_min' => $s->duration_min])->values();
         $categoriesJs   = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values();
         $transactionsJs = $transactions->map(fn($t) => ['id' => $t->id, 'client_name' => $t->client_name, 'payment_method' => $t->payment_method ?? '—', 'total' => $t->total, 'created_at' => $t->created_at->format('H:i')])->values();
@@ -186,6 +210,53 @@ class PosController extends Controller
         $project = Project::where('slug', $slug)->firstOrFail();
         app()->instance('active_project', $project);
         return $this->store($request);
+    }
+
+    /**
+     * Cotización rápida desde el POS: crea la Quote con precios (editables) y
+     * devuelve el enlace público listo para enviar al cliente. Sin cobro.
+     */
+    public function quote(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $data = $request->validate([
+            'client_name'  => 'nullable|string|max:100',
+            'client_phone' => 'nullable|string|max:30',
+            'notes'        => 'nullable|string',
+            'items'        => 'required|array|min:1',
+            'items.*.name'     => 'required|string',
+            'items.*.price'    => 'required|numeric|min:0',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        $total = collect($data['items'])->sum(fn ($i) => $i['price'] * $i['quantity']);
+
+        $quote = $project->quotes()->create([
+            'client_name' => $data['client_name'] ?: 'Cliente mostrador',
+            'client_phone'=> $data['client_phone'] ?? null,
+            'notes'       => $data['notes'] ?? null,
+            'valid_until' => now()->addDays(15),
+            'total'       => $total,
+            'status'      => 'sent',
+            'token'       => \Illuminate\Support\Str::random(48),
+            'sent_at'     => now(),
+        ]);
+
+        foreach ($data['items'] as $item) {
+            $quote->items()->create([
+                'description' => $item['name'],
+                'price'       => $item['price'],
+                'quantity'    => $item['quantity'],
+            ]);
+        }
+
+        return response()->json([
+            'ok'    => true,
+            'quote_id' => $quote->id,
+            'total' => $total,
+            'url'   => url('/b/' . $project->slug . '/c/' . $quote->token),
+        ]);
     }
 
     private function catValues(Project $project, string $type): \Illuminate\Support\Collection

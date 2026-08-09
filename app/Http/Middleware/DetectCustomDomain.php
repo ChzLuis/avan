@@ -30,9 +30,13 @@ class DetectCustomDomain
             return $next($request);
         }
 
+        // www.midominio.com debe resolver igual que midominio.com (el cliente
+        // guarda un solo custom_domain sin www; el certificado wildcard cubre ambos).
+        $lookupHost = str_starts_with($host, 'www.') ? substr($host, 4) : $host;
+
         // Buscar proyecto por custom_domain (con cache de 5 min)
-        $project = Cache::remember("custom_domain:{$host}", 300, function () use ($host) {
-            return Project::where('custom_domain', $host)
+        $project = Cache::remember("custom_domain:{$lookupHost}", 300, function () use ($lookupHost) {
+            return Project::where('custom_domain', $lookupHost)
                 ->where('is_active', true)
                 ->first();
         });
@@ -53,6 +57,13 @@ class DetectCustomDomain
                 $view = app(PublicController::class)->shop($request, $project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
+            // /tienda/{coleccion} → catálogo acotado a una colección (Niño, Niña…).
+            // Sin esta ruta las colecciones solo funcionaban entrando por arindg.com.
+            if (preg_match('#^/tienda/([a-z0-9-]+)$#', $path, $mp)) {
+                $view = app(PublicController::class)->shop($request, $project->slug, $mp[1]);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+
             // /nosotros y /contacto → páginas institucionales
             if ($path === '/nosotros') {
                 $view = app(\App\Http\Controllers\StorePageController::class)->about($project->slug);
@@ -61,6 +72,32 @@ class DetectCustomDomain
             if ($path === '/contacto' && $request->isMethod('get')) {
                 $view = app(\App\Http\Controllers\StorePageController::class)->contact($project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
+            }
+            // Páginas legales y Libro de Reclamaciones (el rewrite de REQUEST_URI no
+            // aplica aquí: Symfony ya resolvió pathInfo, así que van explícitas).
+            if ($path === '/privacidad' || $path === '/terminos') {
+                $view = app(\App\Http\Controllers\StorePageController::class)->legal($project->slug, ltrim($path, '/'));
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            if ($path === '/reclamaciones' || $path === '/libro-reclamaciones') {
+                if ($request->isMethod('post')) {
+                    return app(\App\Http\Controllers\StorePageController::class)->storeComplaint($request, $project->slug);
+                }
+                $view = app(\App\Http\Controllers\StorePageController::class)->complaints($project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+
+            // Ficha de producto: sin esta ruta el dominio propio devolvía 404 y los
+            // enlaces tenían que arrastrar el slug interno (/tecsist-yc5w/p/452).
+            if (preg_match('#^/p/(\d+)$#', $path, $m)) {
+                $view = app(PublicController::class)->product($project->slug, (int) $m[1]);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+
+            // El carrito es una capa dentro de la tienda, no una página propia:
+            // quien llegue a /carrito por un enlace guardado va al inicio.
+            if ($path === '/carrito' || $path === '/cart') {
+                return redirect("https://{$host}/");
             }
 
             // Sitemap y robots en raíz del custom domain
@@ -85,7 +122,7 @@ class DetectCustomDomain
 
             // Rutas sin slug (custom domain directo): /tienda, /nosotros, /p/{id}, etc.
             // Anteponemos el slug para que el router de Laravel las encuentre
-            $slugRoutes = ['/tienda', '/nosotros', '/contacto', '/blog', '/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher'];
+            $slugRoutes = ['/tienda', '/nosotros', '/contacto', '/blog', '/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher', '/reclamaciones', '/libro-reclamaciones', '/privacidad', '/terminos'];
             $needsSlug = collect($slugRoutes)->contains(fn($r) => str_starts_with($path, $r) || $path === $r);
             if ($needsSlug || $path === '') {
                 $newPath = '/' . $project->slug . ($path ?: '/');

@@ -31,9 +31,36 @@
                     <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                 </svg>
             </div>
-            <div class="flex flex-col leading-tight">
+            <div class="flex flex-col leading-tight min-w-0">
                 <span class="text-white font-bold text-xs">Comunicaciones</span>
-                <span class="text-gray-500 text-[10px] truncate max-w-[110px]">{{ $project->name ?? '' }}</span>
+                @php $_negocios = \App\Http\Controllers\Comunicaciones\AuthController::proyectosDelUsuario(); @endphp
+                @if($_negocios->count() > 1)
+                    {{-- Selector de negocio (el usuario tiene varios) --}}
+                    <div x-data="{open:false}" class="relative">
+                        <button @click="open=!open" type="button"
+                                class="flex items-center gap-1 text-gray-400 hover:text-white text-[10px] max-w-[120px] transition">
+                            <span class="truncate">{{ $project->name ?? 'Elegir negocio' }}</span>
+                            <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="open" @click.outside="open=false" x-cloak
+                             class="absolute left-0 top-6 z-50 w-52 bg-[#1e2130] border border-[#2a2f3a] rounded-xl shadow-xl py-1">
+                            <p class="text-[9px] text-gray-500 uppercase tracking-wide px-3 py-1">Cambiar de negocio</p>
+                            @foreach($_negocios as $neg)
+                                <form method="POST" action="{{ route('bixocrm.cambiar.negocio') }}">
+                                    @csrf
+                                    <input type="hidden" name="project_id" value="{{ $neg->id }}">
+                                    <button type="submit"
+                                            class="w-full text-left px-3 py-1.5 text-xs transition flex items-center gap-2 {{ ($project->id ?? null)==$neg->id ? 'text-green-400 font-bold' : 'text-gray-300 hover:bg-[#2a2f3a]' }}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{ ($project->id ?? null)==$neg->id ? 'bg-green-400' : 'bg-gray-600' }}"></span>
+                                        <span class="truncate">{{ $neg->name }}</span>
+                                    </button>
+                                </form>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <span class="text-gray-500 text-[10px] truncate max-w-[110px]">{{ $project->name ?? '' }}</span>
+                @endif
             </div>
         </div>
 
@@ -65,12 +92,20 @@
 
             <p class="nav-section">Automatización</p>
 
-            <a href="{{ route('bixocrm.chatbot') }}"
-               class="nav-item {{ request()->routeIs('bixocrm.chatbot') ? 'nav-active' : '' }}">
+            <a href="{{ route('bixocrm.bots.index') }}"
+               class="nav-item {{ request()->routeIs('bixocrm.bots.*') ? 'nav-active' : '' }}">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v3"/>
                 </svg>
-                Chatbot
+                Constructor de bots
+            </a>
+
+            <a href="{{ route('bixocrm.chatbot') }}"
+               class="nav-item {{ request()->routeIs('bixocrm.chatbot') ? 'nav-active' : '' }}">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Respuestas rápidas
             </a>
 
             <p class="nav-section">Sistema</p>

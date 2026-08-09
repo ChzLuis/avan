@@ -1,0 +1,1265 @@
+{
+    "manifest_version": "1.0.21",
+    "title": "Farmacy \u2013 Pharmacy & Medical Store Elementor Template Kit",
+    "page_builder": "elementor",
+    "kit_version": "1.0.0",
+    "templates": [
+        {
+            "name": "Global Kit Styles",
+            "screenshot": "screenshots\/global-kit-styles.jpg",
+            "source": "templates\/global.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com",
+            "type": "section",
+            "category": "page",
+            "metadata": {
+                "template_type": "global-styles",
+                "include_in_zip": "1",
+                "elementor_pro_required": null,
+                "additional_template_information": [
+                    "These are the global theme styles configured through the Elementor Theme Styles area."
+                ]
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Home",
+            "screenshot": "screenshots\/home.jpg",
+            "source": "templates\/home.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/home\/",
+            "type": "section",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-home",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Shop",
+            "screenshot": "screenshots\/shop.jpg",
+            "source": "templates\/shop.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/shop\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Product Details",
+            "screenshot": "screenshots\/product-details.jpg",
+            "source": "templates\/product-details.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/product-details\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Services",
+            "screenshot": "screenshots\/services.jpg",
+            "source": "templates\/services.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/services\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "About",
+            "screenshot": "screenshots\/about.jpg",
+            "source": "templates\/about.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/about\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "FAQ",
+            "screenshot": "screenshots\/faq.jpg",
+            "source": "templates\/faq.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/faq\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Team",
+            "screenshot": "screenshots\/team.jpg",
+            "source": "templates\/team.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/team\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Blog",
+            "screenshot": "screenshots\/blog.jpg",
+            "source": "templates\/blog.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/blog\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Single Post",
+            "screenshot": "screenshots\/single-post.jpg",
+            "source": "templates\/single-post.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/single-post\/",
+            "type": "section",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-post",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Metform Contact",
+            "screenshot": "screenshots\/metform-contact.jpg",
+            "source": "templates\/metform-contact.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/metform-contact\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Contact",
+            "screenshot": "screenshots\/contact.jpg",
+            "source": "templates\/contact.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/contact\/",
+            "type": "page",
+            "category": "page",
+            "metadata": {
+                "template_type": "single-page",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Header",
+            "screenshot": "screenshots\/header.jpg",
+            "source": "templates\/header.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/header\/",
+            "type": "section",
+            "category": "section",
+            "metadata": {
+                "template_type": "section-header",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        },
+        {
+            "name": "Footer",
+            "screenshot": "screenshots\/footer.jpg",
+            "source": "templates\/footer.json",
+            "preview_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/template-kit\/footer\/",
+            "type": "section",
+            "category": "section",
+            "metadata": {
+                "template_type": "section-footer",
+                "include_in_zip": "1",
+                "elementor_pro_required": null
+            },
+            "elementor_pro_required": false
+        }
+    ],
+    "required_plugins": [
+        {
+            "name": "MetForm",
+            "version": "2.1.6",
+            "file": "metform\/metform.php",
+            "author": "Wpmet"
+        },
+        {
+            "name": "WooCommerce",
+            "version": "6.5.1",
+            "file": "woocommerce\/woocommerce.php",
+            "author": "Automattic"
+        },
+        {
+            "name": "Elementor",
+            "version": "3.6.5",
+            "file": "elementor\/elementor.php",
+            "author": "Elementor.com"
+        },
+        {
+            "name": "Jeg Elementor Kit",
+            "version": "2.4.3-dev-2",
+            "file": "jeg-elementor-kit\/jeg-elementor-kit.php",
+            "author": "Jegstudio"
+        }
+    ],
+    "images": [
+        {
+            "filename": "OilGlassBottle-U88PHEF-e1654762928959.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/OilGlassBottle-U88PHEF-800x666.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 302456,
+            "dimensions": [
+                800,
+                666
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-U88PHEF"
+        },
+        {
+            "filename": "two-pharmacists-working-together-at-pharmacy-e1654763118286.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/two-pharmacists-working-together-at-pharmacy-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                }
+            ],
+            "filesize": 297128,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-XRA34M5"
+        },
+        {
+            "filename": "beautiful-young-woman-pharmacist-showing-drugs-to-senior-man-customer-in-pharmacy--e1654763254810.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/beautiful-young-woman-pharmacist-showing-drugs-to-senior-man-customer-in-pharmacy--800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                }
+            ],
+            "filesize": 152830,
+            "dimensions": [
+                1440,
+                960
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-PYYTN9T"
+        },
+        {
+            "filename": "portrait-of-a-beautiful-female-pharmacist-working-in-a-pharmacy-e1654763272200.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/portrait-of-a-beautiful-female-pharmacist-working-in-a-pharmacy-800x532.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                }
+            ],
+            "filesize": 117175,
+            "dimensions": [
+                1440,
+                958
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-FYZTLZB"
+        },
+        {
+            "filename": "background2.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/background2-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/faq.json",
+                    "name": "FAQ"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                },
+                {
+                    "source": "templates\/footer.json",
+                    "name": "Footer"
+                }
+            ],
+            "filesize": 147958,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "cc0",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/www.freepik.com\/free-vector\/white-abstract-background_11771164.htm"
+        },
+        {
+            "filename": "medicine-9.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/05\/medicine-9.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                }
+            ],
+            "filesize": 302788,
+            "dimensions": [
+                800,
+                800
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-K3C898"
+        },
+        {
+            "filename": "minimalist-white-abstract-background-e1654763385727.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/minimalist-white-abstract-background-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 32296,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "cc0",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/www.freepik.com\/free-vector\/minimalist-white-abstract-background_12063968.htm"
+        },
+        {
+            "filename": "infrared-thermometer-49C968T.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/infrared-thermometer-49C968T-800x1409.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 212218,
+            "dimensions": [
+                1000,
+                1761
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-49C968T"
+        },
+        {
+            "filename": "white-seamless-weave-pattern-background-vector-e1654763598244.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/white-seamless-weave-pattern-background-vector-800x450.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                },
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                },
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 36082,
+            "dimensions": [
+                1920,
+                1080
+            ],
+            "image_source": "cc0",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/www.freepik.com\/free-vector\/white-seamless-weave-pattern-background-vector_16264590.htm"
+        },
+        {
+            "filename": "gloves-and-respirators-medical-YMKJVC8.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/gloves-and-respirators-medical-YMKJVC8-800x575.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 168025,
+            "dimensions": [
+                1000,
+                719
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-YMKJVC8"
+        },
+        {
+            "filename": "white-elegant-texture-background-e1654763580870.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/white-elegant-texture-background-800x533.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 224740,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "cc0",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/www.freepik.com\/free-vector\/white-elegant-texture-background_6675359.htm"
+        },
+        {
+            "filename": "portable-pulse-oximeter-on-blue-background-to-moni-YG5HD58.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/portable-pulse-oximeter-on-blue-background-to-moni-YG5HD58-800x703.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 196318,
+            "dimensions": [
+                1000,
+                879
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-YG5HD58"
+        },
+        {
+            "filename": "white-abstract-background-e1654763404991.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/white-abstract-background-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 29568,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "cc0",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/www.freepik.com\/free-vector\/white-abstract-background_11771163.htm"
+        },
+        {
+            "filename": "orange-pill-bottle-concept-for-healthcare-and-medi-R4R2MG9.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/orange-pill-bottle-concept-for-healthcare-and-medi-R4R2MG9.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 149965,
+            "dimensions": [
+                600,
+                945
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-R4R2MG9"
+        },
+        {
+            "filename": "paper-style-white-monochrome-background-e1654763394495.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/paper-style-white-monochrome-background-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                },
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 56057,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "cc0",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/www.freepik.com\/free-vector\/paper-style-white-monochrome-background_15518081.htm"
+        },
+        {
+            "filename": "medicine-3.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/05\/medicine-3.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 245304,
+            "dimensions": [
+                600,
+                600
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-XC95TJ"
+        },
+        {
+            "filename": "doctor-with-pills-2WVYUPD.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/doctor-with-pills-2WVYUPD-800x777.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 204075,
+            "dimensions": [
+                1000,
+                971
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-2WVYUPD"
+        },
+        {
+            "filename": "robertson-EB97XMK-e1654763785116.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/robertson-EB97XMK-800x222.png",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 38928,
+            "dimensions": [
+                1000,
+                278
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-EB97XMK"
+        },
+        {
+            "filename": "pharmacist-pointing-showing-male-colleague-medication-prices-prescriptions-on-computer-screen-e1654763950927.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/pharmacist-pointing-showing-male-colleague-medication-prices-prescriptions-on-computer-screen-800x534.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 130053,
+            "dimensions": [
+                1440,
+                960
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-644VHUK"
+        },
+        {
+            "filename": "muslim-doctors-explain-the-health-examination-results-to-patient-that-receives-annual-health-checks-e1654763975673.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/muslim-doctors-explain-the-health-examination-results-to-patient-that-receives-annual-health-checks-800x532.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 100186,
+            "dimensions": [
+                1440,
+                958
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-KXAXMEJ"
+        },
+        {
+            "filename": "woman-pharmacist-checking-medicine-in-pharmacy-e1654763962486.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/woman-pharmacist-checking-medicine-in-pharmacy-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 142873,
+            "dimensions": [
+                1440,
+                960
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-MN27GVS"
+        },
+        {
+            "filename": "portrait-of-a-beautiful-female-pharmacist-working-in-a-pharmacy-1-e1654763989396.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/portrait-of-a-beautiful-female-pharmacist-working-in-a-pharmacy-1-800x1202.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 106438,
+            "dimensions": [
+                1000,
+                1503
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-AZP8ARQ"
+        },
+        {
+            "filename": "winter-portrait-of-smiling-senior-woman-looking-at-camera-wearing-faux-pink-fur-cap--e1654764001365.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/winter-portrait-of-smiling-senior-woman-looking-at-camera-wearing-faux-pink-fur-cap--800x800.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/faq.json",
+                    "name": "FAQ"
+                }
+            ],
+            "filesize": 56101,
+            "dimensions": [
+                1000,
+                1000
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-XP29X8F"
+        },
+        {
+            "filename": "portrait-of-an-interesting-young-man-in-winter-clothes-e1654764036186.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/portrait-of-an-interesting-young-man-in-winter-clothes-800x800.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/faq.json",
+                    "name": "FAQ"
+                }
+            ],
+            "filesize": 109527,
+            "dimensions": [
+                1000,
+                1000
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-PUVK2ZG"
+        },
+        {
+            "filename": "beautiful-smiling-caucasian-girl-sitting-at-green-sofa-and-watching-at-camera-e1654764046655.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/beautiful-smiling-caucasian-girl-sitting-at-green-sofa-and-watching-at-camera-800x800.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/faq.json",
+                    "name": "FAQ"
+                }
+            ],
+            "filesize": 138438,
+            "dimensions": [
+                1000,
+                1000
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-5B76AT2"
+        },
+        {
+            "filename": "cheerful-man-portrait-e1654764073790.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/cheerful-man-portrait-800x800.jpg",
+            "templates": [
+                {
+                    "source": "templates\/home.json",
+                    "name": "Home"
+                },
+                {
+                    "source": "templates\/faq.json",
+                    "name": "FAQ"
+                }
+            ],
+            "filesize": 63208,
+            "dimensions": [
+                1000,
+                1000
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-LXPGBH3"
+        },
+        {
+            "filename": "handsome-pharmacist-working-in-a-pharmacy-e1654764196888.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/handsome-pharmacist-working-in-a-pharmacy-800x534.jpg",
+            "templates": [
+                {
+                    "source": "templates\/shop.json",
+                    "name": "Shop"
+                }
+            ],
+            "filesize": 129333,
+            "dimensions": [
+                1440,
+                961
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-WDSP825"
+        },
+        {
+            "filename": "portrait-of-a-handsome-pharmacist-working-in-a-pharmacy-e1654764202722.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/portrait-of-a-handsome-pharmacist-working-in-a-pharmacy-800x532.jpg",
+            "templates": [
+                {
+                    "source": "templates\/product-details.json",
+                    "name": "Product Details"
+                }
+            ],
+            "filesize": 109350,
+            "dimensions": [
+                1440,
+                958
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-26QBUTV"
+        },
+        {
+            "filename": "female-pharmacist-serving-a-male-customer--e1654764212132.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/female-pharmacist-serving-a-male-customer--800x513.jpg",
+            "templates": [
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 154588,
+            "dimensions": [
+                1440,
+                923
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-PQS6FWH"
+        },
+        {
+            "filename": "two-pharmacist-checking-product-in-folder-e1654764278221.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/two-pharmacist-checking-product-in-folder-800x534.jpg",
+            "templates": [
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 148575,
+            "dimensions": [
+                1440,
+                960
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-5B3HQYG"
+        },
+        {
+            "filename": "professional-counseling-for-children-psychologist-looks-at-childs-drawing-e1654764296120.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/professional-counseling-for-children-psychologist-looks-at-childs-drawing-800x534.jpg",
+            "templates": [
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 114244,
+            "dimensions": [
+                1440,
+                960
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-DFEYUPT"
+        },
+        {
+            "filename": "young-african-american-woman-client-lying-on-the-couch-in-modern-dermatology-clinic-having-face-e1654764305210.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/young-african-american-woman-client-lying-on-the-couch-in-modern-dermatology-clinic-having-face-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                }
+            ],
+            "filesize": 103090,
+            "dimensions": [
+                1440,
+                960
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-KXC4SBA"
+        },
+        {
+            "filename": "multiethnic-pharmacists-with-digital-tablet-and-medications-smiling-at-camera-in-drugstore-e1654764230784.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/multiethnic-pharmacists-with-digital-tablet-and-medications-smiling-at-camera-in-drugstore-800x1200.jpg",
+            "templates": [
+                {
+                    "source": "templates\/services.json",
+                    "name": "Services"
+                },
+                {
+                    "source": "templates\/faq.json",
+                    "name": "FAQ"
+                }
+            ],
+            "filesize": 142832,
+            "dimensions": [
+                1000,
+                1500
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-CJMF5EY"
+        },
+        {
+            "filename": "male-pharmacist-serving-a-female-customer--e1654764270537.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/male-pharmacist-serving-a-female-customer--800x565.jpg",
+            "templates": [
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                }
+            ],
+            "filesize": 167788,
+            "dimensions": [
+                1440,
+                1017
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-PBM34ZR"
+        },
+        {
+            "filename": "couple-in-the-pharmacy-store-e1654764221637.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/couple-in-the-pharmacy-store-800x1199.jpg",
+            "templates": [
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 191731,
+            "dimensions": [
+                1000,
+                1498
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-NCFFV6E"
+        },
+        {
+            "filename": "happy-young-male-and-female-colleagues-pharmacist-working-in-a-pharmacy-e1654764316703.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/happy-young-male-and-female-colleagues-pharmacist-working-in-a-pharmacy-800x1202.jpg",
+            "templates": [
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 124872,
+            "dimensions": [
+                1000,
+                1503
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-PYRYVS2"
+        },
+        {
+            "filename": "happy-smiling-pharmacist-in-drugstore-C9R8PCC.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/happy-smiling-pharmacist-in-drugstore-C9R8PCC-800x920.jpg",
+            "templates": [
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 304745,
+            "dimensions": [
+                1000,
+                1150
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-C9R8PCC"
+        },
+        {
+            "filename": "female-pharmacist-in-white-coat-holding-digital-ta-F5GU928.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/female-pharmacist-in-white-coat-holding-digital-ta-F5GU928-800x920.jpg",
+            "templates": [
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 274783,
+            "dimensions": [
+                1000,
+                1150
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-F5GU928"
+        },
+        {
+            "filename": "portrait-of-a-beautiful-senior-female-pharmacist-w-62TLF75.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/portrait-of-a-beautiful-senior-female-pharmacist-w-62TLF75-800x920.jpg",
+            "templates": [
+                {
+                    "source": "templates\/about.json",
+                    "name": "About"
+                },
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 206064,
+            "dimensions": [
+                1000,
+                1150
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-62TLF75"
+        },
+        {
+            "filename": "female-medicine-doctor-filling-patient-medical-form-or-prescription-e1654764343577.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/female-medicine-doctor-filling-patient-medical-form-or-prescription-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/faq.json",
+                    "name": "FAQ"
+                }
+            ],
+            "filesize": 154511,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-6AQWXSG"
+        },
+        {
+            "filename": "cropped-view-of-pharmacists-with-clipboard-and-pills-in-drugstore-e1654764375297.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/cropped-view-of-pharmacists-with-clipboard-and-pills-in-drugstore-800x248.jpg",
+            "templates": [
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 102630,
+            "dimensions": [
+                1920,
+                596
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-QJ5ZYE3"
+        },
+        {
+            "filename": "pharmacist-portrait-in-the-pharmacy-store-RLCCWTR.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/pharmacist-portrait-in-the-pharmacy-store-RLCCWTR-800x920.jpg",
+            "templates": [
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 241440,
+            "dimensions": [
+                1000,
+                1150
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-RLCCWTR"
+        },
+        {
+            "filename": "medicine-pharmaceutics-healthcare-and-people-con-SA2FGZU.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/medicine-pharmaceutics-healthcare-and-people-con-SA2FGZU-800x920.jpg",
+            "templates": [
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 269241,
+            "dimensions": [
+                1000,
+                1150
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-SA2FGZU"
+        },
+        {
+            "filename": "portrait-of-a-beautiful-female-pharmacist-working-AZPX6E3.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/portrait-of-a-beautiful-female-pharmacist-working-AZPX6E3-800x920.jpg",
+            "templates": [
+                {
+                    "source": "templates\/team.json",
+                    "name": "Team"
+                }
+            ],
+            "filesize": 218239,
+            "dimensions": [
+                1000,
+                1150
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-AZPX6E3"
+        },
+        {
+            "filename": "medicine-1-e1654764384681.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/medicine-1-800x533.jpg",
+            "templates": [
+                {
+                    "source": "templates\/blog.json",
+                    "name": "Blog"
+                }
+            ],
+            "filesize": 133484,
+            "dimensions": [
+                1920,
+                1280
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-YEM6SJD"
+        },
+        {
+            "filename": "pharmacist-selling-medications-in-the-pharmacy-store-e1654764409128.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/pharmacist-selling-medications-in-the-pharmacy-store-800x534.jpg",
+            "templates": [
+                {
+                    "source": "templates\/single-post.json",
+                    "name": "Single Post"
+                }
+            ],
+            "filesize": 192213,
+            "dimensions": [
+                1920,
+                1282
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-GZ6YRYK"
+        },
+        {
+            "filename": "pharmacist-with-client-in-the-pharmacy-store-1-e1654764418705.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/pharmacist-with-client-in-the-pharmacy-store-1-800x534.jpg",
+            "templates": [
+                {
+                    "source": "templates\/single-post.json",
+                    "name": "Single Post"
+                }
+            ],
+            "filesize": 226198,
+            "dimensions": [
+                1920,
+                1282
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-MHDW7Q5"
+        },
+        {
+            "filename": "pharmacist-working-on-a-computer-while-female-pharmacist-is-giving-medications-to-senior-patient-e1654764393401.jpg",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/pharmacist-working-on-a-computer-while-female-pharmacist-is-giving-medications-to-senior-patient-800x534.jpg",
+            "templates": [
+                {
+                    "source": "templates\/contact.json",
+                    "name": "Contact"
+                }
+            ],
+            "filesize": 213210,
+            "dimensions": [
+                1920,
+                1282
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "yes",
+            "image_urls": "https:\/\/elements.envato.com\/image-ZW7HDZT"
+        },
+        {
+            "filename": "logo1-GMJ5LRJ.png",
+            "thumbnail_url": "https:\/\/templatekit.jegtheme.com\/farmacy\/wp-content\/uploads\/sites\/287\/2022\/06\/logo1-GMJ5LRJ-800x199.png",
+            "templates": [
+                {
+                    "source": "templates\/header.json",
+                    "name": "Header"
+                },
+                {
+                    "source": "templates\/footer.json",
+                    "name": "Footer"
+                }
+            ],
+            "filesize": 12371,
+            "dimensions": [
+                845,
+                210
+            ],
+            "image_source": "envato_elements",
+            "person_or_place": "no",
+            "image_urls": "https:\/\/elements.envato.com\/image-GMJ5LRJ"
+        }
+    ]
+}

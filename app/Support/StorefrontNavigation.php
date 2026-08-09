@@ -154,4 +154,24 @@ class StorefrontNavigation
         return filter_var($url, FILTER_VALIDATE_URL) && in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)
             ? $url : '#';
     }
+
+    /**
+     * Categoría activa según la URL, tolerando category=ID y category[]=ID.
+     *
+     * Los filtros del catálogo permiten marcar varias categorías, así que el
+     * parámetro puede llegar como arreglo; para resaltar el enlace del menú
+     * basta la primera.
+     */
+    public static function currentCategoryId(): ?string
+    {
+        $valor = request('category');
+
+        if (is_array($valor)) {
+            $valor = reset($valor);
+        }
+
+        $valor = is_scalar($valor) ? trim((string) $valor) : '';
+
+        return $valor === '' ? null : $valor;
+    }
 }

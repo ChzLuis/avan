@@ -50,6 +50,9 @@ class OrderController extends Controller
 
         $total = collect($data['items'])->sum(fn($i) => $i['price'] * $i['quantity']);
 
+        // Lavandería: nº total de prendas = suma de cantidades de los items
+        $piecesCount = (int) collect($data['items'])->sum('quantity');
+
         $order = $project->orders()->create([
             'client_id'         => $data['client_id'] ?? null,
             'client_name'       => $data['client_name'],
@@ -60,7 +63,13 @@ class OrderController extends Controller
             'sales_channel'     => $data['sales_channel'] ?? null,
             'total'             => $total,
             'status'            => 'pending',
+            'pieces_count'      => $piecesCount,
+            'laundry_status'    => 'recibido',
+            'laundry_status_at' => now(),
         ]);
+
+        // Código de etiqueta legible por bolsa: LV-000123 (id acolchado)
+        $order->update(['tag_code' => 'LV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT)]);
 
         foreach ($data['items'] as $item) {
             $order->items()->create($item);
@@ -83,6 +92,31 @@ class OrderController extends Controller
             $data['payment_proof'] = str_replace('http://', 'https://', asset('storage/' . $order->payment_proof));
         }
         return response()->json(['order' => $data]);
+    }
+
+    // ── Lavandería: etiqueta imprimible de la bolsa (ticket con código + QR) ───
+    public function tag(Order $order)
+    {
+        $isSales = request()->routeIs('bixosales.*');
+        /** @var \App\Models\Project $project */
+        $project = $isSales
+            ? \App\Models\Project::findOrFail(session('comercial_project_id'))
+            : app('active_project');
+        abort_unless($order->project_id === $project->id, 403);
+
+        // Generar tag_code si el pedido es antiguo y no lo tiene
+        if (!$order->tag_code) {
+            $order->update(['tag_code' => 'LV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT)]);
+        }
+
+        $order->load('items');
+
+        // QR con el código de etiqueta vía servicio externo (sin dependencia PHP).
+        // Si no hay internet, la vista igual muestra el código grande legible.
+        $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data='
+               . urlencode($order->tag_code);
+
+        return view('orders.tag', compact('order', 'project', 'qrUrl'));
     }
 
     public function update(Request $request, Order $order)

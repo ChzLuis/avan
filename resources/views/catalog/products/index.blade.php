@@ -105,6 +105,17 @@
                     </svg>
                     Exportar para GitHub Pages
                 </a>
+                <div class="border-t border-gray-100 my-1"></div>
+                <p class="px-4 py-1 text-[10px] font-semibold text-red-400 uppercase tracking-wider">Zona de riesgo (superadmin)</p>
+                {{-- El componente productPage() vive más abajo (otro scope Alpine):
+                     se invoca por evento global para que el clic siempre llegue. --}}
+                <button type="button" @click="open = false; window.dispatchEvent(new CustomEvent('purge-catalog'))"
+                        class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 text-left">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Vaciar catálogo completo…
+                </button>
                 @endif
             </div>
         </div>
@@ -124,6 +135,7 @@ window.__productPageData = {
         'price'            => (float)$p->price,
         'compare_price'    => $p->compare_price !== null ? (float)$p->compare_price : null,
         'wholesale_price'  => $p->wholesale_price !== null ? (float)$p->wholesale_price : null,
+        'sizes'            => implode(', ', $p->sizes),
         'wholesale_min_qty'=> $p->wholesale_min_qty ?? null,
         'wholesale_unit'   => $p->wholesale_unit ?? '',
         'cost'             => $p->cost !== null ? (float)$p->cost : null,
@@ -230,7 +242,7 @@ document.addEventListener('alpine:init', () => {
             this.selected = null; this.creating = true; this.tab = 'info';
             this.form = {
                 name:'', sku:'', barcode:'', description:'', notes:'',
-                price:'', compare_price:'', wholesale_price:'', wholesale_min_qty:'', wholesale_unit:'', cost:'', unit:'',
+                price:'', price_suggested:'', price_min:'', price_max:'', compare_price:'', wholesale_price:'', wholesale_min_qty:'', wholesale_unit:'', cost:'', unit:'', sizes:'',
                 stock:0, stock_min:0, stock_max:0,
                 location:'', supplier:'',
                 has_tax:false, tax_rate:18,
@@ -279,6 +291,35 @@ document.addEventListener('alpine:init', () => {
             this.selected = null; this.creating = false;
         },
 
+        async purgeAll() {
+            const count = this.products.length;
+            const ok = await window.__confirm({
+                title: 'Vaciar catálogo completo',
+                msg: 'Vas a eliminar los ' + count + ' producto(s) de este negocio, sus imágenes y vínculos (combos, reseñas, perfiles de catálogo). Esta acción NO se puede deshacer.',
+                confirmLabel: 'Entiendo, continuar',
+            });
+            if (!ok) return;
+            const typed = window.prompt('Para confirmar, escribe exactamente el identificador del negocio:\n\n{{ $project->slug }}');
+            if (typed !== '{{ $project->slug }}') {
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Cancelado: el texto no coincidió.', type: 'warning' } }));
+                return;
+            }
+            const res = await fetch(this.baseUrl + '/products/purge-all', {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm_slug: typed }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: data.message || 'No se pudo vaciar el catálogo.', type: 'error' } }));
+                return;
+            }
+            this.products = [];
+            this.selected = null; this.creating = false;
+            document.getElementById('product-count-label').textContent = '0 productos';
+            window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Catálogo vaciado: ' + data.deleted + ' producto(s) eliminado(s).', type: 'warning' } }));
+        },
+
         dragId: null,
 
         dragStart(id) { this.dragId = id; },
@@ -319,6 +360,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         init() {
+            // El botón "Vaciar catálogo" vive en el menú superior (otro scope
+            // Alpine): llega por este evento global.
+            window.addEventListener('purge-catalog', () => this.purgeAll());
             this.$nextTick(() => {
                 const el = document.getElementById('product-count-label');
                 if (el) el.textContent = this.filtered.length + ' producto' + (this.filtered.length !== 1 ? 's' : '');
@@ -695,6 +739,11 @@ document.addEventListener('alpine:init', () => {
                             <input type="text" x-model="form.sku" class="input font-mono text-sm" placeholder="{{ $infoLabels['sku_ph'] }}">
                             <p class="text-[10px] text-gray-400 mt-0.5">Identificador único interno</p>
                         </div>
+                            <div>
+                                <label class="label">Tallas / variantes <span class="text-gray-400 font-normal">(opcional)</span></label>
+                                <input type="text" x-model="form.sizes" class="input" placeholder="S, M, L, XL o 38, 40, 42">
+                                <p class="text-[10px] text-gray-400 mt-0.5">Separadas por comas. El cliente elegirá una al comprar (ideal ropa y calzado).</p>
+                            </div>
                         @if($infoLabels['barcode'])
                         <div>
                             <label class="label">Código de barras</label>
@@ -1002,6 +1051,40 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     </div>
 
+                    {{-- SECCIÓN REVENDEDORES — límites de precio para el POS "Vender fácil" --}}
+                    <div class="rounded-xl overflow-hidden border border-amber-200">
+                        <div class="bg-amber-500 px-4 py-2 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <p class="text-xs font-bold text-white uppercase tracking-wider">Revendedores — límites de precio</p>
+                        </div>
+                        <div class="p-4 bg-amber-50 grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="label">Precio sugerido</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.price_suggested" step="0.01" min="0" class="input pl-10" placeholder="0.00">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">El precio que verá el revendedor por defecto</p>
+                            </div>
+                            <div>
+                                <label class="label">Precio mínimo 🔒</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.price_min" step="0.01" min="0" class="input pl-10" placeholder="Sin límite">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Nunca podrá vender por debajo de esto</p>
+                            </div>
+                            <div>
+                                <label class="label">Precio máximo</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">{{ $currency }}</span>
+                                    <input type="number" x-model="form.price_max" step="0.01" min="0" class="input pl-10" placeholder="Sin límite">
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Tope superior (opcional)</p>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- SECCIÓN MAYORISTA (solo para rubros que aplica) --}}
                     @if(!$noWholesale)
                     <div class="rounded-xl overflow-hidden border border-green-200">
@@ -1012,8 +1095,22 @@ document.addEventListener('alpine:init', () => {
                         <div class="p-4 bg-green-50 grid grid-cols-4 gap-4">
                             <div>
                                 <label class="label">Unidad mayorista</label>
-                                <input type="text" x-model="form.wholesale_unit" class="input" placeholder="Ej: caja, saco, docena">
-                                <p class="text-[10px] text-gray-400 mt-0.5">Ej: caja x12, saco 25kg</p>
+                                {{-- Al elegir la unidad se completa sola la cantidad minima
+                                     (media docena = 6, docena = 12, par = 2). Antes se podia
+                                     guardar "docena" con minimo 1 o 3, lo que se contradecia. --}}
+                                <select x-model="form.wholesale_unit" class="input"
+                                        @change="const m={'unidad':1,'par':2,'media docena':6,'docena':12};
+                                                 if(m[form.wholesale_unit]) form.wholesale_min_qty=m[form.wholesale_unit];">
+                                    <option value="">Sin especificar</option>
+                                    <option value="unidad">Unidad (1)</option>
+                                    <option value="par">Par (2)</option>
+                                    <option value="media docena">Media docena (6)</option>
+                                    <option value="docena">Docena (12)</option>
+                                    <option value="caja">Caja (cantidad libre)</option>
+                                    <option value="paquete">Paquete (cantidad libre)</option>
+                                    <option value="saco">Saco (cantidad libre)</option>
+                                </select>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Al elegirla se completa la cantidad mínima</p>
                             </div>
                             <div>
                                 <label class="label">Precio x mayor</label>
@@ -1362,31 +1459,45 @@ document.addEventListener('alpine:init', () => {
 
                 @else
                     {{-- ══ STOCK FÍSICO (Retail, Farmacia, Taller, Default) ══ --}}
-                    <div>
-                        <label class="label">Stock actual</label>
-                        <div class="flex items-center gap-3 mt-1">
-                            <button @click="form.stock = Math.max(0, (parseInt(form.stock)||0) - 1)"
-                                    class="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-lg transition border border-gray-200">-</button>
-                            <input type="number" x-model.number="form.stock" min="0"
-                                   class="input text-center w-28 font-mono font-bold text-xl py-2">
-                            <button @click="form.stock = (parseInt(form.stock)||0) + 1"
-                                    class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center text-white font-bold text-lg transition">+</button>
-                            <span class="text-sm text-gray-400" x-text="form.unit ? 'en ' + form.unit + 's' : 'unidades'"></span>
-                        </div>
-                    </div>
+                    <label class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3.5 cursor-pointer">
+                        <span>
+                            <span class="block text-sm font-semibold text-gray-700">Controlar stock de este producto</span>
+                            <span class="block text-xs text-gray-400 mt-0.5">Si lo apagas, el producto siempre se muestra disponible y no se descuenta al vender.</span>
+                        </span>
+                        <input type="checkbox" class="w-5 h-5 rounded accent-indigo-600 flex-shrink-0"
+                               :checked="form.stock !== null && form.stock !== undefined"
+                               @change="form.stock = $event.target.checked ? (form.stock ?? 0) : null">
+                    </label>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <template x-if="form.stock !== null && form.stock !== undefined">
+                    <div class="space-y-4">
                         <div>
-                            <label class="label">Stock mínimo (alerta)</label>
-                            <input type="number" x-model.number="form.stock_min" min="0" class="input" placeholder="5">
-                            <p class="text-[10px] text-gray-400 mt-0.5">Alerta cuando baje de este nivel</p>
+                            <label class="label">Stock actual</label>
+                            <div class="flex items-center gap-3 mt-1">
+                                <button @click="form.stock = Math.max(0, (parseInt(form.stock)||0) - 1)"
+                                        class="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-lg transition border border-gray-200">-</button>
+                                <input type="number" x-model.number="form.stock" min="0"
+                                       class="input text-center w-28 font-mono font-bold text-xl py-2">
+                                <button @click="form.stock = (parseInt(form.stock)||0) + 1"
+                                        class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center text-white font-bold text-lg transition">+</button>
+                                <span class="text-sm text-gray-400" x-text="form.unit ? 'en ' + form.unit + 's' : 'unidades'"></span>
+                            </div>
                         </div>
-                        <div>
-                            <label class="label">Stock máximo</label>
-                            <input type="number" x-model.number="form.stock_max" min="0" class="input" placeholder="100">
-                            <p class="text-[10px] text-gray-400 mt-0.5">Capacidad máxima de almacenaje</p>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label">Stock mínimo (alerta)</label>
+                                <input type="number" x-model.number="form.stock_min" min="0" class="input" placeholder="5">
+                                <p class="text-[10px] text-gray-400 mt-0.5">Alerta cuando baje de este nivel</p>
+                            </div>
+                            <div>
+                                <label class="label">Stock máximo</label>
+                                <input type="number" x-model.number="form.stock_max" min="0" class="input" placeholder="100">
+                                <p class="text-[10px] text-gray-400 mt-0.5">Capacidad máxima de almacenaje</p>
+                            </div>
                         </div>
                     </div>
+                    </template>
 
                     {{-- Barra de stock --}}
                     <div x-show="form.stock_max > 0" class="bg-gray-50 rounded-xl p-4 border border-gray-200">
@@ -1485,7 +1596,24 @@ document.addEventListener('alpine:init', () => {
 
                 {{-- TAB: IMAGENES --}}
                 <div x-show="tab==='imagenes'" x-cloak class="p-5 space-y-4"
-                     x-data="{ uploading: false, imgError: '' }">
+                     x-data="{
+                        uploading: false, imgError: '',
+                        async uploadFiles(files) {
+                            this.uploading = true; this.imgError = '';
+                            for (const file of files) {
+                                const fd = new FormData();
+                                fd.append('image', file);
+                                fd.append('_token', '{{ csrf_token() }}');
+                                const res = await fetch('{{ url('/bixoadmin/products') }}/' + this.selected.id + '/images', { method:'POST', body: fd });
+                                const data = await res.json();
+                                if (data.ok) {
+                                    if (!this.selected.images) this.selected.images = [];
+                                    this.selected.images.push(data.image);
+                                } else { this.imgError = data.message || 'Error al subir imagen'; }
+                            }
+                            this.uploading = false;
+                        },
+                     }">
 
                     {{-- Grid de imágenes actuales --}}
                     <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -1523,37 +1651,32 @@ document.addEventListener('alpine:init', () => {
                             </div>
                         </template>
 
-                        {{-- Botón agregar --}}
-                        <label class="aspect-square rounded-xl border-2 border-dashed border-gray-300 hover:border-indigo-400
-                                      hover:bg-indigo-50 transition cursor-pointer flex flex-col items-center justify-center gap-1.5 group">
-                            <svg class="w-7 h-7 text-gray-300 group-hover:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {{-- Botón agregar / zona de arrastrar y soltar --}}
+                        <label class="aspect-square rounded-xl border-2 border-dashed transition cursor-pointer
+                                      flex flex-col items-center justify-center gap-1.5 group"
+                               :class="isDragging ? 'border-indigo-500 bg-indigo-100' : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50'"
+                               x-data="imageDropzone(files => uploadFiles(files))"
+                               @dragenter.prevent="onDragEnter($event)"
+                               @dragover.prevent
+                               @dragleave.prevent="onDragLeave()"
+                               @drop.prevent="onDrop($event)">
+                            <svg class="w-7 h-7 transition" :class="isDragging ? 'text-indigo-500' : 'text-gray-300 group-hover:text-indigo-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
                             </svg>
-                            <span class="text-[10px] text-gray-400 group-hover:text-indigo-500 font-medium">Agregar</span>
+                            <span class="text-[10px] font-medium text-center px-1" :class="isDragging ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-500'"
+                                  x-text="isDragging ? 'Suelta aquí' : 'Agregar o arrastrar'"></span>
                             <input type="file" accept="image/*" multiple class="hidden"
-                                   @change="
-                                        uploading = true; imgError = '';
-                                        const files = Array.from($event.target.files);
-                                        for (const file of files) {
-                                            const fd = new FormData();
-                                            fd.append('image', file);
-                                            fd.append('_token', '{{ csrf_token() }}');
-                                            const res = await fetch('{{ url('/bixoadmin/products') }}/' + selected.id + '/images', { method:'POST', body: fd });
-                                            const data = await res.json();
-                                            if (data.ok) {
-                                                if (!selected.images) selected.images = [];
-                                                selected.images.push(data.image);
-                                            } else { imgError = data.message || 'Error al subir imagen'; }
-                                        }
-                                        uploading = false;
-                                        $event.target.value = '';
-                                   ">
+                                   @change="uploadFiles(Array.from($event.target.files)); $event.target.value = ''">
                         </label>
                     </div>
 
                     <div x-show="uploading" class="text-xs text-indigo-600 font-medium">⏳ Subiendo imagen...</div>
                     <div x-show="imgError" x-text="imgError" class="text-xs text-red-600"></div>
 
+                    <p class="text-xs text-gray-500 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                        📐 <strong>Recomendado:</strong> fotos cuadradas de <strong>800 × 800 px</strong> o más, con el producto centrado.
+                        ¿Tu foto tiene otra proporción? No te preocupes: <strong>la adaptamos automáticamente</strong> a cuadrado rellenando con el color del fondo de tu foto.
+                    </p>
                     <p class="text-xs text-gray-400">
                         Clic en ⭐ para marcar como imagen principal · Pasa el cursor sobre una imagen para ver las opciones · Formatos: JPG, PNG, WebP · Máx 4MB por imagen
                     </p>

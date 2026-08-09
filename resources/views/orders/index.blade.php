@@ -29,11 +29,26 @@
 </style>
 
 <div class="flex flex-col flex-1 overflow-hidden bg-gray-50" x-data="{
-    orders: {{ Js::from($orders->map(fn($o) => [
+    @php
+        $esLavanderia = \App\Support\OrderFlow::supportsFlow($project->category ?? '');
+        $lavStates = $esLavanderia ? \App\Support\OrderFlow::activeStates($project) : [];
+    @endphp
+    esLavanderia: {{ $esLavanderia ? 'true' : 'false' }},
+    lavStates: {{ Js::from(collect($lavStates)->map(fn($s) => [
+        'key'=>$s['key'], 'label'=>$s['label'], 'icon'=>$s['icon'], 'color'=>$s['color'],
+    ])->values()) }},
+    orders: {{ Js::from($orders->map(function($o) use ($project, $esLavanderia) {
+        $sla = $esLavanderia && $o->laundry_status ? \App\Support\OrderFlow::slaStatus($project, $o) : null;
+        return [
         'id'             => $o->id,
+        'tag_code'       => $o->tag_code ?? '',
         'client_name'    => $o->client_name,
         'client_phone'   => $o->client_phone,
         'status'         => $o->status,
+        'laundry_status' => $o->laundry_status ?? '',
+        'pieces_count'   => $o->pieces_count ?? 0,
+        'sla_level'      => $sla['level'] ?? '',
+        'sla_minutes'    => $sla['minutes'] ?? 0,
         'total'          => (float)$o->total,
         'notes'          => $o->notes,
         'payment_method' => $o->payment_method ?? '',
@@ -47,7 +62,7 @@
         'delivery_address'=> $o->delivery_address ?? '',
         'shipping_cost'  => (float)($o->shipping_cost ?? 0),
         'payment_proof'  => $o->payment_proof ? (str_starts_with($o->payment_proof,'http') ? $o->payment_proof : str_replace('http://','https://',asset('storage/'.$o->payment_proof))) : null,
-    ])) }},
+    ]; })) }},
     paymentMethods:    {{ Js::from($paymentMethods) }},
     paymentConditions: {{ Js::from($paymentConditions) }},
     salesChannels:     {{ Js::from($salesChannels) }},
@@ -66,10 +81,55 @@
         cancelled: { label:'Cancelado',      icon:'🔴', cls:'s-cancelled' },
     },
 
+    // ── Lavandería: helpers de estado (leen del flujo configurado en admin) ──
+    lavState(o) {
+        return this.lavStates.find(s => s.key === o.laundry_status) || null;
+    },
+    lavLabel(o) {
+        const s = this.lavState(o);
+        return s ? s.label : (this.statuses[o.status]||{}).label || o.status;
+    },
+    lavColor(o) {
+        const s = this.lavState(o);
+        return s ? s.color : '#6b7280';
+    },
+    slaColor(o) {
+        return o.sla_level === 'over' ? '#EF4444' : (o.sla_level === 'warn' ? '#F59E0B' : '#10B981');
+    },
+    lavNext(o) {
+        const i = this.lavStates.findIndex(s => s.key === o.laundry_status);
+        return (i >= 0 && i < this.lavStates.length - 1) ? this.lavStates[i+1] : null;
+    },
+    async changeLaundry(key) {
+        if (!this.selected || this.selected.laundry_status === key) return;
+        await this._postLaundry(this.selected, key);
+    },
+    async advanceLaundry(o) {
+        const next = this.lavNext(o);
+        if (!next) return;
+        await this._postLaundry(o, next.key);
+    },
+    async _postLaundry(o, key) {
+        const res = await fetch(`/orders/${o.id}/laundry-status`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
+            body: JSON.stringify({ status: key })
+        });
+        if (res.ok) {
+            const d = await res.json();
+            o.laundry_status = d.laundry_status;
+            o.sla_level = 'ok'; o.sla_minutes = 0;
+            // Mantener coherente el status genérico en la UI
+            const map = { recibido:'pending', cotizado:'pending', entregado:'done', anulado:'cancelled' };
+            o.status = map[d.laundry_status] || 'process';
+        } else { alert('No se pudo cambiar el estado'); }
+    },
+
     get filtered() {
         return this.orders.filter(o => {
             const s = !this.search || o.client_name.toLowerCase().includes(this.search.toLowerCase()) || String(o.id).includes(this.search);
-            const f = !this.filterStatus || o.status === this.filterStatus;
+            const f = !this.filterStatus
+                || (this.esLavanderia ? o.laundry_status === this.filterStatus : o.status === this.filterStatus);
             return s && f;
         });
     },
@@ -228,11 +288,26 @@
             <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
             <input x-model="search" type="text" placeholder="Buscar por nombre o #ID..." class="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
         </div>
+        {{-- Filtros: lavandería usa los estados del flujo; otros rubros usan status genérico --}}
         <div class="flex gap-1 overflow-x-auto pb-0.5">
             <button @click="filterStatus=''" :class="filterStatus==='' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">Todos <span x-text="'('+orders.length+')'"></span></button>
-            <button @click="filterStatus='pending'" :class="filterStatus==='pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🟡 Nuevos</button>
-            <button @click="filterStatus='process'" :class="filterStatus==='process' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🔵 En proceso</button>
-            <button @click="filterStatus='done'" :class="filterStatus==='done' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🟢 Completados</button>
+            <template x-if="esLavanderia">
+                <template x-for="st in lavStates" :key="st.key">
+                    <button @click="filterStatus=st.key"
+                            :style="filterStatus===st.key ? ('background:'+st.color+';color:#fff') : ''"
+                            :class="filterStatus===st.key ? '' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                            class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">
+                        <span x-text="st.icon"></span> <span x-text="st.label"></span>
+                    </button>
+                </template>
+            </template>
+            <template x-if="!esLavanderia">
+                <span class="flex gap-1">
+                    <button @click="filterStatus='pending'" :class="filterStatus==='pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🟡 Nuevos</button>
+                    <button @click="filterStatus='process'" :class="filterStatus==='process' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🔵 En proceso</button>
+                    <button @click="filterStatus='done'" :class="filterStatus==='done' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🟢 Completados</button>
+                </span>
+            </template>
         </div>
     </div>
 
@@ -251,7 +326,17 @@
                     </div>
                     <div class="flex items-center justify-between gap-1">
                         <div class="flex items-center gap-1.5">
-                            <span class="status-pill" :class="(statuses[o.status]||{}).cls" x-text="(statuses[o.status]||{}).label"></span>
+                            {{-- Estado: lavandería usa color del flujo; otros usan pill genérica --}}
+                            <template x-if="esLavanderia && lavState(o)">
+                                <span class="status-pill" :style="'background:'+lavColor(o)+'1a;color:'+lavColor(o)" x-text="lavLabel(o)"></span>
+                            </template>
+                            <template x-if="!esLavanderia || !lavState(o)">
+                                <span class="status-pill" :class="(statuses[o.status]||{}).cls" x-text="(statuses[o.status]||{}).label"></span>
+                            </template>
+                            {{-- Semáforo de tiempo (SLA) --}}
+                            <template x-if="esLavanderia && o.sla_level && o.sla_level!=='ok'">
+                                <span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:'+slaColor(o)" :title="'Tiempo: '+o.sla_minutes+' min'"></span>
+                            </template>
                             <span x-show="o.sales_channel" class="ch-tag" :class="chClass(o.sales_channel)" x-text="o.sales_channel"></span>
                         </div>
                         <span class="text-[10px] text-gray-400 flex-shrink-0" x-text="timeAgo(o.created_ts)"></span>
@@ -350,18 +435,55 @@
                 </div>
             </div>
 
-            {{-- Cambio rápido de estado --}}
+            {{-- Cambio de estado --}}
             <div class="detail-section">
                 <div class="detail-section-header">Estado del pedido</div>
-                <div class="p-3 flex gap-2 flex-wrap">
-                    <template x-for="(st, key) in statuses" :key="key">
-                        <button @click="quickStatus(key)"
-                                :class="selected.status===key ? 'ring-2 ring-offset-1 ring-indigo-500 '+st.cls : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
-                                class="s-btn text-xs transition"
-                                x-text="st.icon+' '+st.label">
-                        </button>
-                    </template>
-                </div>
+
+                {{-- Lavandería: estados del flujo + botón avanzar --}}
+                <template x-if="esLavanderia && lavStates.length">
+                    <div class="p-3 space-y-2.5">
+                        <div class="flex gap-1.5 flex-wrap">
+                            <template x-for="st in lavStates" :key="st.key">
+                                <button @click="changeLaundry(st.key)"
+                                        :style="selected.laundry_status===st.key ? ('background:'+st.color+';color:#fff') : ''"
+                                        :class="selected.laundry_status===st.key ? '' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                                        class="s-btn text-xs transition">
+                                    <span x-text="st.icon"></span> <span x-text="st.label"></span>
+                                </button>
+                            </template>
+                        </div>
+                        {{-- Botón avanzar al siguiente estado --}}
+                        <template x-if="lavNext(selected)">
+                            <button @click="advanceLaundry(selected)"
+                                    class="w-full py-2 rounded-lg text-sm font-semibold text-white transition flex items-center justify-center gap-1.5"
+                                    :style="'background:'+(lavNext(selected)?.color||'#4f46e5')">
+                                Avanzar a <span x-text="lavNext(selected)?.icon+' '+lavNext(selected)?.label"></span> →
+                            </button>
+                        </template>
+                        {{-- Semáforo de tiempo en estado actual --}}
+                        <template x-if="selected.sla_level && selected.sla_level!=='ok'">
+                            <div class="text-xs px-3 py-2 rounded-lg flex items-center gap-2"
+                                 :style="'background:'+slaColor(selected)+'1a;color:'+slaColor(selected)">
+                                <span class="w-2 h-2 rounded-full" :style="'background:'+slaColor(selected)"></span>
+                                <span x-text="'Lleva '+selected.sla_minutes+' min en este estado'"></span>
+                                <span x-show="selected.sla_level==='over'" class="font-bold">· ¡Atrasado!</span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                {{-- Otros rubros: estados genéricos --}}
+                <template x-if="!esLavanderia || !lavStates.length">
+                    <div class="p-3 flex gap-2 flex-wrap">
+                        <template x-for="(st, key) in statuses" :key="key">
+                            <button @click="quickStatus(key)"
+                                    :class="selected.status===key ? 'ring-2 ring-offset-1 ring-indigo-500 '+st.cls : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                                    class="s-btn text-xs transition"
+                                    x-text="st.icon+' '+st.label">
+                            </button>
+                        </template>
+                    </div>
+                </template>
             </div>
 
             {{-- Cliente --}}

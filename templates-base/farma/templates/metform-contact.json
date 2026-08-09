@@ -1,0 +1,680 @@
+{
+    "version": "0.4",
+    "title": "Metform Contact",
+    "type": "page",
+    "metadata": {
+        "template_type": "single-page",
+        "include_in_zip": "1",
+        "elementor_pro_required": null,
+        "wp_page_template": "elementor_canvas"
+    },
+    "content": [
+        {
+            "id": "408f36cc",
+            "settings": {
+                "content_width": {
+                    "unit": "px",
+                    "size": 1100,
+                    "sizes": []
+                },
+                "background_background": "classic",
+                "__globals__": {
+                    "background_color": ""
+                },
+                "margin": {
+                    "unit": "px",
+                    "top": "",
+                    "right": 0,
+                    "bottom": "",
+                    "left": 0,
+                    "isLinked": true
+                },
+                "ekit_has_onepagescroll": "",
+                "ekit_control_get_pro": "1"
+            },
+            "elements": [
+                {
+                    "id": "55da10bf",
+                    "settings": {
+                        "_column_size": 100,
+                        "_inline_size": null,
+                        "padding": {
+                            "unit": "px",
+                            "top": "0",
+                            "right": "0",
+                            "bottom": "0",
+                            "left": "0",
+                            "isLinked": false
+                        }
+                    },
+                    "elements": [
+                        {
+                            "id": "7600ecd7",
+                            "settings": {
+                                "structure": "20",
+                                "margin": {
+                                    "unit": "px",
+                                    "top": "0",
+                                    "right": 0,
+                                    "bottom": "20",
+                                    "left": 0,
+                                    "isLinked": false
+                                },
+                                "margin_mobile": {
+                                    "unit": "px",
+                                    "top": "0",
+                                    "right": 0,
+                                    "bottom": "15",
+                                    "left": 0,
+                                    "isLinked": false
+                                },
+                                "ekit_has_onepagescroll": "",
+                                "ekit_control_get_pro": "1"
+                            },
+                            "elements": [
+                                {
+                                    "id": "6b85335",
+                                    "settings": {
+                                        "_column_size": 50,
+                                        "_inline_size": null,
+                                        "padding": {
+                                            "unit": "px",
+                                            "top": "0",
+                                            "right": "10",
+                                            "bottom": "0",
+                                            "left": "0",
+                                            "isLinked": false
+                                        },
+                                        "padding_mobile": {
+                                            "unit": "px",
+                                            "top": "0",
+                                            "right": "0",
+                                            "bottom": "15",
+                                            "left": "0",
+                                            "isLinked": false
+                                        }
+                                    },
+                                    "elements": [
+                                        {
+                                            "id": "12a61ed1",
+                                            "settings": {
+                                                "mf_input_label": "Name",
+                                                "mf_input_name": "mf-text",
+                                                "mf_input_placeholder": "Your Name",
+                                                "mf_input_validation_warning_message": "This field is required.",
+                                                "mf_input_padding": {
+                                                    "unit": "px",
+                                                    "top": "18",
+                                                    "right": "25",
+                                                    "bottom": "18",
+                                                    "left": "24",
+                                                    "isLinked": false
+                                                },
+                                                "__globals__": {
+                                                    "mf_input_label_color": "",
+                                                    "mf_input_color": "globals\/colors?id=primary",
+                                                    "mf_input_color_hover": "globals\/colors?id=primary",
+                                                    "mf_input_color_focus": "globals\/colors?id=primary",
+                                                    "mf_input_border_color": "globals\/colors?id=43e0a46",
+                                                    "mf_input_label_typography_typography": "globals\/typography?id=e008dec",
+                                                    "mf_input_typgraphy_typography": "globals\/typography?id=text",
+                                                    "mf_input_place_holder_typography_typography": "globals\/typography?id=text",
+                                                    "mf_input_placeholder_color": "globals\/colors?id=text",
+                                                    "mf_input_required_indicator_color": "",
+                                                    "mf_input_warning_text_color": "",
+                                                    "mf_input_border_focus_color": "globals\/colors?id=43e0a46"
+                                                },
+                                                "mf_input_border_border": "solid",
+                                                "mf_input_border_width": {
+                                                    "unit": "px",
+                                                    "top": "1",
+                                                    "right": "1",
+                                                    "bottom": "1",
+                                                    "left": "1",
+                                                    "isLinked": true
+                                                },
+                                                "mf_input_required": "",
+                                                "mf_input_border_radius": {
+                                                    "unit": "px",
+                                                    "size": 50,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_background_background": "classic",
+                                                "mf_input_background_color": "#F9F9F9",
+                                                "mf_input_border_focus_border": "solid",
+                                                "mf_input_border_focus_width": {
+                                                    "unit": "px",
+                                                    "top": "1",
+                                                    "right": "1",
+                                                    "bottom": "1",
+                                                    "left": "1",
+                                                    "isLinked": true
+                                                },
+                                                "mf_input_label_status": "",
+                                                "mf_input_label_color": "#101010",
+                                                "mf_input_label_typography_typography": "custom",
+                                                "mf_input_label_typography_font_family": "Helvetica",
+                                                "mf_input_label_typography_font_size": {
+                                                    "unit": "px",
+                                                    "size": 18,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_label_typography_font_weight": "500",
+                                                "mf_input_label_typography_line_height": {
+                                                    "unit": "px",
+                                                    "size": 21,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_label_margin": {
+                                                    "unit": "px",
+                                                    "top": "0",
+                                                    "right": "0",
+                                                    "bottom": "5",
+                                                    "left": "0",
+                                                    "isLinked": false
+                                                },
+                                                "mf_input_required_indicator_color": "#FF0000",
+                                                "mf_input_box_shadow_box_shadow": {
+                                                    "horizontal": 0,
+                                                    "vertical": 3,
+                                                    "blur": 5,
+                                                    "spread": 0,
+                                                    "color": "rgba(0,0,0,0.05)"
+                                                },
+                                                "mf_input_help_text_typography_typography": "custom",
+                                                "mf_input_help_text_typography_font_family": "Helvetica",
+                                                "mf_input_help_text_typography_font_size": {
+                                                    "unit": "px",
+                                                    "size": 12,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_help_text_typography_font_weight": "400",
+                                                "mf_input_help_text_typography_font_style": "italic",
+                                                "mf_input_help_text_typography_line_height": {
+                                                    "unit": "px",
+                                                    "size": 14,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_help_text_color": "#555555",
+                                                "mf_input_help_text_padding": {
+                                                    "unit": "px",
+                                                    "top": "3",
+                                                    "right": "0",
+                                                    "bottom": "0",
+                                                    "left": "0",
+                                                    "isLinked": false
+                                                }
+                                            },
+                                            "elements": [],
+                                            "isInner": false,
+                                            "widgetType": "mf-text",
+                                            "elType": "widget"
+                                        }
+                                    ],
+                                    "isInner": true,
+                                    "elType": "column"
+                                },
+                                {
+                                    "id": "27a42310",
+                                    "settings": {
+                                        "_column_size": 50,
+                                        "_inline_size": null,
+                                        "padding": {
+                                            "unit": "px",
+                                            "top": "0",
+                                            "right": "0",
+                                            "bottom": "0",
+                                            "left": "10",
+                                            "isLinked": false
+                                        },
+                                        "padding_mobile": {
+                                            "unit": "px",
+                                            "top": "0",
+                                            "right": "0",
+                                            "bottom": "0",
+                                            "left": "0",
+                                            "isLinked": false
+                                        }
+                                    },
+                                    "elements": [
+                                        {
+                                            "id": "2286cebb",
+                                            "settings": {
+                                                "mf_input_label": "Email",
+                                                "mf_input_name": "mf-email",
+                                                "mf_input_placeholder": "Your Email",
+                                                "mf_input_validation_warning_message": "This field is required.",
+                                                "mf_input_padding": {
+                                                    "unit": "px",
+                                                    "top": "18",
+                                                    "right": "25",
+                                                    "bottom": "18",
+                                                    "left": "24",
+                                                    "isLinked": false
+                                                },
+                                                "__globals__": {
+                                                    "mf_input_label_color": "",
+                                                    "mf_input_color": "globals\/colors?id=primary",
+                                                    "mf_input_color_hover": "globals\/colors?id=primary",
+                                                    "mf_input_color_focus": "globals\/colors?id=primary",
+                                                    "mf_input_border_color": "globals\/colors?id=43e0a46",
+                                                    "mf_input_label_typography_typography": "globals\/typography?id=e008dec",
+                                                    "mf_input_typgraphy_typography": "globals\/typography?id=text",
+                                                    "mf_input_place_holder_typography_typography": "globals\/typography?id=text",
+                                                    "mf_input_placeholder_color": "globals\/colors?id=text",
+                                                    "mf_input_required_indicator_color": "",
+                                                    "mf_input_warning_text_color": "",
+                                                    "mf_input_border_focus_color": "globals\/colors?id=43e0a46"
+                                                },
+                                                "mf_input_border_border": "solid",
+                                                "mf_input_border_width": {
+                                                    "unit": "px",
+                                                    "top": "1",
+                                                    "right": "1",
+                                                    "bottom": "1",
+                                                    "left": "1",
+                                                    "isLinked": true
+                                                },
+                                                "mf_input_required": "",
+                                                "mf_input_border_radius": {
+                                                    "unit": "px",
+                                                    "size": 50,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_background_background": "classic",
+                                                "mf_input_background_color": "#F9F9F9",
+                                                "mf_input_border_focus_border": "solid",
+                                                "mf_input_border_focus_width": {
+                                                    "unit": "px",
+                                                    "top": "1",
+                                                    "right": "1",
+                                                    "bottom": "1",
+                                                    "left": "1",
+                                                    "isLinked": true
+                                                },
+                                                "mf_input_label_status": "",
+                                                "mf_input_label_color": "#101010",
+                                                "mf_input_label_typography_typography": "custom",
+                                                "mf_input_label_typography_font_family": "Helvetica",
+                                                "mf_input_label_typography_font_size": {
+                                                    "unit": "px",
+                                                    "size": 18,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_label_typography_font_weight": "500",
+                                                "mf_input_label_typography_line_height": {
+                                                    "unit": "px",
+                                                    "size": 21,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_label_margin": {
+                                                    "unit": "px",
+                                                    "top": "0",
+                                                    "right": "0",
+                                                    "bottom": "5",
+                                                    "left": "0",
+                                                    "isLinked": false
+                                                },
+                                                "mf_input_required_indicator_color": "#FF0000",
+                                                "mf_input_box_shadow_box_shadow": {
+                                                    "horizontal": 0,
+                                                    "vertical": 3,
+                                                    "blur": 5,
+                                                    "spread": 0,
+                                                    "color": "rgba(0,0,0,0.05)"
+                                                },
+                                                "mf_input_help_text_typography_typography": "custom",
+                                                "mf_input_help_text_typography_font_family": "Helvetica",
+                                                "mf_input_help_text_typography_font_size": {
+                                                    "unit": "px",
+                                                    "size": 12,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_help_text_typography_font_weight": "400",
+                                                "mf_input_help_text_typography_font_style": "italic",
+                                                "mf_input_help_text_typography_line_height": {
+                                                    "unit": "px",
+                                                    "size": 14,
+                                                    "sizes": []
+                                                },
+                                                "mf_input_help_text_color": "#555555",
+                                                "mf_input_help_text_padding": {
+                                                    "unit": "px",
+                                                    "top": "3",
+                                                    "right": "0",
+                                                    "bottom": "0",
+                                                    "left": "0",
+                                                    "isLinked": false
+                                                }
+                                            },
+                                            "elements": [],
+                                            "isInner": false,
+                                            "widgetType": "mf-email",
+                                            "elType": "widget"
+                                        }
+                                    ],
+                                    "isInner": true,
+                                    "elType": "column"
+                                }
+                            ],
+                            "isInner": true,
+                            "elType": "section"
+                        },
+                        {
+                            "id": "6948b95e",
+                            "settings": {
+                                "mf_input_label": "Subject",
+                                "mf_input_name": "mf-text",
+                                "mf_input_placeholder": "Subject",
+                                "mf_input_validation_warning_message": "This field is required.",
+                                "mf_input_padding": {
+                                    "unit": "px",
+                                    "top": "18",
+                                    "right": "25",
+                                    "bottom": "18",
+                                    "left": "24",
+                                    "isLinked": false
+                                },
+                                "mf_input_border_border": "solid",
+                                "mf_input_border_width": {
+                                    "unit": "px",
+                                    "top": "1",
+                                    "right": "1",
+                                    "bottom": "1",
+                                    "left": "1",
+                                    "isLinked": true
+                                },
+                                "__globals__": {
+                                    "mf_input_label_color": "",
+                                    "mf_input_color": "globals\/colors?id=primary",
+                                    "mf_input_color_hover": "globals\/colors?id=primary",
+                                    "mf_input_color_focus": "globals\/colors?id=primary",
+                                    "mf_input_border_color": "globals\/colors?id=43e0a46",
+                                    "mf_input_label_typography_typography": "globals\/typography?id=e008dec",
+                                    "mf_input_typgraphy_typography": "globals\/typography?id=text",
+                                    "mf_input_place_holder_typography_typography": "globals\/typography?id=text",
+                                    "mf_input_placeholder_color": "globals\/colors?id=text",
+                                    "mf_input_required_indicator_color": "",
+                                    "mf_input_warning_text_color": "",
+                                    "mf_input_border_focus_color": "globals\/colors?id=43e0a46"
+                                },
+                                "mf_input_required": "",
+                                "mf_input_border_radius": {
+                                    "unit": "px",
+                                    "size": 50,
+                                    "sizes": []
+                                },
+                                "mf_input_background_background": "classic",
+                                "mf_input_background_color": "#F9F9F9",
+                                "mf_input_border_focus_border": "solid",
+                                "mf_input_border_focus_width": {
+                                    "unit": "px",
+                                    "top": "1",
+                                    "right": "1",
+                                    "bottom": "1",
+                                    "left": "1",
+                                    "isLinked": true
+                                },
+                                "mf_input_label_status": "",
+                                "mf_input_label_color": "#101010",
+                                "mf_input_label_typography_typography": "custom",
+                                "mf_input_label_typography_font_family": "Helvetica",
+                                "mf_input_label_typography_font_size": {
+                                    "unit": "px",
+                                    "size": 18,
+                                    "sizes": []
+                                },
+                                "mf_input_label_typography_font_weight": "500",
+                                "mf_input_label_typography_line_height": {
+                                    "unit": "px",
+                                    "size": 21,
+                                    "sizes": []
+                                },
+                                "mf_input_label_margin": {
+                                    "unit": "px",
+                                    "top": "0",
+                                    "right": "0",
+                                    "bottom": "5",
+                                    "left": "0",
+                                    "isLinked": false
+                                },
+                                "mf_input_required_indicator_color": "#FF0000",
+                                "mf_input_box_shadow_box_shadow": {
+                                    "horizontal": 0,
+                                    "vertical": 3,
+                                    "blur": 5,
+                                    "spread": 0,
+                                    "color": "rgba(0,0,0,0.05)"
+                                },
+                                "mf_input_help_text_typography_typography": "custom",
+                                "mf_input_help_text_typography_font_family": "Helvetica",
+                                "mf_input_help_text_typography_font_size": {
+                                    "unit": "px",
+                                    "size": 12,
+                                    "sizes": []
+                                },
+                                "mf_input_help_text_typography_font_weight": "400",
+                                "mf_input_help_text_typography_font_style": "italic",
+                                "mf_input_help_text_typography_line_height": {
+                                    "unit": "px",
+                                    "size": 14,
+                                    "sizes": []
+                                },
+                                "mf_input_help_text_color": "#555555",
+                                "mf_input_help_text_padding": {
+                                    "unit": "px",
+                                    "top": "3",
+                                    "right": "0",
+                                    "bottom": "0",
+                                    "left": "0",
+                                    "isLinked": false
+                                }
+                            },
+                            "elements": [],
+                            "isInner": false,
+                            "widgetType": "mf-text",
+                            "elType": "widget"
+                        },
+                        {
+                            "id": "6406691d",
+                            "settings": {
+                                "mf_input_label": "Message",
+                                "mf_input_name": "mf-textarea",
+                                "mf_input_placeholder": "Your Message",
+                                "mf_input_validation_warning_message": "This field is required.",
+                                "mf_input_padding": {
+                                    "unit": "px",
+                                    "top": "18",
+                                    "right": "25",
+                                    "bottom": "18",
+                                    "left": "24",
+                                    "isLinked": false
+                                },
+                                "__globals__": {
+                                    "mf_input_label_color": "",
+                                    "mf_input_color": "globals\/colors?id=primary",
+                                    "mf_input_color_hover": "globals\/colors?id=primary",
+                                    "mf_input_color_focus": "globals\/colors?id=primary",
+                                    "mf_input_border_color": "globals\/colors?id=43e0a46",
+                                    "mf_input_label_typography_typography": "globals\/typography?id=e008dec",
+                                    "mf_input_typgraphy_typography": "globals\/typography?id=text",
+                                    "mf_input_place_holder_typography_typography": "globals\/typography?id=text",
+                                    "mf_input_placeholder_color": "globals\/colors?id=text",
+                                    "mf_input_required_indicator_color": "",
+                                    "mf_input_warning_text_color": "",
+                                    "mf_input_border_focus_color": "globals\/colors?id=43e0a46"
+                                },
+                                "mf_input_border_border": "solid",
+                                "mf_input_border_width": {
+                                    "unit": "px",
+                                    "top": "1",
+                                    "right": "1",
+                                    "bottom": "1",
+                                    "left": "1",
+                                    "isLinked": true
+                                },
+                                "mf_input_border_radius": {
+                                    "unit": "px",
+                                    "size": 15,
+                                    "sizes": []
+                                },
+                                "mf_input_background_background": "classic",
+                                "mf_input_background_color": "#F9F9F9",
+                                "mf_input_border_focus_border": "solid",
+                                "mf_input_border_focus_width": {
+                                    "unit": "px",
+                                    "top": "1",
+                                    "right": "1",
+                                    "bottom": "1",
+                                    "left": "1",
+                                    "isLinked": true
+                                },
+                                "mf_input_label_status": "",
+                                "mf_input_label_color": "#101010",
+                                "mf_input_label_typography_typography": "custom",
+                                "mf_input_label_typography_font_family": "Helvetica",
+                                "mf_input_label_typography_font_size": {
+                                    "unit": "px",
+                                    "size": 18,
+                                    "sizes": []
+                                },
+                                "mf_input_label_typography_font_weight": "500",
+                                "mf_input_label_typography_line_height": {
+                                    "unit": "px",
+                                    "size": 21,
+                                    "sizes": []
+                                },
+                                "mf_input_label_margin": {
+                                    "unit": "px",
+                                    "top": "0",
+                                    "right": "0",
+                                    "bottom": "5",
+                                    "left": "0",
+                                    "isLinked": false
+                                },
+                                "mf_input_required_indicator_color": "#FF0000",
+                                "mf_textarea_field_height": {
+                                    "unit": "px",
+                                    "size": 160,
+                                    "sizes": []
+                                },
+                                "mf_input_box_shadow_box_shadow": {
+                                    "horizontal": 0,
+                                    "vertical": 3,
+                                    "blur": 5,
+                                    "spread": 0,
+                                    "color": "rgba(0,0,0,0.05)"
+                                },
+                                "mf_input_help_text_typography_typography": "custom",
+                                "mf_input_help_text_typography_font_family": "Helvetica",
+                                "mf_input_help_text_typography_font_size": {
+                                    "unit": "px",
+                                    "size": 12,
+                                    "sizes": []
+                                },
+                                "mf_input_help_text_typography_font_weight": "400",
+                                "mf_input_help_text_typography_font_style": "italic",
+                                "mf_input_help_text_typography_line_height": {
+                                    "unit": "px",
+                                    "size": 14,
+                                    "sizes": []
+                                },
+                                "mf_input_help_text_color": "#555555",
+                                "mf_input_help_text_padding": {
+                                    "unit": "px",
+                                    "top": "3",
+                                    "right": "0",
+                                    "bottom": "0",
+                                    "left": "0",
+                                    "isLinked": false
+                                }
+                            },
+                            "elements": [],
+                            "isInner": false,
+                            "widgetType": "mf-textarea",
+                            "elType": "widget"
+                        },
+                        {
+                            "id": "360e33f3",
+                            "settings": {
+                                "mf_btn_text": "Send Message",
+                                "mf_btn_align": "justify",
+                                "mf_hidden_input": [],
+                                "mf_btn_bg_color_background": "gradient",
+                                "mf_btn_bg_hover_color_background": "gradient",
+                                "mf_btn_box_shadow_group_box_shadow_type": "yes",
+                                "mf_btn_box_shadow_group_box_shadow": {
+                                    "horizontal": 0,
+                                    "vertical": 0,
+                                    "blur": 0,
+                                    "spread": 0,
+                                    "color": "rgba(65.99999999999999, 132.9999999999998, 244, 0)"
+                                },
+                                "__globals__": {
+                                    "mf_btn_bg_color_color": "globals\/colors?id=accent",
+                                    "mf_btn_bg_hover_color_color": "globals\/colors?id=accent",
+                                    "mf_btn_typography_typography": "globals\/typography?id=8be053e",
+                                    "mf_btn_text_color": "globals\/colors?id=3364412",
+                                    "mf_btn_border_color": "",
+                                    "mf_btn_hover_border_color": "",
+                                    "mf_btn_hover_color": "globals\/colors?id=3364412",
+                                    "mf_btn_bg_color_color_b": "globals\/colors?id=secondary",
+                                    "mf_btn_bg_hover_color_color_b": "globals\/colors?id=secondary"
+                                },
+                                "mf_btn_text_padding": {
+                                    "unit": "px",
+                                    "top": "15",
+                                    "right": "40",
+                                    "bottom": "15",
+                                    "left": "40",
+                                    "isLinked": false
+                                },
+                                "mf_btn_text_padding_mobile": {
+                                    "unit": "px",
+                                    "top": "15",
+                                    "right": "30",
+                                    "bottom": "15",
+                                    "left": "30",
+                                    "isLinked": false
+                                },
+                                "mf_btn_border_radius": {
+                                    "unit": "px",
+                                    "top": "50",
+                                    "right": "50",
+                                    "bottom": "50",
+                                    "left": "50",
+                                    "isLinked": true
+                                },
+                                "mf_btn_align_tablet": "justify",
+                                "mf_btn_align_mobile": "justify",
+                                "mf_btn_bg_color_color_stop": {
+                                    "unit": "%",
+                                    "size": 20,
+                                    "sizes": []
+                                },
+                                "mf_btn_bg_color_gradient_angle": {
+                                    "unit": "deg",
+                                    "size": 340,
+                                    "sizes": []
+                                },
+                                "mf_btn_bg_hover_color_gradient_angle": {
+                                    "unit": "deg",
+                                    "size": 340,
+                                    "sizes": []
+                                }
+                            },
+                            "elements": [],
+                            "isInner": false,
+                            "widgetType": "mf-button",
+                            "elType": "widget"
+                        }
+                    ],
+                    "isInner": false,
+                    "elType": "column"
+                }
+            ],
+            "isInner": false,
+            "elType": "section"
+        }
+    ]
+}

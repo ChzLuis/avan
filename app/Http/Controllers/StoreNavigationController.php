@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\StoreMenuItem;
-use App\Models\StorePage;
+use App\Storefront\StoreMenuWriteService;
 use App\Support\StorefrontNavigation;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class StoreNavigationController extends Controller
 {
+    public function __construct(private readonly StoreMenuWriteService $menuWrites)
+    {
+    }
+
     private function project()
     {
         $project = app('active_project');
@@ -36,7 +38,7 @@ class StoreNavigationController extends Controller
             'header_font' => ['required', Rule::in(['Inter', 'Poppins', 'Montserrat', 'Lato', 'Nunito', 'Jost', 'Raleway'])],
             'header_font_size' => ['required', 'integer', 'min:12', 'max:20'],
             'header_height' => ['required', 'integer', 'min:56', 'max:120'],
-            'header_logo_height' => ['required', 'integer', 'min:28', 'max:80'],
+            'header_logo_height' => ['required', 'integer', 'min:20', 'max:300'],
             'header_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
             'header_mobile_style' => ['required', Rule::in(['drawer', 'compact'])],
             'header_tablet_style' => ['required', Rule::in(['drawer', 'desktop'])],
@@ -72,11 +74,8 @@ class StoreNavigationController extends Controller
     {
         $project = $this->project();
         $menu = StorefrontNavigation::ensure($project);
-        $data = $this->validateItem($request, $project->id, $menu->id);
-        $data['project_id'] = $project->id;
-        $data['store_menu_id'] = $menu->id;
-        $data['sort_order'] = ($menu->items()->max('sort_order') ?? 0) + 10;
-        $menu->items()->create($data);
+        $data = $this->validateItem($request);
+        $this->menuWrites->createItem($project, $menu, $data);
         return $this->back('Opción agregada al menú.');
     }
 
@@ -84,9 +83,8 @@ class StoreNavigationController extends Controller
     {
         $project = $this->project();
         $menu = StorefrontNavigation::ensure($project);
-        $menuItem = $menu->items()->where('project_id', $project->id)->findOrFail($item);
-        $data = $this->validateItem($request, $project->id, $menu->id, $menuItem->id);
-        $menuItem->update($data);
+        $data = $this->validateItem($request);
+        $this->menuWrites->updateItem($project, $menu, $item, $data);
         return $this->back('Opción del menú actualizada.');
     }
 
@@ -94,7 +92,7 @@ class StoreNavigationController extends Controller
     {
         $project = $this->project();
         $menu = StorefrontNavigation::ensure($project);
-        $menu->items()->where('project_id', $project->id)->findOrFail($item)->delete();
+        $this->menuWrites->deleteItem($project, $menu, $item);
         return $this->back('Opción eliminada del menú. La página o categoría vinculada se conservó.');
     }
 
@@ -108,31 +106,15 @@ class StoreNavigationController extends Controller
             'items.*.parent_id' => ['nullable', 'integer'],
             'items.*.sort_order' => ['required', 'integer', 'min:0', 'max:10000'],
         ]);
-
-        $items = $menu->items()->where('project_id', $project->id)->get()->keyBy('id');
-        $submittedIds = collect($data['items'])->pluck('id');
-        if ($submittedIds->diff($items->keys())->isNotEmpty()) {
-            throw ValidationException::withMessages(['items' => 'El menú contiene opciones de otra tienda.']);
-        }
-
-        DB::transaction(function () use ($data, $items) {
-            foreach ($data['items'] as $row) {
-                $item = $items->get((int) $row['id']);
-                $parentId = filled($row['parent_id'] ?? null) ? (int) $row['parent_id'] : null;
-                if ($parentId === $item->id || ($parentId && !$items->has($parentId))) {
-                    throw ValidationException::withMessages(['items' => 'La jerarquía del menú no es válida.']);
-                }
-                if ($parentId && $items->get($parentId)?->parent_id) {
-                    throw ValidationException::withMessages(['items' => 'El menú admite un nivel de submenú.']);
-                }
-                $item->update(['parent_id' => $parentId, 'sort_order' => (int) $row['sort_order']]);
-            }
-        });
-
+        $this->menuWrites->reorder($project, $menu, $data['items']);
         return response()->json(['ok' => true, 'message' => 'Orden del menú guardado.']);
     }
 
-    private function validateItem(Request $request, int $projectId, int $menuId, ?int $itemId = null): array
+    /**
+     * Valida el request de un ítem (formato). La propiedad del destino y la
+     * normalización canónica las aplica StoreMenuWriteService.
+     */
+    private function validateItem(Request $request): array
     {
         $data = $request->validate([
             'label' => ['required', 'string', 'max:100'],
@@ -142,33 +124,6 @@ class StoreNavigationController extends Controller
             'target' => ['required', Rule::in(['_self', '_blank'])],
             'parent_id' => ['nullable', 'integer'],
         ]);
-
-        if (!empty($data['parent_id'])) {
-            $parent = StoreMenuItem::where('project_id', $projectId)->where('store_menu_id', $menuId)->find($data['parent_id']);
-            if (!$parent || $parent->id === $itemId || $parent->parent_id) {
-                throw ValidationException::withMessages(['parent_id' => 'Selecciona una opción principal válida.']);
-            }
-        }
-
-        if (in_array($data['destination_type'], ['category', 'subcategory'], true)) {
-            $category = Category::where('project_id', $projectId)->find($data['destination_id'] ?? 0);
-            if (!$category || ($data['destination_type'] === 'category' && $category->parent_id) || ($data['destination_type'] === 'subcategory' && !$category->parent_id)) {
-                throw ValidationException::withMessages(['destination_id' => 'Selecciona una categoría válida de esta tienda.']);
-            }
-        } elseif ($data['destination_type'] === 'page') {
-            if (!StorePage::where('project_id', $projectId)->whereKey($data['destination_id'] ?? 0)->exists()) {
-                throw ValidationException::withMessages(['destination_id' => 'Selecciona una página válida de esta tienda.']);
-            }
-        } elseif ($data['destination_type'] === 'external') {
-            $scheme = strtolower((string) parse_url((string) ($data['url'] ?? ''), PHP_URL_SCHEME));
-            if (!filter_var($data['url'] ?? null, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
-                throw ValidationException::withMessages(['url' => 'La URL externa debe comenzar con http:// o https://.']);
-            }
-        }
-
-        $data['destination_id'] = in_array($data['destination_type'], ['category', 'subcategory', 'page'], true)
-            ? ($data['destination_id'] ?? null) : null;
-        $data['url'] = $data['destination_type'] === 'external' ? $data['url'] : null;
         foreach (['is_enabled', 'show_desktop', 'show_tablet', 'show_mobile'] as $key) {
             $data[$key] = $request->boolean($key);
         }
@@ -177,7 +132,7 @@ class StoreNavigationController extends Controller
 
     private function back(string $message)
     {
-        return redirect()->route('settings.design', ['s' => 'constructor'])
-            ->withFragment('constructor-navegacion')->with('success', $message);
+        return redirect()->route('settings.builder')
+            ->withFragment('pages')->with('success', $message);
     }
 }

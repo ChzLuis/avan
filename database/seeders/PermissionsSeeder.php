@@ -24,7 +24,7 @@ class PermissionsSeeder extends Seeder
         'catalog.resenas',
 
         // Pedidos y POS
-        'orders.ver', 'orders.crear', 'orders.editar', 'orders.eliminar', 'orders.cancelar',
+        'orders.ver', 'orders.crear', 'orders.editar', 'orders.eliminar', 'orders.cancelar', 'orders.descuento',
         'pos.usar',
 
         // Cotizaciones
@@ -65,6 +65,9 @@ class PermissionsSeeder extends Seeder
 
         // Roles y miembros del equipo
         'roles.ver', 'roles.gestionar',
+
+        // Integraciones de catálogo (conectores externos: SISKOTE y futuros ERP)
+        'catalog-integrations.view', 'catalog-integrations.manage', 'catalog-integrations.sync', 'catalog-integrations.view-history',
     ];
 
     // ── Definición de roles y sus permisos ──────────────────────────────────
@@ -78,7 +81,7 @@ class PermissionsSeeder extends Seeder
          */
         'gerente' => [
             'catalog.ver', 'catalog.crear', 'catalog.editar', 'catalog.eliminar', 'catalog.importar',
-            'orders.ver',  'orders.crear',  'orders.editar',  'orders.eliminar',  'orders.cancelar',
+            'orders.ver',  'orders.crear',  'orders.editar',  'orders.eliminar',  'orders.cancelar', 'orders.descuento',
             'pos.usar',
             'quotes.ver',  'quotes.crear',  'quotes.editar',  'quotes.eliminar',
             'invoices.ver','invoices.crear','invoices.editar','invoices.anular',
@@ -92,6 +95,7 @@ class PermissionsSeeder extends Seeder
             'rifas.ver',   'rifas.validar', 'rifas.cancelar',
             'settings.ver', 'settings.negocio', 'settings.diseno', 'settings.pagos', 'settings.catalogos', 'settings.qr',
             'roles.ver',
+            'catalog-integrations.view', 'catalog-integrations.manage', 'catalog-integrations.sync', 'catalog-integrations.view-history',
         ],
 
         /*
@@ -101,7 +105,7 @@ class PermissionsSeeder extends Seeder
          */
         'vendedor' => [
             'catalog.ver',
-            'orders.ver',  'orders.crear',  'orders.editar',
+            'orders.ver',  'orders.crear',  'orders.editar', 'orders.descuento',
             'pos.usar',
             'quotes.ver',  'quotes.crear',  'quotes.editar',
             'invoices.ver','invoices.crear',
@@ -109,6 +113,22 @@ class PermissionsSeeder extends Seeder
             'agenda.ver',  'agenda.crear',
             'reports.ver',
             'attendance.fichar',
+        ],
+
+        /*
+         * REVENDEDOR
+         * Vende con SUS propios precios (dentro de los límites del admin) y arma
+         * su catálogo para compartir. Ve productos pero NO edita el precio principal
+         * ni la configuración del negocio.
+         * Ideal para: revendedor, distribuidor independiente
+         */
+        'revendedor' => [
+            'catalog.ver',
+            'pos.usar',
+            'orders.ver',  'orders.crear',
+            'quotes.ver',  'quotes.crear', 'quotes.editar',
+            'clients.ver', 'clients.crear', 'clients.editar',
+            'reports.ver',
         ],
 
         /*

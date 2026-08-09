@@ -268,6 +268,64 @@ class WaBotController extends Controller
         return response()->json(['ok' => true, 'wa_status' => $order->wa_status]);
     }
 
+    // ── Lavandería: cambiar estado del pedido + aviso WhatsApp automático ─────
+    public function changeLaundryStatus(Request $request, Order $order)
+    {
+        $projectId = request()->routeIs('bixosales.*')
+            ? session('comercial_project_id')
+            : app('active_project')?->id;
+        abort_unless($order->project_id === $projectId, 403);
+
+        $project = $order->project;
+
+        // El estado debe ser uno de los activos del flujo del proyecto (según su rubro)
+        $activos = \App\Support\OrderFlow::activeKeys($project);
+        $data = $request->validate([
+            'status' => 'required|string|in:' . implode(',', $activos),
+        ]);
+        $newStatus = $data['status'];
+
+        $update = [
+            'laundry_status'    => $newStatus,
+            'laundry_status_at' => now(),
+            // Mantener coherente el status genérico (reportes, filtros, dona de estados)
+            'status'            => \App\Support\OrderFlow::toGenericStatus($project, $newStatus),
+        ];
+        if (in_array($newStatus, ['listo', 'finalizado'])) $update['ready_at'] = now();
+        $order->update($update);
+
+        // ¿Este estado dispara aviso por WhatsApp? (según config del proyecto)
+        $sent = false;
+        if (\App\Support\OrderFlow::shouldNotify($project, $newStatus)) {
+            $phone = $order->wa_number ?: $order->client_phone;
+            if ($phone) {
+                $negocio = $project?->name ?? $project->name;
+                $mensaje = \App\Support\OrderFlow::notifyMessage($project, $newStatus, $order, $negocio);
+                try {
+                    $res = Http::timeout(4)->post(self::BOT_URL . '/action', [
+                        'token'     => self::BOT_TOKEN,
+                        'wa_number' => $phone,
+                        'action'    => 'custom_text',
+                        'message'   => $mensaje,
+                        'order_id'  => $order->id,
+                    ]);
+                    $sent = $res->successful();
+                    if ($sent && $newStatus === 'listo') {
+                        $order->update(['ready_notified_at' => now()]);
+                    }
+                } catch (\Throwable $e) {
+                    // El bot puede estar caído; el estado ya quedó guardado.
+                }
+            }
+        }
+
+        return response()->json([
+            'ok'             => true,
+            'laundry_status' => $order->laundry_status,
+            'notified'       => $sent,
+        ]);
+    }
+
     // ── Bot → Laravel: buscar orden activa por número WA ────────────────────
     public function findOrder(Request $request)
     {

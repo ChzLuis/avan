@@ -22,7 +22,8 @@ $shippingCost     = (float)($settings['shipping_cost']      ?? 0);
 $shippingFreeFrom = (float)($settings['shipping_free_from'] ?? 0);
 $requireAddress   = ($settings['require_address']   ?? '0') === '1';
 $quotePriceDisp   = $settings['quote_price_display'] ?? 'show';
-$wholesaleEnabled = ($settings['wholesale_enabled'] ?? '0') === '1';
+// Mayorista visible por defecto (igual que computienda): solo aparece en productos con precio mayorista cargado.
+$wholesaleEnabled = ($settings['wholesale_enabled'] ?? '1') === '1';
 $quoteWaRaw       = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? $project->whatsapp ?? '');
 $quoteWaCountry   = $settings['quote_whatsapp_country'] ?? '51';
 $quoteWa          = $quoteWaRaw ? (str_starts_with($quoteWaRaw, $quoteWaCountry) ? $quoteWaRaw : $quoteWaCountry.$quoteWaRaw) : '';
@@ -45,11 +46,7 @@ $fontTitle        = trim($settings['font_title'] ?? $settings['font'] ?? 'Inter'
 $fontBody         = trim($settings['font_body']  ?? $settings['font'] ?? 'Inter') ?: 'Inter';
 $dGoogleFonts     = collect([$fontTitle,$fontBody,'Inter'])->unique()->filter()
                       ->map(fn($f)=>str_replace(' ','+',$f).':wght@300;400;500;600;700;800')->implode('&family=');
-$heroAlignRaw     = $settings['hero_align'] ?? null;
-$heroAlignValue   = is_string($heroAlignRaw)
-                    ? strtolower(trim($heroAlignRaw))
-                    : '';
-$heroAlign        = in_array($heroAlignValue, ['left', 'center', 'right'], true) ? $heroAlignValue : 'left';
+$heroAlign        = in_array($settings['hero_align'] ?? 'left',['left','center','right'],true) ? ($settings['hero_align'] ?? 'left') : 'left';
 $heroHeightD      = ['small'=>320,'medium'=>420,'large'=>520][$settings['hero_height'] ?? 'medium'] ?? 420;
 $dSlides          = array_values(array_filter([
     ['t'=>trim($settings['banner1_title'] ?? ''),'s'=>trim($settings['banner1_sub'] ?? '')],

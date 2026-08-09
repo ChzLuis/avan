@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Voucher BIXO — Mantenimiento Mes 1</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  body { font-family:'Segoe UI', Arial, sans-serif; background:#f4f6f9; }
+
+  .page {
+    width:210mm; min-height:auto;
+    margin:24px auto; background:#fff;
+    box-shadow:0 4px 28px rgba(0,0,0,0.13);
+    overflow:hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background:#0f172a;
+    padding:36px 48px 28px;
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .brand-name { font-size:28px; font-weight:800; color:#fff; letter-spacing:2px; }
+  .brand-tag  { font-size:11px; color:#94a3b8; letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
+  .doc-block  { text-align:right; }
+  .doc-label  { font-size:10px; color:#64748b; letter-spacing:3px; text-transform:uppercase; }
+  .doc-titulo { font-size:24px; font-weight:800; color:#10b981; letter-spacing:1px; line-height:1; margin-top:2px; }
+  .doc-num    { font-size:11px; color:#94a3b8; margin-top:6px; }
+
+  .accent-bar { height:4px; background:linear-gradient(90deg,#10b981,#059669,#0f172a); }
+
+  /* ── CLIENTE ── */
+  .client-section {
+    background:#f8fafc; padding:18px 48px;
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    gap:24px; border-bottom:1px solid #e2e8f0;
+  }
+  .client-field label { display:block; font-size:9px; font-weight:700; color:#10b981; text-transform:uppercase; letter-spacing:2px; margin-bottom:4px; }
+  .client-value { font-size:13px; font-weight:600; color:#0f172a; border-bottom:1.5px solid #cbd5e1; padding-bottom:4px; min-height:22px; }
+
+  /* ── BODY ── */
+  .body { padding:28px 48px 32px; }
+
+  .section { margin-bottom:22px; }
+  .section-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .section-dot    { width:10px; height:10px; border-radius:50%; background:#10b981; flex-shrink:0; }
+  .section-title  { font-size:11px; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:2px; }
+
+  .card { border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; background:#fff; }
+  .item { display:flex; align-items:flex-start; gap:8px; padding:5px 0; border-bottom:1px dashed #f1f5f9; font-size:12px; color:#334155; }
+  .item:last-child { border-bottom:none; }
+  .check { color:#10b981; font-size:13px; font-weight:700; flex-shrink:0; }
+
+  /* ── PRECIO ── */
+  .precio-card {
+    background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+    border-radius:14px; padding:22px 28px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .precio-label    { font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:2px; }
+  .precio-nombre   { font-size:16px; font-weight:700; color:#fff; margin-top:4px; }
+  .precio-inc      { font-size:10px; color:#64748b; margin-top:3px; }
+  .precio-right    { text-align:right; }
+  .precio-amount   { font-size:44px; font-weight:900; color:#10b981; line-height:1; }
+  .precio-currency { font-size:16px; color:#94a3b8; }
+
+  /* ── PERIODO ── */
+  .periodo-card {
+    background:linear-gradient(135deg,#eff6ff,#dbeafe);
+    border-left:6px solid #3b82f6; border-radius:14px;
+    padding:16px 22px; margin-top:18px;
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+  }
+  .periodo-label  { font-size:10px; font-weight:800; color:#1d4ed8; text-transform:uppercase; letter-spacing:2px; }
+  .periodo-value  { font-size:16px; font-weight:800; color:#1e3a8a; margin-top:4px; }
+  .periodo-sub    { font-size:11px; color:#3b82f6; margin-top:3px; }
+  .periodo-badge  { background:#1e293b; border-radius:12px; padding:12px 20px; text-align:center; min-width:180px; }
+  .periodo-badge-title { color:#fbbf24; font-size:11px; font-weight:800; letter-spacing:1px; }
+  .periodo-badge-val   { color:#fff; font-size:14px; font-weight:700; margin-top:4px; }
+
+  /* ── FIRMAS ── */
+  .firma-section { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:28px; }
+  .firma-line    { border-top:1.5px solid #cbd5e1; margin-bottom:8px; }
+  .firma-label   { font-size:10px; color:#94a3b8; text-align:center; }
+  .firma-name    { font-size:12px; font-weight:700; color:#0f172a; text-align:center; margin-top:2px; }
+
+  /* ── FOOTER ── */
+  .footer { background:#0f172a; padding:14px 48px; display:flex; justify-content:space-between; align-items:center; margin-top:32px; }
+  .footer-brand { font-size:13px; font-weight:800; color:#fff; letter-spacing:1px; }
+  .footer-sub   { font-size:10px; color:#475569; margin-top:1px; }
+  .footer-note  { font-size:10px; color:#475569; text-align:right; line-height:1.6; }
+
+  @media print {
+    body { background:#fff !important; }
+    .page { margin:0 !important; box-shadow:none !important; width:100% !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="brand-name">BIXO</div>
+      <div class="brand-tag">Soluciones Digitales</div>
+    </div>
+    <div class="doc-block">
+      <div class="doc-label">Documento</div>
+      <div class="doc-titulo">VOUCHER</div>
+      <div class="doc-num">N° MNT-2026-001 &nbsp;|&nbsp; Fecha: 25 / 05 / 2026</div>
+    </div>
+  </div>
+  <div class="accent-bar"></div>
+
+  <!-- DATOS CLIENTE -->
+  <div class="client-section">
+    <div class="client-field">
+      <label>Cliente</label>
+      <div class="client-value">Luis</div>
+    </div>
+    <div class="client-field">
+      <label>Proyecto</label>
+      <div class="client-value">Prueba tu Suerte</div>
+    </div>
+    <div class="client-field">
+      <label>Teléfono / WhatsApp</label>
+      <div class="client-value">+51 908 055 871</div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- SERVICIO -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot"></div>
+        <div class="section-title">Mejoras realizadas</div>
+      </div>
+      <div class="card">
+        <div class="item"><span class="check">✓</span> Consulta de tickets por DNI — vista mejorada y rediseñada</div>
+        <div class="item"><span class="check">✓</span> Botón de descarga de ticket desde la consulta</div>
+        <div class="item"><span class="check">✓</span> Mejora del orden y presentación de resultados</div>
+      </div>
+    </div>
+
+    <!-- INVERSIÓN -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot"></div>
+        <div class="section-title">Inversión</div>
+      </div>
+      <div class="precio-card">
+        <div>
+          <div class="precio-label">Mejoras de sistema</div>
+          <div class="precio-nombre">Mejoras en sistema externo</div>
+          <div class="precio-inc">Pago único · Incluye IGV</div>
+        </div>
+        <div class="precio-right">
+          <div class="precio-currency">S/</div>
+          <div class="precio-amount">150.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIRMAS -->
+    <div class="firma-section">
+      <div>
+        <div class="firma-line"></div>
+        <div class="firma-label">Firma y sello del proveedor</div>
+        <div class="firma-name">BIXO Soluciones Digitales</div>
+      </div>
+      <div>
+        <div class="firma-line"></div>
+        <div class="firma-label">Firma y conformidad del cliente</div>
+        <div class="firma-name">____________________</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      <div class="footer-brand">BIXO Soluciones Digitales</div>
+      <div class="footer-sub">Transformación digital para tu negocio</div>
+    </div>
+    <div class="footer-note">
+      Mantenimiento Mes 1 · Junio 2026<br>
+      S/ 150.00 · Pago único mensual
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -40,6 +40,7 @@ class Project extends Model
     public function catalogLists(): HasMany  { return $this->hasMany(\App\Models\CatalogList::class); }
     public function categories(): HasMany   { return $this->hasMany(Category::class); }
     public function products(): HasMany     { return $this->hasMany(Product::class); }
+    public function catalogIntegrations(): HasMany { return $this->hasMany(CatalogIntegration::class); }
     public function services(): HasMany     { return $this->hasMany(Service::class); }
     public function clients(): HasMany      { return $this->hasMany(Client::class); }
     public function orders(): HasMany       { return $this->hasMany(Order::class); }
@@ -48,6 +49,7 @@ class Project extends Model
     public function appointments(): HasMany { return $this->hasMany(Appointment::class); }
     public function employees(): HasMany    { return $this->hasMany(Employee::class); }
     public function settings(): HasMany     { return $this->hasMany(ProjectSetting::class); }
+    public function catalogProfiles(): HasMany { return $this->hasMany(StoreCatalogProfile::class); }
     public function sedes(): HasMany        { return $this->hasMany(Sede::class); }
     public function combos(): HasMany       { return $this->hasMany(Combo::class); }
     public function promotions(): HasMany   { return $this->hasMany(Promotion::class); }

@@ -72,6 +72,11 @@ final class StorefrontContextBuilder
             [$categories, $products, $catalog] = $this->catalog($project, $catalog);
         }
 
+        // Distingue "tienda sin configurar" (sin filas de secciones → mostrar defaults)
+        // de "todas las secciones desactivadas" (hay filas → respetar lo publicado).
+        $catalog['hasSectionRegistry'] = $sections->isNotEmpty()
+            || $project->storeSections()->where('page', 'home')->exists();
+
         $urls = $this->urls($project);
         $theme = StorefrontTheme::resolve($settings);
         $capabilities = array_fill_keys((array) ($template['capabilities'] ?? []), true);
@@ -146,8 +151,13 @@ final class StorefrontContextBuilder
                 $section = clone $source;
                 $section->content = $source->contentForPreview();
                 $section->variant = $source->variantForPreview();
-                $section->sort_order = $source->draft_sort_order ?? $source->sort_order;
+                $section->sort_order = $source->sortOrderForPreview();
                 $section->is_enabled = $source->enabledForPreview();
+                $section->show_desktop = $source->showDesktopForPreview();
+                $section->show_tablet = $source->showTabletForPreview();
+                $section->show_mobile = $source->showMobileForPreview();
+                $section->publish_from = $source->publishFromForPreview();
+                $section->publish_until = $source->publishUntilForPreview();
                 return $section;
             });
             if (!$includeDisabled) $sections = $sections->filter->is_enabled;

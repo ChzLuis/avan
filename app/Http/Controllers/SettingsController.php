@@ -8,18 +8,20 @@ use App\Models\Module;
 use App\Models\Coupon;
 use App\Models\WaCanal;
 use App\Support\CatalogTemplates;
-use App\Support\StorefrontNavigation;
 use App\Support\StorefrontSections;
+use App\Support\StorefrontNavigation;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\ProjectTemplate;
 use App\Storefront\StorefrontContextBuilder;
+use App\Storefront\ProjectSettingWriteService;
 
 class SettingsController extends Controller
 {
-    public function __construct(private readonly StorefrontContextBuilder $storefrontContexts)
-    {
+    public function __construct(
+        private readonly StorefrontContextBuilder $storefrontContexts,
+        private readonly ProjectSettingWriteService $projectSettingWrites,
+    ) {
     }
 
     public function index(Request $request)
@@ -231,42 +233,66 @@ class SettingsController extends Controller
         return back()->with('success', 'Módulos actualizados.');
     }
 
-    public function design()
+    public function design(\Illuminate\Http\Request $request)
+    {
+        // Diseño retirado: el Constructor es la única pantalla de diseño.
+        // Todos sus controles ya viven en las etapas del Constructor.
+        // ?classic=1 se conserva solo como salida de emergencia del superadmin.
+        if (!($request->boolean('classic') && auth()->user()?->is_superadmin)) {
+            return redirect()->route('settings.builder');
+        }
+
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        StorefrontSections::ensure($project);
+        $sections = $project->storeSections()->orderBy('page')->orderBy('sort_order')->get();
+        $homeSections = $project->storeSections()->where('page', 'home')->orderBy('sort_order')->get()
+            ->groupBy('component')->map->first()
+            ->sortBy(fn ($section) => $section->draft_sort_order ?? $section->sort_order)->values();
+        $storeCategories = $project->categories()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
+        $storeProducts = $project->products()->where('is_available', true)->with('mainImage')->orderBy('name')->get();
+        $storeSectionNames = StorefrontSections::COMPONENTS;
+        $pages = $project->storePages()->orderBy('key')->get();
+        $popup = $project->storePopups()->latest()->first();
+        $messages = $project->contactMessages()->latest()->take(20)->get();
+        $complaints = $project->complaints()->latest()->take(20)->get();
+        $storeMenu = StorefrontNavigation::ensure($project);
+        $storeMenu->load(['rootItems.children']);
+        $headerSettings = StorefrontNavigation::headerSettings($project);
+        $menuCategories = $project->categories()->where('is_active', true)->with('parent')->orderBy('sort_order')->orderBy('name')->get();
+        return view('settings.design', compact(
+            'project', 'sections', 'homeSections', 'storeCategories', 'storeProducts', 'storeSectionNames',
+            'pages', 'popup', 'messages', 'complaints', 'storeMenu', 'headerSettings', 'menuCategories'
+        ));
+    }
+
+    /**
+     * Nuevo Diseñador visual (shell de estructura + preview + inspector).
+     * Rediseño por fases — convive con design() (el anterior) hasta validarse.
+     * Reutiliza exactamente los mismos datos y el mismo guardado (updateDesign).
+     */
+    public function designer()
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $project->loadMissing('settings');
         StorefrontSections::ensure($project);
-        $storefrontContext = $this->storefrontContexts->forProject($project, [
-            'preview' => true,
-            'include_disabled' => true,
-            'include_catalog' => true,
-            'include_project_templates' => true,
-            'store_view' => 'designer',
-        ]);
-        $sections = $storefrontContext->sections();
-        $homeSections = $sections->where('page', 'home')->values();
+        $homeSections = $project->storeSections()->where('page', 'home')->orderBy('sort_order')->get()
+            ->groupBy('component')->map->first()
+            ->sortBy(fn ($section) => $section->draft_sort_order ?? $section->sort_order)->values();
+        $storeCategories = $project->categories()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
+        $storeProducts = $project->products()->where('is_available', true)->with('mainImage')->orderBy('name')->get();
         $storeSectionNames = StorefrontSections::COMPONENTS;
-        $storeCategories = $storefrontContext->categories();
-        $storeProducts = $storefrontContext->products();
-        $pages = $storefrontContext->pages()->values();
-        $popup = $storefrontContext->popup();
-        $projectTemplates = $storefrontContext->projectTemplates();
-        $messages = $project->contactMessages()->latest()->take(20)->get();
-        $complaints = $project->complaints()->latest()->take(20)->get();
-        return view('settings.design', compact(
-            'project',
-            'sections',
-            'homeSections',
-            'storeSectionNames',
-            'storeCategories',
-            'storeProducts',
-            'pages',
-            'popup',
-            'messages',
-            'complaints',
-            'storefrontContext',
-            'projectTemplates'
+        $pages = $project->storePages()->orderBy('key')->get();
+        $popup = $project->storePopups()->latest()->first();
+        $storeMenu = StorefrontNavigation::ensure($project);
+        $storeMenu->load(['rootItems.children']);
+        $headerSettings = StorefrontNavigation::headerSettings($project);
+        $menuCategories = $project->categories()->where('is_active', true)->with('parent')->orderBy('sort_order')->orderBy('name')->get();
+        $settings = $project->settings()->pluck('value', 'key')->toArray();
+
+        return view('settings.designer.index', compact(
+            'project', 'homeSections', 'storeCategories', 'storeProducts', 'storeSectionNames',
+            'pages', 'popup', 'storeMenu', 'headerSettings', 'menuCategories', 'settings'
         ));
     }
 
@@ -274,9 +300,17 @@ class SettingsController extends Controller
     {
         $project = app('active_project');
         $this->authorizeProject($project);
-        $request->validate(['file' => 'required|image|max:2048']);
         $type = $request->input('type', 'logo');
-        $path = $request->file('file')->store("logos/{$project->id}", 'public');
+        // El diseñador también sube videos cortos para el banner multimedia.
+        $isVideo = str_starts_with($type, 'section_video');
+        // Lista explícita en vez de la regla 'image': esa regla rechaza AVIF
+        // (formato habitual de imágenes descargadas de la web) y SVG. El tope
+        // sube a 10MB porque las fotos de banner reales superan los 4MB;
+        // nginx permite 20M así que la petición sí llega hasta aquí.
+        $request->validate(['file' => $isVideo
+            ? 'required|file|mimetypes:video/mp4,video/webm|max:51200'
+            : 'required|file|mimes:jpg,jpeg,png,gif,bmp,webp,avif,svg|max:10240']);
+        $path = $request->file('file')->store($isVideo ? "store-sections/{$project->id}" : "logos/{$project->id}", 'public');
         return response()->json([
             'path' => $path,
             'url'  => asset('storage/' . $path),
@@ -315,20 +349,67 @@ class SettingsController extends Controller
             'primary_color','secondary_color','whatsapp_msg',
             'logo_url','logo_height','favicon_url',
             'font_title','font_body','border_radius','currency_symbol',
-            'header_bg_color','header_text_color','header_height',
+            'header_bg_color','header_text_color','header_height','menu_align','header_sticky_mode',
             'footer_bg_color','footer_text_color','footer_logo_height',
             'facebook_url','instagram_url','tiktok_url','youtube_url','twitter_url','linkedin_url',
+            // Estilos globales de secciones
+            'section_style_preset','section_spacing','section_heading_align','section_background_mode',
+            'section_show_dividers','section_card_shadow','featured_products_view','catalog_products_view',
+            // Orden de secciones de Inicio
+            'home_section_order',
             // Portada — Hero
-            'hero_title','hero_subtitle','hero_badge','hero_bg_color',
+            'hero_title','hero_subtitle','hero_badge','hero_bg_color','popup_bg_color',
+            'hero_image_2','hero_image_3','hero_image_4','hero_image_5','hero_show_content',
+            'hero_mobile_image_1','hero_mobile_image_2','hero_mobile_image_3','hero_mobile_image_4','hero_mobile_image_5',
+            'hero_autoplay','hero_pause_hover','hero_show_arrows','hero_show_dots','hero_duration','hero_transition','hero_mobile_height',
+            'hero_slide_1_enabled','hero_slide_2_enabled','hero_slide_3_enabled','hero_slide_4_enabled','hero_slide_5_enabled',
+            'hero_slide_1_show_content','hero_slide_2_show_content','hero_slide_3_show_content','hero_slide_4_show_content','hero_slide_5_show_content',
+            'hero_slide_1_align','hero_slide_2_align','hero_slide_3_align','hero_slide_4_align','hero_slide_5_align',
+            'hero_slide_1_position','hero_slide_2_position','hero_slide_3_position','hero_slide_4_position','hero_slide_5_position',
+            'hero_slide_1_overlay','hero_slide_2_overlay','hero_slide_3_overlay','hero_slide_4_overlay','hero_slide_5_overlay',
+            'hero_slide_1_cta1_show','hero_slide_2_cta1_show','hero_slide_3_cta1_show','hero_slide_4_cta1_show','hero_slide_5_cta1_show',
+            'hero_slide_1_cta1_text','hero_slide_2_cta1_text','hero_slide_3_cta1_text','hero_slide_4_cta1_text','hero_slide_5_cta1_text',
+            'hero_slide_1_cta1_url','hero_slide_2_cta1_url','hero_slide_3_cta1_url','hero_slide_4_cta1_url','hero_slide_5_cta1_url',
+            'hero_slide_1_cta2_show','hero_slide_2_cta2_show','hero_slide_3_cta2_show','hero_slide_4_cta2_show','hero_slide_5_cta2_show',
+            'hero_slide_1_cta2_text','hero_slide_2_cta2_text','hero_slide_3_cta2_text','hero_slide_4_cta2_text','hero_slide_5_cta2_text',
+            'hero_slide_1_cta2_url','hero_slide_2_cta2_url','hero_slide_3_cta2_url','hero_slide_4_cta2_url','hero_slide_5_cta2_url',
+            'hero_title_1','hero_title_2','hero_title_3','hero_title_4','hero_title_5',
+            'hero_subtitle_1','hero_subtitle_2','hero_subtitle_3','hero_subtitle_4','hero_subtitle_5',
+            'hero_badge_1','hero_badge_2','hero_badge_3','hero_badge_4','hero_badge_5',
             'hero_image','hero_overlay','hero_align','hero_height',
             'hero_cta1_show','hero_cta1_text','hero_cta2_show','hero_cta2_text',
             // Portada — Banners y extras
+            'featured_categories_enabled','featured_categories_title','featured_categories_subtitle',
+            'featured_categories_show_all','featured_categories_all_text','featured_categories_visual',
+            'featured_categories_style','featured_categories_shape','featured_categories_image_fit',
+            'featured_categories_items','featured_categories_columns','featured_categories_mobile_columns',
+            'featured_categories_limit','featured_categories_hide_empty','featured_categories_show_count',
+            'featured_categories_mobile_carousel','featured_categories_radius',
+            'featured_categories_section_bg','featured_categories_card_bg',
+            'featured_categories_text_color','featured_categories_accent',
+            'promo_enabled','promo_section_title','promo_section_subtitle','promo_style','promo_columns',
+            'promo_height','promo_mobile_height','promo_overlay','promo_autoplay','promo_duration','promo_show_dots','promo_order',
+            'promo_item_1_enabled','promo_item_2_enabled','promo_item_3_enabled',
+            'promo_image_1','promo_image_2','promo_image_3',
+            'promo_mobile_image_1','promo_mobile_image_2','promo_mobile_image_3',
+            'promo_title_1','promo_title_2','promo_title_3',
+            'promo_subtitle_1','promo_subtitle_2','promo_subtitle_3',
+            'promo_cta_text_1','promo_cta_text_2','promo_cta_text_3',
+            'promo_cta_url_1','promo_cta_url_2','promo_cta_url_3',
+            'promo_align_1','promo_align_2','promo_align_3',
             'banner1_title','banner1_sub','banner2_title','banner2_sub',
-            'announcement_text','announcement_bg',
+            'announcement_text','announcement_bg','announcement_color','announcement_font_size','announcement_align','announcement_full_width','announcement_show',
             'countdown_label','countdown_end',
             'split_left_title','split_left_sub','split_right_title','split_right_sub',
-            'trust_icon_1','trust_text_1','trust_icon_2','trust_text_2','trust_icon_3','trust_text_3',
-            'trust_icon_4','trust_text_4',
+            'trust_section_enabled','trust_section_title','trust_section_subtitle','trust_section_style',
+            'trust_section_columns','trust_section_mobile_columns','trust_section_radius',
+            'trust_section_bg','trust_card_bg','trust_text_color','trust_accent_color',
+            'trust_show_descriptions','trust_mobile_carousel',
+            'trust_item_1_enabled','trust_item_2_enabled','trust_item_3_enabled','trust_item_4_enabled',
+            'trust_icon_1','trust_text_1','trust_description_1',
+            'trust_icon_2','trust_text_2','trust_description_2',
+            'trust_icon_3','trust_text_3','trust_description_3',
+            'trust_icon_4','trust_text_4','trust_description_4',
             'tab1_label','tab2_label','tab3_label',
             // Catálogo — Grid
             'catalog_section_title','card_style','catalog_cols_desktop','catalog_cols_mobile',
@@ -340,6 +421,8 @@ class SettingsController extends Controller
             'float_cart_show','float_cart_pos','float_wa_show','float_wa_tooltip','float_wa_pos',
             // Sistema — Venta y envío
             'store_mode','quote_price_display','quote_whatsapp','quote_whatsapp_country','quote_wa_msg',
+            'product_button_mode','btn_inquiry_text',
+            'featured_categories_band_bg','featured_categories_band_text','flash_sale_style','flash_sale_accent',
             'shipping_enabled','shipping_cost','shipping_free_from','require_address',
             'show_flash_sale','show_testimonials','show_newsletter','show_trust_strip',
             // Sistema — Pagos
@@ -362,15 +445,64 @@ class SettingsController extends Controller
             // Sistema — Login
             'login_bg_type','login_color1','login_color2','login_bg_image','login_heading','login_subtitle',
             // Sistema — SEO
-            'seo_title','seo_description','seo_keywords',
+            'seo_title','seo_description','seo_keywords','seo_robots','seo_canonical',
         ];
+        // Sanitizar la personalización visual por categoría.
+        if ($request->has('featured_categories_items')) {
+            $decoded = json_decode((string) $request->input('featured_categories_items'), true);
+            $clean = [];
+            if (is_array($decoded)) {
+                foreach ($decoded as $categoryId => $item) {
+                    if (!is_numeric($categoryId) || !is_array($item)) continue;
+                    $clean[(string)((int)$categoryId)] = [
+                        'visual' => in_array($item['visual'] ?? 'inherit', ['inherit','image','icon','initial'], true) ? $item['visual'] : 'inherit',
+                        'icon' => preg_match('/^[a-z0-9\-]+$/', (string)($item['icon'] ?? 'default')) ? (string)$item['icon'] : 'default',
+                        'image' => mb_substr(trim((string)($item['image'] ?? '')), 0, 500),
+                        'fit' => in_array($item['fit'] ?? 'cover', ['cover','contain'], true) ? $item['fit'] : 'cover',
+                        'shape' => in_array($item['shape'] ?? 'inherit', ['inherit','rounded','square','circle'], true) ? $item['shape'] : 'inherit',
+                    ];
+                }
+            }
+            $request->merge(['featured_categories_items' => json_encode($clean, JSON_UNESCAPED_SLASHES)]);
+        }
+
+        // Sanitizar el orden interno de los anuncios promocionales.
+        if ($request->has('promo_order')) {
+            $allowedPromoSlots = [1,2,3];
+            $requestedPromoOrder = array_values(array_unique(array_filter(
+                array_map('intval', explode(',', (string) $request->input('promo_order'))),
+                fn ($slot) => in_array($slot, $allowedPromoSlots, true)
+            )));
+            $request->merge([
+                'promo_order' => implode(',', array_merge(
+                    $requestedPromoOrder,
+                    array_values(array_diff($allowedPromoSlots, $requestedPromoOrder))
+                )),
+            ]);
+        }
+
+        // Sanitizar el orden de Inicio para impedir claves desconocidas o duplicadas.
+        if ($request->has('home_section_order')) {
+            $allowedHomeSections = ['hero','benefits','promotions','categories','flash_sale','discount_products','featured_products','blog','catalog','custom_page'];
+            $requestedOrder = array_values(array_unique(array_filter(
+                array_map('trim', explode(',', (string) $request->input('home_section_order'))),
+                fn ($key) => in_array($key, $allowedHomeSections, true)
+            )));
+            $request->merge([
+                'home_section_order' => implode(',', array_merge(
+                    $requestedOrder,
+                    array_values(array_diff($allowedHomeSections, $requestedOrder))
+                )),
+            ]);
+        }
+
         foreach ($request->only($keys) as $key => $value) {
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
         // Guardar también el estado apagado, pero solo para la pestaña enviada.
         $booleanKeysByTab = [
-            'portada' => ['hero_cta1_show','hero_cta2_show','age_gate'],
+            'portada' => ['section_card_shadow','section_show_dividers','promo_item_3_enabled','promo_item_2_enabled','promo_item_1_enabled','promo_show_dots','promo_autoplay','promo_enabled','trust_section_enabled','trust_show_descriptions','trust_mobile_carousel','trust_item_1_enabled','trust_item_2_enabled','trust_item_3_enabled','trust_item_4_enabled','featured_categories_enabled','featured_categories_show_all','featured_categories_hide_empty','featured_categories_show_count','featured_categories_mobile_carousel','hero_cta1_show','hero_cta2_show','hero_autoplay','hero_pause_hover','hero_show_arrows','hero_show_dots','hero_slide_1_enabled','hero_slide_2_enabled','hero_slide_3_enabled','hero_slide_4_enabled','hero_slide_5_enabled','hero_slide_1_show_content','hero_slide_2_show_content','hero_slide_3_show_content','hero_slide_4_show_content','hero_slide_5_show_content','hero_slide_1_cta1_show','hero_slide_2_cta1_show','hero_slide_3_cta1_show','hero_slide_4_cta1_show','hero_slide_5_cta1_show','hero_slide_1_cta2_show','hero_slide_2_cta2_show','hero_slide_3_cta2_show','hero_slide_4_cta2_show','hero_slide_5_cta2_show'],
             'catalogo' => ['catalog_filter_price','catalog_filter_cats','catalog_filter_sale','catalog_filter_search','catalog_show_ratings','catalog_quick_view','catalog_show_sku','catalog_show_stock','wholesale_enabled','btn_show_icon','float_cart_show','float_wa_show'],
             'sistema' => ['shipping_enabled','require_address','show_flash_sale','show_testimonials','show_newsletter','show_trust_strip','footer_show_social','footer_show_categories','footer_show_newsletter','footer_show_benefits','footer_show_address','payment_manual_enabled','culqi_enabled','mp_enabled'],
         ];
@@ -382,46 +514,110 @@ class SettingsController extends Controller
             );
         }
 
-        // Arrays de checkboxes
+        // Mantener sincronizada la plantilla personalizada activa.
+        // Algunos storefronts mezclan sus settings con project_settings;
+        // por eso actualizamos ambos para que el diseñador siempre gane.
+        $activeProjectTemplate = ProjectTemplate::where('project_id', $project->id)
+            ->where('is_active', true)
+            ->first();
+
+        if ($activeProjectTemplate) {
+            $templateSettings = (array) ($activeProjectTemplate->settings ?? []);
+            $keysToSync = array_values(array_unique(array_merge(
+                $keys,
+                $booleanKeysByTab[$designTab] ?? []
+            )));
+            $latestValues = $project->settings()
+                ->whereIn('key', $keysToSync)
+                ->pluck('value', 'key')
+                ->toArray();
+
+            foreach ($latestValues as $key => $value) {
+                $templateSettings[$key] = $value;
+            }
+
+            $activeProjectTemplate->settings = $templateSettings;
+            $activeProjectTemplate->save();
+        }
+
+        // Arrays de checkboxes (solo pestaña sistema)
         if ($designTab === 'sistema') {
-            $project->settings()->updateOrCreate(
-                ['key' => 'accepted_payments'],
-                ['value' => json_encode($request->input('accepted_payments', []))]
-            );
-            $project->settings()->updateOrCreate(
-                ['key' => 'payment_manual_methods'],
-                ['value' => json_encode($request->input('payment_manual_methods', []))]
-            );
+            $this->projectSettingWrites->saveJsonArrays($project, [
+                'accepted_payments' => $request->input('accepted_payments', []),
+                'payment_manual_methods' => $request->input('payment_manual_methods', []),
+            ]);
         }
 
         // Llaves secretas: solo guardar si se envió algo que no sea la máscara
-        foreach (['culqi_secret_key', 'mp_access_token'] as $secretKey) {
-            $val = $request->input($secretKey, '');
-            if ($val && !str_starts_with($val, '••')) {
-                $project->settings()->updateOrCreate(['key' => $secretKey], ['value' => $val]);
-            }
-        }
+        $this->projectSettingWrites->saveSecrets($project, [
+            'culqi_secret_key' => $request->input('culqi_secret_key', ''),
+            'mp_access_token' => $request->input('mp_access_token', ''),
+        ]);
 
         if ($request->expectsJson() || $request->wantsJson()) {
             return response()->json(['ok' => true]);
         }
-        return back()->with('success', 'Configuración guardada.');
+        // El tab activo del Constructor Visual se controla por el query param ?cv=
+        // (lo lee Alpine). Devolver al mismo tab evita el "salto a página en blanco".
+        $validTabs = ['navegacion', 'inicio', 'marca', 'portada', 'catalogo', 'paginas', 'checkout', 'sistema'];
+        $cv = in_array($designTab, $validTabs, true) ? $designTab : 'marca';
+        return redirect()->route('settings.design', ['s' => 'constructor', 'cv' => $cv])
+            ->with('success', 'Configuración guardada.');
     }
 
     public function qr()
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $storefrontContext = $this->storefrontContexts->forProject($project, ['store_view' => 'qr']);
-        $baseUrl = $project->custom_domain
-            ? 'https://' . $project->custom_domain
-            : rtrim((string) config('app.url'), '/') . '/' . $project->slug;
-        $host = parse_url($baseUrl, PHP_URL_HOST);
-        $isIp = $host && filter_var($host, FILTER_VALIDATE_IP);
-        $isPublicUrl = $host && !in_array($host, ['localhost', '127.0.0.1', '::1'], true)
-            && (!$isIp || (bool) filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE));
+        $baseUrl = $this->publicCatalogUrl($project);
+        $isPublicUrl = $baseUrl !== '';
 
-        return view('settings.qr', compact('project', 'baseUrl', 'isPublicUrl', 'storefrontContext'));
+        return view('settings.qr', compact('project', 'baseUrl', 'isPublicUrl'));
+    }
+
+    private function publicCatalogUrl(Project $project): string
+    {
+        $candidates = [];
+        if (filled($project->custom_domain)) {
+            $candidates[] = ['root' => 'https://'.trim((string) $project->custom_domain, '/'), 'append_slug' => false];
+        }
+
+        $candidates[] = ['root' => request()->getSchemeAndHttpHost(), 'append_slug' => true];
+        $candidates[] = ['root' => (string) config('app.url'), 'append_slug' => true];
+
+        foreach ($candidates as $candidate) {
+            $root = rtrim(trim($candidate['root']), '/');
+            $scheme = strtolower((string) parse_url($root, PHP_URL_SCHEME));
+            $host = strtolower((string) parse_url($root, PHP_URL_HOST));
+            if (!in_array($scheme, ['http', 'https'], true) || !$this->isPublicQrHost($host)) {
+                continue;
+            }
+
+            return $candidate['append_slug'] ? $root.'/'.$project->slug : $root;
+        }
+
+        return '';
+    }
+
+    private function isPublicQrHost(string $host): bool
+    {
+        if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+            return false;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return (bool) filter_var(
+                $host,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+            );
+        }
+
+        if (!str_contains($host, '.') || preg_match('/\.(?:local|localhost|test|internal|invalid)$/i', $host)) {
+            return false;
+        }
+
+        return (bool) filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
     }
 
     public function updateQr(Request $request)
@@ -537,66 +733,51 @@ class SettingsController extends Controller
         $project = app('active_project');
         $this->authorizeProject($project);
 
-        $requestedTemplate = $request->input('template');
-        $templateKey = is_string($requestedTemplate) ? trim($requestedTemplate) : '';
+        $templateKey = $request->input('template');
+        $template    = CatalogTemplates::get($templateKey);
 
-        if (!CatalogTemplates::isSupported($templateKey)) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'La plantilla seleccionada no está disponible. Elige Ecommerce, Catálogo Directo o CompuTienda.',
-                'errors' => ['template' => ['La plantilla seleccionada no está soportada.']],
-            ], 422);
+        if (!$template) {
+            return response()->json(['ok' => false, 'message' => 'Plantilla no encontrada.'], 422);
         }
 
-        $template = CatalogTemplates::get($templateKey);
+        // Guardar la clave de plantilla activa
+        $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $templateKey]);
+        ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
 
-        [$preserved, $effectiveKey] = DB::transaction(function () use ($project, $request, $template, $templateKey) {
-            $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $templateKey]);
-            ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
-
-            // La plantilla solo aporta valores iniciales. Los ajustes del proyecto son
-            // globales y siempre deben sobrevivir a un cambio de plantilla.
-            $skip = ['culqi_secret_key', 'mp_access_token', 'culqi_public_key'];
-            $preserved = 0;
-            foreach ($template['settings'] as $key => $value) {
-                if (in_array($key, $skip, true)) {
-                    continue;
-                }
-                $existing = $project->settings()->where('key', $key)->value('value');
-                if ($existing !== null && $existing !== '') {
-                    $preserved++;
-                    continue;
-                }
-                $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
+        // La plantilla solo aporta valores iniciales. Los ajustes del proyecto son
+        // globales y siempre deben sobrevivir a un cambio de plantilla.
+        $skip = ['culqi_secret_key', 'mp_access_token', 'culqi_public_key'];
+        $preserved = 0;
+        foreach ($template['settings'] as $key => $value) {
+            if (in_array($key, $skip)) continue;
+            $existing = $project->settings()->where('key', $key)->value('value');
+            if ($existing !== null && $existing !== '') {
+                $preserved++;
+                continue;
             }
+            $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
+        }
 
-            if ($request->input('save_as_template') === '1') {
-                $name = $request->input('template_name') ?: ('Plantilla ' . ucfirst($templateKey));
-                ProjectTemplate::create([
-                    'project_id' => $project->id,
-                    'name' => $name,
-                    'description' => 'Generada desde aplicación de plantilla ' . $templateKey,
-                    'settings' => $template['settings'],
-                    'is_active' => true,
-                ]);
-            }
-
-            $effectiveKey = (string) $project->fresh()->setting('catalog_template', '');
-            if (!CatalogTemplates::isSupported($effectiveKey)) {
-                throw new \RuntimeException('No se pudo confirmar la plantilla aplicada.');
-            }
-
-            return [$preserved, $effectiveKey];
-        });
-
-        $activeProject = $project->fresh();
+        // Si se solicita, guardar esta configuración como plantilla personalizada del proyecto
+        if ($request->input('save_as_template') === '1') {
+            $name = $request->input('template_name') ?: ('Plantilla ' . ucfirst($templateKey));
+            // Desactivar otras plantillas activas del proyecto
+            \App\Models\ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+            \App\Models\ProjectTemplate::create([
+                'project_id' => $project->id,
+                'name'       => $name,
+                'description'=> 'Generada desde aplicación de plantilla ' . $templateKey,
+                'settings'   => $template['settings'],
+                'is_active'  => true,
+            ]);
+        }
 
         return response()->json([
             'ok' => true,
-            'template' => $effectiveKey,
+            'template' => $templateKey,
             'preserved' => $preserved,
-            'theme' => CatalogTemplates::supportedTheme($effectiveKey),
-            'public_url' => StorefrontNavigation::publicUrl($activeProject),
+            'theme' => \App\Support\StorefrontTheme::resolve(['catalog_template' => $templateKey]),
+            'public_url' => route('public.catalog', $project->slug),
         ]);
     }
 

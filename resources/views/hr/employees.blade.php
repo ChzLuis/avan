@@ -475,6 +475,7 @@
                                 <option value="">Sin acceso (solo lectura o sin login)</option>
                                 <option value="gerente">Gerente — acceso casi total</option>
                                 <option value="vendedor">Vendedor — ventas y clientes</option>
+                                <option value="revendedor">Revendedor — vende con sus propios precios y catálogo</option>
                                 <option value="almacen">Almacén — catálogo e inventario</option>
                                 <option value="rrhh">RRHH — empleados y asistencia</option>
                                 <option value="contador">Contador — facturación y reportes</option>

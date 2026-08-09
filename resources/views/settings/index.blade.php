@@ -7,6 +7,12 @@
     $isOwnerOrSuper = auth()->user()?->is_superadmin || ($project && $project->owner_id === auth()->id());
 @endphp
 
+{{-- Editor de Flujo: pantalla completa e independiente (fuera del x-data de settings
+     para evitar conflictos de scope con 'selected', 'projects', etc.) --}}
+@if($s === 'flujo')
+    @include('settings.partials.flow-editor', ['selP' => $selP])
+@else
+
 <div class="flex flex-col h-full w-full overflow-hidden"
      x-data="{
          projects: {{ Illuminate\Support\Js::from($projects->map(fn($p) => [
@@ -92,7 +98,8 @@
          },
      }">
 
-{{-- TOP BAR --}}
+{{-- TOP BAR (oculto en la pantalla dedicada de Flujo de estados) --}}
+@if($s !== 'flujo')
 <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white flex-shrink-0">
     <div>
         <h1 class="text-lg font-semibold text-gray-800">Negocios</h1>
@@ -108,13 +115,14 @@
     </button>
     @endif
 </div>
+@endif
 
 {{-- BODY --}}
 <div class="flex flex-1 overflow-hidden" {{-- mv is inherited from outer x-data --}}
      x-init="{{ !$isOwnerOrSuper ? 'mv = \'detail\'' : '' }}">
 
-@if($isOwnerOrSuper)
-{{-- ─── RAIL IZQUIERDA ─────────────────────────────────────────────── --}}
+@if($isOwnerOrSuper && $s !== 'flujo')
+{{-- ─── RAIL IZQUIERDA (oculto en Flujo de estados) ─────────────────── --}}
 <div class="w-14 border-r border-gray-200 bg-gray-50 hidden md:flex flex-col items-center py-3 gap-2 flex-shrink-0">
 
     <div class="relative group">
@@ -151,8 +159,10 @@
     </div>
 
 </div>
+@endif{{-- /rail izquierda --}}
 
-{{-- ─── LISTA CENTRAL ──────────────────────────────────────────────── --}}
+{{-- ─── LISTA CENTRAL (oculta por completo en pantalla de Flujo de estados) ─── --}}
+@if($s !== 'flujo')
 <div class="border-r border-gray-200 bg-white flex-shrink-0"
      :class="mv === 'detail' ? 'hidden md:flex md:flex-col md:w-72' : 'flex flex-col w-full md:w-72'">
 
@@ -387,7 +397,8 @@
     <template x-if="!creating && selected">
         <div class="flex flex-col h-full">
 
-            {{-- Header --}}
+            {{-- Header del panel (oculto en Flujo de estados: ya hay encabezado propio) --}}
+            @if($s !== 'flujo')
             <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
                 <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                     @if($selP->logo_url)
@@ -408,9 +419,10 @@
                     {{ $selP->is_active ? 'Activo' : 'Inactivo' }}
                 </span>
             </div>
+            @endif
 
-            {{-- Tabs --}}
-            <div class="flex border-b border-gray-200 px-6 bg-white flex-shrink-0 overflow-x-auto">
+            {{-- Tabs (ocultos en la pantalla dedicada de Flujo de estados) --}}
+            <div class="flex border-b border-gray-200 px-6 bg-white flex-shrink-0 overflow-x-auto {{ $s === 'flujo' ? 'hidden' : '' }}">
                 @php
                 $tabs = [
                     ['k'=>'datos',       'l'=>'Datos'],
@@ -442,8 +454,8 @@
             </div>
             @endif
 
-            {{-- Contenido scrollable --}}
-            <div class="flex-1 overflow-y-auto p-6">
+            {{-- Contenido scrollable (sin padding/scroll en el editor de flujo, que es full-screen) --}}
+            <div class="flex-1 {{ $s === 'flujo' ? 'overflow-hidden' : 'overflow-y-auto p-6' }}">
 
             {{-- TAB: Datos --}}
             @if($s === 'datos')
@@ -865,20 +877,66 @@
                                 <input type="text" name="serie_factura" maxlength="4" class="input"
                                        placeholder="F001"
                                        value="{{ old('serie_factura', $selP->setting('serie_factura', 'F001')) }}">
-                                <p class="text-xs text-gray-400 mt-1">Para facturas (RUC)</p>
+                                <p class="text-xs text-gray-400 mt-1">Para facturas (RUC) · Nubefact demo: FFF1</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Serie Boleta</label>
                                 <input type="text" name="serie_boleta" maxlength="4" class="input"
                                        placeholder="B001"
                                        value="{{ old('serie_boleta', $selP->setting('serie_boleta', 'B001')) }}">
-                                <p class="text-xs text-gray-400 mt-1">Para boletas (DNI)</p>
+                                <p class="text-xs text-gray-400 mt-1">Para boletas (DNI) · Nubefact demo: BBB1</p>
                             </div>
                         </div>
                     </div>
 
+                    {{-- Proveedor de facturación electrónica + credenciales (un solo x-data) --}}
+                    @php $billingProvider = $selP->setting('billing_provider', 'nubefact'); @endphp
+                    <div x-data="{ prov: '{{ $billingProvider }}' }" class="space-y-4">
+
+                        <div class="bg-indigo-50 rounded-xl p-4 space-y-3 border border-indigo-100">
+                            <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Proveedor de emisión a SUNAT</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer bg-white"
+                                       :class="prov==='nubefact' ? 'border-indigo-500 ring-1 ring-indigo-300' : 'border-gray-200'">
+                                    <input type="radio" name="billing_provider" value="nubefact" x-model="prov">
+                                    <span class="text-sm font-medium text-gray-800">Nubefact</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer bg-white"
+                                       :class="prov==='apisperu' ? 'border-indigo-500 ring-1 ring-indigo-300' : 'border-gray-200'">
+                                    <input type="radio" name="billing_provider" value="apisperu" x-model="prov">
+                                    <span class="text-sm font-medium text-gray-800">APIsPERU</span>
+                                </label>
+                            </div>
+                            <p class="text-[11px] text-indigo-500">Elige qué servicio usará el botón "Enviar a SUNAT".</p>
+                        </div>
+
+                        {{-- Credenciales APIsPERU --}}
+                        <div class="bg-gray-50 rounded-xl p-4 space-y-4" x-show="prov==='apisperu'" x-cloak>
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Credenciales APIsPERU (Facturación)</p>
+                                <span class="text-xs px-2 py-0.5 rounded-full
+                                    {{ $selP->setting('apisperu_token') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                    {{ $selP->setting('apisperu_token') ? 'Configurado' : 'Sin configurar' }}
+                                </span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Token de empresa (JWT)</label>
+                                <input type="text" name="apisperu_token" class="input font-mono text-xs"
+                                       placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+                                       value="{{ old('apisperu_token', $selP->setting('apisperu_token')) }}">
+                                <p class="text-xs text-gray-400 mt-1">Del panel de tu empresa en <strong>facturacion.apisperu.com</strong> (incluye tu certificado).</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ubigeo del emisor</label>
+                                <input type="text" name="apisperu_ubigeo" class="input font-mono text-xs" maxlength="6"
+                                       placeholder="150101"
+                                       value="{{ old('apisperu_ubigeo', $selP->setting('apisperu_ubigeo', '150101')) }}">
+                                <p class="text-xs text-gray-400 mt-1">Código de 6 dígitos (Lima-Lima-Lima = 150101).</p>
+                            </div>
+                        </div>
+
                     {{-- Credenciales Nubefact --}}
-                    <div class="bg-gray-50 rounded-xl p-4 space-y-4">
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-4" x-show="prov==='nubefact'" x-cloak>
                         <div class="flex items-center justify-between">
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Credenciales Nubefact</p>
                             <span class="text-xs px-2 py-0.5 rounded-full
@@ -901,31 +959,6 @@
                                    value="{{ old('nubefact_token', $selP->setting('nubefact_token')) }}">
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Token APIPERU <span class="text-gray-400 font-normal text-xs">(consulta automática de RUC)</span></label>
-                            <input type="text" name="apiperu_token" class="input font-mono text-xs"
-                                   placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-                                   value="{{ old('apiperu_token', $selP->setting('apiperu_token')) }}">
-                            <p class="text-xs text-gray-400 mt-1">Regístrate gratis en <strong>apiperu.dev</strong> y copia tu token JWT.</p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Serie Factura</label>
-                                <input type="text" name="serie_factura" class="input font-mono text-xs"
-                                       placeholder="FFF1"
-                                       value="{{ old('serie_factura', $selP->setting('serie_factura', 'FFF1')) }}">
-                                <p class="text-xs text-gray-400 mt-1">Demo: FFF1 · Producción: F001</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Serie Boleta</label>
-                                <input type="text" name="serie_boleta" class="input font-mono text-xs"
-                                       placeholder="BBB1"
-                                       value="{{ old('serie_boleta', $selP->setting('serie_boleta', 'BBB1')) }}">
-                                <p class="text-xs text-gray-400 mt-1">Demo: BBB1 · Producción: B001</p>
-                            </div>
-                        </div>
-
                         <div class="flex items-start gap-2 text-xs text-blue-700 bg-blue-50 rounded-lg p-3">
                             <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -934,6 +967,26 @@
                             <span>Encuentra tu URL y Token en <strong>nubefact.com → Configuración → API</strong>. En modo demo puedes emitir comprobantes de prueba sin costo.</span>
                         </div>
                     </div>
+
+                    {{-- Consulta automática de RUC/DNI — independiente del proveedor de emisión --}}
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Consulta automática de RUC/DNI</p>
+                            <span class="text-xs px-2 py-0.5 rounded-full
+                                {{ $selP->setting('apiperu_token') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                {{ $selP->setting('apiperu_token') ? 'Configurado' : 'Sin configurar' }}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Token APIPERU</label>
+                            <input type="text" name="apiperu_token" class="input font-mono text-xs"
+                                   placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                   value="{{ old('apiperu_token', $selP->setting('apiperu_token')) }}">
+                            <p class="text-xs text-gray-400 mt-1">Autocompleta la razón social y dirección del cliente al escribir su RUC/DNI. Regístrate gratis en <strong>apiperu.dev</strong> y copia tu token JWT. Funciona con cualquier proveedor de emisión.</p>
+                        </div>
+                    </div>
+
+                    </div>{{-- /x-data proveedor --}}
 
                     <div class="flex justify-end pt-2">
                         <button type="submit" class="btn-primary px-6">Guardar configuración</button>
@@ -1189,6 +1242,8 @@
 </div>{{-- /panel detalle --}}
 </div>{{-- /body --}}
 </div>{{-- /flex col --}}
+
+@endif{{-- /$s !== 'flujo' --}}
 
 </x-slot>
 </x-app-layout>

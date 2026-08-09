@@ -1,0 +1,573 @@
+Entendido. Aquí está el voucher **simplificado**:
+
+- **Un solo cliente** (venta de **S/ 490**)
+- **Un solo sistema** (no hay "2 sistemas")
+- **Sin bots ni planes mensuales**
+- **Solo BIXO** como marca/plataforma
+- **Proyecto finalizado** + **saldo pendiente S/ 245** + **1 mes de soporte incluido** (cambios, requerimientos, explicaciones)
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voucher BIXO — Proyecto Finalizado · Saldo S/245</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    background: #eef2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 0;
+  }
+
+  .voucher {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    margin: 0 auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+
+  .header {
+    background: #0a0f1c;
+    padding: 32px 40px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 3px solid #10b981;
+  }
+  .brand h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 1px;
+  }
+  .brand p {
+    font-size: 11px;
+    color: #8b9eb0;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .doc-type {
+    text-align: right;
+  }
+  .doc-type .label {
+    font-size: 10px;
+    color: #6c7a91;
+    letter-spacing: 2px;
+  }
+  .doc-type .title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #10b981;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .doc-type .ref {
+    font-size: 10px;
+    color: #8ba0b5;
+    margin-top: 6px;
+  }
+
+  .client-row {
+    background: #f8fafd;
+    padding: 20px 40px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    border-bottom: 1px solid #e2edf7;
+  }
+  .field label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #10b981;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .field .value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0a1c2f;
+    border-bottom: 1.5px dashed #cbdde9;
+    padding-bottom: 5px;
+  }
+
+  .content {
+    padding: 32px 40px 28px;
+  }
+
+  .section {
+    margin-bottom: 28px;
+  }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .section-title .dot {
+    width: 10px;
+    height: 10px;
+    background: #10b981;
+    border-radius: 50%;
+  }
+  .section-title h2 {
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #0f293f;
+  }
+
+  .card {
+    border: 1px solid #e5edf5;
+    border-radius: 18px;
+    background: white;
+    padding: 18px 24px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  }
+  .grid-2cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 30px;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #1f3a4e;
+    padding: 6px 0;
+    border-bottom: 1px dashed #f0f4fa;
+  }
+  .feature-item .check {
+    color: #10b981;
+    font-weight: 800;
+    font-size: 14px;
+    min-width: 22px;
+  }
+
+  .sistema-unico {
+    background: linear-gradient(115deg, #0c1b2b 0%, #0f212f 100%);
+    border-radius: 20px;
+    padding: 22px 28px;
+    margin: 20px 0 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sistema-info h3 {
+    color: white;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .sistema-info p {
+    color: #9bb4c9;
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .sistema-precio {
+    text-align: right;
+  }
+  .sistema-precio .currency {
+    font-size: 14px;
+    color: #8ba9c2;
+    vertical-align: top;
+  }
+  .sistema-precio .amount {
+    font-size: 48px;
+    font-weight: 900;
+    color: #10b981;
+    line-height: 1;
+  }
+  .sistema-precio .note {
+    font-size: 10px;
+    color: #7e9ab3;
+  }
+
+  .balance-card {
+    background: linear-gradient(135deg, #fff7eb 0%, #fff1df 100%);
+    border-radius: 24px;
+    border-left: 8px solid #f39c12;
+    padding: 20px 28px;
+    margin: 18px 0 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.03);
+  }
+  .balance-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .balance-tag {
+    font-size: 12px;
+    font-weight: 800;
+    color: #e67e22;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .balance-amount {
+    font-size: 42px;
+    font-weight: 900;
+    color: #c0392b;
+    line-height: 1;
+  }
+  .balance-amount small {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .balance-note {
+    font-size: 13px;
+    font-weight: 600;
+    color: #aa6f20;
+    background: #fdebd0;
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 30px;
+  }
+  .support-bonus {
+    background: #2c3e50;
+    border-radius: 20px;
+    padding: 14px 22px;
+    text-align: center;
+    min-width: 210px;
+  }
+  .support-bonus .bonus-title {
+    color: #f1c40f;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+  .support-bonus .bonus-detail {
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  .support-bonus .bonus-sub {
+    color: #b0c4de;
+    font-size: 11px;
+    margin-top: 5px;
+  }
+
+  .payment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0 20px;
+  }
+  .payment-card {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 16px 20px;
+    border: 1px solid #e1edf7;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .payment-percent {
+    font-size: 32px;
+    font-weight: 800;
+    color: #10b981;
+    min-width: 70px;
+  }
+  .payment-desc {
+    font-size: 12px;
+    color: #2c5778;
+    font-weight: 500;
+  }
+
+  .completed-badge {
+    background: #10b98110;
+    border: 1px solid #10b98130;
+    border-radius: 40px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px 0 10px;
+  }
+  .completed-badge .emoji {
+    font-size: 24px;
+  }
+  .completed-badge .text {
+    font-weight: 800;
+    color: #0f6e4a;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .detail-warning {
+    background: #fef9e6;
+    border-left: 5px solid #f5b042;
+    border-radius: 14px;
+    padding: 12px 18px;
+    margin: 12px 0 24px;
+  }
+
+  .signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 20px;
+    margin-bottom: 12px;
+  }
+  .sign-line {
+    border-top: 1.5px solid #cbdde8;
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+  .sign-title {
+    font-size: 10px;
+    color: #7a95ad;
+    text-align: center;
+  }
+  .sign-name {
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 6px;
+    color: #0e2f44;
+  }
+
+  .footer {
+    background: #0a0f1c;
+    padding: 18px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+  .footer-left {
+    color: white;
+  }
+  .footer-left .name {
+    font-weight: 800;
+    font-size: 14px;
+  }
+  .footer-left .slogan {
+    font-size: 9px;
+    color: #768aa2;
+    margin-top: 2px;
+  }
+  .footer-note {
+    font-size: 9px;
+    color: #6d829c;
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  @media print {
+    body {
+      background: white;
+      padding: 0;
+      margin: 0;
+    }
+    .voucher {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="voucher">
+
+  <div class="header">
+    <div class="brand">
+      <h1>BIXO</h1>
+      <p>Soluciones digitales inteligentes</p>
+    </div>
+    <div class="doc-type">
+      <div class="label">DOCUMENTO COMERCIAL</div>
+      <div class="title">VOUCHER</div>
+      <div class="ref">N° COT-2026-0513 &nbsp;|&nbsp; 13 / 05 / 2026</div>
+    </div>
+  </div>
+
+  <div class="client-row">
+    <div class="field">
+      <label>Cliente</label>
+      <div class="value">Julio Lopez Orosco</div>
+    </div>
+    <div class="field">
+      <label>Negocio / Razón social</label>
+      <div class="value">—</div>
+    </div>
+    <div class="field">
+      <label>WhatsApp / Teléfono</label>
+      <div class="value">908 055 871</div>
+    </div>
+  </div>
+
+  <div class="content">
+    
+    <!-- SISTEMA ÚNICO BIXO -->
+    <div class="section">
+      <div class="section-title">
+        <div class="dot"></div>
+        <h2>Sistema BIXO — Plataforma completa</h2>
+      </div>
+      <div class="card">
+        <div class="grid-2cols">
+          <div>
+            <div class="feature-item"><span class="check">✓</span> Catálogo virtual en nube</div>
+            <div class="feature-item"><span class="check">✓</span> Diseño personalizado por referencia</div>
+            <div class="feature-item"><span class="check">✓</span> Panel de administración unificado</div>
+            <div class="feature-item"><span class="check">✓</span> Gestión y control de inventario</div>
+            <div class="feature-item"><span class="check">✓</span> Personalización de catálogo</div>
+          </div>
+          <div>
+            <div class="feature-item"><span class="check">✓</span> Actualización productos y precios</div>
+            <div class="feature-item"><span class="check">✓</span> Gestión proveedores + clientes</div>
+            <div class="feature-item"><span class="check">✓</span> Registro de ventas directas</div>
+            <div class="feature-item"><span class="check">✓</span> Generación de cotizaciones</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÓDULO COMERCIAL E INFRAESTRUCTURA -->
+    <div class="section">
+      <div class="section-title">
+        <div class="dot"></div>
+        <h2>Módulo Comercial & Infraestructura</h2>
+      </div>
+      <div class="card">
+        <div class="grid-2cols">
+          <div>
+            <div class="feature-item"><span class="check">✓</span> POS de ventas integrado</div>
+            <div class="feature-item"><span class="check">✓</span> Control de pedidos (cotización/venta)</div>
+            <div class="feature-item"><span class="check">✓</span> Reportes de ventas diarias</div>
+            <div class="feature-item"><span class="check">✓</span> Reportes de inventario</div>
+          </div>
+          <div>
+            <div class="feature-item"><span class="check">✓</span> Reportes de rentabilidad</div>
+            <div class="feature-item"><span class="check">✓</span> Alojamiento cloud + SSL</div>
+            <div class="feature-item"><span class="check">✓</span> Acceso multi dispositivo</div>
+            <div class="feature-item"><span class="check">✓</span> Respaldo y seguridad de datos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SISTEMA ÚNICO (VENTA 490) -->
+    <div class="sistema-unico">
+      <div class="sistema-info">
+        <h3>🎯 Sistema BIXO · Solución integral</h3>
+        <p>Plataforma completa de gestión comercial + infraestructura cloud</p>
+      </div>
+      <div class="sistema-precio">
+        <span class="currency">S/ </span><span class="amount">490.00</span>
+        <div class="note">Precio total · IGV incluido</div>
+      </div>
+    </div>
+
+    <!-- SALDO PENDIENTE S/245 + MES DE SOPORTE (cambios, requerimientos, explicaciones) -->
+    <div class="balance-card">
+      <div class="balance-left">
+        <div class="balance-tag">💰 SALDO PENDIENTE</div>
+        <div class="balance-amount">S/ 245<small>.00</small></div>
+        <div class="balance-note">Restante del acuerdo total (S/ 490)</div>
+        <div style="font-size: 12px; color:#9a6223; margin-top: 4px;">✓ Proyecto entregado y funcional</div>
+      </div>
+      <div class="support-bonus">
+        <div class="bonus-title">🎁 MES DE SOPORTE INCLUIDO</div>
+        <div class="bonus-detail">✅ Cambios · Requerimientos · Explicaciones</div>
+        <div class="bonus-sub">Soporte técnico y funcional por 30 días corridos</div>
+        <div style="background:#f1c40f20; margin-top: 8px; border-radius: 20px; padding: 4px 8px; font-size: 10px; color:#ffdd99;">
+          🤝 Ajustes post-entrega + asistencia prioritaria
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMAS DE PAGO -->
+    <div class="payment-grid">
+      <div class="payment-card">
+        <div class="payment-percent">50%</div>
+        <div class="payment-desc">Pago inicial realizado: S/ 245 — inicio del desarrollo</div>
+      </div>
+      <div class="payment-card">
+        <div class="payment-percent">50%</div>
+        <div class="payment-desc">Saldo pendiente: S/ 245 — contra entrega y conformidad</div>
+      </div>
+    </div>
+
+    <!-- BADGE PROYECTO FINALIZADO -->
+    <div class="completed-badge">
+      <span class="emoji">✅</span>
+      <span class="text">PROYECTO FINALIZADO · ENTREGA COMPLETADA · IMPLEMENTACIÓN CERRADA</span>
+      <span class="emoji">✅</span>
+    </div>
+
+    <!-- DETALLE DEL MES DE SOPORTE -->
+    <div class="detail-warning">
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <span style="font-weight:800; color:#b55b0e;">🎯 MES DE SOPORTE INCLUIDO (por saldo pendiente):</span>
+        <span style="font-size:13px; color:#5a3e1a;">1 mes completo para cambios solicitados, requerimientos adicionales, explicaciones de uso y ajustes menores en el sistema BIXO. Asistencia por WhatsApp/email.</span>
+      </div>
+      <div style="margin-top: 10px; padding-top: 6px; border-top: 1px solid #ffe0b5; display: flex; gap: 12px; flex-wrap: wrap;">
+        <span style="font-size:12px; background:#f7e5cc; padding:2px 12px; border-radius: 20px;">🛠️ Correcciones y ajustes</span>
+        <span style="font-size:12px; background:#f7e5cc; padding:2px 12px; border-radius: 20px;">📘 Capacitación y explicaciones</span>
+        <span style="font-size:12px; background:#f7e5cc; padding:2px 12px; border-radius: 20px;">⚙️ Soporte para requerimientos post-entrega</span>
+      </div>
+    </div>
+
+    <!-- NOTA ACLARATORIA: SIN BOTS, SIN PLANES MENSUALES, SOLO BIXO -->
+    <div style="background: #e9f3fa; border-radius: 16px; padding: 12px 18px; margin: 10px 0 18px; font-size: 12px; color: #1e4a6b;">
+      <span style="font-weight:800;">🔔 Nota:</span> Este voucher corresponde a un <strong>solo cliente</strong> y un <strong>solo sistema BIXO</strong>. No incluye bots, ni planes de soporte mensual adicionales. El saldo pendiente de <strong>S/ 245</strong> incluye <strong>1 mes de soporte para cambios, requerimientos y explicaciones</strong>.
+    </div>
+
+    <!-- FIRMAS -->
+    <div class="signatures">
+      <div>
+        <div class="sign-line"></div>
+        <div class="sign-title">Firma y sello del proveedor</div>
+        <div class="sign-name">BIXO Soluciones Digitales</div>
+      </div>
+      <div>
+        <div class="sign-line"></div>
+        <div class="sign-title">Firma y conformidad del cliente</div>
+        <div class="sign-name">____________________</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <div class="name">BIXO · Innovación digital</div>
+      <div class="slogan">Gestión comercial inteligente</div>
+    </div>
+    <div class="footer-note">
+      ✅ Proyecto finalizado · Sistema BIXO: S/ 490 (S/ 245 abonados)<br>
+      💰 Saldo pendiente: S/ 245 (incluye 1 mes de soporte: cambios, requerimientos y explicaciones)
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
+```

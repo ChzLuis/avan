@@ -7,8 +7,8 @@ use App\Models\Module;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Employee;
-use App\Support\CatalogTemplates;
 use App\Mail\DemoCreada;
+use App\Support\StorefrontSections;
 use Database\Seeders\DefaultCatalogsSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -100,7 +100,7 @@ class DemoController extends Controller
 
         // Catálogos por defecto
         DefaultCatalogsSeeder::seedForProject($project);
-        CatalogTemplates::createProjectTemplate($project, 'default', 'Plantilla demo', true);
+        StorefrontSections::ensure($project);
 
         // Agregar como empleado/miembro
         Employee::create([

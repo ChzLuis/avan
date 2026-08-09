@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Module;
-use App\Models\ProjectTemplate;
-use App\Support\CatalogTemplates;
+use App\Support\StorefrontSections;
 use Database\Seeders\DefaultCatalogsSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -233,7 +232,7 @@ class ProjectController extends Controller
         }
 
         DefaultCatalogsSeeder::seedForProject($project);
-        CatalogTemplates::createProjectTemplate($project, 'default', 'Plantilla inicial', true);
+        StorefrontSections::ensure($project);
 
         if ($request->wantsJson()) {
             return response()->json(['project' => $project->only(['id','name','category','is_active','slug'])]);

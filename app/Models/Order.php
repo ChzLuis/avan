@@ -14,6 +14,8 @@ class Order extends Model {
         'delivery_status', 'delivery_person_id', 'delivery_person_name',
         'delivery_assigned_at', 'delivery_dispatched_at', 'delivery_delivered_at',
         'delivery_distance_km', 'delivery_notes', 'delivery_proof',
+        // laundry fields
+        'tag_code', 'pieces_count', 'laundry_status', 'laundry_status_at', 'ready_notified_at',
     ];
     protected $casts = [
         'total'                   => 'decimal:2',
@@ -24,6 +26,9 @@ class Order extends Model {
         'delivery_assigned_at'    => 'datetime',
         'delivery_dispatched_at'  => 'datetime',
         'delivery_delivered_at'   => 'datetime',
+        'ready_notified_at'       => 'datetime',
+        'laundry_status_at'       => 'datetime',
+        'pieces_count'            => 'integer',
     ];
     public function project() { return $this->belongsTo(Project::class); }
     public function client()  { return $this->belongsTo(Client::class); }

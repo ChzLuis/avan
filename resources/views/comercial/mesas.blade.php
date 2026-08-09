@@ -11,7 +11,7 @@
       <span x-text="score"></span>
     </div>
     <div>
-      <div style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#9CA3AF;">AVAN Score</div>
+      <div style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#9CA3AF;">BIXO Score</div>
       <div style="font-size:10px;font-weight:800;" :style="'color:' + scoreColor" x-text="scoreLabel"></div>
     </div>
   </div>

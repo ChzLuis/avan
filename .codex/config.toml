@@ -1,0 +1,13 @@
+[mcp_servers.hostinger-mcp]
+command = "npx"
+args = ["hostinger-api-mcp@latest"]
+
+[mcp_servers.hostinger-mcp.env]
+API_TOKEN = "BqkxOyswriihpbrEk9msoUyIXjTqXWreiUgKDLws3b57d61b"
+
+[mcp_servers.n8n]
+command = 'C:\Users\luich\AppData\Roaming\npm\n8n-mcp.cmd'
+
+[mcp_servers.n8n.env]
+N8N_API_URL = "http://2.24.200.91:5678/api/v1"
+N8N_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZWEwNTAwMi01YmUyLTRmYmMtODg4OC01ZDMzZjNlYzViZDciLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiNTZmNGJiOGEtODEyMS00NjA4LThiY2EtODIyMDUyYWRhMmUyIiwiaWF0IjoxNzgwMDY4MTMzLCJleHAiOjE3ODI2MTkyMDB9.1o-3IVlPs1UNivO2ytpviVa9M2ewBSACy91KaIfySOY"

@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VINUM & SPIRITS — Destilados con excelencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- =================== AGE MODAL =================== -->
+<div class="age-modal" id="ageModal" role="dialog" aria-modal="true">
+  <div class="age-card">
+    <div class="lock-ico">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </div>
+    <h2 class="serif">Verificación de Edad</h2>
+    <p>Para ingresar a VINUM &amp; SPIRITS confirma que tienes la mayoría de edad legal en tu país de residencia.</p>
+    <div class="age-actions">
+      <button class="btn btn-ghost" id="ageNo">Soy menor</button>
+      <button class="btn btn-gold" id="ageYes">Soy mayor de 18</button>
+    </div>
+    <p class="age-note-modal">La venta de bebidas alcohólicas a menores de edad está prohibida. <a href="#">Conoce nuestra política de venta responsable</a>.</p>
+  </div>
+</div>
+
+<!-- =================== UTILITY BAR =================== -->
+<div class="utility-bar">
+  <div class="container">
+    <div class="utility-left">
+      <span>🚚 <b style="color:var(--gold)">ENVÍOS GRATIS</b> a partir de $1,500 MXN</span>
+      <span class="utility-sep">|</span>
+      <span>📦 Compra antes de 4 PM y enviamos hoy</span>
+      <span class="utility-sep">|</span>
+      <span>🔞 Verificación de edad: mayor de 18 años</span>
+    </div>
+    <div class="utility-right">
+      <a href="#">⭐ Programa de fidelidad</a>
+      <span class="utility-sep">|</span>
+      <a href="#">📞 Atención 24/7</a>
+    </div>
+  </div>
+</div>
+
+<!-- =================== HEADER =================== -->
+<header class="site-header">
+  <div class="container">
+    <div class="header-main">
+      <a class="brand" href="#">
+        <span class="brand-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M8 3h8l-1 6a4 4 0 0 1-3 3 4 4 0 0 1-3-3z"/>
+            <path d="M12 12v7"/>
+            <path d="M9 20h6"/>
+          </svg>
+        </span>
+        <div>
+          <div class="brand-name">VINUM <b>&amp;</b> SPIRITS</div>
+          <div class="brand-tag">Destilados con excelencia · est. 2018</div>
+        </div>
+      </a>
+
+      <div class="search">
+        <span class="search-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        </span>
+        <input type="text" placeholder="Busca por marca, tipo, graduación o región…" />
+        <div class="search-tags">
+          <span>Whisky</span>
+          <span>Tequila</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+          <span class="tt-moon">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </span>
+          <span class="tt-sun">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </span>
+          <span class="tt-thumb">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>
+          </span>
+        </button>
+        <button class="icon-btn" title="Mi cuenta">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        </button>
+        <button class="icon-btn" title="Lista de deseos">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.8 6.6a5.5 5.5 0 0 0-9-1.8L12 5l-.2-.2a5.5 5.5 0 0 0-8 8L12 21l8.8-8.8a5.5 5.5 0 0 0 0-5.6Z"/></svg>
+          <span class="badge wine">2</span>
+        </button>
+        <button class="icon-btn" title="Carrito">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h2l3 13h11l2-8H7"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+          <span class="badge cart-badge">3</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATEGORIES -->
+  <nav class="nav-cats">
+    <div class="container">
+      <ul>
+        <li class="active">
+          <a class="cat-link" href="#">Whiskies <span class="chev">▾</span></a>
+          <div class="submenu">
+            <a href="#">Single Malt</a><a href="#">Blended</a><a href="#">Bourbon</a><a href="#">Irish</a><a href="#">Japonés</a>
+          </div>
+        </li>
+        <li>
+          <a class="cat-link" href="#">Vodka <span class="chev">▾</span></a>
+          <div class="submenu">
+            <a href="#">Premium</a><a href="#">Saborizados</a><a href="#">Nacionales</a><a href="#">Importados</a>
+          </div>
+        </li>
+        <li>
+          <a class="cat-link" href="#">Ron <span class="chev">▾</span></a>
+          <div class="submenu">
+            <a href="#">Añejo</a><a href="#">Extra añejo</a><a href="#">Overproof</a><a href="#">Especiados</a>
+          </div>
+        </li>
+        <li>
+          <a class="cat-link" href="#">Tequila &amp; Mezcal <span class="chev">▾</span></a>
+          <div class="submenu">
+            <a href="#">Reposado</a><a href="#">Añejo</a><a href="#">Cristalino</a><a href="#">Mezcal artesanal</a>
+          </div>
+        </li>
+        <li>
+          <a class="cat-link" href="#">Gin <span class="chev">▾</span></a>
+          <div class="submenu">
+            <a href="#">London Dry</a><a href="#">Premium</a><a href="#">Destilería local</a>
+          </div>
+        </li>
+        <li>
+          <a class="cat-link" href="#">Vinos <span class="chev">▾</span></a>
+          <div class="submenu">
+            <a href="#">Tinto</a><a href="#">Blanco</a><a href="#">Espumoso</a><a href="#">Rosado</a><a href="#">Gran reserva</a>
+          </div>
+        </li>
+        <li>
+          <a class="cat-link" href="#">Licores &amp; Cremas <span class="chev">▾</span></a>
+          <div class="submenu">
+            <a href="#">Crema irlandesa</a><a href="#">Avellana</a><a href="#">Licor de café</a><a href="#">Anís &amp; herbales</a>
+          </div>
+        </li>
+        <li><a class="cat-link" href="#">Cerveza artesanal</a></li>
+        <li><a class="cat-link promo-link" href="#">🎁 Promociones &amp; kits</a></li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<!-- =================== HERO =================== -->
+<section class="hero">
+  <div class="hero-track" id="heroTrack">
+
+    <div class="hero-slide">
+      <div class="hero-copy">
+        <span class="eyebrow">Colección 2025 — edición limitada</span>
+        <h1 class="hero-title">El whisky que <span>cuenta una historia</span> en cada copa.</h1>
+        <p class="hero-sub">Selección curada de single malts envejecidos en barricas de roble. Envío gratis a todo México en compras +$1,500.</p>
+        <div class="hero-meta">
+          <span><strong>120+</strong> destilerías</span>
+          <span><strong>48h</strong> envío express</span>
+          <span><strong>10%</strong> miembros</span>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-gold" href="#">Comprar ahora →</a>
+          <a class="btn btn-ghost" href="#">Ver la colección</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="bottle-placeholder">
+          <!-- Generic bottle silhouette placeholder -->
+          <svg viewBox="0 0 200 320" fill="none">
+            <defs>
+              <linearGradient id="bot1" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3a2a14"/>
+                <stop offset=".55" stop-color="#7a5828"/>
+                <stop offset="1" stop-color="#2a1c0a"/>
+              </linearGradient>
+              <pattern id="stripe1" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(45)">
+                <rect width="14" height="14" fill="transparent"/>
+                <line x1="0" y1="0" x2="0" y2="14" stroke="rgba(212,175,55,.06)" stroke-width="6"/>
+              </pattern>
+            </defs>
+            <rect width="200" height="320" fill="url(#stripe1)"/>
+            <path d="M85 20h30v40c0 8 18 18 18 40v200a10 10 0 0 1-10 10H77a10 10 0 0 1-10-10V100c0-22 18-32 18-40z" fill="url(#bot1)" stroke="#D4AF37" stroke-width="1"/>
+            <rect x="72" y="160" width="56" height="80" fill="#0F0F0F" stroke="#D4AF37" stroke-width=".8"/>
+            <text x="100" y="190" text-anchor="middle" fill="#D4AF37" font-family="Playfair Display, serif" font-size="11">VINUM</text>
+            <text x="100" y="210" text-anchor="middle" fill="#D4AF37" font-family="Playfair Display, serif" font-style="italic" font-size="9">single malt</text>
+            <line x1="80" y1="220" x2="120" y2="220" stroke="#D4AF37" stroke-width=".5"/>
+            <text x="100" y="232" text-anchor="middle" fill="#B68B40" font-family="Inter, sans-serif" font-size="6" letter-spacing="2">EDITION 2025</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-slide">
+      <div class="hero-copy">
+        <span class="eyebrow">Tequila &amp; Mezcal — miembros</span>
+        <h1 class="hero-title">2×1 en <span>agaves selectos</span> para socios.</h1>
+        <p class="hero-sub">Reposados, añejos y cristalinos de pequeñas casas artesanales. Aprovecha durante todo el mes con tu membresía Caverna.</p>
+        <div class="hero-meta">
+          <span><strong>2×1</strong> miembros</span>
+          <span><strong>NOM</strong> certificado</span>
+          <span><strong>+45</strong> casas</span>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-gold" href="#">Comprar 2×1 →</a>
+          <a class="btn btn-ghost" href="#">Hazte miembro</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="bottle-placeholder">
+          <svg viewBox="0 0 200 320" fill="none">
+            <rect width="200" height="320" fill="transparent"/>
+            <path d="M90 20h20v50c0 6 22 14 22 38v200a8 8 0 0 1-8 8H76a8 8 0 0 1-8-8V108c0-24 22-32 22-38z" fill="#1a3d2a" stroke="#D4AF37" stroke-width="1"/>
+            <rect x="76" y="170" width="48" height="70" fill="#0a1410" stroke="#D4AF37" stroke-width=".6"/>
+            <text x="100" y="200" text-anchor="middle" fill="#D4AF37" font-family="Playfair Display, serif" font-size="11">AGAVE</text>
+            <text x="100" y="220" text-anchor="middle" fill="#D4AF37" font-family="Playfair Display, serif" font-style="italic" font-size="9">reposado</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-slide">
+      <div class="hero-copy">
+        <span class="eyebrow">Regalo de la casa</span>
+        <h1 class="hero-title">Copa de <span>coctelería artesanal</span> en compras +$2,000.</h1>
+        <p class="hero-sub">Cristalería soplada a mano, diseñada en colaboración con bartenders del año. Mientras duren existencias.</p>
+        <div class="hero-meta">
+          <span><strong>1 sola</strong> compra</span>
+          <span><strong>Edición</strong> limitada</span>
+          <span><strong>Gratis</strong> con +$2K</span>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-gold" href="#">Reclama tu copa →</a>
+          <a class="btn btn-ghost" href="#">Ver términos</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="bottle-placeholder">
+          <svg viewBox="0 0 200 320" fill="none">
+            <path d="M50 40h100l-10 90a40 40 0 0 1-80 0z" fill="none" stroke="#D4AF37" stroke-width="1.4"/>
+            <path d="M100 130v110" stroke="#D4AF37" stroke-width="1.4"/>
+            <path d="M70 250h60" stroke="#D4AF37" stroke-width="1.4"/>
+            <path d="M70 70h60" stroke="rgba(212,175,55,.3)"/>
+            <text x="100" y="290" text-anchor="middle" fill="#B68B40" font-family="Inter" font-size="8" letter-spacing="3">CRYSTAL · 2025</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="hero-dots">
+    <button class="active" aria-label="Slide 1"></button>
+    <button aria-label="Slide 2"></button>
+    <button aria-label="Slide 3"></button>
+  </div>
+  <div class="hero-arrows">
+    <button id="heroPrev" aria-label="Anterior">‹</button>
+    <button id="heroNext" aria-label="Siguiente">›</button>
+  </div>
+</section>
+
+<!-- =================== TRUST STRIP =================== -->
+<section class="trust-strip">
+  <div class="container">
+    <div class="trust-item">
+      <div class="ti-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h13l2 4h3v6h-3"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>
+      <div><h4>Envío 24–48h</h4><p>Express en CDMX, GDL y MTY</p></div>
+    </div>
+    <div class="trust-item">
+      <div class="ti-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></div>
+      <div><h4>Pago seguro</h4><p>Tarjeta, OXXO, transferencia y cripto</p></div>
+    </div>
+    <div class="trust-item">
+      <div class="ti-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z"/><path d="m9 12 2 2 4-4"/></svg></div>
+      <div><h4>Producto auténtico</h4><p>Garantía de origen y autenticidad</p></div>
+    </div>
+    <div class="trust-item">
+      <div class="ti-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/></svg></div>
+      <div><h4>+18 verificado</h4><p>Venta responsable a mayores</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== SHOP =================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Catálogo destacado</span>
+        <h2>Explora la cava</h2>
+      </div>
+      <div class="head-right">
+        <div class="tab-pills">
+          <button class="active">Todos</button>
+          <button>Whisky</button>
+          <button>Tequila</button>
+          <button>Vino</button>
+          <button>Gin</button>
+          <button>Ron</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="shop">
+
+      <!-- ===== FILTERS ===== -->
+      <aside class="filters">
+        <div class="filter-block">
+          <div class="filter-head"><h4>Precio</h4><span class="count">$420 – $4,800</span></div>
+          <div class="price-range">
+            <div class="fill"></div>
+            <div class="knob k1"></div>
+            <div class="knob k2"></div>
+          </div>
+          <div class="price-vals"><span>$0</span><span>$10,000+</span></div>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-head"><h4>Graduación</h4></div>
+          <div class="check-list">
+            <label><span class="box">✓</span> 0–20% <span class="qty">14</span></label>
+            <label class="checked"><span class="box">✓</span> 20–40% <span class="qty">96</span></label>
+            <label class="checked"><span class="box">✓</span> 40% o más <span class="qty">142</span></label>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-head"><h4>Casa / Destilería</h4></div>
+          <div class="check-list">
+            <label class="checked"><span class="box">✓</span> Casa del Roble <span class="qty">22</span></label>
+            <label><span class="box">✓</span> Don Alcázar <span class="qty">18</span></label>
+            <label><span class="box">✓</span> Hacienda Norte <span class="qty">14</span></label>
+            <label><span class="box">✓</span> Cordillera Wines <span class="qty">12</span></label>
+            <label><span class="box">✓</span> Botánica Co. <span class="qty">9</span></label>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-head"><h4>País de origen</h4></div>
+          <div class="check-list">
+            <label><span class="box">✓</span> 🇲🇽 México <span class="qty">76</span></label>
+            <label><span class="box">✓</span> 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia <span class="qty">54</span></label>
+            <label><span class="box">✓</span> 🇯🇵 Japón <span class="qty">12</span></label>
+            <label><span class="box">✓</span> 🇮🇹 Italia <span class="qty">28</span></label>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-head"><h4>Envase</h4></div>
+          <div class="tag-row">
+            <span class="tag on">Estándar</span>
+            <span class="tag">Regalo</span>
+            <span class="tag">Edición limitada</span>
+            <span class="tag">Magnum</span>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-head"><h4>Calificación</h4></div>
+          <div class="check-list">
+            <label class="checked"><span class="box">✓</span>
+              <span class="star-row"><span>★</span><span>★</span><span>★</span><span>★</span><span class="off">★</span></span>
+              4+ <span class="qty">182</span>
+            </label>
+            <label><span class="box">✓</span>
+              <span class="star-row"><span>★</span><span>★</span><span>★</span><span class="off">★</span><span class="off">★</span></span>
+              3+ <span class="qty">256</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-head"><h4>Disponibilidad</h4></div>
+          <div class="tag-row">
+            <span class="tag on">⚡ Envío inmediato</span>
+            <span class="tag">⚠ Stock bajo</span>
+            <span class="tag">📦 Pre-orden</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ===== PRODUCT GRID ===== -->
+      <div>
+        <div class="shop-toolbar">
+          <div class="results"><b>248</b> productos · ordenados por relevancia</div>
+          <div class="toolbar-right">
+            <select class="sort-select">
+              <option>Recomendados</option>
+              <option>Precio: menor a mayor</option>
+              <option>Precio: mayor a menor</option>
+              <option>Más vendidos</option>
+              <option>Mejor calificados</option>
+              <option>Recién llegados</option>
+            </select>
+            <div class="view-toggle">
+              <button class="active" title="Grid">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
+              </button>
+              <button title="Lista">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="3"/><rect x="3" y="10.5" width="18" height="3"/><rect x="3" y="17" width="18" height="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="products" id="productGrid">
+          <!-- Products injected via partials/template - written inline -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== OCCASION =================== -->
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Colección por ocasión</span>
+        <h2>Encuentra el momento, nosotros la botella.</h2>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="#">Ver todas →</a>
+    </div>
+
+    <div class="occasion-grid">
+      <div class="occasion-card big" style="background:linear-gradient(160deg,#1e1a0f,#0F0F0F)">
+        <div class="oc-bg"></div>
+        <div class="oc-overlay"></div>
+        <div class="oc-body">
+          <span class="eyebrow">Para él</span>
+          <h3 class="serif">Whisky &amp; cigarros</h3>
+          <p>Single malts, decantadores y maridajes para los conocedores.</p>
+          <span class="arrow">Explorar →</span>
+        </div>
+      </div>
+      <div class="occasion-card" style="background:linear-gradient(160deg,#1a1325,#0F0F0F)">
+        <div class="oc-overlay"></div>
+        <div class="oc-body">
+          <span class="eyebrow">Para ella</span>
+          <h3 class="serif">Espumosos &amp; rosados</h3>
+          <p>Burbujas y cuvées para celebrar.</p>
+          <span class="arrow">Explorar →</span>
+        </div>
+      </div>
+      <div class="occasion-card" style="background:linear-gradient(160deg,#251a12,#0F0F0F)">
+        <div class="oc-overlay"></div>
+        <div class="oc-body">
+          <span class="eyebrow">Fiesta</span>
+          <h3 class="serif">Tequila &amp; mezcal</h3>
+          <p>Las casas más queridas para abrir la pista.</p>
+          <span class="arrow">Explorar →</span>
+        </div>
+      </div>
+      <div class="occasion-card" style="background:linear-gradient(160deg,#161916,#0F0F0F)">
+        <div class="oc-overlay"></div>
+        <div class="oc-body">
+          <span class="eyebrow">Reunión ejecutiva</span>
+          <h3 class="serif">Gran reserva</h3>
+          <p>Botellas con presencia para cerrar negocios.</p>
+          <span class="arrow">Explorar →</span>
+        </div>
+      </div>
+      <div class="occasion-card" style="background:linear-gradient(160deg,#1d1018,#0F0F0F)">
+        <div class="oc-overlay"></div>
+        <div class="oc-body">
+          <span class="eyebrow">Cata privada</span>
+          <h3 class="serif">Flights &amp; rarezas</h3>
+          <p>Selecciones para descubrir paladar.</p>
+          <span class="arrow">Explorar →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== KIT BUNDLE =================== -->
+<section class="kit-section section">
+  <div class="container">
+    <div class="kit-wrap">
+      <div class="kit-visual">
+        <div class="kit-item">
+          <svg width="56" height="84" viewBox="0 0 56 84" fill="none" stroke="currentColor" stroke-width="1"><path d="M22 4h12v18c0 6 8 8 8 18v36a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V40c0-10 8-12 8-18z"/></svg>
+          <span class="label">Gin botánico 750ml</span>
+        </div>
+        <div class="kit-item">
+          <svg width="64" height="84" viewBox="0 0 64 84" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 8h36l-4 32c0 8-6 14-14 14s-14-6-14-14z"/><path d="M32 54v22M22 76h20"/></svg>
+          <span class="label">Shaker premium</span>
+        </div>
+        <div class="kit-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1"><circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="14"/><circle cx="32" cy="32" r="6"/></svg>
+          <span class="label">Set de escarchador</span>
+        </div>
+        <div class="kit-item">
+          <svg width="56" height="64" viewBox="0 0 56 64" fill="none" stroke="currentColor" stroke-width="1"><rect x="8" y="4" width="40" height="56" rx="2"/><path d="M14 14h28M14 22h28M14 30h22M14 38h28M14 46h18"/></svg>
+          <span class="label">Recetario coctelería</span>
+        </div>
+      </div>
+      <div class="kit-copy">
+        <span class="eyebrow">Kit de coctelería completo</span>
+        <h3>Todo lo que necesitas para servir como un bartender.</h3>
+        <ul class="kit-bullets">
+          <li>
+            <span class="bullet-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <div><b>Gin botánico 750ml</b><p>Edición VINUM, destilado en pequeño lote.</p></div>
+          </li>
+          <li>
+            <span class="bullet-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <div><b>Shaker, jigger, cuchara y colador</b><p>Acero inoxidable acabado dorado.</p></div>
+          </li>
+          <li>
+            <span class="bullet-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <div><b>Recetario con 30 cócteles</b><p>De clásicos a creaciones de autor.</p></div>
+          </li>
+        </ul>
+        <div class="kit-price-row">
+          <span class="kit-now">$1,890</span>
+          <span class="kit-was">$2,640</span>
+          <span class="save">Ahorras $750</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <a class="btn btn-gold" href="#">Comprar el kit →</a>
+          <a class="btn btn-ghost" href="#">Ver detalles</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== RECOMMENDED =================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Recomendados para ti</span>
+        <h2>Basados en tu navegación.</h2>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="#">Ver más →</a>
+    </div>
+    <div class="reco-row" id="recoRow"></div>
+  </div>
+</section>
+
+<!-- =================== MOST WISHED =================== -->
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Tendencia · comunidad</span>
+        <h2>Los más deseados esta semana.</h2>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="#">Ver ranking →</a>
+    </div>
+    <div class="wished" id="wishedRow"></div>
+  </div>
+</section>
+
+<!-- =================== BLOG =================== -->
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Diario de la cava</span>
+        <h2>Consejos, catas y maridajes.</h2>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="#">Todos los artículos →</a>
+    </div>
+    <div class="blog-grid">
+      <article class="blog-card">
+        <div class="blog-thumb">
+          <span class="bcat">Cata</span>
+          <div class="stripe-bg"></div>
+          <svg width="60" height="80" viewBox="0 0 60 80" fill="none" stroke="#D4AF37" stroke-width="1"><path d="M14 6h32l-4 38a12 12 0 0 1-24 0z"/><path d="M30 44v28M20 72h20"/></svg>
+        </div>
+        <div class="blog-body">
+          <h3>Cómo catar un whisky: la regla de los 3 sorbos.</h3>
+          <p>Aroma, paladar y retrogusto — una guía práctica para empezar a leer cada copa.</p>
+          <div class="blog-foot"><span>10 min</span><span class="read">Leer →</span></div>
+        </div>
+      </article>
+      <article class="blog-card">
+        <div class="blog-thumb">
+          <span class="bcat">Educación</span>
+          <div class="stripe-bg"></div>
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none" stroke="#D4AF37" stroke-width="1"><circle cx="40" cy="40" r="32"/><path d="M40 8v64M8 40h64M16 16l48 48M16 64l48-48"/></svg>
+        </div>
+        <div class="blog-body">
+          <h3>Tequila vs. mezcal: lo que cambia en cada agave.</h3>
+          <p>Origen, proceso y denominación. Aprende a distinguirlos al primer trago.</p>
+          <div class="blog-foot"><span>8 min</span><span class="read">Leer →</span></div>
+        </div>
+      </article>
+      <article class="blog-card">
+        <div class="blog-thumb">
+          <span class="bcat">Maridaje</span>
+          <div class="stripe-bg"></div>
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none" stroke="#D4AF37" stroke-width="1"><path d="M20 10h40v20a20 20 0 0 1-40 0z"/><path d="M40 30v40M22 70h36"/><circle cx="40" cy="20" r="3" fill="#D4AF37"/></svg>
+        </div>
+        <div class="blog-body">
+          <h3>Maridaje de ron añejo con cigarros artesanales.</h3>
+          <p>Notas dulces, vainilla y madera — la combinación perfecta para una sobremesa.</p>
+          <div class="blog-foot"><span>12 min</span><span class="read">Leer →</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- =================== NEWSLETTER =================== -->
+<section class="newsletter">
+  <div class="container">
+    <div class="newsletter-wrap">
+      <div>
+        <span class="eyebrow">Únete a la cava</span>
+        <h2>Recibe <span>10% off</span> en tu primera orden.</h2>
+        <p>Catas privadas, lanzamientos antes que nadie y guías mensuales de maridaje directo a tu inbox.</p>
+      </div>
+      <div>
+        <form onsubmit="event.preventDefault();">
+          <input type="email" placeholder="tu@correo.com" required />
+          <button type="submit" class="btn btn-gold">Suscribirme →</button>
+        </form>
+        <div class="age-note">🔞 Al suscribirte confirmas ser mayor de 18 años y aceptas nuestra política de privacidad.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== FOOTER =================== -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-cols">
+
+      <div class="footer-col footer-brand">
+        <a class="brand" href="#">
+          <span class="brand-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 3h8l-1 6a4 4 0 0 1-3 3 4 4 0 0 1-3-3z"/><path d="M12 12v7"/><path d="M9 20h6"/></svg>
+          </span>
+          <div>
+            <div class="brand-name">VINUM <b>&amp;</b> SPIRITS</div>
+            <div class="brand-tag">Destilados con excelencia</div>
+          </div>
+        </a>
+        <p>Curaduría de destilados premium, vinos y coctelería. Compra responsable, entrega segura.</p>
+        <div class="seals">
+          <span class="seal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Pago seguro</span>
+          <span class="seal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h13l2 4h3v6h-3"/></svg> Envíos confiables</span>
+          <span class="seal">+18 ONLY</span>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h5>Enlaces rápidos</h5>
+        <ul>
+          <li><a href="#">Sobre nosotros</a></li>
+          <li><a href="#">Tiendas físicas</a></li>
+          <li><a href="#">Preguntas frecuentes</a></li>
+          <li><a href="#">Política de devolución</a></li>
+          <li><a href="#">Términos y condiciones</a></li>
+          <li><a href="#">Aviso de privacidad</a></li>
+          <li><a href="#">Programa de referidos</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>Atención al cliente</h5>
+        <div class="contact-block">
+          <div class="crow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 11.5a8.5 8.5 0 0 1-12.7 7.4L3 21l2.1-5.3A8.5 8.5 0 1 1 21 11.5z"/></svg>
+            <div><b>WhatsApp</b>+52 55 0000 0000</div>
+          </div>
+          <div class="crow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.5 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2-.5c.9.3 1.8.5 2.7.5a2 2 0 0 1 2 2.1z"/></svg>
+            <div><b>Teléfono</b>800 VINUM 00</div>
+          </div>
+          <div class="crow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12a9 9 0 1 1-3-6.7L21 3v6h-6"/></svg>
+            <div><b>Chat en vivo</b>24/7 con sommelier</div>
+          </div>
+          <div class="crow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l3 2"/></svg>
+            <div><b>Centro de ayuda</b>Artículos &amp; tutoriales</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h5>Pago &amp; envíos</h5>
+        <div class="pay-grid">
+          <div class="pay">VISA</div>
+          <div class="pay">MC</div>
+          <div class="pay">AMEX</div>
+          <div class="pay">PAYPAL</div>
+          <div class="pay">OXXO</div>
+          <div class="pay">SPEI</div>
+          <div class="pay">BTC</div>
+          <div class="pay">ETH</div>
+          <div class="pay">USDC</div>
+        </div>
+        <div class="ship-grid">
+          <span class="ship">DHL</span>
+          <span class="ship">Estafeta</span>
+          <span class="ship">FedEx</span>
+          <span class="ship">UPS</span>
+          <span class="ship">Local 2h</span>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h5>Descarga la app</h5>
+        <div class="app-buttons">
+          <a class="app-btn" href="#">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 12.6c0-2.3 1.9-3.4 2-3.4-1.1-1.5-2.7-1.8-3.3-1.8-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-3-.8-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.7 1.1 8.9.7 1 1.6 2.2 2.8 2.2 1.1 0 1.5-.7 2.9-.7 1.4 0 1.7.7 2.9.7 1.2 0 2-1 2.7-2.1.9-1.2 1.2-2.4 1.2-2.4-.1 0-2.3-.9-2.2-3.7zM15.3 5.4c.6-.8 1.1-1.9.9-3-1 .1-2.2.7-2.9 1.5-.6.7-1.1 1.8-1 2.9 1.2.1 2.3-.6 3-1.4z"/></svg>
+            <span><small>Descarga en</small><b>App Store</b></span>
+          </a>
+          <a class="app-btn" href="#">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.4c-.4.3-.6.8-.6 1.5v16.2c0 .7.2 1.2.6 1.5l.1.1 9.1-9.1v-.2L3.6 2.4z"/><path d="m17 14-3.3-3.3 3.4-3.4 4.2 2.4c1.2.7 1.2 1.8 0 2.5L17 14z"/></svg>
+            <span><small>Disponible en</small><b>Google Play</b></span>
+          </a>
+        </div>
+        <div style="margin-top:18px; padding:12px 14px; border:1px dashed var(--gold-2); border-radius:var(--r-sm); font-size:11px; color:var(--text-dim);">
+          🛡 <b style="color:var(--gold)">Venta responsable</b> · Certificado por la Asociación Mexicana de Comercio Digital.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <div>© 2026 VINUM &amp; SPIRITS · Prohibida la venta a menores de edad · Evita el exceso.</div>
+      <div class="right-bar">
+        <a href="#">Reportar venta ilegal</a>
+        <a href="#">Instituto de la Juventud</a>
+        <select class="lang-pick">
+          <option>🇲🇽 ES</option>
+          <option>🇺🇸 EN</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- =================== BREAKPOINT DOC =================== -->
+<section class="bp-doc">
+  <div class="container">
+    <span class="eyebrow">Documentación</span>
+    <h3 class="serif">Comportamiento responsive</h3>
+    <p>Resumen de cómo se reorganiza la interfaz en cada breakpoint. Prueba redimensionando la ventana.</p>
+    <div class="bp-grid">
+      <div class="bp-card">
+        <div class="bp-size">375<small style="font-size:14px"> px</small></div>
+        <small>Mobile</small>
+        <ul>
+          <li>Grilla 1 columna</li>
+          <li>Filtros como botón desplegable</li>
+          <li>Utility bar colapsada</li>
+          <li>Búsqueda full-width bajo logo</li>
+        </ul>
+      </div>
+      <div class="bp-card">
+        <div class="bp-size">768<small style="font-size:14px"> px</small></div>
+        <small>Tablet</small>
+        <ul>
+          <li>Grilla 2 columnas</li>
+          <li>Trust strip en 2×2</li>
+          <li>Hero vertical (texto sobre visual)</li>
+          <li>Footer 3 columnas</li>
+        </ul>
+      </div>
+      <div class="bp-card">
+        <div class="bp-size">1440<small style="font-size:14px"> px</small></div>
+        <small>Desktop</small>
+        <ul>
+          <li>Grilla 4 columnas + filtros</li>
+          <li>Mega menú con submenús al hover</li>
+          <li>Sticky filters al hacer scroll</li>
+          <li>Footer 5 columnas</li>
+        </ul>
+      </div>
+      <div class="bp-card">
+        <div class="bp-size">1920<small style="font-size:14px"> px</small></div>
+        <small>Wide</small>
+        <ul>
+          <li>Contenedor max 1320px centrado</li>
+          <li>Más aire entre secciones</li>
+          <li>Hero a escala completa</li>
+          <li>Tipografía display generosa</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== CHAT WIDGET =================== -->
+<div class="chat-fab">
+  <div class="chat-bubble">
+    <button class="close-bubble">✕</button>
+    <div class="who"><span class="who-dot"></span> Sommelier IA · en línea</div>
+    ¿Necesitas ayuda para elegir un licor? Cuéntame tu presupuesto y la ocasión.
+  </div>
+  <button class="chat-btn" aria-label="Abrir chat">
+    <span class="ping"></span>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.5 8.5 0 0 1-12.7 7.4L3 21l2.1-5.3A8.5 8.5 0 1 1 21 11.5z"/></svg>
+  </button>
+</div>
+
+<!-- =================== TOAST =================== -->
+<div class="toast" id="toast">
+  <div class="toast-ico">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div>
+    <b class="toast-title">Agregado al carrito</b>
+    <small class="toast-sub">Producto añadido correctamente</small>
+  </div>
+  <a class="toast-link" href="#">Ver carrito →</a>
+</div>
+
+<!-- =================== PRODUCT TEMPLATE SCRIPT =================== -->
+<script>
+const PRODUCTS = [
+  { name: "Roble del Norte 18", brand: "Casa del Roble", country: "🇲🇽", vol: "750 ml", abv: "43%", price: 1890, was: 2240, rating: 4.8, reviews: 142, badges: [{t:"Más vendido",c:""}], viewers: 12, hue: "#7a5828" },
+  { name: "Highland Mist 12", brand: "Highland Mist", country: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", vol: "700 ml", abv: "40%", price: 1240, was: null, rating: 4.6, reviews: 98, badges: [{t:"Envío gratis", c:"dark"}], viewers: 8, hue: "#b89150" },
+  { name: "Reserva Cristalina", brand: "Don Alcázar", country: "🇲🇽", vol: "750 ml", abv: "38%", price: 980, was: 1240, rating: 4.9, reviews: 211, badges: [{t:"-21%", c:"wine"}], viewers: 24, hue: "#e0d4a8" },
+  { name: "Botánica Gin London", brand: "Botánica Co.", country: "🇬🇧", vol: "700 ml", abv: "42%", price: 720, was: null, rating: 4.5, reviews: 67, badges: [{t:"Edición limitada", c:"dark"}], viewers: 5, hue: "#a8c8b0" },
+  { name: "Añejo XO Selecto", brand: "Hacienda Norte", country: "🇲🇽", vol: "750 ml", abv: "40%", price: 2480, was: null, rating: 4.7, reviews: 56, badges: [{t:"Premium", c:""}], viewers: 6, hue: "#5a3818" },
+  { name: "Espumoso Brut Nature", brand: "Cordillera Wines", country: "🇮🇹", vol: "750 ml", abv: "12%", price: 640, was: 820, rating: 4.4, reviews: 89, badges: [{t:"-22%", c:"wine"}], viewers: 9, hue: "#d4d0a0" },
+  { name: "Yamada Single Malt", brand: "Yamada Distillery", country: "🇯🇵", vol: "700 ml", abv: "43%", price: 3890, was: null, rating: 4.9, reviews: 41, badges: [{t:"Stock bajo", c:"wine"}], viewers: 22, hue: "#c0844a" },
+  { name: "Crema Avellana", brand: "Bosque Co.", country: "🇮🇹", vol: "750 ml", abv: "17%", price: 420, was: null, rating: 4.3, reviews: 134, badges: [{t:"Envío inmediato", c:"green"}], viewers: 4, hue: "#8a5a2a" }
+];
+
+function bottle(hue) {
+  return `
+    <svg class="bottle-svg" viewBox="0 0 200 280" fill="none">
+      <defs>
+        <linearGradient id="g-${hue.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="${hue}" stop-opacity=".4"/>
+          <stop offset=".5" stop-color="${hue}"/>
+          <stop offset="1" stop-color="${hue}" stop-opacity=".3"/>
+        </linearGradient>
+        <pattern id="s-${hue.replace('#','')}" patternUnits="userSpaceOnUse" width="12" height="12" patternTransform="rotate(45)">
+          <rect width="12" height="12" fill="transparent"/>
+          <line x1="0" y1="0" x2="0" y2="12" stroke="rgba(212,175,55,.05)" stroke-width="6"/>
+        </pattern>
+      </defs>
+      <rect width="200" height="280" fill="url(#s-${hue.replace('#','')})"/>
+      <path d="M88 30h24v34c0 6 16 14 16 32v160a8 8 0 0 1-8 8H80a8 8 0 0 1-8-8V96c0-18 16-26 16-32z"
+            fill="url(#g-${hue.replace('#','')})" stroke="#D4AF37" stroke-width=".8" stroke-opacity=".5"/>
+      <rect x="76" y="140" width="48" height="68" fill="#0F0F0F" stroke="#D4AF37" stroke-width=".5" stroke-opacity=".6"/>
+      <line x1="82" y1="180" x2="118" y2="180" stroke="#D4AF37" stroke-opacity=".5" stroke-width=".4"/>
+    </svg>
+  `;
+}
+
+function renderProduct(p) {
+  const badges = p.badges.map(b => `<span class="badge-pill ${b.c||''}">${b.t}</span>`).join('');
+  const stars = '★★★★★'.slice(0, Math.round(p.rating));
+  const offStars = '★★★★★'.slice(Math.round(p.rating));
+  return `
+  <div class="product">
+    <div class="product-img">
+      ${bottle(p.hue)}
+      <div class="product-badges">${badges}</div>
+      <button class="wish-btn" aria-label="Wishlist">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.8 6.6a5.5 5.5 0 0 0-9-1.8L12 5l-.2-.2a5.5 5.5 0 0 0-8 8L12 21l8.8-8.8a5.5 5.5 0 0 0 0-5.6Z"/></svg>
+      </button>
+    </div>
+    <div class="product-body">
+      <div class="product-meta">
+        <span class="brand-mini">${p.brand}</span>
+        <span>${p.country}</span>
+      </div>
+      <h3 class="product-name">${p.name}</h3>
+      <div class="product-spec"><span>${p.abv} vol.</span><span>${p.vol}</span></div>
+      <div class="product-rating">
+        <span class="star-row"><span>${stars}</span><span class="off">${offStars}</span></span>
+        ${p.rating} · ${p.reviews} reseñas
+      </div>
+      <div class="product-price">
+        <span class="now">$${p.price.toLocaleString('es-MX')}</span>
+        ${p.was ? `<span class="was">$${p.was.toLocaleString('es-MX')}</span>` : ''}
+        ${p.was ? `<span class="off-pct">-${Math.round((1-p.price/p.was)*100)}%</span>` : ''}
+      </div>
+      <div class="member-price">⭐ Precio miembro <b>$${Math.round(p.price*0.9).toLocaleString('es-MX')}</b></div>
+      ${p.viewers >= 8 ? `<div class="viewers-now"><span class="dot"></span> ${p.viewers} personas viéndolo ahora</div>` : ''}
+      <div class="product-foot">
+        <button class="add-cart">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h2l3 13h11l2-8H7"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+          Agregar al carrito
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+document.getElementById('productGrid').innerHTML = PRODUCTS.map(renderProduct).join('');
+document.getElementById('recoRow').innerHTML = PRODUCTS.slice(0,4).map(renderProduct).join('');
+
+// Wished row
+const WISHED = [
+  { name: "Roble del Norte 18", brand: "Casa del Roble", price: 1890, views: 482, hue: "#7a5828" },
+  { name: "Yamada Single Malt", brand: "Yamada", price: 3890, views: 367, hue: "#c0844a" },
+  { name: "Reserva Cristalina", brand: "Don Alcázar", price: 980, views: 612, hue: "#e0d4a8" },
+  { name: "Añejo XO Selecto", brand: "Hacienda Norte", price: 2480, views: 298, hue: "#5a3818" },
+  { name: "Botánica Gin", brand: "Botánica Co.", price: 720, views: 154, hue: "#a8c8b0" },
+  { name: "Espumoso Brut", brand: "Cordillera", price: 640, views: 221, hue: "#d4d0a0" }
+];
+document.getElementById('wishedRow').innerHTML = WISHED.map(w => `
+  <div class="wished-item">
+    <div class="wished-thumb">${bottle(w.hue)}</div>
+    <div class="wished-info">
+      <div style="font-size:10.5px; color:var(--text-mute); text-transform:uppercase; letter-spacing:.16em;">${w.brand}</div>
+      <h4>${w.name}</h4>
+      <div class="views"><span style="width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;"></span> ${w.views} vistas en 24h</div>
+      <div class="pricepart">
+        <span class="p">$${w.price.toLocaleString('es-MX')}</span>
+        <button class="btn btn-ghost btn-sm">Ver →</button>
+      </div>
+    </div>
+  </div>
+`).join('');
+</script>
+
+<script src="app.js"></script>
+
+</body>
+</html>

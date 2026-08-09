@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boleta de Pago BIXO - Saldo + Soporte</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    background: #eef2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 0;
+    min-height: 100vh;
+  }
+
+  .boleta {
+    width: 210mm;
+    background: white;
+    margin: 0 auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: #0a0f1c;
+    padding: 28px 35px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 3px solid #10b981;
+  }
+  .brand h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 1px;
+  }
+  .brand p {
+    font-size: 11px;
+    color: #8b9eb0;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .doc-type {
+    text-align: right;
+  }
+  .doc-type .label {
+    font-size: 10px;
+    color: #6c7a91;
+    letter-spacing: 2px;
+  }
+  .doc-type .title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #10b981;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .doc-type .ref {
+    font-size: 10px;
+    color: #8ba0b5;
+    margin-top: 6px;
+  }
+
+  /* Cliente */
+  .client-row {
+    background: #f8fafd;
+    padding: 18px 35px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    border-bottom: 1px solid #e2edf7;
+  }
+  .field label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #10b981;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .field .value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0a1c2f;
+    border-bottom: 1.5px dashed #cbdde9;
+    padding-bottom: 5px;
+  }
+
+  .content {
+    padding: 28px 35px;
+  }
+
+  /* Tabla de conceptos */
+  .conceptos-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+  .conceptos-table th {
+    text-align: left;
+    padding: 12px 8px;
+    background: #f0f4f9;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1f4b6e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #10b981;
+  }
+  .conceptos-table td {
+    padding: 14px 8px;
+    border-bottom: 1px solid #e9eef3;
+    font-size: 13px;
+    color: #1f3a4e;
+  }
+  .conceptos-table td:last-child {
+    text-align: right;
+    font-weight: 700;
+  }
+  .conceptos-table tr.total-row td {
+    border-top: 2px solid #10b981;
+    border-bottom: none;
+    font-weight: 800;
+    font-size: 16px;
+    background: #f8fafc;
+  }
+  .conceptos-table tr.total-row td:last-child {
+    color: #10b981;
+    font-size: 20px;
+  }
+
+  .status-badge {
+    background: #10b98110;
+    border: 1px solid #10b98130;
+    border-radius: 40px;
+    padding: 12px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  .status-badge .emoji {
+    font-size: 20px;
+  }
+  .status-badge .text {
+    font-weight: 700;
+    color: #0f6e4a;
+    font-size: 13px;
+  }
+
+  /* Info pago recurrente */
+  .recurring-info {
+    background: #f0f7ff;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    border-left: 4px solid #10b981;
+  }
+  .recurring-info p {
+    font-size: 13px;
+    color: #1f4b6e;
+    margin: 5px 0;
+  }
+  .recurring-info .highlight {
+    font-weight: 800;
+    color: #0f6e4a;
+  }
+
+  .payment-details {
+    background: #fef9e6;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    border-left: 4px solid #f5b042;
+  }
+  .payment-details h4 {
+    font-size: 12px;
+    color: #b55b0e;
+    margin-bottom: 10px;
+  }
+  .payment-details .bank-line {
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f3a4e;
+    padding: 5px 0;
+  }
+
+  .signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 30px;
+    margin-bottom: 12px;
+  }
+  .sign-line {
+    border-top: 1.5px solid #cbdde8;
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+  .sign-title {
+    font-size: 10px;
+    color: #7a95ad;
+    text-align: center;
+  }
+  .sign-name {
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 6px;
+    color: #0e2f44;
+  }
+
+  .footer {
+    background: #0a0f1c;
+    padding: 16px 35px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-left {
+    color: white;
+  }
+  .footer-left .name {
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .footer-left .slogan {
+    font-size: 9px;
+    color: #768aa2;
+    margin-top: 2px;
+  }
+  .footer-note {
+    font-size: 9px;
+    color: #6d829c;
+    text-align: right;
+  }
+
+  @media print {
+    body {
+      background: white;
+      padding: 0;
+    }
+    .boleta {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="boleta">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">
+      <h1>BIXO</h1>
+      <p>Soluciones digitales inteligentes</p>
+    </div>
+    <div class="doc-type">
+      <div class="label">COMPROBANTE DE PAGO</div>
+      <div class="title">BOLETA</div>
+      <div class="ref">N° B001-2026-0613 &nbsp;|&nbsp; 13 / 06 / 2026</div>
+    </div>
+  </div>
+
+  <!-- CLIENTE -->
+  <div class="client-row">
+    <div class="field">
+      <label>Cliente</label>
+      <div class="value">Julio Lopez Orosco</div>
+    </div>
+    <div class="field">
+      <label>Documento</label>
+      <div class="value">—</div>
+    </div>
+    <div class="field">
+      <label>Teléfono / WhatsApp</label>
+      <div class="value">908 055 871</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Estado del proyecto -->
+    <div class="status-badge">
+      <span class="emoji">✅</span>
+      <span class="text">PROYECTO FINALIZADO · IMPLEMENTACIÓN CERRADA</span>
+      <span class="emoji">✅</span>
+    </div>
+
+    <!-- TABLA DE CONCEPTOS -->
+    <table class="conceptos-table">
+      <thead>
+        <tr><th>Concepto</th><th>Descripción</th><th>Monto</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Configuración Mercado Mayorista</td>
+          <td>Implementación y mejora de la plataforma Mercado Mayorista (configuración inicial)<br><span style="font-size:11px; color:#6f8faa;">Pago único</span></td>
+          <td>S/ 100.00</td>
+        </tr>
+        <tr>
+          <td>Soporte mensual</td>
+          <td>Soporte técnico mensual + 2 Bots 24/7 (atención/ventas + administrativo)<br><span style="font-size:11px; color:#6f8faa;">Pago recurrente los días 13 de cada mes</span></td>
+          <td>S/ 100.00</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="2"><strong>TOTAL A PAGAR</strong></td>
+          <td><strong>S/ 200.00</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- INFO PAGO RECURRENTE -->
+    <div class="recurring-info">
+      <p>📅 <span class="highlight">Pago recurrente de soporte:</span> Los días <strong>13 de cada mes</strong> se cargará S/ 100.00 por el servicio de soporte técnico mensual + 2 Bots 24/7.</p>
+      <p>🔁 Incluye: actualizaciones, monitoreo, asistencia técnica y garantía de funcionamiento de los bots.</p>
+    </div>
+
+    <!-- DATOS DE PAGO -->
+    <div class="payment-details">
+      <h4>💰 Datos para el pago</h4>
+
+      <div class="bank-line">📌 Yape / Plin: <strong>955 354 646 / 955 513 639</strong></div>
+      <p style="font-size:11px; margin-top:10px;">* Transferir el monto exacto S/ 200.00 (S/ 100 configuración Mercado Mayorista + S/ 100 soporte mensual) y enviar el comprobante a su asesor BIXO.</p>
+    </div>
+
+    <!-- FIRMAS -->
+    <div class="signatures">
+      <div>
+        <div class="sign-line"></div>
+        <div class="sign-title">Firma y sello del proveedor</div>
+        <div class="sign-name">BIXO Soluciones Digitales</div>
+      </div>
+      <div>
+        <div class="sign-line"></div>
+        <div class="sign-title">Firma y conformidad del cliente</div>
+        <div class="sign-name">____________________</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <div class="name">BIXO · Innovación digital</div>
+      <div class="slogan">mayorista + gamificación · todo en uno</div>
+    </div>
+    <div class="footer-note">
+      Boleta de pago · Config. Mercado Mayorista + Soporte mensual<br>
+      S/ 200.00 · Soporte recurrente S/ 100 día 13 de cada mes
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

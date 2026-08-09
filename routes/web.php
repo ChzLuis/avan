@@ -73,6 +73,11 @@ Route::post('/ping-session', function () {
     return response()->json(['ok' => true]);
 })->middleware('web')->name('ping.session');
 
+// Devuelve un token CSRF fresco para evitar el error 419 en páginas de larga vida
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->middleware('web')->name('csrf.token');
+
 // ─── Panel autenticado ────────────────────────────────────────────────────────
 Route::middleware(['auth'])->group(function () {
 
@@ -103,6 +108,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/template',       [ProductController::class, 'template'])->name('products.template');
             Route::post('/import',        [ProductController::class, 'import'])->name('products.import');
             Route::post('/reorder',       [ProductController::class, 'reorder'])->name('products.reorder');
+            Route::delete('/purge-all',   [ProductController::class, 'purgeAll'])->name('products.purge-all');
             Route::get('/export/static',  [ProductController::class, 'exportStatic'])->name('products.export.static');
             Route::get('/export/meli',    [ProductController::class, 'exportMeli'])->name('products.export.meli');
             Route::get('/export/rappi',   [ProductController::class, 'exportRappi'])->name('products.export.rappi');
@@ -123,6 +129,19 @@ Route::middleware(['auth'])->group(function () {
         // Alias legacy para no romper links internos viejos
         Route::get('/catalog',          fn() => redirect()->route('products.index'))->name('catalog');
         Route::get('/catalog/products', fn() => redirect()->route('products.index'));
+
+        // Integraciones de catálogo — conectores externos (SISKOTE y futuros ERP)
+        Route::prefix('catalog-integrations')->middleware(['module:catalog', 'can:catalog-integrations.view'])->group(function () {
+            Route::get('/',                     [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'index'])->name('catalog-integrations.index');
+            Route::get('/schema/{provider}',    [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'schema'])->name('catalog-integrations.schema');
+            Route::post('/',                    [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'store'])->name('catalog-integrations.store')->middleware('can:catalog-integrations.manage');
+            Route::put('/{integration}',        [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'update'])->whereNumber('integration')->name('catalog-integrations.update')->middleware('can:catalog-integrations.manage');
+            Route::delete('/{integration}',     [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'destroy'])->whereNumber('integration')->name('catalog-integrations.destroy')->middleware('can:catalog-integrations.manage');
+            Route::post('/{integration}/test',  [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'testConnection'])->whereNumber('integration')->name('catalog-integrations.test')->middleware('can:catalog-integrations.manage');
+            Route::post('/{integration}/sync',  [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'sync'])->whereNumber('integration')->name('catalog-integrations.sync')->middleware('can:catalog-integrations.sync');
+            Route::get('/{integration}/history', [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'history'])->whereNumber('integration')->name('catalog-integrations.history')->middleware('can:catalog-integrations.view-history');
+            Route::get('/{integration}/preview', [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'preview'])->whereNumber('integration')->name('catalog-integrations.preview')->middleware('can:catalog-integrations.manage');
+        });
 
         // Servicios — /bixoadmin/services
         Route::prefix('services')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
@@ -161,6 +180,28 @@ Route::middleware(['auth'])->group(function () {
             ->middleware(['module:clients', 'can:clients.ver'])
             ->names(['index'=>'clients','create'=>'clients.create','store'=>'clients.store',
                      'show'=>'clients.show','edit'=>'clients.edit','update'=>'clients.update','destroy'=>'clients.destroy']);
+
+        // CRM: pipeline de ventas (leads del Copilot)
+        Route::get('/clients-pipeline', [ClientController::class, 'pipeline'])
+            ->middleware(['module:clients', 'can:clients.ver'])->name('clients.pipeline');
+        Route::patch('/clients/{client}/stage', [ClientController::class, 'moveStage'])
+            ->middleware(['module:clients', 'can:clients.ver'])->name('clients.stage');
+
+        // Dashboard Comercial (indicadores de negocio en tiempo real)
+        Route::get('/dashboard-comercial', [\App\Http\Controllers\DashboardComercialController::class, 'index'])->name('dashboard.comercial');
+        Route::post('/dashboard-comercial/meta', [\App\Http\Controllers\DashboardComercialController::class, 'saveMeta'])->name('dashboard.comercial.meta');
+
+        // Copilot Empresarial (pregúntale a tu negocio en español)
+        Route::get('/copilot',  [\App\Http\Controllers\CopilotEmpresarialController::class, 'index'])->name('copilot.index');
+        Route::post('/copilot', [\App\Http\Controllers\CopilotEmpresarialController::class, 'preguntar'])->name('copilot.preguntar');
+
+        // Constructor visual de bots
+        Route::get('/bots-flow',            [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
+        Route::get('/bots-flow/nuevo',      [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
+        Route::get('/bots-flow/{flow}',     [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
+        Route::post('/bots-flow/{flow}',    [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save');
+        Route::post('/bots-flow/{flow}/test',[\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test');
+        Route::delete('/bots-flow/{flow}',  [\App\Http\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy');
 
         // Agenda
         Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda')->middleware(['module:agenda', 'can:agenda.ver']);
@@ -267,6 +308,35 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings',          [SettingsController::class, 'index'])->name('settings');
         Route::post('/settings',         [SettingsController::class, 'update'])->name('settings.update');
         Route::get('/settings/design',   [SettingsController::class, 'design'])->name('settings.design');
+        Route::get('/settings/designer', [SettingsController::class, 'designer'])->name('settings.designer'); // nuevo Diseñador visual (Fase A)
+
+        // Constructor guiado (B0): entrada + lectura + contrato borrador/publicación.
+        Route::get('/settings/builder', [\App\Http\Controllers\StoreBuilderController::class, 'index'])->name('settings.builder');
+        Route::get('/settings/builder/progress', [\App\Http\Controllers\StoreBuilderController::class, 'progress'])->name('settings.builder.progress');
+        Route::get('/settings/builder/checklist', [\App\Http\Controllers\StoreBuilderController::class, 'checklist'])->name('settings.builder.checklist');
+        Route::get('/settings/builder/catalog/metrics', [\App\Http\Controllers\StoreBuilderController::class, 'catalogMetrics'])->name('settings.builder.metrics');
+        Route::post('/settings/builder/draft/settings', [\App\Http\Controllers\StoreBuilderController::class, 'saveDraftSettings'])->name('settings.builder.draft.settings');
+        Route::post('/settings/builder/design-preset', [\App\Http\Controllers\StoreBuilderController::class, 'applyDesignPreset'])->name('settings.builder.design-preset');
+        // Diseños guardados ("Mis plantillas")
+        Route::get('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'index'])->name('design-templates.index');
+        Route::post('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'store'])->name('design-templates.store');
+        Route::post('/settings/design-templates/import', [\App\Http\Controllers\DesignTemplateController::class, 'import'])->name('design-templates.import');
+        Route::post('/settings/design-templates/{id}/apply', [\App\Http\Controllers\DesignTemplateController::class, 'apply'])->name('design-templates.apply');
+        Route::post('/settings/design-templates/{id}/version', [\App\Http\Controllers\DesignTemplateController::class, 'newVersion'])->name('design-templates.version');
+        Route::post('/settings/design-templates/{id}/restore/{versionNumber}', [\App\Http\Controllers\DesignTemplateController::class, 'restore'])->name('design-templates.restore');
+        Route::post('/settings/design-templates/{id}/duplicate', [\App\Http\Controllers\DesignTemplateController::class, 'duplicate'])->name('design-templates.duplicate');
+        Route::post('/settings/design-templates/{id}/toggle', [\App\Http\Controllers\DesignTemplateController::class, 'toggle'])->name('design-templates.toggle');
+        Route::put('/settings/design-templates/{id}', [\App\Http\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update');
+        Route::get('/settings/design-templates/{id}/export', [\App\Http\Controllers\DesignTemplateController::class, 'export'])->name('design-templates.export');
+        Route::post('/settings/builder/publish', [\App\Http\Controllers\StoreBuilderController::class, 'publish'])->name('settings.builder.publish');
+        Route::get('/settings/builder/preview', [\App\Http\Controllers\StoreBuilderController::class, 'preview'])->name('settings.builder.preview');
+        Route::get('/settings/builder/catalog/products', [\App\Http\Controllers\StoreBuilderController::class, 'catalogList'])->name('settings.builder.catalog.list');
+        Route::post('/settings/builder/catalog/bulk', [\App\Http\Controllers\StoreBuilderController::class, 'catalogBulk'])->name('settings.builder.catalog.bulk');
+        Route::get('/settings/builder/copy/sources', [\App\Http\Controllers\StoreBuilderController::class, 'copySources'])->name('settings.builder.copy.sources');
+        Route::post('/settings/builder/copy', [\App\Http\Controllers\StoreBuilderController::class, 'copyStore'])->name('settings.builder.copy');
+        Route::get('/settings/builder/icons/search', [\App\Http\Controllers\StoreBuilderController::class, 'iconSearch'])->name('settings.builder.icons.search');
+        Route::post('/settings/builder/category-photo', [\App\Http\Controllers\StoreBuilderController::class, 'categoryPhoto'])->name('settings.builder.category-photo');
+        Route::post('/settings/builder/icons/assign', [\App\Http\Controllers\StoreBuilderController::class, 'iconAssign'])->name('settings.builder.icons.assign');
         Route::post('/settings/design',  [SettingsController::class, 'updateDesign'])->name('settings.design.update');
         Route::post('/settings/design/apply-template', [SettingsController::class, 'applyTemplate'])->name('settings.design.applyTemplate');
         Route::post('/settings/design/apply-project-template', [SettingsController::class, 'applyProjectTemplate'])->name('settings.design.applyProjectTemplate');
@@ -276,7 +346,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/experience', [\App\Http\Controllers\StoreExperienceController::class, 'index'])->name('settings.experience');
         Route::post('/settings/experience/home/reorder', [\App\Http\Controllers\StoreExperienceController::class, 'reorderHome'])->name('settings.experience.home.reorder');
         Route::post('/settings/experience/home/publish-all', [\App\Http\Controllers\StoreExperienceController::class, 'publishAll'])->name('settings.experience.home.publishAll');
+        Route::post('/settings/experience/home/{component}/publish', [\App\Http\Controllers\StoreExperienceController::class, 'publishOne'])->name('settings.experience.home.publishOne');
+        Route::delete('/settings/experience/home/{component}/draft', [\App\Http\Controllers\StoreExperienceController::class, 'discardDraft'])->name('settings.experience.home.discardDraft');
         Route::post('/settings/experience/home/{component}', [\App\Http\Controllers\StoreExperienceController::class, 'saveHomeSection'])->name('settings.experience.home.save');
+        Route::post('/settings/experience/home/{component}/state', [\App\Http\Controllers\StoreExperienceController::class, 'sectionState'])->name('settings.experience.home.state'); // Diseñador: sólo estado
         Route::get('/settings/experience/preview', [\App\Http\Controllers\StoreExperienceController::class, 'preview'])->name('settings.experience.preview');
         Route::post('/settings/experience/section', [\App\Http\Controllers\StoreExperienceController::class, 'section'])->name('settings.experience.section');
         Route::delete('/settings/experience/section/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'deleteSection'])->name('settings.experience.section.delete');
@@ -288,7 +361,17 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'updateItem'])->name('settings.storefront.menu.items.update');
         Route::delete('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'destroyItem'])->name('settings.storefront.menu.items.destroy');
         Route::post('/settings/storefront/menu/reorder', [\App\Http\Controllers\StoreNavigationController::class, 'reorder'])->name('settings.storefront.menu.reorder');
+
+        // Perfiles de catálogo (opcional, desactivado por defecto)
+        Route::post('/settings/catalog-profiles/feature', [\App\Http\Controllers\CatalogProfileController::class, 'toggleFeature'])->name('settings.catalog-profiles.feature');
+        Route::post('/settings/catalog-profiles', [\App\Http\Controllers\CatalogProfileController::class, 'store'])->name('settings.catalog-profiles.store');
+        Route::post('/settings/catalog-profiles/quick', [\App\Http\Controllers\CatalogProfileController::class, 'quickCreate'])->name('settings.catalog-profiles.quick');
+        Route::put('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'update'])->name('settings.catalog-profiles.update')->where('id', '[0-9]+');
+        Route::delete('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'destroy'])->name('settings.catalog-profiles.destroy')->where('id', '[0-9]+');
+        Route::post('/settings/catalog-profiles/reorder', [\App\Http\Controllers\CatalogProfileController::class, 'reorder'])->name('settings.catalog-profiles.reorder');
         Route::patch('/settings/experience/complaints/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'complaintStatus'])->name('settings.experience.complaint.status');
+        Route::post('/settings/flow', [SettingsController::class, 'updateFlow'])->name('settings.flow.update');
+        Route::post('/settings/flow/diagram', [SettingsController::class, 'updateDiagram'])->name('settings.flow.diagram');
         Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo');
         Route::get('/notifications/imports',  [SettingsController::class, 'importLogs'])->name('notifications.imports');
         Route::get('/settings/payments', [SettingsController::class, 'payments'])->name('settings.payments');
@@ -326,7 +409,14 @@ Route::middleware(['auth'])->group(function () {
 
         // POS
         Route::get('/pos',  [PosController::class, 'index'])->name('pos.index')->middleware(['module:orders', 'can:pos.usar']);
+        Route::get('/venta-express', [PosController::class, 'express'])->name('ventas.express')->middleware(['module:orders', 'can:pos.usar']);
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store')->middleware(['module:orders', 'can:pos.usar']);
+        Route::post('/pos/cotizar', [PosController::class, 'quote'])->name('pos.quote')->middleware(['module:orders', 'can:pos.usar']);
+
+        // Revendedor: sus precios propios + su catálogo compartible
+        Route::get('/revendedor/precios',  [\App\Http\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios')->middleware('can:pos.usar');
+        Route::post('/revendedor/precio',  [\App\Http\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar')->middleware('can:pos.usar');
+        Route::post('/revendedor/catalogo',[\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
 
         // Facturas
         Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index');
@@ -353,6 +443,14 @@ Route::middleware(['auth'])->group(function () {
         // Pedidos WhatsApp — acción del portal sobre pedido WA
         Route::post('/orders/{order}/wa-action',   [WaBotController::class, 'portalAction'])->name('orders.wa.action')->middleware(['module:orders', 'can:orders.editar']);
         Route::post('/orders/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('orders.wa.delivery')->middleware(['module:orders', 'can:orders.editar']);
+        Route::post('/orders/{order}/laundry-status', [WaBotController::class, 'changeLaundryStatus'])->name('orders.laundry-status')->middleware(['module:orders', 'can:orders.editar']);
+        Route::get('/orders/{order}/tag',          [OrderController::class, 'tag'])->name('orders.tag')->middleware(['module:orders']);
+        Route::post('/orders/{order}/pay',         [OrderController::class, 'pay'])->name('orders.pay')->middleware(['module:orders', 'can:orders.editar']);
+        Route::post('/orders/{order}/issue-document', [OrderController::class, 'issueDocument'])->name('orders.issue-document')->middleware(['module:orders', 'can:orders.editar']);
+        Route::get('/orders/{order}/events',       [OrderController::class, 'events'])->name('orders.events')->middleware(['module:orders', 'can:orders.ver']);
+        Route::post('/orders/{order}/wa-sent',     [OrderController::class, 'waSent'])->name('orders.wa-sent')->middleware(['module:orders', 'can:orders.ver']);
+        Route::get('/orders-export',               [OrderController::class, 'exportCsv'])->name('orders.export')->middleware(['module:orders', 'can:orders.ver']);
+        Route::post('/quotes/{quote}/convert',     [QuoteController::class, 'convert'])->name('quotes.convert')->middleware(['module:quotes', 'can:quotes.editar']);
     });
 
     // Perfil de usuario
@@ -366,18 +464,46 @@ Route::get('/cert/{codigo}', [CertificadoController::class, 'verificar'])->name(
 
 // ─── Sitemap/robots para custom domains (sin slug en URL) ────────────────────
 Route::get('/sitemap.xml', function () {
-    $project = app('custom_domain_project') ?? null;
+    // app('...') lanza excepción si el binding no existe (visitas sin dominio custom):
+    // verificar bound() evita el error que inundaba el log.
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
     if (!$project) abort(404);
     return app(\App\Http\Controllers\PublicController::class)->sitemap($project->slug);
 });
 Route::get('/robots.txt', function () {
-    $project = app('custom_domain_project') ?? null;
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
     if (!$project) abort(404);
     return app(\App\Http\Controllers\PublicController::class)->robots($project->slug);
 });
 
+// ─── Ficha de producto en dominio propio (sin slug en la URL) ────────────────
+// El middleware de dominio propio corre dentro del grupo 'web', así que Laravel
+// resolvía el 404 antes de llegar a él: la ruta debe existir explícitamente.
+Route::get('/p/{id}', function (int $id) {
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
+    if (! $project) {
+        abort(404);
+    }
+    return app(\App\Http\Controllers\PublicController::class)->product($project->slug, $id);
+})->where('id', '[0-9]+')->name('public.product.domain');
+
+// El carrito vive dentro de la tienda; un enlace directo no debe dar error.
+Route::get('/carrito', function () {
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
+    return $project ? redirect('/') : abort(404);
+});
+
+// Colección del catálogo en dominio propio (/tienda/nino, /tienda/nina...).
+Route::get('/tienda/{profile}', function (string $profile, \Illuminate\Http\Request $request) {
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
+    if (! $project) {
+        abort(404);
+    }
+    return app(\App\Http\Controllers\PublicController::class)->shop($request, $project->slug, $profile);
+})->where('profile', '[a-z0-9-]+');
+
 // ─── Catálogo público ─────────────────────────────────────────────────────────
-$reserved = 'login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|wa|cert';
+$reserved = 'login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|bixofact|wa|cert';
 Route::get('/storefront-preview/{project}', function (\App\Models\Project $project) {
     abort_unless($project->is_active, 404);
     if (request('page') === 'shop') {
@@ -395,10 +521,17 @@ Route::get('/{slug}/blog/{key}', [\App\Http\Controllers\StorePageController::cla
 Route::post('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::post('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+// Alias corto usado por los footers de las plantillas + páginas legales.
+Route::get('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints.short')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.short.store')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/privacidad', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'privacidad')->name('public.privacy')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/terminos', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'terminos')->name('public.terms')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-z0-9-]+');
 Route::get('/{slug}/tienda', [PublicController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/tienda/{profile}', [PublicController::class, 'shop'])->name('public.shop.profile')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('profile', '[a-z0-9-]+');
 Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/p/{id}',   [PublicController::class, 'product'])->name('public.product')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('id', '[0-9]+');
+Route::post('/{slug}/order-proof',    [PublicController::class, 'uploadOrderProof'])->name('public.order.proof')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
@@ -475,6 +608,11 @@ Route::get('/bot-status/{bot?}', function ($bot = 'rifa') {
     ]);
 })->name('bot.status.json');
 
+// ─── WooCommerce Webhook (sin CSRF) ──────────────────────────────────────────
+Route::post('/api/woo-webhook', [\App\Http\Controllers\WooSyncController::class, 'webhook'])
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
+    ->name('woo.webhook');
+
 // ─── Rifa Bot API ─────────────────────────────────────────────────────────────
 $nocsrf = [\App\Http\Middleware\VerifyCsrfToken::class];
 Route::get('/rifas/ticket-design',             [RifaController::class, 'ticketDesign'])->name('rifas.ticket.design');
@@ -508,7 +646,14 @@ Route::post('/{slug}/mp-webhook',         [PaymentController::class, 'mpWebhook'
 // ─── Portal comercial del cliente ─────────────────────────────────────────────
 Route::get('/b/{slug}',           [PortalController::class, 'home'])->name('portal.home');
 Route::get('/b/{slug}/c/{token}', [PortalController::class, 'quote'])->name('portal.quote');
-Route::post('/b/{slug}/c/{token}/accept', [PortalController::class, 'accept'])->name('portal.quote.accept');
+Route::post('/b/{slug}/c/{token}/accept', [PortalController::class, 'accept'])->name('portal.quote.accept')->middleware('throttle:10,1');
+Route::post('/b/{slug}/c/{token}/proof',  [PortalController::class, 'proof'])->name('portal.quote.proof')->middleware('throttle:10,1');
+
+// ─── Catálogo público del revendedor ─────────────────────────────────────────
+Route::get('/r/{slug}', [\App\Http\Controllers\ResellerController::class, 'catalogoPublico'])->name('reseller.catalogo.publico');
+
+// ─── Propuesta comercial pública (la abre el cliente y la guarda como PDF) ────
+Route::get('/propuesta/{token}', [\App\Http\Controllers\ProposalController::class, 'publica'])->name('proposal.publica');
 
 // ─── Portal Facturación ───────────────────────────────────────────────────────
 use App\Http\Controllers\Facturacion\AuthController as FacAuthController;
@@ -593,6 +738,13 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
     Route::middleware(['auth', 'comunicaciones.auth'])->group(function () {
         Route::get('/',                              [BandejaController::class, 'index'])->name('bandeja');
         Route::get('/poll',                          [BandejaController::class, 'poll'])->name('poll');
+        // Cambiar de negocio activo dentro del CRM (selector)
+        Route::post('/cambiar-negocio',              [ComWaAuthController::class, 'cambiarProyecto'])->name('cambiar.negocio');
+        // Estado + QR del bot WhatsApp (Baileys) — el frontend hace polling
+        Route::get('/bots/wa-status',                [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'waStatus'])->name('bots.wa.status');
+        // Ficha CRM del lead (columna derecha de la bandeja) — antes de {conversacion}
+        Route::post('/lead',                         [ClientesCrmController::class, 'lead'])->name('lead');
+        Route::post('/lead/{id}/etapa',              [ClientesCrmController::class, 'leadEtapa'])->name('lead.etapa');
         Route::get('/{conversacion}/mensajes',       [BandejaController::class, 'mensajes'])->name('mensajes');
         Route::post('/{conversacion}/enviar',        [BandejaController::class, 'enviar'])->name('enviar');
         Route::patch('/{conversacion}',              [BandejaController::class, 'actualizar'])->name('actualizar');
@@ -605,6 +757,14 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
 
         // Chatbot
         Route::get('/chatbot',                       [CanalesController::class, 'chatbot'])->name('chatbot');
+
+        // Constructor visual de bots (nuevo) dentro del portal CRM
+        Route::get('/bots',            [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'index'])->name('bots.index');
+        Route::get('/bots/nuevo',      [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'editor'])->name('bots.editor.new');
+        Route::get('/bots/{id}',       [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'editor'])->name('bots.editor');
+        Route::post('/bots/{id}',      [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'save'])->name('bots.save');
+        Route::post('/bots/{id}/test', [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'test'])->name('bots.test');
+        Route::delete('/bots/{id}',    [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'destroy'])->name('bots.destroy');
         Route::post('/chatbot/flows',                [CanalesController::class, 'guardarFlow'])->name('chatbot.guardar');
         Route::delete('/chatbot/flows/{flow}',       [CanalesController::class, 'eliminarFlow'])->name('chatbot.eliminar');
         Route::patch('/chatbot/toggle/{id}',         [CanalesController::class, 'toggleBot'])->name('chatbot.toggle');
@@ -622,15 +782,44 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/',             [ComDashController::class, 'index'])->name('dashboard');
 
         Route::get('/pos',  [PosController::class, 'indexComercial'])->name('pos');
+        Route::get('/venta-express', [PosController::class, 'express'])->name('ventas.express');
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+        Route::post('/pos/cotizar', [PosController::class, 'quote'])->name('pos.quote');
+
+        // Aprobación de pagos Yape/Plin (pedidos del bot en revisión)
+        Route::post('/pagos/pendientes', [\App\Http\Controllers\Api\PagoController::class, 'pendientes'])->name('pagos.pendientes');
+        Route::post('/pagos/aprobar',    [\App\Http\Controllers\Api\PagoController::class, 'aprobar'])->name('pagos.aprobar');
+        Route::post('/pagos/rechazar',   [\App\Http\Controllers\Api\PagoController::class, 'rechazar'])->name('pagos.rechazar');
+
+        // Revendedor: sus precios propios + su catálogo compartible
+        Route::get('/revendedor/precios',   [\App\Http\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios');
+        Route::post('/revendedor/precio',   [\App\Http\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar');
+        Route::post('/revendedor/catalogo', [\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle');
 
         Route::get('/pedidos-bot',                  [RifaController::class, 'indexComercial'])->name('rifas');
+        Route::get('/pedidos-bot/monitoreo',         [RifaController::class, 'monitoreo'])->name('rifas.monitoreo');
+        Route::get('/pedidos-bot/exportar',          [RifaController::class, 'exportarComercial'])->name('rifas.exportar');
         Route::post('/pedidos-bot/{venta}/validar', [RifaController::class, 'confirmarPago'])->name('rifas.validar');
         Route::post('/pedidos-bot/{venta}/enviar',  [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
         Route::post('/pedidos-bot/{venta}/cancelar',[RifaController::class, 'cancelar'])->name('rifas.cancelar');
         Route::post('/pedidos-bot/{venta}/editar',   [RifaController::class, 'editarComercial'])->name('rifas.editar');
-        Route::post('/pedidos-bot/{venta}/eliminar', [RifaController::class, 'eliminarComercial'])->name('rifas.eliminar');
+        Route::post('/pedidos-bot/{venta}/eliminar',  [RifaController::class, 'eliminarComercial'])->name('rifas.eliminar');
+        Route::post('/pedidos-bot/{venta}/recordar',  [RifaController::class, 'recordar'])->name('rifas.recordar');
         Route::post('/pedidos-bot/{venta}/enviar-membresia', [RifaController::class, 'enviarConMembresia'])->name('rifas.enviar.membresia');
+        Route::post('/pedidos-bot/nuevo-manual', [RifaController::class, 'nuevoManual'])->name('rifas.nuevo-manual');
+        Route::get('/consultar-dni/{dni}', [RifaController::class, 'consultarDni'])->name('rifas.consultar-dni');
+
+        // WooCommerce
+        Route::get('/woo/orders',  [\App\Http\Controllers\WooSyncController::class, 'index'])->name('woo.orders');
+        Route::post('/woo/sync',   [\App\Http\Controllers\WooSyncController::class, 'sync'])->name('woo.sync');
+        Route::get('/woo/stats',   [\App\Http\Controllers\WooSyncController::class, 'stats'])->name('woo.stats');
+
+        // Tickets manuales WordPress
+        Route::get('/conversaciones', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'index'])->name('conversaciones');
+        Route::get('/conversaciones/{id}/mensajes', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'mensajes'])->name('conversaciones.mensajes');
+        Route::get('/tickets-manuales', [\App\Http\Controllers\TicketsWpController::class, 'index'])->name('tickets.wp');
+        Route::get('/tickets-manuales/buscar', [\App\Http\Controllers\TicketsWpController::class, 'buscar'])->name('tickets.wp.buscar');
+        Route::post('/tickets-manuales/eliminar', [\App\Http\Controllers\TicketsWpController::class, 'eliminar'])->name('tickets.wp.eliminar');
 
         Route::get('/pedidos',                [OrderController::class, 'index'])->name('pedidos');
         Route::post('/pedidos',               [OrderController::class, 'store'])->name('pedidos.store');

@@ -1,4 +1,4 @@
-@props(['project', 'settings' => [], 'popup' => null, 'sections' => collect(), 'aboutPage' => null, 'storeView' => 'home', 'ownFooter' => false])
+@props(['project', 'settings' => [], 'popup' => null, 'sections' => collect(), 'aboutPage' => null, 'storeView' => 'home', 'ownFooter' => false, 'ownWhatsapp' => false])
 
 @php
     $safeColor = static fn ($value, $fallback) => is_string($value) && preg_match('/^#[0-9a-fA-F]{6}$/', $value) ? $value : $fallback;
@@ -12,6 +12,8 @@
 
     $primary = $safeColor($settings['primary_color'] ?? null, '#4f46e5');
     $secondary = $safeColor($settings['secondary_color'] ?? null, '#6366f1');
+    // Acento: token propio (detalles, CTA, subrayados). Sin configurar cae al primary.
+    $accent = $safeColor($settings['accent_color'] ?? null, $primary);
     $headerBg = $safeColor($settings['header_bg_color'] ?? null, '#ffffff');
     $headerText = $safeColor($settings['header_text_color'] ?? null, '#111827');
     $footerBg = $safeColor($settings['footer_bg_color'] ?? null, '#0f172a');
@@ -64,14 +66,12 @@
     $effectiveHeroCtaUrl = data_get($managedHeroSlide, 'primary_url') ?: '#catalogo';
     $needsFeaturedContent = $sections->contains('component', 'featured');
     $needsCategoryContent = $sections->contains('component', 'categories');
-    $contextProducts = $project->relationLoaded('storefrontProducts') ? $project->getRelation('storefrontProducts') : collect();
-    $contextCategories = $project->relationLoaded('storefrontCategories') ? $project->getRelation('storefrontCategories') : collect();
-    $sectionProducts = $needsFeaturedContent ? $contextProducts->take(8)->values() : collect();
-    $sectionServices = $needsFeaturedContent && $sectionProducts->isEmpty()
-        ? $contextCategories->flatMap->products->filter(fn ($item) => str_starts_with((string) $item->id, 'svc-'))->take(8)->values()
+    $sectionProducts = $needsFeaturedContent ? $project->products()->where('is_available', true)->with('mainImage')->orderBy('sort_order')->take(8)->get() : collect();
+    $sectionServices = $needsFeaturedContent && $sectionProducts->isEmpty() ? $project->services()->where('is_available', true)->orderBy('sort_order')->take(8)->get() : collect();
+    $sectionCategories = $needsCategoryContent ? $project->categories()->where('is_active', true)->whereNull('parent_id')->orderBy('sort_order')->take(12)->get() : collect();
+    $footerCategories = $enabled('footer_show_categories')
+        ? $project->categories()->where('is_active', true)->whereNull('parent_id')->orderBy('sort_order')->take(8)->get()
         : collect();
-    $sectionCategories = $needsCategoryContent ? $contextCategories->take(12)->values() : collect();
-    $footerCategories = $enabled('footer_show_categories') ? $contextCategories->take(8)->values() : collect();
     $parseFooterLinks = static fn ($value) => collect(preg_split('/\r\n|\r|\n/', (string) $value))
         ->map(fn ($line) => array_map('trim', explode('|', $line, 2)))
         ->filter(fn ($parts) => filled($parts[0] ?? null));
@@ -192,7 +192,7 @@
     @import url('https://fonts.googleapis.com/css2?family={{ str_replace(' ', '+', $fontTitle) }}:wght@400;500;600;700;800;900&family={{ str_replace(' ', '+', $fontBody) }}:wght@300;400;500;600;700&display=swap');
     :root {
         --store-primary: {{ $primary }}; --store-secondary: {{ $secondary }};
-        --primary: {{ $primary }}; --secondary: {{ $secondary }}; --accent: {{ $primary }};
+        --primary: {{ $primary }}; --secondary: {{ $secondary }}; --accent: {{ $accent }};
         --brand: {{ $primary }}; --brand-primary: {{ $primary }}; --color-primary: {{ $primary }};
         --azul: {{ $primary }}; --rojo: {{ $secondary }};
         --color-primario: {{ $primary }}; --color-secundario: {{ $secondary }};
@@ -276,7 +276,9 @@
     @media (min-width: 768px) { .bixo-runtime-content-grid { grid-template-columns: repeat(4,minmax(0,1fr)); } }
 </style>
 
-@if(filled($settings['announcement_text'] ?? null))
+{{-- La barra de anuncio del runtime no se muestra si la plantilla trae la suya
+     (computienda/ecommerce) para evitar la barra duplicada. --}}
+@if(filled($settings['announcement_text'] ?? null) && ! $ownFooter && ! $ownWhatsapp)
     <div id="bixo-runtime-announcement" class="bixo-runtime-announcement" style="background:{{ $safeColor($settings['announcement_bg'] ?? null, $secondary) }}">{{ $settings['announcement_text'] }}</div>
 @endif
 
@@ -292,6 +294,10 @@
     </div>
 </section>
 
+{{-- Secciones de contenido del runtime (banners/promos/countdown/hero extra).
+     Las plantillas autónomas (ecommerce, computienda) manejan su propio
+     contenido vía el Diseñador, así que aquí NO se inyecta nada para ellas. --}}
+@unless($ownFooter || $ownWhatsapp)
 <div id="bixo-runtime-home-extras" class="bixo-runtime-block">
     @if($hasPromoCards)
         <div class="bixo-runtime-container bixo-runtime-promos" data-store-native-section="announcements">
@@ -331,15 +337,14 @@
         </nav>
     @endif
 </div>
+@endunless
 
-{{-- Bloques del constructor (Beneficios, Promociones, etc.): SOLO en la home --}}
-@if($storeView === 'home')
-@php
-    // Si la plantilla trae su propia sección premium (ownFooter=computienda),
-    // omitimos 'featured_products' aquí para no duplicarla.
-    $homeSections = $ownFooter ? collect($sections)->reject(fn($s) => ($s->component ?? '') === 'featured_products') : $sections;
-@endphp
-<x-storefront-home-sections :project="$project" :settings="$settings" :sections="$homeSections" :products="$contextProducts" :categories="$contextCategories" />
+{{-- Bloques del constructor (Beneficios, Promociones, etc.): SOLO en la home.
+     Las plantillas autónomas (computienda/ecommerce) renderizan sus PROPIAS
+     secciones, así que el runtime no debe volver a inyectarlas (evita el doble
+     "Explora por categoría", "Promociones", etc.). --}}
+@if($storeView === 'home' && ! $ownFooter && ! $ownWhatsapp)
+<x-storefront-home-sections :project="$project" :settings="$settings" :sections="$sections" />
 @endif
 
 {{-- Compatibilidad del renderer anterior: no genera duplicados con el constructor visual. --}}
@@ -404,11 +409,13 @@
         @if($enabled('footer_show_newsletter') && filled($settings['footer_newsletter_title'] ?? null))
             <div style="margin-top:28px;text-align:center"><strong>{{ $settings['footer_newsletter_title'] }}</strong>@if(filled($settings['footer_newsletter_url'] ?? null)) <a class="store-global-action" style="margin-left:12px" href="{{ $settings['footer_newsletter_url'] }}">Suscribirme</a>@endif</div>
         @endif
-        <div class="bixo-runtime-footer-bottom">{{ $settings['footer_copyright'] ?? ('© '.date('Y').' '.$project->name.'. Todos los derechos reservados.') }} @if(filled($settings['footer_dev_text'] ?? null)) · {{ $settings['footer_dev_text'] }} @endif</div>
+        <div class="bixo-runtime-footer-bottom">{{ $settings['footer_copyright'] ?? ('© '.date('Y').' '.$project->name.'. Todos los derechos reservados.') }} @if(filled($settings['footer_dev_text'] ?? null)) · {{ $settings['footer_dev_text'] }} @endif · Desarrollado por <a href="https://eskalagroup.com/" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Eskala</a></div>
     </div>
 </footer>
 
-@if($enabled('float_wa_show') && $whatsapp)
+{{-- El WhatsApp flotante del runtime NO se renderiza cuando la plantilla trae
+     el suyo propio (ownFooter/ownWhatsapp): evita el botón duplicado. --}}
+@if(!$ownFooter && !$ownWhatsapp && $enabled('float_wa_show') && $whatsapp)
     <a id="bixo-runtime-whatsapp" href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($whatsappMessage) }}" target="_blank" rel="noopener" aria-label="WhatsApp" title="{{ $settings['float_wa_tooltip'] ?? '¿Necesitas ayuda?' }}" style="position:fixed;z-index:70;bottom:22px;{{ ($settings['float_wa_pos'] ?? 'bottom-right') === 'bottom-left' ? 'left:22px' : 'right:22px' }};width:56px;height:56px;border-radius:999px;background:#25d366;color:white;display:grid;place-items:center;font-size:26px;text-decoration:none;box-shadow:0 10px 28px rgba(0,0,0,.22)">✆</a>
 @endif
 
@@ -506,7 +513,7 @@
 
         const header = document.querySelector('header');
         if (header && config.logo) {
-            let logo = header.querySelector('[class*="logo" i] img, a:first-child img, img[alt*="logo" i]');
+            let logo = header.querySelector('[class*="logo" i] img, [class*="brand" i] img, a img, img[alt*="logo" i]');
             if (!logo) { logo = document.createElement('img'); logo.alt = config.projectName; logo.style.margin = '8px 16px'; header.prepend(logo); }
             logo.src = config.logo; logo.style.width = 'auto'; logo.style.maxHeight = 'var(--store-logo-height)';
         }
@@ -609,7 +616,24 @@
             const firstCard = [...cards][0];
             const area = firstCard.closest('section,main') || firstCard.parentElement;
             const title = area?.querySelector('h2,h1');
-            if (title && !title.closest('[data-bixo-runtime-hero]')) { title.textContent = config.catalogTitle; title.id = 'catalogo'; }
+            // Solo se renombra el encabezado de una rejilla de catálogo. Antes se
+            // tomaba el primer h1/h2 del área: en la ficha de producto ese título
+            // es el NOMBRE del producto, y quedaba sustituido por "Productos
+            // destacados" (los productos relacionados cuentan como tarjetas).
+            const esFicha = !!document.querySelector('.pdp-wrap,.pdp-gallery,.product-detail,[data-product-detail]');
+            const esTituloDeProducto = title && (
+                title.closest('.pdp-wrap,.product-detail,[data-product-detail]') ||
+                title.classList.contains('pdp-title') ||
+                title.closest('.catalog-card')
+            );
+            // Un título con x-text lo gestiona la plantilla (por ejemplo, el del
+            // catálogo cambia al nombre de la categoría filtrada): pisarlo dejaba
+            // "Productos destacados" aunque el cliente estuviera viendo Monitores.
+            const loGestionaAlpine = title && (title.hasAttribute('x-text') || title.hasAttribute('x-html'));
+            if (title && !esFicha && !esTituloDeProducto && !loGestionaAlpine && !title.closest('[data-bixo-runtime-hero]')) {
+                title.textContent = config.catalogTitle;
+                title.id = 'catalogo';
+            }
         }
 
         document.querySelectorAll('button,a').forEach(element => {
@@ -634,9 +658,12 @@
         if (!config.quickView) document.querySelectorAll('button,a').forEach(el => { if (textMatches(el,['vista rapida','quick view'])) el.hidden = true; });
         if (!config.showSku) document.querySelectorAll('[class*="sku" i],[data-sku]').forEach(el => el.hidden = true);
         if (!config.showStock) document.querySelectorAll('[class*="stock" i],[data-stock]').forEach(el => el.hidden = true);
-        if (!config.showFlashSale) document.querySelectorAll('[class*="flash-sale" i],[data-section="flash-sale"]').forEach(el => el.hidden = true);
-        if (!config.showTestimonials) document.querySelectorAll('[class*="testimonial" i],[data-section="testimonials"]').forEach(el => el.hidden = true);
-        if (!config.showNewsletter) document.querySelectorAll('[class*="newsletter" i],[data-section="newsletter"]').forEach(el => el.hidden = true);
+        // Flags legados del diseñador: NO tocan secciones del registro canónico (data-store-native-section),
+        // cuya visibilidad ya la decidió el servidor con store_sections.
+        const legacySectionHide = (sel) => document.querySelectorAll(sel).forEach(el => { if (!el.closest('[data-store-native-section]')) el.hidden = true; });
+        if (!config.showFlashSale) legacySectionHide('[class*="flash-sale" i],[data-section="flash-sale"]');
+        if (!config.showTestimonials) legacySectionHide('[class*="testimonial" i],[data-section="testimonials"]');
+        if (!config.showNewsletter) legacySectionHide('[class*="newsletter" i],[data-section="newsletter"]');
         const loginPanel = document.querySelector('[data-customer-login],[class*="login-modal" i],[class*="login-panel" i]');
         if (loginPanel) {
             if (config.login.backgroundType === 'image' && config.login.backgroundImage) { loginPanel.style.backgroundImage = `url("${config.login.backgroundImage}")`; loginPanel.style.backgroundSize = 'cover'; }
@@ -671,7 +698,9 @@
             lname: 'input[name*="last" i],input[x-model*="last" i],input[placeholder*="apellido" i]',
             email: 'input[type="email"],input[name*="email" i],input[x-model*="email" i]',
             dni: 'input[name*="dni" i],input[name*="document" i],input[placeholder*="DNI" i],input[placeholder*="RUC" i]',
-            address: 'input[name*="address" i],textarea[name*="address" i],input[x-model*="address" i],textarea[x-model*="address" i]',
+            // El comodin "address" tambien casaba con address2 (la referencia del
+            // domicilio) y le sobreescribia la etiqueta: quedaban dos "Direccion".
+            address: 'input[name*="address" i]:not([name*="address2" i]),textarea[name*="address" i]:not([name*="address2" i]),input[x-model*="address" i]:not([x-model*="address2" i]),textarea[x-model*="address" i]:not([x-model*="address2" i])',
             notes: 'textarea[name*="note" i],textarea[x-model*="note" i]'
         };
         Object.entries(fixed).forEach(([key,fieldConfig]) => {

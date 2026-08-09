@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotización BIXO</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; }
+  @media print {
+    body { background: #fff !important; }
+    .page { margin: 0 !important; box-shadow: none !important; width: 100% !important; }
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 20px auto;
+    background: #fff;
+    padding: 0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    padding: 36px 48px 28px;
+    color: white;
+    position: relative;
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 44px; height: 44px; background: rgba(255,255,255,0.2);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  }
+  .brand-icon svg { width: 24px; height: 24px; }
+  .brand-name { font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+  .brand-sub { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+  .doc-info { text-align: right; }
+  .doc-label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+  .doc-title { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .doc-number { font-size: 12px; opacity: 0.75; margin-top: 4px; }
+
+  .header-divider { border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0; }
+
+  .client-row { display: flex; gap: 40px; }
+  .client-field { flex: 1; }
+  .client-field label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+  .client-field .field-line {
+    border-bottom: 1px solid rgba(255,255,255,0.4);
+    margin-top: 6px; padding-bottom: 4px;
+    font-size: 14px; min-width: 180px; min-height: 22px;
+  }
+
+  /* BODY */
+  .body { padding: 36px 48px; }
+
+  /* SECCIÓN */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: #6366f1;
+    border-left: 3px solid #6366f1; padding-left: 10px;
+    margin-bottom: 14px;
+  }
+
+  /* CARD */
+  .card {
+    background: #f8f7ff; border: 1px solid #e5e3ff;
+    border-radius: 10px; padding: 18px 22px;
+    margin-bottom: 14px;
+  }
+  .card-title { font-size: 13px; font-weight: 700; color: #1e1b4b; margin-bottom: 10px; }
+
+  /* ITEMS */
+  .item-list { list-style: none; }
+  .item-list li {
+    font-size: 12.5px; color: #374151; padding: 5px 0;
+    border-bottom: 1px dashed #e5e7eb;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .item-list li:last-child { border-bottom: none; }
+  .item-list li::before {
+    content: '✓'; color: #6366f1; font-weight: 700;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* GRID 2 COL */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* PRECIO */
+  .precio-box {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 12px; padding: 24px 28px;
+    color: white; text-align: center; margin-bottom: 14px;
+  }
+  .precio-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+  .precio-amount { font-size: 42px; font-weight: 800; margin: 6px 0; }
+  .precio-desc { font-size: 12px; opacity: 0.8; }
+
+  .pago-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .pago-item {
+    background: #f8f7ff; border: 1px solid #e5e3ff;
+    border-radius: 8px; padding: 14px 16px; text-align: center;
+  }
+  .pago-pct { font-size: 24px; font-weight: 800; color: #6366f1; }
+  .pago-desc { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+  /* MANTENIMIENTO */
+  .mant-box {
+    border: 2px dashed #c4b5fd; border-radius: 10px;
+    padding: 18px 22px; background: #faf9ff;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mant-left .mant-title { font-size: 13px; font-weight: 700; color: #1e1b4b; }
+  .mant-left .mant-sub { font-size: 11px; color: #6b7280; margin-top: 3px; }
+  .mant-badge {
+    background: #6366f1; color: white;
+    border-radius: 8px; padding: 8px 16px; text-align: center;
+    flex-shrink: 0;
+  }
+  .mant-badge .mant-price { font-size: 20px; font-weight: 800; }
+  .mant-badge .mant-period { font-size: 10px; opacity: 0.8; }
+
+  /* INFO BOXES */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .info-box {
+    background: #f8f7ff; border: 1px solid #e5e3ff;
+    border-radius: 8px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .info-icon {
+    width: 36px; height: 36px; background: #ede9fe;
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; font-size: 16px;
+  }
+  .info-text .info-title { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+  .info-text .info-value { font-size: 13px; font-weight: 700; color: #1e1b4b; margin-top: 2px; }
+
+  /* FOOTER */
+  .footer {
+    background: #1e1b4b; color: white;
+    padding: 20px 48px; display: flex;
+    justify-content: space-between; align-items: center;
+    border-radius: 0 0 0 0;
+  }
+  .footer-brand { font-size: 14px; font-weight: 700; }
+  .footer-sub { font-size: 11px; color: #a5b4fc; margin-top: 2px; }
+  .footer-note { font-size: 11px; color: #a5b4fc; text-align: right; }
+
+  /* FIRMA */
+  .firma-section {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+    margin-top: 28px; padding-top: 20px;
+    border-top: 1px dashed #e5e7eb;
+  }
+  .firma-box { text-align: center; }
+  .firma-line { border-top: 1px solid #9ca3af; margin-bottom: 8px; margin-top: 40px; }
+  .firma-label { font-size: 11px; color: #6b7280; }
+  .firma-name { font-size: 12px; font-weight: 600; color: #1e1b4b; margin-top: 2px; }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg fill="none" stroke="white" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">BIXO</div>
+          <div class="brand-sub">Soluciones Digitales</div>
+        </div>
+      </div>
+      <div class="doc-info">
+        <div class="doc-label">Documento</div>
+        <div class="doc-title">COTIZACIÓN</div>
+        <div class="doc-number">N° COT-2025-001 &nbsp;|&nbsp; Fecha: 08 / 05 / 2026</div>
+      </div>
+    </div>
+
+    <hr class="header-divider">
+
+    <div class="client-row">
+      <div class="client-field">
+        <label>Cliente</label>
+        <div class="field-line">Oscar</div>
+      </div>
+      <div class="client-field">
+        <label>Empresa / Negocio</label>
+        <div class="field-line">&nbsp;</div>
+      </div>
+      <div class="client-field">
+        <label>Teléfono / WhatsApp</label>
+        <div class="field-line">996 918 212</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- SISTEMA BIXO -->
+    <div class="section">
+      <div class="section-title">Sistema BIXO</div>
+      <div class="card">
+        <div class="card-title">Plataforma digital para gestión comercial y ventas</div>
+        <div class="grid-2">
+          <ul class="item-list">
+            <li>Catálogo virtual alojado en la nube</li>
+            <li>Diseño personalizado basado en referencia</li>
+            <li>Panel de administración</li>
+            <li>Gestión y control de inventario</li>
+            <li>Personalización del catálogo</li>
+          </ul>
+          <ul class="item-list">
+            <li>Actualización de productos y precios</li>
+            <li>Gestión de proveedores y clientes</li>
+            <li>Registro de ventas directas</li>
+            <li>Generación de cotizaciones</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÓDULO COMERCIAL -->
+    <div class="section">
+      <div class="section-title">Módulo Comercial</div>
+      <div class="card">
+        <div class="grid-2">
+          <ul class="item-list">
+            <li>POS de ventas</li>
+            <li>Control de pedidos (cotización y venta)</li>
+            <li>Reportes de ventas diarias</li>
+          </ul>
+          <ul class="item-list">
+            <li>Reportes de inventario</li>
+            <li>Reportes de rentabilidad</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- PÁGINA WEB -->
+    <div class="section">
+      <div class="section-title">Página Web Corporativa</div>
+      <div class="card">
+        <div class="card-title">Página web informativa con integración al catálogo virtual</div>
+        <div class="grid-2">
+          <ul class="item-list">
+            <li>Inicio / Landing</li>
+            <li>Nosotros</li>
+            <li>Contacto</li>
+          </ul>
+          <ul class="item-list">
+            <li>Libro de reclamaciones</li>
+            <li>Información de la empresa</li>
+            <li>Integración al catálogo virtual</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFRAESTRUCTURA -->
+    <div class="section">
+      <div class="section-title">Infraestructura Incluida</div>
+      <div class="card">
+        <ul class="item-list">
+          <li>Alojamiento en servidor en la nube</li>
+          <li>Configuración e implementación de dominio personalizado (Ejemplo: miempresa.com.pe)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- INVERSIÓN -->
+    <div class="section">
+      <div class="section-title">Inversión</div>
+      <div class="precio-box">
+        <div class="precio-label">Sistema BIXO + Página Web Corporativa</div>
+        <div class="precio-amount">S/ 890.00</div>
+        <div class="precio-desc">Precio total del paquete · Incluye IGV</div>
+      </div>
+      <div class="pago-grid">
+        <div class="pago-item">
+          <div class="pago-pct">50%</div>
+          <div class="pago-desc">Pago inicial para inicio de desarrollo</div>
+        </div>
+        <div class="pago-item">
+          <div class="pago-pct">50%</div>
+          <div class="pago-desc">Contra entrega y conformidad</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANTENIMIENTO -->
+    <div class="section">
+      <div class="section-title">Plan de Mantenimiento Mensual (Opcional)</div>
+      <div class="mant-box">
+        <div class="mant-left">
+          <div class="mant-title">Soporte y mantenimiento continuo</div>
+          <div class="mant-sub">Soporte técnico · Asistencia operativa · Actualizaciones menores · Monitoreo del sistema</div>
+        </div>
+        <div class="mant-badge">
+          <div class="mant-price">S/ 100</div>
+          <div class="mant-period">por mes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO TIEMPO Y VIGENCIA -->
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="info-icon">⏱️</div>
+        <div class="info-text">
+          <div class="info-title">Tiempo de implementación</div>
+          <div class="info-value">5 a 10 días hábiles</div>
+        </div>
+      </div>
+      <div class="info-box">
+        <div class="info-icon">📅</div>
+        <div class="info-text">
+          <div class="info-title">Vigencia de la cotización</div>
+          <div class="info-value">7 días calendario</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIRMAS -->
+    <div class="firma-section">
+      <div class="firma-box">
+        <div class="firma-line"></div>
+        <div class="firma-label">Firma y sello del proveedor</div>
+        <div class="firma-name">BIXO Soluciones Digitales</div>
+      </div>
+      <div class="firma-box">
+        <div class="firma-line"></div>
+        <div class="firma-label">Firma y conformidad del cliente</div>
+        <div class="firma-name">&nbsp;</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      <div class="footer-brand">BIXO Soluciones Digitales</div>
+      <div class="footer-sub">Transformación digital para tu negocio</div>
+    </div>
+    <div class="footer-note">
+      Sujeto a entrega de información y aprobación del cliente<br>
+      Esta cotización es válida por 7 días calendario
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -524,6 +524,25 @@ const server = http.createServer(async (req, res) => {
             const waNum   = data.wa_number.replace(/\D/g, '');
             const builder = MENSAJES_ADMIN[data.action];
 
+            // Acción de texto libre (ej. aviso "ropa lista" de lavandería).
+            // No usa plantilla fija: envía data.message tal cual.
+            if (data.action === 'custom_text' && data.message && waNum) {
+                let waId = CHAT_ID_MAP[waNum] || (waNum + '@c.us');
+                try {
+                    await client.sendMessage(waId, data.message);
+                } catch (sendErr) {
+                    if (sendErr.message.includes('LID') && !waId.endsWith('@lid')) {
+                        const altId = waNum + '@lid';
+                        await client.sendMessage(altId, data.message);
+                        CHAT_ID_MAP[waNum] = altId;
+                    } else { throw sendErr; }
+                }
+                console.log(`📤 custom_text → ${data.wa_number}`);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true }));
+                return;
+            }
+
             if (builder && waNum) {
                 const texto = builder(NEGOCIO);
 
@@ -585,6 +604,28 @@ const server = http.createServer(async (req, res) => {
                 console.log(`📤 Admin acción "${data.action}" → ${data.wa_number}`);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ ok: true }));
+            } else if (data.action === 'send_image' && data.image_url && waNum) {
+                // Enviar imagen (comprobante de pago) al número del negocio
+                try {
+                    const media = await MessageMedia.fromUrl(data.image_url, { unsafeMime: true });
+                    const caption = data.caption || '';
+                    let waId = CHAT_ID_MAP[waNum] || (waNum + '@c.us');
+                    try {
+                        await client.sendMessage(waId, media, { caption });
+                    } catch(sendErr) {
+                        if (!waId.endsWith('@lid')) {
+                            const altId = waNum + '@lid';
+                            await client.sendMessage(altId, media, { caption });
+                            CHAT_ID_MAP[waNum] = altId;
+                        } else { throw sendErr; }
+                    }
+                    console.log(`🖼️  Comprobante enviado a ${waNum}`);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ ok: true }));
+                } catch(imgErr) {
+                    console.error('❌ Error enviando imagen:', imgErr.message);
+                    res.writeHead(500); res.end('Error enviando imagen');
+                }
             } else {
                 res.writeHead(400); res.end('Acción desconocida');
             }

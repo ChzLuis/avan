@@ -240,6 +240,70 @@ $estadoColores = [
     </div>
 </div>
 
+{{-- ═══ COLUMNA 3: FICHA DEL LEAD (CRM) ═══ --}}
+<div class="flex flex-col bg-white border-l border-gray-200 flex-shrink-0 overflow-y-auto"
+     style="width:290px;" x-show="convActiva" x-cloak>
+    <div class="px-4 py-3 border-b border-gray-100">
+        <div class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ficha del cliente</div>
+    </div>
+    <div class="p-4" x-show="lead">
+        <div class="text-base font-bold text-gray-800" x-text="lead?.nombre || (convActiva?.cliente_nombre) || 'Cliente'"></div>
+        <div class="text-xs text-gray-500 mt-0.5" x-text="lead?.telefono || (convActiva?.cliente_telefono) || ''"></div>
+
+        {{-- Clasificación del lead --}}
+        <div class="mt-4 rounded-xl border border-gray-100 p-3 bg-gray-50" x-show="lead?.clasificacion">
+            <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">Temperatura</div>
+            <template x-if="lead?.clasificacion">
+                <div>
+                    <div class="text-2xl font-extrabold"
+                         :class="{'text-red-600':lead.clasificacion.temp==='caliente','text-amber-600':lead.clasificacion.temp==='tibio','text-blue-600':lead.clasificacion.temp==='frio'}">
+                        <span x-text="lead.clasificacion.score + '%'"></span>
+                        <span class="text-xs font-semibold" x-text="{caliente:'🔥 Caliente',tibio:'🟡 Tibio',frio:'🔵 Frío'}[lead.clasificacion.temp] || '⚪ Nuevo'"></span>
+                    </div>
+                    <div class="h-1.5 rounded-full bg-gray-200 mt-2 overflow-hidden">
+                        <div class="h-full rounded-full"
+                             :class="{'bg-red-500':lead.clasificacion.temp==='caliente','bg-amber-500':lead.clasificacion.temp==='tibio','bg-blue-500':lead.clasificacion.temp==='frio'}"
+                             :style="`width:${lead.clasificacion.score}%`"></div>
+                    </div>
+                    <div class="text-[11px] text-gray-500 mt-1.5" x-text="lead.clasificacion.motivo"></div>
+                </div>
+            </template>
+        </div>
+
+        {{-- Etapa del pipeline --}}
+        <div class="mt-3">
+            <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">Etapa</div>
+            <select class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5"
+                    x-model="lead.etapa" @change="guardarEtapa()">
+                <option value="prospecto">Prospecto</option>
+                <option value="contactado">Contactado</option>
+                <option value="propuesta">Propuesta</option>
+                <option value="negociacion">Negociación</option>
+                <option value="ganado">Ganado</option>
+                <option value="perdido">Perdido</option>
+            </select>
+        </div>
+
+        {{-- Datos comerciales --}}
+        <div class="mt-3 space-y-2 text-sm">
+            <div x-show="lead?.empresa"><span class="text-gray-400 text-xs">Empresa:</span> <span x-text="lead?.empresa"></span></div>
+            <div x-show="lead?.producto_interes"><span class="text-gray-400 text-xs">Interés:</span> <span x-text="lead?.producto_interes"></span></div>
+        </div>
+
+        {{-- Historial de pedidos --}}
+        <div class="mt-4" x-show="lead?.pedidos?.length">
+            <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">Últimos pedidos</div>
+            <template x-for="p in (lead?.pedidos||[])" :key="p.id">
+                <div class="flex items-center justify-between text-xs py-1 border-b border-gray-50">
+                    <span x-text="'#'+p.id+' · '+p.estado"></span>
+                    <span class="font-semibold" x-text="'S/ '+p.total"></span>
+                </div>
+            </template>
+        </div>
+    </div>
+    <div class="p-4 text-xs text-gray-400" x-show="!lead">Cargando ficha…</div>
+</div>
+
 {{-- Empty: sin conversación activa --}}
 <div class="flex-1 flex flex-col items-center justify-center text-gray-500" x-show="!convActiva">
     <svg class="w-16 h-16 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -371,6 +435,7 @@ function bandeja() {
     return {
         conversaciones: CONVERSACIONES_INIT,
         convActiva: null,
+        lead: null,
         mensajes: [],
         cargandoMensajes: false,
         enviando: false,
@@ -430,6 +495,7 @@ function bandeja() {
             this.editNotas    = conv.notas            || '';
             this.mensajes = [];
             this.cargandoMensajes = true;
+            this.cargarLead(conv); // ficha CRM del cliente (columna derecha)
 
             const res = await fetch(`/bixocrm/${conv.id}/mensajes`, {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
@@ -439,6 +505,38 @@ function bandeja() {
             this.cargandoMensajes = false;
             conv.no_leidos = 0;
             this.$nextTick(() => this.scrollBottom());
+        },
+
+        // Carga la ficha CRM del cliente (scoring, pipeline, historial).
+        async cargarLead(conv) {
+            this.lead = null;
+            try {
+                const res = await fetch(`/bixocrm/lead`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        telefono: conv.cliente_telefono || '',
+                        nombre: conv.cliente_nombre || '',
+                    }),
+                });
+                if (res.ok) this.lead = await res.json();
+            } catch (e) { this.lead = { nombre: conv.cliente_nombre, telefono: conv.cliente_telefono }; }
+        },
+
+        async guardarEtapa() {
+            if (!this.lead?.id) return;
+            await fetch(`/bixocrm/lead/${this.lead.id}/etapa`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ etapa: this.lead.etapa }),
+            });
         },
 
         async enviarMensaje() {

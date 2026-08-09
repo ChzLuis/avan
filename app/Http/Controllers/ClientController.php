@@ -16,7 +16,57 @@ class ClientController extends Controller
         $clientTypes = $this->catValues($project, 'client_type');
         $leadSources = $this->catValues($project, 'lead_source');
         $portalLayout = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
-        return view('clients.index', compact('project', 'clients', 'clientTypes', 'leadSources', 'portalLayout'));
+
+        // Resumen de leads (alimentado por el Copilot) para las tarjetas del CRM.
+        $leadStats = [
+            'caliente' => $clients->where('lead_temp', 'caliente')->count(),
+            'tibio'    => $clients->where('lead_temp', 'tibio')->count(),
+            'frio'     => $clients->where('lead_temp', 'frio')->count(),
+            'total'    => $clients->count(),
+        ];
+
+        return view('clients.index', compact('project', 'clients', 'clientTypes', 'leadSources', 'portalLayout', 'leadStats'));
+    }
+
+    /**
+     * Vista de pipeline (Kanban) del CRM: leads agrupados por etapa comercial.
+     * Es la otra mitad del Copilot: aquí el vendedor gestiona lo que la extensión capturó.
+     */
+    public function pipeline()
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $clients = $project->clients()->withCount(['orders','quotes'])->latest('ultima_actividad')->get();
+
+        $etapas = [
+            'prospecto'   => 'Prospecto',
+            'contactado'  => 'Contactado',
+            'propuesta'   => 'Propuesta',
+            'negociacion' => 'Negociación',
+            'ganado'      => 'Ganado',
+            'perdido'     => 'Perdido',
+        ];
+        $porEtapa = [];
+        foreach ($etapas as $key => $label) {
+            $porEtapa[$key] = $clients->where('etapa', $key === 'prospecto' ? 'prospecto' : $key)
+                ->when($key === 'prospecto', fn ($c) => $c->concat($clients->whereNull('etapa')))
+                ->values();
+        }
+
+        return view('clients.pipeline', compact('project', 'etapas', 'porEtapa'));
+    }
+
+    /** Mover un lead de etapa (drag & drop del pipeline). */
+    public function moveStage(Request $request, Client $client)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        abort_unless($client->project_id === $project->id, 403);
+        $data = $request->validate([
+            'etapa' => 'required|in:prospecto,contactado,propuesta,negociacion,ganado,perdido',
+        ]);
+        $client->update(['etapa' => $data['etapa']]);
+        return response()->json(['ok' => true]);
     }
 
     private function catValues(Project $project, string $type): \Illuminate\Support\Collection

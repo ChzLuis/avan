@@ -113,7 +113,7 @@
                 @csrf
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Correo electrónico</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Usuario</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,9 +121,9 @@
                                       d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
                             </svg>
                         </div>
-                        <input type="text" name="email" value="{{ old('email') }}"
+                        <input type="text" name="username" value="{{ old('username') }}"
                                required autofocus autocomplete="username"
-                               placeholder="tu@correo.com"
+                               placeholder="Tu usuario"
                                class="w-full pl-10 pr-4 py-3 border border-gray-200 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent"
                                style="--tw-ring-color:{{ $bg1 }}">
                     </div>

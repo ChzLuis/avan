@@ -89,9 +89,9 @@
                     'icon'   => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
                     'url'    => $project->slug ? url('/'.$project->slug) : null,
                     'links'  => [
-                        ['label'=>'Diseño y colores',  'href'=> route('settings.design').'?s=brand'],
-                        ['label'=>'Plantilla',         'href'=> route('settings.design').'?s=plantilla'],
-                        ['label'=>'Pagos en línea',    'href'=> route('settings.design').'?s=payments'],
+                        ['label'=>'Diseño y colores',  'href'=> route('settings.builder').'#appearance'],
+                        ['label'=>'Plantilla',         'href'=> route('settings.builder').'#appearance'],
+                        ['label'=>'Pagos en línea',    'href'=> route('settings.builder').'#sales'],
                     ],
                 ],
                 [

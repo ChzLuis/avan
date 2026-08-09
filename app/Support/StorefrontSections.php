@@ -3,18 +3,30 @@
 namespace App\Support;
 
 use App\Models\Project;
-use App\Models\StoreSection;
+use App\Storefront\StoreSectionWriteService;
 
 class StorefrontSections
 {
     public const COMPONENTS = [
         'hero' => 'Banner principal',
+        'media_banner' => 'Banner multimedia (imagen o video)',
         'benefits' => 'Beneficios de la tienda',
         'announcements' => 'Bloque de anuncios',
         'featured_categories' => 'Categorías principales',
+        'collection_showcase' => 'Colecciones / Compra por ambiente',
         'daily_offer' => 'Solo por hoy',
         'discounts' => 'Productos con descuento',
         'featured_products' => 'Productos destacados',
+        'category_rows' => 'Filas por categoría (Laptops, Monitores…)',
+        'brands' => 'Marcas',
+        'testimonials' => 'Testimonios',
+        'gallery' => 'Galería de imágenes y videos',
+        'faq' => 'Preguntas frecuentes',
+        'wa_advisory' => 'Asesoría por WhatsApp',
+        'cta_banner' => 'Llamada a la acción',
+        'locations' => 'Sucursales y ubicación',
+        'about_preview' => 'Nosotros (resumen en Inicio)',
+        'info_strip' => 'Banda informativa (4 bloques)',
         'blog' => 'Blog informativo',
     ];
 
@@ -97,6 +109,13 @@ class StorefrontSections
                     'show_old_price' => true, 'show_current_price' => true, 'show_percentage' => true,
                 ],
             ],
+            'category_rows' => [
+                'variant' => 'rows',
+                'enabled' => false,
+                'content' => [
+                    'rows' => [], 'limit' => 5, 'show_head' => true,
+                ],
+            ],
             'featured_products' => [
                 'variant' => 'carousel',
                 'enabled' => false,
@@ -113,37 +132,123 @@ class StorefrontSections
                     'all_url' => '#', 'items' => [],
                 ],
             ],
+            'media_banner' => [
+                'variant' => 'image',
+                'enabled' => false,
+                'content' => [
+                    // media_type: image | video_file | video_url (YouTube/Vimeo)
+                    'media_type' => 'image', 'desktop_image' => null, 'mobile_image' => null,
+                    'video_file' => null, 'video_url' => null, 'fallback_image' => null,
+                    'autoplay' => true, 'muted' => true, 'loop' => true, 'show_controls' => false,
+                    'overlay_color' => '#0f172a', 'overlay_opacity' => 45,
+                    'height' => 'medium',           // small | medium | large | full
+                    'align' => 'center',            // left | center | right
+                    'title' => '', 'subtitle' => '',
+                    'button_text' => '', 'button_url' => '#catalogo',
+                    'button2_text' => '', 'button2_url' => '',
+                ],
+            ],
+            'collection_showcase' => [
+                'variant' => 'ambient',            // ambient | circles | mosaic | banners
+                'enabled' => false,
+                'content' => [
+                    'title' => 'Compra por ambiente', 'subtitle' => '',
+                    // items: [{title, subtitle, image, url, category_id, enabled, sort_order}]
+                    'items' => [], 'columns' => 3, 'show_count' => false,
+                ],
+            ],
+            'brands' => [
+                'variant' => 'strip',              // strip | grid | carousel
+                'enabled' => false,
+                'content' => [
+                    'title' => 'Marcas con las que trabajamos', 'subtitle' => '',
+                    'grayscale' => true,
+                    // items: [{name, image, url, enabled, sort_order}]
+                    'items' => [],
+                ],
+            ],
+            'testimonials' => [
+                'variant' => 'cards',              // cards | carousel | band
+                'enabled' => false,
+                'content' => [
+                    'title' => 'Lo que dicen nuestros clientes', 'subtitle' => '',
+                    'source' => 'manual',          // manual | reviews (reseñas aprobadas)
+                    'limit' => 3,
+                    // items: [{name, role, text, rating, image, enabled, sort_order}]
+                    'items' => [],
+                ],
+            ],
+            'gallery' => [
+                'variant' => 'grid',               // grid | mosaic
+                'enabled' => false,
+                'content' => [
+                    'title' => 'Galería', 'subtitle' => '', 'columns' => 3,
+                    // items: [{type: image|video_url, image, video_url, caption, enabled, sort_order}]
+                    'items' => [],
+                ],
+            ],
+            'faq' => [
+                'variant' => 'accordion',          // accordion | two-columns
+                'enabled' => false,
+                'content' => [
+                    'title' => 'Preguntas frecuentes', 'subtitle' => '',
+                    // items: [{question, answer, enabled, sort_order}]
+                    'items' => [],
+                ],
+            ],
+            'wa_advisory' => [
+                'variant' => 'band',               // band | card
+                'enabled' => false,
+                'content' => [
+                    'title' => '¿Necesitas asesoría?', 'subtitle' => 'Escríbenos y te ayudamos a elegir el producto correcto.',
+                    'button_text' => 'Hablar por WhatsApp', 'message' => 'Hola, necesito asesoría sobre un producto.',
+                    'phone' => '',                 // vacío = usa el WhatsApp de la tienda
+                ],
+            ],
+            'cta_banner' => [
+                'variant' => 'wide',               // wide | split
+                'enabled' => false,
+                'content' => [
+                    'title' => '', 'subtitle' => '', 'image' => null,
+                    'button_text' => '', 'button_url' => '#catalogo',
+                    'background_color' => '#0f172a',
+                ],
+            ],
+            'locations' => [
+                'variant' => 'cards',              // cards | map-side
+                'enabled' => false,
+                'content' => [
+                    'title' => 'Visítanos', 'subtitle' => 'Te esperamos en nuestras tiendas',
+                    // items: [{name, address, phone, hours, show_map, enabled, sort_order}]
+                    'items' => [],
+                ],
+            ],
+            'info_strip' => [
+                'variant' => 'cards',              // cards | icons
+                'enabled' => false,
+                'content' => [
+                    'title' => '', 'subtitle' => '',
+                    // items: [{title, description, image, icon, url, enabled, sort_order}]
+                    'items' => [],
+                ],
+            ],
+            'about_preview' => [
+                'variant' => 'image-left',         // image-left | image-right
+                'enabled' => false,
+                'content' => [
+                    'label' => 'Quiénes somos', 'title' => '', 'body' => '',
+                    'image' => null,
+                    'button_text' => 'Conoce nuestra historia', 'button_url' => '/nosotros',
+                    // items = indicadores: [{icon, value, title, enabled, sort_order}]
+                    'items' => [],
+                ],
+            ],
         ];
     }
 
     public static function ensure(Project $project): void
     {
-        $loadedSettings = $project->relationLoaded('settings')
-            ? $project->settings->pluck('value', 'key')->all()
-            : null;
-        $defaults = self::defaults($project, $loadedSettings);
-        $existing = $project->storeSections()->where('page', 'home')->orderBy('id')->get()->groupBy('component');
-
-        foreach (array_keys(self::COMPONENTS) as $index => $component) {
-            if (($existing[$component] ?? collect())->isNotEmpty()) {
-                continue;
-            }
-
-            $definition = $defaults[$component];
-            StoreSection::create([
-                'project_id' => $project->id,
-                'page' => 'home',
-                'component' => $component,
-                'variant' => $definition['variant'],
-                'content' => $definition['content'],
-                'sort_order' => ($index + 1) * 10,
-                'is_enabled' => $definition['enabled'],
-                'show_desktop' => true,
-                'show_tablet' => true,
-                'show_mobile' => true,
-                'published_at' => now(),
-            ]);
-        }
+        app(StoreSectionWriteService::class)->ensureHomeSections($project);
     }
 
     public static function definition(Project $project, string $component): array

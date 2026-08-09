@@ -8,6 +8,64 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script>
+    // Guard global: un error puntual no debe dejar la página en blanco.
+    window.addEventListener('unhandledrejection', function (e) {
+        console.warn('[BIXO] Promesa rechazada contenida:', e.reason);
+    });
+
+    // Keep-alive de CSRF: refresca el token cada 15 min para evitar el error
+    // 419 "Page Expired" en formularios que quedan abiertos mucho tiempo.
+    (function () {
+        function refreshCsrf() {
+            fetch('/csrf-token', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d || !d.token) return;
+                    var meta = document.querySelector('meta[name="csrf-token"]');
+                    if (meta) meta.setAttribute('content', d.token);
+                    // Actualiza el hidden _token de todos los formularios abiertos
+                    document.querySelectorAll('input[name="_token"]').forEach(function (i) { i.value = d.token; });
+                })
+                .catch(function () {});
+        }
+        setInterval(refreshCsrf, 15 * 60 * 1000); // cada 15 minutos
+        // También al volver a la pestaña tras estar inactiva
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') refreshCsrf();
+        });
+    })();
+    </script>
+    <script>
+    // Componente Alpine reutilizable: arrastrar y soltar archivos de imagen
+    // sobre cualquier zona de subida. Uso: x-data="imageDropzone(files => miFuncion(files))"
+    // en el mismo elemento (o uno ancestro) que ya tiene el <input type="file">/<label>.
+    // No reemplaza el click-para-elegir existente, solo suma el arrastre.
+    document.addEventListener('alpine:init', () => {
+        window.imageDropzone = function (onFiles, opts = {}) {
+            const accept = opts.accept || 'image/';
+            return {
+                isDragging: false,
+                _dragDepth: 0,
+                onDragEnter(e) {
+                    if (!Array.from(e.dataTransfer?.types || []).includes('Files')) return;
+                    this._dragDepth++;
+                    this.isDragging = true;
+                },
+                onDragLeave() {
+                    this._dragDepth = Math.max(0, this._dragDepth - 1);
+                    if (this._dragDepth === 0) this.isDragging = false;
+                },
+                onDrop(e) {
+                    this._dragDepth = 0;
+                    this.isDragging = false;
+                    const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith(accept));
+                    if (files.length) onFiles(files);
+                },
+            };
+        };
+    });
+    </script>
     <style>
         [x-cloak]{display:none!important}
 
@@ -37,57 +95,58 @@
             border-right: 1px solid var(--sb-border);
             display: flex;
             flex-direction: column;
-            transition: width .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
+            transition: width .22s cubic-bezier(.4,0,.2,1);
             overflow: hidden;
             min-height: 0;
+            position: relative;         /* ancla para la flecha flotante */
         }
 
         /* Firma permanente: barra izquierda morada en TODO el sidebar */
         .sb-bixo::before {
-            content: '';
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            width: 4px;
-            background: var(--sb-stripe);
-            z-index: 60;
-            pointer-events: none;
+            display: none;
         }
 
-        /* ── HEADER (solo mobile) ── */
-        .sb-header { display:none !important; }
-        .sb-mobile-header { display:none; }
+        /* ── HEADER del sidebar: oculto siempre (el header superior ya muestra la marca BIXO) ── */
+        .sb-header { display: none !important; }
         .sb-logo {
             width: 30px; height: 30px;
-            background: var(--sb-purple);
-            border-radius: 7px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 900; color: #fff;
-            letter-spacing: -1px; flex-shrink: 0;
+            border-radius: 7px; flex-shrink: 0;
+            background-image: url('/img/bixo-logo.jpg');
+            background-size: 132%;
+            background-position: 50% 38%;
+            background-repeat: no-repeat;
+            font-size: 0; /* oculta la 'B' de texto de respaldo */
         }
         .sb-brand-name { font-size:13px; font-weight:800; color:var(--sb-text-1); line-height:1; }
         .sb-brand-sub  { font-size:9px;  font-weight:700; color:var(--sb-purple); text-transform:uppercase; letter-spacing:.1em; margin-top:2px; }
 
         /* ── TOGGLE DESKTOP ── */
+        /* Flecha circular flotante sobre la línea divisoria (borde derecho interno) */
         .sb-toggle-btn {
             display: none;
             align-items: center;
             justify-content: center;
-            height: 38px;
-            border: none;
-            background: none;
+            position: absolute;
+            top: 60px;
+            right: 4px;                 /* pegada al borde derecho, dentro del sidebar */
+            width: 24px;
+            height: 24px;
+            border: 1px solid var(--sb-border);
+            border-radius: 50%;
+            background: #fff;
             cursor: pointer;
             color: var(--sb-text-3);
-            border-bottom: 1px solid var(--sb-border);
-            width: 100%;
-            flex-shrink: 0;
-            transition: background .15s, color .15s;
-            font-family: var(--sb-font);
-            font-size: 11px;
-            font-weight: 600;
-            gap: 6px;
+            z-index: 60;
+            box-shadow: 0 1px 3px rgba(16,24,40,.1);
+            transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
         }
         @media (min-width:768px) { .sb-toggle-btn { display:flex; } }
-        .sb-toggle-btn:hover { background: var(--sb-bg-hover); color: var(--sb-text-2); }
+        .sb-toggle-btn:hover {
+            background: var(--sb-purple, #7C3AED);
+            color: #fff;
+            border-color: var(--sb-purple, #7C3AED);
+            box-shadow: 0 2px 8px rgba(124,58,237,.35);
+        }
 
         /* ── NAV SCROLL ── */
         .sb-nav {
@@ -288,9 +347,13 @@
         }
         .bx-hdr-logo { display:flex; align-items:center; gap:8px; flex-shrink:0; }
         .bx-hdr-logo-mark {
-            width:28px; height:28px; background:#7C3AED; border-radius:7px;
-            display:flex; align-items:center; justify-content:center;
-            color:#fff; font-size:14px; font-weight:800; letter-spacing:-.5px; flex-shrink:0;
+            width:30px; height:30px; border-radius:7px; flex-shrink:0;
+            background-image:url('/img/bixo-logo.jpg');
+            /* zoom + centrado-arriba: recorta el borde blanco y la marca de agua (esquina inferior-derecha) */
+            background-size:132%;
+            background-position:50% 38%;
+            background-repeat:no-repeat;
+            box-shadow:0 0 0 1px rgba(0,0,0,.04);
         }
         .bx-hdr-logo-txt { font-size:14px; font-weight:800; color:#111827; letter-spacing:.02em; }
         .bx-hdr-sep { width:1px; height:22px; background:#E5E7EB; margin:0 8px; flex-shrink:0; }
@@ -368,6 +431,7 @@
         }
         .bx-hdr-logout:hover { background:#FEF2F2; }
 
+        .sb-mobile-header { display:none; }
         .admin-menu-trigger {
             display:none;
             width:44px;
@@ -400,7 +464,6 @@
             .bx-hdr-logo-txt,
             .bx-hdr-sep,
             .bx-hdr-pagetitle,
-            .bx-hdr-action-item,
             .bx-hdr-nav-link,
             .bx-hdr-user-name,
             .bx-hdr-logout { display:none; }
@@ -448,7 +511,7 @@
     </style>
 </head>
 
-<body class="font-sans antialiased overflow-hidden" style="background:#f1f5f9;display:flex;flex-direction:column;height:100vh;max-width:100%;"
+<body class="font-sans antialiased overflow-hidden" style="background:#f1f5f9;display:flex;flex-direction:column;height:100vh;"
       x-data="{
           open: localStorage.getItem('sb_open') !== null
                     ? localStorage.getItem('sb_open') !== 'false'
@@ -712,13 +775,14 @@
         </div>
     </div>
 
-    {{-- Toggle desktop --}}
-    <button @click="open=!open" class="sb-toggle-btn">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-             :class="open ? '' : 'rotate-180'">
+    {{-- Toggle desktop: ícono discreto (sin texto, con tooltip) --}}
+    <button @click="open=!open" class="sb-toggle-btn"
+            :title="open ? 'Colapsar menú' : 'Expandir menú'"
+            :aria-label="open ? 'Colapsar menú' : 'Expandir menú'">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :class="open ? '' : 'rotate-180'" style="transition:transform .2s">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
         </svg>
-        <span x-show="open" x-cloak>Colapsar</span>
     </button>
 
     @php
@@ -726,8 +790,9 @@
         $authUser       = auth()->user();
         $isOwnerOrSuper = $authUser?->is_superadmin || ($activeProject && $activeProject->owner_id === $authUser?->id);
         $sCfgActivo     = request()->routeIs('settings*') || request()->routeIs('roles.*') || request()->routeIs('catalogs*') || request()->routeIs('projects.panel*');
-        $sEmpActivo     = request()->routeIs('clients*') || request()->routeIs('agenda*') || request()->routeIs('hr.*') || request()->routeIs('sedes.*') || request()->routeIs('proveedores.*') || request()->routeIs('groups.*');
+        $sEmpActivo     = request()->routeIs('agenda*') || request()->routeIs('hr.*') || request()->routeIs('sedes.*') || request()->routeIs('proveedores.*') || request()->routeIs('groups.*');
         $sCatActivo     = request()->routeIs('catalog') || request()->routeIs('products.*') || request()->routeIs('services.*') || request()->routeIs('categories.*') || request()->routeIs('reviews.*');
+        $sCrmActivo     = request()->routeIs('clients') || request()->routeIs('clients.*') || request()->routeIs('bot-flows.*') || request()->routeIs('bixocrm.*');
         $sComActivo     = request()->routeIs('bixosales.pos*') || request()->routeIs('bixosales.pedidos*') || request()->routeIs('bixosales.cotizaciones*') || request()->routeIs('bixosales.facturas*') || request()->routeIs('bixosales.rifas*') || request()->routeIs('proposals*');
         $sLogActivo     = request()->routeIs('bixosales.reportes*') || request()->routeIs('bots*');
 
@@ -820,7 +885,7 @@
             $negCat === 'farmacia' => [
                 'catalogo'   => 'Catálogo',
                 'productos'  => 'Medicamentos',
-                'servicios'  => null,
+                'servicios'  => 'Servicios',   // farmacias ofrecen servicios (inyectables, control, etc.)
                 'categorias' => 'Categorías',
                 'pedidos'    => 'Pedidos',
                 'pos'        => 'Caja / POS',
@@ -834,13 +899,13 @@
             $negCat === 'retail' => [
                 'catalogo'   => 'Catálogo',
                 'productos'  => 'Productos',
-                'servicios'  => null,
+                'servicios'  => 'Servicios',   // tiendas también pueden vender servicios (instalación, soporte, etc.)
                 'categorias' => 'Categorías',
                 'pedidos'    => 'Pedidos',
                 'pos'        => 'Punto de venta',
                 'agenda'     => null,
                 'clientes'   => 'Clientes',
-                'empleados'  => 'Equipo',
+                'empleados'  => 'Usuarios',
                 'empresa'    => 'Mi Tienda',
                 'cotizaciones' => 'Cotizaciones',
                 'rifas'      => null,
@@ -868,7 +933,7 @@
                 'pos'        => 'Punto de venta',
                 'agenda'     => 'Agenda',
                 'clientes'   => 'Clientes',
-                'empleados'  => 'Equipo',
+                'empleados'  => 'Usuarios',
                 'empresa'    => 'Mi Empresa',
                 'cotizaciones' => 'Cotizaciones',
                 'rifas'      => 'Rifas',
@@ -883,18 +948,26 @@
                  cfg: {{ $sCfgActivo ? 'true' : 'false' }},
                  emp: {{ $sEmpActivo ? 'true' : 'false' }},
                  cat: {{ $sCatActivo ? 'true' : 'false' }},
+                 crm: {{ $sCrmActivo ? 'true' : 'false' }},
                  com: {{ $sComActivo ? 'true' : 'false' }},
                  log: {{ $sLogActivo ? 'true' : 'false' }},
              },
-             toggle(k){ this.sec[k] = !this.sec[k]; }
+             toggle(k){
+                 const abrir = !this.sec[k];
+                 // Acordeón: cerrar todos los grupos y abrir solo el seleccionado
+                 Object.keys(this.sec).forEach(key => this.sec[key] = false);
+                 this.sec[k] = abrir;
+             }
          }">
 
         {{-- ══ BLOQUE: CONFIGURACIÓN ══ --}}
         @php
+        // Constructor guiado: entrada única cuando el flag del proyecto lo permite.
         $cfgItems = [
             ['l'=>'Negocio',   'h'=>$pid?route('settings'):'#',           'r'=>'settings_only',    'i'=>'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', 'perm'=>'settings.negocio'],
             ['l'=>'SEO',       'h'=>$pid?route('settings.seo'):'#',       'r'=>'settings.seo',     'i'=>'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', 'perm'=>null],
-            ['l'=>'Diseño',    'h'=>$pid?route('settings.design'):'#',    'r'=>'settings.design',  'i'=>'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01', 'perm'=>'settings.diseno'],
+            // Constructor: única pantalla de diseño (la antigua "Diseño" redirige aquí).
+            ['l'=>'Constructor', 'h'=>$pid?route('settings.builder'):'#', 'r'=>'settings.builder', 'i'=>'M11 4a1 1 0 011-1h0a1 1 0 011 1v1.07A7.002 7.002 0 0119 12v1h1a1 1 0 011 1v2a1 1 0 01-1 1h-1.07A7.002 7.002 0 0113 20.93V22a1 1 0 01-1 1h0a1 1 0 01-1-1v-1.07A7.002 7.002 0 015 17H4a1 1 0 01-1-1v-2a1 1 0 011-1h1v-1a7.002 7.002 0 016-6.93V4z', 'perm'=>'settings.diseno'],
             ['l'=>'Pagos',     'h'=>$pid?route('settings.payments'):'#',  'r'=>'settings.payments','i'=>'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', 'perm'=>'settings.pagos'],
             ['l'=>'Módulos',   'h'=>$pid?route('settings.modules'):'#',   'r'=>'settings.modules', 'i'=>'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', 'perm'=>null],
             ['l'=>'QR',        'h'=>$pid?route('settings.qr'):'#',        'r'=>'settings.qr',      'i'=>'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z', 'perm'=>null],
@@ -902,7 +975,18 @@
             ['l'=>'Catálogos', 'h'=>$pid?route('catalogs.index'):'#',     'r'=>'catalogs.index',   'i'=>'M4 6h16M4 10h16M4 14h16M4 18h16', 'perm'=>'settings.catalogos'],
             ['l'=>'Canales WA','h'=>$pid?route('bots.index'):'#',         'r'=>'bots.index',       'i'=>'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 11.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', 'perm'=>null],
         ];
-        $cfgVisible = array_filter($cfgItems, fn($i) => $isOwnerOrSuper || ($i['perm'] && $authUser?->can($i['perm'])));
+        // Flujo de estados: para rubros que lo soportan (lavandería, restaurante, taller, etc.)
+        $activeProj = app()->bound('active_project') ? app('active_project') : null;
+        if ($pid && \App\Support\OrderFlow::supportsFlow(optional($activeProj)->category)) {
+            $cfgItems[] = ['l'=>'Flujo de estados', 'h'=>route('settings').'?s=flujo', 'r'=>'settings_flujo', 'i'=>'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01', 'perm'=>null];
+        }
+        // Items sin permiso específico ('perm'=>null) que igual deben verse siempre
+        $cfgSiempreVisible = ['QR', 'SEO'];
+        $cfgVisible = array_filter($cfgItems, fn($i) =>
+            $isOwnerOrSuper
+            || in_array($i['l'], $cfgSiempreVisible, true)
+            || ($i['perm'] && $authUser?->can($i['perm']))
+        );
         @endphp
 
         @if(count($cfgVisible) > 0)
@@ -922,7 +1006,8 @@
             @foreach($cfgVisible as $item)
             @php
                 $ia = match($item['r']) {
-                    'settings_only'     => request()->routeIs('settings') && !request()->routeIs('settings.*'),
+                    'settings_only'     => request()->routeIs('settings') && !request()->routeIs('settings.*') && request('s') !== 'flujo',
+                    'settings_flujo'    => request()->routeIs('settings') && request('s') === 'flujo',
                     'settings.seo'      => request()->routeIs('settings.seo*'),
                     'settings.design'   => request()->routeIs('settings.design*'),
                     'settings.payments' => request()->routeIs('settings.payments*'),
@@ -953,7 +1038,8 @@
                 <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>{{ $sbLabels['empresa'] }}</span>
             </button>
             <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.emp" x-collapse>
-            @if($activeProject && $activeProject->hasModule('clients') && (auth()->user()?->is_superadmin || $activeProject->owner_id===auth()->id() || auth()->user()?->can('clients.ver')))
+            {{-- Clientes se movió al módulo CRM (arriba) --}}
+            @if(false)
                 <a href="{{ $pid?route('clients'):'#' }}" class="sb-sub-item {{ request()->routeIs('clients*') ? 'active' : '' }}">{{ $sbLabels['clientes'] }}</a>
                 <a href="{{ $pid?route('groups.index',['type'=>'client']):'#' }}" class="sb-sub-item {{ (request()->routeIs('groups.*') && request()->get('type','client')==='client') ? 'active' : '' }}">Segmentos</a>
             @endif
@@ -992,14 +1078,52 @@
                 <a href="{{ $pid?route('services.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('services.*') ? 'active' : '' }}">{{ $sbLabels['servicios'] }}</a>
                 @endif
                 <a href="{{ $pid?route('categories.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">{{ $sbLabels['categorias'] }}</a>
-                <a href="{{ $pid?route('reviews.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('reviews.*') ? 'active' : '' }}">Reseñas</a>
+                {{-- Reseñas: oculto — el controlador aún no está implementado --}}
+                {{-- Combos y Promociones: solo owner/superadmin --}}
+                @if($isOwnerOrSuper)
                 <a href="{{ $pid?route('combos.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('combos.*') ? 'active' : '' }}">Combos</a>
                 <a href="{{ $pid?route('promotions.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('promotions.*') ? 'active' : '' }}">Promociones</a>
+                @endif
+                @canany(['catalog-integrations.view'])
+                <a href="{{ $pid?route('catalog-integrations.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('catalog-integrations.*') ? 'active' : '' }}">Conectar catálogo (API)</a>
+                @endcanany
             </div>
         </div>
         @endif
 
-        {{-- ══ BLOQUE: COMUNICACIONES (comercio) ══ --}}
+        {{-- ══ BLOQUE: CRM — solo owner/superadmin ══ --}}
+        @if($isOwnerOrSuper)
+        <div class="sb-module {{ $sCrmActivo ? 'is-active is-open' : '' }}" :class="sec.crm ? 'is-open' : ''">
+            <button @click="toggle('crm')" class="sb-module-head">
+                <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a3 3 0 10-2.5-4.5"/>
+                </svg>
+                <span class="sb-mod-title" x-show="open || sidebarOpen" x-cloak>CRM</span>
+                <svg class="sb-mod-arrow" x-show="open || sidebarOpen" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>CRM</span>
+            </button>
+            <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.crm" x-collapse>
+                @if($pid)
+                    <a href="{{ route('dashboard.comercial') }}" class="sb-sub-item {{ request()->routeIs('dashboard.comercial') ? 'active' : '' }}" style="display:flex;align-items:center;gap:6px;">
+                        📊 Dashboard
+                    </a>
+                    <a href="{{ route('copilot.index') }}" class="sb-sub-item {{ request()->routeIs('copilot.*') ? 'active' : '' }}" style="display:flex;align-items:center;gap:6px;">
+                        ✨ Copilot
+                        <span style="margin-left:auto;font-size:8px;font-weight:800;background:#7c3aed;color:#fff;padding:1px 5px;border-radius:99px;">IA</span>
+                    </a>
+                    <a href="{{ route('bixocrm.bandeja') }}" class="sb-sub-item {{ request()->routeIs('bixocrm.bandeja') ? 'active' : '' }}">Conversaciones</a>
+                    <a href="{{ route('clients') }}" class="sb-sub-item {{ request()->routeIs('clients') ? 'active' : '' }}">Clientes / Leads</a>
+                    <a href="{{ route('clients.pipeline') }}" class="sb-sub-item {{ request()->routeIs('clients.pipeline') ? 'active' : '' }}">Pipeline de ventas</a>
+                    <a href="{{ route('bot-flows.index') }}" class="sb-sub-item {{ request()->routeIs('bot-flows.*') ? 'active' : '' }}">Bots</a>
+                @endif
+            </div>
+        </div>
+        @endif
+
+        {{-- ══ BLOQUE: COMERCIAL — solo owner/superadmin ══ --}}
+        @if($isOwnerOrSuper)
         <div class="sb-module {{ $sComActivo ? 'is-active is-open' : '' }}" :class="sec.com ? 'is-open' : ''">
             <button @click="toggle('com')" class="sb-module-head">
                 <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1023,6 +1147,9 @@
             @if($activeProject && $activeProject->hasModule('pos') && (auth()->user()?->is_superadmin || $activeProject->owner_id===auth()->id() || auth()->user()?->can('pos.ver')))
                 <a href="{{ $pid?route('bixosales.pos'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.pos*') ? 'active' : '' }}">{{ $sbLabels['pos'] }}</a>
             @endif
+            @if($activeProject && (auth()->user()?->is_superadmin || $activeProject->owner_id===auth()->id() || auth()->user()?->can('pos.usar')))
+                <a href="{{ $pid?route('bixosales.reseller.precios'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.reseller.*') ? 'active' : '' }}">🏷️ Mis precios y catálogo</a>
+            @endif
             @if($activeProject && $activeProject->hasModule('orders') && (auth()->user()?->is_superadmin || $activeProject->owner_id===auth()->id() || auth()->user()?->can('orders.ver')))
                 <a href="{{ $pid?route('bixosales.pedidos'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.pedidos*') ? 'active' : '' }}">{{ $sbLabels['pedidos'] }}</a>
                 @if(in_array($negCat, ['restaurante','cafeteria']))
@@ -1040,8 +1167,10 @@
             @endif
             </div>
         </div>
+        @endif
 
-        {{-- ══ BLOQUE: LOGÍSTICA ══ --}}
+        {{-- ══ BLOQUE: LOGÍSTICA — solo owner/superadmin ══ --}}
+        @if($isOwnerOrSuper)
         <div class="sb-module {{ $sLogActivo ? 'is-active is-open' : '' }}" :class="sec.log ? 'is-open' : ''">
             <button @click="toggle('log')" class="sb-module-head">
                 <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1063,6 +1192,7 @@
             @endif
             </div>
         </div>
+        @endif
 
     </nav>
 
@@ -1099,7 +1229,7 @@
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MAIN
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-<div class="flex flex-col flex-1 overflow-hidden min-w-0 max-w-full" data-admin-main>
+<div class="flex flex-col flex-1 overflow-hidden min-w-0">
 
     {{-- â”€â”€ Header â”€â”€ --}}
 
@@ -1153,7 +1283,7 @@
         </template>
     </div>
 
-    {{-- â”€â”€ Modal de confirmaciÃ³n global â”€â”€ --}}
+        {{-- â”€â”€ Modal de confirmaciÃ³n global â”€â”€ --}}
     <div x-data="{
             show: false,
             title: '',
@@ -1349,7 +1479,7 @@
     @endif
 
     {{-- Content --}}
-    <div class="flex flex-1 min-h-0 min-w-0 max-w-full mob-main" style="overflow:hidden;align-items:stretch">
+    <div class="flex flex-1 min-h-0 mob-main" style="overflow:hidden;align-items:stretch">
         {{ $slot }}
     </div>
 </div>
@@ -1361,7 +1491,7 @@
 (function() {
     var LIMIT_S = 30 * 60, WARN_S = 3 * 60, WARN_AT = LIMIT_S - WARN_S;
     var LOGOUT  = {!! json_encode(route('logout')) !!};
-    var TOKEN   = function() { return (document.querySelector('meta[name=”csrf-token”]')||{}).content || ''; };
+    var TOKEN   = function() { return (document.querySelector('meta[name="csrf-token"]')||{}).content || ''; };
     var elapsed = 0, phase = 'idle', tick = null, autoOut = null;
     var elWarn, elExpired, elCd, elBar;
 
@@ -1470,3 +1600,4 @@
 
 </body>
 </html>
+
