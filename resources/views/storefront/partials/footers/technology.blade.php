@@ -122,13 +122,14 @@
     .ftt-ben small{display:block;margin-top:2px;color:var(--ftt-muted);font-size:11px;line-height:1.4}
     /* Listas con separador e icono */
     .ftt ul{list-style:none;margin:0;padding:0}
-    .ftt ul li{border-bottom:1px solid rgba(255,255,255,.08)}
-    .ftt ul li:last-child{border-bottom:0}
-    .ftt ul a{display:flex;align-items:center;gap:9px;padding:10px 0;color:#E5EDF6;font-size:14px;text-decoration:none;transition:color .18s ease}
+    /* Sin lineas bajo cada enlace: creaban una tabla que nadie pidio y solo
+       aparecian en dos de las cuatro columnas. */
+    .ftt ul li{border-bottom:0}
+    .ftt ul a{display:flex;align-items:center;gap:9px;padding:7px 0;color:#E5EDF6;font-size:14px;text-decoration:none;transition:color .18s ease}
     .ftt ul a .ftt-ar{margin-left:auto;opacity:0;transform:translateX(-4px);transition:.18s ease;color:var(--ftt-ac)}
     .ftt ul a:hover{color:var(--ftt-ac)}
     .ftt ul a:hover .ftt-ar{opacity:1;transform:translateX(0)}
-    .ftt ul a>span:first-child{color:var(--ftt-muted);display:inline-flex}
+    .ftt ul a>span:first-child{display:none}
     .ftt ul a:hover>span:first-child{color:var(--ftt-ac)}
     /* Contacto */
     .ftt-contact{display:flex;flex-direction:column;gap:12px;color:var(--ftt-txt2);font-size:14px}

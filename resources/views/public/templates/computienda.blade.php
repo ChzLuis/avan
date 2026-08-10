@@ -892,7 +892,9 @@
 
         @if($themeBodyClass === 'theme-soft-kids')
         /* ── Identidad INFANTIL: lunares, subrayado de crayón, formas jugosas ── */
-        .theme-soft-kids{background-image:radial-gradient(color-mix(in srgb,var(--primary) 9%,transparent) 2.2px,transparent 2.6px);background-size:26px 26px}
+        /* El punteado al 9% y cada 26px se leia como papel cuadriculado en las zonas
+           vacias. Mas fino y mas separado: textura, no rejilla. */
+        .theme-soft-kids{background-image:radial-gradient(color-mix(in srgb,var(--primary) 5%,transparent) 1.6px,transparent 1.9px);background-size:34px 34px}
         .theme-soft-kids [data-store-native-section]{background:transparent}
         .theme-soft-kids .section-heading h2,.theme-soft-kids .xs-head h2,.theme-soft-kids .home-section-copy h2{display:inline-block;background:linear-gradient(transparent 62%,color-mix(in srgb,var(--primary) 28%,transparent) 62%,color-mix(in srgb,var(--primary) 28%,transparent) 92%,transparent 92%);padding:0 6px;border-radius:6px}
         .theme-soft-kids .button,.theme-soft-kids .product-action,.theme-soft-kids .catalog-card-action{border-radius:999px!important}
@@ -2827,6 +2829,142 @@
     #storefront-main .premium-hero:has(.ph-arrow) .premium-hero-copy.is-left{padding-left:56px!important}
     @media(max-width:760px){#storefront-main .premium-hero:has(.ph-arrow) .premium-hero-copy.is-left{padding-left:0!important}
         #storefront-main .premium-hero .ph-arrow{top:auto;bottom:12px}}
+    @php
+        // Titular del hero: hay marcas que piden mayusculas (tecnica) y otras a
+        // las que las mayusculas les quitan la suavidad que declaran.
+        $heroCaps = (string) ($settings['hero_title_caps'] ?? '1') === '1';
+        // Color del boton de compra: si el primario no llega a 4,5:1 con blanco,
+        // el CTA se lee mal. Se permite un tono propio solo para el boton.
+        $btnColor = trim((string) ($settings['buy_button_color'] ?? '')) ?: null;
+    @endphp
+    /* ─── Sistema tipografico unico ───────────────────────────────────────
+       Habia 15 tamanos de letra, 4 pesos, 11 radios y 12 sombras conviviendo.
+       Aqui quedan 5 tamanos, 2 pesos y una jerarquia de radios. */
+    #storefront-main h1,#storefront-main .ph-title{font-size:var(--t-xl)!important;font-weight:800!important}
+    #storefront-main h2,#storefront-main .section-heading h2{font-size:var(--t-lg)!important;font-weight:800!important}
+    #storefront-main h3{font-size:var(--t-md)!important;font-weight:700!important}
+    #storefront-main h4,#storefront-main h5,#storefront-main h6{font-size:var(--t-sm)!important;font-weight:700!important}
+    /* Ningun texto por debajo de 12px: habia etiquetas de categoria a 9. */
+    #storefront-main .catalog-card-category,#storefront-main .buy-tag,
+    #storefront-main .catalog-card-compare,#storefront-main .buy-min,
+    footer .ft-legal,footer small{font-size:12px!important}
+    #storefront-main .catalog-card-category{color:var(--muted)!important;letter-spacing:.04em}
+    /* El boton de compra era el texto mas pequeno de la tarjeta (11px). */
+    #storefront-main .catalog-card-action,#storefront-main .catalog-card-inquiry,
+    #storefront-main .buy-add{font-size:13px!important;min-height:44px!important;
+        border-radius:var(--r-btn)!important;font-weight:700!important}
+    /* Comprar manda; consultar acompana. Antes pesaban lo mismo. */
+    #storefront-main .catalog-card-action{flex:1.6 1 auto}
+    #storefront-main .catalog-card-inquiry{flex:1 1 auto;background:transparent!important;
+        border:1.5px solid var(--border)!important;color:var(--text-strong)!important}
+    /* Un solo lenguaje de boton: nada de pildoras junto a radios de 8. */
+    #storefront-main .button,#storefront-main button.button,#storefront-main a.button,
+    #storefront-main .promo-cta,#storefront-main .home-see-all{border-radius:var(--r-btn)!important;font-size:14px!important;font-weight:700!important}
+    #storefront-main .button{min-height:44px!important}
+    /* Espaciado de seccion unico: habia tiendas a 68 y otras a 46. */
+    #storefront-main > section:not(.premium-hero):not(.trust-section){padding-block:56px!important}
+    /* Peso 900 fuera: junto al 800 no se distingue y endurece la marca. */
+    #storefront-main [style*="font-weight:900"],#storefront-main .fw-900{font-weight:800!important}
+    @unless($heroCaps)
+    #storefront-main h1,#storefront-main .ph-title{text-transform:none!important;font-weight:700!important;letter-spacing:-.01em}
+    @endunless
+    @if($btnColor)
+    #storefront-main .catalog-card-action,#storefront-main .buy-add,
+    #storefront-main .button-primary,#storefront-main .button.button-primary{background:{{ $btnColor }}!important}
+    @endif
+    /* ─── Colecciones como tarjeta-imagen ─────────────────────────────────
+       En moda la foto vende: la coleccion se presenta con la imagen a sangre y
+       el nombre encima, no como una fila con la foto de miniatura. */
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cats-grid{max-width:1000px}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-card{display:block!important;
+        min-height:0!important;aspect-ratio:16/10;border:0!important;box-shadow:var(--sh-2)!important}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-media{position:absolute!important;
+        inset:0;width:100%!important;height:100%!important;flex:none!important}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-media img{padding:0!important;
+        object-fit:cover!important;transition:transform .45s ease}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-card:hover .home-cat-media img{transform:scale(1.05)}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-card::before{content:'';position:absolute;
+        inset:0;z-index:1;background:linear-gradient(180deg,rgba(15,23,42,0) 38%,rgba(15,23,42,.72) 100%)}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-content{position:absolute!important;
+        z-index:2;left:0;right:0;bottom:0;padding:24px 26px!important}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-card strong{color:#fff!important;font-size:var(--t-lg)!important}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-card small{color:rgba(255,255,255,.86)!important}
+    #storefront-main .home-cats.style-horizontal.cover-cards .home-cat-card::after{display:none}
+    /* ─── Colecciones en horizontal (2 o 3 mundos) ────────────────────────
+       Con pocas colecciones, la tarjeta ancha quedaba casi vacia: foto pequena
+       a la izquierda y un titulo perdido en medio. Ahora la foto ocupa el
+       tercio izquierdo a sangre y el nombre pesa lo que tiene que pesar. */
+    /* Con 2 o 3 colecciones la rejilla a 1360px dejaba un vacio enorme entre
+       el nombre y la flecha. Se acota el ancho y la tarjeta se llena. */
+    #storefront-main .home-cats.style-horizontal .home-cats-grid{max-width:900px;margin-inline:auto}
+    #storefront-main .home-cats.style-horizontal .home-cat-card{padding:0!important;gap:0!important;
+        min-height:150px;overflow:hidden;position:relative}
+    #storefront-main .home-cats.style-horizontal .home-cat-media{flex:0 0 38%!important;width:auto!important;
+        height:auto!important;align-self:stretch;border-radius:0!important;
+        background:color-mix(in srgb,var(--primary) 8%,var(--surface-soft))!important}
+    #storefront-main .home-cats.style-horizontal .home-cat-media img{padding:14px!important;object-fit:contain!important;
+        width:100%!important;height:100%!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+    #storefront-main .home-cats.style-horizontal .home-cat-media > *{border:0!important;box-shadow:none!important;background:transparent!important}
+    #storefront-main .home-cats.style-horizontal .home-cat-content{padding:22px 24px!important}
+    #storefront-main .home-cats.style-horizontal .home-cat-card strong{font-size:var(--t-md)!important;
+        font-weight:800!important;color:var(--secondary)!important;text-transform:none!important;letter-spacing:0!important}
+    #storefront-main .home-cats.style-horizontal .home-cat-card small,
+    #storefront-main .home-cats.style-horizontal .home-cat-count{display:block;margin-top:4px;color:var(--muted);font-size:13px}
+    #storefront-main .home-cats.style-horizontal .home-cat-card::after{content:'';position:absolute;
+        left:0;right:0;bottom:0;height:4px;background:var(--primary);opacity:0;transition:opacity .2s ease}
+    #storefront-main .home-cats.style-horizontal .home-cat-card:hover::after{opacity:1}
+    /* En movil la botonera se partia en dos filas y el texto del boton se
+       rompia en dos lineas. Se mantiene en una fila y el texto no se parte. */
+    @media(max-width:760px){
+        /* En una tarjeta de ~160px no caben boton y icono en la misma fila sin
+           cortar el texto. El boton ocupa el ancho y WhatsApp sube a la foto. */
+        #storefront-main .catalog-card{position:relative}
+        #storefront-main .catalog-card-actions{flex-direction:row!important;flex-wrap:nowrap!important;gap:0;padding:0 10px 12px!important}
+        #storefront-main .catalog-card-action{flex:1 1 100%!important;width:100%!important;
+            padding:0 8px!important;font-size:12.5px!important;white-space:nowrap}
+        #storefront-main .catalog-card-inquiry{position:absolute!important;top:8px;right:8px;z-index:3;
+            flex:0 0 38px!important;width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;
+            padding:0!important;border-radius:50%!important;background:#fff!important;
+            border:1px solid var(--border)!important;box-shadow:var(--sh-1)!important}
+        #storefront-main .catalog-card-body{padding:12px 10px 8px!important}
+        #storefront-main .catalog-card-price{font-size:17px!important}
+        #storefront-main .catalog-card-name{font-size:13.5px!important}
+    }
+    /* Producto sin foto: el aviso iba a 9,5px y el icono flotaba suelto. Se
+       resuelve como estado, con el icono contenido y el texto legible. */
+    #storefront-main .catalog-card-media:has(.catalog-card-placeholder){background:var(--surface-soft)!important}
+    #storefront-main .catalog-card-placeholder{width:46px!important;height:46px!important;
+        color:color-mix(in srgb,var(--primary) 34%,var(--muted))!important;opacity:.8}
+    #storefront-main .ph-note{display:block;margin-top:10px;color:var(--muted)!important;
+        font-size:12px!important;font-weight:600;letter-spacing:.02em}
+    #storefront-main .catalog-card-media-link:has(.catalog-card-placeholder){display:grid;place-content:center;gap:0}
+    /* ─── Tarjeta de producto ─────────────────────────────────────────────
+       El precio era del mismo peso visual que el nombre y los dos botones
+       competian. Ahora: foto con aire, nombre a dos lineas fijas, precio
+       protagonista y un boton primario ancho con un secundario compacto. */
+    #storefront-main .catalog-card{border:1px solid var(--border)!important;background:var(--surface)!important;
+        overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+    #storefront-main .catalog-card:hover{border-color:color-mix(in srgb,var(--primary) 45%,var(--border))!important}
+    #storefront-main .catalog-card-media{border-bottom:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
+    #storefront-main .catalog-card-media img{transition:transform .35s ease}
+    #storefront-main .catalog-card:hover .catalog-card-media img{transform:scale(1.04)}
+    #storefront-main .catalog-card-body{padding:14px 14px 10px!important;gap:2px}
+    #storefront-main .catalog-card-category{display:block;margin-bottom:4px;text-transform:uppercase;font-weight:700}
+    #storefront-main .catalog-card-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+        overflow:hidden;min-height:2.8em;font-size:14.5px!important;font-weight:600!important;line-height:1.4!important;color:var(--text-strong)!important}
+    #storefront-main .catalog-card-name:hover{color:var(--primary)!important}
+    #storefront-main .catalog-card-prices{align-items:baseline;gap:8px;margin-top:8px}
+    #storefront-main .catalog-card-price{font-size:20px!important;font-weight:800!important;color:var(--secondary)!important;line-height:1.1}
+    #storefront-main .catalog-card-compare{color:var(--muted)!important;text-decoration:line-through}
+    #storefront-main .catalog-card-actions{display:flex!important;gap:8px;padding:0 14px 14px!important;width:100%;box-sizing:border-box}
+    #storefront-main .catalog-card-inquiry{flex:0 0 44px!important;padding:0!important;justify-content:center}
+    #storefront-main .catalog-card-inquiry span,#storefront-main .catalog-card-inquiry{font-size:0!important}
+    #storefront-main .catalog-card-inquiry svg{width:19px;height:19px;color:#25d366}
+    #storefront-main .catalog-card-action{flex:1 1 auto!important;width:auto!important;min-width:0}
+    /* La foto sin producto no puede ser un texto de 9px: se resuelve como estado. */
+    #storefront-main .catalog-card-media .image-empty,
+    #storefront-main .catalog-card-media > span:only-child{display:grid;place-content:center;gap:6px;
+        width:100%;height:100%;color:var(--muted);font-size:12px!important;background:var(--surface-soft)}
     /* El navegador pinta los textarea en monospace: rompe la tipografia de la tienda. */
     textarea,input,select,button{font-family:inherit}
     /* Mayorista plegable: la cabecera es el disparador y el detalle se despliega. */
@@ -3285,7 +3423,7 @@
         @endphp
 
         @if($featuredCategoryItems->isNotEmpty())
-        <section class="home-cats style-{{ $featuredCatsStyle }} shape-{{ $featuredCatsShape }} {{ $featuredCatsMobileCarousel ? 'mobile-carousel' : '' }}" data-store-native-section="categories" style="order:{{ $sectionOrder('categories') }};--cats-cols:{{ max(1, min($featuredCatsColumns, $featuredCategoryItems->count())) }}">
+        <section class="home-cats style-{{ $featuredCatsStyle }} shape-{{ $featuredCatsShape }} {{ ($settings['featured_categories_cover'] ?? '0') === '1' ? 'cover-cards' : '' }} {{ $featuredCatsMobileCarousel ? 'mobile-carousel' : '' }}" data-store-native-section="categories" style="order:{{ $sectionOrder('categories') }};--cats-cols:{{ max(1, min($featuredCatsColumns, $featuredCategoryItems->count())) }}">
             <div class="container">
                 @include('public.templates.partials.computienda-intro', ['introKey' => 'categories'])
                 @if($featuredCatsStyle === 'showcase' && !$introActive('categories'))
