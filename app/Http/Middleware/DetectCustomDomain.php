@@ -46,8 +46,14 @@ class DetectCustomDomain
 
             $path = rtrim($request->getPathInfo(), '/');
 
-            // Raíz o slug → servir catálogo (inicio) directamente sin cambiar URL
-            if ($path === '' || $path === '/' . $project->slug) {
+            // El slug interno no pinta nada en un dominio propio: 301 a la raiz
+            // para no repartir la misma portada entre dos direcciones.
+            if ($path === '/' . $project->slug) {
+                return redirect('/', 301);
+            }
+
+            // Raíz → servir catálogo (inicio) directamente sin cambiar URL
+            if ($path === '') {
                 $view = app(PublicController::class)->catalog($project->slug);
                 return response()->make($view instanceof Response ? $view->getContent() : $view);
             }
@@ -87,11 +93,29 @@ class DetectCustomDomain
                 return $view instanceof Response ? $view : response()->make($view);
             }
 
-            // Ficha de producto: sin esta ruta el dominio propio devolvía 404 y los
-            // enlaces tenían que arrastrar el slug interno (/tecsist-yc5w/p/452).
-            if (preg_match('#^/p/(\d+)$#', $path, $m)) {
-                $view = app(PublicController::class)->product($project->slug, (int) $m[1]);
+            // Ficha de producto con nombre: /producto/pc-de-escritorio-i5-460.
+            // El id cierra la clave; si el nombre no coincide con el actual,
+            // 301 al canonico para no tener dos URLs vivas del mismo producto.
+            if (preg_match('#^/producto/([A-Za-z0-9-]*[0-9]+)$#', $path, $m)) {
+                $id = \App\Support\ImageVariants::idDeClave($m[1]);
+                $producto = $id > 0 ? $project->products()->where('is_available', true)->find($id) : null;
+                if (! $producto) {
+                    abort(404);
+                }
+                if (\App\Support\ImageVariants::claveProducto($id, $producto->name) !== $m[1]) {
+                    return redirect('/producto/'.\App\Support\ImageVariants::claveProducto($id, $producto->name), 301);
+                }
+                $view = app(PublicController::class)->product($project->slug, $id);
                 return $view instanceof Response ? $view : response()->make($view);
+            }
+
+            // Enlaces antiguos (/p/460): 301 a la URL con nombre.
+            if (preg_match('#^/p/(\d+)$#', $path, $m)) {
+                $producto = $project->products()->where('is_available', true)->find((int) $m[1]);
+                if (! $producto) {
+                    abort(404);
+                }
+                return redirect('/producto/'.\App\Support\ImageVariants::claveProducto((int) $m[1], $producto->name), 301);
             }
 
             // El carrito es una capa dentro de la tienda, no una página propia:
@@ -113,16 +137,20 @@ class DetectCustomDomain
                 return redirect("https://{$host}/");
             }
 
-            // Rutas internas del catálogo con slug → quitar el slug del path
+            // Rutas internas del catálogo con slug → 301 a la version sin slug.
+            // Antes se servian en silencio y quedaban dos URLs por pagina.
             if (str_starts_with($path, '/' . $project->slug . '/')) {
                 $newPath = substr($path, strlen('/' . $project->slug));
+                if ($request->isMethodSafe()) { // GET y HEAD: POST sigue sin redirigir
+                    return redirect($newPath . ($request->getQueryString() ? '?' . $request->getQueryString() : ''), 301);
+                }
                 $request->server->set('REQUEST_URI', $newPath . ($request->getQueryString() ? '?' . $request->getQueryString() : ''));
                 return $next($request);
             }
 
             // Rutas sin slug (custom domain directo): /tienda, /nosotros, /p/{id}, etc.
             // Anteponemos el slug para que el router de Laravel las encuentre
-            $slugRoutes = ['/tienda', '/nosotros', '/contacto', '/blog', '/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher', '/reclamaciones', '/libro-reclamaciones', '/privacidad', '/terminos'];
+            $slugRoutes = ['/tienda', '/nosotros', '/contacto', '/blog', '/producto/', '/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher', '/reclamaciones', '/libro-reclamaciones', '/privacidad', '/terminos'];
             $needsSlug = collect($slugRoutes)->contains(fn($r) => str_starts_with($path, $r) || $path === $r);
             if ($needsSlug || $path === '') {
                 $newPath = '/' . $project->slug . ($path ?: '/');

@@ -479,13 +479,36 @@ Route::get('/robots.txt', function () {
 // ─── Ficha de producto en dominio propio (sin slug en la URL) ────────────────
 // El middleware de dominio propio corre dentro del grupo 'web', así que Laravel
 // resolvía el 404 antes de llegar a él: la ruta debe existir explícitamente.
+// URL legible: /producto/teclado-mecanico-rgb-460. El id cierra la clave, asi
+// que un cambio de nombre no rompe el enlace; si el nombre no coincide con el
+// actual redirigimos 301 al canonico para no repartir dos URLs por producto.
+Route::get('/producto/{clave}', function (string $clave) {
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
+    if (! $project) {
+        abort(404);
+    }
+    $id = \App\Support\ImageVariants::idDeClave($clave);
+    if ($id <= 0) {
+        abort(404);
+    }
+    $producto = $project->products()->where('is_available', true)->find($id);
+    if ($producto && \App\Support\ImageVariants::claveProducto($id, $producto->name) !== $clave) {
+        return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
+    }
+
+    return app(\App\Http\Controllers\PublicController::class)->product($project->slug, $id);
+})->where('clave', '[A-Za-z0-9-]*[0-9]+')->name('public.product.domain');
+
+// Enlaces antiguos (/p/460): 301 al nombre para no perder lo ya compartido.
 Route::get('/p/{id}', function (int $id) {
     $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
     if (! $project) {
         abort(404);
     }
-    return app(\App\Http\Controllers\PublicController::class)->product($project->slug, $id);
-})->where('id', '[0-9]+')->name('public.product.domain');
+    $producto = $project->products()->where('is_available', true)->findOrFail($id);
+
+    return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
+})->where('id', '[0-9]+')->name('public.product.domain.legacy');
 
 // El carrito vive dentro de la tienda; un enlace directo no debe dar error.
 Route::get('/carrito', function () {
@@ -530,7 +553,26 @@ Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::c
 Route::get('/{slug}/tienda', [PublicController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/tienda/{profile}', [PublicController::class, 'shop'])->name('public.shop.profile')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('profile', '[a-z0-9-]+');
 Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/p/{id}',   [PublicController::class, 'product'])->name('public.product')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('id', '[0-9]+');
+Route::get('/{slug}/producto/{clave}', function (string $slug, string $clave) {
+    $id = \App\Support\ImageVariants::idDeClave($clave);
+    if ($id <= 0) {
+        abort(404);
+    }
+    $project = \App\Models\Project::where('slug', $slug)->firstOrFail();
+    $producto = $project->products()->where('is_available', true)->find($id);
+    if ($producto && \App\Support\ImageVariants::claveProducto($id, $producto->name) !== $clave) {
+        return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
+    }
+
+    return app(PublicController::class)->product($slug, $id);
+})->name('public.product')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('clave', '[A-Za-z0-9-]*[0-9]+');
+// Enlaces antiguos (/tienda-x/p/460): 301 al nombre.
+Route::get('/{slug}/p/{id}', function (string $slug, int $id) {
+    $project = \App\Models\Project::where('slug', $slug)->firstOrFail();
+    $producto = $project->products()->where('is_available', true)->findOrFail($id);
+
+    return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
+})->name('public.product.legacy')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('id', '[0-9]+');
 Route::post('/{slug}/order-proof',    [PublicController::class, 'uploadOrderProof'])->name('public.order.proof')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');

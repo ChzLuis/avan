@@ -46,3 +46,4 @@ whatsbot/*.json
 public/.wwebjs_auth/
 .claude/
 whatsbot/node_modules/
+.gstack/

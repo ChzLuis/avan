@@ -189,7 +189,9 @@
 @endphp
 
 <style id="bixo-global-store-settings">
-    @import url('https://fonts.googleapis.com/css2?family={{ str_replace(' ', '+', $fontTitle) }}:wght@400;500;600;700;800;900&family={{ str_replace(' ', '+', $fontBody) }}:wght@300;400;500;600;700&display=swap');
+    /* Las fuentes ya las carga la plantilla con <link> en el <head>. Este
+       @import pedia las mismas familias otra vez y, al ir dentro de <style>,
+       bloqueaba el pintado hasta resolverse (Inter llegaba a pedirse 4 veces). */
     :root {
         --store-primary: {{ $primary }}; --store-secondary: {{ $secondary }};
         --primary: {{ $primary }}; --secondary: {{ $secondary }}; --accent: {{ $accent }};
@@ -502,7 +504,10 @@
             if (!icon) { icon = document.createElement('link'); icon.rel = 'icon'; document.head.appendChild(icon); }
             icon.href = config.favicon;
         }
-        if (config.seoTitle) document.title = config.seoTitle;
+        // La plantilla ya calcula titulo por vista (ficha, tienda, nosotros): si
+        // lo marca como propio, no lo pisamos con el titulo global de la tienda.
+        const tituloPropio = document.querySelector('title[data-seo="page"]');
+        if (config.seoTitle && !tituloPropio) document.title = config.seoTitle;
         const metas = {description: config.seoDescription, keywords: config.seoKeywords};
         Object.entries(metas).forEach(([name,content]) => {
             if (!content) return;

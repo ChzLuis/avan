@@ -660,6 +660,7 @@ class PublicController extends Controller
         // tienda. Antes, un producto único en su categoría no mostraba ninguno.
         $related = $project->products()
             ->where('is_available', true)
+            ->where('price', '>', 0)
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->with('mainImage')
@@ -673,6 +674,7 @@ class PublicController extends Controller
 
             $extra = $project->products()
                 ->where('is_available', true)
+                ->where('price', '>', 0)
                 ->whereIn('category_id', $hermanas)
                 ->whereNotIn('id', $related->pluck('id')->push($product->id))
                 ->with('mainImage')
@@ -684,6 +686,7 @@ class PublicController extends Controller
         if ($related->count() < 4) {
             $extra = $project->products()
                 ->where('is_available', true)
+                ->where('price', '>', 0)
                 ->whereNotIn('id', $related->pluck('id')->push($product->id))
                 ->with('mainImage')
                 ->latest()
@@ -872,7 +875,7 @@ class PublicController extends Controller
 
         foreach ($products as $p) {
             $xml .= '<url>';
-            $xml .= '<loc>'.e($baseUrl.'/p/'.$p->id).'</loc>';
+            $xml .= '<loc>'.e($baseUrl.'/producto/'.\App\Support\ImageVariants::claveProducto($p->id, $p->name)).'</loc>';
             $xml .= '<changefreq>weekly</changefreq><priority>0.8</priority>';
             $img = $p->images->first();
             if ($img) {

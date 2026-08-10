@@ -219,6 +219,7 @@
                     </label>
                     <div class="bxb-field"><span>Diseño</span>
                         <select :value="settings.trust_section_style||'cards'" @change="setSetting('trust_section_style',$event.target.value)">
+                            <option value="linea">Línea de texto (compacta, sin iconos)</option>
                             <option value="cards">Tarjetas clásicas</option>
                             <option value="compact">Compacto</option>
                             <option value="icons-top">Iconos arriba</option>
@@ -229,6 +230,10 @@
                             <option value="inline">Línea minimal</option>
                         </select>
                     </div>
+                    <label class="bxb-field">Dato extra en la línea de confianza (opcional)
+                        <input type="text" maxlength="60" placeholder="Ej: 14 años en Huancavelica · Hasta en 6 cuotas" :value="settings.trust_extra_note||''" @input.debounce.600ms="setSetting('trust_extra_note',$event.target.value)">
+                        <small>Se muestra al final de la línea, en color de marca. Úsalo para años de experiencia, financiación o distribución oficial. Vacío = no aparece.</small>
+                    </label>
                     @foreach(range(1,6) as $i)
                     <div class="bxb-card" @if($i > 4) x-show="(settings.trust_text_{{ $i - 1 }}||'')!==''||(settings.trust_text_{{ $i }}||'')!==''" @endif>
                         <strong class="bxb-card-title">Beneficio {{ $i }} @if($i > 4)<small>(opcional)</small>@endif</strong>

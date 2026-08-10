@@ -88,14 +88,33 @@ class ImageVariants
     /**
      * Enlace a la ficha de un producto respetando el host del visitante.
      *
-     * En un dominio propio devuelve /p/123; en arindg.com mantiene el slug.
+     * La URL lleva el nombre del producto por delante y el id al final
+     * (/producto/teclado-mecanico-rgb-460): se lee, sirve para buscadores y
+     * sigue resolviendo por id sin depender de una columna slug en la tabla.
      */
-    public static function productUrl(\App\Models\Project $project, int $id): string
+    public static function productUrl(\App\Models\Project $project, int $id, ?string $nombre = null): string
     {
         $dominio = trim((string) $project->custom_domain, '/');
 
         return ($dominio !== '' && request()->getHost() === $dominio)
-            ? 'https://'.$dominio.'/p/'.$id
-            : route('public.product', [$project->slug, $id]);
+            ? 'https://'.$dominio.'/producto/'.self::claveProducto($id, $nombre)
+            : url('/'.$project->slug.'/producto/'.self::claveProducto($id, $nombre));
+    }
+
+    /** nombre-del-producto-123, o solo el id si el nombre no deja nada util. */
+    public static function claveProducto(int $id, ?string $nombre = null): string
+    {
+        $slug = \Illuminate\Support\Str::slug((string) $nombre);
+        if ($slug === '') {
+            return (string) $id;
+        }
+
+        return \Illuminate\Support\Str::limit($slug, 70, '').'-'.$id;
+    }
+
+    /** Id que cierra una clave legible: "teclado-rgb-460" => 460. */
+    public static function idDeClave(string $clave): int
+    {
+        return preg_match('/(\d+)$/', $clave, $m) ? (int) $m[1] : 0;
     }
 }

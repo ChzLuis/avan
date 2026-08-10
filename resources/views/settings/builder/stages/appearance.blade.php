@@ -295,6 +295,40 @@
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.footer_show_payments??'1')!=='0'" @change="setSetting('footer_show_payments',$event.target.checked?'1':'0')"> Mostrar métodos de pago</label>
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.footer_show_secure??'1')!=='0'" @change="setSetting('footer_show_secure',$event.target.checked?'1':'0')"> Mostrar sello de compra segura</label>
         </div>
+        {{-- Tarjeta de producto: proporcion y fondo de la foto. --}}
+        <div class="bxb-grid2">
+            <label class="bxb-field">Proporción de la foto de producto
+                <select :value="settings.card_image_ratio||'1/1'" @change="setSetting('card_image_ratio',$event.target.value)">
+                    <option value="1/1">Cuadrada — tecnología, accesorios</option>
+                    <option value="4/3">Horizontal — muebles, electrodomésticos</option>
+                    <option value="3/4">Vertical — ropa, calzado</option>
+                </select>
+                <small>Un mueble en un cuadrado se ve pequeño; una prenda en horizontal se corta.</small>
+            </label>
+            <label class="bxb-field">Fondo de la foto de producto
+                <span class="bxb-color-row"><input type="color" :value="settings.card_image_bg||'#fafaf9'" @input="setSetting('card_image_bg',$event.target.value)" aria-label="Fondo de la foto"><code x-text="settings.card_image_bg||'#fafaf9'"></code><button type="button" class="bxb-link" x-show="settings.card_image_bg" @click="setSetting('card_image_bg','')">Auto</button></span>
+                <small>Un crema suave hace resaltar el producto claro, que sobre blanco desaparece.</small>
+            </label>
+        </div>
+        {{-- Medidas de portada y densidad en movil. 0 = automatico. --}}
+        <div class="bxb-grid2">
+            <label class="bxb-field">Alto del banner en escritorio (px)
+                <input type="number" min="0" max="900" step="10" placeholder="0 = automático" :value="settings.hero_px_desktop||''" @input="setSetting('hero_px_desktop',$event.target.value)">
+                <small>Deja 0 para que el banner se ajuste solo. 420–520 px es lo habitual.</small>
+            </label>
+            <label class="bxb-field">Alto del banner en móvil (px)
+                <input type="number" min="0" max="900" step="10" placeholder="0 = automático" :value="settings.hero_px_mobile||''" @input="setSetting('hero_px_mobile',$event.target.value)">
+                <small>En móvil conviene 320–380 px: se ve la foto y ya asoma lo de abajo.</small>
+            </label>
+            <label class="bxb-field">Categorías visibles en móvil
+                <input type="number" min="0" max="24" step="1" placeholder="0 = todas" :value="settings.cats_mobile_limit||''" @input="setSetting('cats_mobile_limit',$event.target.value)">
+                <small>Con muchas categorías el móvil se hace larguísimo. Las demás siguen en "Ver todas".</small>
+            </label>
+            <div class="bxb-field"><span>Precio mayorista en la tarjeta</span>
+                <label class="bxb-switch"><input type="checkbox" :checked="(settings.wholesale_card_collapse||'')==='1'" @change="setSetting('wholesale_card_collapse',$event.target.checked?'1':'')"> Plegado (se abre al tocarlo)</label>
+                <small>Con el selector de cantidad siempre visible la tarjeta crece y descuadra la fila.</small>
+            </div>
+        </div>
         {{-- Distintivo "Nuevo" en las tarjetas: se calcula por antigüedad. --}}
         <div class="bxb-grid2">
             <label class="bxb-field">Marcar como "Nuevo" los productos de los últimos… (días)

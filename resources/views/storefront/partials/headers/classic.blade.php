@@ -16,7 +16,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
             <a class="brand {{ $logoUrl ? 'brand--logo-only' : 'brand--text' }}"
-               href="{{ route('public.catalog', $project->slug) }}"
+               href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}"
                aria-label="Inicio de {{ $storeName }}">
                 @if($logoUrl)
                     <img class="brand-logo" src="{{ $logoUrl }}" alt="Logo de {{ $storeName }}">
@@ -60,11 +60,11 @@
             @if(!empty($catalogProfiles) && $catalogProfiles->count())
             <div class="profile-switch" role="group" aria-label="Colecciones de la tienda">
                 <span class="profile-switch-label">Colecciones</span>
-                <a class="profile-chip {{ empty($activeProfile) ? 'is-active' : '' }}" href="{{ route('public.shop', $project->slug) }}">Todo</a>
+                <a class="profile-chip {{ empty($activeProfile) ? 'is-active' : '' }}" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">Todo</a>
                 @foreach($catalogProfiles as $cp)
                     <a class="profile-chip {{ (!empty($activeProfile) && $activeProfile->id === $cp->id) ? 'is-active' : '' }}"
                        @if($cp->primary_color) style="--chip-color:{{ $cp->primary_color }}" @endif
-                       href="{{ route('public.shop.profile', [$project->slug, $cp->slug]) }}"><span class="profile-dot" aria-hidden="true"></span>{{ $cp->menu_label ?: $cp->name }}</a>
+                       href="{{ \App\Support\StorefrontNavigation::profileUrl($project, $cp->slug) }}"><span class="profile-dot" aria-hidden="true"></span>{{ $cp->menu_label ?: $cp->name }}</a>
                 @endforeach
             </div>
             @endif

@@ -4,7 +4,7 @@
      $whatsapp, $inquiryMsgBase, $cartText. --}}
 @php
     // Enlace sin el slug interno cuando la tienda tiene dominio propio.
-    $pcUrl = \App\Support\ImageVariants::productUrl($project, $p->id);
+    $pcUrl = \App\Support\ImageVariants::productUrl($project, $p->id, $p->name);
     // Sirve el .webp de la foto cuando existe: las tarjetas son lo que mas se
     // repite en la pagina y las originales pesaban mas de 1 MB cada una.
     $pcImg = \App\Support\ImageVariants::webp($p->main_image_url);
@@ -41,10 +41,11 @@
         @else
         <div class="catalog-card-prices"><span class="catalog-card-price">{{ $currency }} {{ number_format((float) $p->price, 2) }}</span>@if($pcOnSale)<span class="catalog-card-compare">{{ $currency }} {{ number_format((float) $p->compare_price, 2) }}</span>@endif</div>
         @if(($wholesale ?? false) && filled($p->wholesale_price))
-        <div class="buy-block buy-block--wholesale" x-data="{ q: {{ max(1,(int) ($p->wholesale_min_qty ?? 1)) }} }">
-            <div class="buy-head"><span class="buy-tag">Mayorista</span><span class="buy-price">{{ $currency }} {{ number_format((float) $p->wholesale_price, 2) }}</span></div>
-            <small class="buy-min">Por {{ (filled($p->wholesale_unit) && !is_numeric($p->wholesale_unit)) ? $p->wholesale_unit : 'unidades' }} · desde {{ max(1,(int) ($p->wholesale_min_qty ?? 1)) }}</small>
-            <div class="buy-row">
+@php $whFold = (bool) ($settings['wholesale_card_collapse'] ?? false); @endphp
+        <div class="buy-block buy-block--wholesale{{ $whFold ? ' is-foldable' : '' }}" x-data="{ q: {{ max(1,(int) ($p->wholesale_min_qty ?? 1)) }}, open: {{ $whFold ? 'false' : 'true' }} }">
+            <div class="buy-head" @if($whFold) role="button" tabindex="0" :aria-expanded="open" @click.prevent.stop="open=!open" @keydown.enter.prevent.stop="open=!open" @endif><span class="buy-tag">Mayorista</span><span class="buy-price">{{ $currency }} {{ number_format((float) $p->wholesale_price, 2) }}</span>@if($whFold)<svg class="buy-fold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true" :style="open&&'transform:rotate(180deg)'"><path d="m6 9 6 6 6-6"/></svg>@endif</div>
+            <small class="buy-min" @if($whFold) x-show="open" x-cloak @endif>Por {{ (filled($p->wholesale_unit) && !is_numeric($p->wholesale_unit)) ? $p->wholesale_unit : 'unidades' }} · desde {{ max(1,(int) ($p->wholesale_min_qty ?? 1)) }}</small>
+            <div class="buy-row" @if($whFold) x-show="open" x-cloak @endif>
                 <span class="buy-qty">
                     <button type="button" @click.prevent.stop="q=Math.max({{ max(1,(int) ($p->wholesale_min_qty ?? 1)) }},q-1)" aria-label="Quitar">−</button>
                     <input type="number" x-model.number="q" min="{{ max(1,(int) ($p->wholesale_min_qty ?? 1)) }}" @click.stop>

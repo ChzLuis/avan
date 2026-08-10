@@ -135,12 +135,12 @@
 <div class="hpx-uni-top">
     <div class="container hpx-uni-top-inner">
         <span class="hpx-uni-label">Elige tu universo</span>
-        <a class="hpx-uni-chip {{ empty($activeProfile) && !$currentCategory ? 'is-active' : '' }}" href="{{ route('public.shop', $project->slug) }}">General</a>
+        <a class="hpx-uni-chip {{ empty($activeProfile) && !$currentCategory ? 'is-active' : '' }}" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">General</a>
         @if($shUniProfiles)
             @foreach($catalogProfiles as $cp)
             <a class="hpx-uni-chip {{ (!empty($activeProfile) && $activeProfile->id === $cp->id) ? 'is-active' : '' }}"
                @if($cp->primary_color) style="--chip-color:{{ $cp->primary_color }}" @endif
-               href="{{ route('public.shop.profile', [$project->slug, $cp->slug]) }}">{{ $cp->menu_label ?: $cp->name }}</a>
+               href="{{ \App\Support\StorefrontNavigation::profileUrl($project, $cp->slug) }}">{{ $cp->menu_label ?: $cp->name }}</a>
             @endforeach
         @else
             @foreach($shUniItems as $uc)
@@ -164,7 +164,7 @@
         </div>
         @endif
 
-        <a class="brand {{ $logoUrl ? 'brand--logo-only' : 'brand--text' }}" href="{{ route('public.catalog', $project->slug) }}" aria-label="Inicio de {{ $storeName }}">
+        <a class="brand {{ $logoUrl ? 'brand--logo-only' : 'brand--text' }}" href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}" aria-label="Inicio de {{ $storeName }}">
             @if($logoUrl)<img class="brand-logo" src="{{ $logoUrl }}" alt="Logo de {{ $storeName }}">
             @else<span class="brand-mark">{{ mb_strtoupper(mb_substr($storeName, 0, 1)) }}</span><span class="brand-copy"><span class="brand-name">{{ $storeName }}</span></span>@endif
         </a>
@@ -376,7 +376,7 @@
                 <h5>{{ $edUniverses ? 'Colecciones' : 'Explorar' }}</h5>
                 @if($edUniverses)
                     @foreach($edUniverses->take(6) as $cp)
-                    <a class="hpx-ed-link" href="{{ route('public.shop.profile', [$project->slug, $cp->slug]) }}">{{ $cp->menu_label ?: $cp->name }}</a>
+                    <a class="hpx-ed-link" href="{{ \App\Support\StorefrontNavigation::profileUrl($project, $cp->slug) }}">{{ $cp->menu_label ?: $cp->name }}</a>
                     @endforeach
                 @else
                     @foreach($navCategories->take(6) as $cat)
@@ -426,10 +426,10 @@
 @if($shUniRow === 'below' && $shUniItems->count())
 <div class="hpx-uni-below">
     <div class="container hpx-uni-below-inner">
-        <a class="hpx-uni-pill {{ empty($activeProfile) && !$currentCategory ? 'is-active' : '' }}" href="{{ route('public.shop', $project->slug) }}">Todo</a>
+        <a class="hpx-uni-pill {{ empty($activeProfile) && !$currentCategory ? 'is-active' : '' }}" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">Todo</a>
         @if($shUniProfiles)
             @foreach($catalogProfiles as $cp)
-            <a class="hpx-uni-pill {{ (!empty($activeProfile) && $activeProfile->id === $cp->id) ? 'is-active' : '' }}" @if($cp->primary_color) style="--chip-color:{{ $cp->primary_color }}" @endif href="{{ route('public.shop.profile', [$project->slug, $cp->slug]) }}">{{ $cp->menu_label ?: $cp->name }}</a>
+            <a class="hpx-uni-pill {{ (!empty($activeProfile) && $activeProfile->id === $cp->id) ? 'is-active' : '' }}" @if($cp->primary_color) style="--chip-color:{{ $cp->primary_color }}" @endif href="{{ \App\Support\StorefrontNavigation::profileUrl($project, $cp->slug) }}">{{ $cp->menu_label ?: $cp->name }}</a>
             @endforeach
         @else
             @foreach($shUniItems as $uc)
@@ -711,6 +711,28 @@
     .hpx-nav-actions>a[href*="filter=sale"]:hover{background:rgba(220,38,38,.16)}
     .hpx-nav-actions>a[href*="filter=new"]{color:#059669;background:rgba(5,150,105,.10)}
     .hpx-nav-actions>a[href*="filter=new"]:hover{background:rgba(5,150,105,.17)}
+    /* ── ZONAS TACTILES ─────────────────────────────────────────────────────
+       Medido en produccion: WhatsApp del menu tenia 16px de alto, el telefono
+       15px y los iconos de redes 26px. Por debajo de 44px el dedo falla y el
+       cliente abandona. Se amplia el area de toque con padding, sin cambiar el
+       tamano visual del texto ni del icono. */
+    .hpx-topbar a,
+    .hpx-topbar-social a,
+    .hpx-nav-actions > a,
+    .category-list a,
+    .mega-btn,
+    .hpx-searchgo,
+    .hpx-cart{min-height:44px;display:inline-flex;align-items:center}
+    .hpx-topbar-social a{min-width:44px;justify-content:center}
+    .hpx-topbar-social a svg{width:15px;height:15px}
+    .hpx-nav-actions > a{padding-top:0;padding-bottom:0}
+    @media(max-width:960px){
+        /* En movil manda el area de toque: los enlaces del menu desplegable
+           tambien pasan a 44px. */
+        .mobile-nav-panel a,
+        .mobile-nav-links a,
+        .hpx-searchcats-menu a{min-height:44px;display:flex;align-items:center}
+    }
     .hpx-nav-mini{display:none;place-items:center;width:34px;height:34px;padding:0;position:relative;
         background:transparent;border:0;color:inherit;cursor:pointer}
     .hpx-nav-mini svg{width:19px;height:19px}

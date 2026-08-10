@@ -26,7 +26,8 @@
       $quoteWa = str_starts_with($quoteWaRaw, $quoteWaCountry) ? $quoteWaRaw : $quoteWaCountry.$quoteWaRaw;
   }
   $baseUrl      = ($settings['seo_canonical'] ?? null) ?: ($project->custom_domain ? 'https://'.$project->custom_domain : url('/'.$project->slug));
-  $canonicalUrl = $baseUrl . '/p/' . $product->id;
+  // Canonico con nombre: /producto/pc-de-escritorio-i5-460. /p/{id} redirige aqui.
+  $canonicalUrl = $baseUrl . '/producto/' . \App\Support\ImageVariants::claveProducto($product->id, $product->name);
   $catalogUrl   = $baseUrl;
   $seoTitle     = $product->name . ' — ' . $project->name;
   $seoDescRaw   = strip_tags($product->description ?? $project->description ?? '');

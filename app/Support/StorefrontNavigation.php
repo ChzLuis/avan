@@ -91,6 +91,29 @@ class StorefrontNavigation
             : route('public.catalog', $project->slug);
     }
 
+    /** Inicio y tienda respetando el host: en dominio propio, sin el slug interno. */
+    public static function homeUrl(Project $project): string
+    {
+        return self::enDominioPropio($project) ? '/' : url('/'.$project->slug);
+    }
+
+    public static function shopUrl(Project $project): string
+    {
+        return self::enDominioPropio($project) ? '/tienda' : url('/'.$project->slug.'/tienda');
+    }
+
+    public static function profileUrl(Project $project, string $slugPerfil): string
+    {
+        return self::shopUrl($project).'/'.$slugPerfil;
+    }
+
+    private static function enDominioPropio(Project $project): bool
+    {
+        $dominio = trim((string) $project->custom_domain, '/');
+
+        return $dominio !== '' && request()->getHost() === $dominio;
+    }
+
     public static function resolveUrl(Project $project, StoreMenuItem $item): string
     {
         // En dominio custom (ej. tecsist.net) las URLs van SIN el slug del proyecto:

@@ -483,7 +483,23 @@
     $trustSectionEnabled = (string) ($settings['trust_section_enabled'] ?? '1') !== '0';
     $trustSectionTitle = trim($settings['trust_section_title'] ?? 'Compra con confianza');
     $trustSectionSubtitle = trim($settings['trust_section_subtitle'] ?? 'Beneficios pensados para darte una mejor experiencia.');
-    $trustSectionStyle = in_array(($settings['trust_section_style'] ?? 'cards'), ['cards','compact','icons-top','tiles','band','outline','stripe','inline'], true)
+    // Texto libre que se suma a la linea de confianza (por ejemplo, "Hasta en 6
+    // cuotas" o "14 anos en Huancavelica"). Vacio = no aparece nada.
+    $trustExtraNote = trim((string) ($settings['trust_extra_note'] ?? ''));
+    // Proporcion de la foto de producto. Un mueble es horizontal, una prenda
+    // vertical y un teclado compacto: una sola proporcion no sirve a las tres
+    // tiendas, y forzar el cuadrado encoge el producto que no lo es.
+    $cardRatio = in_array($settings['card_image_ratio'] ?? '1/1', ['1/1', '4/3', '3/4'], true)
+        ? ($settings['card_image_ratio'] ?? '1/1') : '1/1';
+    // Fondo de la foto: el mueble claro sobre blanco desaparece.
+    $cardImgBg = trim((string) ($settings['card_image_bg'] ?? '')) ?: '#fafaf9';
+    // Alto del hero en pixeles, separado por dispositivo. Antes solo aceptaba
+    // small/medium/large y un valor numerico se descartaba en silencio.
+    $heroPxDesktop = (int) ($settings['hero_px_desktop'] ?? 0);
+    $heroPxMobile  = (int) ($settings['hero_px_mobile'] ?? 0);
+    // Categorias visibles en movil antes del boton "Ver todas".
+    $catsMobileLimit = (int) ($settings['cats_mobile_limit'] ?? 0);
+    $trustSectionStyle = in_array(($settings['trust_section_style'] ?? 'cards'), ['cards','compact','icons-top','tiles','band','outline','stripe','inline','linea'], true)
         ? ($settings['trust_section_style'] ?? 'cards') : 'cards';
     $trustSectionColumns = max(2, min(4, (int) ($settings['trust_section_columns'] ?? 4)));
     $trustSectionMobileColumns = max(1, min(2, (int) ($settings['trust_section_mobile_columns'] ?? 1)));
@@ -548,7 +564,7 @@
                 'category' => $category->name,
                 'categoryId' => (string) $category->id,
                 'parentId' => null,
-                'url' => is_numeric($product->id) ? route('public.product', [$project->slug, $product->id]) : null,
+                'url' => is_numeric($product->id) ? \App\Support\ImageVariants::productUrl($project, $product->id, $product->name) : null,
                 'wholesalePrice' => filled($product->wholesale_price) ? (float) $product->wholesale_price : null,
                 'wholesaleMinQty' => (int) ($product->wholesale_min_qty ?? 1),
                 'wholesaleUnit' => (filled($product->wholesale_unit) && !is_numeric($product->wholesale_unit)) ? $product->wholesale_unit : 'unidades',
@@ -568,7 +584,7 @@
                     'category' => $subcategory->name,
                     'categoryId' => (string) $subcategory->id,
                     'parentId' => (string) $category->id,
-                    'url' => is_numeric($product->id) ? route('public.product', [$project->slug, $product->id]) : null,
+                    'url' => is_numeric($product->id) ? \App\Support\ImageVariants::productUrl($project, $product->id, $product->name) : null,
                     'wholesalePrice' => filled($product->wholesale_price) ? (float) $product->wholesale_price : null,
                     'wholesaleMinQty' => (int) ($product->wholesale_min_qty ?? 1),
                     'wholesaleUnit' => (filled($product->wholesale_unit) && !is_numeric($product->wholesale_unit)) ? $product->wholesale_unit : 'unidades',
@@ -737,8 +753,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="{{ $settings['seo_description'] ?? $heroSubtitle }}">
-    <title>{{ $storeName }}</title>
+    @php
+        // SEO por vista: antes todas las paginas compartian titulo y no habia
+        // canonico, asi que buscadores veian la tienda entera como una sola URL.
+        $seoBase = ($settings['seo_canonical'] ?? null)
+            ?: ($project->custom_domain ? 'https://'.trim($project->custom_domain, '/') : url('/'.$project->slug));
+        $seoProducto = ($storeView ?? 'home') === 'producto' && !empty($storeProduct) ? $storeProduct : null;
+        $seoTitulo = $seoProducto
+            ? $seoProducto->name.' | '.$storeName
+            : match ($storeView ?? 'home') {
+                'tienda'   => (!empty($activeProfile) ? $activeProfile->name : 'Tienda').' | '.$storeName,
+                'nosotros' => 'Nosotros | '.$storeName,
+                'contacto' => 'Contacto | '.$storeName,
+                default    => $storeName.($heroSubtitle ? ' — '.\Illuminate\Support\Str::limit(strip_tags($heroSubtitle), 60, '') : ''),
+            };
+        $seoDesc = $seoProducto
+            ? \Illuminate\Support\Str::limit(strip_tags((string) ($seoProducto->description ?: $seoProducto->name)), 155, '')
+            : (string) ($settings['seo_description'] ?? $heroSubtitle);
+        $seoCanonical = $seoProducto
+            ? $seoBase.'/producto/'.\App\Support\ImageVariants::claveProducto($seoProducto->id, $seoProducto->name)
+            : $seoBase.match ($storeView ?? 'home') {
+                'tienda'   => '/tienda'.(!empty($activeProfile) ? '/'.$activeProfile->slug : ''),
+                'nosotros' => '/nosotros',
+                'contacto' => '/contacto',
+                default    => '',
+            };
+        $seoImagen = $seoProducto && $seoProducto->main_image_url ? $assetUrl($seoProducto->main_image_url) : $assetUrl($settings['logo_url'] ?? null);
+    @endphp
+    <meta name="description" content="{{ $seoDesc }}">
+    <title data-seo="page">{{ $seoTitulo }}</title>
+    <link rel="canonical" href="{{ $seoCanonical }}">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="{{ $seoProducto ? 'product' : 'website' }}">
+    <meta property="og:site_name" content="{{ $storeName }}">
+    <meta property="og:url" content="{{ $seoCanonical }}">
+    <meta property="og:title" content="{{ $seoTitulo }}">
+    <meta property="og:description" content="{{ $seoDesc }}">
+    @if($seoImagen)<meta property="og:image" content="{{ $seoImagen }}">@endif
+    <meta property="og:locale" content="es_PE">
+    <meta name="twitter:card" content="summary_large_image">
+    @if($seoProducto)
+    <script type="application/ld+json">{!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'Product',
+        'name' => $seoProducto->name,
+        'description' => $seoDesc,
+        'sku' => $seoProducto->sku ?: (string) $seoProducto->id,
+        'image' => array_filter([$seoImagen]),
+        'url' => $seoCanonical,
+        'brand' => ['@type' => 'Brand', 'name' => $storeName],
+        'offers' => array_filter([
+            '@type' => 'Offer',
+            'url' => $seoCanonical,
+            'priceCurrency' => 'PEN',
+            'price' => (float) $seoProducto->price > 0 ? number_format((float) $seoProducto->price, 2, '.', '') : null,
+            'availability' => ((int) $seoProducto->stock) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        ]),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+    @endif
     @if(!empty($settings['favicon_url']))
     <link rel="icon" href="{{ \App\Support\ImageVariants::favicon($assetUrl($settings['favicon_url'])) }}">
     @endif
@@ -1445,6 +1517,75 @@
         .trust-section.style-stripe .trust-card{border:1px solid var(--border);border-left:5px solid {{ $trustAccentColor }};border-radius:12px}
         .trust-section.style-stripe .trust-icon{color:{{ $trustAccentColor }};background:color-mix(in srgb,{{ $trustAccentColor }} 10%,#fff);border:0;border-radius:11px}
         .trust-section.style-inline{padding:30px 0}
+        /* VARIANTE "linea": una sola fila de texto con separadores, sin tarjetas
+           ni iconos. Ocupa ~48px en lugar de 120 y evita el patron de 3-4
+           columnas con icono, que es la señal mas reconocible de plantilla. */
+        .trust-section.style-linea{padding:0;border-block:1px solid var(--border);
+            background:var(--surface-soft,#f8fafc)}
+        .trust-section.style-linea .trust-section-head{display:none}
+        /* La especificidad sube a body...!important porque los presets de seccion
+           (section-preset-commerce y compañia) fijan la rejilla de 5 columnas y
+           el fondo de la banda con !important, y ganaban a la variante. */
+        /* El relleno generico de <section> (68px arriba y abajo) sumaba 136px a una
+           banda cuyo contenido mide 50: la linea es una franja, no una seccion. */
+        /* #storefront-main > section fija el relleno con un ID, y un ID gana a
+           cualquier numero de clases: hay que igualar la especificidad. */
+        #storefront-main > section.trust-section.style-linea,
+        body .trust-section.style-linea{padding:0!important;padding-block:0!important;
+            margin-top:0!important;margin-bottom:0!important}
+        body .trust-section.style-linea .trust-section-head{display:none!important}
+        /* La linea usa todo el ancho util: con textos largos (MegaHogar) el
+           contenedor de 1180px la partia en dos filas. */
+        body .trust-section.style-linea > .container{width:min(1560px,calc(100% - 28px))!important;
+            max-width:none!important}
+        body .trust-section.style-linea .trust-grid{display:flex!important;
+            grid-template-columns:none!important;flex-wrap:wrap;
+            align-items:center;justify-content:center;gap:0!important;min-height:48px;flex-wrap:nowrap!important;
+            border:0!important;border-radius:0!important;background:transparent!important;
+            box-shadow:none!important;overflow:visible!important}
+        /* El preset de seccion (section-preset-commerce) fija estas tarjetas con la
+           misma especificidad, y ganaba por orden: en MegaHogar median 100px de
+           alto frente a los 44 de las otras dos. Con el ID del contenedor se
+           resuelve el empate. */
+        #storefront-main .trust-section.style-linea .trust-card,
+        body .trust-section.style-linea .trust-card{display:inline-flex!important;
+            flex-direction:row!important;align-items:center!important;
+            gap:0!important;padding:12px 0!important;margin:0!important;
+            min-height:0!important;height:auto!important;border:0!important;
+            background:transparent!important;box-shadow:none!important;flex:0 0 auto!important}
+        body .trust-section.style-linea .trust-icon{display:none!important}
+        .trust-section.style-linea .trust-card-copy{display:inline-flex;align-items:baseline;gap:6px}
+        .trust-section.style-linea .trust-card-copy strong{color:var(--text-strong);
+            font-size:13px;font-weight:700;letter-spacing:.01em;white-space:nowrap}
+        /* Cada dato ocupa una sola linea: "Entrega e instalacion" partia en dos
+           y duplicaba el alto de la franja. */
+        body .trust-section.style-linea .trust-card,
+        body .trust-section.style-linea .trust-card-copy{white-space:nowrap!important}
+        body .trust-section.style-linea .trust-card-copy span{display:none!important}
+        /* :last-child fallaba cuando existe el dato extra (que va despues), y se
+           pintaban dos separadores seguidos. :last-of-type mira solo las tarjetas. */
+        .trust-section.style-linea .trust-card:not(:last-of-type)::after{content:'·';
+            margin:0 clamp(8px,1vw,14px);color:var(--muted);font-weight:700}
+        /* Con 5 beneficios mas el dato extra la linea se partia en dos. El texto
+           y el separador se ajustan al ancho disponible antes de romper. */
+        @media(min-width:761px) and (max-width:1500px){
+            .trust-section.style-linea .trust-card-copy strong{font-size:12.5px}
+            .trust-section.style-linea .trust-extra{font-size:12.5px}
+            .trust-section.style-linea .trust-extra::before{margin:0 10px}
+        }
+        .trust-section.style-linea .trust-extra{display:inline-flex;align-items:center;
+            color:var(--primary);font-size:13px;font-weight:800}
+        .trust-section.style-linea .trust-extra::before{content:'·';margin:0 14px;
+            color:var(--muted);font-weight:700}
+        @media(max-width:760px){
+            /* En movil se convierte en carrusel horizontal: cabe entera sin
+               apilar cuatro filas de texto. */
+            .trust-section.style-linea .trust-grid{flex-wrap:nowrap;overflow-x:auto;
+                justify-content:flex-start;padding-inline:16px;
+                scrollbar-width:none;-webkit-overflow-scrolling:touch}
+            .trust-section.style-linea .trust-grid::-webkit-scrollbar{display:none}
+            .trust-section.style-linea .trust-card{white-space:nowrap}
+        }
         .trust-section.style-inline .trust-section-head{margin-bottom:18px}
         .trust-section.style-inline .trust-section-head h2{font-size:clamp(19px,2vw,24px)}
         .trust-section.style-inline .trust-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:0}
@@ -1477,7 +1618,8 @@
         .home-section-head p{margin:9px 0 0;color:#64748b;font-size:14px;line-height:1.6}
         .home-see-all{display:inline-flex;align-items:center;gap:8px;color:var(--primary);font-size:13px;font-weight:800;white-space:nowrap}
         .home-see-all svg{width:16px;height:16px;transition:transform .2s}.home-see-all:hover svg{transform:translateX(4px)}
-        .home-cats-grid{display:grid;grid-template-columns:repeat({{ $featuredCatsColumns }},minmax(0,1fr));gap:18px}
+        /* Si hay menos categorias que columnas, la fila se ajusta: antes quedaba un hueco a la derecha. */
+        .home-cats-grid{display:grid;grid-template-columns:repeat(var(--cats-cols,{{ $featuredCatsColumns }}),minmax(0,1fr));gap:18px}
         .home-cat-card{position:relative;min-width:0;overflow:hidden;background:{{ $featuredCatsCardBg }};border:1px solid color-mix(in srgb,{{ $featuredCatsAccent }} 16%,#dbe3ef);border-radius:{{ $featuredCatsRadius }}px;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
         .home-cat-card:hover{transform:translateY(-5px);border-color:color-mix(in srgb,{{ $featuredCatsAccent }} 60%,#fff);box-shadow:0 18px 44px color-mix(in srgb,{{ $featuredCatsAccent }} 16%,transparent)}
         .home-cat-media{position:relative;display:grid;place-items:center;height:142px;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb,{{ $featuredCatsAccent }} 9%,#fff),color-mix(in srgb,{{ $featuredCatsAccent }} 3%,#fff))}
@@ -1551,7 +1693,7 @@
         .home-cat-card small{display:block;margin-top:5px;color:#64748b;font-size:11.5px}.home-cat-arrow{width:32px;height:32px;display:grid;place-items:center;flex:0 0 32px;color:{{ $featuredCatsAccent }};background:color-mix(in srgb,{{ $featuredCatsAccent }} 9%,#fff);border-radius:999px;transition:.2s}
         .home-cat-arrow svg{width:15px;height:15px}.home-cat-card:hover .home-cat-arrow{color:#fff;background:{{ $featuredCatsAccent }};transform:translateX(2px)}
         .home-cats.style-minimal .home-cat-card{text-align:center}.home-cats.style-minimal .home-cat-media{height:auto;padding:25px 16px 4px;background:transparent}.home-cats.style-minimal .home-cat-content{display:block;padding:12px 16px 22px}.home-cats.style-minimal .home-cat-arrow{display:none}
-        .home-cats.style-horizontal .home-cat-card{display:flex;align-items:center}.home-cats.style-horizontal .home-cat-media{width:104px;height:104px;flex:0 0 104px}.home-cats.style-horizontal .home-cat-content{flex:1}
+        .home-cats.style-horizontal .home-cat-card{display:flex;align-items:center;gap:14px;padding:14px}.home-cats.style-horizontal .home-cat-media{width:104px;height:104px;flex:0 0 104px;overflow:hidden;border-radius:10px;background:var(--surface-soft,#f8fafc)}.home-cats.style-horizontal .home-cat-media img{width:100%;height:100%;object-fit:contain;padding:6px}.home-cats.style-horizontal .home-cat-content{flex:1;min-width:0}
         .home-cats.style-overlay .home-cat-media{height:210px}.home-cats.style-overlay .home-cat-content{position:absolute;left:0;right:0;bottom:0;z-index:2;color:#fff;background:linear-gradient(transparent,rgba(2,6,23,.88));padding:52px 18px 18px}.home-cats.style-overlay .home-cat-card strong,.home-cats.style-overlay .home-cat-card small{color:#fff}.home-cats.style-overlay .home-cat-arrow{background:rgba(255,255,255,.17);color:#fff}
 
         .home-prod-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
@@ -1700,6 +1842,10 @@
         @media(max-width:560px){
         .home-cats{padding:42px 0}.home-section-head{align-items:flex-start;margin-bottom:20px}.home-section-head p{font-size:13px}
         .home-cats-grid{grid-template-columns:repeat({{ $featuredCatsMobileColumns }},minmax(0,1fr));gap:11px}
+@if($catsMobileLimit > 0)
+        /* Limite de categorias visibles en movil: el resto queda tras "Ver todas". */
+        .home-cats:not(.mobile-carousel) .home-cats-grid > .home-cat-card:nth-child(n+{{ $catsMobileLimit + 1 }}){display:none}
+@endif
         .home-cats.mobile-carousel .home-cats-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 14px;scrollbar-width:none}.home-cats.mobile-carousel .home-cats-grid::-webkit-scrollbar{display:none}
         .home-cats.mobile-carousel .home-cat-card{flex:0 0 78%;scroll-snap-align:start}
         .home-cat-media{height:105px}.home-cat-content{padding:13px}.home-cat-card strong{font-size:13px}.home-cat-arrow{display:none}
@@ -1871,18 +2017,24 @@
         .premium-hero-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
         .ph-glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55}
         .ph-glow-1{width:520px;height:520px;top:-140px;right:-80px;background:radial-gradient(circle,var(--primary) 0%,transparent 70%)}
-        .ph-glow-2{width:440px;height:440px;bottom:-160px;left:8%;background:radial-gradient(circle,#7c3aed 0%,transparent 70%);opacity:.4}
+        .ph-glow-2{width:440px;height:440px;bottom:-160px;left:8%;background:radial-gradient(circle,{{ $secondary }} 0%,transparent 70%);opacity:.4}
         .ph-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(120% 80% at 60% 30%,#000 30%,transparent 75%)}
-        .ph-line{position:absolute;height:1px;width:60%;background:linear-gradient(90deg,transparent,rgba(37,99,235,.7),transparent);opacity:.6}
+        .ph-line{position:absolute;height:1px;width:60%;background:linear-gradient(90deg,transparent,color-mix(in srgb,{{ $primary }} 70%,transparent),transparent);opacity:.6}
         .ph-line-1{top:32%;left:-10%;transform:rotate(-8deg)}
-        .ph-line-2{bottom:26%;right:-10%;width:50%;background:linear-gradient(90deg,transparent,rgba(124,58,237,.6),transparent);transform:rotate(6deg)}
+        .ph-line-2{bottom:26%;right:-10%;width:50%;background:linear-gradient(90deg,transparent,color-mix(in srgb,{{ $secondary }} 60%,transparent),transparent);transform:rotate(6deg)}
         .premium-hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:40% 60%;align-items:center;gap:40px;padding:clamp(26px,5vh,70px) 0;width:min(1180px,calc(100% - 40px))}
         /* Al cambiar de diapositiva conviven dos textos durante la transicion:
            como el contenedor es una rejilla, el segundo abria una fila nueva y la
            seccion daba un salto de alto. Todos comparten celda y se superponen. */
-        .premium-hero-inner>.premium-hero-copy{grid-area:1/1;opacity:0;visibility:hidden;pointer-events:none;
+        /* Solo se ocultan los textos cuando hay carrusel (varios copys apilados).
+           Con hero simple hay uno solo y debe verse siempre: al no existir el
+           carrusel nadie le ponia la clase y el hero quedaba mudo. */
+        .premium-hero-inner>.premium-hero-copy{grid-area:1/1}
+        .premium-hero-inner:has(> .premium-hero-copy ~ .premium-hero-copy)>.premium-hero-copy{
+            opacity:0;visibility:hidden;pointer-events:none;
             transition:opacity .45s ease,visibility .45s ease}
-        .premium-hero-inner>.premium-hero-copy.is-on{opacity:1;visibility:visible;pointer-events:auto}
+        .premium-hero-inner:has(> .premium-hero-copy ~ .premium-hero-copy)>.premium-hero-copy.is-on{
+            opacity:1;visibility:visible;pointer-events:auto}
         /* Pantallas de poca altura (portatiles al 100% de zoom): el hero ocupaba
            casi todo el alto util y no se intuia que hubiera contenido debajo.
            Se compacta el texto en vez de recortar la imagen. */
@@ -1897,8 +2049,8 @@
             .premium-hero .premium-hero-copy,.premium-hero .ph-slide-copy{padding:clamp(14px,2.4vh,40px) 0!important}
         }
         .premium-hero-copy{min-width:0}
-        .ph-eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px;padding:7px 14px;color:#93c5fd;background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.3);border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
-        .ph-title{margin:0;color:#fff;font-family:var(--font-title);font-size:clamp(38px,4.6vw,62px);font-weight:800;line-height:1.04;letter-spacing:-.03em;text-transform:uppercase;text-shadow:0 4px 30px rgba(37,99,235,.25)}
+        .ph-eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px;padding:7px 14px;color:color-mix(in srgb,{{ $primary }} 55%,#fff);background:color-mix(in srgb,{{ $primary }} 12%,transparent);border:1px solid color-mix(in srgb,{{ $primary }} 30%,transparent);border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+        .ph-title{margin:0;color:#fff;font-family:var(--font-title);font-size:clamp(38px,4.6vw,62px);font-weight:800;line-height:1.04;letter-spacing:-.03em;text-transform:uppercase;text-shadow:0 4px 30px color-mix(in srgb,{{ $primary }} 25%,transparent)}
         .ph-sub{max-width:440px;margin:22px 0 0;color:#aab6d4;font-size:16.5px;line-height:1.7}
         .premium-hero .hero-actions{margin-top:32px}
         .premium-hero .button-primary{background:linear-gradient(135deg,var(--primary),color-mix(in srgb,var(--primary) 72%,#000));box-shadow:0 10px 30px color-mix(in srgb,var(--primary) 40%,transparent);min-height:50px;padding:0 26px;font-size:14px}
@@ -1907,7 +2059,7 @@
         .premium-hero .button-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
         .premium-hero-visual{position:relative;min-height:420px;display:flex;align-items:center;justify-content:center}
         .ph-stage{position:relative;width:100%;height:100%;min-height:420px;display:flex;align-items:center;justify-content:center}
-        .ph-main{position:relative;z-index:3;width:min(560px,92%);filter:drop-shadow(0 40px 70px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(37,99,235,.25))}
+        .ph-main{position:relative;z-index:3;width:min(560px,92%);filter:drop-shadow(0 40px 70px rgba(0,0,0,.55)) drop-shadow(0 0 40px color-mix(in srgb,{{ $primary }} 25%,transparent))}
         .ph-stage-clean .ph-main{width:min(680px,100%)}
         .ph-main img{width:100%;height:auto;object-fit:contain;animation:phFloat 6s ease-in-out infinite}
         .ph-float{position:absolute;z-index:4;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.03);backdrop-filter:blur(2px);filter:drop-shadow(0 20px 40px rgba(0,0,0,.5))}
@@ -1915,7 +2067,7 @@
         .ph-float-a{width:130px;height:130px;top:6%;right:4%;animation:phFloat 5s ease-in-out .3s infinite}
         .ph-float-b{width:150px;height:110px;bottom:8%;left:0;animation:phFloat 5.5s ease-in-out .6s infinite}
         .ph-float-c{width:100px;height:100px;bottom:20%;right:10%;animation:phFloat 4.5s ease-in-out .9s infinite}
-        .ph-reflection{position:absolute;z-index:2;bottom:6%;left:50%;transform:translateX(-50%);width:60%;height:60px;background:radial-gradient(ellipse at center,rgba(37,99,235,.35),transparent 70%);filter:blur(20px)}
+        .ph-reflection{position:absolute;z-index:2;bottom:6%;left:50%;transform:translateX(-50%);width:60%;height:60px;background:radial-gradient(ellipse at center,color-mix(in srgb,{{ $primary }} 35%,transparent),transparent 70%);filter:blur(20px)}
         @keyframes phFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
         @media(prefers-reduced-motion:reduce){.ph-main img,.ph-float{animation:none}}
         @media(max-width:960px){.premium-hero{min-height:0}.premium-hero-inner{grid-template-columns:1fr;gap:36px;padding:clamp(24px,4.5vh,52px) 0;text-align:center}.ph-eyebrow{margin-inline:auto}.premium-hero .hero-actions{justify-content:center}.ph-sub{margin-inline:auto}.premium-hero-visual{min-height:320px}.ph-float-a{right:12%}.ph-float-c{right:16%}}
@@ -2193,20 +2345,107 @@
     .section-heading h2{font-size:clamp(24px,3vw,34px)!important;font-weight:800!important;letter-spacing:-.02em;color:var(--secondary)}
     .section-heading p{color:#64748b;font-size:15px}
     /* Hero tecnológico: más alto, overlay controlado, título contundente */
+    @if($heroPxDesktop > 0)
+    #storefront-main .premium-hero{min-height:{{ max(220, min(900, $heroPxDesktop)) }}px!important}
+    {{-- El alto pedido no servia de nada si la foto del hero era mas alta que
+         el banner: la imagen manda y el banner crecia. Aqui la foto se acota. --}}
+    #storefront-main .premium-hero .ph-main{max-height:{{ max(140, min(820, $heroPxDesktop - 90)) }}px}
+    #storefront-main .premium-hero .ph-main img{max-height:{{ max(140, min(820, $heroPxDesktop - 90)) }}px;width:auto;max-width:100%;margin-inline:auto;display:block}
+    @endif
+    @if($heroPxMobile > 0)
+    @media(max-width:760px){#storefront-main .premium-hero{min-height:{{ max(180, min(900, $heroPxMobile)) }}px!important}}
+    @endif
     .premium-hero{min-height:clamp(360px,46vh,var(--hero-desktop-h,520px))!important;border-radius:0 0 24px 24px;overflow:hidden}
     /* El hero es una seccion a sangre completa: el relleno generico de <section>
        le sumaba ~137px que no aportan nada (su interior ya trae el suyo). */
     body section.premium-hero,body .premium-hero{padding-block:0!important}
+    /* Controles de accion del carrusel y de las secciones: se amplia el area de
+       toque sin cambiar el tamano visible. Los puntos siguen midiendo 9px a la
+       vista, pero se tocan en 44. El nombre del producto NO se toca: es texto
+       de tarjeta y estirarlo a 44px romperia la rejilla. */
+    .ph-arrow{min-width:44px;min-height:44px}
+    .ph-dot{position:relative}
+    .ph-dot::after{content:'';position:absolute;top:50%;left:50%;
+        width:44px;height:44px;transform:translate(-50%,-50%)}
+    .promo-cta,.home-see-all,.pf-head a,.section-head a,
+    .catalog-card-action,.catalog-card .buy-add{min-height:44px;
+        display:inline-flex;align-items:center;justify-content:center}
+    @media(max-width:960px){
+        /* Estas tres reglas fijaban 38-40px en movil y ganaban por especificidad.
+           El boton de compra es el control que mas importa: va a 44px. */
+        .catalog-card .buy-add,.catalog-card .button,.catalog-card a.button,
+        .catalog-product-grid .catalog-card-action,
+        .pf-grid .catalog-card-action,
+        .catalog-card-actions .catalog-card-action,
+        .special-product-grid .catalog-card-action,
+        .discount-grid .catalog-card-action{min-height:44px}
+    }
+    /* ── MISMA ESCALA EN LAS TRES TIENDAS ────────────────────────────────────
+       Medido: el hero iba de 500 a 945 px segun la tienda, el titulo del hero
+       de 40 a 58 px, y el preset "dense" dejaba el relleno asimetrico (0 arriba
+       y 46 abajo). Comparten plantilla, asi que deben compartir proporciones. */
+    #storefront-main > section{padding-block:var(--sec-pad,68px)!important}
+    body.section-spacing-dense #storefront-main > section{--sec-pad:46px}
+    body.section-spacing-compact #storefront-main > section{--sec-pad:52px}
+    /* El hero manda su propio alto y no lleva relleno de seccion. */
+    body #storefront-main > .premium-hero,
+    body .premium-hero{padding-block:0!important}
+    /* Nada de max-height aqui: recortaba el subtitulo y el boton del hero.
+       El alto lo gobierna min-height, que se adapta sin cortar contenido. */
+    /* El interlineado apretado (1.08) hacia que la segunda linea del titulo
+       invadiera el subtitulo: con tildes y mayusculas el texto necesita mas
+       aire del que reservaba la caja. */
+    .premium-hero .ph-title,
+    .premium-hero h1{font-size:clamp(30px,4vw,54px)!important;line-height:1.18}
+    .premium-hero .ph-sub{margin-top:14px}
+    @media(max-width:760px){
+        #storefront-main > section{--sec-pad:40px}
+    }
     /* ── COHERENCIA ENTRE SECCIONES ─────────────────────────────────────────
        La pagina mezclaba seis tamanos de titulo (29 a 58px), alineaciones
        distintas sin criterio y tarjetas de 259 a 328px de ancho segun la
        seccion. Eso es lo que hace que un inicio parezca armado con piezas
        sueltas. Se unifica en una sola escala. */
+    /* ── ESCALA, RADIOS Y SOMBRAS ───────────────────────────────────────────
+       Escala tipografica con razon 1,33 (cuarta justa). Antes el salto del
+       titular de seccion al cuerpo era de 1,54 y dejaba un hueco visible.
+       Radios jerarquizados: un radio unico en todo (16px) hace que un chip y
+       una seccion entera parezcan la misma pieza.
+       Dos niveles de sombra: reposo y elevado. Una sola sombra plana no
+       comunica que una tarjeta se puede tocar. */
+    :root{
+        --card-ratio:{{ $cardRatio }};
+        --card-img-bg:{{ $cardImgBg }};
+        --t-xl:clamp(30px,3.4vw,44px);
+        --t-lg:clamp(24px,2.6vw,33px);
+        --t-md:25px; --t-sm:19px; --t-xs:16px;
+        --r-chip:4px; --r-btn:8px; --r-card:12px; --r-block:20px;
+        --sh-1:0 1px 3px rgba(15,23,42,.07);
+        --sh-2:0 8px 24px rgba(15,23,42,.13);
+    }
+    /* La proporcion y el fondo de la foto salen del constructor. */
+    .catalog-card-media,.catalog-card-media-link{aspect-ratio:var(--card-ratio)!important}
+    .catalog-card-media{background:var(--card-img-bg)!important}
+    .catalog-card-media img{object-fit:contain!important;padding:6px}
+    #storefront-main .catalog-card,
+    #storefront-main .trust-card,
+    #storefront-main .home-cat-card{border-radius:var(--r-card)!important;
+        box-shadow:var(--sh-1)!important}
+    #storefront-main .catalog-card:hover{box-shadow:var(--sh-2)!important;
+        transform:translateY(-2px)}
+    #storefront-main .button,
+    #storefront-main .catalog-card-action,
+    #storefront-main .buy-add{border-radius:var(--r-btn)!important}
+    #storefront-main .catalog-discount,
+    #storefront-main .catalog-new,
+    #storefront-main .catalog-card-percent{border-radius:999px!important}
+    #storefront-main .premium-hero,
+    #storefront-main .promo-section .promo-card{border-radius:var(--r-block)}
     #storefront-main section h2,
     #storefront-main .pf-title,
     #storefront-main .xs-title,
     #storefront-main .special-title{
-        font-size:clamp(26px,2.6vw,36px)!important;
+        font-size:var(--t-lg)!important;
         line-height:1.15;
         letter-spacing:-.02em;
         font-weight:800}
@@ -2232,7 +2471,7 @@
     #storefront-main .xs-crows .catalog-product-grid{
         grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important;gap:20px!important}
     #storefront-main .catalog-card .catalog-card-media,
-    #storefront-main .catalog-card .catalog-card-media-link{aspect-ratio:1/1!important;height:auto!important}
+    #storefront-main .catalog-card .catalog-card-media-link{aspect-ratio:var(--card-ratio)!important;height:auto!important}
     #storefront-main .catalog-card .catalog-card-media img{width:100%;height:100%;object-fit:contain}
     @media(max-width:760px){
         #storefront-main .catalog-product-grid,
@@ -2392,6 +2631,7 @@
     .ck-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:28px;max-width:1100px;margin:0 auto;padding:clamp(18px,4vw,32px) clamp(14px,4vw,32px)}
     .ck-section{margin-bottom:16px;padding:22px;background:#fff;border:1px solid var(--border);border-radius:14px}
     .ck-section h3{margin:0 0 16px;color:var(--secondary);font-size:16px;font-weight:800}
+    .ck-paynote{margin:0;color:var(--muted,#64748b);font-size:13.5px;line-height:1.6}
     .ck-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
     .ck-field label{color:#475569;font-size:12px;font-weight:700}
     .ck-field input,.ck-field select,.ck-field textarea{width:100%;min-width:0;min-height:44px;padding:0 14px;color:#172033;background:#fff;border:1px solid #cbd5e1;border-radius:9px;font-size:14px;outline:0}
@@ -2428,7 +2668,7 @@
     /* ═══ Página de carrito (esqueleto ecommerce, estilo computienda) ═══ */
     .cartpage{position:relative;z-index:1;min-height:62vh;background:var(--surface,#f5f7fb)}
     .cartpage-inner{width:min(var(--header-layout-width,1360px),calc(100% - 48px));margin:0 auto;padding:clamp(20px,4vw,40px) 0}
-    .cartpage h1{margin:0 0 6px;color:var(--secondary);font-size:clamp(26px,4vw,34px);font-weight:800}
+    .cartpage h1,.cartpage h2{margin:0 0 6px;color:var(--secondary);font-size:clamp(26px,4vw,34px);font-weight:800}
     .cartpage-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;color:#475569;background:none;border:0;font-size:13px;font-weight:700;cursor:pointer}
     .cartpage-back:hover{color:var(--primary)}
     .cartpage-grid{display:grid;grid-template-columns:1fr 360px;gap:26px;align-items:start}
@@ -2539,6 +2779,33 @@
         .buy-tag{font-size:8.5px}
         .buy-min{padding:0 8px;font-size:9.5px}
     }
+    /* Todas las tarjetas de una fila miden lo mismo aunque una traiga bloque
+       mayorista y la otra no: la botonera queda alineada abajo. */
+    #storefront-main .catalog-card{height:100%!important;display:flex;flex-direction:column}
+    /* Y todas las filas del mismo grid miden igual: sin escalones entre fila 1 y 2. */
+    #storefront-main .pf-grid,#storefront-main .home-prod-grid,#storefront-main .catalog-grid,
+    #storefront-main .catalog-product-grid,#storefront-main .special-product-grid{grid-auto-rows:1fr}
+    #storefront-main .catalog-card > .catalog-card-body{flex:1 1 auto}
+    #storefront-main .catalog-card > .catalog-card-actions{margin-top:auto}
+    /* Zonas tactiles de 44 px en los controles reales (2.5.5). Los puntos del
+       carrusel conservan su tamano visual y amplian el area con un pseudo. */
+    #storefront-main .ph-dot{position:relative}
+    #storefront-main .ph-dot::after{content:'';position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}
+    #storefront-main .catalog-quickview{min-height:44px}
+    .hpx-uni-chip,.profile-chip,.hpx-corp-inner a{min-height:44px;display:inline-flex;align-items:center}
+    .catalog-h1{margin:6px 0 0;color:var(--secondary);font-size:var(--t-lg);font-weight:800;line-height:1.15}
+    /* La flecha del carrusel se montaba encima del titulo: el bloque de texto
+       deja sitio a las flechas en vez de compartirlo. */
+    #storefront-main .premium-hero:has(.ph-arrow) .premium-hero-copy.is-left{padding-left:56px!important}
+    @media(max-width:760px){#storefront-main .premium-hero:has(.ph-arrow) .premium-hero-copy.is-left{padding-left:0!important}
+        #storefront-main .premium-hero .ph-arrow{top:auto;bottom:12px}}
+    /* El navegador pinta los textarea en monospace: rompe la tipografia de la tienda. */
+    textarea,input,select,button{font-family:inherit}
+    /* Mayorista plegable: la cabecera es el disparador y el detalle se despliega. */
+    .buy-block--wholesale.is-foldable .buy-head{cursor:pointer;min-height:44px;align-items:center}
+    .buy-block--wholesale.is-foldable .buy-head:hover{background:#fef6e0}
+    .buy-fold{width:15px;height:15px;flex:0 0 auto;color:#b45309;transition:transform .2s ease}
+    [x-cloak]{display:none!important}
     /* Compatibilidad con el markup antiguo (.wh-buy) mientras convive */
     .wh-buy{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding:8px 10px;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px}
     .wh-buy-info{min-width:0}
@@ -2736,7 +3003,12 @@
                     @if($sl['showContent'])
                     <div class="ph-slide-copy">
                         @if($sl['badge'])<span class="ph-eyebrow">{{ $sl['badge'] }}</span>@endif
-                        @if($sl['title'] ?: $heroTitle)<h1 class="ph-title">{{ $sl['title'] ?: $heroTitle }}</h1>@endif
+                        {{-- Solo la primera diapositiva declara el h1: las demas son titulos visuales.
+                             Con un h1 por diapositiva la pagina anunciaba 6 titulos principales. --}}
+                        @if($sl['title'] ?: $heroTitle)
+                            @if($i === 0)<h1 class="ph-title">{{ $sl['title'] ?: $heroTitle }}</h1>
+                            @else<p class="ph-title" role="heading" aria-level="2">{{ $sl['title'] ?: $heroTitle }}</p>@endif
+                        @endif
                         @if($sl['sub'] ?: $heroSubtitle)<p class="ph-sub">{{ $sl['sub'] ?: $heroSubtitle }}</p>@endif
                         @if(($sl['cta1Show'] && $sl['cta1Text']) || ($sl['cta2Show'] && $sl['cta2Text'] && $sl['cta2Url']))
                         <div class="hero-actions">
@@ -2789,10 +3061,10 @@
                 <div class="premium-hero-visual" aria-hidden="true">
                     @if($heroMain)
                     <div class="ph-stage">
-                        <div class="ph-main"><img src="{{ \App\Support\ImageVariants::webp($heroMain) }}" alt="" loading="eager" fetchpriority="high"></div>
-                        @if($heroHead)<div class="ph-float ph-float-a"><img src="{{ \App\Support\ImageVariants::webp($heroHead->main_image_url) }}" alt="" loading="lazy" decoding="async"></div>@endif
-                        @if($heroKb)<div class="ph-float ph-float-b"><img src="{{ \App\Support\ImageVariants::webp($heroKb->main_image_url) }}" alt="" loading="lazy" decoding="async"></div>@endif
-                        @if($heroMouse)<div class="ph-float ph-float-c"><img src="{{ \App\Support\ImageVariants::webp($heroMouse->main_image_url) }}" alt="" loading="lazy" decoding="async"></div>@endif
+                        <div class="ph-main"><img src="{{ \App\Support\ImageVariants::webp($heroMain) }}" alt="{{ $heroTitle }}" loading="eager" fetchpriority="high"></div>
+                        @if($heroHead)<div class="ph-float ph-float-a"><img src="{{ \App\Support\ImageVariants::webp($heroHead->main_image_url) }}" alt="{{ $heroHead->name }}" loading="lazy" decoding="async"></div>@endif
+                        @if($heroKb)<div class="ph-float ph-float-b"><img src="{{ \App\Support\ImageVariants::webp($heroKb->main_image_url) }}" alt="{{ $heroKb->name }}" loading="lazy" decoding="async"></div>@endif
+                        @if($heroMouse)<div class="ph-float ph-float-c"><img src="{{ \App\Support\ImageVariants::webp($heroMouse->main_image_url) }}" alt="{{ $heroMouse->name }}" loading="lazy" decoding="async"></div>@endif
                         <div class="ph-reflection"></div>
                     </div>
                     @endif
@@ -2985,7 +3257,7 @@
         @endphp
 
         @if($featuredCategoryItems->isNotEmpty())
-        <section class="home-cats style-{{ $featuredCatsStyle }} shape-{{ $featuredCatsShape }} {{ $featuredCatsMobileCarousel ? 'mobile-carousel' : '' }}" data-store-native-section="categories" style="order:{{ $sectionOrder('categories') }}">
+        <section class="home-cats style-{{ $featuredCatsStyle }} shape-{{ $featuredCatsShape }} {{ $featuredCatsMobileCarousel ? 'mobile-carousel' : '' }}" data-store-native-section="categories" style="order:{{ $sectionOrder('categories') }};--cats-cols:{{ max(1, min($featuredCatsColumns, $featuredCategoryItems->count())) }}">
             <div class="container">
                 @include('public.templates.partials.computienda-intro', ['introKey' => 'categories'])
                 @if($featuredCatsStyle === 'showcase' && !$introActive('categories'))
@@ -3184,6 +3456,7 @@
                         </div>
                     </article>
                     @endforeach
+                    @if($trustExtraNote !== '')<span class="trust-extra">{{ $trustExtraNote }}</span>@endif
                 </div>
             </div>
         </section>
@@ -3347,6 +3620,14 @@
             };
             if($homeFeatured->isEmpty()) $homeFeatured = $featured->take($pfLimit);
             if($homeFeatured->isEmpty()) $homeFeatured = $categories->flatMap->products->take(8);
+            // En la portada mandan primero los productos que SÍ tienen foto: un
+            // escaparate lleno de "foto en camino" resta más de lo que suma.
+            // Si la tienda aún no subió ninguna imagen, no se altera nada.
+            if ($homeFeatured->contains(fn ($pp) => filled($pp->main_image_url))) {
+                $homeFeatured = $homeFeatured
+                    ->sortByDesc(fn ($pp) => filled($pp->main_image_url) ? 1 : 0)
+                    ->values();
+            }
             // Título: usa el de la sección del constructor si existe.
             $pfSection = $homeSectionByNativeKey->get('featured_products');
             $pfContent = is_array($pfSection?->content) ? $pfSection->content : [];
@@ -3402,7 +3683,9 @@
         {{-- ═══ TIENDA: catálogo completo con filtros ═══ --}}
         @if($storeView === 'tienda')
         <section class="catalog" id="tienda-catalogo" data-store-native-section="catalog" style="order:{{ $sectionOrder('catalog') }}"><div class="container">
-            <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ route('public.catalog', $project->slug) }}">Inicio</a><span>/</span><strong x-text="activeFilterLabel">Todos los productos</strong></nav>
+            <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span><strong x-text="activeFilterLabel">Todos los productos</strong></nav>
+            {{-- La vista tienda no declaraba h1: buscadores y lectores no sabian de que iba. --}}
+            <h1 class="catalog-h1" @if(empty($activeProfile)) x-text="activeFilterLabel" @endif>{{ !empty($activeProfile) ? $activeProfile->name : 'Todos los productos' }}</h1>
             {{-- Banda de categoria: da contexto de donde esta el cliente y cuantos
                  productos hay AQUI. El contador anterior mostraba el total de la
                  tienda (46) aunque la categoria tuviera 4, y se contradecia con
@@ -3423,7 +3706,7 @@
                     <x-computienda.catalog-filters :categories="$navCategories" :catalog-products="$catalogProducts" filter-scope="desktop" />
                 </aside>
 
-                <div class="catalog-results" x-data="catalogBrowser({ endpoint: {{ Js::from(route('public.shop', $project->slug)) }}, total: {{ $catalogPage->total() }}, hasMore: {{ $catalogPage->hasMorePages() ? 'true' : 'false' }} })" x-init="init()">
+                <div class="catalog-results" x-data="catalogBrowser({ endpoint: {{ Js::from(\App\Support\StorefrontNavigation::shopUrl($project)) }}, total: {{ $catalogPage->total() }}, hasMore: {{ $catalogPage->hasMorePages() ? 'true' : 'false' }} })" x-init="init()">
                     <div class="catalog-chips" x-show="hasActiveFilters" x-cloak aria-label="Filtros activos">
                         <template x-for="cid in filterCats" :key="'c'+cid">
                             <button class="catalog-chip" type="button" @click="filterCats=filterCats.filter(x=>x!==cid)" x-cloak><span x-text="categoryName(cid)"></span><span aria-hidden="true">×</span></button>
@@ -3640,8 +3923,8 @@
         @endphp
         <section class="catalog" data-store-native-section="product" style="order:1" x-data="{ pdpImg: @js($spMainUrl), pdpQty: 1, pdpSize: null, pdpSizeErr: false }"><div class="container">
             <nav class="catalog-breadcrumb" aria-label="Ruta de navegación" style="margin-top:22px">
-                <a href="{{ route('public.catalog', $project->slug) }}">Inicio</a><span>/</span>
-                <a href="{{ route('public.shop', $project->slug) }}">Tienda</a><span>/</span>
+                <a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span>
+                <a href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">Tienda</a><span>/</span>
                 <strong>{{ $sp->name }}</strong>
             </nav>
 
@@ -3664,14 +3947,14 @@
                     @endif
                     <div class="pdp-share">
                         <span>Compartir:</span>
-                        <a href="https://wa.me/?text={{ urlencode($sp->name.' - ') }}{{ urlencode(route('public.product', [$project->slug, $sp->id])) }}" target="_blank" rel="noopener" style="background:#25d366" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2z"/></svg></a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(route('public.product', [$project->slug, $sp->id])) }}" target="_blank" rel="noopener" style="background:#1877f2" title="Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
+                        <a href="https://wa.me/?text={{ urlencode($sp->name.' - ') }}{{ urlencode(\App\Support\ImageVariants::productUrl($project, $sp->id, $sp->name)) }}" target="_blank" rel="noopener" style="background:#25d366" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2z"/></svg></a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(\App\Support\ImageVariants::productUrl($project, $sp->id, $sp->name)) }}" target="_blank" rel="noopener" style="background:#1877f2" title="Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
                     </div>
                 </div>
 
                 {{-- Info --}}
                 <div>
-                    @if($sp->category)<a class="pdp-cat" href="{{ route('public.shop', $project->slug) }}?category={{ $sp->category_id }}">{{ $sp->category->name }}</a>@endif
+                    @if($sp->category)<a class="pdp-cat" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}?category={{ $sp->category_id }}">{{ $sp->category->name }}</a>@endif
                     <h1 class="pdp-title">{{ $sp->name }}</h1>
                     @unless($hidePrices)
                     <div class="pdp-price-row">
@@ -3731,7 +4014,7 @@
                 <h2>Productos relacionados</h2>
                 <div class="catalog-product-grid">
                     @foreach($relatedProducts as $rp)
-                    @php $rpImg = $rp->mainImage?->url ? $assetUrl($rp->mainImage->url) : null; $rpUrl = route('public.product', [$project->slug, $rp->id]); @endphp
+                    @php $rpImg = $rp->mainImage?->url ? $assetUrl($rp->mainImage->url) : null; $rpUrl = \App\Support\ImageVariants::productUrl($project, $rp->id, $rp->name); @endphp
                     <article class="catalog-card">
                         <div class="catalog-card-media">
                             <a class="catalog-card-media-link" href="{{ $rpUrl }}" aria-label="Ver {{ $rp->name }}">
@@ -4275,6 +4558,17 @@
                             <span x-show="proofName" x-cloak style="margin-left:9px;font-size:11px;color:#475569" x-text="proofName"></span>
                         </div>
                     </div>
+                    @elseif(!$isQuoteOnly)
+                    {{-- Sin medios de pago cargados el bloque desaparecia y el
+                         cliente llegaba al final sin saber como pagar. Se explica
+                         el flujo real: el pedido se coordina por WhatsApp. --}}
+                    <div class="ck-section">
+                        <h3>¿Cómo pago?</h3>
+                        <p class="ck-paynote">
+                            Al confirmar tu pedido te escribimos por WhatsApp para coordinar
+                            el pago y la entrega. No se cobra nada en este paso.
+                        </p>
+                    </div>
                     @endif
                 </div>
             </div>
@@ -4320,7 +4614,8 @@
     <div class="cartpage" x-show="cartPageOpen" x-cloak role="dialog" aria-modal="true" aria-label="Tu carrito">
         <div class="cartpage-inner">
             <button class="cartpage-back" type="button" @click="cartPageOpen=false;document.body.style.overflow=''"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>Seguir comprando</button>
-            <h1>Tu carrito</h1>
+            {{-- h2, no h1: el h1 de la pagina es el titulo del contenido, no el carrito. --}}
+            <h2>Tu carrito</h2>
             <p style="color:#64748b;font-size:13px;margin:0 0 22px" x-text="itemCount()+' '+(itemCount()===1?'producto':'productos')"></p>
 
             <template x-if="cart.length===0">
@@ -4406,11 +4701,11 @@
             </div>
             @if(!empty($catalogProfiles) && $catalogProfiles->count())
             <div class="mobile-nav-profiles">
-                <a class="profile-chip {{ empty($activeProfile) ? 'is-active' : '' }}" href="{{ route('public.shop', $project->slug) }}">Todo</a>
+                <a class="profile-chip {{ empty($activeProfile) ? 'is-active' : '' }}" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">Todo</a>
                 @foreach($catalogProfiles as $cp)
                     <a class="profile-chip {{ (!empty($activeProfile) && $activeProfile->id === $cp->id) ? 'is-active' : '' }}"
                        @if($cp->primary_color) style="--chip-color:{{ $cp->primary_color }}" @endif
-                       href="{{ route('public.shop.profile', [$project->slug, $cp->slug]) }}"><span class="profile-dot" aria-hidden="true"></span>{{ $cp->menu_label ?: $cp->name }}</a>
+                       href="{{ \App\Support\StorefrontNavigation::profileUrl($project, $cp->slug) }}"><span class="profile-dot" aria-hidden="true"></span>{{ $cp->menu_label ?: $cp->name }}</a>
                 @endforeach
             </div>
             @endif

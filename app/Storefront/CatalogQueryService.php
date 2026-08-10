@@ -24,7 +24,13 @@ final class CatalogQueryService
      */
     public function paginate(Project $project, Request $request, ?StoreCatalogProfile $profile = null): LengthAwarePaginator
     {
-        $query = $project->products()->where('is_available', true)->with(['mainImage', 'category']);
+        // Un producto sin precio no se puede comprar: mostrarlo con "S/ 0.00" y
+        // botón de carrito activo genera pedidos sin importe. Se excluye del
+        // catálogo hasta que la fuente traiga su precio.
+        $query = $project->products()
+            ->where('is_available', true)
+            ->where('price', '>', 0)
+            ->with(['mainImage', 'category']);
 
         // Perfil de catálogo: se aplica ANTES de cualquier otro filtro para acotar
         // el alcance. Un perfil restringe a: sus productos asignados + los productos
@@ -183,7 +189,7 @@ final class CatalogQueryService
             'parentId' => $p->category?->parent_id ? (string) $p->category->parent_id : null,
             'sku' => $p->sku,
             'stock' => $p->stock,
-            'url' => \App\Support\ImageVariants::productUrl($p->project ?? \App\Models\Project::where('slug', $slug)->first(), $p->id),
+            'url' => \App\Support\ImageVariants::productUrl($p->project ?? \App\Models\Project::where('slug', $slug)->first(), $p->id, $p->name),
             'wholesalePrice' => filled($p->wholesale_price) ? (float) $p->wholesale_price : null,
             'wholesaleMinQty' => (int) ($p->wholesale_min_qty ?? 1),
             'wholesaleUnit' => (filled($p->wholesale_unit) && !is_numeric($p->wholesale_unit)) ? $p->wholesale_unit : 'unidades',

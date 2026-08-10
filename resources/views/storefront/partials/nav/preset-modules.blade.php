@@ -84,14 +84,14 @@
 @if(!$hpShellOn && $hpUniverses)
 <div class="hp-universes style-{{ $hpUniStyle }}">
     <div class="container hp-universes-inner">
-        <a class="hp-universe {{ empty($activeProfile) && ! \App\Support\StorefrontNavigation::currentCategoryId() ? 'is-active' : '' }}" href="{{ route('public.shop', $project->slug) }}">
+        <a class="hp-universe {{ empty($activeProfile) && ! \App\Support\StorefrontNavigation::currentCategoryId() ? 'is-active' : '' }}" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">
             @if($hpUniStyle !== 'text')<span class="hp-universe-dot" aria-hidden="true"></span>@endif Todo
         </a>
         @if($hpHasProfiles)
             @foreach($catalogProfiles as $cp)
             <a class="hp-universe {{ (!empty($activeProfile) && $activeProfile->id === $cp->id) ? 'is-active' : '' }}"
                @if($cp->primary_color) style="--chip-color:{{ $cp->primary_color }}" @endif
-               href="{{ route('public.shop.profile', [$project->slug, $cp->slug]) }}">
+               href="{{ \App\Support\StorefrontNavigation::profileUrl($project, $cp->slug) }}">
                 @if($hpUniStyle !== 'text')<span class="hp-universe-dot" aria-hidden="true"></span>@endif
                 {{ $cp->menu_label ?: $cp->name }}
             </a>
