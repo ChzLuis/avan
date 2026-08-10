@@ -49,6 +49,10 @@
     // Color de acento: detalles institucionales (iconos, líneas, etiquetas).
     // Configurable desde el Constructor; si no se define cae al primario.
     $accent = $color($settings['accent_color'] ?? null, $primary);
+    // Color reservado a ofertas y precios rebajados. Separado del acento
+    // porque el acento tambien pinta el encabezado: si se cambia por el de
+    // ofertas, el buscador y el carrito se tinen del mismo color.
+    $saleColor = $color($settings['sale_color'] ?? null, $accent);
     $headerBg = $color($settings['header_bg_color'] ?? null, '#ffffff');
     $headerText = $color($settings['header_text_color'] ?? null, '#0f172a');
     $heroBg = $color($settings['hero_bg_color'] ?? null, '#f1f5f9');
@@ -823,6 +827,7 @@
           --primary:{{ $primary }};
           --secondary:{{ $secondary }};
           --accent:{{ $accent }};
+          --sale:{{ $saleColor }};
           --header-bg:{{ $headerBg }};
           --header-text:{{ $headerText }};
           --hero-bg:{{ $heroBg }};
@@ -2353,7 +2358,23 @@
     #storefront-main .premium-hero .ph-main img{max-height:{{ max(140, min(820, $heroPxDesktop - 90)) }}px;width:auto;max-width:100%;margin-inline:auto;display:block}
     @endif
     @if($heroPxMobile > 0)
-    @media(max-width:760px){#storefront-main .premium-hero{min-height:{{ max(180, min(900, $heroPxMobile)) }}px!important}}
+    @media(max-width:760px){
+        {{-- En movil pasaba lo mismo que en escritorio: la foto era mas alta que
+             el banner y el alto pedido no se cumplia. Se acota tambien aqui. --}}
+        {{-- Sin max-height: recortar el banner cortaba el boton de la portada.
+             Se acota la foto, y el texto decide el alto minimo real. --}}
+        #storefront-main .premium-hero{min-height:{{ max(180, min(900, $heroPxMobile)) }}px!important}
+        {{-- En movil el texto y la foto se apilan: si la foto ocupa 420px, el
+             banner mide el doble de lo pedido. Se acota el bloque visual. --}}
+        {{-- El interior traia 48+96px de relleno en movil: con un alto pedido
+             esos 144px son casi la mitad del banner. --}}
+        #storefront-main .premium-hero .premium-hero-inner{padding-top:26px!important;padding-bottom:34px!important;gap:18px}
+        #storefront-main .premium-hero .premium-hero-copy,
+        #storefront-main .premium-hero .ph-slide-copy{padding-block:0!important}
+        #storefront-main .premium-hero .premium-hero-visual{max-height:{{ max(100, min(420, (int) ($heroPxMobile * 0.45))) }}px;overflow:hidden}
+        #storefront-main .premium-hero .ph-main,
+        #storefront-main .premium-hero .ph-main img{max-height:{{ max(100, min(420, (int) ($heroPxMobile * 0.45))) }}px;width:auto;max-width:100%;margin-inline:auto;display:block}
+    }
     @endif
     .premium-hero{min-height:clamp(360px,46vh,var(--hero-desktop-h,520px))!important;border-radius:0 0 24px 24px;overflow:hidden}
     /* El hero es una seccion a sangre completa: el relleno generico de <section>
@@ -2543,7 +2564,10 @@
     .catalog-card-name,.pf-card-name{font-weight:700!important;color:var(--secondary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;padding-left:2px;margin-left:-2px}
     .catalog-card-price,.pf-price-now{font-size:19px!important;font-weight:800!important;color:var(--secondary)}
     .catalog-card-compare{color:#94a3b8;text-decoration:line-through;font-size:12px}
-    .catalog-discount,.catalog-card-percent,.badge-sale{background:var(--primary)!important;color:#fff;font-weight:800;border-radius:8px;letter-spacing:.02em}
+    /* El descuento iba en el color primario: en una tienda monocromatica no
+   destacaba nada. Va en el acento, que existe justo para esto. */
+    .catalog-discount,.catalog-card-percent,.badge-sale{background:var(--sale)!important;color:#fff;font-weight:800;border-radius:var(--r-btn,8px);letter-spacing:.02em}
+    #storefront-main .catalog-card-price.is-sale,#storefront-main .pdp-price.is-sale{color:var(--sale)}
     .catalog-sold-out{background:#334155!important;border-radius:8px}
     .catalog-card-action,.pf-card-action{font-weight:700!important;letter-spacing:.01em;border-radius:10px!important}
     /* Catálogo: grid aireado + panel de filtros con tarjeta */

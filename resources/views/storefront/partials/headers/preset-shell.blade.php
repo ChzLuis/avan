@@ -517,6 +517,48 @@
     /* Barra corporativa B2B */
     .hpx-corp{background:var(--secondary);color:#fff}
     .hpx-corp-inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;padding:8px 16px;font-size:12.5px}
+    /* Encabezado movil en dos filas fijas: menu + logo + carrito arriba y el
+       buscador debajo. Antes el logo empujaba el carrito a una tercera fila y
+       la cabecera se comia 245px de una pantalla de 844. */
+    @media(max-width:760px){
+        /* El contenedor dejaba 48px de margen a cada lado en una pantalla de
+           390: la cabecera no cabia y se salia por la derecha. */
+        .hpx-main.container{width:calc(100% - 28px)!important;max-width:none!important;
+            margin-inline:auto!important;
+            display:grid!important;grid-template-columns:44px minmax(0,1fr) auto;
+            grid-template-areas:'menu marca acciones' 'buscar buscar buscar';
+            align-items:center;gap:10px;padding-block:8px}
+        .hpx-main > .header-hamburger{grid-area:menu}
+        .hpx-main > .brand{grid-area:marca;justify-self:center;min-width:0!important;max-width:100%}
+        .hpx-main .brand img,.hpx-main .brand-logo{max-height:48px!important;width:auto;max-width:100%;object-fit:contain}
+        .hpx-main > .header-actions,.hpx-main > .hpx-act{grid-area:acciones;justify-self:end}
+        .hpx-main > .hpx-searchbox{grid-area:buscar;width:100%;min-width:0}
+    }
+    /* La barra superior envolvia sus mensajes en dos filas y el contenedor
+       dejaba 48px de margen a cada lado. En movil: una linea desplazable. */
+    @media(max-width:760px){
+        .hpx-topbar-inner.container{width:calc(100% - 24px)!important;max-width:none!important;
+            margin-inline:auto!important;padding-inline:0!important}
+        .hpx-topbar-left,.hpx-topbar-right{flex-wrap:nowrap!important;white-space:nowrap}
+        .hpx-topbar-left > *,.hpx-topbar-right > *{flex:0 0 auto}
+        .hpx-topbar-inner{min-height:38px}
+        .hpx-topbar-left{gap:14px}
+    }
+    /* Cualquier barra superior en movil: una linea desplazable, sin redes. */
+    @media(max-width:760px){
+        .hpx-topbar .container,.hpx-topbar > div{flex-wrap:nowrap!important;
+            overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+        .hpx-topbar .container::-webkit-scrollbar,.hpx-topbar > div::-webkit-scrollbar{display:none}
+    }
+    /* En movil esta barra medía 139px: dos lineas de texto envueltas y tres
+       iconos de 44px que ya estan en el pie. Queda en una linea desplazable. */
+    @media(max-width:760px){
+        .hpx-corp-inner{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;
+            white-space:nowrap;padding:6px 14px;font-size:11.5px;min-height:36px;scrollbar-width:none}
+        .hpx-corp-inner::-webkit-scrollbar{display:none}
+        .hpx-corp-inner .hpx-topbar-social,.hpx-corp .hpx-topbar-social{display:none}
+        .hpx-corp-inner a{min-height:36px}
+    }
     .hpx-corp a{color:#fff;font-weight:700;text-decoration:none}
     .hpx-corp svg{width:14px;height:14px;vertical-align:-2px}
     .hpx-corp-sep{opacity:.4}
@@ -594,6 +636,17 @@
     }
     /* Topbar rica (spec): 3 mensajes con ícono a la izquierda + accesos a la derecha */
     .hpx-topbar{font-size:12.5px}
+    /* En movil la barra superior se comia 130px de la primera pantalla con dos
+       lineas de texto y tres iconos de 44px que ya estan en el pie. Se deja una
+       sola linea, desplazable, y se ocultan las redes. */
+    @media(max-width:760px){
+        .hpx-topbar{font-size:11.5px}
+        .hpx-topbar .container{display:flex;align-items:center;gap:10px;min-height:34px;
+            overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+        .hpx-topbar .container::-webkit-scrollbar{display:none}
+        .hpx-topbar-social{display:none}
+        .hpx-topbar a{min-height:34px}
+    }
     .hpx-topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:40px}
     .hpx-topbar-left{display:flex;align-items:center;gap:30px;flex-wrap:wrap}
     .hpx-topbar-right{display:flex;align-items:center;gap:22px}

@@ -89,6 +89,40 @@ producto por vista, y sitemap con las direcciones nuevas.
 
 ---
 
+## Estructura de portada (sección D de cada consultoría)
+
+Orden verificado en producción, de arriba abajo:
+
+| Tecsist | Baby Toncito | MegaHogar |
+|---|---|---|
+| Hero | Hero | Hero |
+| Beneficios | Beneficios | Beneficios |
+| Promociones* | Elige su mundo | Compra por ambiente |
+| Explora por categoría | Por qué algodón pima | Lo más vendido |
+| Ofertas de la semana | Nuestros favoritos | Formas de pago y entrega |
+| Lo más vendido | Tallas y cuidado | Nosotros |
+| Servicio técnico | Venta por mayor | Asesoría por WhatsApp |
+| Asesoría por WhatsApp | Conoce Baby Toncito | Preguntas frecuentes |
+| Nosotros | Asesoría por WhatsApp | |
+
+\* Promociones no figura en la estructura recomendada; se conserva porque la tienda
+ya la tenía y se movió detrás de beneficios.
+
+**Falta de la estructura recomendada:** el bloque de marcas en Tecsist y MegaHogar
+(necesita los logotipos) y el de ofertas en MegaHogar (necesita descuentos reales).
+
+## Presentación
+
+- Tecsist: color de oferta naranja `#F97316` separado del acento del encabezado
+  (un `sale_color` propio, para que el buscador y el carrito no se tiñan);
+  hero de 440/340 px; carrusel de 3 diapositivas.
+- MegaHogar: buscador con ejemplo ("Busca tu sofá, colchón o refrigeradora…");
+  4 ambientes en móvil de los 8; hero 480/374 px.
+- Baby Toncito: hero 460 px; buscador por talla; guía de tallas y venta por mayor.
+- Las tres: encabezado móvil en dos filas (menú + logo + carrito, buscador debajo).
+  MegaHogar pasó de 309 a 161 px antes del contenido.
+- Banda informativa y bloque Nosotros ya no traen colores fijos: salen del tema.
+
 ## Lo que sigue dependiendo del cliente
 
 - **MegaHogar**: fotografías de producto, medios de pago, logotipos de marcas.

@@ -537,17 +537,19 @@
 @endphp
 @if($isHomeSectionVisible('info_strip') && $isItems->isNotEmpty())
 <style>
-    .xs-strip{display:grid;grid-template-columns:repeat({{ max(1, $isItems->count()) }},minmax(0,1fr));min-height:128px;background:#F7F5F1;border:1px solid #E7DFD4;border-radius:10px;overflow:hidden}
-    .xs-strip-item{display:flex;align-items:center;gap:16px;padding:20px 24px;border-left:1px solid #E7DFD4;color:inherit;text-decoration:none}
+    /* El crema y el borde arena venian fijos: en una tienda tecnologica se leian
+       como un bloque prestado de otra marca. Ahora salen del tema. */
+    .xs-strip{display:grid;grid-template-columns:repeat({{ max(1, $isItems->count()) }},minmax(0,1fr));min-height:128px;background:var(--surface-soft,#f8fafc);border:1px solid var(--border,#e2e8f0);border-radius:var(--r-block,12px);overflow:hidden}
+    .xs-strip-item{display:flex;align-items:center;gap:16px;padding:20px 24px;border-left:1px solid var(--border,#e2e8f0);color:inherit;text-decoration:none}
     .xs-strip-item:first-child{border-left:0}
-    .xs-strip-media{flex:0 0 auto;display:grid;place-items:center;width:76px;height:76px;border-radius:8px;overflow:hidden;background:#fff}
+    .xs-strip-media{flex:0 0 auto;display:grid;place-items:center;width:76px;height:76px;border-radius:var(--r-btn,8px);overflow:hidden;background:var(--surface,#fff)}
     .xs-strip-media img{width:100%;height:100%;object-fit:cover}
     .xs-strip-media svg{width:34px;height:34px;color:var(--secondary)}
     .xs-strip-copy{min-width:0}
     .xs-strip-copy strong{display:block;color:var(--text-strong);font-size:14px;font-weight:700;line-height:1.3}
     .xs-strip-copy span{display:block;margin-top:5px;color:var(--muted);font-size:12.5px;line-height:1.45}
-    @media(max-width:980px){.xs-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.xs-strip-item:nth-child(3){border-left:0}.xs-strip-item:nth-child(n+3){border-top:1px solid #E7DFD4}}
-    @media(max-width:560px){.xs-strip{grid-template-columns:1fr}.xs-strip-item{border-left:0;border-top:1px solid #E7DFD4}.xs-strip-item:first-child{border-top:0}}
+    @media(max-width:980px){.xs-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.xs-strip-item:nth-child(3){border-left:0}.xs-strip-item:nth-child(n+3){border-top:1px solid var(--border,#e2e8f0)}}
+    @media(max-width:560px){.xs-strip{grid-template-columns:1fr}.xs-strip-item{border-left:0;border-top:1px solid var(--border,#e2e8f0)}.xs-strip-item:first-child{border-top:0}}
 </style>
 <section class="xs-section" data-store-native-section="info_strip" style="order:{{ $sectionOrder('info_strip') }}"><div class="container">
     @if(filled($isC['title'] ?? null))<div class="xs-head"><h2>{{ $isC['title'] }}</h2>@if(filled($isC['subtitle'] ?? null))<p>{{ $isC['subtitle'] }}</p>@endif</div>@endif
@@ -590,6 +592,10 @@
 <style>
     .xs-about{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(26px,4vw,54px);align-items:center}
     .xs-about--no-img{grid-template-columns:1fr;max-width:820px;margin:0 auto;text-align:center}
+    /* Si la tienda alinea sus titulos a la izquierda, este bloque no puede
+       ser el unico centrado: rompia la lectura de la columna. */
+    body:not(.section-heading-center) .xs-about--no-img{margin-inline:0;text-align:left}
+    body:not(.section-heading-center) .xs-about--no-img .xs-about-label:after{margin-left:0}
     .v-image-right .xs-about .xs-about-media{order:2}
     .xs-about-media{position:relative;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md)}
     .xs-about-media img{display:block;width:100%;height:100%;min-height:300px;max-height:460px;object-fit:cover}
