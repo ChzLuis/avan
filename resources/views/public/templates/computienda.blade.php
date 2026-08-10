@@ -1075,8 +1075,10 @@
         body.section-heading-center .home-see-all,
         body.section-heading-center .pf-seeall{margin-left:auto}
         body.section-bg-white [data-store-native-section]:not(.premium-hero):not(.flash-sale-section):not(.style-band){background:#fff!important}
-        body.section-bg-soft [data-store-native-section]:not(.premium-hero):not(.flash-sale-section):not(.style-band){background:#f8fafc!important}
-        body.section-bg-alternate [data-store-native-section]:nth-of-type(even):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:#f8fafc}
+        /* Este gris azulado estaba fijo: en una tienda de neutro calido convivian
+           dos familias de gris y el conjunto se ensuciaba. Sale del tema. */
+        body.section-bg-soft [data-store-native-section]:not(.premium-hero):not(.flash-sale-section):not(.style-band){background:var(--surface-soft,#f8fafc)!important}
+        body.section-bg-alternate [data-store-native-section]:nth-of-type(even):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:var(--surface-soft,#f8fafc)}
         body.section-bg-alternate [data-store-native-section]:nth-of-type(odd):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:#fff}
         body.section-no-dividers [data-store-native-section]{border-top:0!important;border-bottom:0!important}
         body.section-dividers [data-store-native-section]{border-bottom:1px solid var(--border)}
@@ -2780,8 +2782,10 @@
     .buy-block--retail .buy-tag{color:#64748b}
     .buy-block--retail .buy-price{color:var(--secondary)}
     .buy-block--retail .buy-add{background:var(--primary)}
-    /* Con bloque dual, la botonera inferior sobra: se oculta para no repetir CTA */
-    .catalog-card:has(.buy-block--wholesale) .catalog-card-actions .catalog-card-action{display:none}
+    /* Con el bloque mayorista ABIERTO la botonera inferior repite el CTA y se
+       oculta. Si esta plegado NO se oculta: al plegarlo, la tarjeta se quedaba
+       sin ningun boton de compra y solo dejaba consultar por WhatsApp. */
+    .catalog-card:has(.buy-block--wholesale:not(.is-foldable)) .catalog-card-actions .catalog-card-action{display:none}
     /* Modalidad B ya trae su boton: la botonera inferior solo conserva WhatsApp */
     .catalog-card:has(.buy-auto) .catalog-card-actions .catalog-card-action{display:none}
     /* Variante mayorista: mismo formato, acento ambar para diferenciarla */
