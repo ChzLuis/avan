@@ -434,30 +434,35 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat');
 
         // Cotizaciones
-        Route::resource('quotes', QuoteController::class)
-            ->middleware(['module:quotes', 'can:quotes.ver'])
-            ->names(['index'=>'quotes','create'=>'quotes.create','store'=>'quotes.store',
-                     'show'=>'quotes.show','edit'=>'quotes.edit','update'=>'quotes.update','destroy'=>'quotes.destroy']);
+        // Un permiso por verbo: *.ver solo autoriza lectura. Antes iba un unico
+        // can:quotes.ver sobre todo el resource y quien podia leer podia borrar.
+        Route::get('/quotes',              [QuoteController::class, 'index'])->name('quotes')->middleware(['module:quotes', 'can:quotes.ver']);
+        Route::get('/quotes/{quote}',      [QuoteController::class, 'show'])->name('quotes.show')->middleware(['module:quotes', 'can:quotes.ver']);
+        Route::post('/quotes',             [QuoteController::class, 'store'])->name('quotes.store')->middleware(['module:quotes', 'can:quotes.crear']);
+        Route::match(['put', 'patch'], '/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update')->middleware(['module:quotes', 'can:quotes.editar']);
+        Route::delete('/quotes/{quote}',   [QuoteController::class, 'destroy'])->name('quotes.destroy')->middleware(['module:quotes', 'can:quotes.eliminar']);
         Route::put('/quotes/{quote}/full',   [QuoteController::class, 'updateFull'])->name('quotes.update_full')->middleware('can:quotes.editar');
         Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send')->middleware('can:quotes.editar');
-        Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate')->middleware('can:quotes.editar');
-        Route::post('/quotes/{quote}/seen',      [QuoteController::class, 'markSeen'])->name('quotes.seen');
+        Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate')->middleware('can:quotes.crear');
+        // Acuse de lectura que dispara la propia vista: basta con poder leerla.
+        Route::post('/quotes/{quote}/seen',      [QuoteController::class, 'markSeen'])->name('quotes.seen')->middleware(['module:quotes', 'can:quotes.ver']);
 
         // Pedidos
-        Route::resource('orders', OrderController::class)
-            ->middleware(['module:orders', 'can:orders.ver'])
-            ->names(['index'=>'orders','create'=>'orders.create','store'=>'orders.store',
-                     'show'=>'orders.show','edit'=>'orders.edit','update'=>'orders.update','destroy'=>'orders.destroy']);
+        Route::get('/orders',              [OrderController::class, 'index'])->name('orders')->middleware(['module:orders', 'can:orders.ver']);
+        Route::get('/orders/{order}',      [OrderController::class, 'show'])->name('orders.show')->middleware(['module:orders', 'can:orders.ver']);
+        Route::post('/orders',             [OrderController::class, 'store'])->name('orders.store')->middleware(['module:orders', 'can:orders.crear']);
+        Route::match(['put', 'patch'], '/orders/{order}', [OrderController::class, 'update'])->name('orders.update')->middleware(['module:orders', 'can:orders.editar']);
+        Route::delete('/orders/{order}',   [OrderController::class, 'destroy'])->name('orders.destroy')->middleware(['module:orders', 'can:orders.eliminar']);
 
         // Pedidos WhatsApp — acción del portal sobre pedido WA
         Route::post('/orders/{order}/wa-action',   [WaBotController::class, 'portalAction'])->name('orders.wa.action')->middleware(['module:orders', 'can:orders.editar']);
         Route::post('/orders/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('orders.wa.delivery')->middleware(['module:orders', 'can:orders.editar']);
         Route::post('/orders/{order}/laundry-status', [WaBotController::class, 'changeLaundryStatus'])->name('orders.laundry-status')->middleware(['module:orders', 'can:orders.editar']);
-        Route::get('/orders/{order}/tag',          [OrderController::class, 'tag'])->name('orders.tag')->middleware(['module:orders']);
+        Route::get('/orders/{order}/tag',          [OrderController::class, 'tag'])->name('orders.tag')->middleware(['module:orders', 'can:orders.ver']);
         Route::post('/orders/{order}/pay',         [OrderController::class, 'pay'])->name('orders.pay')->middleware(['module:orders', 'can:orders.editar']);
         Route::post('/orders/{order}/issue-document', [OrderController::class, 'issueDocument'])->name('orders.issue-document')->middleware(['module:orders', 'can:orders.editar']);
         Route::get('/orders/{order}/events',       [OrderController::class, 'events'])->name('orders.events')->middleware(['module:orders', 'can:orders.ver']);
-        Route::post('/orders/{order}/wa-sent',     [OrderController::class, 'waSent'])->name('orders.wa-sent')->middleware(['module:orders', 'can:orders.ver']);
+        Route::post('/orders/{order}/wa-sent',     [OrderController::class, 'waSent'])->name('orders.wa-sent')->middleware(['module:orders', 'can:orders.editar']);
         Route::get('/orders-export',               [OrderController::class, 'exportCsv'])->name('orders.export')->middleware(['module:orders', 'can:orders.ver']);
         Route::post('/quotes/{quote}/convert',     [QuoteController::class, 'convert'])->name('quotes.convert')->middleware(['module:quotes', 'can:quotes.editar']);
     });
