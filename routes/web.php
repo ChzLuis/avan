@@ -105,9 +105,11 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('products')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
             Route::get('/',               [ProductController::class, 'index'])->name('products.index');
             Route::get('/export',         [ProductController::class, 'export'])->name('products.export');
+            Route::get('/catalog-pdf',    [ProductController::class, 'catalogPdf'])->name('products.catalog.pdf');
             Route::get('/template',       [ProductController::class, 'template'])->name('products.template');
             Route::post('/import',        [ProductController::class, 'import'])->name('products.import');
             Route::post('/reorder',       [ProductController::class, 'reorder'])->name('products.reorder');
+            Route::post('/bulk-action',   [ProductController::class, 'bulkAction'])->name('products.bulk-action');
             Route::delete('/purge-all',   [ProductController::class, 'purgeAll'])->name('products.purge-all');
             Route::get('/export/static',  [ProductController::class, 'exportStatic'])->name('products.export.static');
             Route::get('/export/meli',    [ProductController::class, 'exportMeli'])->name('products.export.meli');
@@ -118,6 +120,7 @@ Route::middleware(['auth'])->group(function () {
                 'show'   => 'products.show',   'edit'    => 'products.edit',
                 'update' => 'products.update', 'destroy' => 'products.destroy',
             ]);
+            Route::post('/{product}/duplicate',             [ProductController::class, 'duplicate'])->name('products.duplicate');
             Route::post('/{product}/images',               [ProductController::class, 'uploadImage'])->name('products.images.upload');
             Route::delete('/{product}/images/{image}',     [ProductController::class, 'deleteImage'])->name('products.images.delete');
             Route::patch('/{product}/images/{image}/main', [ProductController::class, 'setMainImage'])->name('products.images.main');
@@ -329,6 +332,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/settings/design-templates/{id}', [\App\Http\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update');
         Route::get('/settings/design-templates/{id}/export', [\App\Http\Controllers\DesignTemplateController::class, 'export'])->name('design-templates.export');
         Route::post('/settings/builder/publish', [\App\Http\Controllers\StoreBuilderController::class, 'publish'])->name('settings.builder.publish');
+        // Descartar el borrador y volver a lo publicado. Hasta ahora la única
+        // salida de un borrador con cambios no deseados era publicarlos.
+        Route::post('/settings/builder/descartar-borrador', [\App\Http\Controllers\StoreBuilderController::class, 'discardDraft'])->name('settings.builder.discard');
         Route::get('/settings/builder/preview', [\App\Http\Controllers\StoreBuilderController::class, 'preview'])->name('settings.builder.preview');
         Route::get('/settings/builder/catalog/products', [\App\Http\Controllers\StoreBuilderController::class, 'catalogList'])->name('settings.builder.catalog.list');
         Route::post('/settings/builder/catalog/bulk', [\App\Http\Controllers\StoreBuilderController::class, 'catalogBulk'])->name('settings.builder.catalog.bulk');
@@ -432,7 +438,10 @@ Route::middleware(['auth'])->group(function () {
             ->middleware(['module:quotes', 'can:quotes.ver'])
             ->names(['index'=>'quotes','create'=>'quotes.create','store'=>'quotes.store',
                      'show'=>'quotes.show','edit'=>'quotes.edit','update'=>'quotes.update','destroy'=>'quotes.destroy']);
+        Route::put('/quotes/{quote}/full',   [QuoteController::class, 'updateFull'])->name('quotes.update_full')->middleware('can:quotes.editar');
         Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send')->middleware('can:quotes.editar');
+        Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate')->middleware('can:quotes.editar');
+        Route::post('/quotes/{quote}/seen',      [QuoteController::class, 'markSeen'])->name('quotes.seen');
 
         // Pedidos
         Route::resource('orders', OrderController::class)
@@ -516,6 +525,15 @@ Route::get('/carrito', function () {
     return $project ? redirect('/') : abort(404);
 });
 
+// Categoría legible en dominio propio: tienda.tecsist.net/tienda/c/computadoras
+Route::get('/tienda/c/{categoria}', function (string $categoria, \Illuminate\Http\Request $request) {
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
+    if (! $project) {
+        abort(404);
+    }
+    return app(\App\Http\Controllers\PublicController::class)->shopPorCategoria($request, $project->slug, $categoria);
+})->where('categoria', '[a-z0-9-]+');
+
 // Colección del catálogo en dominio propio (/tienda/nino, /tienda/nina...).
 Route::get('/tienda/{profile}', function (string $profile, \Illuminate\Http\Request $request) {
     $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
@@ -550,6 +568,16 @@ Route::post('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController:
 Route::get('/{slug}/privacidad', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'privacidad')->name('public.privacy')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/terminos', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'terminos')->name('public.terms')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-z0-9-]+');
+// ═══ Categoría con URL legible: /{slug}/tienda/c/computadoras ═══
+// El prefijo `c/` es deliberado: sin él chocaría con /tienda/{profile}, que ya
+// existe para los perfiles (nino, nina...). La categoría se resuelve por slug y
+// se inyecta como si viniera en la query, así el catálogo no cambia en nada.
+Route::get('/{slug}/tienda/c/{categoria}', function (string $slug, string $categoria, \Illuminate\Http\Request $request) {
+    return app(PublicController::class)->shopPorCategoria($request, $slug, $categoria);
+})->name('public.shop.category')
+  ->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')
+  ->where('categoria', '[a-z0-9-]+');
+
 Route::get('/{slug}/tienda', [PublicController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/tienda/{profile}', [PublicController::class, 'shop'])->name('public.shop.profile')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('profile', '[a-z0-9-]+');
 Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
@@ -689,6 +717,7 @@ Route::post('/{slug}/mp-webhook',         [PaymentController::class, 'mpWebhook'
 Route::get('/b/{slug}',           [PortalController::class, 'home'])->name('portal.home');
 Route::get('/b/{slug}/c/{token}', [PortalController::class, 'quote'])->name('portal.quote');
 Route::post('/b/{slug}/c/{token}/accept', [PortalController::class, 'accept'])->name('portal.quote.accept')->middleware('throttle:10,1');
+Route::post('/b/{slug}/c/{token}/reject', [PortalController::class, 'reject'])->name('portal.quote.reject')->middleware('throttle:10,1');
 Route::post('/b/{slug}/c/{token}/proof',  [PortalController::class, 'proof'])->name('portal.quote.proof')->middleware('throttle:10,1');
 
 // ─── Catálogo público del revendedor ─────────────────────────────────────────
@@ -917,8 +946,11 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/cotizaciones',          [QuoteController::class, 'store'])->name('cotizaciones.store');
         Route::get('/cotizaciones/{quote}',   [QuoteController::class, 'show'])->name('cotizaciones.show');
         Route::put('/cotizaciones/{quote}',   [QuoteController::class, 'update'])->name('cotizaciones.update');
+        Route::put('/cotizaciones/{quote}/full', [QuoteController::class, 'updateFull'])->name('cotizaciones.update_full');
         Route::delete('/cotizaciones/{quote}',[QuoteController::class, 'destroy'])->name('cotizaciones.destroy');
         Route::post('/cotizaciones/{quote}/send', [QuoteController::class, 'send'])->name('cotizaciones.send');
+        Route::post('/cotizaciones/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('cotizaciones.duplicate');
+        Route::post('/cotizaciones/{quote}/seen',      [QuoteController::class, 'markSeen'])->name('cotizaciones.seen');
 
         Route::get('/facturas',               [InvoiceController::class, 'index'])->name('facturas');
         Route::post('/facturas',              [InvoiceController::class, 'store'])->name('facturas.store');
