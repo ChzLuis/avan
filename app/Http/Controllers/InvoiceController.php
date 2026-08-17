@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Client;
 use App\Jobs\SendInvoiceToSunat;
 use App\Support\NubefactService;
+use App\Support\LineMath;
 use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
@@ -82,6 +83,7 @@ class InvoiceController extends Controller
                 'unit'        => $it->unit,
                 'quantity'    => (float) $it->quantity,
                 'unit_price'  => (float) $it->unit_price,
+                'discount'    => (float) ($it->discount ?? 0),
                 'igv_amount'  => (float) $it->igv_amount,
                 'total'       => (float) $it->total,
             ])->values()->all(),
@@ -116,6 +118,8 @@ class InvoiceController extends Controller
             'items.*.unit'        => 'nullable|string|max:20',
             'items.*.quantity'    => 'required|numeric|min:0.001',
             'items.*.unit_price'  => 'required|numeric|min:0',
+            // F4: el descuento por linea ya se puede facturar.
+            'items.*.discount'    => 'nullable|numeric|decimal:0,2|min:0|max:100',
         ]);
 
         $type   = $data['type'];
@@ -125,37 +129,63 @@ class InvoiceController extends Controller
         $serie  = $data['serie'] ?? $defaultSerie;
         $igvIncluded = $request->boolean('igv_included', true);
 
-        // Calcular importes
-        $igvRate   = 0.18;
-        $subtotal  = 0;
-        $igvTotal  = 0;
-        $itemsData = [];
+        // F4: importes fiscales en CENTAVOS ENTEROS.
+        //
+        // Esto se calculaba con flotantes —`round($qty*$price,2)` y sumas
+        // acumuladas— justo en el dinero de mas consecuencias del sistema,
+        // mientras el resto del proyecto usa LineMath. Un comprobante que no
+        // cuadra por un centimo es un problema con SUNAT, no una molestia.
+        //
+        // El descuento por linea ya viaja hasta aqui: `unit_price` es el precio
+        // de lista y `total` el neto, de modo que
+        // `unit_price x cantidad x (1 - descuento)` = `total` de forma exacta.
+        $subtotalCents = 0;
+        $igvTotalCents = 0;
+        $itemsData     = [];
 
         foreach ($data['items'] as $item) {
-            $qty   = (float) $item['quantity'];
-            $price = (float) $item['unit_price'];
-            $lineTotal = round($qty * $price, 2);
+            // OJO: `quantity` es decimal(10,3) —se factura 2.5 kg— asi que NO
+            // se puede castear a entero. Se trabaja en milesimas para que la
+            // linea siga siendo aritmetica entera y no vuelva el flotante.
+            $qty       = (float) $item['quantity'];
+            $qtyMilli  = (int) round($qty * 1000);
+            $precio    = LineMath::canon((string) $item['unit_price']);
+            $descuento = LineMath::canon((string) ($item['discount'] ?? 0));
+            $precioCents = LineMath::toCents($precio);
+            $bp          = LineMath::toBasisPoints($descuento);
+
+            // precioCents x (qtyMilli/1000) x (1 - bp/10000), half-up sobre 10^7.
+            $lineaCents = intdiv($precioCents * $qtyMilli * (10000 - $bp) + 5_000_000, 10_000_000);
 
             if ($igvIncluded) {
-                $lineSub = round($lineTotal / 1.18, 2);
-                $lineIgv = $lineTotal - $lineSub;
+                // El precio YA lleva IGV: la base es total/1.18, half-up exacto.
+                $subCents = intdiv($lineaCents * 100 + 59, 118);
+                $igvCents = $lineaCents - $subCents;
+                $totalCents = $lineaCents;
             } else {
-                $lineSub = $lineTotal;
-                $lineIgv = round($lineTotal * $igvRate, 2);
-                $lineTotal += $lineIgv;
+                $subCents   = $lineaCents;
+                $igvCents   = intdiv($subCents * 18 + 50, 100);
+                $totalCents = $subCents + $igvCents;
             }
 
-            $subtotal += $lineSub;
-            $igvTotal += $lineIgv;
+            $subtotalCents += $subCents;
+            $igvTotalCents += $igvCents;
             $itemsData[] = [
                 'description' => $item['description'],
                 'unit'        => $item['unit'] ?? 'NIU',
                 'quantity'    => $qty,
-                'unit_price'  => $price,
-                'igv_amount'  => round($lineIgv, 2),
-                'total'       => round($lineTotal, 2),
+                'unit_price'  => $precio,
+                'discount'    => $descuento,
+                'igv_amount'  => LineMath::format($igvCents),
+                'total'       => LineMath::format($totalCents),
             ];
         }
+
+        // El total del comprobante es la SUMA de sus lineas, no un recalculo:
+        // asi el documento cuadra consigo mismo linea por linea.
+        $subtotal = LineMath::format($subtotalCents);
+        $igvTotal = LineMath::format($igvTotalCents);
+        $totalDoc = LineMath::format($subtotalCents + $igvTotalCents);
 
         $correlativo = $request->filled('correlativo')
             ? (int) $request->input('correlativo')
@@ -178,9 +208,9 @@ class InvoiceController extends Controller
             'client_doc_type'    => $data['client_doc_type'] ?? null,
             'client_doc_number'  => $data['client_doc_number'] ?? null,
             'client_address'     => $data['client_address'] ?? null,
-            'subtotal'            => round($subtotal, 2),
-            'igv'                 => round($igvTotal, 2),
-            'total'               => round($subtotal + $igvTotal, 2),
+            'subtotal'            => $subtotal,
+            'igv'                 => $igvTotal,
+            'total'               => $totalDoc,
             'currency'            => $data['currency'] ?? ($project->setting('currency') ?? 'PEN'),
             'igv_included'        => $igvIncluded,
             'payment_method'      => $data['payment_method'] ?? null,

@@ -6,11 +6,12 @@ class InvoiceItem extends Model
 {
     protected $fillable = [
         'invoice_id', 'product_id',
-        'description', 'unit', 'quantity', 'unit_price', 'igv_amount', 'total',
+        'description', 'unit', 'quantity', 'unit_price', 'discount', 'igv_amount', 'total',
     ];
 
     protected $casts = [
         'quantity'   => 'decimal:3',
+        'discount'   => 'decimal:2',
         'unit_price' => 'decimal:2',
         'igv_amount' => 'decimal:2',
         'total'      => 'decimal:2',
