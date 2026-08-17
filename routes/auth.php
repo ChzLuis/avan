@@ -23,6 +23,15 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:10,1');
 
+    // El panel vive en /bixoadmin/*, asi que su login propio es /bixoadmin/login.
+    // Misma pantalla y mismo controlador que /login (que se mantiene por
+    // compatibilidad con enlaces guardados).
+    Route::get('bixoadmin/login', [AuthenticatedSessionController::class, 'create'])
+        ->name('bixoadmin.login');
+
+    Route::post('bixoadmin/login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:10,1');
+
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
