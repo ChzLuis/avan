@@ -852,7 +852,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
               <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-2 hover:underline block" itemprop="name">{{ $p->name }}</a>
 
               @if($p->description)
-              <p class="text-xs text-gray-500 line-clamp-2 mb-2 leading-relaxed">{{ $p->description }}</p>
+              <p class="text-xs text-gray-500 line-clamp-2 mb-2 leading-relaxed">{{ \App\Support\RichText::plain($p->description) }}</p>
               @endif
 
               {{-- Rating --}}

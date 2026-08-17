@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        // ARIN ya tiene este indice, creado alli por 2026_07_29_000002. Sin la
+        // guarda, correr migrate en produccion tras desplegar este archivo
+        // fallaria con "Duplicate key name". La comprobacion de duplicados se
+        // conserva para el resto de entornos, donde el indice aun no existe.
+        if ($this->indiceExiste()) {
+            return;
+        }
+
         $duplicates = DB::table('store_sections')
             ->select('project_id', 'page', 'component', DB::raw('GROUP_CONCAT(id) AS ids'), DB::raw('COUNT(*) AS count'))
             ->groupBy('project_id', 'page', 'component')
@@ -33,8 +41,18 @@ return new class extends Migration {
 
     public function down(): void
     {
+        if (! $this->indiceExiste()) {
+            return;
+        }
         Schema::table('store_sections', function (Blueprint $table) {
             $table->dropUnique('store_sections_project_page_component_unique');
         });
+    }
+
+    /** MySQL no expone hasIndex() en Laravel, asi que se consulta el catalogo. */
+    private function indiceExiste(): bool
+    {
+        return collect(Schema::getIndexes('store_sections'))
+            ->contains(fn ($i) => ($i['name'] ?? '') === 'store_sections_project_page_component_unique');
     }
 };

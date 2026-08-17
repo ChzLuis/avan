@@ -11,8 +11,21 @@
       'sent'     => ['label'=>'Pendiente', 'color'=>'#d97706', 'bg'=>'#fef3c7'],
       'accepted' => ['label'=>'Aceptada',  'color'=>'#16a34a', 'bg'=>'#dcfce7'],
       'rejected' => ['label'=>'Rechazada', 'color'=>'#dc2626', 'bg'=>'#fee2e2'],
+      // F1c: faltaba. Una convertida caia en el fallback y se presentaba al
+      // cliente como "Borrador", ofreciendole Aceptar/Rechazar algo que ya era
+      // un pedido.
+      'converted'=> ['label'=>'Convertida', 'color'=>'#4338ca', 'bg'=>'#e0e7ff'],
   ];
-  $st = $statusMap[$quote->status] ?? $statusMap['draft'];
+  // Estado normalizado (las filas legacy 'borrador' del historial se leen bien)
+  $estadoCanonico = \App\Support\QuoteStatus::comercial($quote->status);
+  $st = $statusMap[$estadoCanonico] ?? $statusMap['draft'];
+  // Vigencia DERIVADA: si venció y sigue abierta, no se ofrece Aceptar.
+  $vencida = \App\Support\QuoteStatus::vencida($quote->status, $quote->valid_until);
+  // Fecha en español SIN setlocale (F1c): un locale global afectaria a otras
+  // vistas y hasta al formateo numerico. Mapa explicito en el punto de uso.
+  $meses = [1=>'enero','febrero','marzo','abril','mayo','junio','julio',
+            'agosto','septiembre','octubre','noviembre','diciembre'];
+  $fechaEs = fn($f) => $f ? $f->format('j') . ' de ' . $meses[(int)$f->format('n')] . ' de ' . $f->format('Y') : '';
 @endphp
 <title>Cotización #{{ $quote->id }} — {{ $project->name }}</title>
 <meta name="robots" content="noindex, nofollow">
@@ -32,10 +45,21 @@
 </head>
 <body class="min-h-screen" x-data="{
   accepting: false,
-  accepted: {{ $quote->status === 'accepted' ? 'true' : 'false' }},
-  rejected: {{ $quote->status === 'rejected' ? 'true' : 'false' }},
+  rejecting: false,
+  showRejectForm: false,
+  // Comparaciones por estado CANONICO (antes eran crudas y una fila legacy o
+  // 'converted' se leia mal).
+  accepted: {{ $estadoCanonico === 'accepted' ? 'true' : 'false' }},
+  rejected: {{ $estadoCanonico === 'rejected' ? 'true' : 'false' }},
+  convertida: {{ $estadoCanonico === 'converted' ? 'true' : 'false' }},
   notes: '',
+  rejectReason: '',
   error: '',
+
+  uploadingProof: false,
+  proofUploaded: {{ $quote->payment_proof_url ? 'true' : 'false' }},
+  proofUrl: {{ $quote->payment_proof_url ? "'".$quote->payment_proof_url."'" : 'null' }},
+  proofError: '',
 
   async accept() {
     this.accepting = true; this.error = '';
@@ -50,6 +74,40 @@
       else { this.error = data.message || 'No se pudo procesar. Inténtalo de nuevo.'; }
     } catch(e) { this.error = 'Error de conexión.'; }
     this.accepting = false;
+  },
+
+  async reject() {
+    this.rejecting = true; this.error = '';
+    try {
+      const res = await fetch('{{ route('portal.quote.reject', ['slug'=>$project->slug,'token'=>$quote->token]) }}', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':'{{ csrf_token() }}' },
+        body: JSON.stringify({ reason: this.rejectReason })
+      });
+      const data = await res.json();
+      if (data.ok) { this.rejected = true; }
+      else { this.error = data.message || 'No se pudo procesar. Inténtalo de nuevo.'; }
+    } catch(e) { this.error = 'Error de conexión.'; }
+    this.rejecting = false;
+  },
+
+  async uploadProof(fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+    this.uploadingProof = true; this.proofError = '';
+    try {
+      const formData = new FormData();
+      formData.append('proof', file);
+      const res = await fetch('{{ route('portal.quote.proof', ['slug'=>$project->slug,'token'=>$quote->token]) }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN':'{{ csrf_token() }}' },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.ok) { this.proofUploaded = true; this.proofUrl = data.url; }
+      else { this.proofError = data.message || 'No se pudo subir el comprobante.'; }
+    } catch(e) { this.proofError = 'Error de conexión.'; }
+    this.uploadingProof = false;
   }
 }">
 
@@ -100,9 +158,9 @@
             </span>
           </div>
           <h1 class="text-3xl font-black text-gray-900">#{{ str_pad($quote->id, 4, '0', STR_PAD_LEFT) }}</h1>
-          <p class="text-sm text-gray-500 mt-1">Emitida el {{ $quote->created_at->format('d \d\e F, Y') }}</p>
+          <p class="text-sm text-gray-500 mt-1">Emitida el {{ $fechaEs($quote->created_at) }}</p>
           @if($quote->valid_until)
-          <p class="text-sm text-gray-500">Válida hasta el <strong>{{ $quote->valid_until->format('d \d\e F, Y') }}</strong></p>
+          <p class="text-sm text-gray-500">Válida hasta el <strong>{{ $fechaEs($quote->valid_until) }}</strong></p>
           @endif
         </div>
         <div class="text-right">
@@ -159,9 +217,11 @@
           @foreach($quote->items as $item)
           <tr>
             <td class="py-3 font-medium text-gray-800">{{ $item->description ?? $item->name ?? '—' }}</td>
-            <td class="py-3 text-right text-gray-600">S/ {{ number_format($item->price, 2) }}</td>
-            <td class="py-3 text-right text-gray-600">{{ $item->quantity }}</td>
-            <td class="py-3 text-right font-semibold text-gray-900">S/ {{ number_format($item->price * $item->quantity, 2) }}</td>
+            <td class="py-3 text-right text-gray-600">S/ {{ \App\Support\LineMath::present(\App\Support\LineMath::canon((string)$item->price)) }}</td>
+            <td class="py-3 text-right text-gray-600">{{ $item->quantity }}@if((float)($item->discount ?? 0) > 0)<span class="block text-[11px] text-emerald-600">-{{ rtrim(rtrim(number_format($item->discount,2),'0'),'.') }}%</span>@endif</td>
+            {{-- Total de linea por LineMath (servidor): mismo half-up entero que el
+                 editor, y present() le pone separadores SIN pasar por float. --}}
+            <td class="py-3 text-right font-semibold text-gray-900">S/ {{ \App\Support\LineMath::present(\App\Support\LineMath::total((string)$item->price, (int)$item->quantity, (string)($item->discount ?? 0))) }}</td>
           </tr>
           @endforeach
         </tbody>
@@ -169,7 +229,7 @@
           <tr class="border-t-2 border-gray-200">
             <td colspan="3" class="pt-4 text-right font-bold text-gray-700 pr-4">Total</td>
             <td class="pt-4 text-right font-black text-xl" style="color:{{ $primaryColor }}">
-              S/ {{ number_format($quote->total, 2) }}
+              S/ {{ \App\Support\LineMath::present(\App\Support\LineMath::canon((string)$quote->total)) }}
             </td>
           </tr>
         </tfoot>
@@ -209,27 +269,80 @@
   {{-- ACCIÓN DEL CLIENTE --}}
   <div class="no-print">
 
-    {{-- Ya aceptada --}}
-    <div x-show="accepted" class="bg-green-50 border border-green-200 rounded-2xl px-6 py-5 flex items-center gap-4">
-      <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-        </svg>
+    {{-- Ya procesada: aceptada o convertida en pedido. El comprobante sigue
+         disponible en ambos casos (continuidad F1c). --}}
+    <div x-show="accepted || convertida" class="space-y-4">
+      <div class="bg-green-50 border border-green-200 rounded-2xl px-6 py-5 flex items-center gap-4">
+        <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div>
+          <p class="font-black text-green-900 text-lg" x-text="convertida ? 'Tu pedido está en marcha' : '¡Cotización aceptada!'"></p>
+          <p class="text-sm text-green-700" x-show="!convertida">{{ $project->name }} fue notificado. Pronto se pondrán en contacto contigo.</p>
+          <p class="text-sm text-green-700" x-show="convertida" x-cloak>{{ $project->name }} ya generó el pedido a partir de esta cotización.</p>
+        </div>
       </div>
-      <div>
-        <p class="font-black text-green-900 text-lg">¡Cotización aceptada!</p>
-        <p class="text-sm text-green-700">{{ $project->name }} fue notificado. Pronto se pondrán en contacto contigo.</p>
+
+      {{-- Comprobante de pago --}}
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-6">
+        <template x-if="!proofUploaded">
+          <div>
+            <h3 class="font-black text-gray-900 text-base">¿Ya realizaste el pago?</h3>
+            <p class="text-sm text-gray-500 mt-1 mb-4">Sube una foto o captura de tu voucher/transferencia para que {{ $project->name }} confirme tu pago más rápido.</p>
+            <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-200 hover:border-indigo-300 rounded-xl py-6 cursor-pointer transition focus-within:ring-2 focus-within:ring-indigo-400"
+                   tabindex="0" role="button" aria-label="Subir comprobante de pago (JPG o PNG, máximo 5 MB)"
+                   :aria-busy="uploadingProof ? 'true' : 'false'"
+                   @keydown.enter.prevent="$el.querySelector('input[type=file]').click()"
+                   @keydown.space.prevent="$el.querySelector('input[type=file]').click()"
+                   :class="uploadingProof ? 'opacity-60 pointer-events-none' : ''">
+              <svg x-show="!uploadingProof" class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+              <svg x-show="uploadingProof" class="w-6 h-6 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <span class="text-sm font-semibold text-gray-600" x-text="uploadingProof ? 'Subiendo...' : 'Subir comprobante'"></span>
+              <span class="text-xs text-gray-400">JPG o PNG, máx. 5 MB</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadProof($event.target)" :disabled="uploadingProof">
+            </label>
+            <p x-show="proofError" x-cloak role="alert" class="text-red-500 text-sm font-medium mt-2" x-text="proofError"></p>
+          </div>
+        </template>
+        <template x-if="proofUploaded">
+          <div class="flex items-center gap-4">
+            <img :src="proofUrl" alt="Comprobante de pago subido" class="w-16 h-16 rounded-lg object-cover border border-gray-200 flex-shrink-0">
+            <div>
+              <p class="font-bold text-gray-800 text-sm">Comprobante recibido</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ $project->name }} lo revisará y confirmará tu pago pronto.</p>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
     {{-- Ya rechazada --}}
     <div x-show="rejected" class="bg-red-50 border border-red-200 rounded-2xl px-6 py-5">
       <p class="font-bold text-red-800">Esta cotización fue rechazada.</p>
+      @if($quote->reject_reason)
+      <p class="text-sm text-red-600 mt-1">Motivo: {{ $quote->reject_reason }}</p>
+      @endif
       <p class="text-sm text-red-600 mt-1">Si deseas una nueva cotización, contacta a {{ $project->name }}.</p>
     </div>
 
     {{-- Pendiente de respuesta --}}
-    <div x-show="!accepted && !rejected"
+    @if ($vencida)
+    {{-- Vencida: se explica con claridad y se retira Aceptar. Rechazar sigue
+         disponible; el vendedor puede extender la vigencia o duplicar. --}}
+    <div x-show="!accepted && !rejected && !convertida"
+         style="background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:14px 16px;margin-bottom:12px">
+      <p style="font-weight:700;color:#92400e;margin:0 0 4px">Esta cotización venció el {{ $quote->valid_until->format('d/m/Y') }}</p>
+      <p style="font-size:13px;color:#a16207;margin:0">Los precios ya no están garantizados. Escríbenos y te la actualizamos al instante.</p>
+    </div>
+    @endif
+    <div x-show="!accepted && !rejected && !convertida"
          class="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-6 space-y-4">
       <div>
         <h3 class="font-black text-gray-900 text-lg">¿Apruebas esta cotización?</h3>
@@ -240,6 +353,7 @@
                 class="w-full border-2 border-gray-200 focus:border-indigo-400 rounded-xl px-4 py-3 text-sm outline-none resize-none transition"></textarea>
       <p x-show="error" class="text-red-500 text-sm font-medium" x-text="error"></p>
       <div class="flex flex-col sm:flex-row gap-3">
+        @if (! $vencida)
         <button @click="accept()" :disabled="accepting"
                 class="flex-1 btn-p py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 disabled:opacity-60">
           <svg x-show="!accepting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,6 +365,7 @@
           </svg>
           <span x-text="accepting ? 'Procesando...' : 'Aceptar cotización'"></span>
         </button>
+        @endif
         @if($project->whatsapp)
         <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}?text={{ urlencode('Hola, tengo consultas sobre la cotización #'.str_pad($quote->id,4,'0',STR_PAD_LEFT)) }}"
            target="_blank"
@@ -262,6 +377,30 @@
         </a>
         @endif
       </div>
+
+      <div class="text-center pt-1">
+        <button x-show="!showRejectForm" @click="showRejectForm=true" class="text-xs text-gray-400 hover:text-red-500 font-medium transition">
+          No me interesa esta cotización
+        </button>
+      </div>
+
+      <template x-if="showRejectForm">
+        <div class="border-t border-gray-100 pt-4 space-y-3">
+          <p class="text-sm font-semibold text-gray-700">¿Por qué la rechazas? <span class="text-gray-400 font-normal">(opcional)</span></p>
+          <textarea x-model="rejectReason" rows="2"
+                    placeholder="Ej: el precio es muy alto, elegí otra opción, ya no lo necesito..."
+                    class="w-full border-2 border-gray-200 focus:border-red-300 rounded-xl px-4 py-3 text-sm outline-none resize-none transition"></textarea>
+          <div class="flex gap-3">
+            <button @click="showRejectForm=false" class="px-4 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
+              Cancelar
+            </button>
+            <button @click="reject()" :disabled="rejecting"
+                    class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-bold text-sm transition disabled:opacity-60">
+              <span x-text="rejecting ? 'Procesando...' : 'Confirmar rechazo'"></span>
+            </button>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 

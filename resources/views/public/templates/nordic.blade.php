@@ -435,7 +435,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
           @endif
           <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="font-semibold text-base leading-snug line-clamp-2 mb-2 hover:underline block">{{ $p->name }}</a>
           @if($p->description)
-          <p class="text-sm opacity-50 line-clamp-2 mb-3 font-light leading-relaxed">{{ $p->description }}</p>
+          <p class="text-sm opacity-50 line-clamp-2 mb-3 font-light leading-relaxed">{{ \App\Support\RichText::plain($p->description) }}</p>
           @endif
           @if(!$isQuoteOnly || $quotePriceDisp === 'show')
           <div class="flex items-center gap-2 mb-4">

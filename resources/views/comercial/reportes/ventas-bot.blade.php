@@ -7,13 +7,13 @@
         <h1 style="font-size:15px;font-weight:700;color:#111827;margin:0;">Ventas por WhatsApp Bot</h1>
         <p style="font-size:11px;color:#9CA3AF;margin:2px 0 0;">Resumen de ingresos y pedidos del bot</p>
     </div>
-    <form method="GET" style="display:flex;align-items:center;gap:6px;">
+    <form method="GET" style="display:flex;align-items:center;gap:8px;">
         <input type="date" name="desde" value="{{ $desde }}"
-               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;min-height:44px;">
         <span style="font-size:11px;color:#9CA3AF;">→</span>
         <input type="date" name="hasta" value="{{ $hasta }}"
-               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
-        <button type="submit" style="font-size:12px;font-weight:600;background:#2563EB;color:#fff;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;">Filtrar</button>
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;min-height:44px;">
+        <button type="submit" style="font-size:12px;font-weight:600;background:#2563EB;color:#fff;padding:6px 14px;border-radius:8px;border:none;cursor:pointer;min-height:44px;">Filtrar</button>
     </form>
 </div>
 

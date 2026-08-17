@@ -19,13 +19,16 @@
         'id' => $p->id, 'name' => $p->name, 'price' => (float) $p->price,
         'comparePrice' => $pcOnSale ? (float) $p->compare_price : null,
         'image' => $pcImg, 'category' => $p->category->name ?? '',
-        'url' => $pcUrl, 'stock' => $p->stock, 'sizes' => $pcSizes,
+        'url' => $pcUrl, 'stock' => $p->stock, 'sizes' => $pcSizes, 'sku' => $p->sku,
+        // Resumen para la vista rapida. Esta tarjeta la usan las secciones de
+        // la PORTADA; sin esto el resumen solo salia en el catalogo.
+        'resumen' => \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags((string) $p->description))), 180),
     ];
 @endphp
 <article class="catalog-card">
     <div class="catalog-card-media{{ $pcImg ? '' : ' is-noimg' }}">
         <a class="catalog-card-media-link" href="{{ $pcUrl }}" @click="qvMobile($event, {{ Js::from($pcData) }})" aria-label="Ver {{ $p->name }}">
-            @if($pcImg)<img src="{{ $pcImg }}" alt="{{ $p->name }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">Foto en camino</span>@endif
+            @if($pcImg)<img src="{{ $pcImg }}" alt="{{ $p->name }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ trim((string) ($settings['card_no_photo_text'] ?? '')) ?: 'Foto en camino' }}</span>@endif
         </a>
         @if($pcOnSale)<span class="catalog-discount">-{{ $pcPct }}%</span>@endif
         @if($pcIsNew && ! $pcOnSale)<span class="catalog-new">Nuevo</span>@endif
@@ -39,7 +42,7 @@
         @if($hidePrices)
         <div class="catalog-card-prices"><span class="quote-price">Precio a solicitud</span></div>
         @else
-        <div class="catalog-card-prices"><span class="catalog-card-price">{{ $currency }} {{ number_format((float) $p->price, 2) }}</span>@if($pcOnSale)<span class="catalog-card-compare">{{ $currency }} {{ number_format((float) $p->compare_price, 2) }}</span>@endif</div>
+        <div class="catalog-card-prices"><span class="catalog-card-price">{{ $currency }} {{ number_format((float) $p->price, 2) }}</span>@if($pcOnSale)<span class="catalog-card-compare">{{ $currency }} {{ number_format((float) $p->compare_price, 2) }}</span>@endif @if($p->has_tax)<span class="catalog-card-tax-note">Incluye IGV</span>@endif</div>
         @if(($wholesale ?? false) && filled($p->wholesale_price))
 @php $whFold = (bool) ($settings['wholesale_card_collapse'] ?? false); @endphp
         <div class="buy-block buy-block--wholesale{{ $whFold ? ' is-foldable' : '' }}" x-data="{ q: {{ max(1,(int) ($p->wholesale_min_qty ?? 1)) }}, open: {{ $whFold ? 'false' : 'true' }} }">

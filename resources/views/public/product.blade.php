@@ -205,7 +205,7 @@
       @endif
 
       @if($product->description)
-      <div class="text-sm text-gray-600 mb-6 leading-relaxed whitespace-pre-line">{{ $product->description }}</div>
+      <div class="text-sm text-gray-600 mb-6 leading-relaxed">{!! \App\Support\RichText::render($product->description) !!}</div>
       @endif
 
       {{-- CTA --}}

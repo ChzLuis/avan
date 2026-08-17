@@ -35,8 +35,13 @@ class DashboardController extends Controller
             $ventasAyer   = $project->orders()->whereDate('created_at', $ayer)
                                 ->whereIn('status', ['process','done'])->sum('total');
             $pendientes   = $project->orders()->where('status', 'pending')->count();
+            // Un pedido de WhatsApp sin wa_status es de los que crea el webhook
+            // del bot, que no rellena esa columna: NULL significa "aun no se ha
+            // entregado", no "no aplica". Con NOT IN a secas los nulos caian
+            // fuera y el KPI marcaba 0 teniendo pedidos pendientes de verdad.
             $waPendientes = $project->orders()->where('sales_channel', 'whatsapp')
-                                ->whereNotIn('wa_status', ['entregado','problema'])->count();
+                                ->where(fn ($q) => $q->whereNull('wa_status')
+                                    ->orWhereNotIn('wa_status', ['entregado','problema']))->count();
             return compact('pedidosHoy','pedidosAyer','ventasHoy','ventasAyer','pendientes','waPendientes');
         });
 
@@ -49,6 +54,27 @@ class DashboardController extends Controller
                 ->select(DB::raw('DATE(created_at) as fecha'), DB::raw('SUM(total) as total'))
                 ->groupBy('fecha')->orderBy('fecha')->get()->keyBy('fecha');
         });
+
+        // ── Ventas por canal (mes) + por cobrar + meta — corazón multicanal de BIXO ──
+        $inicioMes = now()->startOfMonth();
+        $canalesRaw = $project->orders()->where('status', '!=', 'cancelled')
+            ->where('created_at', '>=', $inicioMes)
+            ->selectRaw("COALESCE(NULLIF(sales_channel,''),'otros') as canal, COUNT(*) as n, SUM(total) as t")
+            ->groupBy('canal')->get();
+        $canalMap = ['ecommerce' => 'Tienda virtual', 'web' => 'Tienda virtual', 'pos' => 'POS / Mostrador',
+                     'whatsapp' => 'WhatsApp', 'cotizacion' => 'Cotizaciones', 'otros' => 'Otros'];
+        $canales = [];
+        foreach ($canalesRaw as $c) {
+            $k = $canalMap[$c->canal] ?? ucfirst($c->canal);
+            $canales[$k] = ['n' => ($canales[$k]['n'] ?? 0) + (int) $c->n, 't' => ($canales[$k]['t'] ?? 0) + (float) $c->t];
+        }
+        uasort($canales, fn ($a, $b) => $b['t'] <=> $a['t']);
+        $ventasMesTotal = array_sum(array_column($canales, 't'));
+        $porCobrar = (float) $project->orders()->where('status', '!=', 'cancelled')
+            ->where(fn ($q) => $q->whereNotIn('payment_status', ['paid', 'refunded'])->orWhereNull('payment_status'))
+            ->sum('total');
+        $meta = (float) $project->setting('sales_goal_month', 0);
+        $metaPct = $meta > 0 ? round($ventasMesTotal / $meta * 100) : null;
 
         $labels7 = [];
         $data7   = [];
@@ -99,7 +125,9 @@ class DashboardController extends Controller
         $varPedidos = $pedidosAyer > 0 ? round((($pedidosHoy - $pedidosAyer) / $pedidosAyer) * 100) : null;
         $varVentas  = $ventasAyer  > 0 ? round((($ventasHoy  - $ventasAyer)  / $ventasAyer)  * 100) : null;
 
-        return view('comercial.dashboard', compact(
+        return view('comercial.dashboard', array_merge(
+            compact('canales', 'ventasMesTotal', 'porCobrar', 'meta', 'metaPct'),
+            [] ) + compact(
             'project',
             'pedidosHoy', 'pedidosAyer', 'varPedidos',
             'ventasHoy',  'ventasAyer',  'varVentas',

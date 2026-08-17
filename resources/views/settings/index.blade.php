@@ -511,9 +511,85 @@
                             <input type="text" name="custom_domain" class="flex-1 px-3 py-2.5 text-sm bg-gray-50 focus:outline-none border-0 min-w-0"
                                    placeholder="gestion.sunegocio.com" value="{{ old('custom_domain', $selP->custom_domain) }}">
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">El cliente apunta su DNS a este servidor. BIXO detectará el dominio automáticamente.</p>
+                        <p class="text-xs text-gray-400 mt-1">El cliente apunta su DNS a este servidor. El certificado se emite solo.</p>
+                        {{-- Estado real de la publicación. Antes esto fallaba en
+                             absoluto silencio: el panel decía "guardado" pasara lo
+                             que pasara y el cliente no tenía forma de saber si su
+                             dominio estaba sirviendo, esperando al DNS o roto. --}}
+                        @if($selP->custom_domain)
+                            @php
+                                $dEstado = $selP->domain_status;
+                                $dMapa = [
+                                    'listo'          => ['Funcionando con certificado', 'bg-emerald-50 text-emerald-700 border-emerald-200', '●'],
+                                    'dns-pendiente'  => ['Esperando a que el DNS apunte aquí', 'bg-amber-50 text-amber-700 border-amber-200', '◌'],
+                                    'cert-pendiente' => ['Emitiendo el certificado', 'bg-amber-50 text-amber-700 border-amber-200', '◌'],
+                                    'error'          => ['Con problemas — se reintenta solo', 'bg-red-50 text-red-700 border-red-200', '▲'],
+                                ];
+                                [$dTxt, $dCls, $dIco] = $dMapa[$dEstado] ?? ['Sin comprobar todavía', 'bg-gray-50 text-gray-500 border-gray-200', '○'];
+                            @endphp
+                            <div class="mt-2 flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg border {{ $dCls }}">
+                                <span>{{ $dIco }}</span>
+                                <span class="font-semibold">{{ $dTxt }}</span>
+                                @if($selP->domain_checked_at)
+                                    <span class="opacity-70">· comprobado {{ \Carbon\Carbon::parse($selP->domain_checked_at)->diffForHumans() }}</span>
+                                @endif
+                            </div>
+                            @if($dEstado === 'dns-pendiente')
+                                <p class="text-xs text-gray-400 mt-1">Crea un registro <b>A</b> con el nombre del subdominio apuntando a <b>2.24.200.91</b>. Se reintenta cada 10 minutos, no hace falta que vuelvas a guardar.</p>
+                            @endif
+                        @endif
                     </div>
                     @endif
+
+                    {{-- ═══ Modalidades de venta ═══
+                         Hasta ahora TODA tienda cargaba con los campos de precio
+                         mayorista, cantidad mínima y unidad en cada producto,
+                         vendiera al por mayor o no. Aquí se decide una vez y el
+                         catálogo se adapta. Se sembraron encendidos en los
+                         proyectos que ya tenían precios mayoristas cargados, así
+                         que ninguna tienda existente cambió. --}}
+                    <div class="md:col-span-2">
+                        <label class="label">Modalidades de venta</label>
+                        <div class="mt-2 space-y-3 rounded-xl border border-gray-200 p-4 bg-gray-50">
+                            <div class="flex items-start gap-3">
+                                <label class="relative inline-flex items-center cursor-pointer mt-0.5">
+                                    <input type="hidden" name="feature_mayorista" value="0">
+                                    <input type="checkbox" name="feature_mayorista" value="1" class="sr-only peer"
+                                           {{ $selP->setting('feature_mayorista') == '1' ? 'checked' : '' }}>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                                <span class="text-sm">
+                                    <b class="font-medium text-gray-700">Venta mayorista</b>
+                                    <span class="block text-xs text-gray-500">Añade precio por volumen, cantidad mínima y unidad a cada producto, y muestra el bloque de precios doble en la tienda. Apágalo si solo vendes al detalle.</span>
+                                </span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <label class="relative inline-flex items-center cursor-pointer mt-0.5">
+                                    <input type="hidden" name="feature_revendedores" value="0">
+                                    <input type="checkbox" name="feature_revendedores" value="1" class="sr-only peer"
+                                           {{ $selP->setting('feature_revendedores') == '1' ? 'checked' : '' }}>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                                <span class="text-sm">
+                                    <b class="font-medium text-gray-700">Revendedores</b>
+                                    <span class="block text-xs text-gray-500">Habilita precios propios por revendedor y su catálogo compartible. Apagado, esos campos no aparecen en ningún producto.</span>
+                                </span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <label class="relative inline-flex items-center cursor-pointer mt-0.5">
+                                    <input type="hidden" name="feature_variantes" value="0">
+                                    <input type="checkbox" name="feature_variantes" value="1" class="sr-only peer"
+                                           {{ $selP->setting('feature_variantes') == '1' ? 'checked' : '' }}>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                                <span class="text-sm">
+                                    <b class="font-medium text-gray-700">Tallas / variantes</b>
+                                    <span class="block text-xs text-gray-500">Para ropa, calzado o productos que se venden en varias presentaciones. Apagado, el campo no aparece en ningún producto. Si ya tienes productos con tallas cargadas, se muestra igual para que puedas editarlas.</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="label">Moneda</label>
                         <select name="currency" class="input mt-1">

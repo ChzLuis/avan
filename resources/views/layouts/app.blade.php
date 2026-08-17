@@ -4,7 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ isset($activeProject) ? $activeProject->name . ' â€” ' : '' }}BIXO</title>
+    {{-- El guion estaba mal codificado (se veía "â€"" en la pestaña) y el
+         título decía BIXO, que es interno y no debe llegar al cliente. --}}
+    <title>{{ isset($activeProject) ? $activeProject->name . ' — ' : '' }}ESKALA</title>
+    {{-- Sin favicon propio, el navegador reutilizaba el último que había visto
+         para arindg.com — el de otra tienda. Ahora el panel muestra el de la
+         tienda que estás editando, y si no tiene, el de la raíz. --}}
+    @php
+        $panelIcono = isset($activeProject)
+            ? $activeProject->settings()->where('key', 'favicon_url')->value('value')
+            : null;
+    @endphp
+    <link rel="icon" href="{{ $panelIcono ? asset('storage/'.ltrim($panelIcono, '/')) : asset('favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -1073,6 +1084,7 @@
             <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.cat" x-collapse>
                 @if($sbLabels['productos'] !== null)
                 <a href="{{ $pid?route('products.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('products.*') ? 'active' : '' }}">{{ $sbLabels['productos'] }}</a>
+                <a href="{{ $pid?route('inventory.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}">Inventario</a>
                 @endif
                 @if($sbLabels['servicios'] !== null)
                 <a href="{{ $pid?route('services.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('services.*') ? 'active' : '' }}">{{ $sbLabels['servicios'] }}</a>
@@ -1442,7 +1454,9 @@
                 </div>
                 <div>
                     <h3 id="global-confirm-title" class="text-sm font-semibold text-gray-900" x-text="title"></h3>
-                    <p id="global-confirm-message" class="text-xs text-gray-500 mt-1 leading-relaxed" x-text="msg"></p>
+                    {{-- whitespace-pre-line: permite explicar la consecuencia en un
+                         párrafo aparte usando \n, no solo una frase suelta. --}}
+                    <p id="global-confirm-message" class="text-xs text-gray-500 mt-1 leading-relaxed whitespace-pre-line" x-text="msg"></p>
                 </div>
             </div>
             <div class="flex gap-2 justify-end">

@@ -75,7 +75,10 @@
       </p>
     </div>
 
-    @if($settings['facebook_url'] ?? null || $settings['instagram_url'] ?? null)
+    {{-- Parentesis obligatorios: `??` liga MAS DEBIL que `||`, asi que la
+     version anterior accedia instagram_url SIN proteccion cuando faltaba
+     facebook_url -> 500 en todo proyecto sin esa clave (bomba latente). --}}
+@if(($settings['facebook_url'] ?? null) || ($settings['instagram_url'] ?? null))
     <div class="flex justify-center gap-3 pt-2">
       @if($settings['facebook_url'] ?? null)
       <a href="{{ $settings['facebook_url'] }}" target="_blank"
@@ -97,7 +100,7 @@
     @endif
 
     <a href="{{ url('/p/'.$project->slug) }}"
-       class="inline-flex items-center gap-2 text-sm font-medium hover:underline"
+       class="inline-flex items-center gap-2 text-sm font-medium hover:underline py-3 -my-3"
        style="color:{{ $primaryColor }}">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>

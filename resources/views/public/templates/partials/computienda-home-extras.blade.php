@@ -161,7 +161,10 @@
     .xs-gal-cap{position:absolute;inset:auto 0 0 0;padding:22px 14px 10px;background:linear-gradient(transparent,rgba(2,6,23,.78));color:#fff;font-size:13px}
     .v-mosaic .xs-gal{grid-auto-rows:150px}.v-mosaic .xs-gal-item{aspect-ratio:auto}.v-mosaic .xs-gal-item:nth-child(4n+1){grid-row:span 2}
     /* ── faq ── */
-    .xs-faq{max-width:820px;margin-inline:auto;display:flex;flex-direction:column;gap:10px}
+    /* El acordeon se centraba mientras el titular quedaba a la izquierda: dos
+       ejes distintos dentro de la misma seccion. Ahora sigue al titular. */
+    .xs-faq{max-width:820px;margin-inline:0;display:flex;flex-direction:column;gap:10px}
+    body.section-heading-center .xs-faq{margin-inline:auto}
     .v-two-columns .xs-faq{max-width:none;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
     .xs-faq details{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);overflow:hidden}
     .xs-faq summary{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 20px;cursor:pointer;font-weight:700;color:var(--text-strong);list-style:none}
@@ -170,7 +173,14 @@
     .xs-faq details[open] summary::after{transform:rotate(45deg)}
     .xs-faq-a{padding:0 20px 18px;color:var(--text);line-height:1.65;font-size:14.5px}
     /* ── wa_advisory ── */
-    .xs-wa{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;padding:clamp(28px,4vw,44px);border-radius:var(--radius-lg);background:linear-gradient(120deg,#128c4b,#25d366);color:#fff;box-shadow:var(--shadow-md)}
+    /* `space-between` empujaba el botón al borde y dejaba ~600px de verde vacío
+       en medio: el ojo tenía que cruzar media pantalla desde la pregunta hasta
+       la respuesta. Ahora el texto y el botón viajan juntos, centrados como un
+       bloque, con una separación acotada. La banda sigue a ancho completo. */
+    .xs-wa{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+        gap:clamp(24px,5vw,72px);padding:clamp(26px,3.2vw,38px) clamp(28px,4vw,44px);
+        border-radius:var(--radius-lg);background:linear-gradient(120deg,#128c4b,#25d366);color:#fff;box-shadow:var(--shadow-md)}
+    .xs-wa-copy{flex:0 1 auto;min-width:0}
     .xs-wa-copy h2{margin:0;color:#fff;font-family:var(--font-title);font-size:clamp(21px,2.6vw,29px)}
     .xs-wa-copy p{margin:8px 0 0;color:rgba(255,255,255,.9);max-width:560px;line-height:1.6}
     .xs-wa-btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:12px 24px;border-radius:999px;background:#fff;color:#128c4b;font-weight:800;text-decoration:none;transition:transform .18s}
@@ -184,7 +194,10 @@
     .xs-cta>*{position:relative}
     .xs-cta h2{margin:0;color:#fff;font-family:var(--font-title);font-size:clamp(25px,3.4vw,40px);letter-spacing:-.02em}
     .xs-cta p{margin:0;max-width:640px;color:rgba(255,255,255,.87);line-height:1.6}
-    .xs-cta.is-brand{background:linear-gradient(130deg,var(--primary) 0%,color-mix(in srgb,var(--primary) 74%,#000) 58%,color-mix(in srgb,var(--accent,var(--primary)) 60%,var(--primary)) 100%)}
+    /* El ultimo tramo tiraba del color de acento: con un acento calido el
+       degradado terminaba en oliva y ensuciaba la banda. Se queda en la familia
+       de la marca, de mas oscuro a mas claro. */
+    .xs-cta.is-brand{background:linear-gradient(130deg,color-mix(in srgb,var(--primary) 86%,#000) 0%,var(--primary) 55%,color-mix(in srgb,var(--primary) 78%,#fff) 100%)}
     .xs-cta.is-brand:before{content:'';position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:color-mix(in srgb,var(--accent,#fff) 20%,transparent)}
     .xs-cta.is-brand>*{position:relative;z-index:1}
     /* El boton se fundia con el degradado de marca: contraste solido */
@@ -599,12 +612,22 @@
     .v-image-right .xs-about .xs-about-media{order:2}
     .xs-about-media{position:relative;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md)}
     .xs-about-media img{display:block;width:100%;height:100%;min-height:300px;max-height:460px;object-fit:cover}
-    .xs-about-label{display:inline-block;color:var(--accent,var(--primary));font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+    {{-- Sello en TINTA FUERTE: hay tiendas con primario claro (cyan de
+         Tecsist) y acento claro (dorado de MegaHogar); solo la tinta garantiza
+         lectura. La rayita de acento pone el color de marca. --}}
+    .xs-about-label{display:inline-block;color:var(--text-strong,#10231f);font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
     .xs-about-label:after{content:'';display:block;width:44px;height:2px;margin:8px auto 0;background:var(--accent,var(--primary))}
     .xs-about:not(.xs-about--no-img) .xs-about-label:after{margin-left:0}
     .xs-about-copy h2{margin:14px 0 12px;color:var(--text-strong);font-family:var(--font-title);font-size:clamp(23px,2.6vw,34px);letter-spacing:-.02em;line-height:1.2}
-    .xs-about-copy p{margin:0;color:var(--text);font-size:15px;line-height:1.8;white-space:pre-line}
-    .xs-about-cta{display:inline-block;margin-top:20px}
+    /* Medida de lectura: a 820px la linea pasaba de 100 caracteres y el ojo
+       perdia el renglon al volver. 68ch es el limite comodo. */
+    .xs-about-copy p{margin:0;max-width:68ch;color:var(--text);font-size:15px;line-height:1.8;white-space:pre-line}
+    body.section-heading-center .xs-about--no-img .xs-about-copy p{margin-inline:auto}
+    /* Era `inline-block` y heredaba `text-align:left` del bloque: el texto se
+       pegaba a la izquierda y dejaba un hueco a la derecha. Como caja flexible
+       el texto queda centrado de verdad, con o sin icono. */
+    .xs-about-cta{display:inline-flex;align-items:center;justify-content:center;
+        text-align:center;gap:8px;margin-top:20px;min-height:46px;padding:0 26px}
     .xs-about-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-top:26px}
     .xs-about-stat{padding:16px 14px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}
     .xs-about-stat svg{width:22px;height:22px;color:var(--accent,var(--primary))}
@@ -661,7 +684,8 @@ window.__sectionAnims = @json($sectionAnims);
 
 document.addEventListener('DOMContentLoaded', function () {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!document.body.className.match(/theme-[a-z-]+/)) return;
+    // Antes exigía una clase theme-*: las tiendas en tema "classic" se quedaban
+    // sin aparición de secciones sin que nadie lo hubiera decidido.
     var sections = document.querySelectorAll('[data-store-native-section]');
     if (!sections.length || !('IntersectionObserver' in window)) return;
     // Aplicar la animación configurada ANTES de activar el revelado.
@@ -684,5 +708,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (r.top < innerHeight * 0.9) { s.classList.add('sf-in'); return; }
         io.observe(s);
     });
+    // Red de seguridad: si el observador se pierde una sección (saltos de
+    // ancla, scroll instantáneo), este repaso en cada scroll la revela igual.
+    // Una sección que se queda en opacity 0 es una sección que no existe.
+    var pendiente = false;
+    addEventListener('scroll', function () {
+        if (pendiente) return;
+        pendiente = true;
+        requestAnimationFrame(function () {
+            pendiente = false;
+            sections.forEach(function (s) {
+                if (s.classList.contains('sf-in')) return;
+                if (s.getBoundingClientRect().top < innerHeight) s.classList.add('sf-in');
+            });
+        });
+    }, { passive: true });
 });
 </script>

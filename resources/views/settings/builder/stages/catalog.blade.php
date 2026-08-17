@@ -15,7 +15,7 @@
 
     {{-- Acciones iniciales --}}
     <div class="bxb-actions-row">
-        <a class="bxb-btn bxb-btn-primary" href="{{ route('products.create') }}" target="_blank" rel="noopener">+ Crear producto</a>
+        <a class="bxb-btn bxb-btn-primary" href="{{ route('products.index') }}?new=1" target="_blank" rel="noopener">+ Crear producto</a>
         <a class="bxb-btn" href="{{ route('products.index') }}" target="_blank" rel="noopener">Abrir catálogo completo ↗</a>
         <a class="bxb-btn" href="{{ route('products.template') }}">⇩ Plantilla Excel</a>
         <a class="bxb-btn" href="{{ route('products.index') }}#importar" target="_blank" rel="noopener">⇧ Importar Excel</a>
@@ -150,6 +150,53 @@
                     <option value="link">Enlace simple</option>
                     <option value="icon">Solo icono</option>
                 </select>
+            </label>
+        </div>
+    </div>
+
+    {{-- ═══ Textos de la tienda ═══
+         Siete frases que el cliente le dice a SU comprador y que estaban
+         escritas a mano en la plantilla. "Foto en camino" y "Precio a
+         solicitud" son promesas comerciales, no etiquetas de interfaz. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Textos de la tienda</strong>
+        <p class="bxb-note">Las frases que ve tu comprador en las tarjetas y en la ficha del producto. Déjalas vacías para usar las de siempre.</p>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Producto sin fotografía
+                <input type="text" maxlength="40" placeholder="Foto en camino"
+                       :value="settings.card_no_photo_text||''"
+                       @input.debounce.600ms="setSetting('card_no_photo_text',$event.target.value)">
+                <small class="bxb-note">Se muestra sobre el hueco de la imagen.</small>
+            </label>
+            <label class="bxb-field">Producto sin precio publicado
+                <input type="text" maxlength="40" placeholder="Precio a solicitud"
+                       :value="settings.price_on_request_text||''"
+                       @input.debounce.600ms="setSetting('price_on_request_text',$event.target.value)">
+            </label>
+            <label class="bxb-field">Etiqueta del precio al detalle
+                <input type="text" maxlength="30" placeholder="Minorista"
+                       :value="settings.buy_retail_label||''"
+                       @input.debounce.600ms="setSetting('buy_retail_label',$event.target.value)">
+            </label>
+            <label class="bxb-field">Etiqueta del precio por volumen
+                <input type="text" maxlength="30" placeholder="Mayorista"
+                       :value="settings.buy_wholesale_label||''"
+                       @input.debounce.600ms="setSetting('buy_wholesale_label',$event.target.value)">
+            </label>
+            <label class="bxb-field">Aclaración bajo el precio al detalle
+                <input type="text" maxlength="30" placeholder="Por unidad"
+                       :value="settings.buy_unit_label||''"
+                       @input.debounce.600ms="setSetting('buy_unit_label',$event.target.value)">
+            </label>
+            <label class="bxb-field">Producto sin stock
+                <input type="text" maxlength="60" placeholder="Producto agotado temporalmente"
+                       :value="settings.sold_out_text||''"
+                       @input.debounce.600ms="setSetting('sold_out_text',$event.target.value)">
+            </label>
+            <label class="bxb-field">Título de productos relacionados
+                <input type="text" maxlength="60" placeholder="Productos relacionados"
+                       :value="settings.related_title||''"
+                       @input.debounce.600ms="setSetting('related_title',$event.target.value)">
             </label>
         </div>
     </div>

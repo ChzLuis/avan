@@ -204,8 +204,10 @@ class BotWebhookController extends Controller
                 'project_id'    => $project->id,
                 'client_name'   => $client->name ?: $nombre,
                 'client_phone'  => $telefono,
-                'status'        => 'pendiente',
-                'payment_status'=> $esDigital ? 'en_revision' : 'pendiente',
+                // Vocabulario canonico: comercial en ingles (pending); el pago
+                // digital queda under_review hasta su aprobacion.
+                'status'        => 'pending',
+                'payment_status'=> $esDigital ? 'under_review' : 'pending',
                 'payment_method'=> $metodo,
                 'sales_channel' => 'whatsapp',
                 'notes'         => implode("\n", $notas),

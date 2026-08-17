@@ -46,6 +46,14 @@
             </div>
             <label class="bxb-field">Mensaje inicial de la cotización por WhatsApp
                 <textarea rows="2" maxlength="500" placeholder="Hola, quiero cotizar los siguientes productos:" @input.debounce.600ms="setSetting('quote_wa_msg',$event.target.value)" x-text="settings.quote_wa_msg||''"></textarea>
+                <small class="bxb-note">Se usa cuando el comprador escribe desde el carrito. Debajo se añaden los productos.</small>
+            </label>
+            {{-- Este mensaje estaba escrito en el código: cambiar el saludo con
+                 el que un cliente recibe a SUS compradores obligaba a tocar la
+                 plantilla. --}}
+            <label class="bxb-field">Mensaje al consultar por un producto
+                <textarea rows="2" maxlength="300" placeholder="Hola, quiero consultar por este producto:" @input.debounce.600ms="setSetting('wa_product_msg',$event.target.value)" x-text="settings.wa_product_msg||''"></textarea>
+                <small class="bxb-note">Es el que se abre al pulsar <b>Consultar</b> en una tarjeta o en la ficha. El sistema añade solo el nombre del producto y su enlace, así que no hace falta que los escribas.</small>
             </label>
         </div>
     </div>
@@ -210,6 +218,7 @@
                 ['key' => 'btn_send_quote_text',    'label' => 'Botón enviar cotización',    'ph' => 'Enviar cotización por WhatsApp'],
                 ['key' => 'cart_title',             'label' => 'Título del carrito',         'ph' => 'Tu carrito'],
                 ['key' => 'cart_empty_msg',         'label' => 'Mensaje de carrito vacío',   'ph' => 'Tu carrito está vacío'],
+                ['key' => 'cart_shipping_zero_label', 'label' => 'Envío sin costo: cómo se muestra', 'ph' => 'Gratis (o "Por coordinar")'],
                 ['key' => 'txt_search_placeholder', 'label' => 'Texto del buscador',         'ph' => 'Buscar productos...'],
                 ['key' => 'txt_no_results',         'label' => 'Mensaje sin resultados',     'ph' => 'No se encontraron productos'],
                 ['key' => 'txt_view_more',          'label' => 'Texto "Ver más"',            'ph' => 'Ver todos los productos'],

@@ -5,10 +5,12 @@ use App\Models\Traits\HasProjectScope;
 class Order extends Model {
     use HasProjectScope;
     protected $fillable = [
-        'project_id', 'created_by', 'client_id', 'client_name', 'client_phone', 'client_email',
+        'project_id', 'created_by', 'client_id', 'quote_id', 'client_name', 'client_phone', 'client_email',
         'status', 'notes', 'coupon_code', 'discount', 'delivery_address', 'shipping_cost', 'total',
         'payment_method', 'payment_condition', 'sales_channel', 'payment_status', 'payment_reference',
         'payment_gateway', 'wa_number', 'wa_status', 'payment_proof',
+        'document_status', 'document_type', 'document_number',
+        'delivery_type', 'promised_at', 'advance_amount',
         'table_number', 'order_type', 'kitchen_status', 'kitchen_at', 'ready_at',
         // delivery fields
         'delivery_status', 'delivery_person_id', 'delivery_person_name',
@@ -17,6 +19,9 @@ class Order extends Model {
         // laundry fields
         'tag_code', 'pieces_count', 'laundry_status', 'laundry_status_at', 'ready_notified_at',
     ];
+    /** Cotizacion de origen (FK canonica desde F1b; nullable). */
+    public function quote() { return $this->belongsTo(Quote::class); }
+
     protected $casts = [
         'total'                   => 'decimal:2',
         'shipping_cost'           => 'decimal:2',
@@ -29,6 +34,8 @@ class Order extends Model {
         'ready_notified_at'       => 'datetime',
         'laundry_status_at'       => 'datetime',
         'pieces_count'            => 'integer',
+        'promised_at'             => 'datetime',
+        'advance_amount'          => 'decimal:2',
     ];
     public function project() { return $this->belongsTo(Project::class); }
     public function client()  { return $this->belongsTo(Client::class); }

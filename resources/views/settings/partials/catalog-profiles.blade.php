@@ -14,6 +14,20 @@
         </div>
     </div>
 
+    {{-- Sin este bloque, un fallo de validacion devolvia a la pagina sin decir
+         nada: parecia que la subida "no hacia nada". --}}
+    @if($errors->any())
+        <div class="snb-card" style="border-left:4px solid #dc2626;background:#fef2f2">
+            <strong style="display:block;margin-bottom:6px;color:#b91c1c">No se pudo guardar el perfil</strong>
+            <ul style="margin:0;padding-left:18px;color:#7f1d1d;font-size:13px">
+                @foreach($errors->all() as $cpError)<li>{{ $cpError }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+    @if(session('status'))
+        <div class="snb-card" style="border-left:4px solid #16a34a;background:#f0fdf4;color:#166534;font-weight:700">{{ session('status') }}</div>
+    @endif
+
     {{-- Activar / política --}}
     <form method="POST" action="{{ route('settings.catalog-profiles.feature') }}" class="snb-card" style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
         @csrf
@@ -81,14 +95,47 @@
 
                             <div class="snb-card-title" style="margin:16px 0 10px"><div><h3 style="font-size:14px">Identidad propia (opcional)</h3><p>Lo que dejes vacío hereda el diseño general de la tienda.</p></div></div>
                             <div class="snb-grid snb-grid-4">
-                                @foreach(['primary_color'=>'Color principal','secondary_color'=>'Color secundario','header_bg_color'=>'Fondo encabezado','button_color'=>'Botones'] as $ck=>$cl)
+                                {{-- Fondo del pie y letra del encabezado: el backend ya los
+                                     guardaba pero el formulario no los ofrecia, asi que el pie
+                                     no podia seguir el color del mundo activo. --}}
+                                @foreach(['primary_color'=>'Color principal','secondary_color'=>'Color secundario','header_bg_color'=>'Fondo encabezado','header_text_color'=>'Letra del encabezado','button_color'=>'Botones','footer_bg_color'=>'Fondo del pie'] as $ck=>$cl)
                                     <label><span>{{ $cl }}</span><div class="snb-color"><input type="color" name="{{ $ck }}" value="{{ $profile->{$ck} ?: '#ffffff' }}"><code>{{ $profile->{$ck} ?: 'heredar' }}</code></div></label>
                                 @endforeach
                             </div>
                             <div class="snb-grid snb-grid-3">
-                                <label><span>Logo propio</span><input type="file" name="logo" accept="image/*"></label>
-                                <label><span>Hero (escritorio)</span><input type="file" name="hero_desktop" accept="image/*"></label>
+                                {{-- Vista previa como en el logo principal: sin ella no habia
+                                     forma de saber si la imagen habia quedado guardada. --}}
+                                @php
+                                    // @php(...) en una linea no admite parentesis anidados: la
+                                    // directiva corta en el primer ")" y rompe el archivo.
+                                    $cpPrev = static function ($ruta) {
+                                        if (!$ruta) return null;
+                                        return asset('storage/' . ltrim(preg_replace('#^storage/#', '', $ruta), '/'));
+                                    };
+                                @endphp
+                                <label><span>Logo propio</span>
+                                    <img class="cp-prev" data-vacio="{{ $cpPrev($profile->logo_path) ? '0' : '1' }}"
+                                         src="{{ $cpPrev($profile->logo_path) ?: '' }}" alt="Logo de {{ $profile->name }}"
+                                         style="{{ $cpPrev($profile->logo_path) ? '' : 'display:none;' }}margin:4px 0;height:52px;width:auto;max-width:100%;object-fit:contain;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px">
+                                    <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/avif">
+                                </label>
+                                <label><span>Hero (escritorio)</span>
+                                    <img class="cp-prev" data-vacio="{{ $cpPrev($profile->hero_desktop_path) ? '0' : '1' }}"
+                                         src="{{ $cpPrev($profile->hero_desktop_path) ?: '' }}" alt="Hero de {{ $profile->name }}"
+                                         style="{{ $cpPrev($profile->hero_desktop_path) ? '' : 'display:none;' }}margin:4px 0;height:52px;width:100%;object-fit:cover;border-radius:6px">
+                                    <input type="file" name="hero_desktop" accept="image/png,image/jpeg,image/webp,image/avif">
+                                </label>
+                                {{-- El backend ya guardaba hero_mobile pero el formulario no lo
+                                     ofrecia: una foto apaisada de hero recortada en movil deja al
+                                     sujeto fuera de encuadre. --}}
+                                <label><span>Hero (móvil)</span>
+                                    <img class="cp-prev" data-vacio="{{ $cpPrev($profile->hero_mobile_path) ? '0' : '1' }}"
+                                         src="{{ $cpPrev($profile->hero_mobile_path) ?: '' }}" alt="Hero móvil de {{ $profile->name }}"
+                                         style="{{ $cpPrev($profile->hero_mobile_path) ? '' : 'display:none;' }}margin:4px 0;height:52px;width:100%;object-fit:cover;border-radius:6px">
+                                    <input type="file" name="hero_mobile" accept="image/png,image/jpeg,image/webp,image/avif">
+                                </label>
                                 <label><span>Título del hero</span><input type="text" name="hero_title" value="{{ $profile->hero_title }}"></label>
+                                <label><span>Texto del hero</span><input type="text" name="hero_description" maxlength="500" value="{{ $profile->hero_description }}"></label>
                             </div>
 
                             <div class="snb-card-title" style="margin:16px 0 10px"><div><h3 style="font-size:14px">Categorías incluidas</h3><p>Marca qué categorías verá este perfil. Sin marcar ninguna, sólo aporta identidad.</p></div></div>
@@ -128,4 +175,41 @@
             </form>
         </div>
     @endif
+
+    {{-- Vista previa inmediata al elegir el archivo: sin ella no habia forma de
+         saber si el navegador habia tomado la imagen hasta guardar y recargar.
+         Tambien avisa del peso antes de enviar, que era el motivo real de que
+         algunas subidas "no hicieran nada". --}}
+    <script>
+    (function () {
+        var TOPE = 8 * 1024 * 1024;
+        document.querySelectorAll('#constructor-perfiles input[type=file]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                var previa = input.parentElement.querySelector('img.cp-prev');
+                var aviso = input.parentElement.querySelector('.cp-aviso');
+                if (aviso) aviso.remove();
+                var f = input.files && input.files[0];
+                if (!f) { if (previa && previa.dataset.vacio === '1') previa.style.display = 'none'; return; }
+                if (f.size > TOPE) {
+                    var m = document.createElement('small');
+                    m.className = 'cp-aviso';
+                    m.style.cssText = 'display:block;margin-top:4px;color:#b91c1c;font-weight:700';
+                    m.textContent = 'Pesa ' + (f.size / 1048576).toFixed(1) + ' MB. El máximo es 8 MB.';
+                    input.parentElement.appendChild(m);
+                    input.value = '';
+                    if (previa && previa.dataset.vacio === '1') previa.style.display = 'none';
+                    return;
+                }
+                if (!previa) return;
+                previa.src = URL.createObjectURL(f);
+                previa.style.display = '';
+                var ok = document.createElement('small');
+                ok.className = 'cp-aviso';
+                ok.style.cssText = 'display:block;margin-top:4px;color:#16a34a;font-weight:700';
+                ok.textContent = 'Lista para guardar · ' + (f.size / 1048576).toFixed(1) + ' MB';
+                input.parentElement.appendChild(ok);
+            });
+        });
+    })();
+    </script>
 </section>

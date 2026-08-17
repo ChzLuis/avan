@@ -54,9 +54,14 @@
     .ftc-secure .ssl-seal{flex:0 0 auto;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
     .ftc-secure b{display:block;font-size:12px}
     .ftc-secure small{opacity:.7;font-size:10.5px}
-    .ftc-pays{display:flex;flex-wrap:wrap;gap:7px}
+    /* El boton flotante de WhatsApp vive en la esquina inferior derecha y tapaba
+       el ultimo medio de pago. Se reserva su carril. */
+    .ftc-pays{display:flex;flex-wrap:wrap;gap:7px;padding-right:76px}
+    @media(max-width:760px){.ftc-pays{padding-right:0;padding-bottom:60px}}
     .ftc-pays .pay-marks{display:contents}
-    .ftc-pays span{display:inline-grid;place-items:center;height:26px;min-width:44px;padding:0 8px;background:#fff;border:1px solid rgba(255,255,255,.85);border-radius:6px;color:#0B2038;font-size:10px;font-weight:800;letter-spacing:.04em}
+    /* El borde blanco solo se ve sobre pie oscuro; con un pie claro los medios de
+       pago quedaban como recortes flotando. El borde sigue al color del texto. */
+    .ftc-pays span{display:inline-grid;place-items:center;height:26px;min-width:44px;padding:0 8px;background:#fff;border:1px solid color-mix(in srgb,currentColor 22%,transparent);border-radius:6px;color:#0B2038;font-size:10px;font-weight:800;letter-spacing:.04em}
     .ftc-pays span svg{display:block;height:15px;width:auto}
     .ftc-pays span img{display:block;height:17px;width:auto;max-width:60px;object-fit:contain}
     .ftc-pays span img.is-wide{height:17px}

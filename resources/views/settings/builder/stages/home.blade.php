@@ -141,6 +141,13 @@
                             </div>
                             <small>"Solo carrusel" oculta título, subtítulo y botones en todas las imágenes — ideal si tus fotos ya llevan el texto.</small>
                         </div>
+                        <div class="bxb-field"><span>Si todavía no has subido ninguna foto</span>
+                            <div class="bxb-seg">
+                                <button type="button" :class="(settings.hero_no_image_style||'collage')==='collage'&&'on'" @click="setSetting('hero_no_image_style','collage')">Montaje con tus productos</button>
+                                <button type="button" :class="settings.hero_no_image_style==='typographic'&&'on'" @click="setSetting('hero_no_image_style','typographic')">Solo texto, centrado</button>
+                            </div>
+                            <small>El montaje recorta fotos de producto y flota unas sobre otras: funciona con packshots sin fondo, pero delata el recorte si tus fotos están sobre blanco. En ese caso elige "Solo texto".</small>
+                        </div>
                     </div>
                     @foreach([1,2,3,4,5] as $n)
                     @php($heroKey = $n === 1 ? 'hero_image' : 'hero_image_'.$n)

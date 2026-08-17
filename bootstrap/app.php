@@ -25,7 +25,16 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\DetectCustomDomain::class,
             \App\Http\Middleware\SetActiveProject::class,
         ]);
+        // Sesion expirada: cada zona vuelve a SU login, no al generico /login.
+        $middleware->redirectGuestsTo(fn ($request) => $request->is('admin/*')
+            ? route('admin.login')
+            : route('bixoadmin.login'));
         $middleware->alias([
+            // routes/admin.php usa 'superadmin' desde siempre, pero el alias no
+            // estaba registrado: toda ruta /admin/* protegida lanzaba
+            // "Target class [superadmin] does not exist" y el panel de
+            // superadmin era inalcanzable.
+            'superadmin'       => \App\Http\Middleware\IsSuperAdmin::class,
             'module'           => \App\Http\Middleware\CheckModuleActive::class,
             'project.member'   => \App\Http\Middleware\CheckProjectMember::class,
             'project.scope'    => \App\Http\Middleware\EnsureProjectScope::class,

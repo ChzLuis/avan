@@ -119,7 +119,7 @@ $_nav = match(true) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $project->name ?? 'BIXO' }} — Operations</title>
+    <title>{{ $project->name ?? 'Panel' }} — Operaciones</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -212,25 +212,61 @@ $_nav = match(true) {
             min-width: 0;
         }
 
-        /* ── PANEL DERECHO ── */
+        /* ── PANEL DERECHO (cajón) ──────────────────────────────────────────
+           Antes era una columna dentro del flujo: se llevaba 272 px de ancho
+           de forma permanente, estuviera o no mirándolo el usuario, y por
+           debajo de 1024 px se ocultaba con display:none, o sea que en tablet
+           y movil las alertas NO EXISTIAN. Ahora es un cajon superpuesto: el
+           area de trabajo recupera esos 272 px SIEMPRE, y las alertas quedan
+           disponibles tambien en pantallas pequenas. Ninguna funcion se quita:
+           las tres pestanas y su contenido son los mismos. */
         #panel-right {
+            position: fixed;
+            top: var(--topbar-h);
+            right: 0;
+            bottom: 0;
+            z-index: 60;
             width: var(--panel-w);
-            flex-shrink: 0;
+            max-width: 100vw;
             background: var(--surface);
             border-left: 1px solid var(--border);
+            box-shadow: -8px 0 24px rgba(15,23,42,.10);
             display: flex; flex-direction: column;
             overflow: hidden;
-            transition: width .2s ease, opacity .2s ease;
+            transition: transform .22s ease;
         }
         #panel-right.hidden-panel {
-            width: 0;
+            transform: translateX(100%);
+            box-shadow: none;
+            pointer-events: none;
+        }
+        /* Velo: cierra al tocar fuera. Solo en pantallas donde el cajon tapa
+           trabajo; en escritorio ancho se puede dejar abierto y seguir usando
+           la pantalla. */
+        #panel-overlay {
+            position: fixed;
+            top: var(--topbar-h); left: 0; right: 0; bottom: 0;
+            z-index: 59;
+            background: rgba(15,23,42,.28);
             opacity: 0;
             pointer-events: none;
+            transition: opacity .22s ease;
+        }
+        @media (max-width: 1280px) {
+            #panel-overlay.is-open { opacity: 1; pointer-events: auto; }
+        }
+        /* UX1: en movil el buscador colapsaba a 24px de ancho — inutilizable y
+           fuera de contrato. Se oculta; cada modulo tiene su propia busqueda. */
+        @media (max-width: 767px) { .search-box { display: none !important; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            #panel-right, #panel-overlay { transition: none; }
         }
 
         /* ── Nav íconos sidebar ── */
         .nav-item {
-            width: 40px; height: 40px;
+            /* UX1: objetivo tactil 44 (medidos 40x40 en toda pagina). */
+            width: 44px; height: 44px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 10px;
             color: var(--muted);
@@ -265,7 +301,8 @@ $_nav = match(true) {
 
         /* ── Topbar botones ── */
         .top-btn {
-            width: 34px; height: 34px;
+            /* UX1: objetivo tactil 44 (medidos 34x34). */
+            width: 44px; height: 44px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 8px; cursor: pointer;
             color: var(--muted);
@@ -362,21 +399,29 @@ $_nav = match(true) {
         .obj-card.obj-gray::before   { background: var(--border-dark); }
 
         /* ── Búsqueda global ── */
+        /* min-width:0 es imprescindible, no cosmetico: sin el, un item flex no
+           baja de su ancho minimo de contenido. El buscador se negaba a
+           encogerse y empujaba los .top-btn (que son flex-shrink:0) fuera del
+           viewport en moviles, dejando ALERTAS y PENDIENTES inalcanzables. */
         .search-box {
-            flex: 1; max-width: 420px;
+            flex: 1; max-width: 420px; min-width: 0;
             display: flex; align-items: center; gap: 8px;
             background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 6px 12px;
+            overflow: hidden;
             transition: border-color .12s, box-shadow .12s;
         }
         .search-box:focus-within {
             border-color: var(--blue);
             box-shadow: 0 0 0 3px rgba(37,99,235,.10);
         }
+        /* min-width:0 tambien aqui: sin el, el input no baja de su ancho
+           intrinseco y su texto se desborda sobre los iconos de la barra. */
         .search-box input {
-            flex: 1; border: none; background: none; outline: none;
+            flex: 1; min-width: 0; border: none; background: none; outline: none;
+            text-overflow: ellipsis;
             font-size: 13px; color: var(--text);
             font-family: inherit;
         }
@@ -384,7 +429,8 @@ $_nav = match(true) {
 
         /* ── Panel tabs ── */
         .panel-tab {
-            flex: 1; padding: 10px 4px; text-align: center;
+            /* UX1: 39px de alto medidos -> minimo tactil. */
+            flex: 1; padding: 10px 4px; min-height: 44px; text-align: center;
             font-size: 11px; font-weight: 600;
             color: var(--muted); cursor: pointer;
             border-bottom: 2px solid transparent;
@@ -442,9 +488,17 @@ $_nav = match(true) {
         .flash-success { background: var(--green-bg); color: #065F46; border: 1px solid #A7F3D0; }
         .flash-error   { background: var(--red-bg);   color: #991B1B; border: 1px solid #FECACA; }
 
-        /* ── Responsive: tablet ── */
-        @media (max-width: 1024px) {
-            #panel-right { display: none; }
+        /* ── Responsive: tablet ──
+           Antes: `#panel-right { display:none }` — las alertas desaparecían
+           por completo por debajo de 1024 px. Como cajón superpuesto ya no
+           estorba, así que se mantienen disponibles en todos los tamaños;
+           en móvil ocupa el ancho de la pantalla. */
+        @media (max-width: 480px) {
+            /* NO 100vw: el cajon se ancla a la derecha, asi que con 100vw su
+               borde izquierdo queda bajo el sidebar (56 px, z-index 101) y le
+               recorta las primeras letras a cada linea. Se descuenta el
+               sidebar para que ocupe exactamente el area util. */
+            #panel-right { width: calc(100vw - var(--sidebar-w)); }
         }
         @media (max-width: 768px) {
             #topbar { padding-left: calc(var(--sidebar-w) + 8px); padding-right: 8px; }
@@ -463,7 +517,7 @@ $_nav = match(true) {
 
     {{-- Logo --}}
     <a href="{{ route('bixosales.dashboard') }}"
-       class="flex items-center justify-center w-9 h-9 rounded-xl mb-4 flex-shrink-0"
+       class="flex items-center justify-center w-11 h-11 rounded-xl mb-4 flex-shrink-0"
        style="background: linear-gradient(135deg, #1D4ED8, #2563EB); box-shadow: 0 2px 8px rgba(37,99,235,.35);">
         <span style="color:#fff; font-weight:900; font-size:15px; letter-spacing:-.5px;">A</span>
     </a>
@@ -681,22 +735,23 @@ $_nav = match(true) {
 
     {{-- Búsqueda Global --}}
     <div class="search-box" style="margin: 0 auto;">
-        <svg style="width:15px;height:15px;color:var(--muted-light);flex-shrink:0;"
+        <svg style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"
              fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
         </svg>
         <input type="text"
                x-model="searchQ"
+               style="min-height:44px"
                placeholder="Buscar clientes, órdenes, mesas..."
                @keydown.enter="if(searchQ.length>1) window.location='{{ route('bixosales.pedidos') }}?q='+searchQ">
-        <kbd style="font-size:10px; color:var(--muted-light); background:var(--bg);
+        <kbd style="font-size:10px; color:var(--muted); background:var(--bg);
                     border:1px solid var(--border); padding:1px 6px; border-radius:4px;
                     white-space:nowrap;">⌘K</kbd>
     </div>
 
     {{-- Alertas --}}
-    <button class="top-btn" @click="panelTab='alertas'; panelOpen=true" title="Alertas">
+    <button class="top-btn" @click="abrirPanel('alertas', $event)" :aria-expanded="panelOpen && panelTab==='alertas' ? 'true':'false'" aria-controls="panel-right" title="Alertas">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -716,7 +771,7 @@ $_nav = match(true) {
     @endif
 
     {{-- Pendientes --}}
-    <button class="top-btn" @click="panelTab='pendientes'; panelOpen=true" title="Pendientes">
+    <button class="top-btn" @click="abrirPanel('pendientes', $event)" :aria-expanded="panelOpen && panelTab==='pendientes' ? 'true':'false'" aria-controls="panel-right" title="Pendientes">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -735,19 +790,10 @@ $_nav = match(true) {
 
     <div class="vdiv"></div>
 
-    {{-- AVAN Score --}}
-    <div style="display:flex; align-items:center; gap:8px; cursor:pointer;"
-         title="BIXO Score">
-        <div class="score-ring">
-            <div class="score-inner">87</div>
-        </div>
-        <div style="display:flex; flex-direction:column; line-height:1.2;">
-            <span style="font-size:13px; font-weight:700; color:var(--blue);">87/100</span>
-            <span style="font-size:10px; color:var(--muted);">BIXO Score</span>
-        </div>
-    </div>
-
-    <div class="vdiv"></div>
+    {{-- Retirado: mostraba "87/100 BIXO Score" a los usuarios del cliente.
+         Era una puntuacion fija, sin metodologia ni acciones asociadas, y
+         ademas exponia una marca interna. Se elimina en vez de renombrarla:
+         un indicador que nadie puede accionar no aporta valor operativo. --}}
 
     {{-- Empresa --}}
     <div class="empresa-chip">
@@ -790,7 +836,23 @@ $_nav = match(true) {
     {{-- ══════════════════════════════════════
          PANEL DERECHO
     ══════════════════════════════════════ --}}
-    <div id="panel-right" :class="panelOpen ? '' : 'hidden-panel'">
+    {{-- Velo del cajón: cierra al tocar fuera. Solo se ve por debajo de
+         1280 px (en escritorio ancho el cajón no tapa el trabajo). --}}
+    <div id="panel-overlay" :class="panelOpen ? 'is-open' : ''" @click="panelOpen=false" aria-hidden="true"></div>
+
+    {{-- `inert` (no solo aria-hidden): aria-hidden lo esconde del lector de
+         pantalla pero los botones del cajón cerrado SEGUÍAN siendo tabulables
+         — el foco se iba a controles invisibles. `inert` los saca del orden de
+         tabulación y del árbol de accesibilidad de una vez. Es atributo nativo,
+         sin librerías.
+         Al abrir, el foco entra al cajón; al cerrar, vuelve al botón que lo
+         abrió (se guarda en `panelTrigger`). --}}
+    <div id="panel-right" :class="panelOpen ? '' : 'hidden-panel'"
+         x-effect="panelOpen ? ($el.removeAttribute('inert'), $nextTick(()=>$el.querySelector('.panel-tab')?.focus()))
+                             : ($el.setAttribute('inert',''), panelTrigger?.focus())"
+         @keydown.escape.window="panelOpen && (panelOpen=false)"
+         role="complementary" aria-label="Alertas, pendientes y actividad"
+         :aria-hidden="panelOpen ? 'false' : 'true'" inert>
 
         {{-- Tabs --}}
         <div style="display:flex; border-bottom:1px solid var(--border); flex-shrink:0;">
@@ -800,8 +862,8 @@ $_nav = match(true) {
                     @click="panelTab='pendientes'">Pendientes</button>
             <button class="panel-tab" :class="panelTab==='actividad' ? 'active' : ''"
                     @click="panelTab='actividad'">Actividad</button>
-            <button @click="panelOpen=false"
-                    style="padding:8px; color:var(--muted); background:none; border:none; cursor:pointer;">
+            <button @click="panelOpen=false" aria-label="Cerrar panel lateral"
+                    style="min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; color:var(--muted); background:none; border:none; cursor:pointer;">
                 <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -985,13 +1047,13 @@ $_nav = match(true) {
                             <p style="font-size:11px;font-weight:600;color:var(--text);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $_r->nombre ?? $_r->wa_number }}</p>
                             <p style="font-size:10px;color:var(--muted);margin:0;">{{ $_r_label }} · S/ {{ number_format($_r->monto,2) }}</p>
                         </div>
-                        <span style="font-size:10px;color:var(--muted-light);flex-shrink:0;">{{ \Carbon\Carbon::parse($_r->updated_at)->timezone('America/Lima')->format('d/m H:i') }}</span>
+                        <span style="font-size:10px;color:var(--muted);flex-shrink:0;">{{ \Carbon\Carbon::parse($_r->updated_at)->timezone('America/Lima')->format('d/m H:i') }}</span>
                     </div>
                     @empty
-                    <p style="font-size:12px; color:var(--muted-light); text-align:center; padding:20px 0;">Sin actividad reciente</p>
+                    <p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;">Sin actividad reciente</p>
                     @endforelse
                 @else
-                    <p style="font-size:12px; color:var(--muted-light); text-align:center; padding:20px 0;">Sin actividad reciente</p>
+                    <p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;">Sin actividad reciente</p>
                 @endif
             </div>
         </div>
@@ -1163,7 +1225,12 @@ function avanLayout() {
     return {
         vista:      'operativa',
         vistaOpen:  false,
-        panelOpen:  window.innerWidth >= 1024,
+        // Como cajón ya no roba ancho, pero arrancar abierto en escritorio
+        // tapaba trabajo al entrar. Cerrado por defecto: se abre a demanda.
+        panelOpen:  false,
+        // Botón que abrió el cajón, para devolverle el foco al cerrar.
+        panelTrigger: null,
+        abrirPanel(tab, ev){ this.panelTrigger = ev?.currentTarget || null; this.panelTab = tab; this.panelOpen = true; },
         panelTab:   'alertas',
         searchQ:    '',
         init() {

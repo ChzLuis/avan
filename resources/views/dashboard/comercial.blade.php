@@ -7,9 +7,15 @@
 
 <div class="p-6 max-w-7xl mx-auto">
 
-    <div class="mb-6">
-        <h1 class="text-xl font-bold text-gray-800">Dashboard Comercial</h1>
-        <p class="text-sm text-gray-500">Indicadores de {{ $project->name }} en tiempo real.</p>
+    <div class="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+            <h1 class="text-xl font-bold text-gray-800">Panel Comercial</h1>
+            <p class="text-sm text-gray-500">Controla tus ventas y actúa a tiempo · {{ $project->name }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ url('/orders') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 font-semibold bg-white">Centro de pedidos</a>
+            <a href="{{ route('ventas.express') }}" class="text-xs px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700">⚡ Nueva venta</a>
+        </div>
     </div>
 
     {{-- ═══ TARJETAS PRINCIPALES ═══ --}}
@@ -17,12 +23,18 @@
         <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div class="text-xs font-semibold text-gray-400 uppercase">Ventas hoy</div>
             <div class="text-2xl font-black text-gray-800 mt-1">S/ {{ $fmt($ventasHoy['total']) }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ $ventasHoy['cantidad'] }} pedidos</div>
+            @php $dHoy = $ventasAyer > 0 ? round(($ventasHoy['total'] - $ventasAyer) / $ventasAyer * 100) : null; @endphp
+            <div class="text-xs mt-1 {{ $dHoy === null ? 'text-gray-500' : ($dHoy >= 0 ? 'text-emerald-600' : 'text-red-500') }}">
+                {{ $ventasHoy['cantidad'] }} pedidos @if($dHoy !== null)· {{ $dHoy >= 0 ? '▲' : '▼' }} {{ abs($dHoy) }}% vs ayer @endif
+            </div>
         </div>
         <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div class="text-xs font-semibold text-gray-400 uppercase">Ventas del mes</div>
             <div class="text-2xl font-black text-indigo-600 mt-1">S/ {{ $fmt($ventasMes['total']) }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ $ventasMes['cantidad'] }} pedidos</div>
+            @php $dMes = $mesAnterior > 0 ? round(($ventasMes['total'] - $mesAnterior) / $mesAnterior * 100) : null; @endphp
+            <div class="text-xs mt-1 {{ $dMes === null ? 'text-gray-500' : ($dMes >= 0 ? 'text-emerald-600' : 'text-red-500') }}">
+                {{ $ventasMes['cantidad'] }} pedidos @if($dMes !== null)· {{ $dMes >= 0 ? '▲' : '▼' }} {{ abs($dMes) }}% vs mes anterior @endif
+            </div>
         </div>
         <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div class="text-xs font-semibold text-gray-400 uppercase">Leads calientes</div>
@@ -33,6 +45,97 @@
             <div class="text-xs font-semibold text-gray-400 uppercase">Conversión</div>
             <div class="text-2xl font-black text-emerald-600 mt-1">{{ $conversion }}%</div>
             <div class="text-xs text-gray-500 mt-1">{{ $embudo['ganado'] }} ganados</div>
+        </div>
+    </div>
+
+    {{-- ═══ SEGUNDA FILA DE KPIs ═══ --}}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <a href="{{ url('/orders') }}" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:border-amber-300 transition">
+            <div class="text-xs font-semibold text-gray-400 uppercase">Por cobrar</div>
+            <div class="text-2xl font-black text-amber-600 mt-1">S/ {{ $fmt($porCobrar) }}</div>
+            <div class="text-xs text-gray-500 mt-1">Ver pagos pendientes →</div>
+        </a>
+        <a href="{{ url('/orders') }}" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:border-indigo-300 transition">
+            <div class="text-xs font-semibold text-gray-400 uppercase">Pedidos activos</div>
+            <div class="text-2xl font-black text-blue-600 mt-1">{{ $pedidosActivos }}</div>
+            <div class="text-xs {{ $sinActualizar > 0 ? 'text-red-500 font-semibold' : 'text-gray-500' }} mt-1">{{ $sinActualizar }} sin actualizar +48h</div>
+        </a>
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-semibold text-gray-400 uppercase">Ticket promedio</div>
+            <div class="text-2xl font-black text-gray-800 mt-1">S/ {{ $fmt($ticketProm) }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ $clientesNuevosMes }} clientes nuevos este mes</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-semibold text-gray-400 uppercase">Meta del mes</div>
+            @if($meta > 0)
+                <div class="text-2xl font-black {{ ($metaPct ?? 0) >= 100 ? 'text-emerald-600' : 'text-gray-800' }} mt-1">{{ $metaPct }}%</div>
+                <div class="w-full h-1.5 bg-gray-100 rounded-full mt-2"><div class="h-1.5 rounded-full {{ ($metaPct ?? 0) >= 100 ? 'bg-emerald-500' : 'bg-indigo-500' }}" style="width:{{ min(100, $metaPct ?? 0) }}%"></div></div>
+                <div class="text-xs text-gray-500 mt-1">de S/ {{ $fmt($meta) }}</div>
+            @else
+                <form method="POST" action="{{ route('dashboard.comercial.meta') }}" class="mt-1 flex gap-1.5">
+                    @csrf
+                    <input name="meta" type="number" min="0" step="100" placeholder="S/ meta mensual" class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5" required>
+                    <button class="text-xs px-3 rounded-lg bg-indigo-600 text-white font-bold">OK</button>
+                </form>
+                <div class="text-[11px] text-gray-400 mt-1">Define tu meta para medir el avance</div>
+            @endif
+        </div>
+    </div>
+
+    {{-- ═══ RENDIMIENTO: ventas por día vs meta ═══ --}}
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-6">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <h2 class="font-bold text-gray-800">Rendimiento del mes</h2>
+            <div class="text-xs text-gray-500">Acumulado: <strong class="text-gray-800">S/ {{ $fmt($ventasMes['total']) }}</strong>@if($meta > 0) · Ritmo esperado hoy: S/ {{ $fmt($meta / now()->daysInMonth * now()->day) }}@endif</div>
+        </div>
+        @php
+            $maxDia = max(1, collect($grafico)->max('total'));
+            $n = max(1, count($grafico));
+            $bw = 100 / max(14, $n);
+        @endphp
+        <svg viewBox="0 0 100 34" preserveAspectRatio="none" class="w-full" style="height:150px">
+            @foreach($grafico as $i => $g)
+                <rect x="{{ $i * $bw + $bw * 0.15 }}" y="{{ 30 - ($g['total'] / $maxDia * 26) }}" width="{{ $bw * 0.7 }}" height="{{ $g['total'] / $maxDia * 26 }}" rx="0.6" fill="{{ $g['total'] > 0 ? '#6366f1' : '#e5e7eb' }}">
+                    <title>Día {{ $g['dia'] }}: S/ {{ $fmt($g['total']) }}</title>
+                </rect>
+            @endforeach
+            @if($meta > 0)
+                @php $metaDia = $meta / now()->daysInMonth; $yMeta = 30 - min(26, $metaDia / $maxDia * 26); @endphp
+                <line x1="0" y1="{{ $yMeta }}" x2="100" y2="{{ $yMeta }}" stroke="#f59e0b" stroke-width="0.35" stroke-dasharray="1.4,1"/>
+            @endif
+            <line x1="0" y1="30" x2="100" y2="30" stroke="#e5e7eb" stroke-width="0.3"/>
+        </svg>
+        <div class="flex justify-between text-[10px] text-gray-400 mt-1"><span>1 {{ now()->translatedFormat('M') }}</span>@if($meta > 0)<span class="text-amber-500 font-semibold">— — meta diaria (S/ {{ $fmt($meta / now()->daysInMonth) }})</span>@endif<span>{{ now()->format('j M') }}</span></div>
+    </div>
+
+    {{-- ═══ ALERTAS + RANKING ═══ --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <h2 class="font-bold text-gray-800 mb-3">Alertas de hoy</h2>
+            @forelse($alertas as $a)
+                <a href="{{ $a['url'] }}" class="flex items-center gap-2.5 py-2 border-b border-gray-50 last:border-0 group">
+                    <span class="w-2 h-2 rounded-full flex-shrink-0 {{ $a['tipo'] === 'red' ? 'bg-red-500' : 'bg-amber-400' }}"></span>
+                    <span class="text-sm text-gray-700 group-hover:text-indigo-600 flex-1">{{ $a['txt'] }}</span>
+                    <span class="text-gray-300 group-hover:text-indigo-500">→</span>
+                </a>
+            @empty
+                <div class="text-sm text-emerald-600 bg-emerald-50 rounded-xl px-4 py-3">✓ Todo al día: sin pendientes urgentes.</div>
+            @endforelse
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <h2 class="font-bold text-gray-800 mb-3">Ranking del mes por vendedor</h2>
+            @forelse($ranking as $i => $r)
+                <div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                    <span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 text-[11px] font-black flex items-center justify-center flex-shrink-0">{{ $i + 1 }}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-800 truncate">{{ $r['nombre'] }}</div>
+                        <div class="text-[11px] text-gray-400">{{ $r['pedidos'] }} pedidos · ticket S/ {{ $fmt($r['ticket']) }}</div>
+                    </div>
+                    <div class="text-sm font-black text-gray-900">S/ {{ $fmt($r['total']) }}</div>
+                </div>
+            @empty
+                <div class="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3">Aún no hay ventas registradas por vendedor este mes.</div>
+            @endforelse
         </div>
     </div>
 

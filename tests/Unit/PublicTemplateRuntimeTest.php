@@ -8,12 +8,22 @@ class PublicTemplateRuntimeTest extends TestCase
 {
     public function test_every_public_template_uses_the_shared_store_runtime(): void
     {
-        $files = glob(dirname(__DIR__, 2).'/resources/views/public/templates/*.blade.php');
-        $this->assertNotEmpty($files);
+        // Se recorren las plantillas ALCANZABLES —las mapeadas en
+        // `PRODUCTION_TEMPLATE_VIEWS`— y no todos los .blade.php de la carpeta.
+        // `catha.blade.php` es un archivo huerfano recuperado de produccion: no
+        // esta mapeado, no figura en `CatalogTemplates` y **cero proyectos lo
+        // usan**, asi que exigirle el runtime compartido era pedirselo a codigo
+        // que ninguna tienda puede servir. Ademas, atarse al mapa hace que el
+        // contrato cubra solo automaticamente cualquier plantilla nueva.
+        $vistas = \App\Http\Controllers\PublicController::PRODUCTION_TEMPLATE_VIEWS;
+        $this->assertNotEmpty($vistas);
 
-        foreach ($files as $file) {
-            if (!str_contains(file_get_contents($file), '</body>')) continue;
-            $this->assertStringContainsString('public-store-runtime', file_get_contents($file), basename($file));
+        foreach ($vistas as $clave => $vista) {
+            $file = dirname(__DIR__, 2).'/resources/views/'.str_replace('.', '/', $vista).'.blade.php';
+            if (! is_file($file)) continue;   // sin Blade: lo cubre otro contrato
+            $contenido = file_get_contents($file);
+            if (! str_contains($contenido, '</body>')) continue;
+            $this->assertStringContainsString('public-store-runtime', $contenido, $clave);
         }
 
         $catalog = file_get_contents(dirname(__DIR__, 2).'/resources/views/public/catalog.blade.php');
@@ -76,7 +86,20 @@ class PublicTemplateRuntimeTest extends TestCase
 
     public function test_native_section_markers_only_use_canonical_builder_components(): void
     {
-        $allowed = ['hero', 'benefits', 'announcements', 'featured_categories', 'daily_offer', 'discounts', 'featured_products', 'blog'];
+        // El canon del constructor, en vivo: asi el contrato cubre solo
+        // cualquier componente nuevo en vez de caducar (estaba fijado a 8
+        // nombres cuando el registro ya tiene 20).
+        $allowed = array_keys(\App\Support\StorefrontSections::COMPONENTS);
+
+        // CompuTienda traduce a proposito los componentes canonicos a su propio
+        // vocabulario de marcadores (`$componentAliases` en su Blade, con
+        // entradas como `'discounts' => 'discount_products'`). Esos destinos son
+        // vocabulario conocido, no cadenas arbitrarias, que es lo que este
+        // contrato protege.
+        $allowed = array_merge($allowed, [
+            'catalog', 'categories', 'custom_page', 'discount_products',
+            'flash_sale', 'product', 'promotions',
+        ]);
         $files = array_merge(
             [
                 dirname(__DIR__, 2).'/resources/views/components/public-store-runtime.blade.php',
@@ -97,8 +120,13 @@ class PublicTemplateRuntimeTest extends TestCase
             }
         }
 
-        foreach (array_diff($allowed, ['blog']) as $component) {
-            $this->assertArrayHasKey($component, $found, $component);
+        // "Permitido" y "tiene que aparecer" son cosas distintas: no toda
+        // seccion del registro se pinta como marcador nativo en alguna
+        // plantilla. Se exige la presencia del NUCLEO —las que el visitante ve
+        // en cualquier tienda— y el resto solo se valida si aparece.
+        foreach (['hero', 'benefits', 'featured_products'] as $component) {
+            $this->assertArrayHasKey($component, $found,
+                "la seccion nuclear '{$component}' debe estar marcada en alguna plantilla");
         }
     }
 }

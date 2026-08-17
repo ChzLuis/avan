@@ -64,7 +64,11 @@
                 @php $tplMedia = count($latest?->decodedPayload()['media'] ?? []); @endphp
                 <a class="px-2.5 py-1.5 rounded-md border" href="{{ route('design-templates.export', $tpl->id) }}"
                    @if($tplMedia) title="⚠ Referencia {{ $tplMedia }} archivo(s) multimedia de ESTE servidor: al importarla en otro servidor esos archivos no existirán y se omitirán (sin imágenes rotas). Sube los archivos al destino o reemplázalos después de aplicar." @endif>
-                   Exportar@if($tplMedia)<span class="text-amber-500" aria-hidden="true"> ⚠</span>@endif</a>
+                   {{-- "Exportar@if(...)" no compilaba: Blade ignora una directiva
+                        pegada a una palabra (la confunde con un correo), asi que
+                        quedaba el @if literal y el @endif suelto rompia la vista. --}}
+                   Exportar
+                   @if($tplMedia)<span class="text-amber-500" aria-hidden="true"> ⚠</span>@endif</a>
                 <button class="px-2.5 py-1.5 rounded-md border" @click="renaming=renaming==={{ $tpl->id }}?null:{{ $tpl->id }}">Renombrar</button>
                 <form method="POST" action="{{ route('design-templates.toggle', $tpl->id) }}">@csrf<input type="hidden" name="field" value="is_default"><button class="px-2.5 py-1.5 rounded-md border">Predet.</button></form>
                 <form method="POST" action="{{ route('design-templates.toggle', $tpl->id) }}" onsubmit="return confirm('¿Archivar esta plantilla? Podrás recuperarla luego.')">@csrf<input type="hidden" name="field" value="archived"><button class="px-2.5 py-1.5 rounded-md border text-red-500">Archivar</button></form>

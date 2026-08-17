@@ -130,11 +130,13 @@ class CatalogProfileController extends Controller
             'footer_bg_color' => $colorRule,
             'hero_title' => ['nullable', 'string', 'max:200'],
             'hero_description' => ['nullable', 'string', 'max:500'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
-            'mobile_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
-            'favicon' => ['nullable', 'image', 'mimes:png,webp,svg,ico', 'max:1024'],
-            'hero_desktop' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
-            'hero_mobile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
+            // AVIF entra en la lista: los exportadores modernos lo generan por defecto y
+            // el archivo se rechazaba sin explicacion visible en el formulario.
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,avif', 'max:8192'],
+            'mobile_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,avif', 'max:8192'],
+            'favicon' => ['nullable', 'image', 'mimes:png,webp,svg,ico,avif', 'max:1024'],
+            'hero_desktop' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:6144'],
+            'hero_mobile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:6144'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer'],
             'product_ids' => ['nullable', 'array'],

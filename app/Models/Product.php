@@ -8,10 +8,11 @@ class Product extends Model {
         'project_id','category_id','brand_catalog_id',
         'name','sku','barcode','description','notes',
         'price','price_suggested','price_min','price_max','compare_price','wholesale_price','wholesale_min_qty','wholesale_unit','cost','unit',
+        'has_tax','tax_rate',
         'stock','stock_min','stock_max','is_available','sort_order','options',
         'catalog_integration_id','external_sync_status','owner_scope',
     ];
-    protected $casts = ['is_available' => 'boolean', 'price' => 'decimal:2', 'price_suggested' => 'decimal:2', 'price_min' => 'decimal:2', 'price_max' => 'decimal:2', 'compare_price' => 'decimal:2', 'wholesale_price' => 'decimal:2', 'cost' => 'decimal:2', 'options' => 'array', 'owner_scope' => 'array'];
+    protected $casts = ['is_available' => 'boolean', 'has_tax' => 'boolean', 'tax_rate' => 'decimal:2', 'price' => 'decimal:2', 'price_suggested' => 'decimal:2', 'price_min' => 'decimal:2', 'price_max' => 'decimal:2', 'compare_price' => 'decimal:2', 'wholesale_price' => 'decimal:2', 'cost' => 'decimal:2', 'options' => 'array', 'owner_scope' => 'array'];
     public function project()   { return $this->belongsTo(Project::class); }
     public function category()  { return $this->belongsTo(Category::class); }
     public function images()    { return $this->hasMany(ProductImage::class)->orderBy('sort_order'); }

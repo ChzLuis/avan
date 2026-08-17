@@ -73,9 +73,10 @@ class VentaExtensionController extends Controller
             'project_id'    => $project->id,
             'client_name'   => $data['nombre'] ?? ($data['telefono'] ?? 'Cliente'),
             'client_phone'  => $data['telefono'] ?? null,
-            // Venta directa = pagada/entregada; pedido normal = pendiente.
-            'status'        => $esVenta ? 'pagado' : 'pendiente',
-            'payment_status'=> $esVenta ? 'pagado' : 'pendiente',
+            // "pagado" = pago confirmado, NO venta culminada (Codex 2026-08-15):
+            // el comercial nace pending siempre; solo el pago refleja el cobro.
+            'status'        => 'pending',
+            'payment_status'=> $esVenta ? 'paid' : 'pending',
             'notes'         => $this->notasConExtras($data['notas'] ?? null, $data['extras'] ?? []),
             'discount'      => $descuento,
             'total'         => $total,
@@ -119,7 +120,10 @@ class VentaExtensionController extends Controller
             'project_id'   => $project->id,
             'client_name'  => $data['nombre'] ?? ($data['telefono'] ?? 'Cliente'),
             'client_phone' => $data['telefono'] ?? null,
-            'status'       => 'borrador',
+            // Canonico + pago explicito: neutraliza el DEFAULT 'pendiente'
+            // del esquema sin migrarlo (QuoteStatus normaliza el legado).
+            'status'         => 'draft',
+            'payment_status' => 'pending',
             'notes'        => $this->notasConExtras($data['notas'] ?? null, $data['extras'] ?? []),
             'total'        => $total,
             'valid_until'  => now()->addDays(15),

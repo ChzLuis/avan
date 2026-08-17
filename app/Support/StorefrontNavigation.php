@@ -107,6 +107,30 @@ class StorefrontNavigation
         return self::shopUrl($project).'/'.$slugPerfil;
     }
 
+    /**
+     * URL de una categoría, legible: /tienda/computadoras en vez de
+     * /tienda?category=394.
+     *
+     * Acepta el id o el propio modelo. Si la categoría todavía no tiene slug
+     * —una recién creada por un flujo que no pase por el modelo— cae a la forma
+     * antigua, que sigue funcionando. Nunca devuelve un enlace roto.
+     */
+    public static function categoryUrl(Project $project, $categoria): string
+    {
+        $base = self::shopUrl($project);
+
+        $cat = is_object($categoria)
+            ? $categoria
+            : \App\Models\Category::where('project_id', $project->id)->find($categoria);
+
+        // Sin prefijo `c/`: perfiles y categorías comparten segmento y el
+        // controlador resuelve cuál es. Las URLs con `c/` siguen sirviéndose
+        // por compatibilidad con lo que ya se haya compartido.
+        return ($cat && filled($cat->slug))
+            ? $base.'/'.$cat->slug
+            : $base.'?category='.(is_object($categoria) ? $categoria->id : $categoria);
+    }
+
     private static function enDominioPropio(Project $project): bool
     {
         $dominio = trim((string) $project->custom_domain, '/');
@@ -125,7 +149,10 @@ class StorefrontNavigation
         $home = $onCustomDomain ? '/' : '/' . $project->slug;
 
         $shopUrl = $base . '/tienda';
-        $categoryUrl = fn ($id) => $base . '/tienda?category=' . $id;
+        // Enlaces de menú a categoría: forma legible (/tienda/c/computadoras).
+        // `categoryUrl()` cae sola a `?category={id}` si esa categoría todavía
+        // no tuviera slug, así que nunca devuelve un enlace roto.
+        $categoryUrl = fn ($id) => self::categoryUrl($project, $id);
 
         return match ($item->destination_type) {
             'home' => $home,

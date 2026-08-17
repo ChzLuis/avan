@@ -26,6 +26,11 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            // El login real de la aplicacion es por `username`, no por email
+            // (App\Http\Requests\Auth\LoginRequest). Sin esto, ningun usuario
+            // de prueba puede entrar por el formulario y las pruebas de auth
+            // solo podian usar actingAs(). La columna es UNIQUE y nullable.
+            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

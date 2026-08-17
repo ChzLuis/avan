@@ -20,10 +20,10 @@
 <form method="GET" style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #E5E8EF;flex-shrink:0;">
     <label style="font-size:11px;color:#9CA3AF;">Desde</label>
     <input type="date" name="desde" value="{{ $desde }}"
-           style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+           style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;min-height:44px;">
     <label style="font-size:11px;color:#9CA3AF;">Hasta</label>
     <input type="date" name="hasta" value="{{ $hasta }}"
-           style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+           style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;min-height:44px;">
     <button type="submit"
             style="font-size:12px;font-weight:600;background:#2563EB;color:#fff;padding:6px 14px;border-radius:8px;border:none;cursor:pointer;">
         Filtrar

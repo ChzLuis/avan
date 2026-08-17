@@ -41,9 +41,21 @@ class SetActiveProject
             view()->share('activeProject', $project);
             app()->instance('active_project', $project);
 
+            // Contexto de equipo de Spatie: el negocio activo. A partir de aquí,
+            // roles y permisos del usuario se leen y escriben SOLO para este
+            // proyecto. Es lo que convierte el rol en algo por negocio y lo que
+            // hace que el syncRoles de abajo ya no sea un borrado global.
+            setPermissionsTeamId($project->id);
+
             // Cargar rol del empleado en el usuario autenticado
             $user = auth()->user();
             if ($user && !$user->is_superadmin) {
+                // Los roles cargados antes de fijar el equipo pertenecen a otro
+                // contexto. Sin esto, la comparación de abajo usa datos viejos,
+                // decide que no hay nada que sincronizar, y la persona se queda
+                // sin permisos en este negocio.
+                $user->unsetRelation('roles')->unsetRelation('permissions');
+                $user->forgetCachedPermissions();
                 $employee = Employee::where('project_id', $project->id)
                     ->where('user_id', $user->id)
                     ->first();
@@ -62,7 +74,9 @@ class SetActiveProject
                         $user->syncRoles([$roleName]);
                     }
                 } elseif (!$project->owner_id || $project->owner_id !== $user->id) {
-                    // Sin rol asignado → quitar todos los roles de Spatie
+                    // Sin rol en ESTE proyecto → se le retira aquí y solo aquí.
+                    // Antes esto vaciaba model_has_roles entero y una persona
+                    // perdía sus roles en todos los negocios de forma permanente.
                     if ($user->roles->isNotEmpty()) {
                         $user->syncRoles([]);
                     }

@@ -104,14 +104,27 @@ final class CatalogQueryService
             $query->where('price', '<=', max(0, (float) $request->query('max_price')));
         }
 
-        // Orden (whitelist; nunca columna cruda del request)
+        // Los productos sin foto se iban delante y el cliente veia una rejilla de
+        // marcadores. Con foto primero en el orden recomendado; el resto de
+        // criterios los elige el visitante y ahi manda su eleccion.
         $sort = (string) $request->query('sort', 'recommended');
+        if (!in_array($sort, self::SORTS, true) || $sort === 'recommended') {
+            $query->orderByRaw('EXISTS (SELECT 1 FROM product_images pi WHERE pi.product_id = products.id) DESC');
+        }
+
         match ($filtro === 'new' && $sort === 'recommended' ? 'newest' : (in_array($sort, self::SORTS, true) ? $sort : 'recommended')) {
             'price_asc' => $query->orderBy('price')->orderBy('id'),
             'price_desc' => $query->orderByDesc('price')->orderByDesc('id'),
             'name' => $query->orderBy('name')->orderBy('id'),
             'newest' => $query->latest()->orderByDesc('id'),
-            default => $query->orderBy('sort_order')->orderByDesc('id'),
+            // "Recomendado" caia en sort_order y luego id DESC: con un catalogo
+            // importado por lotes eso agrupa por categoria y la primera pantalla
+            // sale con ocho articulos identicos seguidos. Se intercalan las
+            // categorias (uno de cada una, luego el segundo de cada una...), que
+            // es lo que hace un escaparate: ensenar variedad primero.
+            default => $query->orderBy('sort_order')
+                ->orderByRaw('ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY id DESC)')
+                ->orderByDesc('id'),
         };
 
         $perPage = in_array($request->integer('per_page'), self::PER_PAGE_OPTIONS, true)
@@ -183,12 +196,20 @@ final class CatalogQueryService
             'name' => $p->name,
             'price' => (float) $p->price,
             'comparePrice' => $cp, 'cp' => $cp,
+            'hasTax' => (bool) $p->has_tax,
+            'taxRate' => $p->has_tax ? (float) ($p->tax_rate ?? 18) : null,
             'image' => $img, 'img' => $img,
             'category' => $p->category?->name, 'cat' => $p->category?->name,
             'catId' => (string) $p->category_id,
             'parentId' => $p->category?->parent_id ? (string) $p->category->parent_id : null,
             'sku' => $p->sku,
             'stock' => $p->stock,
+            // Resumen para la vista rapida: sin el, la tarjeta solo decia nombre
+            // y precio y el comprador tenia que abrir la ficha para saber que
+            // estaba comprando. Se limpia el HTML y se corta a 180 caracteres.
+            'resumen' => \Illuminate\Support\Str::limit(
+                trim(preg_replace('/\s+/', ' ', strip_tags((string) $p->description))), 180
+            ),
             'url' => \App\Support\ImageVariants::productUrl($p->project ?? \App\Models\Project::where('slug', $slug)->first(), $p->id, $p->name),
             'wholesalePrice' => filled($p->wholesale_price) ? (float) $p->wholesale_price : null,
             'wholesaleMinQty' => (int) ($p->wholesale_min_qty ?? 1),

@@ -29,14 +29,77 @@
             <div style="margin-top:14px">
                 <p class="bxb-note">La marca, colores, barra superior, menú y comportamiento sticky se configuran en las otras tarjetas de esta etapa — aplican a todos los modelos.</p>
 
-                <details class="bxb-advanced" x-show="hpCan('mega')" open>
+                <label class="bxb-field">Desplegable de categorías en el menú
+                    <select :value="settings.hp_cat_trigger||''" @change="setSetting('hp_cat_trigger',$event.target.value)">
+                        <option value="">Según el modelo elegido</option>
+                        <option value="none">Sin desplegable</option>
+                        <option value="mega">Panel de categorías y subcategorías</option>
+                        <option value="editorial">Panel editorial con imagen</option>
+                    </select>
+                    <small class="bxb-note">Actívalo si tu tienda tiene muchas subcategorías y quieres llegar a ellas desde el menú.</small>
+                </label>
+
+                {{-- Redes de la barra superior. El tamaño estaba fijo y en una
+                     franja fina se veían desproporcionadas. --}}
+                <div class="bxb-grid2">
+                    <label class="bxb-field">Estilo de las redes (barra superior)
+                        <select :value="settings.hp_topbar_social_style||'circulo'" @change="setSetting('hp_topbar_social_style',$event.target.value)">
+                            <option value="circulo">Círculo con el color de cada red</option>
+                            <option value="plano">Solo el icono, sin fondo</option>
+                        </select>
+                        <small class="bxb-note">Sin fondo va mejor cuando la barra ya tiene color propio: tres círculos de marca la ensucian.</small>
+                    </label>
+                    <label class="bxb-field">Tamaño de las redes
+                        <input type="number" min="14" max="40" :value="settings.hp_topbar_social_size||26" @input.debounce.600ms="setSetting('hp_topbar_social_size',$event.target.value)">
+                    </label>
+                    <label class="bxb-field">Separación entre redes
+                        <input type="number" min="4" max="28" :value="settings.hp_topbar_social_gap||10" @input.debounce.600ms="setSetting('hp_topbar_social_gap',$event.target.value)">
+                    </label>
+                </div>
+
+                {{-- Colores del botón de teléfono del encabezado. Antes heredaba
+                     el color del encabezado con transparencia y sobre fondos de
+                     color la etiqueta no llegaba a contraste. --}}
+                <div class="bxb-grid2">
+                    <label class="bxb-field">Fondo del botón de teléfono
+                        <x-bxb-color clave="hp_phone_btn_bg" defecto="#ffffff" etiqueta="Fondo del teléfono" />
+                    </label>
+                    <label class="bxb-field">Letra del botón de teléfono
+                        <x-bxb-color clave="hp_phone_btn_color" defecto="#0f172a" etiqueta="Letra del teléfono" />
+                    </label>
+                    <label class="bxb-field bxb-full">Etiqueta sobre el número
+                        <input type="text" maxlength="40" placeholder="Atención comercial" :value="settings.hp_header_phone_label||''" @input.debounce.600ms="setSetting('hp_header_phone_label',$event.target.value)">
+                    </label>
+                </div>
+
+                {{-- Iconos del menú, con alcance elegible. Usa la misma
+                     biblioteca que la portada, no un sistema aparte. --}}
+                <label class="bxb-field">Iconos de categoría en el menú
+                    <select :value="settings.hp_menu_icons||'no'" @change="setSetting('hp_menu_icons',$event.target.value)">
+                        <option value="no">Sin iconos</option>
+                        <option value="movil">Solo en móvil</option>
+                        <option value="escritorio">Solo en computadora</option>
+                        <option value="ambos">En móvil y computadora</option>
+                    </select>
+                    <small class="bxb-note">Usa los iconos que asignaste en <b>Inicio → Iconos de categorías</b>. En móvil ayudan a barrer la lista de un vistazo; en computadora, junto a un texto corto, muchas veces sobran — por eso puedes decidirlo por separado. Las categorías sin icono asignado se muestran solo con su nombre.</small>
+                </label>
+
+                <details class="bxb-advanced" x-show="hpCan('mega') || (settings.hp_cat_trigger||'')==='mega'" open>
                     <summary>Mega menú</summary>
                     <div class="bxb-card">
-                        <div class="bxb-grid2">
+                        <label class="bxb-field">Disposición del panel
+                            <select :value="settings.hp_mega_layout||'rejilla'" @change="setSetting('hp_mega_layout',$event.target.value)">
+                                <option value="rejilla">Rejilla — todas las categorías a la vez</option>
+                                <option value="lateral">Lateral — categorías a un lado y subcategorías al pasar</option>
+                            </select>
+                            <small class="bxb-note">La <b>lateral</b> muestra una columna con tus categorías y, al posar el cursor sobre una, abre sus subcategorías al lado. Va mejor cuando tienes muchas categorías o muchas subcategorías por categoría. Con la lateral, el número de columnas de abajo no aplica.</small>
+                        </label>
+                        <div class="bxb-grid2" x-show="(settings.hp_mega_layout||'rejilla')!=='lateral'" x-cloak>
                             <label class="bxb-field">Columnas del panel
                                 <select :value="settings.hp_mega_columns||'4'" @change="setSetting('hp_mega_columns',$event.target.value)">
-                                    <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                    <option value="1">1 — lista vertical</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 </select>
+                                <small class="bxb-note">Con 1 el panel deja de ser una rejilla y pasa a ser una lista alta, una categoría por fila con su flecha. Va bien cuando hay muchas categorías de un solo nivel.</small>
                             </label>
                             <label class="bxb-field">Máx. subcategorías por categoría
                                 <input type="number" min="2" max="12" :value="settings.hp_mega_max_subs||6" @input.debounce.600ms="setSetting('hp_mega_max_subs',$event.target.value)">
@@ -100,6 +163,10 @@
                         <label class="bxb-switch" x-show="(settings.header_preset||'')==='multiverse'">
                             <input type="checkbox" :checked="(settings.hp_multiverse_use_categories??'1')!=='0'" @change="setSetting('hp_multiverse_use_categories',$event.target.checked?'1':'0')">
                             Sin perfiles, usar categorías principales como universos
+                        </label>
+                        <label class="bxb-field">Aviso a la derecha de la barra
+                            <input type="text" maxlength="90" placeholder="Ej.: Venta por mayor desde 12 unidades" :value="settings.uni_top_note||''" @input.debounce.600ms="setSetting('uni_top_note',$event.target.value)">
+                            <small class="bxb-note">Déjalo vacío para no mostrar nada. No repitas aquí el teléfono si ya aparece en la fila del logo.</small>
                         </label>
                         <p class="bxb-note">Los universos salen de tus <strong>Perfiles</strong> (etapa Catálogo → "Perfiles de catálogo"). No se duplican datos: solo cambia cómo se navega.</p>
                     </div>
@@ -193,10 +260,10 @@
         <strong class="bxb-card-title">Encabezado y barra superior</strong>
         <div class="bxb-grid2">
             <label class="bxb-field">Fondo del encabezado
-                <span class="bxb-color-row"><input type="color" :value="settings.header_bg_color||'#ffffff'" @input="setSetting('header_bg_color',$event.target.value)" aria-label="Fondo del encabezado"><code x-text="settings.header_bg_color||'#ffffff'"></code></span>
+                <x-bxb-color clave="header_bg_color" defecto="#ffffff" etiqueta="Fondo del encabezado" />
             </label>
             <label class="bxb-field">Letra del encabezado
-                <span class="bxb-color-row"><input type="color" :value="settings.header_text_color||'#0f172a'" @input="setSetting('header_text_color',$event.target.value)" aria-label="Letra del encabezado"><code x-text="settings.header_text_color||'#0f172a'"></code></span>
+                <x-bxb-color clave="header_text_color" defecto="#0f172a" etiqueta="Letra del encabezado" />
             </label>
         </div>
         <label class="bxb-field">Diseño del menú de navegación
@@ -212,22 +279,14 @@
             <div class="bxb-grid2">
                 @foreach(['menu_bg_color' => 'Fondo del menú', 'menu_text_color' => 'Texto del menú', 'menu_active_bg_color' => 'Fondo del botón activo', 'menu_active_text_color' => 'Texto del botón activo'] as $mk => $ml)
                 <label class="bxb-field">{{ $ml }}
-                    <span class="bxb-color-row">
-                        <input type="color" :value="settings.{{ $mk }}||'#ffffff'" @input="setSetting('{{ $mk }}',$event.target.value)" aria-label="{{ $ml }}">
-                        <code x-text="settings.{{ $mk }}||'auto'"></code>
-                        <button type="button" class="bxb-link" x-show="settings.{{ $mk }}" @click="setSetting('{{ $mk }}','')">Auto</button>
-                    </span>
+                    <x-bxb-color clave="{{ $mk }}" defecto="#ffffff" etiqueta="{{ $ml }}" />
                 </label>
                 @endforeach
             </div>
             <small>El texto de cada botón del menú se cambia en Navegación (Inicio, Tienda, Nosotros…), no aquí.</small>
         </div>
         <label class="bxb-field">Fondo de la página (todo el lienzo)
-            <span class="bxb-color-row">
-                <input type="color" :value="settings.page_bg_color||'#f8fafc'" @input="setSetting('page_bg_color',$event.target.value)" aria-label="Fondo de la página">
-                <code x-text="settings.page_bg_color||'auto'"></code>
-                <button type="button" class="bxb-link" x-show="settings.page_bg_color" @click="setSetting('page_bg_color','')">Auto</button>
-            </span>
+            <x-bxb-color clave="page_bg_color" defecto="#f8fafc" etiqueta="Fondo de la página" />
         </label>
         <div class="bxb-field"><span>Qué baja con el scroll</span>
             <div class="bxb-seg">
@@ -243,14 +302,125 @@
         </label>
         <div class="bxb-grid2" x-show="(settings.announcement_text||'')!==''">
             <label class="bxb-field">Fondo de la barra
-                <span class="bxb-color-row"><input type="color" :value="settings.announcement_bg||'#0f172a'" @input="setSetting('announcement_bg',$event.target.value)" aria-label="Fondo barra superior"><code x-text="settings.announcement_bg||'#0f172a'"></code></span>
+                <x-bxb-color clave="announcement_bg" defecto="#0f172a" etiqueta="Fondo barra superior" />
             </label>
             <label class="bxb-field">Letra de la barra
-                <span class="bxb-color-row"><input type="color" :value="settings.announcement_color||'#ffffff'" @input="setSetting('announcement_color',$event.target.value)" aria-label="Letra barra superior"><code x-text="settings.announcement_color||'#ffffff'"></code></span>
+                <x-bxb-color clave="announcement_color" defecto="#ffffff" etiqueta="Letra barra superior" />
             </label>
         </div>
     </div>
 
+
+    {{-- ═══ Accesos del menú ═══
+         Eran tres enlaces fijos escritos en la plantilla (Ofertas, Novedades,
+         WhatsApp) y ni el texto ni el destino se podían tocar sin código. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Accesos del menú</strong>
+        <p class="bxb-note">Los botones que salen a la derecha de la barra de navegación. Cada uno puede llevar a una categoría, a un perfil de catálogo, a una acción (WhatsApp, llamar) o a la dirección que quieras. Deja el destino vacío para no usar esa ranura.</p>
+        <p class="bxb-note" x-show="![1,2,3,4,5,6].some(n=>settings['hp_nav_chip_'+n+'_target'])" x-cloak>
+            Ahora mismo se muestran los tres accesos de siempre (Ofertas, Novedades y WhatsApp). En cuanto configures la primera ranura, mandan estas.
+        </p>
+
+        <template x-for="n in 6" :key="'chip'+n">
+            <div class="bxb-grid2" style="grid-template-columns:auto 1.1fr 1.4fr .9fr .8fr auto;align-items:end;gap:10px;margin-bottom:10px">
+                <label class="bxb-switch" style="padding-bottom:9px">
+                    <input type="checkbox"
+                           :checked="(settings['hp_nav_chip_'+n+'_enabled']||'1')!=='0'"
+                           @change="setSetting('hp_nav_chip_'+n+'_enabled', $event.target.checked?'1':'0')">
+                    <span x-text="n"></span>
+                </label>
+
+                <label class="bxb-field">Texto
+                    <input type="text" maxlength="40" placeholder="Ofertas"
+                           :value="settings['hp_nav_chip_'+n+'_text']||''"
+                           @input.debounce.600ms="setSetting('hp_nav_chip_'+n+'_text',$event.target.value)">
+                </label>
+
+                <label class="bxb-field">Lleva a
+                    <select :value="settings['hp_nav_chip_'+n+'_target']||''"
+                            @change="setSetting('hp_nav_chip_'+n+'_target',$event.target.value)">
+                        <option value="">— sin usar —</option>
+                        <optgroup label="Acciones">
+                            <option value="ofertas">Ofertas del catálogo</option>
+                            <option value="novedades">Novedades</option>
+                            <option value="catalogo">Ver todo el catálogo</option>
+                            <option value="whatsapp">Escribir por WhatsApp</option>
+                        </optgroup>
+                        <optgroup label="Perfiles de catálogo" x-show="profiles && profiles.length">
+                            <template x-for="pf in (profiles||[])" :key="'ct'+n+'p'+pf.id">
+                                <option :value="'perfil:'+pf.slug" x-text="pf.menu_label||pf.name"></option>
+                            </template>
+                        </optgroup>
+                        <optgroup label="Categorías">
+                            <template x-for="c in (storeCategories||[])" :key="'ct'+n+'c'+c.id">
+                                <option :value="'categoria:'+c.id" x-text="c.name"></option>
+                            </template>
+                        </optgroup>
+                    </select>
+                </label>
+
+                <label class="bxb-field">Icono
+                    <select :value="settings['hp_nav_chip_'+n+'_icon']||'etiqueta'"
+                            @change="setSetting('hp_nav_chip_'+n+'_icon',$event.target.value)">
+                        <option value="etiqueta">Etiqueta</option>
+                        <option value="novedad">Novedad</option>
+                        <option value="descuento">Descuento</option>
+                        <option value="estrella">Estrella</option>
+                        <option value="corazon">Corazón</option>
+                        <option value="regalo">Regalo</option>
+                        <option value="camion">Envío</option>
+                        <option value="escudo">Garantía</option>
+                        <option value="tienda">Tienda</option>
+                        <option value="carrito">Carrito</option>
+                        <option value="caja">Producto</option>
+                        <option value="catalogo">Catálogo</option>
+                        <option value="telefono">Teléfono</option>
+                        <option value="soporte">Soporte</option>
+                        <option value="reloj">Horario</option>
+                        <option value="ubicacion">Ubicación</option>
+                        <option value="tarjeta">Pago</option>
+                        <option value="usuario">Cuenta</option>
+                        <option value="whatsapp">WhatsApp</option>
+                    </select>
+                </label>
+
+                <label class="bxb-field">Estilo
+                    <select :value="settings['hp_nav_chip_'+n+'_style']||'suave'"
+                            @change="setSetting('hp_nav_chip_'+n+'_style',$event.target.value)">
+                        <option value="plano">Solo texto</option>
+                        <option value="suave">Fondo suave</option>
+                        <option value="solido">Botón sólido</option>
+                    </select>
+                </label>
+
+                <label class="bxb-field">Color
+                    {{-- Mismo campo de una pieza que el resto, pero escrito a
+                         medida: la clave es dinámica (`'hp_nav_chip_'+n+'_color'`)
+                         y el componente recibe la clave como texto fijo. --}}
+                    <span class="bxb-color-one" x-data="{
+                        norm(v){
+                            v = String(v || '').trim().replace(/^#/, '');
+                            if (/^[0-9a-fA-F]{3}$/.test(v)) v = v.split('').map(c => c + c).join('');
+                            return /^[0-9a-fA-F]{6}$/.test(v) ? '#' + v.toLowerCase() : null;
+                        }
+                    }">
+                        <input type="color" class="bxb-color-dot"
+                               :value="settings['hp_nav_chip_'+n+'_color']||'#2563eb'"
+                               @change="setSetting('hp_nav_chip_'+n+'_color',$event.target.value)"
+                               aria-label="Elegir color del acceso">
+                        <input type="text" class="bxb-color-hex" maxlength="7" spellcheck="false"
+                               placeholder="automático"
+                               :value="settings['hp_nav_chip_'+n+'_color']||''"
+                               @change="(() => { const v = $event.target.value; if (String(v).trim() === '') { setSetting('hp_nav_chip_'+n+'_color',''); return; } const c = norm(v); if (c) setSetting('hp_nav_chip_'+n+'_color', c); })()"
+                               @blur="$event.target.value = settings['hp_nav_chip_'+n+'_color'] || ''"
+                               aria-label="Color del acceso en código hexadecimal">
+                    </span>
+                </label>
+            </div>
+        </template>
+
+        <p class="bxb-note">Un solo acceso en <b>botón sólido</b> por fila: dos compiten entre sí y ninguno destaca. El resto, en fondo suave o solo texto.</p>
+    </div>
 
     {{-- Menú de navegación (administración canónica; guarda al instante) --}}
     <div class="bxb-card bxb-embed">

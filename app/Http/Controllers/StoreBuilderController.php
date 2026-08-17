@@ -225,6 +225,40 @@ class StoreBuilderController extends Controller
     }
 
     /** Publicación transaccional: checklist → bloquear críticos → promover. */
+    /**
+     * Descarta el borrador y vuelve a lo publicado.
+     *
+     * Por qué hacía falta: el borrador acumula cambios que quizá nadie recuerda
+     * haber hecho —basta abrir un selector de color para que se guarde algo— y
+     * la única salida era publicar. Un cliente se encontró con once ajustes
+     * pendientes (tema oscuro, otro pie, otro estilo de tarjeta) que al publicar
+     * le habrían cambiado la tienda entera, y no tenía forma de deshacerlos.
+     *
+     * No toca nada publicado: solo borra el borrador. La tienda en vivo se queda
+     * exactamente como está.
+     */
+    public function discardDraft(Request $request)
+    {
+        $project = $this->project();
+
+        $cuantos = \DB::table('builder_drafts')->where('project_id', $project->id)->count();
+
+        if ($cuantos > 0) {
+            // Copia de seguridad antes de borrar: si alguien descarta por error,
+            // el trabajo no se pierde sin remedio.
+            \DB::table('builder_drafts_descartados')->insertUsing(
+                ['project_id', 'resource_type', 'resource_key', 'payload', 'descartado_en'],
+                \DB::table('builder_drafts')->where('project_id', $project->id)
+                    ->selectRaw('project_id, resource_type, resource_key, payload, NOW()')
+            );
+            \DB::table('builder_drafts')->where('project_id', $project->id)->delete();
+        }
+
+        $this->telemetry($project, 'builder_draft_discarded', ['cambios' => $cuantos]);
+
+        return response()->json(['ok' => true, 'descartados' => $cuantos]);
+    }
+
     public function publish(Request $request)
     {
         $project = $this->project();
@@ -481,7 +515,7 @@ JS;
                 'id' => $p->id, 'name' => $p->name, 'sku' => $p->sku,
                 'price' => (float) $p->price, 'is_available' => (bool) $p->is_available,
                 'image' => $p->mainImage?->url ? asset('storage/'.ltrim(preg_replace('#^storage/#', '', $p->mainImage->url), '/')) : null,
-                'edit_url' => route('products.edit', $p->id),
+                'edit_url' => route('products.index') . '?edit=' . $p->id,
             ]),
             'has_more' => $page->hasMorePages(),
         ]);

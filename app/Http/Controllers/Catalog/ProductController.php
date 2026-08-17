@@ -47,7 +47,97 @@ class ProductController extends Controller
 
         $allCatalogs  = $project->catalogLists()->where('is_active', true)->count();
 
-        return view('catalog.products.index', compact('project', 'categories', 'products', 'brands', 'units', 'suppliers', 'locations', 'taxes', 'allCatalogs'));
+        // Perfiles de catálogo activos — alimentan el modal "Catálogo PDF".
+        $pdfProfiles  = $project->catalogProfiles()->where('is_enabled', true)->orderBy('sort_order')->get(['id', 'name']);
+
+        // ¿Se muestra el campo de tallas/variantes? El rubro no sirve para decidirlo
+        // (casi todas las tiendas son "retail" pero muy pocas venden ropa), así que
+        // manda el interruptor de Configuración. Si nunca se configuró, se deduce de
+        // los datos: si el negocio YA cargó tallas en algún producto, se sigue mostrando.
+        $ajusteVariantes = $project->setting('feature_variantes');
+        $usaVariantes = $ajusteVariantes !== null && $ajusteVariantes !== ''
+            ? $ajusteVariantes === '1'
+            : $project->products()->where('options', 'like', '%"sizes"%')->exists();
+
+        return view('catalog.products.index', compact('project', 'categories', 'products', 'brands', 'units', 'suppliers', 'locations', 'taxes', 'allCatalogs', 'pdfProfiles', 'usaVariantes'));
+    }
+
+    /**
+     * Catálogo imprimible (PDF vía el diálogo del navegador, mismo patrón que
+     * las facturas). Filtros: ?category_id= (incluye subcategorías),
+     * ?profile_id= (mismo alcance que el perfil aplica en la tienda),
+     * ?prices=retail|wholesale|none.
+     */
+    public function catalogPdf(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $prices  = in_array($request->query('prices'), ['retail', 'wholesale', 'none'], true)
+            ? $request->query('prices') : 'retail';
+
+        $query = $project->products()->where('is_available', true)
+            ->with(['images' => fn ($q) => $q->where('is_main', true), 'category.parent']);
+
+        $profile  = null;
+        $category = null;
+
+        if ($pid = $request->integer('profile_id')) {
+            $profile = \App\Models\StoreCatalogProfile::where('project_id', $project->id)->findOrFail($pid);
+
+            // Misma regla que CatalogQueryService::applyProfileScope (la tienda):
+            // productos directos ∪ categorías asignadas (raíces expandidas a hijas),
+            // respetando la política de huérfanos del proyecto.
+            $catIds = $profile->categories()->pluck('categories.id');
+            $expanded = collect();
+            if ($catIds->isNotEmpty()) {
+                $roots    = $project->categories()->whereIn('id', $catIds)->whereNull('parent_id')->pluck('id');
+                $childIds = $roots->isNotEmpty()
+                    ? $project->categories()->where('is_active', true)->whereIn('parent_id', $roots)->pluck('id')
+                    : collect();
+                $expanded = $catIds->merge($childIds)->unique()->values();
+            }
+            $productIds = $profile->products()->pluck('products.id');
+
+            if ($expanded->isNotEmpty() || $productIds->isNotEmpty()) {
+                $orphanPolicy = (string) $project->setting('catalog_profile_orphan_policy', 'hide');
+                $query->where(function ($q) use ($expanded, $productIds, $orphanPolicy) {
+                    if ($productIds->isNotEmpty()) $q->orWhereIn('id', $productIds->all());
+                    if ($expanded->isNotEmpty())   $q->orWhereIn('category_id', $expanded->all());
+                    if ($orphanPolicy === 'show_all') $q->orWhereDoesntHave('catalogProfiles');
+                });
+            }
+        } elseif ($cid = $request->integer('category_id')) {
+            $category = $project->categories()->findOrFail($cid);
+            $childIds = $project->categories()->where('parent_id', $cid)->pluck('id');
+            $query->where(fn ($q) => $q->where('category_id', $cid)->orWhereIn('category_id', $childIds));
+        }
+
+        $products = $query->orderBy('sort_order')->orderBy('name')->get();
+
+        // Secciones por categoría raíz (las subcategorías cuelgan de su padre).
+        // El prefijo "~" manda "Sin categoría" al final del orden alfabético.
+        $groups = $products->groupBy(function ($p) {
+            $c = $p->category;
+            if (!$c) return '~Sin categoría';
+            return $c->parent ? $c->parent->name : $c->name;
+        })->sortKeys()->mapWithKeys(fn ($items, $key) => [ltrim($key, '~') => $items]);
+
+        $settings = $project->settings()->pluck('value', 'key');
+
+        // Presentación: densidad de la grilla y portada.
+        $layout = in_array($request->query('layout'), ['grid2', 'grid3', 'grid4'], true)
+            ? $request->query('layout') : 'grid3';
+        $cover  = $request->query('cover', '1') === '1';
+
+        // URL pública para el QR: el perfil tiene la suya propia.
+        $storeUrl = $profile
+            ? \App\Support\StorefrontNavigation::profileUrl($project, $profile->slug)
+            : \App\Support\StorefrontNavigation::publicUrl($project);
+
+        return view('catalog.products.catalog-pdf', compact(
+            'project', 'groups', 'prices', 'profile', 'category', 'settings',
+            'layout', 'cover', 'storeUrl'
+        ));
     }
 
     /** "S, M, L" → options.sizes (conserva otras claves de options). */
@@ -83,6 +173,8 @@ class ProductController extends Controller
             'wholesale_min_qty'=> 'nullable|integer|min:1',
             'wholesale_unit'   => 'nullable|string|max:30',
             'cost'             => 'nullable|numeric|min:0',
+            'has_tax'          => 'boolean',
+            'tax_rate'         => 'nullable|numeric|min:0|max:100',
             'unit'             => 'nullable|string|max:30',
             'stock'            => 'nullable|integer|min:0',
             'stock_min'        => 'nullable|integer|min:0',
@@ -100,8 +192,22 @@ class ProductController extends Controller
         $data['project_id']   = $project->id;
         $data['is_available'] = $request->boolean('is_available', true);
         $data = $this->applySizes($data);
+        // La descripción admite formato básico: se limpia antes de guardar.
+        $data['description'] = \App\Support\RichText::clean($data['description'] ?? null);
+
+        // El stock inicial entra por el Kardex, no por el create: así el primer
+        // asiento del producto explica de dónde salieron esas unidades.
+        $stockInicial = $data['stock'] ?? null;
+        $data['stock'] = $stockInicial !== null ? 0 : null;
 
         $product = Product::create($data);
+
+        if ($stockInicial !== null && (int) $stockInicial !== 0) {
+            \App\Support\InventoryLedger::registrar(
+                $product, (int) $stockInicial, 'inicial',
+                $data['cost'] ?? null, 'Stock inicial al crear el producto'
+            );
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['product' => $this->productRow($product)]);
@@ -118,7 +224,31 @@ class ProductController extends Controller
         $data = $request->validate($this->rules());
         $data['is_available'] = $request->boolean('is_available');
         $data = $this->applySizes($data, $product);
+        $data['description'] = \App\Support\RichText::clean($data['description'] ?? null);
+
+        // Si el usuario cambió el stock a mano, queda registrado en el Kardex.
+        // Se saca del update para que el ajuste lo escriba el ledger (y no se
+        // pise el saldo que este acaba de calcular).
+        $stockPedido = array_key_exists('stock', $data) ? $data['stock'] : null;
+        $stockPrevio = $product->stock;
+        unset($data['stock']);
+
         $product->update($data);
+
+        if ($stockPedido !== null && $stockPrevio !== null && (int) $stockPedido !== (int) $stockPrevio) {
+            \App\Support\InventoryLedger::ajustarA($product, (int) $stockPedido, 'conteo', 'Ajuste manual desde el editor de producto');
+        } elseif ($stockPrevio === null && $stockPedido !== null) {
+            // Producto que empieza a llevar inventario: se asienta el stock inicial.
+            $product->update(['stock' => (int) $stockPedido]);
+            \App\Models\InventoryMovement::create([
+                'project_id' => $product->project_id, 'product_id' => $product->id,
+                'user_id' => auth()->id(), 'type' => 'in', 'reason' => 'inicial',
+                'quantity' => (int) $stockPedido, 'unit_cost' => $product->cost,
+                'balance_after' => (int) $stockPedido, 'notes' => 'Stock inicial',
+            ]);
+        } elseif ($stockPedido === null && $stockPrevio !== null) {
+            $product->update(['stock' => null]);   // dejó de llevar inventario
+        }
 
         if ($request->expectsJson()) {
             $product->load('category');
@@ -186,10 +316,149 @@ class ProductController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /** Aplica una acción a varios productos seleccionados a la vez. */
+    public function bulkAction(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $data = $request->validate([
+            'ids'         => 'required|array|min:1',
+            'ids.*'       => 'integer',
+            'action'      => 'required|string|in:available,unavailable,stock_on,stock_off,tax_on,tax_off,delete,set_category,price_adjust',
+            'tax_rate'    => 'nullable|numeric|min:0|max:100',
+            'category_id' => 'nullable|integer',
+            'price_mode'  => 'nullable|string|in:pct,fixed',
+            'price_delta' => 'nullable|numeric',
+        ]);
+        // La ruta exige catalog.editar, pero 'delete' borra de verdad: ese permiso
+        // no se puede resolver en la ruta porque depende del payload.
+        if ($data['action'] === 'delete') {
+            abort_unless($request->user()?->can('catalog.eliminar'), 403, 'No tienes permiso para eliminar productos.');
+        }
+
+        $query = Product::whereIn('id', $data['ids'])->where('project_id', $project->id);
+
+        $count = match ($data['action']) {
+            'available'   => $query->update(['is_available' => true]),
+            'unavailable' => $query->update(['is_available' => false]),
+            // Activar stock solo toca los que estaban sin seguimiento (stock null),
+            // para no resetear a 0 el stock de los que ya lo llevaban.
+            'stock_on'    => (clone $query)->whereNull('stock')->update(['stock' => 0]),
+            'stock_off'   => $this->bulkStockOff($query),
+            'tax_on'      => $query->update(array_filter([
+                'has_tax'  => true,
+                'tax_rate' => $data['tax_rate'] ?? null,
+            ], fn ($v) => $v !== null)),
+            'tax_off'     => $query->update(['has_tax' => false]),
+            'delete'      => $this->bulkDelete($query),
+            'set_category' => $this->bulkSetCategory($query, $project, $data['category_id'] ?? null),
+            'price_adjust' => $this->bulkPriceAdjust($query, $data['price_mode'] ?? null, $data['price_delta'] ?? null),
+        };
+
+        return response()->json(['ok' => true, 'count' => $count]);
+    }
+
+    /**
+     * Dejar de llevar inventario. El saldo no puede evaporarse sin dejar rastro:
+     * se cierra en cero por el Kardex y recién entonces se pone stock a null.
+     */
+    private function bulkStockOff($query): int
+    {
+        foreach ((clone $query)->whereNotNull('stock')->where('stock', '!=', 0)->get() as $p) {
+            \App\Support\InventoryLedger::ajustarA($p, 0, 'ajuste_negativo', 'Dejó de llevar control de inventario');
+        }
+        return $query->update(['stock' => null]);
+    }
+
+    private function bulkSetCategory($query, $project, ?int $categoryId): int
+    {
+        if ($categoryId !== null) {
+            // No dejar que asignen una categoría de otro proyecto por error de ids.
+            abort_unless(
+                \App\Models\Category::where('id', $categoryId)->where('project_id', $project->id)->exists(),
+                422, 'Categoría inválida.'
+            );
+        }
+        return $query->update(['category_id' => $categoryId]);
+    }
+
+    private function bulkPriceAdjust($query, ?string $mode, ?float $delta): int
+    {
+        abort_if($mode === null || $delta === null, 422, 'Falta el tipo de ajuste o el monto.');
+        // GREATEST evita que un ajuste a la baja deje precios en 0 o negativos.
+        $expr = $mode === 'pct'
+            ? 'GREATEST(0.01, price * (1 + (' . (float) $delta . ') / 100))'
+            : 'GREATEST(0.01, price + (' . (float) $delta . '))';
+        return $query->update(['price' => \Illuminate\Support\Facades\DB::raw($expr)]);
+    }
+
+    private function bulkDelete($query): int
+    {
+        $productIds = (clone $query)->pluck('id');
+        $count = $productIds->count();
+        if ($count === 0) return 0;
+
+        ProductImage::whereIn('product_id', $productIds)->get()->each(function (ProductImage $image) {
+            $relativePath = ltrim(str_replace('/avan/public/', '', parse_url($image->url, PHP_URL_PATH)), '/');
+            $fullPath = public_path($relativePath);
+            if (file_exists($fullPath)) @unlink($fullPath);
+        });
+        \App\Models\CatalogIntegrationItem::where('local_type', Product::class)
+            ->whereIn('local_id', $productIds)->delete();
+        Product::whereIn('id', $productIds)->delete();
+
+        return $count;
+    }
+
+    /** Clona un producto (y sus fotos, como archivos independientes) para variantes rápidas. */
+    public function duplicate(Product $product)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        abort_unless($product->project_id === $project->id, 403);
+
+        $copy = $product->replicate(['catalog_integration_id', 'external_sync_status']);
+        $copy->name = $product->name . ' (copia)';
+        $copy->sku  = $product->sku ? $product->sku . '-' . strtoupper(substr(uniqid(), -4)) : null;
+        $copy->sort_order = ((int) Product::where('project_id', $project->id)->max('sort_order')) + 1;
+        // La copia hereda el seguimiento de stock pero NO las unidades: duplicar
+        // un producto no compra mercadería. Arrancar con el saldo del original
+        // inventaría existencias que nadie ingresó y el Kardex no podría explicar.
+        $copy->stock = $product->stock === null ? null : 0;
+        $copy->save();
+
+        // Se copian los archivos físicos (no solo la URL): si el original y la
+        // copia apuntaran al mismo archivo, borrar la imagen de uno borraría
+        // también la del otro.
+        foreach ($product->images as $img) {
+            $relativePath = ltrim(str_replace('/avan/public/', '', parse_url($img->url, PHP_URL_PATH)), '/');
+            $sourcePath = public_path($relativePath);
+            if (!file_exists($sourcePath)) continue;
+
+            $dir = public_path('uploads/products/' . $copy->id);
+            if (!is_dir($dir)) mkdir($dir, 0775, true);
+            $filename = time() . '_' . uniqid() . '.jpg';
+            if (!@copy($sourcePath, $dir . '/' . $filename)) continue;
+
+            $copy->images()->create([
+                'url'        => asset('uploads/products/' . $copy->id . '/' . $filename),
+                'is_main'    => $img->is_main,
+                'sort_order' => $img->sort_order,
+            ]);
+        }
+
+        return response()->json(['product' => $this->productRow($copy->fresh(['category', 'images']))]);
+    }
+
     public function export()
     {
         $project  = app('active_project');
-        $products = $project->products()->with(['category', 'category.parent'])->orderBy('sort_order')->get()->map(fn($p) => [
+        $ids      = request('ids');
+        $query    = $project->products()->with(['category', 'category.parent'])->orderBy('sort_order');
+        if (is_array($ids) && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+        $products = $query->get()->map(fn($p) => [
             'nombre'              => $p->name,
             'sku'                 => $p->sku ?? '',
             'codigo_barras'       => $p->barcode ?? '',
@@ -539,10 +808,25 @@ class ProductController extends Controller
                     'description'   => trim($data['descripcion'] ?? '') ?: null,
                     'notes'         => trim($data['notas'] ?? '') ?: null,
                 ];
+                // El stock del Excel no se escribe directo: entra por el Kardex para
+                // que quede el asiento de dónde salieron esas unidades.
+                $stockImportado = $payload['stock'];
+                unset($payload['stock']);
+
                 $existing = $sku ? Product::where('project_id', $project->id)->where('sku', $sku)->first() : null;
                 $existing ??= Product::where('project_id', $project->id)->where('name', $nombre)->first();
-                if ($existing) { $existing->update($payload); $updated++; }
-                else           { Product::create($payload);   $created++; }
+                if ($existing) {
+                    $existing->update($payload);
+                    $updated++;
+                    $prodImp = $existing;
+                } else {
+                    $prodImp = Product::create($payload + ['stock' => 0]);
+                    $created++;
+                }
+                \App\Support\InventoryLedger::ajustarA(
+                    $prodImp, $stockImportado, 'conteo',
+                    'Stock fijado por importación de Excel'
+                );
             } catch (\Exception $e) {
                 $errors[] = '"' . $nombre . '" (fila ' . $i . '): ' . $e->getMessage();
             }
@@ -839,6 +1123,8 @@ class ProductController extends Controller
             'wholesale_min_qty'=> $p->wholesale_min_qty,
             'wholesale_unit'   => $p->wholesale_unit,
             'cost'             => $p->cost !== null ? (float)$p->cost : null,
+            'has_tax'          => (bool)$p->has_tax,
+            'tax_rate'         => $p->tax_rate !== null ? (float)$p->tax_rate : 18,
             'unit'             => $p->unit,
             'stock'            => $p->stock,
             'stock_min'        => $p->stock_min,

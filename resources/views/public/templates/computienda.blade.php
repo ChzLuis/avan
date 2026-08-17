@@ -52,7 +52,12 @@
     // Color reservado a ofertas y precios rebajados. Separado del acento
     // porque el acento tambien pinta el encabezado: si se cambia por el de
     // ofertas, el buscador y el carrito se tinen del mismo color.
-    $saleColor = $color($settings['sale_color'] ?? null, $accent);
+    // El color de ofertas caía al acento de la tienda: en Tecsist eso era el
+    // celeste de marca, así que un "-33%" salía del mismo color que todo lo
+    // demás y no se leía como rebaja. Por defecto va en rojo, que es lo que
+    // significa descuento en cualquier tienda. Sigue siendo modificable desde
+    // Apariencia → Ofertas y descuentos.
+    $saleColor = $color($settings['sale_color'] ?? null, '#E11D2E');
     $headerBg = $color($settings['header_bg_color'] ?? null, '#ffffff');
     $headerText = $color($settings['header_text_color'] ?? null, '#0f172a');
     $heroBg = $color($settings['hero_bg_color'] ?? null, '#f1f5f9');
@@ -74,8 +79,20 @@
         ? ($settings['section_spacing'] ?? 'comfortable') : 'comfortable';
     $sectionHeadingAlign = in_array(($settings['section_heading_align'] ?? 'left'), ['left','center'], true)
         ? ($settings['section_heading_align'] ?? 'left') : 'left';
-    $sectionBackgroundMode = in_array(($settings['section_background_mode'] ?? 'alternate'), ['white','soft','alternate'], true)
+    // 'pastel': tres bandas de color suave que van rotando seccion a seccion.
+    // Pensado para tiendas que necesitan leerse calidas (bebes, hogar) sin
+    // pintar el sitio entero: cada banda es configurable desde el constructor.
+    $sectionBackgroundMode = in_array(($settings['section_background_mode'] ?? 'alternate'), ['white','soft','alternate','pastel'], true)
         ? ($settings['section_background_mode'] ?? 'alternate') : 'alternate';
+    $bandaPastel = static function (string $k, string $def) use ($settings): string {
+        $v = (string) ($settings[$k] ?? '');
+        return preg_match('/^#[0-9a-fA-F]{6}$/', $v) ? $v : $def;
+    };
+    $bandas = [
+        $bandaPastel('pastel_band_1', '#FDF6EF'),
+        $bandaPastel('pastel_band_2', '#FDF0F2'),
+        $bandaPastel('pastel_band_3', '#EEF6F9'),
+    ];
     $sectionShowDividers = (string) ($settings['section_show_dividers'] ?? '1') !== '0';
     $sectionCardShadow = (string) ($settings['section_card_shadow'] ?? '1') !== '0';
 
@@ -176,6 +193,26 @@
         ? ($settings['card_cart_style'] ?? 'full') : 'full';
     $pcWaStyle = in_array($settings['card_whatsapp_style'] ?? 'outline', ['outline','solid','link','icon'], true)
         ? ($settings['card_whatsapp_style'] ?? 'outline') : 'outline';
+
+    // ═══ Textos comerciales de la tarjeta y la ficha ═══
+    // Estaban escritos a mano en siete sitios distintos. Son frases que el
+    // cliente le dice a SU comprador ("Foto en camino" es una promesa, no una
+    // etiqueta de interfaz), así que le tocan a él, no al código.
+    $txtoLibre = static fn (string $k, string $porDefecto) =>
+        trim((string) ($settings[$k] ?? '')) ?: $porDefecto;
+    $txtSinFoto      = $txtoLibre('card_no_photo_text', 'Foto en camino');
+    $txtPrecioConsul = $txtoLibre('price_on_request_text', 'Precio a solicitud');
+    $txtMinorista    = $txtoLibre('buy_retail_label', 'Minorista');
+    $txtMayorista    = $txtoLibre('buy_wholesale_label', 'Mayorista');
+    $txtPorUnidad    = $txtoLibre('buy_unit_label', 'Por unidad');
+    $txtAgotado      = $txtoLibre('sold_out_text', 'Producto agotado temporalmente');
+    $txtRelacionados = $txtoLibre('related_title', 'Productos relacionados');
+
+    // Estilo del título de sección: suelto sobre el fondo (como siempre) o
+    // dentro de una barra de color. La barra separa mejor los bloques cuando la
+    // portada encadena varias secciones seguidas de productos.
+    $estiloTituloSeccion = in_array($settings['section_head_style'] ?? 'normal', ['normal','barra'], true)
+        ? ($settings['section_head_style'] ?? 'normal') : 'normal';
     $pcQtyStyle = in_array($settings['card_qty_style'] ?? 'horizontal', ['horizontal','compact'], true)
         ? ($settings['card_qty_style'] ?? 'horizontal') : 'horizontal';
     $columns = max(2, min(5, (int) ($settings['catalog_cols_desktop'] ?? 4)));
@@ -187,7 +224,10 @@
         'pill' => 24,
         default => max(0, min(24, (int) $radiusSetting)),
     };
-    $logoUrl = \App\Support\ImageVariants::webp($assetUrl($settings['logo_url'] ?? $project->logo_url ?? null));
+    // Logo: si hay un perfil activo (Niño/Niña) y tiene logo propio, manda el suyo.
+    // El campo existia en la base y en el formulario, pero la tienda nunca lo leia.
+    $logoPerfil = !empty($activeProfile) ? ($activeProfile->logo_path ?: null) : null;
+    $logoUrl = \App\Support\ImageVariants::webp($assetUrl($logoPerfil ?? $settings['logo_url'] ?? $project->logo_url ?? null));
     $waSource = $settings['whatsapp_number']
         ?? $settings['quote_whatsapp']
         ?? $settings['contact_whatsapp']
@@ -202,7 +242,13 @@
     $inquiryText = trim($settings['btn_inquiry_text'] ?? '') !== '' ? trim($settings['btn_inquiry_text']) : 'Consultar';
     $showCartButton = $productButtonMode !== 'inquiry';
     $showInquiryButton = $productButtonMode !== 'cart' && $whatsapp;
-    $inquiryMsgBase = $quoteMode ? 'Hola, quiero cotizar este producto: ' : 'Hola, quiero consultar por este producto: ';
+    // Mensaje con el que se abre WhatsApp desde una tarjeta o ficha. Estaba
+    // escrito a fuego en la plantilla: cambiar el saludo con el que un cliente
+    // recibe a SUS compradores obligaba a tocar código. Se le añade el nombre
+    // del producto y su enlace donde se usa.
+    $inquiryMsgBase = trim((string) ($settings['wa_product_msg'] ?? '')) !== ''
+        ? rtrim((string) $settings['wa_product_msg']).' '
+        : ($quoteMode ? 'Hola, quiero cotizar este producto: ' : 'Hola, quiero consultar por este producto: ');
     $phone = $settings['contact_phone'] ?? $project->phone ?? '';
     // Se respeta el host por el que entra el visitante: forzar el dominio propio
     // rompia la tienda cuando ese dominio no responde (MegaHogar entra por
@@ -261,7 +307,11 @@
     $filterCats       = (string) ($settings['catalog_filter_cats'] ?? '1') !== '0';
     $filterPrice      = (string) ($settings['catalog_filter_price'] ?? '1') !== '0';
     $footerCopyright  = trim($settings['footer_copyright'] ?? '') !== '' ? $settings['footer_copyright'] : ('© ' . date('Y') . ' ' . $storeName . '. Todos los derechos reservados.');
-    $footerLogoHeight = (int) ($settings['footer_logo_height'] ?? 50) ?: 50;
+    // Con tope: el ajuste aceptaba cualquier número y Baby Toncito tenía 300px.
+    // Un logo de 300 en el pie deja la columna de marca con un hueco enorme,
+    // empuja la descripción muy por debajo del resto de columnas y descuadra la
+    // rejilla entera. 140 ya es un logo grande de verdad.
+    $footerLogoHeight = max(24, min(140, (int) ($settings['footer_logo_height'] ?? 50) ?: 50));
     $showSocial       = (string) ($settings['footer_show_social'] ?? '1') !== '0';
     // Orden estandar de redes: Facebook, Instagram, TikTok, YouTube, LinkedIn.
     $social = array_filter([
@@ -554,8 +604,33 @@
     // La serialización del catálogo sigue protegida aparte por $catalogProducts.
     $allProducts = $categories->flatMap(fn ($cat) => $cat->products->concat($cat->children->flatMap(fn ($child) => $child->products)))->unique('id')->values();
     $catalogProducts = collect();
+    // Dentro de un perfil (Niño/Niña) el catalogo solo muestra SUS productos, pero
+    // este listado se armaba con todas las categorias: el filtro decia "Todos los
+    // productos 26" mientras la rejilla decia "11 productos".
+    $catCategorias = $categories;
+    if (!empty($activeProfile)) {
+        $idsPerfil = $activeProfile->categories()->pluck('categories.id')->map(fn ($v) => (int) $v)->all();
+        if ($idsPerfil) {
+            $catCategorias = $categories->filter(function ($c) use ($idsPerfil) {
+                if (in_array((int) $c->id, $idsPerfil, true)) return true;
+                foreach ($c->children ?? [] as $h) if (in_array((int) $h->id, $idsPerfil, true)) return true;
+                return false;
+            })->values();
+            // Si la raiz NO esta en el perfil y solo lo esta alguna hija, hay que
+            // podar: si no, se cuelan los productos de la raiz y de sus otras
+            // hijas. Era por esto que un perfil de 4 productos decia "Laptops 5".
+            $catCategorias->each(function ($c) use ($idsPerfil) {
+                if (in_array((int) $c->id, $idsPerfil, true)) return;
+                $c->setRelation('products', collect());
+                if ($c->children) {
+                    $c->setRelation('children',
+                        $c->children->filter(fn ($h) => in_array((int) $h->id, $idsPerfil, true))->values());
+                }
+            });
+        }
+    }
     if ($isCatalogView)
-    foreach ($categories as $category) {
+    foreach ($catCategorias as $category) {
         foreach ($category->products as $product) {
             $catalogProducts->push([
                 'id' => (string) $product->id,
@@ -629,6 +704,24 @@
         ? ($settings['hero_transition'] ?? 'fade') : 'fade';
     $heroMobileHeight = max(360, min(760, (int) ($settings['hero_mobile_height'] ?? 520)));
 
+    // Que hacer cuando NO hay fotografia de portada. El montaje de recortes de
+    // producto flotando solo funciona con packshots sin fondo; con fotos sobre
+    // blanco se ven las cajas recortadas y el hero parece un error. En ese caso
+    // un hero tipografico centrado es mas digno que un collage forzado.
+    // Por defecto se mantiene el montaje: las tiendas ya publicadas no cambian.
+    // Que hacer con los productos SIN fotografia. Con "placeholder" se reserva el
+    // hueco de la imagen y se pinta una caja gris (util cuando faltan pocas). Con
+    // "compact" la tarjeta prescinde del hueco y el nombre y el precio hacen el
+    // trabajo: es lo unico honesto en un catalogo que no tiene fotos. En cuanto
+    // un producto tenga foto, esa tarjeta vuelve al formato normal ella sola.
+    $cardsSinFoto = in_array(($settings['cards_no_photo_style'] ?? 'placeholder'), ['placeholder', 'compact'], true)
+        ? ($settings['cards_no_photo_style'] ?? 'placeholder')
+        : 'placeholder';
+
+    $heroNoImageStyle = in_array(($settings['hero_no_image_style'] ?? 'collage'), ['collage', 'typographic'], true)
+        ? ($settings['hero_no_image_style'] ?? 'collage')
+        : 'collage';
+
     $heroSlides = [];
     foreach (range(1, 5) as $n) {
         $desktopKey = $n === 1 ? 'hero_image' : "hero_image_{$n}";
@@ -677,7 +770,9 @@
     $fontTitle = trim($settings['font_title'] ?? $settings['font'] ?? 'Inter') ?: 'Inter';
     $fontBody  = trim($settings['font_body'] ?? $settings['font'] ?? 'Inter') ?: 'Inter';
     $fontList  = collect([$fontTitle, $fontBody, 'Inter'])->unique()->filter()->values();
-    $googleFonts = $fontList->map(fn ($f) => str_replace(' ', '+', $f) . ':wght@400;500;600;700')->implode('&family=');
+    // 800 incluido: los titulares se piden a 800 y sin este peso el navegador
+    // sintetiza una negrita falsa que ensucia el trazo.
+    $googleFonts = $fontList->map(fn ($f) => str_replace(' ', '+', $f) . ':wght@400;500;600;700;800')->implode('&family=');
     // Alto del header y logo SIN TOPE: el vendedor controla el tamaño libremente.
     $headerHeight = (int) ($settings['header_height'] ?? 78) ?: 78;
     $logoHeight = (int) ($settings['header_logo_height'] ?? $settings['logo_height'] ?? 48) ?: 48;
@@ -702,6 +797,29 @@
     $footerStyle = in_array(($settings['footer_style'] ?? 'classic'), ['classic', 'light', 'accent', 'minimal'], true)
         ? ($settings['footer_style'] ?? 'classic') : 'classic';
     $footerText = $color($settings['footer_text_color'] ?? null, '#94a3b8');
+    // El pie tambien pertenece al mundo activo: si el perfil define su propio
+    // fondo o color de cabecera, el pie lo sigue en vez de quedarse con el de la
+    // tienda general. Sin valores propios, comportamiento identico al anterior.
+    if (!empty($activeProfile)) {
+        if (!empty($activeProfile->header_bg_color)) $headerBg = $color($activeProfile->header_bg_color, $headerBg);
+        if (!empty($activeProfile->header_text_color)) $headerText = $color($activeProfile->header_text_color, $headerText);
+        if (!empty($activeProfile->secondary_color)) $secondary = $color($activeProfile->secondary_color, $secondary);
+        // El acento tambien sigue al mundo activo. Sin esto, el boton del
+        // buscador y los detalles se quedaban con el acento de la tienda: en el
+        // perfil verde salia un boton cian dentro del encabezado verde.
+        if (!empty($activeProfile->primary_color)) $accent = $color($activeProfile->primary_color, $accent);
+        if (!empty($activeProfile->footer_bg_color)) {
+            $footerBg = $color($activeProfile->footer_bg_color, $footerBg);
+            // Con fondo propio del mundo, la letra del pie se elige por luminancia:
+            // un pie celeste o rosa con la tinta del pie general se vuelve ilegible.
+            $lumPie = (static function (string $hex): float {
+                $hex = ltrim($hex, '#');
+                if (strlen($hex) !== 6) return 0.0;
+                return (0.299 * hexdec(substr($hex, 0, 2)) + 0.587 * hexdec(substr($hex, 2, 2)) + 0.114 * hexdec(substr($hex, 4, 2))) / 255;
+            })($footerBg);
+            $footerText = $lumPie > 0.62 ? '#3F3730' : '#FFFFFF';
+        }
+    }
     // Anuncios promocionales configurables: hasta 3 piezas.
     $promoEnabled = (string) ($settings['promo_enabled'] ?? '1') !== '0';
     $promoSectionTitle = trim($settings['promo_section_title'] ?? 'Promociones');
@@ -828,6 +946,53 @@
           --secondary:{{ $secondary }};
           --accent:{{ $accent }};
           --sale:{{ $saleColor }};
+          {{-- Color propio de la barra de los títulos de sección. Sin él usaba
+               el color principal, así que cambiarlo obligaba a cambiar toda la
+               tienda para retocar una barra. --}}
+          {{-- El respaldo se resuelve en CSS con var(--primary), no en PHP: al
+               pasarle $primary al ayudante devolvía azul marino y la barra salía
+               de otro color. El CSS ya sabe cuál es el principal. --}}
+          --barra-seccion:{{ preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($settings['section_head_bar_color'] ?? '')) ? $settings['section_head_bar_color'] : 'var(--primary)' }};
+          {{-- La letra de la barra estaba forzada a blanco: si el cliente ponía
+               una barra clara, el título desaparecía y no había forma de
+               arreglarlo desde el panel. --}}
+          --barra-seccion-txt:{{ preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($settings['section_head_text_color'] ?? '')) ? $settings['section_head_text_color'] : '#ffffff' }};
+          {{-- Botón que acompaña a la barra ("Ver todos los productos"). Iba
+               blanco con letra del color principal, fijo en el código. --}}
+          --barra-btn-bg:{{ preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($settings['section_head_btn_bg'] ?? '')) ? $settings['section_head_btn_bg'] : '#ffffff' }};
+          --barra-btn-txt:{{ preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($settings['section_head_btn_color'] ?? '')) ? $settings['section_head_btn_color'] : 'var(--primary)' }};
+          {{-- Tinta de la franja móvil, elegida por la luminancia de su fondo
+               (el acento). Misma regla que usan las etiquetas del menú, para que
+               ningún color deje ese texto ilegible. --}}
+          @php
+              // Color propio de la franja si el constructor lo define; si no,
+              // sigue cayendo en acento/marca como siempre.
+              $tickerBgSetting = (string) ($settings['ticker_bg_color'] ?? '');
+              $tickerBg = preg_match('/^#[0-9a-fA-F]{6}$/', $tickerBgSetting) ? $tickerBgSetting : null;
+              $tkFondo = ltrim((string) ($tickerBg ?? $accentColor ?? $accent ?? $primary), '#');
+              if (strlen($tkFondo) !== 6) $tkFondo = ltrim((string) $primary, '#');
+              $tkLin = static fn ($c) => ($c /= 255) <= 0.03928 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
+              $tkL = strlen($tkFondo) === 6
+                  ? 0.2126 * $tkLin(hexdec(substr($tkFondo, 0, 2))) + 0.7152 * $tkLin(hexdec(substr($tkFondo, 2, 2))) + 0.0722 * $tkLin(hexdec(substr($tkFondo, 4, 2)))
+                  : 0.5;
+          @endphp
+          --ticker-txt:{{ (1.05 / ($tkL + 0.05)) >= 4.5 ? '#ffffff' : '#10231f' }};
+          {{-- Tinta para botones pintados con el ACENTO: sobre un acento claro
+               (dorado de MegaHogar) el blanco fijo daba 2,2:1. Misma luminancia
+               que la franja, pero contra el acento real. --}}
+          @php
+              $acFondo = ltrim((string) ($accentColor ?? $accent ?? $primary), '#');
+              if (strlen($acFondo) !== 6) $acFondo = ltrim((string) $primary, '#');
+              $acL = 0.2126 * $tkLin(hexdec(substr($acFondo, 0, 2))) + 0.7152 * $tkLin(hexdec(substr($acFondo, 2, 2))) + 0.0722 * $tkLin(hexdec(substr($acFondo, 4, 2)));
+          @endphp
+          --accent-ink:{{ (1.05 / ($acL + 0.05)) >= 4.5 ? '#ffffff' : '#1c1508' }};
+          {{-- Acento ya resuelto a hex: color-mix() con var(a,var(b)) anidado
+               se invalida en Chromium; con una variable simple funciona. --}}
+          --accent-hex:#{{ $acFondo }};
+          --ticker-bg:{{ $tickerBg ?? 'var(--accent, var(--primary))' }};
+          --band-1:{{ $bandas[0] }};
+          --band-2:{{ $bandas[1] }};
+          --band-3:{{ $bandas[2] }};
           --header-bg:{{ $headerBg }};
           --header-text:{{ $headerText }};
           --hero-bg:{{ $heroBg }};
@@ -891,18 +1056,23 @@
         @endif
 
         @if($themeBodyClass === 'theme-soft-kids')
-        /* ── Identidad INFANTIL: lunares, subrayado de crayón, formas jugosas ── */
-        /* El punteado al 9% y cada 26px se leia como papel cuadriculado en las zonas
-           vacias. Mas fino y mas separado: textura, no rejilla. */
-        .theme-soft-kids{background-image:radial-gradient(color-mix(in srgb,var(--primary) 5%,transparent) 1.6px,transparent 1.9px);background-size:34px 34px}
+        /* ── Identidad BOUTIQUE SUAVE ─────────────────────────────────────────
+           Antes: lunares de fondo, subrayado de crayon, tarjetas que rotaban al
+           pasar y contornos discontinuos. Eso leia guarderia, no boutique. La
+           ropa ya pone el color; el sitio pone el aire. Crema, un solo sistema
+           de titular y movimiento vertical discreto.                          */
+        .theme-soft-kids{background:var(--surface-soft)}
         .theme-soft-kids [data-store-native-section]{background:transparent}
-        .theme-soft-kids .section-heading h2,.theme-soft-kids .xs-head h2,.theme-soft-kids .home-section-copy h2{display:inline-block;background:linear-gradient(transparent 62%,color-mix(in srgb,var(--primary) 28%,transparent) 62%,color-mix(in srgb,var(--primary) 28%,transparent) 92%,transparent 92%);padding:0 6px;border-radius:6px}
-        .theme-soft-kids .button,.theme-soft-kids .product-action,.theme-soft-kids .catalog-card-action{border-radius:999px!important}
-        .theme-soft-kids .button-primary:hover{transform:translateY(-2px) scale(1.03)}
-        .theme-soft-kids .catalog-card:hover,.theme-soft-kids .pf-card:hover{transform:translateY(-5px) rotate(-.6deg)}
-        .theme-soft-kids .premium-hero{border-radius:0 0 34px 34px;overflow:hidden}
+        /* Un unico titular en toda la tienda: antetitulo + H2 de peso medio */
+        .theme-soft-kids .section-heading h2,.theme-soft-kids .xs-head h2,
+        .theme-soft-kids .home-section-copy h2,.theme-soft-kids .pf-title,
+        .theme-soft-kids #storefront-main h1{font-weight:600!important;letter-spacing:-.015em;color:var(--text-strong)}
+        .theme-soft-kids .pf-eyebrow,.theme-soft-kids .xs-eyebrow,.theme-soft-kids .section-eyebrow{
+            font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--primary)}
+        .theme-soft-kids .button,.theme-soft-kids .product-action,.theme-soft-kids .catalog-card-action{border-radius:10px}
+        .theme-soft-kids .button-primary:hover{transform:translateY(-1px)}
+        .theme-soft-kids .catalog-card:hover,.theme-soft-kids .pf-card:hover{transform:translateY(-4px)}
         .theme-soft-kids .catalog-card-image img,.theme-soft-kids .pf-media img{border-radius:var(--radius-md)}
-        .theme-soft-kids .hc-circle,.theme-soft-kids .xs-coll-card{border:3px solid #fff;outline:2px dashed color-mix(in srgb,var(--primary) 40%,transparent);outline-offset:4px}
         @endif
 
         @if($themeBodyClass === 'theme-warm-home')
@@ -971,6 +1141,9 @@
         .theme-warm-home .premium-hero:not(.has-bg) .ph-sub,
         .theme-soft-kids .premium-hero:not(.has-bg) .ph-sub{color:#4b5563!important}
         .premium-hero.has-bg .ph-sub{color:rgba(255,255,255,.94)!important}
+        /* El titular lleva un halo pensado para hero oscuro con foto. Sobre un
+           hero claro ese halo se lee como una mancha bajo las letras. */
+        .premium-hero:not(.has-bg) .ph-title{text-shadow:none}
         /* Badge del hero sobre fondo claro: contraste real (se leia casi nada) */
         .premium-hero:not(.has-bg) .ph-eyebrow,.premium-hero:not(.has-bg) .ph-badge{color:var(--text-strong,#0f172a)!important;background:color-mix(in srgb,var(--primary) 12%,#fff)!important;border:1px solid color-mix(in srgb,var(--primary) 26%,transparent)!important}
         /* Título del hero alineado a la izquierda: que no quede bajo la flecha */
@@ -1020,7 +1193,11 @@
         .theme-high-contrast .cart-count{border-radius:0;font-weight:900}
 
         /* ═══ Animaciones de entrada por tema (solo si el JS las activa; respetan reduced-motion) ═══ */
-        .sf-reveal-ready.{{ $themeBodyClass }} [data-store-native-section]{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+        {{-- Sin tema (classic) la clase interpolada quedaba vacía, el selector
+             compilaba roto y las tiendas en classic se quedaban SIN aparición
+             de secciones. Base válida siempre; los temas la pisan con las
+             suyas (dos clases = más específicas). --}}
+        .sf-reveal-ready{{ $themeBodyClass ? '.'.$themeBodyClass : '' }} [data-store-native-section]{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
         .sf-reveal-ready.theme-soft-kids [data-store-native-section]{transform:translateY(26px) scale(.985);transition:opacity .55s ease,transform .55s cubic-bezier(.34,1.56,.64,1)}
         .sf-reveal-ready.theme-warm-home [data-store-native-section]{transform:translateY(14px);transition:opacity .9s ease,transform .9s ease}
         .sf-reveal-ready.theme-high-contrast [data-store-native-section]{transform:translateX(-14px);transition:opacity .32s ease,transform .32s ease}
@@ -1034,6 +1211,12 @@
         .sf-reveal-ready [data-store-native-section][data-anim="right"]{opacity:0;transform:translateX(28px)}
         .sf-reveal-ready [data-store-native-section][data-anim="zoom"]{opacity:0;transform:scale(.94)}
         .sf-reveal-ready [data-store-native-section].sf-in{opacity:1!important;transform:none!important}
+        /* Última red: si ni el observador ni el repaso por scroll revelaron una
+           sección, a los 8s se fuerza visible. Las animaciones ganan a las
+           declaraciones normales del bloque de arriba, y .sf-in (con !important)
+           sigue ganando a la animación, así que el revelado normal no cambia. */
+        .sf-reveal-ready [data-store-native-section]{animation:sf-red-final 1ms linear 8s forwards}
+        @keyframes sf-red-final{to{opacity:1;transform:none}}
         @media(prefers-reduced-motion:reduce){.sf-reveal-ready [data-store-native-section]{opacity:1!important;transform:none!important;transition:none!important}}
         @endif
         /* ═══ Variantes de tarjeta de producto (estructura, no solo color) ═══ */
@@ -1082,6 +1265,12 @@
         body.section-bg-soft [data-store-native-section]:not(.premium-hero):not(.flash-sale-section):not(.style-band){background:var(--surface-soft,#f8fafc)!important}
         body.section-bg-alternate [data-store-native-section]:nth-of-type(even):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:var(--surface-soft,#f8fafc)}
         body.section-bg-alternate [data-store-native-section]:nth-of-type(odd):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:#fff}
+        /* Bandas pastel: blanco entre banda y banda para que respiren; las
+           secciones pares llevan el color rotando entre las tres bandas. */
+        body.section-bg-pastel [data-store-native-section]:not(.premium-hero):not(.flash-sale-section):not(.style-band){background:#fff}
+        body.section-bg-pastel [data-store-native-section]:nth-of-type(6n+2):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:var(--band-1,#FDF6EF)}
+        body.section-bg-pastel [data-store-native-section]:nth-of-type(6n+4):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:var(--band-2,#FDF0F2)}
+        body.section-bg-pastel [data-store-native-section]:nth-of-type(6n):not(.premium-hero):not(.flash-sale-section):not(.style-band){background:var(--band-3,#EEF6F9)}
         body.section-no-dividers [data-store-native-section]{border-top:0!important;border-bottom:0!important}
         body.section-dividers [data-store-native-section]{border-bottom:1px solid var(--border)}
         body.section-no-shadows .home-cat-card,
@@ -1111,7 +1300,10 @@
         body.section-preset-commerce .store-header{min-height:112px!important;display:flex;align-items:center}
         body.section-preset-commerce .header-zone{min-height:0!important}
         body.section-preset-commerce .hpx-main{width:100%;padding-top:0!important;padding-bottom:0!important}
-        body.section-preset-commerce .brand-logo{width:auto!important;max-width:210px!important;height:auto!important;max-height:96px!important}
+        {{-- El preset fijaba height:auto y un tope de 96px, asi que el control
+             "Alto del logo" del constructor no hacia nada en las tiendas con este
+             preset. Ahora manda el ajuste y el ancho lo acompana. --}}
+        body.section-preset-commerce .brand-logo{width:auto!important;height:var(--logo-h,64px)!important;max-height:none!important;max-width:min(calc(var(--logo-h,64px) * 4.5),40vw)!important}
         body.section-preset-commerce .brand{flex:0 0 auto;min-width:200px}
         body.section-preset-commerce .search input{height:48px;border-radius:7px;font-size:14.5px}
         body.section-preset-commerce .phone-copy{border-right:0;padding-right:12px}
@@ -1121,7 +1313,9 @@
         body.section-preset-commerce .category-bar,
         body.section-preset-commerce .category-nav>.container.category-bar{min-height:60px!important;padding-top:0!important;padding-bottom:0!important}
         body.section-preset-commerce .category-nav .container{padding-top:0;padding-bottom:0}
-        body.section-preset-commerce .mega-btn{min-height:46px;padding:0 22px;border-radius:6px;background:var(--accent,var(--primary));color:#fff;font-weight:700}
+        {{-- Tinta por luminancia: sobre un acento claro (dorado) el blanco fijo
+             daba 1,9:1 en el botón de Categorías. --}}
+        body.section-preset-commerce .mega-btn{min-height:46px;padding:0 22px;border-radius:6px;background:var(--accent,var(--primary));color:var(--accent-ink,#fff);font-weight:700}
         body.section-preset-commerce .category-list a{padding:18px 0;margin-right:30px;color:var(--text-strong);font-size:13.5px;font-weight:600;border-radius:0;background:none}
         body.section-preset-commerce .category-list a.is-active{color:var(--secondary);background:none;box-shadow:inset 0 -3px 0 var(--accent,var(--primary))}
         /* Hero: alto de referencia, esquinas suaves y overlay lateral */
@@ -1139,11 +1333,16 @@
         body.section-preset-commerce .ph-eyebrow{display:inline-block;background:transparent!important;border:0!important;padding:0!important;margin-bottom:18px;color:#CEB16D!important;font-size:13px!important;font-weight:600!important;letter-spacing:.04em!important;text-transform:uppercase}
         body.section-preset-commerce .ph-sub{color:rgba(255,255,255,.94)!important;font-size:16.5px!important;line-height:1.55!important;max-width:480px}
         /* Hero con foto: mas alto, CTAs en linea y degradado con transicion suave */
-        body.section-preset-commerce .premium-hero.has-bg{min-height:480px!important;height:500px;max-height:560px!important;border-radius:12px;overflow:hidden}
+        /* El alto iba fijado a 480/500/560 y anulaba el ajuste del constructor:
+           subir "Alto del hero" no hacia nada. Ahora manda la variable. */
+        body.section-preset-commerce .premium-hero.has-bg{min-height:var(--hero-desktop-h,480px)!important;max-height:none!important;border-radius:12px;overflow:hidden}
         /* §11: contenido a la izquierda, ancho 500-560, padding 65 */
         body.section-preset-commerce .premium-hero.has-bg .ph-slide-copy{padding-left:65px}
         /* §11: etiqueta dorada y titulo 52-58 */
-        body.section-preset-commerce .premium-hero.has-bg .ph-eyebrow{color:#E5B851!important;font-size:13px!important;font-weight:700!important;letter-spacing:.04em!important}
+        {{-- El sello del hero quedaba como pastilla azul SIN relleno (el texto
+             tocaba los bordes) y en frío sobre foto cálida. Pastilla dorada con
+             aire y tinta automática: primer golpe de marca al entrar. --}}
+        body.section-preset-commerce .premium-hero.has-bg .ph-eyebrow{background:var(--accent,#C9A860)!important;color:var(--accent-ink,#1c1508)!important;padding:7px 16px!important;border-radius:999px!important;font-size:12.5px!important;font-weight:800!important;letter-spacing:.07em!important}
         /* La columna de texto medía 384px: los 2 CTA no cabían en una fila y se
            apilaban. Se amplía la columna y se fija la fila. */
         body.section-preset-commerce .premium-hero.has-bg .ph-slide-copy{max-width:600px!important;width:auto!important;flex:0 0 auto}
@@ -1171,11 +1370,28 @@
         body.section-preset-commerce .ph-title{font-size:clamp(32px,3.9vw,56px)!important;line-height:1.05!important;font-weight:750!important;letter-spacing:-.02em!important}
         /* §12: CTA principal dorado y secundario contorno blanco */
         body.section-preset-commerce .premium-hero.has-bg .hero-actions .button{min-height:50px;padding:0 24px;border-radius:5px;font-weight:700;font-size:14px}
-        body.section-preset-commerce .premium-hero.has-bg .hero-actions .button-primary:hover{background:#B98A32!important;border-color:#B98A32!important}
-        body.section-preset-commerce .premium-hero.has-bg .hero-actions .button-ghost{border:1px solid rgba(255,255,255,.8)!important;background:transparent!important;color:#fff!important}
+        {{-- Hover del primario: antes un dorado clavado a mano; ahora oscurece
+             el acento configurado, sea cual sea. --}}
+        body.section-preset-commerce .premium-hero.has-bg .hero-actions .button-primary:hover{background:color-mix(in srgb,var(--accent,#C39C54) 82%,#000)!important;border-color:color-mix(in srgb,var(--accent,#C39C54) 82%,#000)!important}
+        {{-- El fantasma transparente con letra blanca desaparecía sobre fotos
+             claras. Velo oscuro traslúcido: legible sobre foto clara u oscura
+             sin tapar la imagen. --}}
+        {{-- El fantasma con velo gris leía como botón deshabilitado y el
+             primario mezclaba fondo azul de una regla con borde dorado de
+             otra. Pareja definitiva: primario DORADO sólido con tinta oscura
+             (el acento del logo gritando, que es su trabajo) y secundario
+             BLANCO nítido. Con elevación al pasar: transform y sombra, nada
+             de opacidad. --}}
+        body.section-preset-commerce .premium-hero.has-bg .hero-actions .button-ghost{border:1px solid rgba(16,38,79,.14)!important;background:#fff!important;color:var(--text-strong,#10264F)!important;box-shadow:0 4px 14px rgba(10,20,35,.14)}
+        body.section-preset-commerce .premium-hero.has-bg .hero-actions .button{min-height:54px!important;padding:0 28px!important;font-size:15px!important;letter-spacing:.02em;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+        body.section-preset-commerce .premium-hero.has-bg .hero-actions .button:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(10,20,35,.22)}
         body.section-preset-commerce .premium-hero.has-bg .hero-actions .button-ghost:hover{background:#fff!important;color:var(--secondary)!important;border-color:#fff!important}
+        {{-- Con ID: la regla de buy_button_color usa #storefront-main con
+             !important y pintaba de azul el primario del hero por encima de
+             todo. El hero manda su acento. --}}
+        body.section-preset-commerce #storefront-main .premium-hero .hero-actions .button-primary,
         body.section-preset-commerce .premium-hero .hero-actions .button-primary,
-        body.section-preset-commerce .ph-slide-copy .hero-actions .button-primary{background:var(--accent,#C39C54)!important;border-color:var(--accent,#C39C54)!important;color:#fff!important}
+        body.section-preset-commerce .ph-slide-copy .hero-actions .button-primary{background:var(--accent,#C39C54)!important;border:0!important;color:var(--accent-ink,#fff)!important;box-shadow:0 6px 18px rgba(10,20,35,.20)}
         body.section-preset-commerce .premium-hero .hero-actions .button-ghost{border:1px solid rgba(255,255,255,.85)!important;color:#fff!important;background:transparent!important}
         /* Blindaje anti-FOUC: un SVG sin dimensiones se dibuja gigante hasta
            que aplica su regla; este tope lo impide en cualquier parte. */
@@ -1231,9 +1447,28 @@
               Se configura desde el Constructor con ticker_text. ══ */
         /* Sticky: acompana el scroll pegada al fondo y al llegar al final queda
            justo encima del pie, sin hueco. */
-        .bx-ticker{position:sticky;bottom:0;z-index:40;overflow:hidden;background:var(--primary);color:#fff;box-shadow:0 -4px 16px rgba(15,23,42,.12)}
-        /* El pie traia 60px de margen: pegado a la franja no debe haber hueco */
-        .bx-ticker+footer,.bx-ticker+.ftc,.bx-ticker+.site-footer-corporate{margin-top:0!important}
+        /* Va en el color de acento, no en el de marca: con un pie del color de
+           marca ambas franjas se fundian en un bloque y la barra se perdia.
+           El acento la separa y ademas la hace visible, que es su unico trabajo.
+           Tinta oscura encima (8:1 sobre el ambar). */
+        /* Posición configurable: 'fija' acompaña el scroll pegada al borde
+           inferior (pisa la última fila visible mientras navegas); 'pie' la
+           deja quieta en su sitio, justo encima del pie. */
+        body.ticker-pie .bx-ticker{position:static}
+        .bx-ticker{position:sticky;bottom:0;z-index:40;overflow:hidden;
+            {{-- La letra estaba fija en el tono oscuro de los títulos. Sobre un
+                 acento claro —el rosa de Niña daba 3,09:1— el texto se perdía.
+                 Ahora sigue al fondo, igual que las etiquetas del menú. --}}
+            background:var(--ticker-bg,var(--accent,var(--primary)));color:var(--ticker-txt,var(--text-strong,#0f172a));
+            box-shadow:0 -4px 16px rgba(15,23,42,.12)}
+        /* El pie traia 60px de margen: pegado a la franja no debe haber hueco.
+           El hueco blanco que quedaba encima venia del relleno inferior de la
+           ultima seccion, no del pie: se anula tambien. */
+        /* Se usa "~" y no "+": entre la franja y el pie hay una etiqueta <style>,
+           asi que el hermano ADYACENTE nunca era el pie y el margen de 60px
+           seguia dejando una banda blanca entre las dos. */
+        .bx-ticker~footer,.bx-ticker~.ftc,.bx-ticker~.site-footer-corporate,
+        .bx-ticker~.site-footer{margin-top:0!important}
         .bx-ticker-track{display:flex;width:max-content;animation:bxTicker var(--bx-ticker-speed,28s) linear infinite}
         .bx-ticker-track span{display:inline-flex;align-items:center;gap:26px;padding:9px 26px;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
         .bx-ticker-track span:after{content:'•';opacity:.55}
@@ -1265,7 +1500,10 @@
         /* El hero de la referencia es ancho y bajo: nada de 680px ni bordes de 34px */
         body.section-preset-commerce .premium-hero .ph-slide,body.section-preset-commerce .premium-hero .ph-stage{min-height:clamp(334px,26vw,380px)!important}
         /* §4/§23: sans, sin mayúsculas forzadas ni sombra, tamaño de la referencia */
-        body.section-preset-commerce .ph-title{color:#fff!important;font-family:var(--font-body),system-ui,sans-serif!important;font-size:clamp(26px,2.8vw,40px)!important;font-weight:700!important;line-height:1.17!important;letter-spacing:-.01em!important;text-transform:none!important;text-shadow:none!important}
+        /* El preset forzaba la fuente del CUERPO en el titular del hero: la tienda
+           elegia una letra de titulos y el hero la ignoraba, asi que la primera
+           pantalla contradecia al resto de la pagina. */
+        body.section-preset-commerce .ph-title{color:#fff!important;font-family:var(--font-title),system-ui,sans-serif!important;font-size:clamp(30px,3.4vw,52px)!important;font-weight:700!important;line-height:1.12!important;letter-spacing:-.01em!important;text-transform:none!important;text-shadow:none!important}
         body.section-preset-commerce .ph-badge{background:transparent!important;border:0!important;padding:0!important;color:#CEB16D!important;font-size:13px!important;font-weight:600!important;letter-spacing:.04em!important}
         body.section-preset-commerce .ph-slide-copy>p{font-family:var(--font-body),system-ui,sans-serif!important}
         body.section-preset-commerce .ph-slide::before,body.section-preset-commerce .hero::before{background:linear-gradient(90deg,rgba(4,29,65,.98) 0%,rgba(4,29,65,.93) 25%,rgba(4,29,65,.65) 40%,rgba(4,29,65,.15) 55%,rgba(4,29,65,0) 68%)!important}
@@ -1406,9 +1644,11 @@
         .footer-dev-link{color:#cbd5e1;font-weight:700;text-decoration:underline;text-underline-offset:2px}
         .footer-dev-link:hover{color:#fff}
         @media(max-width:640px){.footer-copy{white-space:normal}}
-        .footer-pay{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.footer-pay-logo{display:inline-flex}.footer-pay-logo svg{height:26px;width:auto;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+        /* El boton flotante de WhatsApp se comia el ultimo logo de pago: vive
+           en la esquina inferior derecha, justo encima de esta fila. */
+        .footer-pay{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding-right:76px}.footer-pay-logo{display:inline-flex}.footer-pay-logo svg{height:26px;width:auto;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
         @media(max-width:1000px){.footer-main{grid-template-columns:1fr 1fr;gap:36px 40px}.footer-brand{grid-column:1/-1}}
-        @media(max-width:760px){.footer-bottom-inner{grid-template-columns:1fr;justify-items:center;text-align:center;gap:16px}.footer-pay{justify-content:center}.footer-secure{justify-content:center}}
+        @media(max-width:760px){.footer-bottom-inner{grid-template-columns:1fr;justify-items:center;text-align:center;gap:16px}.footer-pay{justify-content:center;padding-right:0;padding-bottom:64px}.footer-secure{justify-content:center}}
         @media(max-width:600px){.footer-main{grid-template-columns:1fr;gap:32px;padding:40px 0 30px}.footer-trust{grid-template-columns:1fr 1fr}}
         /* ── Diseños del pie de página (footer_style) ── */
         /* Claro elegante */
@@ -1454,6 +1694,50 @@
 
         /* ═══ Secciones especiales del constructor de Inicio ═══ */
         .special-home-section{padding:64px 0;border-bottom:1px solid var(--border)}
+        /* ═══ Título de sección dentro de una barra ═══
+           Con varias secciones de producto encadenadas, un título suelto sobre
+           fondo blanco no separa nada: todo se lee como una sola lista larga.
+           La barra corta el bloque y deja claro dónde empieza cada cosa. */
+        /* `.pf-head` es el encabezado de "Lo más vendido" y compañía: usa otra
+           estructura, así que la primera versión de la barra se lo saltaba. */
+        body.sechead-barra .special-section-head,
+        body.sechead-barra .pf-head,
+        body.sechead-barra #storefront-main .section-heading{
+            align-items:center!important;gap:18px;margin-bottom:22px;padding:13px 20px;
+            background:var(--barra-seccion,var(--primary));border-radius:var(--r-btn,10px);text-align:left!important}
+        body.sechead-barra .pf-head{display:flex!important;justify-content:space-between}
+        body.sechead-barra .pf-head .pf-title{color:var(--barra-seccion-txt,#fff)!important;font-size:clamp(16px,1.9vw,21px)!important;margin:0}
+        body.sechead-barra .pf-head p,body.sechead-barra .pf-head .pf-sub{color:rgba(255,255,255,.82)!important;font-size:12.5px!important;margin-top:3px}
+        /* El distintivo ("DESTACADO") en azul sobre azul desaparecía. */
+        body.sechead-barra .pf-head .pf-badge,body.sechead-barra .pf-head [class*="badge"],
+        body.sechead-barra .pf-head [class*="kicker"],body.sechead-barra .pf-head [class*="eyebrow"]{
+            color:var(--primary)!important;background:#fff!important;border-color:#fff!important}
+        body.sechead-barra .pf-head a{flex:0 0 auto;padding:8px 15px!important;color:var(--barra-btn-txt,var(--primary))!important;
+            background:var(--barra-btn-bg,#fff)!important;border:0!important;font-size:12.5px!important;border-radius:999px}
+        body.sechead-barra .special-section-head > div,
+        body.sechead-barra #storefront-main .section-heading > div{min-width:0}
+        body.sechead-barra .special-section-head h2,
+        body.sechead-barra #storefront-main .section-heading h2{
+            color:var(--barra-seccion-txt,#fff)!important;font-size:clamp(16px,1.9vw,21px)!important;letter-spacing:.005em!important;line-height:1.25}
+        body.sechead-barra .special-section-head p,
+        body.sechead-barra #storefront-main .section-heading p{
+            margin-top:3px;color:color-mix(in srgb,var(--barra-seccion-txt,#fff) 82%,transparent)!important;font-size:12.5px}
+        /* El enlace "Ver todos" pasa a botón claro: en azul sobre azul no se veía. */
+        body.sechead-barra .special-section-head .home-see-all,
+        body.sechead-barra #storefront-main .section-heading .home-see-all{
+            flex:0 0 auto;padding:8px 15px!important;color:var(--barra-btn-txt,var(--primary))!important;
+            background:var(--barra-btn-bg,#fff)!important;border:0!important;font-size:12.5px!important}
+        body.sechead-barra .special-section-head .home-see-all:hover{filter:brightness(.94)}
+        /* La barra manda sobre el centrado general: un título centrado dentro de
+           una barra con el enlace a la derecha queda descuadrado. */
+        body.sechead-barra.section-heading-center .special-section-head,
+        body.sechead-barra.section-heading-center #storefront-main .section-heading{
+            align-items:center!important;text-align:left!important}
+        @media(max-width:640px){
+            body.sechead-barra .special-section-head,
+            body.sechead-barra #storefront-main .section-heading{padding:11px 14px;gap:10px}
+            body.sechead-barra .special-section-head p{display:none}
+        }
         .special-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:26px}
         .special-section-head h2{margin:0;color:var(--secondary);font-size:clamp(25px,3vw,36px);line-height:1.1;letter-spacing:-.04em}
         .special-section-head p{margin:9px 0 0;color:#64748b;font-size:14px;line-height:1.6}
@@ -1516,6 +1800,18 @@
         .trust-section.style-band{background:{{ $trustAccentColor }};padding:46px 0}
         .trust-section.style-band .trust-section-head h2,.trust-section.style-band .trust-section-head p{color:{{ $trustOnAccent }}}
         .trust-section.style-band .trust-card{flex-direction:column;align-items:center;text-align:center;background:transparent;border:0;box-shadow:none;padding:10px}
+        /* Los presets de seccion pintan la tarjeta de blanco con un ID y ganaban:
+           el texto blanco de la banda quedaba blanco sobre blanco, invisible. */
+        #storefront-main .trust-section.style-band .trust-card{background:transparent!important;border:0!important;box-shadow:none!important}
+        #storefront-main .trust-section.style-band .trust-grid{background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important}
+        /* Mismo empate en el circulo del icono: relleno blanco solido y el icono,
+           tambien blanco, desaparecia dentro. */
+        #storefront-main .trust-section.style-band .trust-icon{
+            background:color-mix(in srgb,{{ $trustOnAccent }} 16%,transparent)!important;
+            border:1.5px solid color-mix(in srgb,{{ $trustOnAccent }} 45%,transparent)!important;
+            color:{{ $trustOnAccent }}!important;box-shadow:none!important}
+        #storefront-main .trust-section.style-band .trust-card strong{color:{{ $trustOnAccent }}!important}
+        #storefront-main .trust-section.style-band .trust-card span{color:{{ $trustOnAccentSoft }}!important}
         .trust-section.style-band .trust-icon{width:56px;height:56px;flex-basis:56px;color:{{ $trustOnAccent }};background:color-mix(in srgb,{{ $trustOnAccent }} 12%,transparent);border:1.5px solid color-mix(in srgb,{{ $trustOnAccent }} 40%,transparent);border-radius:50%}
         .trust-section.style-band .trust-icon svg{width:27px;height:27px}
         .trust-section.style-band .trust-card strong{color:{{ $trustOnAccent }}}
@@ -1547,6 +1843,14 @@
            contenedor de 1180px la partia en dos filas. */
         body .trust-section.style-linea > .container{width:min(1560px,calc(100% - 28px))!important;
             max-width:none!important}
+        /* Movil: la franja iba en una sola linea sin envolver, asi que el primer y
+           el ultimo argumento salian cortados por los bordes de la pantalla. Con
+           dos filas se leen enteros y no hace falta desplazamiento lateral. */
+        @media(max-width:760px){
+            #storefront-main .trust-section.style-linea .trust-grid{flex-wrap:wrap!important;justify-content:center;
+                row-gap:2px;padding-block:8px}
+            #storefront-main .trust-section.style-linea .trust-card{flex:0 0 auto}
+        }
         body .trust-section.style-linea .trust-grid{display:flex!important;
             grid-template-columns:none!important;flex-wrap:wrap;
             align-items:center;justify-content:center;gap:0!important;min-height:48px;flex-wrap:nowrap!important;
@@ -1582,10 +1886,15 @@
             .trust-section.style-linea .trust-extra{font-size:12.5px}
             .trust-section.style-linea .trust-extra::before{margin:0 10px}
         }
+        {{-- El dato destacado (p. ej. "14 años en Huancavelica") iba en azul de
+             enlace entre hermanos grises: parecía un link roto. Como pastilla
+             del acento se lee como sello, que es lo que es. --}}
         .trust-section.style-linea .trust-extra{display:inline-flex;align-items:center;
-            color:var(--primary);font-size:13px;font-weight:800}
-        .trust-section.style-linea .trust-extra::before{content:'·';margin:0 14px;
-            color:var(--muted);font-weight:700}
+            margin-left:14px;padding:5px 13px;border-radius:999px;background:var(--accent,var(--primary));
+            color:var(--accent-ink,#fff);font-size:13px;font-weight:800}
+        {{-- Sin punto separador: al volverse pastilla, el "·" quedaba DENTRO
+             del fondo dorado. El margen ya separa. --}}
+        .trust-section.style-linea .trust-extra::before{content:none}
         @media(max-width:760px){
             /* En movil se convierte en carrusel horizontal: cabe entera sin
                apilar cuatro filas de texto. */
@@ -1665,6 +1974,18 @@
         .home-cats.style-coleccion .home-cat-arrow{display:inline-flex;align-items:center;gap:6px;width:auto;height:auto;margin-top:10px;padding:0;color:var(--text);background:none;border-radius:0;font-size:13px;font-weight:600;transition:color .18s ease}
         .home-cats.style-coleccion .home-cat-arrow svg{width:15px;height:15px}
         .home-cats.style-coleccion .home-cat-cta{font-style:normal}
+        {{-- "Ver más" de las tarjetas de ambiente: era texto plano sin ninguna
+             reacción — la gente lo seleccionaba intentando pulsarlo. Ahora es
+             pastilla que se rellena del primario al pasar por la tarjeta. --}}
+        .home-cat-cta{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;margin-left:-12px;border-radius:999px;font-style:normal;font-weight:800;color:var(--primary);transition:background .18s ease,color .18s ease,margin .18s ease}
+        .home-cat-card:hover .home-cat-cta{background:var(--primary);color:#fff;margin-left:0}
+        {{-- Tarjetas de producto con reacción notoria (pedido explícito):
+             elevación mayor, foto con zoom suave y borde del acento. Solo
+             transform/sombra/borde — nunca opacidad. --}}
+        body.section-preset-commerce .catalog-card{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+        body.section-preset-commerce .catalog-card:hover{transform:translateY(-5px);border-color:var(--accent-hex,var(--primary));box-shadow:0 18px 40px rgba(16,26,40,.15)!important}
+        body.section-preset-commerce .catalog-card .catalog-card-media img{transition:transform .35s ease}
+        body.section-preset-commerce .catalog-card:hover .catalog-card-media img{transform:scale(1.06)}
         .home-cats.style-coleccion .home-cat-card:hover .home-cat-arrow{color:var(--accent,var(--primary))}
         @media(max-width:900px){.home-cats.style-coleccion .home-cats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
         @media(max-width:600px){.home-cats.style-coleccion .home-cats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -1819,17 +2140,55 @@
         .about-hero-content{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;height:100%;max-width:640px;padding:0 clamp(24px,5vw,64px)}
         .about-hero--center .about-hero-content{max-width:none;align-items:center;text-align:center}
         .about-hero-title{margin:0;color:#fff!important;-webkit-text-fill-color:#fff;font-family:var(--font-title);font-size:clamp(30px,4.4vw,52px);letter-spacing:-.02em;line-height:1.08;text-shadow:0 2px 18px rgba(0,0,0,.35)}
+        {{-- Firma de marca bajo el título: la barrita del acento. --}}
+        .about-hero-title:after{content:'';display:block;width:64px;height:4px;margin-top:16px;border-radius:3px;background:var(--accent,var(--primary))}
+        .about-hero--center .about-hero-title:after{margin-inline:auto}
+        {{-- La mitad derecha del hero de marca era aire muerto: ahí van los
+             diferenciales YA configurados como pastillas de vidrio. Solo
+             escritorio ancho y solo cuando no hay fotografía. --}}
+        .about-hero-chips{position:absolute;z-index:2;right:clamp(24px,4vw,56px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;max-width:300px}
+        .about-hero-chip{display:flex;align-items:center;gap:10px;padding:11px 16px;color:#fff;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);border-radius:12px;font-size:13.5px;font-weight:700;backdrop-filter:blur(6px)}
+        .about-hero-chip svg{width:19px;height:19px;flex:0 0 19px;color:var(--accent,#fff)}
+        @media(max-width:900px){.about-hero-chips{display:none}}
         .about-hero-subtitle{margin:14px 0 0;color:var(--accent);font-size:clamp(16px,2vw,22px);font-weight:600;line-height:1.35}
+        /* Sin foto, el fondo del hero ES el color de marca; el subtitulo tomaba
+           tambien el acento y, cuando acento y marca coinciden, desaparecia. */
+        .about-hero--brand .about-hero-subtitle{color:rgba(255,255,255,.92)}
         .about-hero-desc{margin:12px 0 0;color:rgba(255,255,255,.82);font-size:15px;line-height:1.7;max-width:520px}
-        .about-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:clamp(28px,4vw,56px);align-items:start;margin-top:10px}
+        /* ─── NOSOTROS: composicion en dos tiempos ────────────────────────────
+           La rejilla lateral (2fr + 3fr) dejaba la columna izquierda a un tercio
+           del alto de la derecha: medio metro de vacio bajo el boton mientras
+           mision y vision desbordaban al lado. Ademas presentaba mision y vision
+           como dos tarjetas con borde, que es el formato mas generico posible
+           para lo unico que esta empresa tiene de propio.
+           Ahora: la introduccion manda a ancho completo con medida de lectura, y
+           mision y vision van debajo en dos columnas SIN caja, separadas por un
+           filete dorado. El texto respira y el titular pesa. */
+        .about-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(32px,4vw,52px);margin-top:10px}
+        .about-grid .about-intro{max-width:none}
+        .about-grid .store-page-body,.about-grid .about-intro>p{max-width:68ch}
         .about-grid--single{grid-template-columns:minmax(0,1fr);max-width:780px}
-        .about-label{display:inline-block;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+        {{-- Sello en TINTA FUERTE, no en primario ni acento: hay tiendas con
+             primario claro (cyan de Tecsist) y acento claro (dorado de
+             MegaHogar); la única garantía de lectura es la tinta. La rayita
+             de acento pone el color de marca. --}}
+        .about-label{display:inline-block;color:var(--text-strong,#10231f);font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
         .about-label:after{content:'';display:block;width:44px;height:2px;margin-top:8px;background:var(--accent)}
         .about-heading{margin:16px 0 14px;color:var(--secondary);font-family:var(--font-title);font-size:clamp(24px,2.8vw,36px);letter-spacing:-.02em;line-height:1.18}
         .about-intro .store-page-body{font-size:15px}
-        .about-cta{display:inline-block;margin-top:22px}
+        /* inline-block anulaba el inline-flex de .button y el texto se iba al
+           borde superior de la caja en vez de quedar centrado. */
+        .about-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:22px}
+        .about-cta-block{margin-top:26px;padding:0;background:transparent;border:0}
+        .about-cta-block strong{display:block;color:var(--text-strong);font-family:var(--font-title);font-size:19px;font-weight:600}
+        .about-cta-block p{margin:6px 0 0;color:var(--muted);font-size:14px}
+        .about-cta-block .about-cta{margin-top:16px}
         .about-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
-        .about-card{padding:30px 26px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);transition:transform .18s ease,box-shadow .18s ease}
+        /* Sin caja: filete dorado arriba y aire. La tarjeta convertia el texto
+           institucional en un widget; asi se lee como lo que es, un texto. */
+        .about-card{padding:26px 0 0;background:transparent;border:0;border-top:3px solid var(--accent,var(--primary));border-radius:0;box-shadow:none}
+        .about-card:hover{transform:none;box-shadow:none}
+        .about-cards{gap:clamp(28px,4vw,48px)}
         .about-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
         .about-card-icon{display:grid;place-items:center;width:52px;height:52px;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:14px}
         .about-card-icon svg{width:26px;height:26px}
@@ -1845,6 +2204,29 @@
         @media(max-width:980px){.about-grid{grid-template-columns:1fr}.about-cards{margin-top:6px}}
         @media(max-width:640px){.about-cards{grid-template-columns:1fr}.about-hero{height:min(var(--ab-hero-h,380px),330px);border-radius:var(--radius-md)}.about-diffs{grid-template-columns:repeat(2,minmax(0,1fr));padding:24px 16px}}
         @media(max-width:420px){.about-diffs{grid-template-columns:1fr}}
+        /* Contacto: cada dato es una accion pulsable, no una linea de texto */
+        .ct-acciones{display:grid;gap:10px;margin:4px 0 18px}
+        .ct-accion{display:flex;align-items:center;gap:14px;padding:15px 16px;
+            color:var(--text-strong);background:var(--surface);border:1px solid var(--border);
+            border-radius:var(--radius-md);text-decoration:none;transition:border-color .18s ease,transform .18s ease}
+        .ct-accion:hover{border-color:var(--primary);transform:translateY(-1px)}
+        .ct-accion svg{width:22px;height:22px;flex:0 0 22px;color:var(--primary)}
+        .ct-accion span{display:flex;flex-direction:column;gap:2px;min-width:0}
+        /* El título salía en el azul de enlace heredado: sobre la tarjeta verde
+           de WhatsApp era azul sobre verde —ilegible— y en las blancas competía
+           con el dato, que es lo que el visitante busca. Hereda el color de su
+           tarjeta y el dato va debajo, en su tono. */
+        .ct-accion strong{font-size:14px;font-weight:700;color:inherit}
+        .ct-accion small{color:inherit;opacity:.82}
+        .ct-accion--wa,.ct-accion--wa strong,.ct-accion--wa small{color:#fff!important}
+        .ct-accion:not(.ct-accion--wa){color:var(--text-strong,#0f172a)}
+        .ct-accion:not(.ct-accion--wa) svg{color:var(--primary)}
+        .ct-accion small{color:var(--muted);font-size:12.5px;line-height:1.45}
+        .ct-accion--wa{color:#fff;background:#25D366;border-color:#25D366}
+        .ct-accion--wa svg,.ct-accion--wa small{color:rgba(255,255,255,.92)}
+        .ct-accion--wa:hover{filter:brightness(.95);border-color:#25D366}
+        .ct-accion--info{cursor:default}
+        .ct-accion--info:hover{border-color:var(--border);transform:none}
         .store-page-contact{display:grid;grid-template-columns:1fr 1.2fr;gap:36px;margin-top:28px;align-items:start}.store-contact-info p{margin:0 0 12px;color:#475569;font-size:15px}.store-contact-info a{color:var(--primary)}.store-contact-form{display:flex;flex-direction:column;gap:12px;background:var(--surface);padding:24px;border:1px solid var(--border);border-radius:var(--radius)}.store-contact-form input,.store-contact-form textarea{width:100%;padding:11px 13px;border:1px solid #cbd5e1;border-radius:calc(var(--radius)*.75);font:inherit;font-size:14px;outline:0}.store-contact-form input:focus,.store-contact-form textarea:focus{border-color:var(--primary)}.store-contact-form .button{margin-top:4px}
         @media(max-width:800px){.store-page-contact{grid-template-columns:1fr}}
         @media(max-width:900px){.home-cats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-prod-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -2066,6 +2448,17 @@
         .premium-hero .button-primary:hover{filter:brightness(1.08);transform:translateY(-2px)}
         .premium-hero .button-ghost{min-height:50px;padding:0 24px;color:#dbe4ff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:var(--btn-radius);font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:8px;transition:.18s}
         .premium-hero .button-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+        /* Hero tipografico (hero_no_image_style=typographic): sin fotografia de
+           campana, la composicion se sostiene con el texto y el aire. Se retiran
+           los destellos y la reticula del fondo, que son decoracion tecnologica y
+           en una boutique sobran. */
+        .premium-hero.is-typographic .ph-glow,
+        .premium-hero.is-typographic .ph-grid,
+        .premium-hero.is-typographic .ph-line{display:none}
+        .premium-hero.is-typographic .premium-hero-inner{display:block;padding-block:clamp(64px,8vw,104px)}
+        .premium-hero.is-typographic .premium-hero-copy{max-width:760px;margin-inline:auto;text-align:center;align-items:center}
+        .premium-hero.is-typographic .ph-sub{margin-inline:auto;max-width:52ch}
+        .premium-hero.is-typographic .hero-actions{justify-content:center}
         .premium-hero-visual{position:relative;min-height:420px;display:flex;align-items:center;justify-content:center}
         .ph-stage{position:relative;width:100%;height:100%;min-height:420px;display:flex;align-items:center;justify-content:center}
         .ph-main{position:relative;z-index:3;width:min(560px,92%);filter:drop-shadow(0 40px 70px rgba(0,0,0,.55)) drop-shadow(0 0 40px color-mix(in srgb,{{ $primary }} 25%,transparent))}
@@ -2102,9 +2495,16 @@
         .catalog-experience{display:grid;grid-template-columns:280px minmax(0,1fr);align-items:start;gap:30px;margin-top:28px}.catalog-filter-panel{position:sticky;top:96px;max-height:calc(100vh - 116px);overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:12px;scrollbar-width:thin}.catalog-filter-header{position:sticky;top:0;z-index:2;min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff;border-bottom:1px solid var(--border)}.catalog-filter-header strong{font-size:14px}.catalog-clear{min-height:44px;padding:0;color:var(--primary);background:transparent;border:0;font-size:12px;font-weight:700;cursor:pointer}.catalog-clear[disabled]{opacity:0;pointer-events:none}
         .catalog-filter-group{border-top:1px solid var(--border)}.catalog-filter-group:first-of-type{border-top:0}.catalog-filter-summary{min-height:48px;display:flex;align-items:center;gap:8px;padding:0 16px;list-style:none;font-size:13px;font-weight:700;cursor:pointer;user-select:none}.catalog-filter-summary::-webkit-details-marker{display:none}.catalog-filter-summary svg{width:17px;margin-left:auto;color:#64748b;transition:transform .18s ease}.catalog-filter-group[open]>.catalog-filter-summary svg{transform:rotate(180deg)}.catalog-filter-badge{min-width:19px;height:19px;display:grid;place-items:center;padding:0 5px;color:#fff;background:var(--primary);border-radius:999px;font-size:10px}.catalog-filter-body{display:flex;flex-direction:column;gap:3px;padding:0 16px 14px}.catalog-filter-search input{width:100%;height:38px;margin-bottom:7px;padding:0 11px;color:#172033;background:var(--surface);border:1px solid #cbd5e1;border-radius:6px;font-size:12px;outline:0}.catalog-filter-search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 12%,transparent)}
         .catalog-filter-option{min-height:36px;display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:6px;font-size:12px;cursor:pointer}.catalog-filter-option:hover{background:var(--surface)}.catalog-filter-option input{appearance:none;width:17px;height:17px;display:grid;place-items:center;flex:0 0 17px;margin:0;background:#fff;border:1.5px solid #cbd5e1;border-radius:50%;cursor:pointer}.catalog-filter-option input:checked{background:var(--primary);border-color:var(--primary);box-shadow:inset 0 0 0 4px #fff}.catalog-filter-option span{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.catalog-filter-option small{padding:2px 6px;color:#64748b;background:var(--surface);border-radius:999px;font-size:10px}.catalog-subcategories{margin:1px 0 5px 4px;padding-left:8px;border-left:2px solid var(--border)}.catalog-filter-option-sub{color:#475569}.catalog-filter-checkbox input{border-radius:4px}.catalog-filter-checkbox input:checked{box-shadow:none}.catalog-filter-checkbox input:checked:after{content:'✓';color:#fff;font-size:11px;font-weight:800}
+        /* Mundos (perfiles) dentro del filtro: no son casillas, son entradas.
+           Se distinguen con la flecha y el peso del texto para que se entienda
+           que llevan a otro sitio y no marcan una casilla. */
+        .catalog-filter-option-world{text-decoration:none;color:var(--text-strong);font-weight:700}
+        .catalog-filter-option-world svg{flex:0 0 13px;opacity:.55;transition:transform .15s ease}
+        .catalog-filter-option-world:hover{background:color-mix(in srgb,var(--primary) 8%,transparent);color:var(--primary)}
+        .catalog-filter-option-world:hover svg{transform:translateX(2px);opacity:1}
         .catalog-price-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.catalog-price-inputs label{display:flex;flex-direction:column;gap:5px;color:#64748b;font-size:10px}.catalog-price-inputs input{width:100%;height:38px;padding:0 9px;color:#172033;background:var(--surface);border:1px solid #cbd5e1;border-radius:6px;font-size:12px;outline:0}.catalog-price-inputs input:focus{border-color:var(--primary)}.catalog-range{position:relative;height:4px;margin:18px 5px 10px;background:#e2e8f0;border-radius:999px}.catalog-range span{position:absolute;height:4px;background:var(--primary);border-radius:999px}.catalog-range input{position:absolute;top:0;width:100%;height:4px;margin:0;appearance:none;background:transparent;pointer-events:none}.catalog-range input::-webkit-slider-thumb{width:18px;height:18px;appearance:none;background:#fff;border:2px solid var(--primary);border-radius:50%;box-shadow:0 1px 5px rgba(15,23,42,.2);pointer-events:auto}.catalog-range input::-moz-range-thumb{width:18px;height:18px;background:#fff;border:2px solid var(--primary);border-radius:50%;pointer-events:auto}
         .catalog-results{min-width:0}.catalog-chips{min-height:32px;display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}.catalog-chip{min-height:32px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;color:var(--primary);background:color-mix(in srgb,var(--primary) 9%,white);border:1px solid color-mix(in srgb,var(--primary) 18%,white);border-radius:999px;font-size:11px;font-weight:600;cursor:pointer}.catalog-chip:hover{background:color-mix(in srgb,var(--primary) 15%,white)}.catalog-chip-neutral{color:#475569;background:var(--surface);border-color:var(--border)}.catalog-results-head{min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px}.catalog-results-count{color:#64748b;font-size:12px}.catalog-results-count strong{color:#172033}.catalog-results-tools{display:flex;align-items:center;gap:8px}.catalog-sort{height:42px;min-width:205px;padding:0 36px 0 13px;color:#172033;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;outline:0}.catalog-sort:focus{border-color:var(--primary)}.catalog-mobile-filter{display:none;min-height:44px;align-items:center;gap:8px;padding:0 14px;color:#fff;background:var(--secondary);border:0;border-radius:6px;font-size:12px;font-weight:700}.catalog-mobile-filter svg{width:17px}.catalog-mobile-filter span{min-width:18px;height:18px;display:grid;place-items:center;background:var(--primary);border-radius:999px;font-size:9px}
-        .catalog-product-grid{display:grid;grid-template-columns:repeat({{ $catalogColumns }},minmax(0,1fr));gap:18px}.catalog-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:12px;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}.catalog-card:hover{transform:translateY(-2px);border-color:#cbd5e1;box-shadow:0 12px 30px rgba(15,23,42,.08)}.catalog-card-media{position:relative;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border-bottom:1px solid #f1f5f9}.catalog-card-media img{width:100%;height:100%;object-fit:cover;transition:transform .25s ease}.catalog-card:hover .catalog-card-media img{transform:scale(1.035)}.catalog-card-media.is-noimg,.catalog-card-media:has(.catalog-card-placeholder){background:linear-gradient(140deg,color-mix(in srgb,var(--primary) 9%,#fff),color-mix(in srgb,var(--primary) 3%,#fff))}.catalog-card-placeholder{width:74px;height:74px;color:color-mix(in srgb,var(--primary) 38%,#cbd5e1);opacity:.9}.catalog-card-media .ph-note{position:absolute;bottom:10px;left:0;right:0;text-align:center;color:color-mix(in srgb,var(--primary) 55%,#94a3b8);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.catalog-discount{position:absolute;top:12px;left:12px;z-index:1;padding:6px 9px;color:#fff;background:var(--primary);border-radius:6px;font-size:10px;font-weight:800}.catalog-sold-out{position:absolute;top:12px;right:12px;padding:6px 8px;color:#fff;background:#475569;border-radius:6px;font-size:9px;font-weight:700}.catalog-card-body{min-height:128px;display:flex;flex:1;flex-direction:column;padding:14px}.catalog-card-category{overflow:hidden;color:#7c899b;font-size:9px;font-weight:700;letter-spacing:.07em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}.catalog-card-name{min-height:40px;margin-top:7px;color:#172033;font-size:13px;font-weight:700;line-height:1.45}.catalog-card-name:hover{color:var(--primary)}.catalog-card-prices{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:auto;padding-top:14px}.catalog-card-price{color:var(--secondary);font-size:17px;font-weight:800}.catalog-card-compare{color:#94a3b8;font-size:11px;text-decoration:line-through}.catalog-card-percent{padding:3px 6px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:800}.catalog-card-wholesale{display:block;margin-top:5px;color:#64748b;font-size:9px}.catalog-card-action{min-height:44px;margin:0 10px 10px;color:#fff;background:var(--primary);border:0;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer}.catalog-card-action:hover{filter:brightness(.92)}.catalog-card-action:disabled{color:#94a3b8;background:#e2e8f0;cursor:not-allowed}.catalog-empty{grid-column:1/-1;padding:64px 22px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:12px}.catalog-empty svg{width:42px;margin:0 auto;color:#94a3b8}.catalog-empty h3{margin:15px 0 6px;color:#172033;font-size:18px}.catalog-empty p{margin:0 0 18px;color:#64748b;font-size:13px}
+        .catalog-product-grid{display:grid;grid-template-columns:repeat({{ $catalogColumns }},minmax(0,1fr));gap:18px}.catalog-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:12px;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}.catalog-card:hover{transform:translateY(-2px);border-color:#cbd5e1;box-shadow:0 12px 30px rgba(15,23,42,.08)}.catalog-card-media{position:relative;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border-bottom:1px solid #f1f5f9}.catalog-card-media img{width:100%;height:100%;object-fit:cover;transition:transform .25s ease}.catalog-card:hover .catalog-card-media img{transform:scale(1.035)}.catalog-card-media.is-noimg,.catalog-card-media:has(.catalog-card-placeholder){background:linear-gradient(140deg,color-mix(in srgb,var(--primary) 9%,#fff),color-mix(in srgb,var(--primary) 3%,#fff))}.catalog-card-placeholder{width:74px;height:74px;color:color-mix(in srgb,var(--primary) 38%,#cbd5e1);opacity:.9}.catalog-card-media .ph-note{position:absolute;bottom:10px;left:0;right:0;text-align:center;color:color-mix(in srgb,var(--primary) 55%,#94a3b8);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.catalog-discount{position:absolute;top:12px;left:12px;z-index:1;padding:6px 9px;color:#fff;background:var(--primary);border-radius:6px;font-size:10px;font-weight:800}.catalog-sold-out{position:absolute;top:12px;right:12px;padding:6px 8px;color:#fff;background:#475569;border-radius:6px;font-size:9px;font-weight:700}.catalog-card-body{min-height:128px;display:flex;flex:1;flex-direction:column;padding:14px}.catalog-card-category{overflow:hidden;color:var(--muted,#64748b);font-size:9px;font-weight:700;letter-spacing:.07em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}.catalog-card-name{min-height:40px;margin-top:7px;color:#172033;font-size:13px;font-weight:700;line-height:1.45}.catalog-card-name:hover{color:var(--primary)}.catalog-card-prices{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:auto;padding-top:14px}.catalog-card-price{color:var(--secondary);font-size:17px;font-weight:800}.catalog-card-compare{color:#94a3b8;font-size:11px;text-decoration:line-through}.catalog-card-percent{padding:3px 6px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:800}.catalog-card-wholesale{display:block;margin-top:5px;color:#64748b;font-size:9px}.catalog-card-action{min-height:44px;margin:0 10px 10px;color:#fff;background:var(--primary);border:0;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer}.catalog-card-action:hover{filter:brightness(.92)}.catalog-card-action:disabled{color:#94a3b8;background:#e2e8f0;cursor:not-allowed}.catalog-empty{grid-column:1/-1;padding:64px 22px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:12px}.catalog-empty svg{width:42px;margin:0 auto;color:#94a3b8}.catalog-empty h3{margin:15px 0 6px;color:#172033;font-size:18px}.catalog-empty p{margin:0 0 18px;color:#64748b;font-size:13px}
         .catalog-card-media-link{position:absolute;inset:0;display:grid;place-items:center}.catalog-card-media-link img{width:100%;height:100%;padding:18px;object-fit:contain;transition:transform .25s ease}.catalog-card:hover .catalog-card-media-link img{transform:scale(1.035)}
         /* El wrapper SSR no debe romper el grid: sus cards participan directamente */
         .catalog-ssr{display:contents}
@@ -2185,11 +2585,16 @@
         /* ═══════════════════════════════════════════════════════
            AJUSTE VISUAL FINAL — estilo más serio y corporativo
            ═══════════════════════════════════════════════════════ */
-        .topbar{background:linear-gradient(90deg,#0f172a,#162033)!important;color:#fff!important;font-size:12px!important;letter-spacing:.02em}
+        {{-- Antes esta regla clavaba un azul marino fijo con !important y
+             anulaba el color configurado de la barra en TODAS las tiendas.
+             El degradado se mantiene, pero sale del color del constructor. --}}
+        .topbar{background:linear-gradient(90deg,{{ $announcementBg }},color-mix(in srgb,{{ $announcementBg }} 88%,#fff))!important;color:{{ $announcementColor }}!important;font-size:12px!important;letter-spacing:.02em}
         .header{background:rgba(255,255,255,.96)!important;backdrop-filter:saturate(180%) blur(10px)!important;border-bottom:1px solid #e5e7eb!important}
         .header-main{grid-template-columns:320px minmax(360px,1fr) auto!important;gap:32px!important;padding:26px 0!important}
         .brand{gap:16px!important}
-        .brand-logo{height:64px!important}
+        {{-- El alto del logo es un control del constructor. Estaba fijado a 64px
+             con !important, asi que el ajuste no hacia nada. --}}
+        .brand-logo{height:var(--logo-h,64px)!important;max-height:none!important}
         .brand-copy strong{font-size:15px!important;letter-spacing:-.01em!important;color:#0f172a!important}
         .brand-copy span,.brand-copy small{color:#64748b!important}
         .searchbox input{height:58px!important;border:1px solid #d7dfea!important;border-radius:18px!important;padding:0 56px 0 20px!important;font-size:15px!important;background:#fff!important;box-shadow:0 8px 20px rgba(15,23,42,.05)!important}
@@ -2204,7 +2609,10 @@
         .premium-hero-copy{padding:78px 0!important}
         .ph-title{letter-spacing:-.045em!important}
         .ph-sub{font-size:17px!important;line-height:1.68!important;color:rgba(255,255,255,.90)!important}
-        .button-primary{background:linear-gradient(135deg,var(--primary),color-mix(in srgb,var(--primary) 82%,#fff))!important;color:#fff!important;box-shadow:0 12px 28px color-mix(in srgb,var(--primary) 26%,transparent)!important}
+        /* La sombra iba a 12px de desplazamiento y 26% del color de marca: en un
+           boton pequeno se leia como un segundo boton pegado detras. Elevacion,
+           no duplicado. */
+        .button-primary{background:linear-gradient(135deg,var(--primary),color-mix(in srgb,var(--primary) 82%,#fff))!important;color:#fff!important;box-shadow:0 1px 2px rgba(15,23,42,.08),0 6px 14px color-mix(in srgb,var(--primary) 16%,transparent)!important}
         .home-cats,.trust-section,.pf-section,.promo-section,.catalog,.store-page{padding-block:72px!important}
         .section-heading h2,.home-section-head h2,.trust-section-head h2,.pf-title{font-size:clamp(30px,3.4vw,46px)!important;letter-spacing:-.035em!important;color:#0f172a!important}
         .section-heading p,.home-section-copy p,.trust-section-head p,.pf-desc{color:#64748b!important;line-height:1.7!important}
@@ -2274,7 +2682,10 @@
         .brand--logo-only .brand-logo{
           width:auto!important;
           height:var(--logo-h)!important;
-          max-width:230px!important;
+          /* El tope fijo de 230px frenaba el crecimiento: subir el alto no hacia
+             nada porque el logo chocaba antes con el ancho. El limite acompana al
+             alto configurado y solo actua de red de seguridad. */
+          max-width:min(calc(var(--logo-h) * 5), 40vw)!important;
           object-fit:contain!important;
         }
         .brand--text{
@@ -2508,7 +2919,12 @@
        (asi se escanea un catalogo) pero con fondo propio y una barra de acento
        que la separa del resto de la pagina. */
     .cat-banner{margin:0 0 26px;padding:26px 0 24px;border-bottom:1px solid var(--border);
-        background:linear-gradient(90deg,color-mix(in srgb,var(--primary) 7%,transparent),transparent 62%)}
+        {{-- Tinte del ACENTO, no del primario: con un primario frío (petróleo
+             de MegaHogar) el 7% daba una banda gris sobre página crema. El
+             acento es el color decorativo por definición. --}}
+        {{-- rgba calculado en servidor: color-mix dentro de un gradiente se
+             invalida en este Chromium, con o sin var(). --}}
+        background:linear-gradient(90deg,rgba({{ hexdec(substr($acFondo,0,2)) }},{{ hexdec(substr($acFondo,2,2)) }},{{ hexdec(substr($acFondo,4,2)) }},.09),transparent 62%)}
     .cat-banner-inner{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
     .cat-banner-copy{position:relative;padding-left:16px;min-width:0}
     .cat-banner-copy::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:4px;
@@ -2568,6 +2984,7 @@
     .catalog-card-name,.pf-card-name{font-weight:700!important;color:var(--secondary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;padding-left:2px;margin-left:-2px}
     .catalog-card-price,.pf-price-now{font-size:19px!important;font-weight:800!important;color:var(--secondary)}
     .catalog-card-compare{color:#94a3b8;text-decoration:line-through;font-size:12px}
+    .catalog-card-tax-note{display:block;font-size:10.5px;color:#94a3b8;font-weight:500;margin-top:1px}
     /* El descuento iba en el color primario: en una tienda monocromatica no
    destacaba nada. Va en el acento, que existe justo para esto. */
     .catalog-discount,.catalog-card-percent,.badge-sale{background:var(--sale)!important;color:#fff;font-weight:800;border-radius:var(--r-btn,8px);letter-spacing:.02em}
@@ -2705,6 +3122,14 @@
     .cart-line-thumb{width:88px;height:88px;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border:1px solid #f1f5f9;border-radius:10px}
     .cart-line-thumb img{width:100%;height:100%;padding:8px;object-fit:contain}
     .cart-line-cat{color:#7c899b;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+    /* En una tienda sin fotos, la miniatura del carrito era un cuadro gris con un
+       icono: se lee como imagen rota. Sin foto no hay miniatura. */
+    body.nophoto-compact .cart-line-thumb:not(:has(img)){display:none}
+    /* Aviso de tramo mayorista dentro de la linea del carrito */
+    .cart-line-mayor{margin-top:5px;padding:4px 9px;display:inline-block;border-radius:999px;
+        color:var(--text);background:var(--surface-soft);border:1px solid var(--border);font-size:11.5px}
+    .cart-line-mayor.is-on{color:#fff;background:var(--primary);border-color:var(--primary)}
+    .cart-line-mayor b{font-weight:800}
     .cart-line-name{margin-top:3px;color:var(--secondary);font-size:14px;font-weight:700}
     .cart-line-ctl{display:flex;align-items:center;gap:14px;margin-top:10px}
     .cart-line-price{color:var(--secondary);font-size:16px;font-weight:800;white-space:nowrap}
@@ -2717,8 +3142,23 @@
     /* ═══ Página de producto (esqueleto ecommerce, estilo computienda) ═══ */
     .pdp-wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px}
     .pdp-gallery{position:sticky;top:96px;align-self:start}
+    /* Ficha sin fotografia: la galeria dejaba un hueco blanco de 652x702 ocupando
+       media pantalla, peor aun que la caja gris de la tarjeta. Sin imagen no hay
+       galeria: la ficha pasa a una sola columna centrada y se lee como una ficha
+       tecnica, que es lo que de verdad es. Igual que en la tarjeta, en cuanto el
+       producto tenga foto vuelve a dos columnas sin tocar nada. */
+    body.nophoto-compact .pdp-wrap:has(.catalog-card-placeholder),
+    body.nophoto-compact .pdp-wrap:has(.ph-note){grid-template-columns:minmax(0,760px)!important;justify-content:center}
+    body.nophoto-compact .pdp-wrap:has(.catalog-card-placeholder) .pdp-gallery,
+    body.nophoto-compact .pdp-wrap:has(.ph-note) .pdp-gallery{display:none!important}
     .pdp-main-img{position:relative;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:16px;cursor:zoom-in}
     .pdp-zoom-hint{position:absolute;bottom:12px;right:12px;width:38px;height:38px;display:grid;place-items:center;color:#fff;background:rgba(15,23,42,.55);border-radius:50%;opacity:.85;pointer-events:none;transition:opacity .2s}
+    /* El recuadro del icono si esta centrado, pero el dibujo dentro del SVG no:
+       el lente va en 11,11 y el centro del viewBox es 12,12, y encima el mango
+       carga peso abajo a la derecha. El ojo centra en el lente, asi que la lupa
+       se veia corrida arriba-izquierda. Se compensa 1 unidad de las 24 del
+       viewBox (4.17%), que es independiente del tamano al que se pinte. */
+    .pdp-zoom-hint svg{width:18px;height:18px;transform:translate(4.17%,4.17%)}
     .pdp-main-img:hover .pdp-zoom-hint{opacity:1}
     .cpt-lb{position:fixed;inset:0;z-index:100000;display:none;background:rgba(2,6,23,.93);touch-action:none}
     body.cpt-lb-open .official-whatsapp-float,body.cpt-lb-open #bixo-runtime-whatsapp{display:none!important}
@@ -2787,9 +3227,15 @@
     /* Con el bloque mayorista ABIERTO la botonera inferior repite el CTA y se
        oculta. Si esta plegado NO se oculta: al plegarlo, la tarjeta se quedaba
        sin ningun boton de compra y solo dejaba consultar por WhatsApp. */
-    .catalog-card:has(.buy-block--wholesale:not(.is-foldable)) .catalog-card-actions .catalog-card-action{display:none}
-    /* Modalidad B ya trae su boton: la botonera inferior solo conserva WhatsApp */
-    .catalog-card:has(.buy-auto) .catalog-card-actions .catalog-card-action{display:none}
+    /* CORREGIDO: se ocultaba el boton de la botonera cuando la tarjeta traia
+       bloque mayorista o precio automatico, porque ese bloque ya llevaba el
+       suyo. El efecto para el comprador era que "Agregar al carrito" aparecia y
+       desaparecia al navegar, segun el producto: unas tarjetas lo tenian abajo,
+       otras dentro del bloque de precios, y otras —al plegar— en ningun sitio.
+       Ahora manda SIEMPRE el de la botonera, en la misma posicion en todas las
+       tarjetas, y es el bloque de precios el que deja de duplicarlo. */
+    .catalog-card .buy-block--wholesale .buy-add,
+    .catalog-card .buy-auto .buy-add{display:none!important}
     /* Variante mayorista: mismo formato, acento ambar para diferenciarla */
     .buy-block--wholesale{border-color:#f0c471;background:#fffdf7}
     .buy-block--wholesale .buy-head{background:#fffbeb;border-bottom-color:#f6e3b8}
@@ -2835,8 +3281,93 @@
         $heroCaps = (string) ($settings['hero_title_caps'] ?? '1') === '1';
         // Color del boton de compra: si el primario no llega a 4,5:1 con blanco,
         // el CTA se lee mal. Se permite un tono propio solo para el boton.
-        $btnColor = trim((string) ($settings['buy_button_color'] ?? '')) ?: null;
+        // Color del boton de compra. Prioridad: el del perfil activo (Nino/Nina
+        // traen el suyo), luego el de la tienda, y si no hay ninguno se deriva
+        // del primario oscureciendolo para que el texto blanco se lea.
+        $btnColor = null;
+        if (!empty($activeProfile) && !empty($activeProfile->button_color)) {
+            $btnColor = $color($activeProfile->button_color, null);
+        }
+        if (!$btnColor) {
+            $btnColor = trim((string) ($settings['buy_button_color'] ?? '')) ?: null;
+        }
+        if (!$btnColor && !empty($activeProfile)) {
+            $btnColor = 'color-mix(in srgb,var(--primary) 82%,#000)';
+        }
     @endphp
+@php
+    // Tinta del botón de compra por luminancia: con un color claro (dorado de
+    // MegaHogar) el blanco fijo daba 2:1 y el botón principal de la tienda
+    // era el peor texto de la página.
+    $btnInk = '#fff';
+    if ($btnColor && preg_match('/^#[0-9a-fA-F]{6}$/', $btnColor)) {
+        $btnRgbTmp = array_map(fn ($c) => hexdec($c) / 255, str_split(ltrim($btnColor, '#'), 2));
+        $btnLinTmp = fn ($v) => $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
+        $btnLumTmp = 0.2126 * $btnLinTmp($btnRgbTmp[0]) + 0.7152 * $btnLinTmp($btnRgbTmp[1]) + 0.0722 * $btnLinTmp($btnRgbTmp[2]);
+        $btnInk = (1.05 / ($btnLumTmp + 0.05)) >= 4.5 ? '#ffffff' : '#1c1508';
+    }
+@endphp
+@if($btnColor)
+    /* ═══ Color del botón de compra ═══
+       `$btnColor` se calculaba aquí arriba en seis líneas —con su prioridad de
+       perfil, ajuste de la tienda y valor automático— y después NO se usaba en
+       ningún sitio. El control "Botón de compra" de Apariencia se guardaba y la
+       tienda lo ignoraba por completo. Aquí pasa a aplicarse de verdad, en los
+       cuatro botones de compra que existen: tarjeta, bloque de precios, ficha y
+       vista rápida. Con sombra y elevación al pasar: el botón de compra es el
+       que tiene que atraer la mano. */
+    #storefront-main .catalog-card-action:not(:disabled),
+    #storefront-main .buy-add,
+    #storefront-main .pdp-add:not(.pdp-consult),
+    .qv-add{background:{{ $btnColor }}!important;border-color:{{ $btnColor }}!important;color:{{ $btnInk }}!important;
+        box-shadow:0 4px 12px rgba(16,26,40,.16);transition:transform .15s ease,box-shadow .15s ease,filter .15s ease}
+    #storefront-main .catalog-card-action:not(:disabled):hover,
+    #storefront-main .buy-add:hover,
+    #storefront-main .pdp-add:not(.pdp-consult):hover,
+    .qv-add:hover{filter:brightness(.95);transform:translateY(-1px);box-shadow:0 8px 18px rgba(16,26,40,.22)}
+@endif
+    /* Los CTA azules (Ver todos, Conoce la historia, barra de secciones)
+       también con presencia: sombra y elevación, mismo lenguaje. */
+    body.section-preset-commerce .button-primary,
+    body.section-preset-commerce .sec-head-btn{box-shadow:0 4px 12px rgba(16,26,40,.14);transition:transform .15s ease,box-shadow .15s ease,filter .15s ease}
+    body.section-preset-commerce .button-primary:hover,
+    body.section-preset-commerce .sec-head-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(16,26,40,.20)}
+    /* ═══ Aparición de las secciones al entrar en pantalla ═══
+       Sin JavaScript: `animation-timeline: view()` liga la animación al
+       desplazamiento del propio navegador. Se declara dentro de `@supports`, así
+       que en un navegador que no lo entienda simplemente no pasa nada — nunca
+       deja contenido invisible, que es el fallo clásico de estos efectos cuando
+       dependen de un script que no llegó a cargar.
+       Movimiento corto (14px) y rápido: acompaña la lectura, no la interrumpe. */
+    @supports (animation-timeline: view()) {
+        @media (prefers-reduced-motion: no-preference) {
+            /* SOLO desplazamiento, NADA de opacidad. Lo probé con `opacity:0` y
+               medí una sección a opacidad 0 fuera del rango de entrada: si algo
+               falla —un navegador que aplica mal el rango, una sección que nunca
+               entra— el cliente se queda con la tienda en blanco. Con transform
+               el peor caso posible es que un bloque aparezca 14px desplazado.
+               Nunca invisible. */
+            @keyframes bx-entra{from{transform:translateY(14px)}to{transform:none}}
+            #storefront-main > section,
+            #storefront-main .home-section,
+            #storefront-main .xs-wa,
+            #storefront-main .special-section-head,
+            #storefront-main .pf-head{
+                animation:bx-entra linear both;
+                animation-timeline:view();
+                animation-range:entry 0% entry 32%}
+            /* El hero no: es lo primero que se ve y aparecer ya cargado da
+               sensación de lentitud. */
+            #storefront-main .premium-hero{animation:none!important}
+        }
+    }
+    /* Microinteracción en las tarjetas: acompaña al cursor sin saltos. */
+    @media (prefers-reduced-motion: no-preference) and (hover:hover){
+        #storefront-main .catalog-card{transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+        #storefront-main .catalog-card:hover{transform:translateY(-3px)}
+        #storefront-main .catalog-card-action,#storefront-main .catalog-card-inquiry{transition:filter .16s ease,transform .16s ease}
+        #storefront-main .catalog-card-action:hover,#storefront-main .catalog-card-inquiry:hover{transform:translateY(-1px)}
+    }
     /* ─── Sistema tipografico unico ───────────────────────────────────────
        Habia 15 tamanos de letra, 4 pesos, 11 radios y 12 sombras conviviendo.
        Aqui quedan 5 tamanos, 2 pesos y una jerarquia de radios. */
@@ -2869,8 +3400,15 @@
     #storefront-main h1,#storefront-main .ph-title{text-transform:none!important;font-weight:700!important;letter-spacing:-.01em}
     @endunless
     @if($btnColor)
+    {{-- La tinta acompaña al color: con el dorado de MegaHogar el blanco fijo
+         daba 1,9:1 en "Conoce nuestra tienda" y compañía. --}}
     #storefront-main .catalog-card-action,#storefront-main .buy-add,
-    #storefront-main .button-primary,#storefront-main .button.button-primary{background:{{ $btnColor }}!important}
+    #storefront-main .button-primary,#storefront-main .button.button-primary{background:{{ $btnColor }}!important;color:{{ $btnInk ?? '#fff' }}!important;border-color:{{ $btnColor }}!important}
+    /* Excepcion: dentro de la banda de marca el fondo YA es ese color, asi que
+       el boton se fundia con el y quedaba en 3,3:1. Sobre color, boton blanco. */
+    #storefront-main .xs-cta.is-brand .button,
+    #storefront-main .xs-cta.is-brand .button.button-primary{background:#fff!important;color:var(--primary)!important;border-color:#fff!important}
+    #storefront-main .xs-cta.is-brand .button:hover{background:rgba(255,255,255,.9)!important}
     @endif
     /* ─── Colecciones como tarjeta-imagen ─────────────────────────────────
        En moda la foto vende: la coleccion se presenta con la imagen a sangre y
@@ -2916,16 +3454,85 @@
     /* En movil la botonera se partia en dos filas y el texto del boton se
        rompia en dos lineas. Se mantiene en una fila y el texto no se parte. */
     @media(max-width:760px){
-        /* En una tarjeta de ~160px no caben boton y icono en la misma fila sin
-           cortar el texto. El boton ocupa el ancho y WhatsApp sube a la foto. */
+        /* En una tarjeta de ~160px no caben los dos botones en la misma fila sin
+           cortar el texto, asi que se apilan. Antes WhatsApp subia a la foto como
+           circulo: se leia como un adorno, tapaba la imagen y no decia que hacia.
+           Ahora son dos botones de verdad, del mismo ancho y centrados. */
+        /* ═══ Hero en móvil ═══
+           Venía con 20px de redondeo y respirando por los lados: en una pantalla
+           de 430px eso son cuatro esquinas curvas y dos franjas muertas que
+           recortan lo único que tiene que impactar. A pantalla completa, sin
+           redondeo y sin márgenes, como cualquier portada móvil seria. */
+        #storefront-main .premium-hero,
+        body.section-preset-commerce .premium-hero,
+        body.section-preset-commerce .premium-hero.has-bg{
+            border-radius:0!important;margin-left:0!important;margin-right:0!important;
+            width:100%!important;max-width:none!important}
+        /* Las flechas de 48px tapaban el texto y competían con el botón. En móvil
+           se navega deslizando: quedan los puntos, que sí dicen cuántos hay. */
+        #storefront-main .ph-arrow{display:none!important}
+        #storefront-main .ph-title{font-size:clamp(25px,7.2vw,31px)!important;line-height:1.12!important;letter-spacing:-.02em}
+        #storefront-main .ph-sub{font-size:14.5px!important;line-height:1.5!important;margin-top:10px!important}
+        /* El CTA ocupaba todo el ancho y parecía una barra, no un botón. */
+        /* El CTA salía translúcido sobre la foto y se leía como un rótulo, no
+           como algo pulsable. Sólido, en el color de compra. */
+        #storefront-main .premium-hero .button{width:auto!important;min-width:200px;max-width:88%;
+            background:var(--primary)!important;color:#fff!important;border:0!important;
+            box-shadow:0 6px 20px rgba(0,0,0,.28)!important}
+        /* La barra de sección apila título y botón: en 430px iban en la misma
+           fila y el título se partía en dos líneas contra el botón. */
+        body.sechead-barra .special-section-head,
+        body.sechead-barra .pf-head,
+        body.sechead-barra #storefront-main .section-heading{
+            flex-direction:column!important;align-items:flex-start!important;gap:10px!important}
+        body.sechead-barra .pf-head a,
+        body.sechead-barra .special-section-head .home-see-all{align-self:flex-start}
+        /* ═══ Menú móvil ═══
+           Eran filas planas con un separador fino y todas del mismo peso: para
+           encontrar algo había que leerlas una a una. Ahora respiran, la fila
+           tiene su flecha de "esto lleva a algún sitio" y el encabezado de grupo
+           se distingue del contenido en vez de parecer otra opción más. */
+        .mobile-nav-panel .mnav-cat{display:flex!important;align-items:center;gap:12px;
+            min-height:50px;padding:0 18px!important;border-bottom:1px solid var(--border)}
+        .mobile-nav-panel .mnav-ico{display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px;color:var(--accent,var(--primary))}
+        .mobile-nav-panel .mnav-ico svg{width:22px;height:22px;display:block}
+        .mobile-nav-panel .mnav-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .mobile-nav-panel .mnav-arr{flex:0 0 auto;color:var(--muted);font-size:20px;line-height:1}
+        .mobile-nav-panel .mnav-cat:active{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+        /* Acordeón: la fila es un botón a ancho completo, la flecha gira al
+           abrir y las subcategorías entran indentadas y en fondo suave, para
+           que se lea de un vistazo qué cuelga de qué. */
+        .mobile-nav-panel .mnav-cat{width:100%;background:none;border:0;text-align:left;
+            font:inherit;color:inherit;cursor:pointer}
+        .mobile-nav-panel .mnav-arr{transition:transform .18s ease}
+        .mobile-nav-panel .mnav-cat.is-open{color:var(--primary)}
+        .mobile-nav-panel .mnav-cat.is-open .mnav-arr{transform:rotate(90deg)}
+        .mobile-nav-panel .mnav-subs{background:var(--surface-soft,#f8fafc);border-bottom:1px solid var(--border)}
+        .mobile-nav-panel .mnav-sub{display:flex!important;align-items:center;min-height:44px;
+            padding:0 18px 0 52px!important;color:var(--text)!important;font-size:13.5px}
+        .mobile-nav-panel .mnav-sub:first-child{font-weight:700;color:var(--primary)!important}
+        /* Accesos (Ofertas, perfiles) arriba del todo, como pastillas. */
+        /* La fila de perfiles de arriba desaparece: sus accesos viven ahora en
+           el bloque único, en el mismo orden que en escritorio. Tener el mismo
+           tipo de enlace en dos sitios de la misma pantalla obligaba a mirar
+           dos veces para encontrar uno. */
+        .mobile-nav-panel .mobile-nav-profiles{display:none}
+        .mobile-nav-panel .mnav-accesos{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px;
+            border-bottom:1px solid var(--border)}
+        .mobile-nav-panel .mnav-acceso{display:inline-flex!important;align-items:center;min-height:38px;
+            padding:0 15px!important;border-radius:999px;font-size:13px;font-weight:700;
+            color:#fff!important;background:var(--chip,var(--primary))}
+        .mobile-nav-panel .mobile-nav-section{margin-top:14px;padding:8px 18px 6px!important;
+            color:var(--muted)!important;font-size:11px!important;font-weight:800!important;
+            letter-spacing:.1em;text-transform:uppercase;background:var(--surface-soft,#f8fafc);
+            border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
         #storefront-main .catalog-card{position:relative}
-        #storefront-main .catalog-card-actions{flex-direction:row!important;flex-wrap:nowrap!important;gap:0;padding:0 10px 12px!important}
-        #storefront-main .catalog-card-action{flex:1 1 100%!important;width:100%!important;
-            padding:0 8px!important;font-size:12.5px!important;white-space:nowrap}
-        #storefront-main .catalog-card-inquiry{position:absolute!important;top:8px;right:8px;z-index:3;
-            flex:0 0 38px!important;width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;
-            padding:0!important;border-radius:50%!important;background:#fff!important;
-            border:1px solid var(--border)!important;box-shadow:var(--sh-1)!important}
+        body #storefront-main .catalog-card-actions{flex-direction:column!important;flex-wrap:nowrap!important;
+            align-items:stretch!important;gap:7px!important;padding:0 10px 12px!important}
+        body #storefront-main .catalog-card-action,
+        body #storefront-main .catalog-card-inquiry{width:100%!important;min-width:0!important;
+            justify-content:center!important;text-align:center;white-space:nowrap;
+            padding:0 8px!important;font-size:12.5px!important}
         #storefront-main .catalog-card-body{padding:12px 10px 8px!important}
         #storefront-main .catalog-card-price{font-size:17px!important}
         #storefront-main .catalog-card-name{font-size:13.5px!important}
@@ -2935,9 +3542,69 @@
     #storefront-main .catalog-card-media:has(.catalog-card-placeholder){background:var(--surface-soft)!important}
     #storefront-main .catalog-card-placeholder{width:46px!important;height:46px!important;
         color:color-mix(in srgb,var(--primary) 34%,var(--muted))!important;opacity:.8}
+    /* ─── TARJETA SIN FOTOGRAFIA ──────────────────────────────────────────
+       Un catalogo de muebles sin fotos de producto no puede presentarse con una
+       rejilla de fotos: quedan cajas grises con "foto en camino" y la tienda
+       parece rota. Aqui la tarjeta renuncia al hueco de la imagen y deja que
+       trabajen la categoria, el nombre y el precio, que es la informacion que si
+       existe. La tarjeta pasa de ~380px de alto a ~180: entran el doble de
+       productos por pantalla, que es lo que pide un catalogo de 1127 articulos.
+       Solo afecta a las tarjetas SIN foto: en cuanto un producto tenga imagen,
+       vuelve al formato normal sin tocar nada. */
+    body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-media,
+    body.nophoto-compact .pf-card:has(.catalog-card-placeholder) .pf-media{display:none!important}
+    /* !important justificado: los presets de seccion redeclaran el atajo
+       `border` completo mas abajo y se llevaban por delante este filete. */
+    /* #storefront-main .catalog-card redeclara `border` con un ID y !important:
+       hay que igualar la especificidad o el filete dorado no aparece. */
+    #storefront-main body.nophoto-compact .catalog-card:has(.catalog-card-placeholder),
+    body.nophoto-compact #storefront-main .catalog-card:has(.catalog-card-placeholder){
+        border-top:3px solid var(--accent,var(--primary))!important}
+    body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-body{
+        min-height:0!important;padding:16px 16px 12px!important}
+    body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-category{
+        color:color-mix(in srgb,var(--accent,var(--primary)) 78%,#000)!important;
+        font-size:10px!important;letter-spacing:.1em!important}
+    body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-name{
+        min-height:44px!important;margin-top:8px!important;font-size:15px!important;
+        line-height:1.35!important;color:var(--text-strong)!important}
+    body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-prices{
+        padding-top:12px!important;margin-top:12px!important;
+        border-top:1px solid var(--border)}
+    body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-price{
+        font-size:24px!important;color:var(--primary)!important;letter-spacing:-.02em}
+    @media(max-width:760px){
+        body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-name{font-size:13px!important;min-height:38px!important}
+        body.nophoto-compact .catalog-card:has(.catalog-card-placeholder) .catalog-card-price{font-size:19px!important}
+    }
     #storefront-main .ph-note{display:block;margin-top:10px;color:var(--muted)!important;
         font-size:12px!important;font-weight:600;letter-spacing:.02em}
     #storefront-main .catalog-card-media-link:has(.catalog-card-placeholder){display:grid;place-content:center;gap:0}
+@if(($settings['wholesale_card_style'] ?? 'block') === 'line')
+    /* Mayorista en la tarjeta como LINEA, no como bloque de compra. Con los dos
+       bloques la tarjeta llegaba a 727px y parecia una ficha tecnica. El pedido
+       por mayor se cierra en la ficha, donde hay sitio para cantidades. */
+    #storefront-main .catalog-card .buy-block{border:0!important;background:none!important;
+        margin:0!important;padding:0!important;overflow:visible}
+    #storefront-main .catalog-card .buy-block .buy-head{padding:0!important;background:none!important;
+        border:0!important;min-height:0!important;justify-content:flex-start;gap:8px}
+    #storefront-main .catalog-card .buy-block--retail .buy-tag{display:none!important}
+    #storefront-main .catalog-card .buy-block--retail .buy-price{font-size:20px!important;
+        font-weight:800!important;color:var(--secondary)!important}
+    #storefront-main .catalog-card .buy-block--retail .buy-min,
+    #storefront-main .catalog-card .buy-block .buy-row,
+    #storefront-main .catalog-card .buy-block .buy-fold{display:none!important}
+    #storefront-main .catalog-card .buy-block--wholesale .buy-head{margin-top:4px!important}
+    #storefront-main .catalog-card .buy-block--wholesale .buy-tag{display:inline!important;
+        color:var(--muted)!important;font-size:12px!important;font-weight:600!important;
+        letter-spacing:0!important;text-transform:none!important}
+    #storefront-main .catalog-card .buy-block--wholesale .buy-price{color:var(--muted)!important;
+        font-size:13px!important;font-weight:700!important}
+    #storefront-main .catalog-card .buy-block--wholesale .buy-min{display:block!important;
+        padding:0!important;margin-top:2px!important;color:var(--muted)!important;font-size:12px!important}
+    /* Con el mayorista en una linea, la botonera inferior vuelve a mandar. */
+    #storefront-main .catalog-card .catalog-card-actions .catalog-card-action{display:flex!important}
+@endif
     /* ─── Tarjeta de producto ─────────────────────────────────────────────
        El precio era del mismo peso visual que el nombre y los dos botones
        competian. Ahora: foto con aire, nombre a dos lineas fijas, precio
@@ -2946,7 +3613,19 @@
         overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
     #storefront-main .catalog-card:hover{border-color:color-mix(in srgb,var(--primary) 45%,var(--border))!important}
     #storefront-main .catalog-card-media{border-bottom:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
-    #storefront-main .catalog-card-media img{transition:transform .35s ease}
+    /* ═══ Encuadre de las fotos de producto ═══
+       La caja era cuadrada (1:1) y las fotos del catálogo son 3:2 y 4:3. Con
+       `contain` eso dejaba franjas vacías arriba y abajo de casi un cuarto de la
+       tarjeta, y cada producto se veía a un tamaño distinto según su foto.
+       4:3 es la proporción intermedia entre las dos que hay: aprovecha el hueco
+       sin recortar, que en un catálogo de informática importa —recortar una
+       laptop por los bordes se come el teclado o la pantalla. */
+    {{-- La proporción NO se fija aquí: ya existe el ajuste card_image_ratio`n         del constructor, que la pinta con !important y más especificidad. Aquí
+         solo el aire alrededor de la foto. --}}
+    #storefront-main .catalog-card-media{padding:10px;box-sizing:border-box}
+    #storefront-main .catalog-card-media img{transition:transform .35s ease;
+        object-fit:contain!important;object-position:center;width:100%;height:100%}
+    @media(max-width:760px){#storefront-main .catalog-card-media{padding:7px}}
     #storefront-main .catalog-card:hover .catalog-card-media img{transform:scale(1.04)}
     #storefront-main .catalog-card-body{padding:14px 14px 10px!important;gap:2px}
     #storefront-main .catalog-card-category{display:block;margin-bottom:4px;text-transform:uppercase;font-weight:700}
@@ -2956,15 +3635,277 @@
     #storefront-main .catalog-card-prices{align-items:baseline;gap:8px;margin-top:8px}
     #storefront-main .catalog-card-price{font-size:20px!important;font-weight:800!important;color:var(--secondary)!important;line-height:1.1}
     #storefront-main .catalog-card-compare{color:var(--muted)!important;text-decoration:line-through}
-    #storefront-main .catalog-card-actions{display:flex!important;gap:8px;padding:0 14px 14px!important;width:100%;box-sizing:border-box}
-    #storefront-main .catalog-card-inquiry{flex:0 0 44px!important;padding:0!important;justify-content:center}
-    #storefront-main .catalog-card-inquiry span,#storefront-main .catalog-card-inquiry{font-size:0!important}
-    #storefront-main .catalog-card-inquiry svg{width:19px;height:19px;color:#25d366}
+    /* Comprar arriba, consultar abajo. En fila los dos botones se repartían el
+       ancho y "Agregar al carrito" quedaba estrecho y con el texto apretado,
+       compitiendo de tú a tú con el de WhatsApp. Apilados, el de compra ocupa
+       todo el ancho y manda; el de consulta acompaña debajo. Es además la misma
+       disposición que ya tenía el móvil: una sola tarjeta en toda la tienda. */
+    /* La botonera traía `margin:0 10px 10px` de la regla base Y el relleno que
+       le puse aquí: 246px de ancho más 20 de margen dentro de una tarjeta de
+       248. Se desbordaba y los botones quedaban descuadrados (25px a la
+       izquierda, 5 a la derecha). El aire lo pone el relleno, una sola vez. */
+    #storefront-main .catalog-card-actions{display:flex!important;flex-direction:column!important;
+        align-items:stretch!important;gap:8px;margin:0!important;padding:0 14px 14px!important;
+        width:100%;box-sizing:border-box}
+    /* `margin:0 10px 10px` de la regla base + `width:100%` = el botón se salía
+       10px por la derecha y la tarjeta se veía descuadrada. El margen lo pone
+       ahora el relleno del contenedor, una sola vez y simétrico. */
+    #storefront-main .catalog-card-actions > *{width:100%!important;margin:0!important;
+        justify-content:center!important;text-align:center}
+    /* WhatsApp de la tarjeta. `card_whatsapp_style` existia en el constructor
+       (Catalogo → estilo del WhatsApp) desde siempre, se guardaba, y la
+       plantilla nunca lo leia: el valor calculado se quedaba en una variable sin
+       usar. Aqui pasa a mandar de verdad. */
+    #storefront-main .catalog-card-inquiry{flex:1 1 auto!important;padding:0 10px!important;
+        justify-content:center;gap:7px;font-size:12.5px!important}
+    #storefront-main .catalog-card-inquiry svg{width:17px;height:17px}
+    /* ═══ Vista rápida: resumen del producto ═══
+       Solo daba nombre y precio, así que para saber qué se estaba comprando
+       había que abrir la ficha entera y la vista rápida no servía de nada. */
+    .qv-box{max-width:520px!important;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+    /* Con el resumen añadido, la tarjeta creció y en móvil se salía de la
+       pantalla: la foto quedaba cortada por arriba. Ahora la cabecera se
+       desplaza si hace falta y los botones se quedan SIEMPRE abajo, visibles
+       sin desplazar — que es lo que hay que poder pulsar. */
+    .qv-head{overflow-y:auto;min-height:0;flex:1 1 auto}
+    .qv-foot{flex:0 0 auto}
+    /* El botón flotante de WhatsApp se colaba por encima de la vista rápida y
+       tapaba "Ver producto completo". Ya se ocultaba con el carrito y el cajón;
+       faltaba este caso. */
+    body:has(.qv-layer:not([style*="display: none"])) .official-whatsapp-float{opacity:0!important;pointer-events:none;transition:opacity .2s}
+    .qv-resumen{margin:9px 0 0;color:var(--muted,#64748b);font-size:12.5px;line-height:1.55;
+        display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+    .qv-datos{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:9px;font-size:11.5px;color:var(--muted,#64748b)}
+    .qv-datos b{color:var(--text-strong,#172033);font-weight:700}
+    .qv-hay{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+        color:#0B7A59;background:color-mix(in srgb,#0B7A59 12%,transparent);font-weight:700}
+    .qv-hay::before{content:'';width:6px;height:6px;border-radius:50%;background:#0B7A59}
+    @media(max-width:560px){
+        .qv-box{max-width:100%!important}
+        /* En móvil la foto de 118px y el texto se apretaban: la foto pasa arriba. */
+        .qv-head{flex-direction:column}
+        /* El recuadro medía 352x200 —apaisado— y la foto de producto es
+           cuadrada: con `contain` se dibujaba a 180x180 y ocupaba la mitad del
+           ancho, con aire a los lados. Cuadrado y a todo el ancho de la
+           tarjeta; `max-height` para que en un móvil bajo no empuje los
+           botones fuera de la pantalla. */
+        .qv-media{flex:0 0 auto;width:100%;height:auto;aspect-ratio:1/1;max-height:46vh;padding:10px;box-sizing:border-box}
+        /* `cover` recortaba el producto: en una laptop se comía el teclado y la
+           pantalla quedaba descentrada. `contain` muestra la pieza entera, que
+           es lo que el comprador quiere ver antes de decidir. */
+        .qv-media img{width:100%;height:100%;object-fit:contain!important;object-position:center}
+        /* La lupa de ampliar: el icono iba descolocado dentro de su círculo y
+           en gris sobre gris no se veía. Centrado de verdad y con contraste. */
+        /* Es un `.pdp-zoom-hint`, no un botón: en gris sobre gris no se veía y el
+           icono iba descolocado dentro de su círculo. */
+        .qv-media .pdp-zoom-hint{display:grid!important;place-items:center!important;
+            width:38px!important;height:38px!important;padding:0!important;border-radius:50%!important;
+            color:#fff!important;background:rgba(15,23,42,.62)!important;border:0!important;
+            box-shadow:0 2px 8px rgba(15,23,42,.28)}
+        .qv-media .pdp-zoom-hint svg{width:18px!important;height:18px!important;display:block;color:#fff!important;stroke-width:2.2}
+        .qv-resumen{-webkit-line-clamp:3}
+    }
+    /* Solido: el verde que la gente reconoce sin leer. */
+    body.cardwa-solid #storefront-main .catalog-card-inquiry{color:#fff!important;background:#25D366!important;border:1px solid #25D366!important}
+    body.cardwa-solid #storefront-main .catalog-card-inquiry:hover{background:#1EBE5A!important;border-color:#1EBE5A!important}
+    body.cardwa-solid #storefront-main .catalog-card-inquiry svg{color:#fff!important}
+    /* Contorno: acompana al boton de compra sin competir con el. */
+    body.cardwa-outline #storefront-main .catalog-card-inquiry{color:#128C7E!important;background:transparent!important;border:1.5px solid #25D366!important}
+    body.cardwa-outline #storefront-main .catalog-card-inquiry:hover{background:#F0FDF4!important}
+    body.cardwa-outline #storefront-main .catalog-card-inquiry svg{color:#25D366!important}
+    /* Enlace: sin caja, para catalogos donde el carrito es el unico protagonista. */
+    body.cardwa-link #storefront-main .catalog-card-inquiry{flex:0 0 auto!important;min-height:0!important;padding:0!important;
+        color:#128C7E!important;background:transparent!important;border:0!important;text-decoration:underline}
+    body.cardwa-link #storefront-main .catalog-card-inquiry svg{color:#25D366!important}
+    /* Icono: el cuadrado de 44px de siempre, ahora como opcion y no como unica via. */
+    body.cardwa-icon #storefront-main .catalog-card-inquiry{flex:0 0 44px!important;padding:0!important;font-size:0!important;
+        color:#128C7E!important;background:transparent!important;border:1.5px solid var(--border)!important}
+    body.cardwa-icon #storefront-main .catalog-card-inquiry svg{width:19px;height:19px;color:#25D366!important}
     #storefront-main .catalog-card-action{flex:1 1 auto!important;width:auto!important;min-width:0}
     /* La foto sin producto no puede ser un texto de 9px: se resuelve como estado. */
     #storefront-main .catalog-card-media .image-empty,
     #storefront-main .catalog-card-media > span:only-child{display:grid;place-content:center;gap:6px;
         width:100%;height:100%;color:var(--muted);font-size:12px!important;background:var(--surface-soft)}
+    /* Ficha: habia tres botones del mismo tamano compitiendo (mayorista ambar,
+       carrito de marca y WhatsApp verde saturado). Uno manda, el resto acompana. */
+    #storefront-main .pdp-add{min-height:52px!important;border-radius:var(--r-btn)!important;font-size:15px!important}
+    #storefront-main .pdp-add:not(.pdp-consult){flex:2 1 auto!important;box-shadow:var(--sh-1)}
+    #storefront-main .pdp-consult{flex:1 1 auto!important;background:transparent!important;
+        color:var(--text-strong)!important;border:1.5px solid var(--border)!important;font-weight:700!important}
+    #storefront-main .pdp-consult:hover{background:var(--surface-soft)!important;border-color:#25D366!important;filter:none!important}
+    #storefront-main .pdp-consult svg{width:18px;height:18px;color:#25D366}
+    #storefront-main .pdp-stock-low{padding:0!important;margin:10px 0 0!important;background:none!important;
+        border:0!important;color:var(--muted)!important;font-size:13px!important;font-weight:600!important}
+    #storefront-main .pdp-stock-low::before{content:'';display:inline-block;width:7px;height:7px;
+        margin-right:7px;border-radius:50%;background:#f59e0b;vertical-align:middle}
+    #storefront-main .pdp-stock-out{border-radius:var(--r-btn)!important}
+    #storefront-main .wh-buy{background:color-mix(in srgb,var(--primary) 7%,var(--surface))!important;
+        border:1px solid color-mix(in srgb,var(--primary) 28%,transparent)!important;border-radius:var(--r-card)!important;
+        padding:12px 14px!important;margin-top:14px}
+    #storefront-main .wh-buy-info b{color:var(--secondary)!important;font-size:15px!important}
+    #storefront-main .wh-buy-info small{color:var(--muted)!important;font-size:12px!important}
+    #storefront-main .wh-buy-btn{min-height:40px;padding:0 16px;background:transparent!important;
+        color:var(--primary)!important;border:1.5px solid var(--primary)!important;border-radius:var(--r-btn)!important;
+        font-size:13px!important;font-weight:700!important;cursor:pointer}
+    #storefront-main .wh-buy-btn:hover{background:var(--primary)!important;color:#fff!important}
+    .pdp-trust{list-style:none;margin:20px 0 0;padding:18px 0 0;border-top:1px solid var(--border);display:grid;gap:12px}
+    .pdp-trust li{display:flex;flex-direction:column;gap:2px;padding-left:24px;position:relative}
+    .pdp-trust li::before{content:'';position:absolute;left:0;top:5px;width:14px;height:14px;border-radius:50%;
+        background:color-mix(in srgb,var(--primary) 18%,transparent);
+        box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--primary) 55%,transparent)}
+    .pdp-trust strong{color:var(--text-strong);font-size:14px;font-weight:700}
+    .pdp-trust span{color:var(--muted);font-size:13px;line-height:1.5}
+    /* La banda del catalogo llevaba un borde de color a la izquierda: es una de
+       las señales tipicas de plantilla. El titulo ya jerarquiza solo. */
+    #storefront-main .cat-banner-copy{padding-left:0!important}
+    #storefront-main .cat-banner-copy::before{display:none!important}
+    #storefront-main .cat-banner{padding-top:8px!important;margin-bottom:22px!important}
+    #storefront-main .catalog-h1{margin:0!important}
+    /* En escritorio el carrito ya vive en el encabezado: el flotante solo apilaba
+       un segundo boton sobre el de WhatsApp y tapaba la esquina. Queda en movil,
+       donde el encabezado se va al hacer scroll. */
+    @media(min-width:761px){body .cf-bubble,body .cart-fab,body .floating-cart,body [class*="cart-float"]{display:none!important}}
+    /* Cada mundo (Nino/Nina) trae su propia banda: foto, titulo y texto salen
+       del perfil, no del codigo. Sin foto se resuelve con el color del perfil. */
+    #storefront-main .cat-banner.has-profile-media{position:relative;overflow:hidden;
+        border-radius:var(--r-block);border-bottom:0!important;padding:38px 32px!important;
+        background-image:var(--pf-media);background-size:cover;background-position:center}
+    #storefront-main .cat-banner.has-profile-media::before{content:'';position:absolute;inset:0;
+        background:linear-gradient(90deg,color-mix(in srgb,var(--primary) 88%,#000) 0%,color-mix(in srgb,var(--primary) 55%,transparent) 70%,transparent 100%)}
+    #storefront-main .cat-banner.has-profile-media .cat-banner-inner{position:relative;z-index:1}
+    #storefront-main .cat-banner.has-profile-media .catalog-h1,
+    #storefront-main .cat-banner.has-profile-media p{color:#fff!important}
+    /* Sin foto, el perfil se distingue por una banda de color suave.
+       Del ACENTO, no del primario: con un primario frío (petróleo de
+       MegaHogar) el 8% daba una banda gris sobre página crema. */
+    #storefront-main .cat-banner:not(.has-profile-media){border-bottom:0!important;
+        padding:22px 24px!important;border-radius:var(--r-block);
+        background:color-mix(in srgb,var(--accent-hex,var(--primary)) 9%,var(--surface))}
+    /* ─── Navbar ──────────────────────────────────────────────────────────
+       Era una fila de enlaces de 13px, todos con el mismo peso y el activo
+       igual que el resto: no se sabia donde estabas. Ahora hay jerarquia
+       (seccion vs categoria), estado activo real y respuesta al pasar. */
+    #storefront-main ~ * .category-nav,body .category-nav{border-top:1px solid var(--border)}
+    body .category-list{gap:2px}
+    body .category-list a{position:relative;padding:11px 14px!important;font-size:14px!important;
+        font-weight:600!important;color:var(--text)!important;border-radius:var(--r-btn);
+        transition:color .18s ease,background .18s ease}
+    body .category-list a:hover{color:var(--primary)!important;
+        background:color-mix(in srgb,var(--primary) 8%,transparent)!important}
+    /* El activo se marca con color y una barra bajo el texto, no con nada. */
+    body .category-list a.is-active{color:var(--primary)!important;font-weight:800!important;background:transparent!important}
+    body .category-list a.is-active::after{content:'';position:absolute;left:14px;right:14px;bottom:2px;
+        height:3px;border-radius:2px;background:var(--primary)}
+    /* Las categorias pesan menos que las secciones: se leen como un segundo nivel. */
+    body .category-list a[href*="category="],body .category-list a[data-nav="category"]{font-weight:500!important;color:var(--muted)!important}
+    body .category-list a[href*="category="]:hover{color:var(--primary)!important}
+    /* ─── FASE 1 · Sistema visual ─────────────────────────────────────────
+       Direccion: boutique de ropa de bebe. Radio generoso (la marca es suave),
+       iconos de un solo tamano por contexto, precios con una sola escala y
+       rejillas que no bajan de 220px por tarjeta para que la foto respire. */
+@if(($settings['visual_direction'] ?? '') === 'boutique')
+    :root{--r-chip:8px;--r-btn:10px;--r-card:16px;--r-block:24px}
+@endif
+    /* ═══ Descuentos en el color de descuento ═══
+       La insignia de rebaja y el porcentaje se pintaban con `var(--primary)`,
+       el color de la marca. Es decir: existía el control "Ofertas y descuentos"
+       en Apariencia, se guardaba, y las insignias lo ignoraban — salían azules
+       teniendo el naranja configurado. Ahora usan `--sale`, que es su color. */
+    #storefront-main .catalog-discount,
+    #storefront-main .catalog-card-percent,
+    #storefront-main .qv-percent,
+    #storefront-main .pdp-percent{background:var(--sale,var(--primary))!important;color:#fff!important}
+    /* ═══ Legibilidad del hero sobre foto clara ═══
+       El titular iba en tinta oscura y el subtítulo en blanco: dos criterios
+       opuestos en el mismo bloque. Sobre una foto oscura desaparecía el título;
+       sobre una clara —la de ropa de bebé sobre lino beige— desaparecía el
+       subtítulo. Y el distintivo iba en teal claro sobre teal translúcido:
+       invisible en las dos.
+       Se resuelve con un velo claro que baja de izquierda a derecha —donde vive
+       el texto— y toda la tipografía en la misma tinta oscura. El velo se apoya
+       en el lado del texto y deja la foto limpia a la derecha. */
+    #storefront-main .premium-hero.has-bg::before{content:'';position:absolute;inset:0;z-index:1;
+        background:linear-gradient(100deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.80) 34%,rgba(255,255,255,.30) 56%,rgba(255,255,255,0) 74%);
+        pointer-events:none}
+    #storefront-main .premium-hero.has-bg .container,
+    #storefront-main .premium-hero.has-bg .ph-copy{position:relative;z-index:2}
+    #storefront-main .premium-hero.has-bg .ph-title,
+    #storefront-main .premium-hero.has-bg .ph-sub{color:var(--text-strong,#1d2b2a)!important;text-shadow:none!important}
+    #storefront-main .premium-hero.has-bg .ph-sub{opacity:.92}
+    /* El distintivo pasa a sólido: en translúcido sobre foto no se leía nunca. */
+    #storefront-main .premium-hero.has-bg .ph-eyebrow,
+    #storefront-main .premium-hero.has-bg .ph-badge{
+        color:#fff!important;background:var(--primary)!important;border:0!important}
+    @media(max-width:760px){
+        /* En móvil el texto ocupa todo el ancho: el velo cubre de arriba abajo. */
+        #storefront-main .premium-hero.has-bg::before{
+            background:linear-gradient(180deg,rgba(255,255,255,.90) 0%,rgba(255,255,255,.78) 52%,rgba(255,255,255,.30) 100%)}
+    }
+    /* ═══ El logo dentro de un mundo de color ═══
+       El logo de estas tiendas es una imagen fija en el color de su marca (aquí
+       navy #183060). Sobre el encabezado verde del perfil daba 2,4:1 de
+       contraste: se leía embarrado. Y no se arregla eligiendo otro verde —más
+       oscuro lo empeora y más claro rompe el texto blanco—, ni es exclusivo de
+       este perfil: pasaría igual con el celeste de Niño o el rosa de Niña.
+       La solución es la que ya usa el pie: una placa blanca detrás. Así el logo
+       conserva su color de marca sobre CUALQUIER fondo, presente o futuro. */
+    {{-- Placa blanca retirada a petición: ensuciaba el encabezado. La salida
+         correcta es que el PERFIL tenga su propio logo (el campo ya existe en
+         la ficha del perfil), en una versión clara. Mientras no lo haya, el
+         encabezado del perfil usa un verde lo bastante oscuro para que el navy
+         del logo se lea como parte de la paleta y no como una mancha. --}}
+    /* ═══ Bordes del hero ═══
+       El redondeo solo lo había quitado en móvil; en escritorio seguían las
+       cuatro esquinas curvas. Se hace opción del constructor para no cambiárselo
+       a las otras tiendas sin que lo decidan. */
+    body.hero-recto #storefront-main .premium-hero,
+    body.hero-recto.section-preset-commerce .premium-hero,
+    body.hero-recto.section-preset-commerce .premium-hero.has-bg,
+    body.hero-recto #storefront-main .promo-slider-shell,
+    body.hero-recto #storefront-main .promo-slide{border-radius:0!important}
+    /* ═══ El precio manda ═══
+       Era el dato que el comprador busca y estaba al mismo peso que el nombre.
+       Sube de tamaño, se aprieta el interletrado y el precio tachado se
+       encoge: la comparación se entiende antes si uno de los dos pesa más. */
+    #storefront-main .catalog-card-price,#storefront-main .buy-auto-price{
+        font-size:23px!important;font-weight:800!important;letter-spacing:-.02em!important;
+        color:var(--text-strong,#0f172a)!important;line-height:1.05}
+    #storefront-main .catalog-card-compare{font-size:12.5px!important;opacity:.75}
+    #storefront-main .pdp-price{font-size:34px!important;letter-spacing:-.025em!important}
+    @media(max-width:760px){#storefront-main .catalog-card-price{font-size:19px!important}}
+    /* El importe del carrito, que es el precio que se vigila mientras compra. */
+    .hpx-cart-total{font-size:16px!important;font-weight:800!important}
+    /* Precios: una sola escala en toda la tienda (tarjeta, ficha, carrito). */
+    /* 23px, no 20: esta regla iba después de la que sube el precio y la anulaba.
+       El precio es el dato que el comprador busca en la tarjeta. */
+    #storefront-main .catalog-card-price,#storefront-main .buy-auto-price{font-size:23px!important;font-weight:800!important;letter-spacing:-.02em!important}
+    @media(max-width:760px){#storefront-main .catalog-card-price,#storefront-main .buy-auto-price{font-size:19px!important}}
+    #storefront-main .pdp-price{font-size:30px!important;font-weight:800!important;letter-spacing:-.01em}
+    #storefront-main .catalog-card-compare,#storefront-main .pdp-compare{font-size:13px!important;font-weight:600!important}
+    #storefront-main .buy-price{font-size:14px!important;font-weight:700!important}
+    /* Iconografia: dos tamanos, no siete. 18px en linea, 22px en accion. */
+    #storefront-main .catalog-card-inquiry svg,#storefront-main .pdp-consult svg,
+    #storefront-main .home-see-all svg,#storefront-main .pf-head a svg{width:18px!important;height:18px!important}
+    #storefront-main .trust-card svg,#storefront-main .xs-strip-media svg{width:22px!important;height:22px!important}
+    /* Rejillas: la tarjeta no baja de 220px para que la prenda se vea. */
+    /* En ropa la prenda es el argumento: 4 columnas dan foto de 280px en vez
+       de 218. El catalogo, que ya tiene panel de filtros, se ajusta solo. */
+    #storefront-main .pf-grid,#storefront-main .special-product-grid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))!important}
+    /* El numero de columnas del catalogo es un control del constructor
+       (Catalogo > Columnas en escritorio, --columns). Esta regla lo pisaba con
+       un auto-fill fijo: el ajuste no hacia nada y en 930px de rejilla salian
+       3 tarjetas de 297x618, demasiado grandes para leer una coleccion. */
+    #storefront-main .catalog-product-grid{grid-template-columns:repeat(var(--columns,4),minmax(0,1fr))!important}
+    @media(max-width:1240px){#storefront-main .catalog-product-grid{grid-template-columns:repeat(min(var(--columns,4),3),minmax(0,1fr))!important}}
+    @media(max-width:760px){#storefront-main .pf-grid,#storefront-main .catalog-product-grid,
+        #storefront-main .special-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+    /* La cabecera de seccion gastaba 117px para dos lineas. */
+    #storefront-main .pf-head{margin-bottom:20px!important}
+    #storefront-main .pf-head p{margin-top:4px!important}
+    /* Ancho util: 1360px es demasiado para una boutique; el ojo pierde la fila. */
+@if(!empty($settings['content_max_width']))
+    #storefront-main .container{width:min({{ (int) $settings['content_max_width'] }}px,calc(100% - 40px))!important}
+@endif
     /* El navegador pinta los textarea en monospace: rompe la tipografia de la tienda. */
     textarea,input,select,button{font-family:inherit}
     /* Mayorista plegable: la cabecera es el disparador y el detalle se despliega. */
@@ -2983,6 +3924,7 @@
     .qv-wholesale{margin:4px 0 0;color:#64748b;font-size:12px}
     .pdp-price{color:var(--secondary);font-size:30px;font-weight:800}
     .pdp-compare{color:#94a3b8;font-size:16px;text-decoration:line-through}
+    .pdp-tax-note{margin:2px 0 0;color:#94a3b8;font-size:12.5px;font-weight:500}
     .pdp-save{margin:2px 0 14px;color:#16a34a;font-size:13px;font-weight:700}
     .pdp-stock-out{padding:10px 14px;margin-bottom:14px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:9px;font-size:13px;font-weight:700}
     .pdp-stock-low{padding:8px 14px;margin-bottom:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:9px;font-size:12px;font-weight:700}
@@ -3008,6 +3950,14 @@
     .pdp-share a,.pdp-share button{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;border:0;cursor:pointer}
     .pdp-related{margin-top:56px}
     .pdp-related h2{margin:0 0 18px;color:var(--secondary);font-size:20px;font-weight:800}
+    /* La rejilla automatica daba 5 columnas y los relacionados son 6: quedaba
+       uno solo en una segunda fila, con cinco huecos al lado. Fila cerrada. */
+    #storefront-main .pdp-related .catalog-product-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+    #storefront-main .pdp-related .catalog-card:nth-child(n+5){display:none}
+    @media(max-width:1024px){#storefront-main .pdp-related .catalog-product-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+        #storefront-main .pdp-related .catalog-card:nth-child(n+4){display:none}}
+    @media(max-width:640px){#storefront-main .pdp-related .catalog-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+        #storefront-main .pdp-related .catalog-card:nth-child(n+5){display:none}}
     @media(max-width:860px){.pdp-wrap{grid-template-columns:1fr;gap:22px}.pdp-gallery{position:static}.pdp-add-row{display:flex;gap:10px}}
     /* Selector de perfiles de catálogo */
     .profile-switch{display:flex;flex-wrap:wrap;gap:6px;margin-right:12px}
@@ -3042,7 +3992,7 @@
 @endphp
 <body x-data="professionalStore()" x-init="init()" :class="{'ck-focus': checkoutOpen}"
       @if(!empty($profileTint)) style="--profile-tint:{{ $profileTint }}" @endif
-      class="section-preset-{{ $sectionPreset }} section-spacing-{{ $sectionSpacing }} section-heading-{{ $sectionHeadingAlign }} section-bg-{{ $sectionBackgroundMode }} {{ $sectionShowDividers ? 'section-dividers' : 'section-no-dividers' }} {{ $sectionCardShadow ? 'section-card-shadows' : 'section-no-shadows' }} featured-view-{{ $featuredProductsView }} catalog-view-{{ $catalogProductsView }} {{ $themeBodyClass }} cards-{{ $productCardStyle }} {{ $hpBodyClass }}">
+      class="section-preset-{{ $sectionPreset }} section-spacing-{{ $sectionSpacing }} section-heading-{{ $sectionHeadingAlign }} section-bg-{{ $sectionBackgroundMode }} {{ $sectionShowDividers ? 'section-dividers' : 'section-no-dividers' }} {{ $sectionCardShadow ? 'section-card-shadows' : 'section-no-shadows' }} featured-view-{{ $featuredProductsView }} catalog-view-{{ $catalogProductsView }} {{ $themeBodyClass }} cards-{{ $productCardStyle }} nophoto-{{ $cardsSinFoto }} cardwa-{{ $pcWaStyle }} sechead-{{ $estiloTituloSeccion }} ticker-{{ in_array($settings['ticker_position'] ?? 'fija', ['fija','pie'], true) ? ($settings['ticker_position'] ?? 'fija') : 'fija' }} {{ ($settings['hero_edges'] ?? 'redondeado') === 'recto' ? 'hero-recto' : '' }} {{ !empty($activeProfile) ? 'perfil-activo' : '' }} {{ $hpBodyClass }}">
     {{-- CABECERA: variante estructural (F1). classic = markup original extraído --}}
     {{-- Variables de navegación compartidas (header + menú móvil) --}}
     @php
@@ -3075,6 +4025,30 @@
                 $navCategories = $scopedRoots;
             }
         }
+        // ═══ Filtros dentro de un perfil ═══
+        // Los filtros del catalogo recibian SIEMPRE las categorias de toda la
+        // tienda. Dentro de un perfil eso era mentira: en un mundo de 4 productos
+        // ofrecia "Accesorios 24", y al pulsarlo el comprador salia del perfil sin
+        // enterarse. Aqui se recorta el listado al alcance real del perfil.
+        $categoriasFiltro = $navCategories;
+        if (!empty($activeProfile)) {
+            $idsPerfil = $activeProfile->categories->pluck('id');
+            if ($idsPerfil->isNotEmpty()) {
+                $categoriasFiltro = $navCategories
+                    ->filter(fn ($c) => $idsPerfil->contains($c->id)
+                        || ($c->children?->contains(fn ($s) => $idsPerfil->contains($s->id)) ?? false))
+                    ->values();
+                // Si la raiz no esta en el perfil pero si alguna hija, se muestran
+                // solo esas hijas: lo contrario reabriria toda la rama.
+                $categoriasFiltro->each(function ($c) use ($idsPerfil) {
+                    if (!$idsPerfil->contains($c->id) && $c->children) {
+                        $c->setRelation('children',
+                            $c->children->filter(fn ($s) => $idsPerfil->contains($s->id))->values());
+                    }
+                });
+            }
+        }
+
         // Las categorias sin ningun producto (ni en sus subcategorias) se ocultan
         // del menu: llevaban al cliente a una pagina vacia. Si por algun motivo
         // ninguna tuviera productos, se deja el listado original.
@@ -3093,6 +4067,29 @@
         if ($navConStock->count()) {
             $navCategories = $navConStock;
         }
+        // Las SUBcategorias vacias tambien se ocultan. El filtro anterior solo
+        // miraba el primer nivel, asi que el panel de categorias y el filtro
+        // lateral seguian ofreciendo ramas que llevaban a un listado sin
+        // resultados. La relacion ya viene cargada en memoria: no hay consultas
+        // extra.
+        // Mapa categoria -> perfil: en Baby Toncito "Nino" y "Nina" no son un
+        // filtro cualquiera, son mundos con su propia identidad (color, logo,
+        // hero y pie). Filtrar por ellos debe llevar a su perfil, no reordenar
+        // la rejilla dejando la tienda con la cara de "General".
+        $perfilPorCategoria = [];
+        foreach (($catalogProfiles ?? collect()) as $cp) {
+            foreach ($cp->categories()->pluck('categories.id') as $cid) {
+                $perfilPorCategoria[(int) $cid] = [
+                    'slug' => $cp->slug,
+                    'url'  => rtrim($shopBase, '/') . '/' . $cp->slug,
+                ];
+            }
+        }
+        $navCategories->each(function ($c) use ($catConProductos) {
+            if ($c->relationLoaded('children') && $c->children->count()) {
+                $c->setRelation('children', $c->children->filter($catConProductos)->values());
+            }
+        });
     @endphp
     @php
         // ── ENCABEZADO Y NAVEGACIÓN: preset activo (composición de módulos) ──
@@ -3199,7 +4196,7 @@
         </section>
         @elseif($isHomeSectionVisible('hero'))
         {{-- Sin imágenes cargadas: hero con composición de productos (fallback) --}}
-        <section class="premium-hero" id="storefront-hero" data-store-native-section="hero" style="order:{{ $sectionOrder('hero') }}">
+        <section class="premium-hero {{ $heroNoImageStyle === 'typographic' ? 'is-typographic' : '' }}" id="storefront-hero" data-store-native-section="hero" style="order:{{ $sectionOrder('hero') }}">
             <div class="premium-hero-bg" aria-hidden="true"><span class="ph-glow ph-glow-1"></span><span class="ph-glow ph-glow-2"></span><span class="ph-grid"></span><span class="ph-line ph-line-1"></span><span class="ph-line ph-line-2"></span></div>
             <div class="container premium-hero-inner">
                 @if($heroShowContent)
@@ -3224,6 +4221,7 @@
                 <button type="button" class="ph-arrow ph-arrow-prev" aria-label="Anterior" @click="heroPrev && heroPrev()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 6-6 6 6 6"/></svg></button>
                 <button type="button" class="ph-arrow ph-arrow-next" aria-label="Siguiente" @click="heroNext && heroNext()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
                 @endif
+                @if($heroNoImageStyle !== 'typographic')
                 <div class="premium-hero-visual" aria-hidden="true">
                     @if($heroMain)
                     <div class="ph-stage">
@@ -3235,6 +4233,7 @@
                     </div>
                     @endif
                 </div>
+                @endif
             </div>
         </section>
         @endif
@@ -3850,26 +4849,26 @@
         @if($storeView === 'tienda')
         <section class="catalog" id="tienda-catalogo" data-store-native-section="catalog" style="order:{{ $sectionOrder('catalog') }}"><div class="container">
             <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span><strong x-text="activeFilterLabel">Todos los productos</strong></nav>
-            {{-- La vista tienda no declaraba h1: buscadores y lectores no sabian de que iba. --}}
-            <h1 class="catalog-h1" @if(empty($activeProfile)) x-text="activeFilterLabel" @endif>{{ !empty($activeProfile) ? $activeProfile->name : 'Todos los productos' }}</h1>
-            {{-- Banda de categoria: da contexto de donde esta el cliente y cuantos
-                 productos hay AQUI. El contador anterior mostraba el total de la
-                 tienda (46) aunque la categoria tuviera 4, y se contradecia con
-                 el conteo de abajo. --}}
-            <div class="cat-banner">
+            {{-- Un solo titulo. Antes salia el h1 y debajo un h2 con el MISMO texto,
+                 y dos contadores distintos (57 en la banda, 26 sobre la rejilla).
+                 El conteo vive junto a los filtros, que es lo que lo cambia. --}}
+            <div class="cat-banner{{ !empty($activeProfile) && $activeProfile->hero_desktop_path ? ' has-profile-media' : '' }}"@if(!empty($activeProfile) && $activeProfile->hero_desktop_path) style="--pf-media:url('{{ $assetUrl($activeProfile->hero_desktop_path) }}')"@endif>
                 <div class="cat-banner-inner">
                     <div class="cat-banner-copy">
-                        <h2 x-text="activeFilterLabel">{{ $catalogTitle }}</h2>
+                        <h1 class="catalog-h1" @if(empty($activeProfile)) x-text="activeFilterLabel" @endif>{{ !empty($activeProfile) ? ($activeProfile->hero_title ?: $activeProfile->name) : 'Todos los productos' }}</h1>
+                        @if(!empty($activeProfile) && filled($activeProfile->hero_description))
+                        <p>{{ $activeProfile->hero_description }}</p>
+                        @else
                         <p x-text="catalogSubtitle">Filtra por categoría, precio y disponibilidad para encontrar la mejor opción.</p>
+                        @endif
                     </div>
-                    <span class="product-total"><b x-text="catalogCount">{{ $catalogProducts->count() }}</b> <span x-text="catalogCount===1 ? 'producto' : 'productos'">productos</span></span>
                 </div>
             </div>
 
             <div class="catalog-experience">
                 <aside class="catalog-filter-panel" aria-label="Filtros del catálogo">
                     <div class="catalog-filter-header"><strong>Filtros</strong><button class="catalog-clear" type="button" @click="clearAllFilters()" :disabled="!hasActiveFilters">Limpiar todo</button></div>
-                    <x-computienda.catalog-filters :categories="$navCategories" :catalog-products="$catalogProducts" filter-scope="desktop" />
+                    <x-computienda.catalog-filters :categories="$categoriasFiltro" :catalog-products="$catalogProducts" :profile-links="$perfilPorCategoria" filter-scope="desktop" />
                 </aside>
 
                 <div class="catalog-results" x-data="catalogBrowser({ endpoint: {{ Js::from(\App\Support\StorefrontNavigation::shopUrl($project)) }}, total: {{ $catalogPage->total() }}, hasMore: {{ $catalogPage->hasMorePages() ? 'true' : 'false' }} })" x-init="init()">
@@ -3901,9 +4900,16 @@
                                 <template x-for="product in products" :key="product.id">
                                     <article class="catalog-card">
                                         <div class="catalog-card-media" :class="!product.image && 'is-noimg'">
+                                            {{-- Descuento automático: todo producto con precio tachado
+                                                 se marca solo, sin configurar nada. La rejilla del
+                                                 catálogo era la única que no lo pintaba: 10 productos
+                                                 en oferta y 0 con insignia. --}}
+                                            <template x-if="product.comparePrice && product.comparePrice > product.price">
+                                                <span class="catalog-discount" x-text="'-'+Math.round((1-product.price/product.comparePrice)*100)+'%'"></span>
+                                            </template>
                                             <a class="catalog-card-media-link" :href="product.url" @click="qvMobile($event, product)" :aria-label="'Ver '+product.name">
                                                 <template x-if="product.image"><img :src="product.image" :alt="product.name" loading="lazy"></template>
-                                                <template x-if="!product.image"><svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">Foto en camino</span></template>
+                                                <template x-if="!product.image"><svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span></template>
                                             </a>
                                             <span class="catalog-sold-out" x-show="product.stock===0" x-cloak>{{ $settings['catalog_badge_sold_out'] ?? 'Agotado' }}</span>
                                             <div class="catalog-quickview">
@@ -3913,7 +4919,7 @@
                                         <div class="catalog-card-body">
                                             <span class="catalog-card-category" x-text="product.category"></span>
                                             <a class="catalog-card-name" :href="product.url" @click="qvMobile($event, product)" x-text="product.name"></a>
-                                            @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">Precio a solicitud</span></div>@else
+                                            @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">{{ $txtPrecioConsul }}</span></div>@else
                                             @if($pcMode==='auto')
                                             {{-- MODALIDAD B: precio automatico por cantidad (una sola logica de precios) --}}
                                             <div class="buy-auto" x-data="{ q:1 }">
@@ -3950,19 +4956,19 @@
                                             @else
                                             <div class="catalog-card-prices" x-show="!product.wholesalePrice"><span class="catalog-card-price" x-text="money(product.price)"></span><span class="catalog-card-compare" x-show="product.comparePrice" x-text="money(product.comparePrice)" x-cloak></span></div>
                                             @if($wholesale)<div class="buy-block buy-block--retail" x-data="{ q:1 }" x-show="product.wholesalePrice" x-cloak>
-                                                <div class="buy-head"><span class="buy-tag">Minorista</span><span class="buy-price" x-text="money(product.price)"></span></div>
-                                                <small class="buy-min">Por unidad</small>
+                                                <div class="buy-head"><span class="buy-tag">{{ $txtMinorista }}</span><span class="buy-price" x-text="money(product.price)"></span></div>
+                                                <small class="buy-min">{{ $txtPorUnidad }}</small>
                                                 <div class="buy-row">
                                                     <span class="buy-qty">
                                                         <button type="button" @click.prevent.stop="q=Math.max(1,q-1)" aria-label="Quitar">−</button>
                                                         <input type="number" x-model.number="q" min="1" @click.stop>
                                                         <button type="button" @click.prevent.stop="q=q+1" aria-label="Agregar">+</button>
                                                     </span>
-                                                    <button type="button" class="buy-add" @click.prevent.stop="for(let i=0;i<q;i++)add(product.id,product.name,product.price,product.image,product.category)">+ Agregar</button>
+                                                    <button type="button" class="buy-add" @click.prevent.stop="Array.from({length:q},()=>add(product.id,product.name,product.price,product.image,product.category))">+ Agregar</button>
                                                 </div>
                                             </div>@endif
                                             @if($wholesale)<div class="buy-block buy-block--wholesale" x-data="{ q: Math.max(1, Number(product.wholesaleMinQty)||1) }" x-show="product.wholesalePrice" x-cloak>
-                                                <div class="buy-head"><span class="buy-tag">Mayorista</span><span class="buy-price" x-text="money(product.wholesalePrice)"></span></div>
+                                                <div class="buy-head"><span class="buy-tag">{{ $txtMayorista }}</span><span class="buy-price" x-text="money(product.wholesalePrice)"></span></div>
                                                 <small class="buy-min" x-text="(()=>{const u=product.wholesaleUnit||'',n=Number(product.wholesaleMinQty)||1;return u&&u!=='unidad'?('1 '+u+' = '+n+' unid.'):('Desde '+n+' unid.')})()"></small>
                                                 <div class="buy-row">
                                                     <span class="buy-qty">
@@ -3988,8 +4994,10 @@
                                 @foreach($catalogCards as $card)
                                 <article class="catalog-card">
                                     <div class="catalog-card-media{{ $card['image'] ? '' : ' is-noimg' }}">
+                                        @php $cDesc = (!empty($card['comparePrice']) && $card['comparePrice'] > $card['price']) ? (int) round((1 - $card['price'] / max(0.01, (float) $card['comparePrice'])) * 100) : 0; @endphp
+                                        @if($cDesc > 0)<span class="catalog-discount">-{{ $cDesc }}%</span>@endif
                                         <a class="catalog-card-media-link" href="{{ $card['url'] }}" @click="qvMobile($event, {{ Js::from($card) }})" aria-label="Ver {{ $card['name'] }}">
-                                            @if($card['image'])<img src="{{ $card['image'] }}" alt="{{ $card['name'] }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">Foto en camino</span>@endif
+                                            @if($card['image'])<img src="{{ $card['image'] }}" alt="{{ $card['name'] }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span>@endif
                                         </a>
                                         <div class="catalog-quickview">
                                             <button type="button" @click.prevent.stop="openQuickView({{ Js::from($card) }})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>{{ $settings['catalog_quickview_text'] ?? 'Vista rápida' }}</button>
@@ -3998,7 +5006,7 @@
                                     <div class="catalog-card-body">
                                         <span class="catalog-card-category">{{ $card['category'] }}</span>
                                         <a class="catalog-card-name" href="{{ $card['url'] }}" @click="qvMobile($event, {{ Js::from($card) }})">{{ $card['name'] }}</a>
-                                        @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">Precio a solicitud</span></div>@else
+                                        @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">{{ $txtPrecioConsul }}</span></div>@else
                                         @if($pcMode==='auto')
                                         {{-- MODALIDAD B (server): misma logica de precios via Alpine --}}
                                         @php $pcData = ['id'=>$card['id'],'name'=>$card['name'],'price'=>(float) $card['price'],'wholesalePrice'=>(float) ($card['wholesalePrice'] ?? 0),'wholesaleMinQty'=>max(1,(int) ($card['wholesaleMinQty'] ?? 1)),'image'=>$card['image'] ?? '','category'=>$card['category'] ?? '']; @endphp
@@ -4026,21 +5034,21 @@
                                             @if($pcShowCart && $pcCartStyle!=='inline')<button type="button" class="buy-add buy-add--{{ $pcCartStyle }}" @click.prevent.stop="addSmart(p,q)">{{ $cartText }}</button>@endif
                                         </div>
                                         @else
-                                        @if(!($wholesale && !empty($card['wholesalePrice'])))<div class="catalog-card-prices"><span class="catalog-card-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['price'],2) }}</span>@if($card['comparePrice'])<span class="catalog-card-compare">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['comparePrice'],2) }}</span>@endif</div>@endif
+                                        @if(!($wholesale && !empty($card['wholesalePrice'])))<div class="catalog-card-prices"><span class="catalog-card-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['price'],2) }}</span>@if($card['comparePrice'])<span class="catalog-card-compare">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['comparePrice'],2) }}</span>@endif @if(!empty($card['hasTax']))<span class="catalog-card-tax-note">Incluye IGV</span>@endif</div>@endif
                                         @if($wholesale && !empty($card['wholesalePrice']))<div class="buy-block buy-block--retail" x-data="{ q:1 }">
-                                            <div class="buy-head"><span class="buy-tag">Minorista</span><span class="buy-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['price'],2) }}</span></div>
-                                            <small class="buy-min">Por unidad</small>
+                                            <div class="buy-head"><span class="buy-tag">{{ $txtMinorista }}</span><span class="buy-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['price'],2) }}</span></div>
+                                            <small class="buy-min">{{ $txtPorUnidad }}</small>
                                             <div class="buy-row">
                                                 <span class="buy-qty">
                                                     <button type="button" @click.prevent.stop="q=Math.max(1,q-1)" aria-label="Quitar">−</button>
                                                     <input type="number" x-model.number="q" min="1" @click.stop>
                                                     <button type="button" @click.prevent.stop="q=q+1" aria-label="Agregar">+</button>
                                                 </span>
-                                                <button type="button" class="buy-add" @click.prevent.stop="for(let i=0;i<q;i++)add({{ $card['id'] }},{{ Js::from($card['name']) }},{{ (float) $card['price'] }},{{ Js::from($card['image'] ?? '') }},{{ Js::from($card['category'] ?? '') }})">+ Agregar</button>
+                                                <button type="button" class="buy-add" @click.prevent.stop="Array.from({length:q},()=>add({{ $card['id'] }},{{ Js::from($card['name']) }},{{ (float) $card['price'] }},{{ Js::from($card['image'] ?? '') }},{{ Js::from($card['category'] ?? '') }}))">+ Agregar</button>
                                             </div>
                                         </div>@endif
                                         @if($wholesale && !empty($card['wholesalePrice']))<div class="buy-block buy-block--wholesale" x-data="{ q: {{ max(1,(int) $card['wholesaleMinQty']) }} }">
-                                            <div class="buy-head"><span class="buy-tag">Mayorista</span><span class="buy-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['wholesalePrice'],2) }}</span></div>
+                                            <div class="buy-head"><span class="buy-tag">{{ $txtMayorista }}</span><span class="buy-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['wholesalePrice'],2) }}</span></div>
                                             <small class="buy-min">{{ (trim((string) $card['wholesaleUnit'])!=='' && !in_array(trim((string) $card['wholesaleUnit']),['unidad','unidades'],true)) ? '1 '.trim((string) $card['wholesaleUnit']).' = '.max(1,(int) $card['wholesaleMinQty']).' unid.' : 'Desde '.max(1,(int) $card['wholesaleMinQty']).' unid.' }}</small>
                                             <div class="buy-row">
                                                 <span class="buy-qty">
@@ -4127,20 +5135,21 @@
                         <span class="pdp-price">{{ $currency }} {{ number_format($sp->price, 2) }}</span>
                         @if($spCompare)<span class="pdp-compare">{{ $currency }} {{ number_format($spCompare, 2) }}</span>@endif
                     </div>
+                    @if($sp->has_tax)<p class="pdp-tax-note">Precio incluye IGV ({{ rtrim(rtrim(number_format((float) ($sp->tax_rate ?? 18), 2), '0'), '.') }}%)</p>@endif
                     @if($spCompare)<p class="pdp-save">Ahorras {{ $currency }} {{ number_format($spCompare - $sp->price, 2) }}</p>@endif
                     @if($wholesale && filled($sp->wholesale_price))
-                    <div class="wh-buy"><span class="wh-buy-info"><b>MAYORISTA {{ $currency }} {{ number_format($sp->wholesale_price, 2) }}</b><small>Mín. {{ (int) ($sp->wholesale_min_qty ?? 1) }} {{ (filled($sp->wholesale_unit) && !is_numeric($sp->wholesale_unit)) ? $sp->wholesale_unit : 'unidades' }}</small></span><button type="button" class="wh-buy-btn" @click="addWholesale({{ $sp->id }},{{ Js::from($sp->name) }},{{ (float) $sp->wholesale_price }},{{ (int) ($sp->wholesale_min_qty ?? 1) }},{{ Js::from($sp->main_image_url ?? '') }},{{ Js::from($sp->category?->name ?? '') }})">+ Agregar por mayor</button></div>
+                    <div class="wh-buy"><span class="wh-buy-info"><b>MAYORISTA {{ $currency }} {{ number_format($sp->wholesale_price, 2) }}</b><small>Desde {{ (int) ($sp->wholesale_min_qty ?? 1) }} unidades</small></span><button type="button" class="wh-buy-btn" @click="addWholesale({{ $sp->id }},{{ Js::from($sp->name) }},{{ (float) $sp->wholesale_price }},{{ (int) ($sp->wholesale_min_qty ?? 1) }},{{ Js::from($sp->main_image_url ?? '') }},{{ Js::from($sp->category?->name ?? '') }})">+ Agregar por mayor</button></div>
                     @endif
                     @endunless
 
                     @if(!is_null($spStock) && $spStock === 0)
-                        <div class="pdp-stock-out">⚠️ Producto agotado temporalmente</div>
+                        <div class="pdp-stock-out">{{ $txtAgotado }}</div>
                     @elseif(!is_null($spStock) && $spStock > 0 && $spStock <= 10)
-                        <div class="pdp-stock-low">⚡ ¡Solo quedan {{ $spStock }} unidades!</div>
+                        <div class="pdp-stock-low">Quedan {{ $spStock }} unidades</div>
                     @endif
 
                     @if($sp->sku && $showSku)<p style="color:#94a3b8;font-size:12px;margin:4px 0">SKU: {{ $sp->sku }}</p>@endif
-                    @if($sp->description)<div class="pdp-desc">{!! nl2br(e($sp->description)) !!}</div>@endif
+                    @if($sp->description)<div class="pdp-desc">{!! \App\Support\RichText::render($sp->description) !!}</div>@endif
 
                     @php $spSizes = $sp->sizes; @endphp
                     @if(count($spSizes))
@@ -4163,7 +5172,7 @@
                                 <button type="button" @click="pdpQty++" aria-label="Más">+</button>
                             </div>
                             <button class="pdp-add" type="button" @if(!is_null($spStock) && $spStock === 0) disabled @else @click="if({{ count($sp->sizes) }}&&!pdpSize){pdpSizeErr=true}else{for(let i=0;i<pdpQty;i++)add({{ $sp->id }},{{ Js::from($sp->name) }},{{ $sp->price }},'','',pdpSize||'')}" @endif>
-                                @if(!is_null($spStock) && $spStock === 0){{ $soldOutText ?? 'Agotado' }}@else🛒 {{ $quoteMode ? $quoteBtnText : $cartText }}@endif
+                                @if(!is_null($spStock) && $spStock === 0){{ $soldOutText ?? 'Agotado' }}@else{{ $quoteMode ? $quoteBtnText : $cartText }}@endif
                             </button>
                             @endif
                             @if($showInquiryButton)
@@ -4171,20 +5180,38 @@
                             @endif
                         </div>
                     </div>
+                    @php
+                        // Garantias junto al boton: es donde el cliente duda.
+                        // Se configuran por tienda; sin textos no aparece nada.
+                        $pdpTrust = [];
+                        foreach ([1, 2, 3] as $i) {
+                            $t = trim((string) ($settings['pdp_trust_'.$i.'_title'] ?? ''));
+                            if ($t !== '') {
+                                $pdpTrust[] = ['t' => $t, 'd' => trim((string) ($settings['pdp_trust_'.$i.'_text'] ?? ''))];
+                            }
+                        }
+                    @endphp
+                    @if(count($pdpTrust))
+                    <ul class="pdp-trust">
+                        @foreach($pdpTrust as $tr)
+                        <li><strong>{{ $tr['t'] }}</strong>@if($tr['d'])<span>{{ $tr['d'] }}</span>@endif</li>
+                        @endforeach
+                    </ul>
+                    @endif
                 </div>
             </div>
 
             {{-- Relacionados --}}
             @if(!empty($relatedProducts) && $relatedProducts->count())
             <div class="pdp-related">
-                <h2>Productos relacionados</h2>
+                <h2>{{ $txtRelacionados }}</h2>
                 <div class="catalog-product-grid">
                     @foreach($relatedProducts as $rp)
                     @php $rpImg = $rp->mainImage?->url ? $assetUrl($rp->mainImage->url) : null; $rpUrl = \App\Support\ImageVariants::productUrl($project, $rp->id, $rp->name); @endphp
                     <article class="catalog-card">
                         <div class="catalog-card-media">
                             <a class="catalog-card-media-link" href="{{ $rpUrl }}" aria-label="Ver {{ $rp->name }}">
-                                @if($rpImg)<img src="{{ $rpImg }}" alt="{{ $rp->name }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">Foto en camino</span>@endif
+                                @if($rpImg)<img src="{{ $rpImg }}" alt="{{ $rp->name }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span>@endif
                             </a>
                         </div>
                         <div class="catalog-card-body">
@@ -4301,7 +5328,7 @@
         @php $storePage = $storePage ?? null; $pc = is_array($storePage?->content) ? $storePage->content : []; @endphp
         <section class="store-page" data-store-native-section="custom_page" style="order:{{ $sectionOrder('custom_page') }}"><div class="container">
             <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::resolveUrl($project, new \App\Models\StoreMenuItem(['destination_type'=>'home'])) }}">Inicio</a><span>/</span><strong>{{ $storePage?->title ?? ($storeView === 'nosotros' ? 'Nosotros' : 'Contacto') }}</strong></nav>
-            @php $abHeroActive = $storeView === 'nosotros' && !empty($pc['hero_enabled']) && (!empty($pc['hero_image']) || !empty($pc['image'])); @endphp
+            @php $abHeroActive = $storeView === 'nosotros' && !empty($pc['hero_enabled']); @endphp
             @unless($abHeroActive)<h1 class="store-page-title">{{ $storePage?->title ?? ($storeView === 'nosotros' ? 'Nosotros' : 'Contacto') }}</h1>@endunless
 
             @if($storeView === 'nosotros')
@@ -4349,10 +5376,19 @@
                     </picture>
                     @endif
                     <div class="about-hero-content">
-                        <h2 class="about-hero-title">{{ $pc['hero_title'] ?? ($storePage?->title ?? 'Nosotros') }}</h2>
+                        <h1 class="about-hero-title">{{ $pc['hero_title'] ?? ($storePage?->title ?? 'Nosotros') }}</h1>
                         @if(!empty($pc['hero_subtitle']))<p class="about-hero-subtitle">{{ $pc['hero_subtitle'] }}</p>@endif
                         @if(!empty($pc['hero_desc']))<p class="about-hero-desc">{{ $pc['hero_desc'] }}</p>@endif
                     </div>
+                    {{-- Diferenciales configurados como pastillas: llenan la mitad
+                         derecha del hero de marca, que quedaba vacía. --}}
+                    @if(!$abHeroHasImg && $abHeroAlign === 'left' && $abDiffsOn)
+                    <div class="about-hero-chips" aria-hidden="true">
+                        @foreach($abDiffs->take(4) as $d)
+                        <span class="about-hero-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">{!! $abIcon($d['icon'] ?? '', 'check') !!}</svg>{{ $d['title'] }}</span>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
                 @elseif(!empty($pc['image']))
                 <img class="store-page-hero" src="{{ $assetUrl($pc['image']) }}" alt="{{ $storePage?->title }}">
@@ -4364,8 +5400,16 @@
                         <span class="about-label">{{ $pc['label'] ?? 'Quiénes somos' }}</span>
                         @if(!empty($pc['heading']))<h2 class="about-heading">{{ $pc['heading'] }}</h2>@endif
                         @if(!empty($pc['body']))<div class="store-page-body">{{ $pc['body'] }}</div>@endif
-                        @if(!empty($pc['button_text']) && !empty($pc['button_url']))
-                        <a class="button button-primary about-cta" href="{{ $pc['button_url'] }}">{{ $pc['button_text'] }}</a>
+                        {{-- Sin button_url configurado el boton no aparecia, y con el
+                             se perdian el titular y el texto de apoyo que ya estaban
+                             guardados. Si no hay enlace propio se usa WhatsApp. --}}
+                        @php $abCtaUrl = $pc['button_url'] ?? ($whatsapp ? 'https://wa.me/'.$whatsapp : ''); @endphp
+                        @if(!empty($pc['button_text']) && $abCtaUrl !== '')
+                        <div class="about-cta-block">
+                            @if(!empty($pc['button_heading']))<strong>{{ $pc['button_heading'] }}</strong>@endif
+                            @if(!empty($pc['button_body']))<p>{{ $pc['button_body'] }}</p>@endif
+                            <a class="button button-primary about-cta" href="{{ $abCtaUrl }}" @if(str_starts_with($abCtaUrl, 'http')) target="_blank" rel="noopener" @endif>{{ $pc['button_text'] }}</a>
+                        </div>
                         @endif
                     </div>
                     @if($abHasCards)
@@ -4421,11 +5465,43 @@
                 @endphp
                 <div class="store-page-contact">
                     <div class="store-contact-info">
-                        @if($ctEmail)<p><strong>Correo:</strong> <a href="mailto:{{ $ctEmail }}">{{ $ctEmail }}</a></p>@endif
-                        @if($ctPhone)<p><strong>Teléfono:</strong> {{ $ctPhone }}</p>@endif
-                        @if($ctWhats)<p><strong>WhatsApp:</strong> <a href="https://wa.me/{{ preg_replace('/\D/','',$ctWhats) }}" target="_blank" rel="noopener">{{ $ctWhats }}</a></p>@endif
-                        @if($ctAddress)<p><strong>Dirección:</strong> {{ $ctAddress }}</p>@endif
-                        @if($ctHours)<p><strong>Horario:</strong> {{ $ctHours }}</p>@endif
+                        {{-- Antes era una lista de parrafos con la etiqueta en negrita:
+                             informacion flotando, sin jerarquia y sin nada accionable.
+                             Ahora cada dato es una accion con su area de pulsacion:
+                             WhatsApp primero, que es como estas tiendas atienden de
+                             verdad, y despues llamar, llegar y horario. --}}
+                        <div class="ct-acciones">
+                            @if($ctWhats)
+                            <a class="ct-accion ct-accion--wa" href="https://wa.me/{{ preg_replace('/\D/','',$ctWhats) }}" target="_blank" rel="noopener">
+                                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.86 9.86 0 0 0 4.79 1.22c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.6 14.14c-.23.65-1.35 1.24-1.85 1.28-.47.04-.93.2-3.15-.66-2.65-1.04-4.32-3.72-4.45-3.89-.13-.17-1.06-1.41-1.06-2.69 0-1.28.67-1.91.91-2.17.24-.26.52-.33.7-.33h.5c.16 0 .38-.06.59.45.22.53.74 1.83.8 1.96.07.13.11.29.02.46-.08.17-.13.28-.26.43l-.39.45c-.13.13-.26.27-.11.53.14.26.64 1.06 1.38 1.72.95.85 1.75 1.11 2 1.24.25.13.4.11.55-.07.15-.17.63-.73.8-.99.17-.25.33-.21.56-.13.23.09 1.45.69 1.7.81.25.13.41.19.47.29.06.11.06.62-.16 1.27Z"/></svg>
+                                <span><strong>{{ $txtoLibre('contact_wa_label', 'Escríbenos por WhatsApp') }}</strong><small>{{ $ctWhats }}</small></span>
+                            </a>
+                            @endif
+                            @if($ctPhone)
+                            <a class="ct-accion" href="tel:{{ preg_replace('/\D/','',$ctPhone) }}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2Z"/></svg>
+                                <span><strong>{{ $txtoLibre('contact_tel_label', 'Llámanos') }}</strong><small>{{ $ctPhone }}</small></span>
+                            </a>
+                            @endif
+                            @if($ctAddress)
+                            <a class="ct-accion" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ctAddress) }}" target="_blank" rel="noopener">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <span><strong>{{ $txtoLibre('contact_map_label', 'Cómo llegar') }}</strong><small>{{ $ctAddress }}</small></span>
+                            </a>
+                            @endif
+                            @if($ctHours)
+                            <div class="ct-accion ct-accion--info">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                                <span><strong>{{ $txtoLibre('contact_hours_label', 'Horario de atención') }}</strong><small>{{ $ctHours }}</small></span>
+                            </div>
+                            @endif
+                            @if($ctEmail)
+                            <a class="ct-accion" href="mailto:{{ $ctEmail }}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                                <span><strong>Correo</strong><small>{{ $ctEmail }}</small></span>
+                            </a>
+                            @endif
+                        </div>
 
                         @if($ctAddress)
                         {{-- Ubicación en Google Maps de la dirección configurada --}}
@@ -4684,7 +5760,12 @@
                                 @endif
                                 <div style="text-align:center">
                                     <div style="opacity:.9;font-size:12px;font-weight:700">Celular Yape:</div>
-                                    <div style="font-size:24px;font-weight:800;letter-spacing:.5px;margin:2px 0 10px">{{ $payYapeNumber }}</div>
+                                    <div style="font-size:24px;font-weight:800;letter-spacing:.5px;margin:2px 0 6px">{{ $payYapeNumber }}</div>
+                                    {{-- El número se mostraba pero no se podía copiar: había que
+                                         seleccionarlo a mano justo en el móvil, que es donde se
+                                         yapea. Mismo botón que en las cuentas bancarias. --}}
+                                    <button type="button" style="margin:0 0 10px;padding:5px 12px;font-size:11px;font-weight:800;color:#0f172a;background:#fff;border:1px solid rgba(15,23,42,.18);border-radius:6px;cursor:pointer"
+                                            @click.prevent="navigator.clipboard&&navigator.clipboard.writeText('{{ preg_replace('/\D/', '', $payYapeNumber) }}');$el.textContent='Copiado ✓'">Copiar número</button>
                                     <label style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:#00c9a7;color:#fff;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.4 11.05 12.3 20.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.6 5.66l-9.1 9.1a2 2 0 0 1-2.9-2.9l8.5-8.4"/></svg>
                                         <span x-text="proofUrl ? 'Comprobante adjuntado \u2713' : (proofUploading ? 'Subiendo\u2026' : 'Adjuntar pago')"></span>
@@ -4705,6 +5786,27 @@
                         </div>
                         <div x-show="payMethod==='bank_{{ $bk }}'" x-cloak style="margin:0 0 8px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;font-size:12px;color:#475569">
                             <div style="white-space:pre-line">{{ $bank['details'] }}</div>
+                            @php
+                                // El número de cuenta vive dentro del texto libre, así que
+                                // no tenía botón: solo el CCI. Se copiaba uno y el otro
+                                // había que seleccionarlo a mano en el móvil, que es donde
+                                // justamente se paga. Se extrae la ristra de dígitos más
+                                // larga del texto, que es siempre la cuenta.
+                                preg_match_all('/\d[\d\s-]{7,}/', (string) ($bank['details'] ?? ''), $mCta);
+                                $ctaNum = '';
+                                foreach (($mCta[0] ?? []) as $cand) {
+                                    $soloDig = preg_replace('/\D/', '', $cand);
+                                    if (strlen($soloDig) > strlen($ctaNum)) $ctaNum = $soloDig;
+                                }
+                            @endphp
+                            @if($ctaNum !== '')
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)">
+                                <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8">Cuenta</span>
+                                <b style="font-size:13px;color:#172033;letter-spacing:.02em">{{ $ctaNum }}</b>
+                                <button type="button" style="padding:4px 10px;font-size:10.5px;font-weight:800;color:var(--primary);background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer"
+                                        @click.prevent="navigator.clipboard&&navigator.clipboard.writeText('{{ $ctaNum }}');$el.textContent='Copiado'">Copiar</button>
+                            </div>
+                            @endif
                             @if(!empty($bank['cci']))
                             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)">
                                 <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8">CCI</span>
@@ -4772,7 +5874,14 @@
         $waFooter = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? $phone ?? '');
         if ($waFooter && !str_starts_with($waFooter, '51')) $waFooter = '51'.$waFooter;
         $shopBaseFooter = \App\Support\StorefrontNavigation::resolveUrl($project, new \App\Models\StoreMenuItem(['destination_type' => 'shop']));
-        $aboutUrl   = \App\Support\StorefrontNavigation::resolveUrl($project, new \App\Models\StoreMenuItem(['destination_type' => 'about']));
+        // El pie enlazaba "Nosotros" siempre, aunque la tienda tuviera la página
+        // desactivada: el cliente que no la usa acababa con un enlace a una
+        // sección que no le corresponde. Si está apagada, no se enlaza.
+        $aboutActiva = \App\Models\StorePage::where('project_id', $project->id)
+            ->where('key', 'nosotros')->value('is_enabled');
+        $aboutUrl   = ($aboutActiva === null || (int) $aboutActiva === 1)
+            ? \App\Support\StorefrontNavigation::resolveUrl($project, new \App\Models\StoreMenuItem(['destination_type' => 'about']))
+            : null;
         $contactUrl = \App\Support\StorefrontNavigation::resolveUrl($project, new \App\Models\StoreMenuItem(['destination_type' => 'contact']));
     @endphp
 
@@ -4805,6 +5914,13 @@
                                 <div style="min-width:0">
                                     <div class="cart-line-cat" x-text="item.categoria" x-show="item.categoria"></div>
                                     <div class="cart-line-name" x-text="item.nombre+(item.talla?(' · Talla '+item.talla):'')"></div>
+                                    {{-- Aviso de tramo mayorista: se activa solo al llegar al minimo --}}
+                                    <div class="cart-line-mayor is-on" x-show="lineaEsMayorista(item)" x-cloak>
+                                        Precio por mayor aplicado · <b x-text="money(item.precio)"></b> c/u
+                                    </div>
+                                    <div class="cart-line-mayor" x-show="!lineaEsMayorista(item) && faltanParaMayor(item)>0" x-cloak>
+                                        Añade <b x-text="faltanParaMayor(item)"></b> más y pagas <b x-text="money(item.wPrecio)"></b> c/u
+                                    </div>
                                     <div class="cart-line-ctl">
                                         <div class="pdp-qty" style="border-radius:8px">
                                             <button type="button" @click="decrease(item.id,item.talla)" style="width:36px;height:38px">−</button>
@@ -4892,20 +6008,75 @@
                         $groupMobileCats = empty($activeProfile) && !empty($catalogProfiles) && $catalogProfiles->count();
                         $mobileLoose = $groupMobileCats ? $navCategories->filter(fn ($c) => !$c->children->count())->values() : $navCategories;
                     @endphp
-                    @if($groupMobileCats)
+                    {{-- ═══ Categorías en acordeón ═══
+                         Antes se listaban DOS veces: primero todas las
+                         subcategorías planas bajo un encabezado por familia, y
+                         debajo otra vez las categorías raíz. En un catálogo con
+                         cuatro familias eso son treinta filas repetidas para
+                         encontrar una. Ahora hay una fila por categoría, con su
+                         icono, y las subcategorías se despliegan al tocarla. --}}
+                    {{-- Los accesos del menú también en móvil. El de WhatsApp NO:
+                         ya está el botón flotante en pantalla y repetirlo solo
+                         gasta una fila. Ofertas y los perfiles sí son navegación
+                         y aquí no había forma de llegar a ellos. --}}
+                    @php
+                        // Los accesos se arman aquí y no se reutilizan los del
+                        // encabezado: aquéllos viven dentro del parcial del
+                        // header y sus variables no salen de él.
+                        $mnavAccesos = [];
+                        if (($onSale ?? collect())->isNotEmpty()) {
+                            $mnavAccesos[] = ['t' => trim((string) ($settings['hp_nav_chip_1_text'] ?? '')) ?: 'Ofertas',
+                                              'u' => $shopBase.'?filter=sale',
+                                              'c' => trim((string) ($settings['hp_nav_chip_1_color'] ?? '')) ?: 'var(--sale)'];
+                        }
+                        // Los perfiles van AQUÍ, con el resto de accesos, igual que
+                        // en la web. Antes tenían una fila propia arriba ("Todo /
+                        // Reacondicionados") separada de "Ofertas": el mismo tipo
+                        // de acceso repartido en dos sitios distintos de la misma
+                        // pantalla. Un solo bloque, mismo orden que en escritorio.
+                        foreach (($catalogProfiles ?? collect()) as $mp) {
+                            if (!$mp->is_enabled || !$mp->show_in_menu) continue;
+                            $mnavAccesos[] = ['t' => $mp->menu_label ?: $mp->name,
+                                              'u' => \App\Support\StorefrontNavigation::profileUrl($project, $mp->slug),
+                                              'c' => $mp->primary_color ?: 'var(--primary)'];
+                        }
+                        // WhatsApp NO va en el menú móvil. En escritorio sí, porque
+                        // allí el botón flotante queda lejos de la navegación;
+                        // aquí está a un dedo de distancia, sobre esta misma
+                        // pantalla. Repetirlo solo gasta una fila y le quita
+                        // protagonismo a las categorías, que es a lo que se abre
+                        // este menú.
+                    @endphp
+                    @if(count($mnavAccesos))
+                        <div class="mnav-accesos">
+                            @foreach($mnavAccesos as $acc)
+                                <a class="mnav-acceso" href="{{ $acc['u'] }}" @click="mobileNav=false" style="--chip:{{ $acc['c'] }}">{{ $acc['t'] }}</a>
+                            @endforeach
+                        </div>
+                    @endif
+                    @if($navCategories->count())
+                        <div class="mobile-nav-section">Categorías</div>
                         @foreach($navCategories as $cat)
                             @if($cat->children->count())
-                                <div class="mobile-nav-section">{{ $cat->name }}</div>
-                                @foreach($cat->children as $sub)
-                                    <a href="{{ $shopBase }}?category={{ (int) $sub->id }}" @click="mobileNav=false">{{ $sub->name }}</a>
-                                @endforeach
+                                <div class="mnav-grp" x-data="{ abierto:false }">
+                                    <button type="button" class="mnav-cat" @click="abierto=!abierto" :class="abierto && 'is-open'" :aria-expanded="abierto">
+                                        <span class="mnav-ico" aria-hidden="true">{!! \App\Support\CategoryIcons::svg($cat->name, $settings['caticon_'.$cat->id] ?? null) !!}</span>
+                                        <span class="mnav-txt">{{ $cat->name }}</span>
+                                        <span class="mnav-arr" aria-hidden="true">›</span>
+                                    </button>
+                                    <div class="mnav-subs" x-show="abierto" x-cloak x-transition.opacity>
+                                        <a class="mnav-sub" href="{{ $shopBase }}?category={{ (int) $cat->id }}" @click="mobileNav=false">Ver todo en {{ $cat->name }}</a>
+                                        @foreach($cat->children as $sub)
+                                            <a class="mnav-sub" href="{{ $shopBase }}?category={{ (int) $sub->id }}" @click="mobileNav=false">{{ $sub->name }}</a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @else
+                                <a class="mnav-cat" href="{{ $shopBase }}?category={{ (int) $cat->id }}" @click="mobileNav=false">
+                                    <span class="mnav-ico" aria-hidden="true">{!! \App\Support\CategoryIcons::svg($cat->name, $settings['caticon_'.$cat->id] ?? null) !!}</span>
+                                    <span class="mnav-txt">{{ $cat->name }}</span>
+                                </a>
                             @endif
-                        @endforeach
-                    @endif
-                    @if($mobileLoose->count())
-                        <div class="mobile-nav-section">Categorías</div>
-                        @foreach($mobileLoose as $cat)
-                            <a href="{{ $shopBase }}?category={{ (int) $cat->id }}" @click="mobileNav=false">{{ $cat->name }}</a>
                         @endforeach
                     @endif
                 @endif
@@ -4931,8 +6102,16 @@
                 <div class="qv-info">
                     <div class="qv-cat" x-text="qv.category" x-show="qv.category"></div>
                     <a class="qv-name" :href="qv.url || '#'" x-text="qv.name"></a>
+                    {{-- Resumen: la vista rapida solo daba nombre y precio, asi que
+                         para saber que se estaba comprando habia que abrir la ficha
+                         entera. Con el resumen la tarjeta se basta sola. --}}
+                    <p class="qv-resumen" x-show="qv.resumen" x-cloak x-text="qv.resumen"></p>
+                    <div class="qv-datos" x-show="qv.sku || qv.stock>0" x-cloak>
+                        <span x-show="qv.sku"><b>Código:</b> <span x-text="qv.sku"></span></span>
+                        <span x-show="qv.stock>0" class="qv-hay">Disponible</span>
+                    </div>
                     @if($hidePrices)
-                    <div class="qv-prices"><span class="qv-price">Precio a solicitud</span></div>
+                    <div class="qv-prices"><span class="qv-price">{{ $txtPrecioConsul }}</span></div>
                     @else
                     <div class="qv-prices">
                         <span class="qv-price" x-text="money(qv.price)"></span>
@@ -4949,7 +6128,7 @@
                 </div>
             </div>
             <div class="qv-foot">
-                <div class="qv-out" x-show="qv.stock===0" x-cloak>⚠️ Producto agotado temporalmente</div>
+                <div class="qv-out" x-show="qv.stock===0" x-cloak>⚠️ {{ $txtAgotado }}</div>
                 <div class="qv-sizes" x-show="qv.sizes&&qv.sizes.length" x-cloak>
                     <span class="qv-sizes-label">Talla:</span>
                     <div class="qv-size-list">
@@ -4969,14 +6148,20 @@
         </template>
     </div>
 
+    {{-- El cajon de filtros solo existe en la tienda. Se renderizaba en todas las
+         vistas y en la portada su estado Alpine (filterCat, catOpen...) no existe:
+         cada carga soltaba cientos de "Alpine Expression Error: filterCat is not
+         defined" en la consola. --}}
+    @if($isCatalogView)
     <div class="catalog-filter-layer" x-show="filterDrawerOpen" x-cloak @keydown.escape.window="filterDrawerOpen=false" role="dialog" aria-modal="true" aria-label="Filtros del catálogo">
         <div class="catalog-filter-overlay" @click="filterDrawerOpen=false"></div>
         <aside class="catalog-filter-drawer">
             <div class="catalog-filter-drawer-head"><strong>Filtrar productos</strong><button class="icon-button" type="button" @click="filterDrawerOpen=false" aria-label="Cerrar filtros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button></div>
-            <div class="catalog-filter-drawer-body"><x-computienda.catalog-filters :categories="$navCategories" :catalog-products="$catalogProducts" filter-scope="mobile" /></div>
+            <div class="catalog-filter-drawer-body"><x-computienda.catalog-filters :categories="$categoriasFiltro" :catalog-products="$catalogProducts" :profile-links="$perfilPorCategoria" filter-scope="mobile" /></div>
             <div class="catalog-filter-drawer-foot"><button type="button" @click="clearAllFilters()">Limpiar</button><button type="button" @click="filterDrawerOpen=false">Ver <span x-text="catalogProducts.length"></span> productos</button></div>
         </aside>
     </div>
+    @endif
 
     {{-- CARRITO: variante estructural (F1). classic = drawer original --}}
     @include(\App\Support\StorefrontLayoutPacks::view($settings, 'carts') ?? 'storefront.partials.carts.classic')
@@ -5200,7 +6385,9 @@
                     const sel=this.selectedCats;
                     if(sel.length===1)return this.categoryName(sel[0]);
                     if(sel.length>1)return sel.length+' categorías';
-                    return 'Todos los productos';
+                    {{-- En la vista de un perfil la miga decia "Todos los productos"
+                         aunque solo se estuvieran viendo los de ese mundo. --}}
+                    return @js(!empty($activeProfile) ? ($activeProfile->name ?: 'Todos los productos') : 'Todos los productos');
                 },
                 get catalogCount(){
                     // Sin filtros manda el total real del catalogo (la vista carga
@@ -5248,7 +6435,7 @@
                 // N tramos sin rehacer la tarjeta ni el carrito.
                 priceTiers(p){
                     const base=Number(p.price ?? p.precio ?? 0);
-                    const tiers=[{min:1,price:base,label:'Por unidad'}];
+                    const tiers=[{min:1,price:base,label:{{ Illuminate\Support\Js::from($txtPorUnidad) }}}];
                     const wp=Number(p.wholesalePrice ?? p.wholesale_price ?? 0);
                     const wq=Math.max(1,Number(p.wholesaleMinQty ?? p.wholesale_min_qty ?? 1)||1);
                     if(wp>0 && wq>1) tiers.push({min:wq,price:wp,label:'Desde '+wq+' unid.',wholesale:true});
@@ -5273,15 +6460,22 @@
                     const talla=t.wholesale?'por mayor':'';
                     const nombre=(p.name||p.nombre||'')+(t.wholesale?' (por mayor)':'');
                     const id=p.id, row=this.cart.find(i=>String(i.id)===String(id)&&(i.talla||'')===talla);
-                    if(row){ row.cantidad+=q; row.precio=Number(t.price); }
-                    else this.cart.push({id,nombre,precio:Number(t.price),cantidad:q,imagen:p.image||p.imagen||'',categoria:p.category||p.categoria||'',talla});
+                    // Se guardan precio base, precio mayorista y minimo en la propia
+                    // linea para poder retarifar cuando cambie la cantidad.
+                    const base=Number(p.price ?? p.precio ?? 0);
+                    const wp=Number(p.wholesalePrice ?? p.wholesale_price ?? 0);
+                    const wq=Math.max(0,Number(p.wholesaleMinQty ?? p.wholesale_min_qty ?? 0)||0);
+                    if(row){ row.cantidad+=q; row.base=base; row.wPrecio=wp; row.wMin=wq; this._retarifar(row); if(!this.lineaEsMayorista(row)) row.precio=Number(t.price); }
+                    else this.cart.push({id,nombre,precio:Number(t.price),base,cantidad:q,imagen:p.image||p.imagen||'',categoria:p.category||p.categoria||'',talla,wPrecio:wp,wMin:wq});
                     this.cartOpen=true;
                 },
-                add(id,nombre,precio,imagen,categoria,talla){
+                add(id,nombre,precio,imagen,categoria,talla,wPrecio,wMin){
                     talla=talla||'';
                     const row=this.cart.find(item=>String(item.id)===String(id)&&(item.talla||'')===talla);
-                    if(row)row.cantidad++;
-                    else this.cart.push({id,nombre,precio:Number(precio),cantidad:1,imagen:imagen||'',categoria:categoria||'',talla});
+                    if(row){row.cantidad++;this._retarifar(row)}
+                    else this.cart.push({id,nombre,precio:Number(precio),base:Number(precio),cantidad:1,
+                        imagen:imagen||'',categoria:categoria||'',talla,
+                        wPrecio:Number(wPrecio)||0,wMin:Number(wMin)||0});
                     this.cartOpen=true;
                 },
                 // Compra POR MAYOR: línea propia en el carrito (usa la dimensión "talla"
@@ -5295,8 +6489,25 @@
                     this.cartOpen=true;
                 },
                 _line(id,talla){return this.cart.find(item=>String(item.id)===String(id)&&(item.talla||'')===(talla||''))},
-                increase(id,talla){const row=this._line(id,talla);if(row)row.cantidad++},
-                decrease(id,talla){const row=this._line(id,talla);if(!row)return;row.cantidad--;if(row.cantidad<=0)this.remove(id,talla)},
+                // Retarifado automatico: si la linea guarda su precio mayorista y su
+                // minimo, al alcanzar ese minimo el precio unitario baja solo. Antes
+                // el cliente tenia que volver a la tarjeta y usar el boton "por mayor".
+                _retarifar(row){
+                    if(!row || !(Number(row.wPrecio)>0) || !(Number(row.wMin)>1)) return;
+                    const base=Number(row.base ?? row.precio)||0;
+                    row.precio = Number(row.cantidad)>=Number(row.wMin) ? Number(row.wPrecio) : base;
+                },
+                // ¿La linea ya disfruta del precio por mayor?
+                lineaEsMayorista(row){
+                    return Number(row.wPrecio)>0 && Number(row.wMin)>1 && Number(row.cantidad)>=Number(row.wMin);
+                },
+                // Cuantas unidades faltan para el precio por mayor (0 = ya lo tiene).
+                faltanParaMayor(row){
+                    if(!(Number(row.wPrecio)>0) || !(Number(row.wMin)>1)) return 0;
+                    return Math.max(0, Number(row.wMin) - Number(row.cantidad));
+                },
+                increase(id,talla){const row=this._line(id,talla);if(row){row.cantidad++;this._retarifar(row)}},
+                decrease(id,talla){const row=this._line(id,talla);if(!row)return;row.cantidad--;if(row.cantidad<=0){this.remove(id,talla);return}this._retarifar(row)},
                 remove(id,talla){this.cart=this.cart.filter(item=>!(String(item.id)===String(id)&&(item.talla||'')===(talla||'')))},
                 itemCount(){return this.cart.reduce((sum,item)=>sum+Number(item.cantidad||0),0)},
                 total(){return this.cart.reduce((sum,item)=>sum+Number(item.precio||0)*Number(item.cantidad||0),0)},
@@ -5316,7 +6527,12 @@
                         price:Number(product.price)||0,
                         comparePrice:Number(product.comparePrice)||0,
                         stock:(product.stock===null||product.stock===undefined)?null:Number(product.stock),
-                        url:product.url||''
+                        url:product.url||'',
+                        // Esta funcion copia campo a campo, con lista blanca: lo que
+                        // no se nombre aqui NO llega a la vista rapida por mucho que
+                        // venga en los datos. Era por esto que el resumen salia vacio.
+                        resumen:product.resumen||'',
+                        sku:product.sku||''
                     };
                     document.body.style.overflow='hidden';
                 },
@@ -5332,7 +6548,10 @@
                     return 0;
                     @endif
                 },
-                get shippingLabel(){ return this.shippingCost>0 ? this.money(this.shippingCost) : 'Gratis'; },
+                {{-- "Gratis" es una promesa comercial. En tiendas que coordinan el
+                     envio por WhatsApp no es cierta, asi que el texto de coste cero
+                     es configurable. Por defecto se mantiene "Gratis". --}}
+                get shippingLabel(){ return this.shippingCost>0 ? this.money(this.shippingCost) : @js(trim((string) ($settings['cart_shipping_zero_label'] ?? '')) ?: 'Gratis'); },
                 get checkoutTotal(){ return this.total() + this.shippingCost; },
                 openCartPage(){ this.cartOpen=false; this.cartPageOpen=true; document.body.style.overflow=''; window.scrollTo({top:0}); },
                 openCheckout(){ this.cartOpen=false; this.cartPageOpen=false; this.checkoutOpen=true; this.orderError='';
@@ -5412,6 +6631,6 @@
     </a>
     @endif
 
-    <x-public-store-runtime :project="$project" :settings="array_merge($settings, ['primary_color' => $primary])" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" :store-view="$storeView ?? 'home'" :own-footer="true" />
+    <x-public-store-runtime :project="$project" :settings="array_merge($settings, ['primary_color' => $primary])" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" :store-view="$storeView ?? 'home'" :own-footer="true" :active-profile="$activeProfile ?? null" />
 </body>
 </html>

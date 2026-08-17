@@ -32,6 +32,48 @@
     $ftBg2    = $settings['footer_bg2_color']    ?? '#07284A';
     $ftAccent = $settings['footer_accent_color'] ?? ($settings['accent_color'] ?? '#16BDF2');
 
+    // ═══ El pie también pertenece al perfil activo ═══
+    // Este pie pinta con variables PROPIAS (`--ftt-bg`), no con `--footer-bg`,
+    // así que el color del perfil se calculaba bien, llegaba a la página… y el
+    // pie lo ignoraba: al entrar en un mundo verde el encabezado cambiaba y el
+    // pie seguía azul marino. El degradado se arma aclarando el mismo color, no
+    // inventando un segundo.
+    $ftPerfil = $activeProfile ?? null;
+    if ($ftPerfil && !empty($ftPerfil->footer_bg_color)
+        && preg_match('/^#[0-9a-fA-F]{6}$/', (string) $ftPerfil->footer_bg_color)) {
+        $ftBg  = $ftPerfil->footer_bg_color;
+        $ftBg2 = '#'.implode('', array_map(
+            fn ($c) => str_pad(dechex(min(255, (int) round(hexdec($c) + (255 - hexdec($c)) * 0.14))), 2, '0', STR_PAD_LEFT),
+            str_split(ltrim($ftBg, '#'), 2)
+        ));
+        if (!empty($ftPerfil->primary_color)) {
+            $ftAccent = $ftPerfil->primary_color;
+        }
+    }
+
+    // ═══ Acento legible garantizado ═══
+    // El acento pinta iconos y enlaces SOBRE el propio fondo del pie. Cuando
+    // ambos comparten familia (perfil Niño: azul #1266E3 sobre pie #0F3E8C)
+    // el acento daba 1,3:1 y los iconos desaparecían. Se aclara mezclando con
+    // blanco, en pasos de 10%, hasta alcanzar 4,5:1 contra el extremo MÁS
+    // CLARO del degradado (el peor caso). Conserva el tono elegido.
+    $ftLum = static function (string $hex): float {
+        $c = array_map(fn ($x) => hexdec($x) / 255, str_split(ltrim($hex, '#'), 2));
+        $f = fn ($v) => $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
+        return 0.2126 * $f($c[0]) + 0.7152 * $f($c[1]) + 0.0722 * $f($c[2]);
+    };
+    if (preg_match('/^#[0-9a-fA-F]{6}$/', (string) $ftAccent)) {
+        $ftAccentBase = $ftAccent;
+        $ftLumFondo = max($ftLum($ftBg), $ftLum($ftBg2));
+        $ftContraste = static fn (float $a, float $b): float => (max($a, $b) + 0.05) / (min($a, $b) + 0.05);
+        for ($ftPaso = 1; $ftPaso <= 9 && $ftContraste($ftLum($ftAccent), $ftLumFondo) < 4.5; $ftPaso++) {
+            $ftAccent = '#'.implode('', array_map(
+                fn ($c) => str_pad(dechex(min(255, (int) round(hexdec($c) + (255 - hexdec($c)) * 0.10 * $ftPaso))), 2, '0', STR_PAD_LEFT),
+                str_split(ltrim($ftAccentBase, '#'), 2)
+            ));
+        }
+    }
+
     // Beneficios: reutiliza los mismos textos de la banda de confianza.
     $ftBenefits = collect(range(1, 4))->map(fn ($i) => [
         'title' => trim((string) ($settings['trust_text_'.$i] ?? '')),
@@ -77,7 +119,15 @@
 @endphp
 <style>
     .ftt{--ftt-bg:{{ $ftBg }};--ftt-bg2:{{ $ftBg2 }};--ftt-ac:{{ $ftAccent }};
+        /* Las dos tintas secundarias estaban fijas en gris azulado porque este
+           pie nacio para un fondo navy. Sobre el teal de una tienda de bebe
+           daban 2.1:1 de contraste —ilegible— y ademas chocaban de tono. Ahora
+           salen de mezclar blanco con el propio fondo del pie: conservan su
+           color, quedan por encima de 4.5:1 y se adaptan solas a la tienda que
+           sea. Se deja el valor plano delante como respaldo. */
         --ftt-txt:#fff;--ftt-txt2:#B8C9DB;--ftt-muted:#849BB3;
+        --ftt-txt2:color-mix(in srgb,#fff 92%,var(--ftt-bg));
+        --ftt-muted:color-mix(in srgb,#fff 85%,var(--ftt-bg));
         --ftt-bd:rgba(255,255,255,.10);--ftt-card:rgba(255,255,255,.025);--ftt-cardbd:rgba(255,255,255,.16);
         position:relative;overflow:hidden;color:var(--ftt-txt);
         background:linear-gradient(135deg,var(--ftt-bg) 0%,var(--ftt-bg2) 100%)}
@@ -97,8 +147,19 @@
     .ftt h4::after{content:'';display:block;width:36px;height:3px;margin-top:9px;border-radius:2px;background:var(--ftt-ac)}
     /* El logo va sobre placa blanca: los logotipos oscuros o de un solo color
        se apagaban contra el navy y perdian contraste. */
-    .ftt-logo{display:inline-flex;align-items:center;padding:10px 16px;background:#fff;border-radius:12px;
-        box-shadow:0 6px 18px rgba(0,0,0,.22)}
+    /* El plato medía 176×116 para un logo que solo ocupaba 96×96: sobraba caja
+       blanca por los lados. `width:max-content` hace que abrace al logo, y el
+       relleno pasa a ser parejo en los cuatro lados. */
+    /* Sin plato blanco. Probadas las dos versiones: el recuadro blanco cortaba
+       la franja de color y el logo parecía una pegatina pegada encima. Los logos
+       de estas tiendas tienen transparencia, así que se apoyan directamente en
+       el fondo y el pie se lee como una sola pieza.
+       El plato solo vuelve si el logo NO es transparente: en ese caso su propio
+       fondo blanco se vería como un rectángulo suelto, y entonces sí conviene
+       enmarcarlo a propósito (clase `ftt-logo--placa`). */
+    .ftt-logo{display:inline-flex;align-items:center;justify-content:center;
+        width:max-content;padding:0;background:none;border-radius:0;box-shadow:none}
+    .ftt-logo--placa{padding:12px;background:#fff;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
     .ftt-logo .ftt-name{color:#0B2038}
     .ftt-logo img{max-height:{{ max(28, min(120, (int) ($settings['footer_logo_height'] ?? 46))) }}px;max-width:210px;width:auto;object-fit:contain}
     .ftt-name{font-family:var(--font-title);font-size:20px;font-weight:700}
@@ -125,7 +186,8 @@
     /* Sin lineas bajo cada enlace: creaban una tabla que nadie pidio y solo
        aparecian en dos de las cuatro columnas. */
     .ftt ul li{border-bottom:0}
-    .ftt ul a{display:flex;align-items:center;gap:9px;padding:7px 0;color:#E5EDF6;font-size:14px;text-decoration:none;transition:color .18s ease}
+    /* Los enlaces tambien iban en un azul fijo; siguen la tinta del pie. */
+    .ftt ul a{display:flex;align-items:center;gap:9px;padding:7px 0;color:var(--ftt-txt2);font-size:14px;text-decoration:none;transition:color .18s ease}
     .ftt ul a .ftt-ar{margin-left:auto;opacity:0;transform:translateX(-4px);transition:.18s ease;color:var(--ftt-ac)}
     .ftt ul a:hover{color:var(--ftt-ac)}
     .ftt ul a:hover .ftt-ar{opacity:1;transform:translateX(0)}
@@ -192,7 +254,12 @@
     <div class="ftt-inner">
         {{-- EMPRESA --}}
         <div>
-            <div class="ftt-logo">
+            {{-- La placa blanca detrás del logo es POR TIENDA, no global.
+                 Depende del archivo: un logo claro sobre un pie oscuro se lee
+                 solo y la placa lo ensucia; uno oscuro —el navy de Tecsist sobre
+                 su pie azul marino— desaparece sin ella. Por defecto se conserva,
+                 que es como estaba antes de tocarlo. --}}
+            <div class="ftt-logo{{ (string) ($settings['footer_logo_plate'] ?? '1') === '1' ? ' ftt-logo--placa' : '' }}">
                 @if($logoUrl)<img src="{{ $logoUrl }}" alt="{{ $storeName }}" loading="lazy">@else<span class="ftt-name">{{ $storeName }}</span>@endif
             </div>
             @if($tagline)<p class="ftt-desc">{{ $tagline }}</p>@endif
@@ -231,7 +298,7 @@
         <details class="ftt-col-acc" open>
             <summary><h4>Información <span class="ftt-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></h4></summary>
             <ul>
-                <li><a href="{{ $aboutUrl }}">Nosotros<span class="ftt-ar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></a></li>
+                @if(!empty($aboutUrl))<li><a href="{{ $aboutUrl }}">Nosotros<span class="ftt-ar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></a></li>@endif
                 <li><a href="{{ $contactUrl }}">Contacto<span class="ftt-ar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></a></li>
                 <li><a href="{{ url($legalBase.'/reclamaciones') }}">Libro de Reclamaciones<span class="ftt-ar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></a></li>
                 <li><a href="{{ url($legalBase.'/privacidad') }}">Políticas de privacidad<span class="ftt-ar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></a></li>

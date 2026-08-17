@@ -5,7 +5,7 @@
     <div class="kitch-header">
         <div class="kitch-header-left">
             <div class="kitch-title-row">
-                <span class="kitch-icon">🍳</span>
+                
                 <h1 class="kitch-title">Vista de Cocina</h1>
                 <span class="kitch-live-dot"></span>
                 <span class="kitch-live-txt">En vivo</span>
@@ -25,7 +25,7 @@
         {{-- NUEVO --}}
         <div class="kitch-col">
             <div class="kitch-col-head kitch-col-head--new">
-                <span>🟡 Nuevo</span>
+                <span>Nuevo</span>
                 <span class="kitch-col-count" x-text="countByStatus('pending')"></span>
             </div>
             <div class="kitch-col-body">
@@ -36,7 +36,7 @@
                             <div class="kitch-time" x-text="timeAgo(o.created_at)"></div>
                         </div>
                         <div class="kitch-table-row" x-show="o.table_number">
-                            🪑 Mesa <strong x-text="o.table_number"></strong>
+                            Mesa <strong x-text="o.table_number"></strong>
                         </div>
                         <div class="kitch-client" x-text="o.client_name"></div>
                         <ul class="kitch-items">
@@ -47,9 +47,9 @@
                                 </li>
                             </template>
                         </ul>
-                        <div class="kitch-notes" x-show="o.notes" x-text="'📝 ' + o.notes"></div>
+                        <div class="kitch-notes" x-show="o.notes" x-text="'Nota: ' + o.notes"></div>
                         <button class="kitch-btn kitch-btn--start" @click="advance(o, 'cooking')">
-                            🔥 Iniciar preparación
+                            Iniciar preparación
                         </button>
                     </div>
                 </template>
@@ -60,7 +60,7 @@
         {{-- EN PREPARACIÓN --}}
         <div class="kitch-col">
             <div class="kitch-col-head kitch-col-head--cooking">
-                <span>🔵 Preparando</span>
+                <span>Preparando</span>
                 <span class="kitch-col-count" x-text="countByStatus('cooking')"></span>
             </div>
             <div class="kitch-col-body">
@@ -71,7 +71,7 @@
                             <div class="kitch-timer" x-text="elapsedSince(o.kitchen_at)"></div>
                         </div>
                         <div class="kitch-table-row" x-show="o.table_number">
-                            🪑 Mesa <strong x-text="o.table_number"></strong>
+                            Mesa <strong x-text="o.table_number"></strong>
                         </div>
                         <div class="kitch-client" x-text="o.client_name"></div>
                         <ul class="kitch-items">
@@ -82,9 +82,9 @@
                                 </li>
                             </template>
                         </ul>
-                        <div class="kitch-notes" x-show="o.notes" x-text="'📝 ' + o.notes"></div>
+                        <div class="kitch-notes" x-show="o.notes" x-text="'Nota: ' + o.notes"></div>
                         <button class="kitch-btn kitch-btn--ready" @click="advance(o, 'ready')">
-                            ✅ Marcar listo
+                            Marcar listo
                         </button>
                     </div>
                 </template>
@@ -95,7 +95,7 @@
         {{-- LISTO --}}
         <div class="kitch-col">
             <div class="kitch-col-head kitch-col-head--ready">
-                <span>🟢 Listo para servir</span>
+                <span>Listo para servir</span>
                 <span class="kitch-col-count" x-text="countByStatus('ready')"></span>
             </div>
             <div class="kitch-col-body">
@@ -106,7 +106,7 @@
                             <div class="kitch-time kitch-time--ready" x-text="elapsedSince(o.ready_at) + ' esperando'"></div>
                         </div>
                         <div class="kitch-table-row" x-show="o.table_number">
-                            🪑 Mesa <strong x-text="o.table_number"></strong>
+                            Mesa <strong x-text="o.table_number"></strong>
                         </div>
                         <div class="kitch-client" x-text="o.client_name"></div>
                         <ul class="kitch-items">
@@ -118,7 +118,7 @@
                             </template>
                         </ul>
                         <button class="kitch-btn kitch-btn--served" @click="advance(o, 'served')">
-                            🍽 Entregado
+                            Entregado
                         </button>
                     </div>
                 </template>
@@ -159,7 +159,6 @@
     align-items: center;
     gap: 10px;
 }
-.kitch-icon { font-size: 22px; }
 .kitch-title { font-size: 20px; font-weight: 800; margin: 0; color: #F9FAFB; }
 .kitch-live-dot {
     width: 8px; height: 8px; border-radius: 50%;
@@ -288,6 +287,7 @@
 .kitch-notes { font-size: 12px; color: #9CA3AF; font-style: italic; }
 
 .kitch-btn {
+    min-height: var(--tactil-min, 44px);
     width: 100%;
     padding: 9px;
     border: none;

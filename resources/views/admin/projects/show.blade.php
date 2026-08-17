@@ -22,7 +22,12 @@
                 </div>
                 <div>
                     <p class="text-gray-500 text-xs">Propietario</p>
-                    <p class="text-gray-300">{{ $project->owner->name ?? '—' }}</p>
+                    <p class="text-gray-300">
+                        {{ $project->owner->name ?? '—' }}
+                        @if($project->owner?->is_superadmin)
+                        <span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">ESKALA</span>
+                        @endif
+                    </p>
                     <p class="text-gray-500 text-xs">{{ $project->owner->email ?? '' }}</p>
                 </div>
                 <div>
@@ -36,6 +41,50 @@
                     <p class="text-gray-500 text-xs">Miembros</p>
                     <p class="text-gray-300">{{ $project->members->count() }} usuario(s)</p>
                 </div>
+            </div>
+
+            {{-- Traspaso de propiedad. El negocio se crea a nombre de quien lo
+                 registra —normalmente Eskala—, así que hace falta poder ponerlo
+                 a nombre de su dueño real. --}}
+            <div class="mt-5 pt-5 border-t" style="border-color:rgba(255,255,255,0.08);">
+                <p class="text-sm font-semibold text-white">Dueño del negocio</p>
+                <p class="text-xs text-gray-500 mt-0.5 max-w-xl">
+                    El dueño manda dentro de su negocio: tiene todos los permisos sin necesidad de
+                    perfil. No obtiene ninguna capacidad sobre los demás negocios.
+                    @if($project->owner?->is_superadmin)
+                    <span class="block mt-1 text-amber-400">
+                        Ahora mismo pertenece a Eskala. Traspásalo al cliente cuando se lo entregues.
+                    </span>
+                    @endif
+                </p>
+
+                <form method="POST" action="{{ route('admin.projects.owner', $project) }}"
+                      class="flex flex-wrap items-end gap-3 mt-3"
+                      onsubmit="return confirm('El negocio pasará a manos de la persona elegida, que tendrá control total sobre él. ¿Continuar?')">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Traspasar a</label>
+                        <select name="owner_id" required
+                                class="rounded-xl bg-gray-900 border border-gray-700 px-3 h-10 text-sm text-white outline-none focus:border-indigo-500"
+                                style="min-width:16rem">
+                            @forelse($candidatosDueno as $c)
+                            <option value="{{ $c->id }}" {{ $c->id === $project->owner_id ? 'disabled' : '' }}>
+                                {{ $c->name }}{{ $c->email ? ' — '.$c->email : '' }}{{ $c->id === $project->owner_id ? ' (dueño actual)' : '' }}
+                            </option>
+                            @empty
+                            <option value="" disabled>Este negocio aún no tiene miembros con cuenta</option>
+                            @endforelse
+                        </select>
+                    </div>
+                    <button type="submit"
+                            class="h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold">
+                        Traspasar
+                    </button>
+                </form>
+
+                @error('owner_id')
+                <p class="text-xs text-red-400 mt-2">{{ $message }}</p>
+                @enderror
             </div>
 
             <form method="POST" action="{{ route('admin.projects.toggle', $project) }}" class="mt-5">

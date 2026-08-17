@@ -76,6 +76,20 @@ function builderApp(cfg) {
                 this.stage = firstPending ? firstPending.key : 'publish';
             }
             this.$watch('stage', v => { try { history.replaceState(null, '', '#' + v); } catch (e) {} });
+            // Formularios embebidos (perfiles, paginas, navegacion): al enviarlos el
+            // navegador no manda el #hash, el controlador responde back() y al volver
+            // no habia etapa que restaurar, asi que el constructor arrancaba en el
+            // paso 1. Se estampa la etapa en la accion antes de enviar: el navegador
+            // conserva el fragmento a traves de la redireccion.
+            document.addEventListener('submit', ev => {
+                const f = ev.target;
+                if (!(f instanceof HTMLFormElement) || f.dataset.noStage === '1') return;
+                try {
+                    const url = new URL(f.action, location.origin);
+                    url.hash = this.stage;
+                    f.action = url.toString();
+                } catch (e) {}
+            }, true);
             // Ancho del preview persistido + escala de escritorio.
             document.documentElement.style.setProperty('--bxb-pw', this.previewWidth + 'px');
             window.addEventListener('resize', () => this.fitPreview());
@@ -707,7 +721,14 @@ function builderApp(cfg) {
                 const f = this.$refs.previewFrame;
                 if (!f) return;
                 this.previewError = false;
-                try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; }
+                // location.reload() podia servirse de la cache del navegador: se
+                // guardaba el ajuste y la vista previa seguia mostrando lo anterior.
+                // Una URL distinta en cada refresco obliga a pedirla de nuevo.
+                try {
+                    f.src = this.urls.preview + '?view=home&_=' + Date.now();
+                } catch (e) {
+                    try { f.contentWindow.location.reload(); } catch (e2) {}
+                }
             }, force ? 0 : 400);
         },
         highlightForStage() {

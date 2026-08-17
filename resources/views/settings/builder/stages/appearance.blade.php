@@ -114,12 +114,57 @@
                     <option value="center">Centrados</option>
                 </select>
             </label>
+            <label class="bxb-field">Estilo de los títulos de sección
+                <select :value="settings.section_head_style||'normal'" @change="setSetting('section_head_style',$event.target.value)">
+                    <option value="normal">Suelto sobre el fondo</option>
+                    <option value="barra">Dentro de una barra de color</option>
+                </select>
+                <small class="bxb-note">Separa mejor los bloques cuando la portada encadena varias secciones de productos seguidas. Con la barra activa, la alineación centrada no aplica.</small>
+            </label>
+            <label class="bxb-field" x-show="(settings.section_head_style||'normal')==='barra'" x-cloak>Color de la barra de títulos
+                <x-bxb-color clave="section_head_bar_color" defecto="#2563eb" etiqueta="Color de la barra de títulos" />
+                <small class="bxb-note">Vacío = usa el color principal de la tienda. Ponle uno propio si quieres que las barras de "Ofertas de la semana" y "Lo más vendido" no vayan del mismo color que el resto.</small>
+            </label>
+            <label class="bxb-field" x-show="(settings.section_head_style||'normal')==='barra'" x-cloak>Letra de la barra de títulos
+                <x-bxb-color clave="section_head_text_color" defecto="#ffffff" etiqueta="Letra de la barra de títulos" />
+                <small class="bxb-note">Vacío = blanco. Cámbialo si eliges una barra clara: con el blanco fijo el título desaparecía.</small>
+            </label>
+            <label class="bxb-field" x-show="(settings.section_head_style||'normal')==='barra'" x-cloak>Fondo del botón de la barra
+                <x-bxb-color clave="section_head_btn_bg" defecto="#ffffff" etiqueta="Fondo del botón de la barra" />
+                <small class="bxb-note">Es el botón "Ver todos los productos" que acompaña al título. Vacío = blanco.</small>
+            </label>
+            <label class="bxb-field" x-show="(settings.section_head_style||'normal')==='barra'" x-cloak>Letra del botón de la barra
+                <x-bxb-color clave="section_head_btn_color" defecto="#2563eb" etiqueta="Letra del botón de la barra" />
+                <small class="bxb-note">Vacío = el color principal de la tienda.</small>
+            </label>
+            {{-- Depende del archivo de logo, no del gusto: uno claro sobre un pie
+                 oscuro se lee solo; uno oscuro sin placa desaparece. --}}
+            <label class="bxb-field">Placa blanca tras el logo del pie
+                <select :value="settings.footer_logo_plate||'1'" @change="setSetting('footer_logo_plate',$event.target.value)">
+                    <option value="1">Con placa blanca</option>
+                    <option value="0">Sin placa, el logo directo sobre el fondo</option>
+                </select>
+                <small class="bxb-note">Quítala solo si tu logo tiene fondo transparente y colores claros: se integra mejor. Si tu logo es oscuro, sin placa se pierde sobre un pie de color.</small>
+            </label>
             <label class="bxb-field">Fondos de las secciones
                 <select :value="settings.section_background_mode||'alternate'" @change="setSetting('section_background_mode',$event.target.value)">
                     <option value="alternate">Alternados (blanco y suave)</option>
                     <option value="white">Todo blanco</option>
                     <option value="soft">Todo suave</option>
+                    <option value="pastel">Bandas pastel (3 colores que rotan)</option>
                 </select>
+            </label>
+        </div>
+        {{-- Los tres colores solo tienen sentido en el modo pastel. --}}
+        <div class="bxb-grid2" x-show="(settings.section_background_mode||'alternate')==='pastel'" style="margin-top:6px">
+            <label class="bxb-field">Banda pastel 1
+                <x-bxb-color clave="pastel_band_1" defecto="#FDF6EF" etiqueta="Banda pastel 1" />
+            </label>
+            <label class="bxb-field">Banda pastel 2
+                <x-bxb-color clave="pastel_band_2" defecto="#FDF0F2" etiqueta="Banda pastel 2" />
+            </label>
+            <label class="bxb-field">Banda pastel 3
+                <x-bxb-color clave="pastel_band_3" defecto="#EEF6F9" etiqueta="Banda pastel 3" />
             </label>
         </div>
         <div class="bxb-grid2" style="margin-top:6px">
@@ -148,13 +193,13 @@
         </div>
         <div class="bxb-grid2">
             <label class="bxb-field">Color principal
-                <span class="bxb-color-row"><input type="color" :value="settings.primary_color||'#2563eb'" @input="setSetting('primary_color',$event.target.value)" aria-label="Color principal"><code x-text="settings.primary_color||'#2563eb'"></code></span>
+                <x-bxb-color clave="primary_color" defecto="#2563eb" etiqueta="Color principal" />
             </label>
             <label class="bxb-field">Color secundario
-                <span class="bxb-color-row"><input type="color" :value="settings.secondary_color||'#0f172a'" @input="setSetting('secondary_color',$event.target.value)" aria-label="Color secundario"><code x-text="settings.secondary_color||'#0f172a'"></code></span>
+                <x-bxb-color clave="secondary_color" defecto="#0f172a" etiqueta="Color secundario" />
             </label>
             <label class="bxb-field">Color de acento (detalles, íconos, etiquetas)
-                <span class="bxb-color-row"><input type="color" :value="settings.accent_color||settings.primary_color||'#2563eb'" @input="setSetting('accent_color',$event.target.value)" aria-label="Color de acento"><code x-text="settings.accent_color||'auto'"></code><button type="button" class="bxb-link" x-show="settings.accent_color" @click="setSetting('accent_color','')">Auto</button></span>
+                <x-bxb-color clave="accent_color" defecto="#2563eb" etiqueta="Color de acento" />
             </label>
         </div>
         <div class="bxb-field"><span>Paletas sugeridas</span>
@@ -167,6 +212,46 @@
                 <button type="button" class="bxb-btn" x-show="settings.logo_url" @click="paletteFromLogo()">🎨 Generar desde el logo</button>
             </div>
         </div>
+
+        {{-- Colores finos del sistema. Estaban en la base de datos sin control:
+             quien quisiera cambiar el color de compra, el de oferta o el tono
+             de los textos tenia que pedir codigo. Todos con "Auto": vacio
+             mantiene el comportamiento anterior. --}}
+        <details class="bxb-advanced">
+            <summary>Colores del sistema (compra, oferta, textos y bordes)</summary>
+            <div class="bxb-grid2">
+                <label class="bxb-field">Botón de compra
+                    <x-bxb-color clave="buy_button_color" defecto="#2563eb" etiqueta="Botón de compra" />
+                </label>
+                <label class="bxb-field">Ofertas y descuentos
+                    <x-bxb-color clave="sale_color" defecto="#dc2626" etiqueta="Color de oferta" />
+                </label>
+                <label class="bxb-field">Títulos
+                    <x-bxb-color clave="text_strong_color" defecto="#0f172a" etiqueta="Color de los títulos" />
+                </label>
+                <label class="bxb-field">Texto normal
+                    <x-bxb-color clave="text_color" defecto="#334155" etiqueta="Color del texto" />
+                </label>
+                <label class="bxb-field">Texto secundario
+                    <x-bxb-color clave="text_muted_color" defecto="#64748b" etiqueta="Color del texto secundario" />
+                </label>
+                <label class="bxb-field">Fondo suave (bandas y tarjetas)
+                    <x-bxb-color clave="surface_soft_color" defecto="#f8fafc" etiqueta="Fondo suave" />
+                </label>
+                <label class="bxb-field">Bordes
+                    <x-bxb-color clave="border_color" defecto="#e2e8f0" etiqueta="Color de los bordes" />
+                </label>
+                <label class="bxb-field">Banda de confianza
+                    <x-bxb-color clave="trust_accent_color" defecto="#2563eb" etiqueta="Acento de la banda de confianza" />
+                </label>
+                <label class="bxb-field">Menú: enlace activo
+                    <x-bxb-color clave="header_active_color" defecto="#2563eb" etiqueta="Color del enlace activo" />
+                </label>
+                <label class="bxb-field">Menú: enlace al pasar
+                    <x-bxb-color clave="header_hover_color" defecto="#2563eb" etiqueta="Color del enlace al pasar" />
+                </label>
+            </div>
+        </details>
     </div>
 
     {{-- Tipografía y botones --}}
@@ -266,10 +351,10 @@
                 <input type="text" maxlength="120" placeholder="Desarrollado por AVAN" :value="settings.footer_dev_text||''" @input.debounce.600ms="setSetting('footer_dev_text',$event.target.value)">
             </label>
             <label class="bxb-field">Fondo del pie (opcional)
-                <span class="bxb-color-row"><input type="color" :value="settings.footer_bg_color||'#0f172a'" @input="setSetting('footer_bg_color',$event.target.value)" aria-label="Fondo del pie"><code x-text="settings.footer_bg_color||'auto'"></code><button type="button" class="bxb-link" x-show="settings.footer_bg_color" @click="setSetting('footer_bg_color','')">Auto</button></span>
+                <x-bxb-color clave="footer_bg_color" defecto="#0f172a" etiqueta="Fondo del pie" />
             </label>
             <label class="bxb-field">Letra del pie (opcional)
-                <span class="bxb-color-row"><input type="color" :value="settings.footer_text_color||'#e2e8f0'" @input="setSetting('footer_text_color',$event.target.value)" aria-label="Letra del pie"><code x-text="settings.footer_text_color||'auto'"></code><button type="button" class="bxb-link" x-show="settings.footer_text_color" @click="setSetting('footer_text_color','')">Auto</button></span>
+                <x-bxb-color clave="footer_text_color" defecto="#e2e8f0" etiqueta="Letra del pie" />
             </label>
         </div>
         <div class="bxb-grid2">
@@ -306,7 +391,7 @@
                 <small>Un mueble en un cuadrado se ve pequeño; una prenda en horizontal se corta.</small>
             </label>
             <label class="bxb-field">Fondo de la foto de producto
-                <span class="bxb-color-row"><input type="color" :value="settings.card_image_bg||'#fafaf9'" @input="setSetting('card_image_bg',$event.target.value)" aria-label="Fondo de la foto"><code x-text="settings.card_image_bg||'#fafaf9'"></code><button type="button" class="bxb-link" x-show="settings.card_image_bg" @click="setSetting('card_image_bg','')">Auto</button></span>
+                <x-bxb-color clave="card_image_bg" defecto="#fafaf9" etiqueta="Fondo de la foto" />
                 <small>Un crema suave hace resaltar el producto claro, que sobre blanco desaparece.</small>
             </label>
         </div>
@@ -346,6 +431,19 @@
                 <small>Más segundos = más lenta.</small>
             </label>
         </div>
+        <div class="bxb-grid2" x-show="(settings.ticker_text||'')!==''">
+            <label class="bxb-field">Color de fondo de la franja
+                <x-bxb-color clave="ticker_bg_color" defecto="#2563eb" etiqueta="Fondo de la franja" />
+                <small>Vacío = usa el color de acento. La letra elige sola blanco o oscuro según el fondo.</small>
+            </label>
+            <label class="bxb-field">Posición de la franja
+                <select :value="settings.ticker_position||'fija'" @change="setSetting('ticker_position',$event.target.value)">
+                    <option value="fija">Fija abajo mientras se navega</option>
+                    <option value="pie">Quieta, justo encima del pie</option>
+                </select>
+                <small>Fija se ve siempre, pero tapa el borde inferior de la página al hacer scroll.</small>
+            </label>
+        </div>
         <div class="bxb-check-inline" x-show="(settings.ticker_text||'')!==''">
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.ticker_force_motion||'0')!=='0'" @change="setSetting('ticker_force_motion',$event.target.checked?'1':'0')"> Mover la franja aunque el equipo tenga las animaciones reducidas</label>
         </div>
@@ -370,10 +468,10 @@
             <strong class="bxb-card-title">Pie Tecnológico Pro</strong>
             <div class="bxb-grid2">
                 <label class="bxb-field">Degradado — segundo color
-                    <span class="bxb-color-row"><input type="color" :value="settings.footer_bg2_color||'#07284A'" @input="setSetting('footer_bg2_color',$event.target.value)" aria-label="Segundo color del degradado"><code x-text="settings.footer_bg2_color||'auto'"></code><button type="button" class="bxb-link" x-show="settings.footer_bg2_color" @click="setSetting('footer_bg2_color','')">Auto</button></span>
+                    <x-bxb-color clave="footer_bg2_color" defecto="#07284A" etiqueta="Segundo color del degradado" />
                 </label>
                 <label class="bxb-field">Color de acento del pie
-                    <span class="bxb-color-row"><input type="color" :value="settings.footer_accent_color||'#16BDF2'" @input="setSetting('footer_accent_color',$event.target.value)" aria-label="Acento del pie"><code x-text="settings.footer_accent_color||'auto'"></code><button type="button" class="bxb-link" x-show="settings.footer_accent_color" @click="setSetting('footer_accent_color','')">Auto</button></span>
+                    <x-bxb-color clave="footer_accent_color" defecto="#16BDF2" etiqueta="Acento del pie" />
                 </label>
                 <label class="bxb-field">Categorías a mostrar (3 a 8)
                     <input type="number" min="3" max="8" placeholder="5" :value="settings.footer_cats_limit||''" @input.debounce.600ms="setSetting('footer_cats_limit',$event.target.value)">
@@ -429,7 +527,7 @@
                     <button type="button" :class="settings.float_cart_pos==='bottom-left'&&'on'" @click="setSetting('float_cart_pos','bottom-left')">Abajo izquierda</button>
                 </div>
                 <label class="bxb-field">Color del pop-up promocional
-                    <span class="bxb-color-row"><input type="color" :value="settings.popup_bg_color||'#ffffff'" @input="setSetting('popup_bg_color',$event.target.value)" aria-label="Color del pop-up"><code x-text="settings.popup_bg_color||'auto'"></code></span>
+                    <x-bxb-color clave="popup_bg_color" defecto="#ffffff" etiqueta="Color del pop-up" />
                 </label>
             </div>
         </div>
@@ -456,10 +554,10 @@
         </div>
         <div class="bxb-grid2" x-show="(settings.login_bg_type||'gradient')!=='image'">
             <label class="bxb-field">Color 1
-                <span class="bxb-color-row"><input type="color" :value="settings.login_color1||'#4f46e5'" @input="setSetting('login_color1',$event.target.value)" aria-label="Color 1 del login"><code x-text="settings.login_color1||'#4f46e5'"></code></span>
+                <x-bxb-color clave="login_color1" defecto="#4f46e5" etiqueta="Color 1 del login" />
             </label>
             <label class="bxb-field" x-show="(settings.login_bg_type||'gradient')==='gradient'">Color 2
-                <span class="bxb-color-row"><input type="color" :value="settings.login_color2||'#7c3aed'" @input="setSetting('login_color2',$event.target.value)" aria-label="Color 2 del login"><code x-text="settings.login_color2||'#7c3aed'"></code></span>
+                <x-bxb-color clave="login_color2" defecto="#7c3aed" etiqueta="Color 2 del login" />
             </label>
         </div>
         <div class="bxb-field" x-show="settings.login_bg_type==='image'"><span>Imagen de fondo</span>

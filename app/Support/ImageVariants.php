@@ -52,7 +52,7 @@ class ImageVariants
         }
 
         $origen  = public_path(ltrim($ruta, '/'));
-        $destino = preg_replace('/\.(png|jpe?g)$/i', '-fav64.png', $origen);
+        $destino = preg_replace('/\.(png|jpe?g)$/i', '-fav128.png', $origen);
 
         if (! is_file($origen)) {
             return $url;
@@ -67,22 +67,81 @@ class ImageVariants
             if (! $im) {
                 return $url;
             }
-            $w = imagesx($im);
-            $h = imagesy($im);
+            // El favicon sale del logo de la tienda, que suele ser horizontal
+            // (800x533) y con margen blanco propio. Metido tal cual en un
+            // cuadrado, la marca acaba ocupando menos de la mitad del lienzo y
+            // a 16 px de la pestana no se distingue nada. Se recorta primero
+            // todo el borde vacio -transparente o blanco- para que lo que se
+            // escale sea solo el dibujo.
+            [$ox, $oy, $w, $h] = self::recorteUtil($im);
+
             $lado = max($w, $h) ?: 1;
-            $out = imagecreatetruecolor(64, 64);
+            $lienzo = 128;
+            // 4% de aire: pegado al borde el icono se ve apretado y algunos
+            // navegadores le aplican esquinas redondeadas.
+            $util = (int) round($lienzo * 0.92);
+            $out = imagecreatetruecolor($lienzo, $lienzo);
             imagealphablending($out, false);
             imagesavealpha($out, true);
             imagefill($out, 0, 0, imagecolorallocatealpha($out, 0, 0, 0, 127));
-            $nw = (int) round($w * 64 / $lado);
-            $nh = (int) round($h * 64 / $lado);
-            imagecopyresampled($out, $im, (int) ((64 - $nw) / 2), (int) ((64 - $nh) / 2), 0, 0, $nw, $nh, $w, $h);
+            $nw = (int) round($w * $util / $lado);
+            $nh = (int) round($h * $util / $lado);
+            imagecopyresampled(
+                $out, $im,
+                (int) (($lienzo - $nw) / 2), (int) (($lienzo - $nh) / 2),
+                $ox, $oy, $nw, $nh, $w, $h
+            );
             imagepng($out, $destino, 9);
             imagedestroy($im);
             imagedestroy($out);
         }
 
-        return preg_replace('/\.(png|jpe?g)$/i', '-fav64.png', $url);
+        return preg_replace('/\.(png|jpe?g)$/i', '-fav128.png', $url);
+    }
+
+    /**
+     * Caja util de una imagen: descarta el borde transparente o casi blanco.
+     * Devuelve [x, y, ancho, alto]; si la imagen es toda fondo devuelve la
+     * imagen entera para no acabar con un recorte de 0 px.
+     */
+    private static function recorteUtil($im): array
+    {
+        $w = imagesx($im);
+        $h = imagesy($im);
+
+        // Muestreo cada 2 px: en un logo de 800 px de ancho basta para
+        // encontrar el borde y evita recorrer medio millon de pixeles.
+        $paso = max(1, (int) floor(min($w, $h) / 200));
+        $x1 = $w; $y1 = $h; $x2 = -1; $y2 = -1;
+
+        for ($y = 0; $y < $h; $y += $paso) {
+            for ($x = 0; $x < $w; $x += $paso) {
+                $c = imagecolorat($im, $x, $y);
+                if ((($c >> 24) & 0x7F) > 100) {
+                    continue; // transparente
+                }
+                $r = ($c >> 16) & 0xFF; $g = ($c >> 8) & 0xFF; $b = $c & 0xFF;
+                if ($r > 244 && $g > 244 && $b > 244) {
+                    continue; // blanco de fondo
+                }
+                if ($x < $x1) { $x1 = $x; }
+                if ($y < $y1) { $y1 = $y; }
+                if ($x > $x2) { $x2 = $x; }
+                if ($y > $y2) { $y2 = $y; }
+            }
+        }
+
+        if ($x2 < 0 || $y2 < 0) {
+            return [0, 0, $w, $h];
+        }
+
+        // Se devuelve un pixel de holgura por el muestreo.
+        $x1 = max(0, $x1 - $paso);
+        $y1 = max(0, $y1 - $paso);
+        $x2 = min($w - 1, $x2 + $paso);
+        $y2 = min($h - 1, $y2 + $paso);
+
+        return [$x1, $y1, $x2 - $x1 + 1, $y2 - $y1 + 1];
     }
 
     /**

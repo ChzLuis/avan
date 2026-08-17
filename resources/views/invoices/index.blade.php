@@ -4,7 +4,7 @@
         : route('invoices.index');
 @endphp
 <x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Facturas / Boletas">
-<div class="flex flex-1 overflow-hidden"
+<div class="mod-tactil flex flex-1 overflow-hidden"
      x-data="invoicesApp()"
      x-init="init()"
      @resize.window="isMobile = window.innerWidth < 768">
@@ -26,7 +26,7 @@
             <option value="nota_debito">N. Débito</option>
         </select>
         <button @click="openNew()"
-                class="flex-shrink-0 w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors">
+                class="flex-shrink-0 w-11 h-11 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>

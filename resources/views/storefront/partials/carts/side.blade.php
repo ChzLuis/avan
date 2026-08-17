@@ -29,7 +29,8 @@
     .cs-total span{color:#64748b;font-size:13px}
     .cs-total strong{color:#0f172a;font-size:21px}
     .cs-foot .button{width:100%}
-    .cs-note{margin:10px 0 0;color:#94a3b8;font-size:10.5px;text-align:center;line-height:1.5}
+    /* 10,5px es ilegible: el aviso de condiciones es justo lo que hay que leer. */
+    .cs-note{margin:10px 0 0;color:#64748b;font-size:12px;text-align:left;line-height:1.5}
     .cs-item{grid-template-columns:auto 1fr auto}
     .cs-thumb{grid-row:span 2;width:52px;height:52px;display:grid;place-items:center;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:8px;color:#cbd5e1}
     .cs-thumb img{width:100%;height:100%;object-fit:cover}
@@ -59,7 +60,7 @@
                         <template x-if="!item.imagen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.2"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/></svg></template>
                     </span>
                     @endif
-                    <div><strong x-text="item.nombre+(item.talla?(' · Talla '+item.talla):'')"></strong><br><small x-text="{!! $csLineTotal ? "money(item.precio)+' × '+item.cantidad" : 'money(item.precio)' !!}"></small>@if($csLineTotal)<b class="cs-line-total" x-text="money(item.precio*item.cantidad)"></b>@endif</div>
+                    <div><strong x-text="item.nombre+(item.talla?(' · Talla '+item.talla):'')"></strong><br><small x-show="item.cantidad>1" x-cloak x-text="{!! $csLineTotal ? "money(item.precio)+' × '+item.cantidad" : 'money(item.precio)' !!}"></small>@if($csLineTotal)<b class="cs-line-total" x-text="money(item.precio*item.cantidad)"></b>@endif</div>
                     <button class="cs-remove" type="button" @click="remove(item.id,item.talla)" aria-label="Eliminar">
                         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
                     </button>

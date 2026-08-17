@@ -22,12 +22,12 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->post('/login', [
-            'email' => $user->email,
+            'username' => $user->username,
             'password' => 'password',
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('workspace', absolute: false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -35,7 +35,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $this->post('/login', [
-            'email' => $user->email,
+            'username' => $user->username,
             'password' => 'wrong-password',
         ]);
 
@@ -49,6 +49,9 @@ class AuthenticationTest extends TestCase
         $response = $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
-        $response->assertRedirect('/');
+        // Al cerrar sesion se vuelve al LOGIN, no a la raiz
+        // (`AuthenticatedSessionController:49`): el panel no es un sitio
+        // publico al que devolver a alguien que acaba de salir.
+        $response->assertRedirect(route('login', absolute: false));
     }
 }

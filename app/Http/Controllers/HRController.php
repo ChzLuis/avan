@@ -29,6 +29,35 @@ class HRController extends Controller
         return view('hr.employees', compact('project', 'employees', 'departments', 'jobTitles', 'contractTypes', 'availableRoles'));
     }
 
+    /**
+     * Materializa el perfil de un empleado en el equipo de su proyecto.
+     *
+     * `setPermissionsTeamId` acota la escritura a ese negocio: asignar un perfil
+     * en MegaHogar no toca los roles que esa persona tenga en otro proyecto. Se
+     * restaura el equipo anterior para no dejar contaminada la petición.
+     */
+    private function aplicarPerfil(Employee $employee, int $projectId): void
+    {
+        $equipoPrevio = getPermissionsTeamId();
+
+        try {
+            setPermissionsTeamId($projectId);
+            $usuario = $employee->user;
+            if (!$usuario) {
+                return;
+            }
+
+            $perfil = $employee->spatie_role;
+            if ($perfil && \Spatie\Permission\Models\Role::where('name', $perfil)->exists()) {
+                $usuario->syncRoles([$perfil]);
+            } else {
+                $usuario->syncRoles([]);
+            }
+        } finally {
+            setPermissionsTeamId($equipoPrevio);
+        }
+    }
+
     private function catValues(Project $project, string $type): \Illuminate\Support\Collection
     {
         $list = $project->catalogLists()->where('type', $type)->first();
@@ -108,6 +137,20 @@ class HRController extends Controller
         unset($data['username'], $data['password'], $data['password_confirmation']);
 
         $employee = Employee::create($data);
+
+        if ($employee->spatie_role && $employee->user_id) {
+            $this->aplicarPerfil($employee, $project->id);
+        }
+
+        if ($employee->spatie_role) {
+            \App\Models\AccessEvent::registrar(
+                'profile_assigned',
+                $project->id,
+                $employee->spatie_role,
+                $employee->user_id,
+                ['from' => null, 'to' => $employee->spatie_role]
+            );
+        }
 
         if ($request->expectsJson()) {
             $row = $this->row($employee);
@@ -189,7 +232,28 @@ class HRController extends Controller
         }
 
         unset($data['username'], $data['password'], $data['password_confirmation']);
+
+        $perfilAnterior = $employee->spatie_role;
         $employee->update($data);
+
+        // El perfil se materializa aquí mismo, en el equipo de este proyecto.
+        // Antes solo lo hacía SetActiveProject en la siguiente petición de esa
+        // persona, así que entre guardar y su próximo acceso el cambio no existía.
+        if ($perfilAnterior !== $employee->spatie_role && $employee->user_id) {
+            $this->aplicarPerfil($employee, $project->id);
+        }
+
+        // Auditoría de accesos: cambiar el perfil de una persona es un cambio de
+        // acceso, y hasta ahora no dejaba rastro en ninguna parte.
+        if ($perfilAnterior !== $employee->spatie_role) {
+            \App\Models\AccessEvent::registrar(
+                $employee->spatie_role ? 'profile_assigned' : 'profile_removed',
+                $project->id,
+                $employee->spatie_role ?: $perfilAnterior,
+                $employee->user_id,
+                ['from' => $perfilAnterior, 'to' => $employee->spatie_role]
+            );
+        }
 
         if ($request->expectsJson()) {
             $row = $this->row($employee->fresh());
@@ -207,6 +271,13 @@ class HRController extends Controller
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         abort_unless($employee->project_id === $project->id, 403);
+
+        // Un negocio no puede quedarse sin dueño: si esta ficha es la del dueño,
+        // primero hay que traspasar la propiedad a otra persona.
+        if ($employee->user_id) {
+            \App\Support\ProjectOwnership::exigirQueNoSeaElDueno($project, $employee->user_id, 'eliminar');
+        }
+
         $employee->delete();
 
         if (request()->expectsJson()) {

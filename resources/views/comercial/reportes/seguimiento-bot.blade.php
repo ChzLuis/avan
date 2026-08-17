@@ -9,10 +9,10 @@
     </div>
     <form method="GET" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <input type="date" name="desde" value="{{ $desde }}"
-               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;min-height:44px;">
         <span style="font-size:11px;color:#9CA3AF;">→</span>
         <input type="date" name="hasta" value="{{ $hasta }}"
-               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;">
+               style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;font-family:inherit;min-height:44px;">
         <select name="status" style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 10px;outline:none;background:#fff;font-family:inherit;">
             <option value="">Todos</option>
             <option value="pendiente" @selected($status==='pendiente')>Pendiente</option>
@@ -22,7 +22,7 @@
         </select>
         <input type="text" name="buscar" value="{{ $buscar }}" placeholder="Nombre, DNI o celular"
                style="font-size:12px;border:1px solid #E5E8EF;border-radius:8px;padding:6px 12px;outline:none;font-family:inherit;width:180px;">
-        <button type="submit" style="font-size:12px;font-weight:600;background:#2563EB;color:#fff;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;">Buscar</button>
+        <button type="submit" style="font-size:12px;font-weight:600;background:#2563EB;color:#fff;padding:6px 14px;border-radius:8px;border:none;cursor:pointer;min-height:44px;">Buscar</button>
     </form>
 </div>
 

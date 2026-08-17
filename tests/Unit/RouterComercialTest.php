@@ -21,8 +21,20 @@ class RouterComercialTest extends TestCase
         $ruta = RouterComercial::analizar('Tengo una ferretería', 'IDENTIFICAR_NEGOCIO', ['rubro' => 'ferretería']);
 
         $this->assertSame('ENTENDER_NECESIDAD', $ruta['etapa']);
-        $this->assertSame('¿Cómo seguimos?', $ruta['lista']['titulo']);
-        $this->assertSame(['Ver ejemplos', 'Recibir propuesta', 'Agendar llamada'], array_column($ruta['lista']['opciones'], 'titulo'));
+        // Las opciones son CONTENIDO configurable
+        // (`config/asesor_comercial.php` → `listas.siguiente_paso`): el negocio
+        // reescribe el guion del asesor cuando quiere, y fijar aqui los textos
+        // hacia fallar la prueba en cada cambio comercial. Lo que el contrato
+        // protege es el CABLEADO: que tras identificar el rubro se ofrezca
+        // exactamente la lista configurada para ese paso.
+        $esperada = config('asesor_comercial.listas.siguiente_paso');
+
+        $this->assertSame($esperada['titulo'], $ruta['lista']['titulo']);
+        $this->assertSame(
+            array_column($esperada['opciones'], 'titulo'),
+            array_column($ruta['lista']['opciones'], 'titulo')
+        );
+        $this->assertNotEmpty($ruta['lista']['opciones'], 'el paso debe ofrecer alguna salida al cliente');
     }
 
     public function test_agendar_devuelve_los_horarios_tocables_configurados(): void

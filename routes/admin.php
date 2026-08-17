@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminProjectController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminImportController;
+use App\Http\Controllers\Admin\AdminLicenseController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminTurnosController;
 use App\Http\Controllers\DemoController;
@@ -33,11 +34,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/projects/{project}/modules',    [AdminProjectController::class, 'updateModules'])->name('projects.modules');
         Route::patch('/projects/{project}/subdomain',  [AdminProjectController::class, 'updateSubdomain'])->name('projects.subdomain');
         Route::get('/projects/{project}',              [AdminProjectController::class, 'show'])->name('projects.show');
+        Route::post('/projects/{project}/owner',       [AdminProjectController::class, 'transferOwnership'])->name('projects.owner');
 
         // Usuarios
         Route::get('/users',                           [AdminUserController::class, 'index'])->name('users');
         Route::patch('/users/{user}/toggle-admin',     [AdminUserController::class, 'toggleAdmin'])->name('users.toggle-admin');
         Route::post('/users/{user}/reset-password',    [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+
+        // Licencias y sesiones
+        Route::get('/licencias',                          [AdminLicenseController::class, 'index'])->name('licenses');
+        Route::post('/licencias/sesion/cerrar',           [AdminLicenseController::class, 'revokeSession'])->name('licenses.revoke-session');
+        Route::post('/licencias/usuario/{user}/cerrar',   [AdminLicenseController::class, 'revokeUser'])->name('licenses.revoke-user');
+        Route::post('/licencias/inactivas/cerrar',        [AdminLicenseController::class, 'revokeIdle'])->name('licenses.revoke-idle');
+        Route::patch('/licencias/usuario/{user}/tipo',    [AdminLicenseController::class, 'updateLicense'])->name('licenses.update-user');
+        Route::post('/licencias/configuracion',           [AdminLicenseController::class, 'updateSettings'])->name('licenses.settings');
 
         // Cargas masivas
         Route::get('/imports',                         [AdminImportController::class, 'index'])->name('imports');

@@ -24,8 +24,28 @@ class AdminProjectController extends Controller
         $project->load(['owner', 'members.user', 'modules']);
         $allModules = Module::orderBy('sort_order')->get();
         $activeModuleIds = $project->modules()->wherePivot('is_active', true)->pluck('modules.id');
+        $candidatosDueno = \App\Support\ProjectOwnership::candidatos($project);
 
-        return view('admin.projects.show', compact('project', 'allModules', 'activeModuleIds'));
+        return view('admin.projects.show', compact(
+            'project', 'allModules', 'activeModuleIds', 'candidatosDueno'
+        ));
+    }
+
+    /**
+     * Traspasa el negocio a su dueño real.
+     *
+     * Los 7 proyectos se crearon desde la cuenta de superadmin, así que quedaron
+     * a nombre de Eskala y ningún cliente era dueño del suyo. Esto es lo que
+     * permite cumplir el §3.4 del plan: separar la plataforma de los negocios.
+     */
+    public function transferOwnership(Request $request, Project $project)
+    {
+        $data = $request->validate(['owner_id' => 'required|integer|exists:users,id']);
+
+        $nuevo = \App\Models\User::findOrFail($data['owner_id']);
+        \App\Support\ProjectOwnership::transferir($project, $nuevo);
+
+        return back()->with('success', "«{$project->name}» ahora pertenece a {$nuevo->name}.");
     }
 
     public function toggle(Project $project)

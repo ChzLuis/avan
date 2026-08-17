@@ -236,7 +236,13 @@ final class StorefrontContextBuilder
     {
         $allCategories = $project->categories()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
         $categoryMap = $allCategories->keyBy('id');
-        $products = $project->products()->where('is_available', true)->with('mainImage')->orderBy('sort_order')->orderBy('id')->get();
+        // Misma regla que CatalogQueryService: un producto sin precio no se puede
+        // comprar y queda fuera del catalogo. Aqui no se filtraba, asi que los
+        // contadores del filtro lateral, "Novedades" y "Destacados" contaban
+        // productos que la rejilla nunca mostraba: la tienda decia "26 productos"
+        // junto a un filtro que decia "57".
+        $products = $project->products()->where('is_available', true)->where('price', '>', 0)
+            ->with('mainImage')->orderBy('sort_order')->orderBy('id')->get();
         $services = $project->services()->where('is_available', true)->orderBy('sort_order')->orderBy('id')->get();
 
         foreach ($products as $product) $product->setRelation('category', $categoryMap->get($product->category_id));
@@ -267,7 +273,14 @@ final class StorefrontContextBuilder
             ->orderByDesc('rating')->take(3)->get();
         $newArrivals = $products->sortByDesc('created_at')->take(8)->values();
         $onSale = $products->filter(fn ($product) => $product->compare_price !== null && (float) $product->compare_price > (float) $product->price)->take(8)->values();
-        $featured = $products->shuffle()->take(8)->values();
+        // Destacados al azar, pero con foto primero: en un catálogo importado
+        // donde casi nada tiene imagen (MegaHogar: 13 de 1106), el azar puro
+        // llenaba "Lo más vendido" de tarjetas vacías mientras la tienda sí
+        // enseñaba fotos. Mismo criterio que el orden recomendado del catálogo.
+        // sortByDesc es estable: dentro de cada grupo se conserva el azar.
+        $featured = $products->shuffle()
+            ->sortByDesc(fn ($product) => $product->mainImage ? 1 : 0)
+            ->take(8)->values();
         if ($featured->isEmpty()) $featured = $categories->flatMap->products->take(8)->values();
 
         return [$categories, $products, $catalog + compact('newArrivals', 'onSale', 'featured', 'productRatings', 'testimonials')];

@@ -19,6 +19,8 @@ class User extends Authenticatable
         'email',
         'password',
         'is_superadmin',
+        // 'nombrada' reserva un asiento fijo; 'concurrente' consume del pool.
+        'license_type',
     ];
 
     protected $hidden = [

@@ -10,8 +10,7 @@
     $pid  = $project->id;
 @endphp
 
-<div class="flex flex-col h-full w-full overflow-hidden">
-
+<div class="cli-wrap flex flex-col h-full w-full overflow-hidden">
 {{-- TOP BAR --}}
 <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white flex-shrink-0">
     <div>
@@ -21,9 +20,9 @@
     <div class="flex items-center gap-2">
         @isset($leadStats)
         <div class="hidden md:flex items-center gap-1.5 mr-2 text-xs">
-            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#fef2f2;color:#b91c1c" title="Leads calientes">🔥 {{ $leadStats['caliente'] }}</span>
-            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#fffbeb;color:#b45309" title="Leads tibios">🟡 {{ $leadStats['tibio'] }}</span>
-            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#eff6ff;color:#1d4ed8" title="Leads fríos">🔵 {{ $leadStats['frio'] }}</span>
+            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#fef2f2;color:#b91c1c" title="Leads calientes">Calientes: {{ $leadStats['caliente'] }}</span>
+            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#fffbeb;color:#b45309" title="Leads tibios">Tibios: {{ $leadStats['tibio'] }}</span>
+            <span class="px-2 py-1 rounded-lg font-semibold" style="background:#eff6ff;color:#1d4ed8" title="Leads fríos">Fríos: {{ $leadStats['frio'] }}</span>
         </div>
         @endisset
         @if(Route::has('clients.pipeline'))
@@ -183,15 +182,15 @@
     <div class="relative group">
         <button @click="filterStatus = filterStatus==='' ? 'with_orders' : ''"
                 :class="filterStatus !== '' ? 'bg-sky-100 text-sky-700' : 'text-gray-400 hover:text-gray-600'"
-                class="w-9 h-9 flex items-center justify-center rounded-lg transition">
+                class="cli-icon-btn flex items-center justify-center rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
         </button>
         <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
-            <template x-if="filterStatus===''">Todos los clientes</template>
-            <template x-if="filterStatus==='with_orders'">Con pedidos</template>
+            <template x-if="filterStatus===''"><span>Todos los clientes</span></template>
+            <template x-if="filterStatus==='with_orders'"><span>Con pedidos</span></template>
         </span>
     </div>
 
@@ -201,8 +200,8 @@
     {{-- Reset filtros --}}
     <div class="relative group">
         <button @click="filterStatus=''; search='';"
-                :class="(filterStatus!=='' || search!=='') ? 'bg-amber-100 text-amber-600' : 'text-gray-300'"
-                class="w-9 h-9 flex items-center justify-center rounded-lg transition">
+                :class="(filterStatus!=='' || search!=='') ? 'bg-amber-100 text-amber-600' : 'text-gray-500'"
+                class="cli-icon-btn flex items-center justify-center rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -289,13 +288,13 @@
 
     {{-- Estado vacío --}}
     <template x-if="!selected && !creating">
-        <div class="flex-1 flex flex-col items-center justify-center text-center p-10 text-gray-300">
+        <div class="flex-1 flex flex-col items-center justify-center text-center p-10 text-gray-500">
             <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="0.8"
                       d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             <p class="text-lg font-semibold text-gray-400">Selecciona un cliente</p>
-            <p class="text-sm text-gray-300 mt-1">o crea uno nuevo</p>
+            <p class="text-sm text-gray-500 mt-1">o crea uno nuevo</p>
         </div>
     </template>
 
@@ -429,7 +428,7 @@
                                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <p class="text-sm font-medium text-gray-400">Próximamente: historial completo del cliente</p>
-                        <p class="text-xs text-gray-300 mt-1">Pedidos, citas, cotizaciones y actividad</p>
+                        <p class="text-xs text-gray-500 mt-1">Pedidos, citas, cotizaciones y actividad</p>
                     </div>
 
                 </div>
@@ -483,3 +482,5 @@
 </div>
 
 </x-portal-layout>
+
+

@@ -28,7 +28,8 @@
 <style>
     /* ═══ Identidad visible EN REPOSO de cada modelo ═══ */
     /* Mega Menú Pro: botón de categorías protagonista + columnas configuradas */
-    body.hp-mega-menu .mega-btn{background:var(--accent,var(--primary));color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:800}
+    {{-- Tinta por luminancia: sobre acento claro (dorado) el blanco fijo era ilegible. --}}
+    body.hp-mega-menu .mega-btn{background:var(--accent,var(--primary));color:var(--accent-ink,#fff);border:0;padding:10px 18px;border-radius:8px;font-weight:800}
     body.hp-mega-menu .mega-sub-grid{grid-template-columns:repeat({{ min(3, max(1, $hpMegaCols - 2)) }},minmax(0,1fr))}
     body.hp-mega-menu .mega-sub-grid .mega-sub-link:nth-child(n+{{ max(3, (int) ($hp('mega_max_subs') ?: 6)) + 1 }}){display:none}
     body.hp-mega-menu .mega-grid{grid-template-columns:250px minmax(0,1fr) {{ '280px' }}}

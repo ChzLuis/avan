@@ -27,7 +27,9 @@
                     @forelse($porEtapa[$key] as $c)
                         @php
                             $temp = $c->lead_temp ?? 'nuevo';
-                            $tc = ['caliente'=>['#fef2f2','#b91c1c','🔥'],'tibio'=>['#fffbeb','#b45309','🟡'],'frio'=>['#eff6ff','#1d4ed8','🔵']][$temp] ?? ['#f8fafc','#64748b','⚪'];
+                            // Etiqueta corta en vez de emoji (DoD): el color de la pastilla ya
+                            // semaforiza y la palabra es legible para lectores de pantalla.
+                            $tc = ['caliente'=>['#fef2f2','#b91c1c','Caliente'],'tibio'=>['#fffbeb','#b45309','Tibio'],'frio'=>['#eff6ff','#1d4ed8','Frío']][$temp] ?? ['#f8fafc','#64748b','Nuevo'];
                         @endphp
                         <div class="bg-white rounded-lg border border-gray-200 p-2.5 cursor-grab hover:shadow-sm transition-shadow"
                              draggable="true"

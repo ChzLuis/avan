@@ -198,8 +198,17 @@ class CatalogSyncManager
                 $product = new Product(['project_id' => $integration->project_id, 'catalog_integration_id' => $integration->id]);
             }
 
+            // El stock que manda el ERP no se guarda con el resto de campos: se
+            // aplica después por el Kardex, para que el historial explique por qué
+            // cambió la existencia. Sin esto el proveedor movía el stock en silencio.
+            $stockDelErp = null;
             if ($type === ItemEntityType::Product && $normalized instanceof NormalizedProduct) {
+                $stockPrevio = $product->stock;
                 $this->ownership->apply($product, $normalized);
+                if (!$isNew && $product->stock !== $stockPrevio) {
+                    $stockDelErp = $product->stock;
+                    $product->stock = $stockPrevio;   // se restaura; lo mueve el Kardex
+                }
             } else {
                 // Servicio: mapeo mínimo directo (no hay política de ownership de stock/unidad para servicios).
                 $product->name = $normalized->name;
@@ -210,6 +219,13 @@ class CatalogSyncManager
             }
             if (!$product->sort_order) $product->sort_order = 0;
             $product->save();
+
+            if ($stockDelErp !== null) {
+                \App\Support\InventoryLedger::ajustarA(
+                    $product, (int) $stockDelErp, 'sincronizacion',
+                    'Stock informado por ' . $integration->provider
+                );
+            }
 
             if (!$item) {
                 $item = $this->matcher->createPending($integration, $type, $normalized->externalId, $normalized->sku ?? null);

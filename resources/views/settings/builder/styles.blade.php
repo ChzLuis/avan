@@ -67,6 +67,21 @@
 .bxb-field input[type=text],.bxb-field input[type=email]{min-height:44px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;font-weight:400;color:var(--dz-ink)}
 .bxb-field input:focus{outline:0;border-color:var(--dz-accent);box-shadow:0 0 0 3px var(--dz-accent-soft)}
 .bxb-color-row{display:flex;align-items:center;gap:10px}
+/* ═══ Campo de color de una sola pieza ═══
+   Sustituye la fila de tres elementos (selector + <code> + botón "Auto"). La
+   muestra abre el selector nativo; el campo acepta que se escriba o se pegue el
+   código, que es lo que hace falta cuando lo traes de una guía de marca. */
+.bxb-color-one{display:inline-flex;align-items:center;gap:0;
+    border:1px solid #d7dbe3;border-radius:9px;background:#fff;overflow:hidden;max-width:180px}
+.bxb-color-one:focus-within{border-color:var(--sb-purple,#5B21B6);box-shadow:0 0 0 3px rgba(91,33,182,.12)}
+.bxb-color-one .bxb-color-dot{flex:0 0 34px;width:34px;height:36px;padding:0;margin:0;
+    border:0;border-right:1px solid #e5e8ee;background:none;cursor:pointer;appearance:none}
+.bxb-color-one .bxb-color-dot::-webkit-color-swatch-wrapper{padding:4px}
+.bxb-color-one .bxb-color-dot::-webkit-color-swatch{border:0;border-radius:5px}
+.bxb-color-one .bxb-color-hex{flex:1 1 auto;min-width:0;width:100%;height:36px;padding:0 10px;
+    border:0;outline:0;background:none;font:600 12.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    letter-spacing:.03em;text-transform:lowercase;color:#0f172a}
+.bxb-color-one .bxb-color-hex::placeholder{color:#9aa3b2;font-weight:500;text-transform:none;letter-spacing:0}
 .bxb-color-row input[type=color]{width:52px;height:44px;padding:3px;border:1px solid #cbd5e1;border-radius:9px;cursor:pointer;background:#fff}
 .bxb-color-row code{font-size:12px;color:var(--dz-soft)}
 .bxb-note{color:var(--dz-soft);font-size:12.5px;line-height:1.6}
