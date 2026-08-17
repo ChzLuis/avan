@@ -47,3 +47,7 @@ public/.wwebjs_auth/
 .claude/
 whatsbot/node_modules/
 .gstack/
+
+# Copias locales: duplican archivos reales del repo
+_local_backup_*/
+NUL

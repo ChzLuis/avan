@@ -1,0 +1,8 @@
+app/Http/Controllers/Api/PagoController.php
+app/Http/Controllers/OrderController.php
+app/Http/Controllers/PortalController.php
+app/Http/Controllers/PosController.php
+resources/views/orders/_drawer.blade.php
+resources/views/orders/index.blade.php
+tests/Feature/PagoBotContratoTest.php
+tests/Feature/PagoPanelLedgerTest.php

@@ -1,0 +1,19 @@
+{
+  "tipo": "REPORTE DE PREFLIGHT (solo lectura). NO es un manifiesto aplicable.",
+  "generado": "2026-08-15 19:06:54 (NOW() de ARIN)",
+  "bd": "MySQL 8.4.10-10 (SELECT VERSION())",
+  "resumen": {
+    "candidatos_limpios": 5,
+    "ambiguo_A_pedido_multi_quote": 0,
+    "ambiguo_B_quote_multi_pedido": 0,
+    "ambiguo_C_muertas_o_cruzadas": 0
+  },
+  "parejas": [
+    {"order_id": 26, "quote_id": 25, "order_project_id": 18, "quote_project_id": 18, "order_event_ids": [2]},
+    {"order_id": 29, "quote_id": 27, "order_project_id": 18, "quote_project_id": 18, "order_event_ids": [4]},
+    {"order_id": 32, "quote_id": 28, "order_project_id": 18, "quote_project_id": 18, "order_event_ids": [7, 9]},
+    {"order_id": 33, "quote_id": 29, "order_project_id": 18, "quote_project_id": 18, "order_event_ids": [11]},
+    {"order_id": 34, "quote_id": 30, "order_project_id": 18, "quote_project_id": 18, "order_event_ids": [15]}
+  ],
+  "sql_reproducibles": "ver modulo1-f1b-expediente.md anexo A (candidatos, ambiguos A/B/C, enriquecida)"
+}

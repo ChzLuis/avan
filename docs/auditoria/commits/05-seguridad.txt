@@ -1,0 +1,17 @@
+app/Http/Controllers/ClientController.php
+app/Http/Controllers/PublicController.php
+app/Http/Controllers/SettingsController.php
+app/Http/Controllers/StoreExperienceController.php
+app/Support/StorefrontTheme.php
+resources/views/comercial/dashboard.blade.php
+resources/views/components/public-store-runtime.blade.php
+resources/views/settings/design.blade.php
+routes/web.php
+tests/Feature/AdminGlobalConfirmModalTest.php
+tests/Feature/AdminResponsiveLayoutTest.php
+tests/Feature/BixoSalesAuthorizationTest.php
+tests/Feature/CheckoutPublicoPrecioTest.php
+tests/Feature/ClientRoutesAuthorizationTest.php
+tests/Feature/NotInNullTrapTest.php
+tests/Feature/StorefrontHomepageBuilderTest.php
+tests/Feature/StorefrontStructureV2Test.php

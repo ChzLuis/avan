@@ -1,0 +1,9 @@
+app/Http/Controllers/CxcController.php
+app/Models/Payment.php
+app/Models/ReceivableTerm.php
+app/Support/Ledger.php
+database/migrations/2026_08_16_180000_create_payments_table.php
+database/migrations/2026_08_16_180001_create_receivable_terms_table.php
+docs/auditoria/modulo-f2b-cxc-entidad-diseno.md
+tests/Feature/CxcTest.php
+tests/Feature/LedgerTest.php

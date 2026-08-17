@@ -1,0 +1,8 @@
+docs/ANALISIS_REUTILIZACION_SORTEOS.md
+docs/auditoria/DESIGN.md
+docs/auditoria/bixo-mini-erp-roadmap.md
+docs/auditoria/bixo-ux-roadmap.md
+docs/auditoria/f2b-backfill.php
+docs/auditoria/handoff-claude-codex.md
+docs/auditoria/modulo-f3-pagos-diseno.md
+docs/auditoria/modulo1-f1c-expediente.md

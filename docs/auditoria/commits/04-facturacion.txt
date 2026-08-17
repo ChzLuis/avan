@@ -1,0 +1,5 @@
+app/Http/Controllers/InvoiceController.php
+app/Http/Controllers/QuoteController.php
+app/Models/InvoiceItem.php
+database/migrations/2026_08_16_190000_add_discount_to_invoice_items.php
+tests/Feature/FacturacionDescuentoTest.php
