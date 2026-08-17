@@ -21,7 +21,7 @@ $seoRobots     = ($settings['seo_robots'] ?? 'index, follow');
 $faviconUrl    = !empty($settings['favicon_url']) ? asset('storage/'.$settings['favicon_url']) : '';
 $announcementText = $settings['announcement_text'] ?? '';
 $footerTagline    = $settings['footer_tagline']  ?? '';
-$footerCopyright  = $settings['footer_copyright'] ?? ('© ' . date('Y') . ' ' . $project->name);
+$footerCopyright  = trim($settings['footer_copyright'] ?? '') !== '' ? $settings['footer_copyright'] : ('© ' . date('Y') . ' ' . $project->name);
 $heroTitle     = $settings['hero_title']    ?? $project->name;
 $heroSub       = $settings['hero_subtitle'] ?? '';
 // Tipografías del panel de Diseño (si no se configuran, usa el par por defecto de la plantilla)
@@ -29,7 +29,7 @@ $ecFontTitle   = trim($settings['font_title'] ?? $settings['font'] ?? '') ?: 'Sp
 $ecFontBody    = trim($settings['font_body']  ?? $settings['font'] ?? '') ?: 'DM Sans';
 $ecGoogleFonts = collect([$ecFontTitle, $ecFontBody])->unique()->filter()
                    ->map(fn($f)=>str_replace(' ','+',$f).':wght@300;400;500;600;700')->implode('&family=');
-$isQuoteOnly   = ($settings['store_mode'] ?? 'direct') === 'quote_only';
+$isQuoteOnly   = in_array($settings['store_mode'] ?? 'direct', ['quote_only', 'quote'], true); // acepta ambas claves históricas
 $culqiEnabled  = ($settings['culqi_enabled'] ?? '0') === '1';
 $culqiPublicKey= $settings['culqi_public_key'] ?? '';
 $mpEnabled     = ($settings['mp_enabled'] ?? '0') === '1';
@@ -59,6 +59,12 @@ $quoteWaRaw    = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? '');
 if (!$quoteWaRaw) $quoteWaRaw = preg_replace('/\D/', '', $project->whatsapp ?? '');
 $quoteWaCountry = $settings['quote_whatsapp_country'] ?? '51';
 $quoteWa = $quoteWaRaw ? (str_starts_with($quoteWaRaw, $quoteWaCountry) ? $quoteWaRaw : $quoteWaCountry.$quoteWaRaw) : '';
+// Botones de producto: solo compra, solo consulta (WhatsApp) o ambos; adaptado a cotización.
+$productButtonMode = in_array($settings['product_button_mode'] ?? '', ['cart', 'inquiry', 'both'], true) ? $settings['product_button_mode'] : 'cart';
+$inquiryText = trim($settings['btn_inquiry_text'] ?? '') !== '' ? trim($settings['btn_inquiry_text']) : 'Consultar';
+$showCartButton = $productButtonMode !== 'inquiry';
+$showInquiryButton = $productButtonMode !== 'cart' && $quoteWa;
+$inquiryMsgBase = $isQuoteOnly ? 'Hola, quiero cotizar este producto: ' : 'Hola, quiero consultar por este producto: ';
 $ckFields = json_decode($settings['checkout_fields'] ?? 'null', true) ?? [
     'fixed'  => [
         'lname'   => ['label'=>'Apellido',  'enabled'=>true],
@@ -357,7 +363,7 @@ input,select,textarea{font:inherit;color:inherit;}
 @media(prefers-reduced-motion:reduce){.card{transition:none}}
 .card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(14,14,16,.10),0 4px 8px rgba(14,14,16,.06);border-color:transparent;}
 .card-media{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--bg-inset);}
-.card-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;transition:transform 400ms var(--ease);padding:6px;background:var(--bg-inset);}
+.card-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform 400ms var(--ease);}
 .card:hover .card-media img{transform:scale(1.07);}
 .card-media-placeholder{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(145deg,var(--bg-inset) 0%,var(--bg-elev) 100%);color:var(--text-muted);font-size:44px;}
 .card-badges{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;z-index:2;}
@@ -575,6 +581,15 @@ details.fg[open] .fg-arrow{transform:rotate(180deg);}
 .co-order-thumb img{width:100%;height:100%;object-fit:cover;}
 
 /* TOAST */
+/* Popup "agregado al carrito": seguir comprando o ver carrito */
+.added-pop-backdrop{position:fixed;inset:0;z-index:9997;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45);}
+.added-pop{width:100%;max-width:340px;background:var(--bg-surface);border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.22);padding:26px 22px 20px;text-align:center;animation:qv-in .18s ease;}
+.added-pop-check{width:44px;height:44px;margin:0 auto 12px;display:grid;place-items:center;background:var(--primary);color:var(--primary-ink);border-radius:50%;font-size:20px;font-weight:800;}
+.added-pop-img{width:84px;height:84px;object-fit:cover;border-radius:10px;margin:0 auto 10px;background:var(--bg-inset);display:block;}
+.added-pop-name{display:block;font-size:14.5px;font-weight:700;margin-bottom:2px;}
+.added-pop-sub{display:block;color:var(--text-secondary);font-size:12.5px;margin-bottom:16px;}
+.added-pop-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.added-pop-actions .btn{height:42px;font-size:13px;}
 .toast-host{position:fixed;bottom:28px;left:50%;transform:translate(-50%,0);z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
 .toast{background:var(--text-primary);color:var(--bg-surface);padding:11px 18px;border-radius:var(--radius-full);display:inline-flex;align-items:center;gap:10px;font-size:13.5px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);pointer-events:auto;animation:toast-in 280ms var(--ease);max-width:90vw;}
 @keyframes toast-in{from{opacity:0;transform:translateY(16px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
@@ -867,10 +882,10 @@ h2{font-size:clamp(26px,3vw,36px);font-weight:800;letter-spacing:-.02em}
 .hero,.hero-section{min-height:clamp(440px,52vh,580px)}
 .card{border-radius:var(--rd-radius)!important;border:1px solid #ececec!important;box-shadow:var(--rd-shadow)!important;transition:transform .24s cubic-bezier(.2,.7,.3,1),box-shadow .24s ease}
 .card:hover{transform:translateY(-6px);box-shadow:var(--rd-shadow-hover)!important}
-.card-media{aspect-ratio:4/5;background:#f4f4f5;overflow:hidden}
+.card-media{aspect-ratio:1/1;background:#fff;overflow:hidden}
 .card-media img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
 .card:hover .card-media img{transform:scale(1.05)}
-.card-name{font-weight:600;color:#1f2937;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em}
+.card-name{font-weight:600;color:#1f2937;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;padding-left:2px;margin-left:-2px}
 .price-now{font-size:18px;font-weight:800;color:#111827}
 .price-was{color:#9ca3af;text-decoration:line-through;font-size:12px}
 .badge-sale,.badge{border-radius:999px;font-weight:700;letter-spacing:.02em}
@@ -881,6 +896,10 @@ h2{font-size:clamp(26px,3vw,36px);font-weight:800;letter-spacing:-.02em}
 .category-tile:hover,.cat-tile:hover{transform:translateY(-4px);box-shadow:var(--rd-shadow-hover)}
 footer{border-top:1px solid rgba(0,0,0,.06)}
 .official-whatsapp-float{box-shadow:0 10px 28px -6px rgba(37,211,102,.5)!important;border-radius:50%!important}
+/* Botón "Consultar" (WhatsApp) configurable por diseño */
+.btn-inquiry{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff!important;color:#128C7E!important;border:1.5px solid #25D366!important;text-decoration:none;transition:background .15s ease}
+.btn-inquiry:hover{background:#f0fdf4!important}
+.card-add .btn-inquiry{width:100%;margin-top:6px}
 a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
 @media(max-width:640px){section{padding-block:clamp(36px,8vw,52px)}.hero,.hero-section{min-height:clamp(360px,58vh,480px)}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -1209,6 +1228,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
               @if($product->stock == 0)
               <button class="btn btn-sm btn-block" disabled style="background:var(--bg-inset);color:var(--text-muted);cursor:not-allowed">Agotado</button>
               @else
+              @if($showCartButton)
               <button class="btn btn-primary btn-sm btn-block" @click.stop="{{ $isQuoteOnly ? 'openQuotePopup('.$product->id.')' : 'addToCart('.$product->id.')' }}">
                 @if(!$isQuoteOnly)
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -1217,6 +1237,10 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
                 {{ $settings['btn_quote_text'] ?? 'Cotizar' }}
                 @endif
               </button>
+              @endif
+              @if($showInquiryButton)
+              <a class="btn btn-sm btn-block btn-inquiry" href="https://wa.me/{{ $quoteWa }}?text={{ urlencode($inquiryMsgBase.$product->name) }}" target="_blank" rel="noopener" @click.stop>{{ $inquiryText }}</a>
+              @endif
               @endif
             </div>
           </div>
@@ -1236,8 +1260,8 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
     </div>
     <div class="testimonials-grid">
       @php
-        $reviews = \App\Models\Review::where('project_id', $project->id)
-          ->where('is_approved', true)->orderByDesc('rating')->take(3)->get();
+        // Las reseñas llegan del controlador: una vista no consulta la base.
+        $reviews = $reviews ?? collect();
       @endphp
       @if($reviews->count() > 0)
         @foreach($reviews as $rv)
@@ -1326,9 +1350,14 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
           </div>
           @if($product->stock != 0)
           <div class="card-add">
+            @if($showCartButton)
             <button class="btn" @click.stop="{{ $isQuoteOnly ? 'openQuotePopup('.$product->id.')' : 'addToCart('.$product->id.')' }}">
               @if(!$isQuoteOnly)🛒 {{ $settings['btn_cart_text'] ?? 'Agregar al carrito' }}@else{{ $settings['btn_quote_text'] ?? 'Cotizar' }}@endif
             </button>
+            @endif
+            @if($showInquiryButton)
+            <a class="btn btn-inquiry" href="https://wa.me/{{ $quoteWa }}?text={{ urlencode($inquiryMsgBase.$product->name) }}" target="_blank" rel="noopener" @click.stop>{{ $inquiryText }}</a>
+            @endif
           </div>
           @endif
         </div>
@@ -1579,9 +1608,14 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
               </div>
             </div>
             <div class="card-add" x-show="p.stock!==0">
+              @if($showCartButton)
               <button class="btn" @click.stop="{{ $isQuoteOnly ? 'openQuotePopup(p.id)' : 'addToCart(p.id)' }}">
                 @if(!$isQuoteOnly)🛒 {{ $settings['btn_cart_text'] ?? 'Agregar al carrito' }}@else{{ $settings['btn_quote_text'] ?? 'Cotizar' }}@endif
               </button>
+              @endif
+              @if($showInquiryButton)
+              <a class="btn btn-inquiry" :href="'https://wa.me/{{ $quoteWa }}?text='+encodeURIComponent({{ Js::from($inquiryMsgBase) }}+p.name)" target="_blank" rel="noopener" @click.stop>{{ $inquiryText }}</a>
+              @endif
             </div>
           </article>
         </template>
@@ -1948,6 +1982,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
 
           {{-- Botones desktop --}}
           <div class="pdp-actions-desktop" x-show="pdp.stock!==0">
+            @if($showCartButton)
             <button class="btn btn-primary btn-lg btn-block" style="margin-bottom:10px" @click="addToCartQty(pdp.id, pdpQty)">
               @if(!$isQuoteOnly)
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -1957,9 +1992,10 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
               @endif
             </button>
             @if(!$isQuoteOnly)
-            <button class="btn btn-ghost btn-lg btn-block" style="margin-bottom:10px" @click="addToCartQty(pdp.id, pdpQty); checkoutOpen=true">
+            <button class="btn btn-ghost btn-lg btn-block" style="margin-bottom:10px" @click="addToCartQty(pdp.id, pdpQty, true); checkoutOpen=true">
               Comprar ahora →
             </button>
+            @endif
             @endif
             @if($quoteWa)
             <a class="btn btn-outline btn-lg btn-block" :href="'https://wa.me/{{ $quoteWa }}?text='+encodeURIComponent('Hola, quiero '+pdpQty+'x '+pdp.name+' ('+fmt(pdp.price*pdpQty)+')')" target="_blank" rel="noopener">
@@ -2003,7 +2039,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
               <span x-show="rp.cp && rp.cp>rp.price" style="font-size:12px;color:var(--text-muted);text-decoration:line-through" x-text="rp.cp ? fmt(rp.cp) : ''"></span>
             </div>
             @if(!$isQuoteOnly)
-            <button class="btn btn-primary btn-sm btn-block" style="margin-top:8px" @click.stop="addToCart(rp.id);showToast('✓ '+rp.name+' agregado')">+ Agregar</button>
+            <button class="btn btn-primary btn-sm btn-block" style="margin-top:8px" @click.stop="addToCart(rp.id)">+ Agregar</button>
             @endif
           </div>
         </article>
@@ -2020,7 +2056,8 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
         WhatsApp
       </a>
       @endif
-      <button class="btn btn-primary" style="flex:2;gap:6px" @click="addToCart(pdp.id);showToast('✓ '+pdp.name+' agregado')">
+      @if($showCartButton)
+      <button class="btn btn-primary" style="flex:2;gap:6px" @click="addToCart(pdp.id)">
         @if(!$isQuoteOnly)
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         {{ $settings['btn_cart_text'] ?? 'Agregar al carrito' }}
@@ -2028,6 +2065,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
         {{ $settings['btn_quote_text'] ?? 'Cotizar' }}
         @endif
       </button>
+      @endif
     </div>
   </template>
 </main>
@@ -2051,6 +2089,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
     </div>
     <div style="padding:0 18px 18px;display:flex;flex-direction:column;gap:8px">
       <div id="qv-stock-out" style="display:none;padding:8px 12px;background:color-mix(in srgb,var(--danger) 8%,transparent);border:1px solid color-mix(in srgb,var(--danger) 20%,transparent);border-radius:8px;color:var(--danger);font-size:13px;font-weight:600;text-align:center">⚠️ Producto agotado temporalmente</div>
+      @if($showCartButton)
       <button id="qv-btn-add" onclick="{{ $isQuoteOnly ? 'qvCotizar()' : 'qvAddToCart()' }}"
               style="width:100%;padding:13px;background:var(--primary);color:var(--primary-ink);border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
         @if(!$isQuoteOnly)
@@ -2060,6 +2099,13 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
         {{ $settings['btn_quote_text'] ?? 'Cotizar' }}
         @endif
       </button>
+      @endif
+      @if($showInquiryButton)
+      <button type="button" onclick="qvConsultar()" class="btn-inquiry"
+              style="width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        {{ $inquiryText }}
+      </button>
+      @endif
       <button id="qv-btn-view" style="width:100%;padding:12px;background:transparent;border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:var(--text-primary)">Ver producto completo</button>
     </div>
   </div>
@@ -2322,6 +2368,11 @@ function qvCotizar() {
     closeQuickView();
     el._x_dataStack[0].openQuotePopup(_qvProduct.id);
   }
+}
+
+function qvConsultar() {
+  if (!_qvProduct) return;
+  window.open('https://wa.me/{{ $quoteWa }}?text=' + encodeURIComponent({{ Js::from($inquiryMsgBase) }} + _qvProduct.name), '_blank', 'noopener');
 }
 
 // Escuchar evento para abrir producto desde el botón "Ver producto completo"
@@ -2966,7 +3017,7 @@ document.addEventListener('qv-open-product', function(e) {
 
     {{-- Barra de copyright --}}
     <div class="footer-base">
-      <span>{{ $footerCopyright }}</span>
+      <span>{{ $footerCopyright }} · Desarrollado por <a href="https://eskalagroup.com/" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Eskala</a></span>
       <span style="display:flex;align-items:center;gap:5px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
         Sitio seguro — SSL
@@ -3140,6 +3191,20 @@ document.addEventListener('qv-open-product', function(e) {
     </div>
   </div>
 </aside>
+
+{{-- POPUP: producto agregado (seguir comprando / ver carrito) --}}
+<div class="added-pop-backdrop" x-show="addedPopup" x-cloak @click.self="addedPopup=null" @keydown.escape.window="addedPopup=null">
+  <div class="added-pop" role="dialog" aria-modal="true" aria-label="Producto agregado al carrito">
+    <div class="added-pop-check" aria-hidden="true">✓</div>
+    <template x-if="addedPopup && addedPopup.img"><img class="added-pop-img" :src="addedPopup.img" :alt="addedPopup.name"></template>
+    <strong class="added-pop-name" x-text="addedPopup ? ((addedPopup.qty>1 ? addedPopup.qty+' × ' : '')+addedPopup.name) : ''"></strong>
+    <span class="added-pop-sub">se agregó a tu carrito</span>
+    <div class="added-pop-actions">
+      <button type="button" class="btn btn-ghost" @click="addedPopup=null">Seguir comprando</button>
+      <button type="button" class="btn btn-primary" @click="addedPopup=null; window.innerWidth<=768 ? (cartDrawerOpen=true) : (page='cart')">Ver carrito</button>
+    </div>
+  </div>
+</div>
 
 {{-- TOAST --}}
 <div class="toast-host">
@@ -4415,7 +4480,7 @@ function ecStore() {
     },
     confirmQuotePopup() {
       if (!this.quotePopupProduct) return;
-      this.addToCartQty(this.quotePopupProduct.id, this.quotePopupQty);
+      this.addToCartQty(this.quotePopupProduct.id, this.quotePopupQty, true);
       this.quotePopup = false;
     },
     // Checkout
@@ -4438,6 +4503,7 @@ function ecStore() {
     prevPage: 'catalog',
     // UI
     toasts: [],
+    addedPopup: null,
     showBackTop: false,
 
     get allCats() {
@@ -4647,10 +4713,10 @@ function ecStore() {
       else { this.cart.push({ id: p.id, name: p.name, price: p.price, img: p.img, cat: p.cat, qty: 1 }); }
       this.saveCart();
       this.flyToCart(productId);
-      this.showToast('✓ Agregado al carrito');
+      this.addedPopup = { name: p.name, img: p.img, qty: 1 };
     },
 
-    addToCartQty(productId, qty) {
+    addToCartQty(productId, qty, silent) {
       const q = parseInt(qty) || 1;
       const p = this.findLoadedProduct(productId);
       if (!p) return;
@@ -4659,7 +4725,8 @@ function ecStore() {
       else { this.cart.push({ id: p.id, name: p.name, price: p.price, img: p.img, cat: p.cat, qty: q }); }
       this.saveCart();
       this.flyToCart(productId);
-      this.showToast('✓ ' + q + 'x ' + p.name + ' agregado');
+      if (silent) { this.showToast('✓ ' + q + 'x ' + p.name + ' agregado'); }
+      else { this.addedPopup = { name: p.name, img: p.img, qty: q }; }
     },
 
     removeFromCart(id) { this.cart = this.cart.filter(i => i.id != id); this.saveCart(); },

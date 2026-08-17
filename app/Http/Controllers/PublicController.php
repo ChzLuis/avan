@@ -525,7 +525,47 @@ class PublicController extends Controller
         $storeMenu = \App\Support\StorefrontNavigation::menu($project)
             ?: \App\Support\StorefrontNavigation::ensure($project)->load(['rootItems.children']);
 
-        $data = compact('project','categories','settings','newArrivals','onSale','featured','productRatings','popup','sections','aboutPage','storeMenu','storeView','hasSectionRegistry');
+        // Testimonios: la consultaba `ecommerce.blade.php` dentro de un @php.
+        // Una vista no deberia leer de la base; se calcula aqui con la MISMA
+        // consulta para que lo renderizado no cambie.
+        $reviews = \App\Models\Review::where('project_id', $project->id)
+            ->where('is_approved', true)->orderByDesc('rating')->take(3)->get();
+
+        $data = compact('project','categories','settings','newArrivals','onSale','featured','productRatings','popup','sections','aboutPage','storeMenu','storeView','hasSectionRegistry','reviews');
+
+        // Contexto canonico (proposito de la rama `refactor/store-builder-
+        // canonical-context`). Se construye CON LOS MISMOS valores que ya usa
+        // esta vista, no recalculandolos: asi las plantillas pueden migrar a
+        // `$storefrontContext` uno a uno sin que cambie ni un pixel de lo que
+        // hoy se sirve.
+        //
+        // La unificacion COMPLETA —que `settings` salga de
+        // `StorefrontContextBuilder::resolveSettings()`, con los valores por
+        // defecto de la plantilla y los respaldos heredados— si altera lo
+        // renderizado en TODA tienda publica, asi que exige revision visual y
+        // queda fuera de este paso a proposito.
+        $data['storefrontContext'] = new \App\Storefront\StorefrontContext(
+            project: $project,
+            settings: $settings,
+            template: array_merge(
+                (array) (\App\Support\CatalogTemplates::get($settings['catalog_template'] ?? 'default') ?? []),
+                ['key' => (string) ($settings['catalog_template'] ?? 'default')]
+            ),
+            theme: \App\Support\StorefrontTheme::resolve($settings),
+            sectionCollection: $sections instanceof \Illuminate\Support\Collection ? $sections : collect($sections),
+            menuCollection: collect($storeMenu ? ['primary' => $storeMenu] : []),
+            pageCollection: collect($aboutPage ? ['nosotros' => $aboutPage] : []),
+            activePopup: $popup,
+            categoryCollection: $categories instanceof \Illuminate\Support\Collection ? $categories : collect($categories),
+            productCollection: collect($featured),
+            urls: ['public' => \App\Support\StorefrontNavigation::publicUrl($project)],
+            capabilityMap: [],
+            legacyFallbacks: [],
+            catalogData: ['profiles' => $this->menuProfiles($project)],
+            templateCollection: collect(),
+            storeView: $storeView,
+            preview: $preview,
+        );
         // Los perfiles de catálogo (Niño/Niña, etc.) viven en la navegación compartida:
         // deben verse también en el Inicio y demás vistas, no solo en la Tienda.
         $data['catalogProfiles'] = $this->menuProfiles($project);
