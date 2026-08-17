@@ -14,7 +14,8 @@ class AdminResponsiveLayoutTest extends TestCase
 
     private function adminContext(): array
     {
-        $owner = User::factory()->create();
+        // La pantalla clasica solo es alcanzable por superadmin con ?classic=1.
+        $owner = User::factory()->create(['is_superadmin' => 1]);
         $project = Project::create([
             'owner_id' => $owner->id,
             'name' => 'Tienda responsive',
@@ -37,7 +38,7 @@ class AdminResponsiveLayoutTest extends TestCase
 
         return $this->actingAs($owner)
             ->withSession(['active_project_id' => $project->id])
-            ->get(route('settings.design', ['s' => $section]));
+            ->get(route('settings.design', ['s' => $section, 'classic' => 1]));
     }
 
     public function test_admin_shell_exposes_one_accessible_mobile_drawer(): void

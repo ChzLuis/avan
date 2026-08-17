@@ -127,6 +127,10 @@ class SettingsController extends Controller
             'seo_title', 'seo_description', 'seo_keywords',
             // Envío
             'shipping_enabled', 'shipping_cost', 'shipping_free_from', 'require_address',
+            // Modalidades de venta. Apagadas, el catálogo esconde los campos que
+            // no aplican: una tienda que solo vende al detalle cargaba con precio
+            // mayorista, cantidad mínima y unidad en cada producto.
+            'feature_mayorista', 'feature_revendedores', 'feature_variantes',
         ];
         foreach ($settingsKeys as $key) {
             if ($request->has($key)) {
@@ -734,9 +738,29 @@ class SettingsController extends Controller
         $this->authorizeProject($project);
 
         $templateKey = $request->input('template');
-        $template    = CatalogTemplates::get($templateKey);
 
-        if (!$template) {
+        // El orden importa: `get()` exige `string` y una plantilla vacia llega
+        // como NULL (la convierte `ConvertEmptyStringsToNull`), asi que
+        // llamarla primero devolvia **500** en vez de un 422 limpio.
+        // `isSupported()` acepta null, de modo que filtra antes de tocar nada.
+        //
+        // Y estar en el catalogo NO basta: hay que estar SOPORTADA.
+        // `CatalogTemplates::isSupported()` ya existia para esto —las
+        // soportadas son ecommerce, direct y computienda— pero aqui no se
+        // usaba, asi que se podia aplicar cualquier clave del catalogo. Entre
+        // ellas `editorial`, `luxe` y `bistro`, que ni siquiera tienen Blade
+        // (3 de 18): al elegirlas la tienda caia a la plantilla por defecto
+        // respondiendo 200, y el negocio veia una portada distinta de la que
+        // escogio, para siempre y sin que nadie se enterara.
+        if (! CatalogTemplates::isSupported($templateKey)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Esa plantilla no está disponible. Elige una del catálogo activo.',
+            ], 422);
+        }
+
+        $template = CatalogTemplates::get($templateKey);
+        if (! $template) {
             return response()->json(['ok' => false, 'message' => 'Plantilla no encontrada.'], 422);
         }
 
@@ -777,7 +801,10 @@ class SettingsController extends Controller
             'template' => $templateKey,
             'preserved' => $preserved,
             'theme' => \App\Support\StorefrontTheme::resolve(['catalog_template' => $templateKey]),
-            'public_url' => route('public.catalog', $project->slug),
+            // `StorefrontNavigation::publicUrl()` ya resuelve el dominio
+            // propio y no se usaba aqui: un negocio con dominio propio
+            // recibia el enlace a arindg.com/slug en vez de al suyo.
+            'public_url' => StorefrontNavigation::publicUrl($project),
         ]);
     }
 

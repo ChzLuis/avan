@@ -22,7 +22,8 @@ class StorefrontStructureV2Test extends TestCase
 
     private function project(string $slug = 'tienda-v2'): array
     {
-        $owner = User::factory()->create();
+        // La pantalla clasica solo la alcanza un superadmin con ?classic=1.
+        $owner = User::factory()->create(['is_superadmin' => 1]);
         $project = Project::create(['owner_id'=>$owner->id,'name'=>'Tienda V2','slug'=>$slug,'is_active'=>true,'phone'=>'999111222']);
         $project->settings()->createMany([
             ['key'=>'storefront_structure_v2','value'=>'1'], ['key'=>'catalog_template','value'=>'servicios'],
@@ -60,7 +61,13 @@ class StorefrontStructureV2Test extends TestCase
 
         $this->get(route('public.shop',[$project->slug,'category'=>$root->id,'sale'=>1,'q'=>'Laptop','min_price'=>50,'max_price'=>120]))
             ->assertOk()->assertSee('Laptop Oferta')->assertDontSee('Mouse normal');
-        $this->get(route('public.shop',[$project->slug,'category'=>$child->id]))
+        // Con `category` como UNICO parametro, la tienda canonicaliza con un
+        // 301 hacia la URL legible (/tienda/c/laptops). Es deliberado —una sola
+        // direccion por categoria para el buscador— asi que se sigue el
+        // redirect en vez de exigir 200 en la forma antigua. Lo que el contrato
+        // protege sigue siendo lo mismo: que el filtro por categoria filtre.
+        $this->followingRedirects()
+            ->get(route('public.shop',[$project->slug,'category'=>$child->id]))
             ->assertOk()->assertSee('Laptop Oferta')->assertDontSee('Mouse normal');
     }
 
@@ -79,7 +86,14 @@ class StorefrontStructureV2Test extends TestCase
         ]);
         $response->assertRedirect();
         $item=$project->storeMenuItems()->where('label','Cocina online')->firstOrFail();
-        $this->assertStringContainsString('category='.$child->id, StorefrontNavigation::resolveUrl($project,$item));
+        // El menu genera ya la URL legible (/tienda/cocina) en vez de
+        // `?category=2`. Se afirma el DESTINO, no el formato: comparar contra
+        // `categoryUrl()` mantiene el contrato —que la entrada apunte a esa
+        // subcategoria— sin caducar la proxima vez que cambie la forma.
+        $this->assertSame(
+            StorefrontNavigation::categoryUrl($project, $child),
+            StorefrontNavigation::resolveUrl($project, $item)
+        );
         $this->assertFalse($other->storeMenuItems()->whereKey($item->id)->exists());
 
         $about=$menu->items()->where('destination_type','about')->firstOrFail();
@@ -112,7 +126,12 @@ class StorefrontStructureV2Test extends TestCase
             route('public.about',$project->slug), route('public.contact',$project->slug),
             route('public.blog',$project->slug), route('public.blog.show',[$project->slug,'nota-1']),
             route('public.page',[$project->slug,$custom->key]), route('public.product',[$project->slug,$product->id]),
-        ] as $url) $this->get($url)->assertOk()->assertSee('store-header',false)->assertSee('store-footer',false);
+        // Igual que las categorias, la ficha de producto canonicaliza con 301
+        // hacia su URL legible (/producto/1 -> /producto/producto-detalle-1).
+        // Se sigue el redirect: lo que este contrato protege es que TODAS estas
+        // paginas compartan cabecera y pie, no la forma de la URL.
+        ] as $url) $this->followingRedirects()->get($url)->assertOk()
+            ->assertSee('store-header',false)->assertSee('store-footer',false);
     }
 
     public function test_changing_template_changes_visual_theme_without_changing_global_content(): void
@@ -184,9 +203,25 @@ class StorefrontStructureV2Test extends TestCase
                 ->assertViewIs('public.templates.direct');
         }
 
-        $template = file_get_contents(resource_path('views/public/templates/direct.blade.php'));
-        $this->assertSame(1, substr_count($template, "\$settings['hero_align']"));
-        $this->assertStringContainsString("['left', 'center', 'right']", $template);
+        // Antes se contaba cuantas veces aparecia `$settings['hero_align']` en
+        // el fuente y se exigia 1. La lectura ES una sola —`in_array(...) ? ... :
+        // 'left'`— pero la expresion lo menciona dos veces, asi que la cuenta
+        // fallaba sobre codigo correcto. Se comprueba el COMPORTAMIENTO, que es
+        // lo que protege al visitante: un valor invalido no llega a la pagina.
+        $project->settings()->updateOrCreate(['key' => 'hero_align'], ['value' => 'diagonal']);
+        // Un valor invalido NO puede llegar a la pagina: ni al HTML del
+        // servidor ni al JSON del runtime, que lo asignaba a
+        // `hero.style.textAlign` sin filtrar.
+        $this->get(route('public.catalog', $project->slug))
+            ->assertOk()
+            ->assertDontSee('diagonal');
+
+        // Y una alineacion valida SI llega, para que el contrato no se cumpla
+        // simplemente por no pintar nada.
+        $project->settings()->updateOrCreate(['key' => 'hero_align'], ['value' => 'right']);
+        $this->get(route('public.catalog', $project->slug))
+            ->assertOk()
+            ->assertSee('"heroAlign":"right"', false);
     }
 
     public function test_template_selector_updates_the_public_v2_theme_immediately(): void
@@ -251,7 +286,7 @@ class StorefrontStructureV2Test extends TestCase
 
         $response = $this->actingAs($owner)
             ->withSession(['active_project_id' => $project->id])
-            ->get(route('settings.design', ['s' => 'plantilla']))
+            ->get(route('settings.design', ['s' => 'plantilla', 'classic' => 1]))
             ->assertOk()
             ->assertSee('Esta tienda utiliza una plantilla heredada que ya no recibe nuevas funciones.')
             ->assertSee('data-supported-template-card="ecommerce"', false)
@@ -311,7 +346,14 @@ class StorefrontStructureV2Test extends TestCase
             ->assertSee('catalog-filter-panel', false)
             ->assertSee('catalog-product-grid', false)
             ->assertSee('catalog-filter-drawer', false)
-            ->assertSee('COMPUTIENDA_PRODUCTS', false)
+            ->assertSee('COMPUTIENDA_PRODUCTS', false);
+
+        // CompuTienda separa a proposito **Inicio** (portada) de **Tienda**
+        // (/tienda, el catalogo con filtros). El catalogo de productos vive en
+        // la segunda, asi que el producto se comprueba ahi y no en la portada,
+        // que es donde lo buscaba este contrato antes de esa separacion.
+        $this->get(route('public.shop', $project->slug))
+            ->assertOk()
             ->assertSee('Taladro profesional');
     }
 
@@ -339,7 +381,7 @@ class StorefrontStructureV2Test extends TestCase
 
         $response = $this->actingAs($owner)
             ->withSession(['active_project_id' => $project->id])
-            ->get(route('settings.design', ['s' => 'plantilla', 'applied' => 'ecommerce']))
+            ->get(route('settings.design', ['s' => 'plantilla', 'applied' => 'ecommerce', 'classic' => 1]))
             ->assertOk()
             ->assertSee('Ecommerce — Tienda online completa aplicada')
             ->assertSee('Ver cambio en la tienda')

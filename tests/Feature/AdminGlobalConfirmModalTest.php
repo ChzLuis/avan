@@ -28,7 +28,8 @@ class AdminGlobalConfirmModalTest extends TestCase
 
     private function designer(string $section = 'plantilla')
     {
-        $owner = User::factory()->create();
+        // La pantalla clasica solo es alcanzable por superadmin con ?classic=1.
+        $owner = User::factory()->create(['is_superadmin' => 1]);
         $project = Project::create([
             'owner_id' => $owner->id,
             'name' => 'Confirm modal contract',
@@ -44,7 +45,7 @@ class AdminGlobalConfirmModalTest extends TestCase
 
         return $this->actingAs($owner)
             ->withSession(['active_project_id' => $project->id])
-            ->get(route('settings.design', ['s' => $section]));
+            ->get(route('settings.design', ['s' => $section, 'classic' => 1]));
     }
 
     public function test_shell_registers_one_global_confirm_without_an_executable_x_init_return(): void

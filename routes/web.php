@@ -91,8 +91,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('projects', ProjectController::class)->except(['index', 'show']);
 
     // Panel de módulos del negocio activo (reemplaza /bixoadmin/negocios)
-    Route::patch('/bixoadmin/settings/{target}/toggle', [ProjectController::class, 'toggleStatus'])->name('projects.toggle');
-    Route::post('/bixoadmin/settings/{target}/modules', [ProjectController::class, 'updateModules'])->name('projects.modules');
+    Route::patch('/bixoadmin/settings/{target}/toggle', [ProjectController::class, 'toggleStatus'])->name('projects.toggle')->middleware('can:settings.negocio');
+    Route::post('/bixoadmin/settings/{target}/modules', [ProjectController::class, 'updateModules'])->name('projects.modules')->middleware('can:settings.negocio');
 
     // Panel del negocio — todas las rutas bajo /panel
     Route::prefix('bixoadmin')->middleware(['project.member'])->group(function () {
@@ -102,32 +102,51 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', fn() => redirect()->route('settings'))->name('dashboard.alt');
 
         // Productos — /bixoadmin/products
-        Route::prefix('products')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
-            Route::get('/',               [ProductController::class, 'index'])->name('products.index');
-            Route::get('/export',         [ProductController::class, 'export'])->name('products.export');
-            Route::get('/catalog-pdf',    [ProductController::class, 'catalogPdf'])->name('products.catalog.pdf');
-            Route::get('/template',       [ProductController::class, 'template'])->name('products.template');
-            Route::post('/import',        [ProductController::class, 'import'])->name('products.import');
-            Route::post('/reorder',       [ProductController::class, 'reorder'])->name('products.reorder');
-            Route::post('/bulk-action',   [ProductController::class, 'bulkAction'])->name('products.bulk-action');
-            Route::delete('/purge-all',   [ProductController::class, 'purgeAll'])->name('products.purge-all');
-            Route::get('/export/static',  [ProductController::class, 'exportStatic'])->name('products.export.static');
-            Route::get('/export/meli',    [ProductController::class, 'exportMeli'])->name('products.export.meli');
-            Route::get('/export/rappi',   [ProductController::class, 'exportRappi'])->name('products.export.rappi');
-            Route::get('/export/shopee',  [ProductController::class, 'exportShopee'])->name('products.export.shopee');
-            Route::resource('/', ProductController::class)->except(['index'])->parameters(['' => 'product'])->names([
-                'create' => 'products.create', 'store'   => 'products.store',
-                'show'   => 'products.show',   'edit'    => 'products.edit',
-                'update' => 'products.update', 'destroy' => 'products.destroy',
-            ]);
-            Route::post('/{product}/duplicate',             [ProductController::class, 'duplicate'])->name('products.duplicate');
-            Route::post('/{product}/images',               [ProductController::class, 'uploadImage'])->name('products.images.upload');
-            Route::delete('/{product}/images/{image}',     [ProductController::class, 'deleteImage'])->name('products.images.delete');
-            Route::patch('/{product}/images/{image}/main', [ProductController::class, 'setMainImage'])->name('products.images.main');
-            // Reseñas
-            Route::get('/reviews',                [ProductController::class, 'reviews'])->name('reviews.index');
-            Route::patch('/reviews/{id}/approve', [ProductController::class, 'approveReview'])->name('reviews.approve');
-            Route::delete('/reviews/{id}',        [ProductController::class, 'destroyReview'])->name('reviews.destroy');
+        // Un permiso por verbo. Antes iba un unico can:catalog.ver sobre todo el
+        // grupo, asi que un usuario de SOLO LECTURA podia crear, editar, importar,
+        // hacer acciones masivas y hasta vaciar el catalogo entero. Mismo hueco
+        // que 9b2bcc5 cerro en Pedidos y Cotizaciones; Catalogo se quedo fuera.
+        Route::prefix('products')->middleware(['module:catalog'])->group(function () {
+            // Lectura
+            Route::middleware('can:catalog.ver')->group(function () {
+                Route::get('/',               [ProductController::class, 'index'])->name('products.index');
+                Route::get('/export',         [ProductController::class, 'export'])->name('products.export');
+                Route::get('/catalog-pdf',    [ProductController::class, 'catalogPdf'])->name('products.catalog.pdf');
+                Route::get('/template',       [ProductController::class, 'template'])->name('products.template');
+                Route::get('/export/static',  [ProductController::class, 'exportStatic'])->name('products.export.static');
+                Route::get('/export/meli',    [ProductController::class, 'exportMeli'])->name('products.export.meli');
+                Route::get('/export/rappi',   [ProductController::class, 'exportRappi'])->name('products.export.rappi');
+                Route::get('/export/shopee',  [ProductController::class, 'exportShopee'])->name('products.export.shopee');
+                Route::get('/reviews',        [ProductController::class, 'reviews'])->name('reviews.index');
+            });
+            // Alta
+            Route::middleware('can:catalog.crear')->group(function () {
+                Route::post('/',                   [ProductController::class, 'store'])->name('products.store');
+                Route::post('/{product}/duplicate', [ProductController::class, 'duplicate'])->name('products.duplicate');
+            });
+            // Importacion masiva
+            Route::post('/import', [ProductController::class, 'import'])->name('products.import')->middleware('can:catalog.importar');
+            // Edicion
+            Route::middleware('can:catalog.editar')->group(function () {
+                Route::match(['put', 'patch'], '/{product}',    [ProductController::class, 'update'])->name('products.update');
+                Route::post('/reorder',                        [ProductController::class, 'reorder'])->name('products.reorder');
+                // bulkAction incluye 'delete': el propio metodo exige catalog.eliminar
+                // para esa accion concreta, porque el permiso depende del payload.
+                Route::post('/bulk-action',                    [ProductController::class, 'bulkAction'])->name('products.bulk-action');
+                Route::post('/{product}/images',               [ProductController::class, 'uploadImage'])->name('products.images.upload');
+                Route::delete('/{product}/images/{image}',     [ProductController::class, 'deleteImage'])->name('products.images.delete');
+                Route::patch('/{product}/images/{image}/main', [ProductController::class, 'setMainImage'])->name('products.images.main');
+            });
+            // Borrado
+            Route::middleware('can:catalog.eliminar')->group(function () {
+                Route::delete('/purge-all',  [ProductController::class, 'purgeAll'])->name('products.purge-all');
+                Route::delete('/{product}',  [ProductController::class, 'destroy'])->name('products.destroy');
+            });
+            // Moderacion de resenas
+            Route::middleware('can:catalog.resenas')->group(function () {
+                Route::patch('/reviews/{id}/approve', [ProductController::class, 'approveReview'])->name('reviews.approve');
+                Route::delete('/reviews/{id}',        [ProductController::class, 'destroyReview'])->name('reviews.destroy');
+            });
         });
         // Alias legacy para no romper links internos viejos
         Route::get('/catalog',          fn() => redirect()->route('products.index'))->name('catalog');
@@ -147,84 +166,121 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Servicios — /bixoadmin/services
-        Route::prefix('services')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
-            Route::get('/',          [ServiceController::class, 'index'])->name('services.index');
-            Route::get('/export',    [ServiceController::class, 'export'])->name('services.export');
-            Route::get('/template',  [ServiceController::class, 'template'])->name('services.template');
-            Route::post('/import',   [ServiceController::class, 'import'])->name('services.import');
-            Route::post('/reorder',  [ServiceController::class, 'reorder'])->name('services.reorder');
-            Route::resource('/', ServiceController::class)->except(['index'])->parameters(['' => 'service'])->names([
-                'create' => 'services.create', 'store'   => 'services.store',
-                'show'   => 'services.show',   'edit'    => 'services.edit',
-                'update' => 'services.update', 'destroy' => 'services.destroy',
-            ]);
+        Route::prefix('services')->middleware(['module:catalog'])->group(function () {
+            Route::middleware('can:catalog.ver')->group(function () {
+                Route::get('/',          [ServiceController::class, 'index'])->name('services.index');
+                Route::get('/export',    [ServiceController::class, 'export'])->name('services.export');
+                Route::get('/template',  [ServiceController::class, 'template'])->name('services.template');
+            });
+            Route::post('/import',  [ServiceController::class, 'import'])->name('services.import')->middleware('can:catalog.importar');
+            Route::post('/',        [ServiceController::class, 'store'])->name('services.store')->middleware('can:catalog.crear');
+            Route::middleware('can:catalog.editar')->group(function () {
+                Route::post('/reorder',                     [ServiceController::class, 'reorder'])->name('services.reorder');
+                Route::match(['put', 'patch'], '/{service}', [ServiceController::class, 'update'])->name('services.update');
+            });
+            Route::delete('/{service}', [ServiceController::class, 'destroy'])->name('services.destroy')->middleware('can:catalog.eliminar');
         });
         // Alias legacy
         Route::get('/catalog/services', fn() => redirect()->route('services.index'));
 
         // Categorías — /bixoadmin/categories
-        Route::prefix('categories')->middleware(['module:catalog', 'can:catalog.ver'])->group(function () {
-            Route::get('/export',    [CategoryController::class, 'export'])->name('categories.export');
-            Route::get('/template',  [CategoryController::class, 'template'])->name('categories.template');
-            Route::post('/import',   [CategoryController::class, 'import'])->name('categories.import');
-            Route::post('/reorder',  [CategoryController::class, 'reorder'])->name('categories.reorder');
-            Route::resource('/', CategoryController::class)->parameters(['' => 'category'])->names([
-                'index'   => 'categories.index',   'create'  => 'categories.create',
-                'store'   => 'categories.store',   'show'    => 'categories.show',
-                'edit'    => 'categories.edit',    'update'  => 'categories.update',
-                'destroy' => 'categories.destroy',
-            ]);
+        Route::prefix('categories')->middleware(['module:catalog'])->group(function () {
+            Route::middleware('can:catalog.ver')->group(function () {
+                Route::get('/',          [CategoryController::class, 'index'])->name('categories.index');
+                Route::get('/export',    [CategoryController::class, 'export'])->name('categories.export');
+                Route::get('/template',  [CategoryController::class, 'template'])->name('categories.template');
+            });
+            Route::post('/import',  [CategoryController::class, 'import'])->name('categories.import')->middleware('can:catalog.importar');
+            Route::post('/',        [CategoryController::class, 'store'])->name('categories.store')->middleware('can:catalog.crear');
+            Route::middleware('can:catalog.editar')->group(function () {
+                Route::post('/reorder',                      [CategoryController::class, 'reorder'])->name('categories.reorder');
+                Route::match(['put', 'patch'], '/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            });
+            Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy')->middleware('can:catalog.eliminar');
         });
         // Alias legacy
         Route::get('/catalog/categories', fn() => redirect()->route('categories.index'));
 
-        // Clientes
-        Route::resource('clients', ClientController::class)
-            ->middleware(['module:clients', 'can:clients.ver'])
-            ->names(['index'=>'clients','create'=>'clients.create','store'=>'clients.store',
-                     'show'=>'clients.show','edit'=>'clients.edit','update'=>'clients.update','destroy'=>'clients.destroy']);
+        // Clientes. Permiso GRANULAR por accion (UX2/seguridad): el resource
+        // entero iba bajo can:clients.ver, asi que un lector podia crear,
+        // editar y BORRAR clientes — la misma clase de agujero que el hotfix
+        // "*.ver ya no autoriza escribir" cerro en Pedidos y Cotizaciones,
+        // pero Clientes quedo fuera de aquel barrido.
+        Route::get('/clients',                 [ClientController::class, 'index'])->name('clients')->middleware(['module:clients', 'can:clients.ver']);
+        Route::get('/clients/create',          [ClientController::class, 'create'])->name('clients.create')->middleware(['module:clients', 'can:clients.crear']);
+        Route::post('/clients',                [ClientController::class, 'store'])->name('clients.store')->middleware(['module:clients', 'can:clients.crear']);
+        Route::get('/clients/{client}',        [ClientController::class, 'show'])->name('clients.show')->middleware(['module:clients', 'can:clients.ver']);
+        Route::get('/clients/{client}/edit',   [ClientController::class, 'edit'])->name('clients.edit')->middleware(['module:clients', 'can:clients.editar']);
+        Route::match(['put', 'patch'], '/clients/{client}', [ClientController::class, 'update'])->name('clients.update')->middleware(['module:clients', 'can:clients.editar']);
+        Route::delete('/clients/{client}',     [ClientController::class, 'destroy'])->name('clients.destroy')->middleware(['module:clients', 'can:clients.eliminar']);
 
         // CRM: pipeline de ventas (leads del Copilot)
         Route::get('/clients-pipeline', [ClientController::class, 'pipeline'])
             ->middleware(['module:clients', 'can:clients.ver'])->name('clients.pipeline');
+        // Mover de etapa MUTA al cliente: exige edicion, no lectura.
         Route::patch('/clients/{client}/stage', [ClientController::class, 'moveStage'])
-            ->middleware(['module:clients', 'can:clients.ver'])->name('clients.stage');
+            ->middleware(['module:clients', 'can:clients.editar'])->name('clients.stage');
 
         // Dashboard Comercial (indicadores de negocio en tiempo real)
-        Route::get('/dashboard-comercial', [\App\Http\Controllers\DashboardComercialController::class, 'index'])->name('dashboard.comercial');
-        Route::post('/dashboard-comercial/meta', [\App\Http\Controllers\DashboardComercialController::class, 'saveMeta'])->name('dashboard.comercial.meta');
+        // Sin `can:` cualquier miembro del proyecto veia facturacion del mes,
+        // cuentas por cobrar, meta y **ranking de ventas por vendedor**. Su
+        // propia ruta hermana `saveMeta` si exigia permiso, lo que delata el
+        // olvido. Los 7 roles tienen `reports.ver`, asi que no deja fuera a
+        // nadie legitimo.
+        Route::get('/dashboard-comercial', [\App\Http\Controllers\DashboardComercialController::class, 'index'])->name('dashboard.comercial')->middleware('can:reports.ver');
+        Route::post('/dashboard-comercial/meta', [\App\Http\Controllers\DashboardComercialController::class, 'saveMeta'])->name('dashboard.comercial.meta')->middleware('can:settings.negocio');
 
         // Copilot Empresarial (pregúntale a tu negocio en español)
         Route::get('/copilot',  [\App\Http\Controllers\CopilotEmpresarialController::class, 'index'])->name('copilot.index');
-        Route::post('/copilot', [\App\Http\Controllers\CopilotEmpresarialController::class, 'preguntar'])->name('copilot.preguntar');
+        Route::post('/copilot', [\App\Http\Controllers\CopilotEmpresarialController::class, 'preguntar'])->name('copilot.preguntar')->middleware('can:reports.ver');
 
         // Constructor visual de bots
         Route::get('/bots-flow',            [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
         Route::get('/bots-flow/nuevo',      [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
         Route::get('/bots-flow/{flow}',     [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
-        Route::post('/bots-flow/{flow}',    [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save');
-        Route::post('/bots-flow/{flow}/test',[\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test');
-        Route::delete('/bots-flow/{flow}',  [\App\Http\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy');
+        Route::post('/bots-flow/{flow}',    [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save')->middleware('can:settings.negocio');
+        Route::post('/bots-flow/{flow}/test',[\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test')->middleware('can:settings.negocio');
+        Route::delete('/bots-flow/{flow}',  [\App\Http\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy')->middleware('can:settings.negocio');
 
         // Agenda
+        // Un permiso por verbo: agenda.ver autorizaba tambien crear, mover y
+        // BORRAR citas. No hay permiso agenda.eliminar en el sistema, asi que
+        // borrar exige agenda.editar, que es el mismo nivel de autoridad.
         Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda')->middleware(['module:agenda', 'can:agenda.ver']);
-        Route::resource('appointments', AgendaController::class)->except(['index'])->middleware(['module:agenda', 'can:agenda.ver']);
+        // Sin 'show'/'create'/'edit': esos metodos no existen en el controlador,
+        // el resource los generaba igual y solo podian dar 500.
+        Route::prefix('appointments')->middleware('module:agenda')->group(function () {
+            Route::post('/',              [AgendaController::class, 'store'])->name('appointments.store')->middleware('can:agenda.crear');
+            Route::match(['put', 'patch'], '/{appointment}', [AgendaController::class, 'update'])->name('appointments.update')->middleware('can:agenda.editar');
+            Route::delete('/{appointment}', [AgendaController::class, 'destroy'])->name('appointments.destroy')->middleware('can:agenda.editar');
+        });
 
         // Roles y permisos
-        Route::get('/roles',           [RolePermissionController::class, 'index'])->name('roles.index');
-        Route::post('/roles',          [RolePermissionController::class, 'store'])->name('roles.store');
-        Route::put('/roles/{role}',    [RolePermissionController::class, 'update'])->name('roles.update');
-        Route::delete('/roles/{role}', [RolePermissionController::class, 'destroy'])->name('roles.destroy');
+        //
+        // ESCALADA DE PRIVILEGIOS: estas rutas no exigian ningun permiso, asi que
+        // cualquier MIEMBRO del proyecto (un vendedor, un solo_lectura) podia
+        // llamar a update() y hacer syncPermissions() sobre su propio rol,
+        // concediendose todos los permisos del sistema. authorizeProject() solo
+        // comprueba pertenencia, no autoridad.
+        //
+        // Ademas los roles de Spatie son GLOBALES, no por proyecto: tocarlos
+        // afecta a TODOS los negocios. Por eso mutarlos queda reservado a
+        // roles.gestionar (que hoy solo tiene 'admin'), mas el dueño del
+        // proyecto y el superadmin, que pasan por Gate::before.
+        Route::get('/roles',           [RolePermissionController::class, 'index'])->name('roles.index')->middleware('can:roles.ver');
+        Route::post('/roles',          [RolePermissionController::class, 'store'])->name('roles.store')->middleware('can:roles.gestionar');
+        Route::put('/roles/{role}',    [RolePermissionController::class, 'update'])->name('roles.update')->middleware('can:roles.gestionar');
+        Route::delete('/roles/{role}', [RolePermissionController::class, 'destroy'])->name('roles.destroy')->middleware('can:roles.gestionar');
 
         // Catálogos (listas de valores maestros)
         Route::get('/catalogs',                             [CatalogListController::class, 'index'])->name('catalogs.index');
-        Route::post('/catalogs',                            [CatalogListController::class, 'store'])->name('catalogs.store');
-        Route::put('/catalogs/{catalog}',                   [CatalogListController::class, 'update'])->name('catalogs.update');
-        Route::delete('/catalogs/{catalog}',                [CatalogListController::class, 'destroy'])->name('catalogs.destroy');
+        Route::post('/catalogs',                            [CatalogListController::class, 'store'])->name('catalogs.store')->middleware('can:settings.catalogos');
+        Route::put('/catalogs/{catalog}',                   [CatalogListController::class, 'update'])->name('catalogs.update')->middleware('can:settings.catalogos');
+        Route::delete('/catalogs/{catalog}',                [CatalogListController::class, 'destroy'])->name('catalogs.destroy')->middleware('can:settings.catalogos');
         Route::get('/catalogs/{catalog}/values',            [CatalogListController::class, 'values'])->name('catalogs.values');
-        Route::post('/catalogs/{catalog}/values',           [CatalogListController::class, 'storeValue'])->name('catalogs.values.store');
-        Route::put('/catalogs/{catalog}/values/{value}',    [CatalogListController::class, 'updateValue'])->name('catalogs.values.update');
-        Route::delete('/catalogs/{catalog}/values/{value}', [CatalogListController::class, 'destroyValue'])->name('catalogs.values.destroy');
+        Route::post('/catalogs/{catalog}/values',           [CatalogListController::class, 'storeValue'])->name('catalogs.values.store')->middleware('can:settings.catalogos');
+        Route::put('/catalogs/{catalog}/values/{value}',    [CatalogListController::class, 'updateValue'])->name('catalogs.values.update')->middleware('can:settings.catalogos');
+        Route::delete('/catalogs/{catalog}/values/{value}', [CatalogListController::class, 'destroyValue'])->name('catalogs.values.destroy')->middleware('can:settings.catalogos');
 
         // Proyectos (panel 3 columnas) — rutas movidas fuera del grupo project.member
 
@@ -235,22 +291,22 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/bots',                             [BotStatusController::class, 'index'])->name('bots.index');
         Route::get('/bots/status',                      [BotStatusController::class, 'status'])->name('bots.status');
         Route::get('/bots/flow',                        [BotStatusController::class, 'flowIndex'])->name('bots.flow');
-        Route::post('/bots/flow',                       [BotStatusController::class, 'flowStore'])->name('bots.flow.store');
-        Route::post('/bots/states',                     [BotStatusController::class, 'stateStore'])->name('bots.states.store');
-        Route::put('/bots/states/{state}',              [BotStatusController::class, 'stateUpdate'])->name('bots.states.update');
-        Route::delete('/bots/states/{state}',           [BotStatusController::class, 'stateDestroy'])->name('bots.states.destroy');
-        Route::post('/bots/states/{state}/move',        [BotStatusController::class, 'stateMove'])->name('bots.states.move');
-        Route::post('/bots/transitions',                [BotStatusController::class, 'transitionStore'])->name('bots.transitions.store');
-        Route::delete('/bots/transitions/{transition}', [BotStatusController::class, 'transitionDestroy'])->name('bots.transitions.destroy');
-        Route::post('/bots/config',                     [BotStatusController::class, 'configSave'])->name('bots.config.save');
-        Route::post('/bots/control',                    [BotStatusController::class, 'botControl'])->name('bots.control');
-        Route::post('/bots/reset-session',              [BotStatusController::class, 'resetSession'])->name('bots.reset-session');
+        Route::post('/bots/flow',                       [BotStatusController::class, 'flowStore'])->name('bots.flow.store')->middleware('can:settings.negocio');
+        Route::post('/bots/states',                     [BotStatusController::class, 'stateStore'])->name('bots.states.store')->middleware('can:settings.negocio');
+        Route::put('/bots/states/{state}',              [BotStatusController::class, 'stateUpdate'])->name('bots.states.update')->middleware('can:settings.negocio');
+        Route::delete('/bots/states/{state}',           [BotStatusController::class, 'stateDestroy'])->name('bots.states.destroy')->middleware('can:settings.negocio');
+        Route::post('/bots/states/{state}/move',        [BotStatusController::class, 'stateMove'])->name('bots.states.move')->middleware('can:settings.negocio');
+        Route::post('/bots/transitions',                [BotStatusController::class, 'transitionStore'])->name('bots.transitions.store')->middleware('can:settings.negocio');
+        Route::delete('/bots/transitions/{transition}', [BotStatusController::class, 'transitionDestroy'])->name('bots.transitions.destroy')->middleware('can:settings.negocio');
+        Route::post('/bots/config',                     [BotStatusController::class, 'configSave'])->name('bots.config.save')->middleware('can:settings.negocio');
+        Route::post('/bots/control',                    [BotStatusController::class, 'botControl'])->name('bots.control')->middleware('can:settings.negocio');
+        Route::post('/bots/reset-session',              [BotStatusController::class, 'resetSession'])->name('bots.reset-session')->middleware('can:settings.negocio');
         Route::get('/bots/logs',                        [BotStatusController::class, 'botLogs'])->name('bots.logs');
-        Route::post('/bots/upload-image',               [BotStatusController::class, 'uploadImage'])->name('bots.upload.image');
-        Route::post('/bots/instances',                  [BotStatusController::class, 'botStore'])->name('bots.instances.store');
-        Route::delete('/bots/instances/{bot}',          [BotStatusController::class, 'botDestroy'])->name('bots.instances.destroy');
+        Route::post('/bots/upload-image',               [BotStatusController::class, 'uploadImage'])->name('bots.upload.image')->middleware('can:settings.negocio');
+        Route::post('/bots/instances',                  [BotStatusController::class, 'botStore'])->name('bots.instances.store')->middleware('can:settings.negocio');
+        Route::delete('/bots/instances/{bot}',          [BotStatusController::class, 'botDestroy'])->name('bots.instances.destroy')->middleware('can:settings.negocio');
         Route::get('/bots/espera-asesor',               [BotStatusController::class, 'esperaAsesor'])->name('bots.espera-asesor');
-        Route::post('/bots/flow/import-json',           [BotStatusController::class, 'flowImportFromJson'])->name('bots.flow.import');
+        Route::post('/bots/flow/import-json',           [BotStatusController::class, 'flowImportFromJson'])->name('bots.flow.import')->middleware('can:settings.negocio');
 
         // HR / Empleados
         Route::get('/hr/employees',                [HRController::class, 'index'])->name('hr.employees.index')->middleware('can:hr.ver');
@@ -260,45 +316,61 @@ Route::middleware(['auth'])->group(function () {
 
         // Asistencia y Comisiones
         Route::get('/hr/asistencia',               [\App\Http\Controllers\AttendanceController::class, 'index'])->name('hr.attendance.index')->middleware('can:attendance.ver');
-        Route::post('/hr/asistencia',              [\App\Http\Controllers\AttendanceController::class, 'store'])->name('hr.attendance.store')->middleware('can:attendance.ver');
+        // Escritura autorizada por un permiso de LECTURA: `store` hace
+        // updateOrCreate de asistencias, y esas horas alimentan el calculo de
+        // comisiones (`AttendanceController::159`). Quien solo podia MIRAR la
+        // asistencia podia FABRICARLA, y con ella la comision a pagar.
+        // `attendance.editar` ya existe y lo tienen admin, rrhh y gerente; el
+        // unico que pierde algo es `solo_lectura`, que es justo el objetivo.
+        Route::post('/hr/asistencia',              [\App\Http\Controllers\AttendanceController::class, 'store'])->name('hr.attendance.store')->middleware('can:attendance.editar');
         Route::post('/hr/asistencia/check-in',     [\App\Http\Controllers\AttendanceController::class, 'checkIn'])->name('hr.attendance.checkin')->middleware('can:attendance.fichar');
         Route::post('/hr/asistencia/check-out',    [\App\Http\Controllers\AttendanceController::class, 'checkOut'])->name('hr.attendance.checkout')->middleware('can:attendance.fichar');
         Route::get('/hr/comisiones',               [\App\Http\Controllers\AttendanceController::class, 'comisiones'])->name('hr.comisiones.index')->middleware('can:attendance.ver');
 
         // Sedes
         Route::get('/company/sedes',           [SedeController::class, 'index'])->name('sedes.index');
-        Route::post('/company/sedes',          [SedeController::class, 'store'])->name('sedes.store');
-        Route::put('/company/sedes/{sede}',    [SedeController::class, 'update'])->name('sedes.update');
-        Route::delete('/company/sedes/{sede}', [SedeController::class, 'destroy'])->name('sedes.destroy');
+        Route::post('/company/sedes',          [SedeController::class, 'store'])->name('sedes.store')->middleware('can:settings.negocio');
+        Route::put('/company/sedes/{sede}',    [SedeController::class, 'update'])->name('sedes.update')->middleware('can:settings.negocio');
+        Route::delete('/company/sedes/{sede}', [SedeController::class, 'destroy'])->name('sedes.destroy')->middleware('can:settings.negocio');
 
         // Grupos de usuarios
         Route::get('/company/groups',                [UserGroupController::class, 'index'])->name('groups.index');
-        Route::post('/company/groups',               [UserGroupController::class, 'store'])->name('groups.store');
-        Route::put('/company/groups/{userGroup}',    [UserGroupController::class, 'update'])->name('groups.update');
-        Route::delete('/company/groups/{userGroup}', [UserGroupController::class, 'destroy'])->name('groups.destroy');
+        Route::post('/company/groups',               [UserGroupController::class, 'store'])->name('groups.store')->middleware('can:settings.negocio');
+        Route::put('/company/groups/{userGroup}',    [UserGroupController::class, 'update'])->name('groups.update')->middleware('can:settings.negocio');
+        Route::delete('/company/groups/{userGroup}', [UserGroupController::class, 'destroy'])->name('groups.destroy')->middleware('can:settings.negocio');
+
+        // Inventario y Kardex
+        Route::get('/inventario',                  [\App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index')->middleware(['module:catalog', 'can:catalog.ver']);
+        Route::post('/inventario/movimiento',      [\App\Http\Controllers\InventoryController::class, 'store'])->name('inventory.store')->middleware(['module:catalog', 'can:catalog.editar']);
+        Route::get('/inventario/{product}/kardex', [\App\Http\Controllers\InventoryController::class, 'kardex'])->name('inventory.kardex')->middleware(['module:catalog', 'can:catalog.ver']);
 
         // Proveedores
-        Route::get('/company/proveedores',                    [ProveedorController::class, 'index'])->name('proveedores.index');
-        Route::post('/company/proveedores',                   [ProveedorController::class, 'store'])->name('proveedores.store');
-        Route::put('/company/proveedores/{proveedor}',        [ProveedorController::class, 'update'])->name('proveedores.update');
-        Route::delete('/company/proveedores/{proveedor}',     [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
-        Route::get('/company/proveedores/template',           [ProveedorController::class, 'template'])->name('proveedores.template');
-        Route::get('/company/proveedores/export',             [ProveedorController::class, 'export'])->name('proveedores.export');
-        Route::post('/company/proveedores/import',            [ProveedorController::class, 'import'])->name('proveedores.import');
+        // proveedores.ver / proveedores.editar ya existian en la tabla de permisos
+        // y aparecian en Roles, pero ninguna ruta los usaba: cualquier miembro
+        // del proyecto podia crear, editar y borrar proveedores.
+        Route::get('/company/proveedores',                    [ProveedorController::class, 'index'])->name('proveedores.index')->middleware('can:proveedores.ver');
+        Route::get('/company/proveedores/template',           [ProveedorController::class, 'template'])->name('proveedores.template')->middleware('can:proveedores.ver');
+        Route::get('/company/proveedores/export',             [ProveedorController::class, 'export'])->name('proveedores.export')->middleware('can:proveedores.ver');
+        Route::middleware('can:proveedores.editar')->group(function () {
+            Route::post('/company/proveedores',               [ProveedorController::class, 'store'])->name('proveedores.store');
+            Route::put('/company/proveedores/{proveedor}',    [ProveedorController::class, 'update'])->name('proveedores.update');
+            Route::delete('/company/proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
+            Route::post('/company/proveedores/import',        [ProveedorController::class, 'import'])->name('proveedores.import');
+        });
 
         // Combos
         Route::get('/combos',                        [ComboController::class, 'index'])->name('combos.index');
-        Route::post('/combos',                       [ComboController::class, 'store'])->name('combos.store');
-        Route::put('/combos/{combo}',                [ComboController::class, 'update'])->name('combos.update');
-        Route::delete('/combos/{combo}',             [ComboController::class, 'destroy'])->name('combos.destroy');
-        Route::patch('/combos/{combo}/toggle',       [ComboController::class, 'toggleAvailable'])->name('combos.toggle');
+        Route::post('/combos',                       [ComboController::class, 'store'])->name('combos.store')->middleware('can:catalog.editar');
+        Route::put('/combos/{combo}',                [ComboController::class, 'update'])->name('combos.update')->middleware('can:catalog.editar');
+        Route::delete('/combos/{combo}',             [ComboController::class, 'destroy'])->name('combos.destroy')->middleware('can:catalog.eliminar');
+        Route::patch('/combos/{combo}/toggle',       [ComboController::class, 'toggleAvailable'])->name('combos.toggle')->middleware('can:catalog.editar');
 
         // Promociones
         Route::get('/promotions',                    [PromotionController::class, 'index'])->name('promotions.index');
-        Route::post('/promotions',                   [PromotionController::class, 'store'])->name('promotions.store');
-        Route::put('/promotions/{promotion}',        [PromotionController::class, 'update'])->name('promotions.update');
-        Route::delete('/promotions/{promotion}',     [PromotionController::class, 'destroy'])->name('promotions.destroy');
-        Route::patch('/promotions/{promotion}/toggle',[PromotionController::class, 'toggle'])->name('promotions.toggle');
+        Route::post('/promotions',                   [PromotionController::class, 'store'])->name('promotions.store')->middleware('can:catalog.editar');
+        Route::put('/promotions/{promotion}',        [PromotionController::class, 'update'])->name('promotions.update')->middleware('can:catalog.editar');
+        Route::delete('/promotions/{promotion}',     [PromotionController::class, 'destroy'])->name('promotions.destroy')->middleware('can:catalog.eliminar');
+        Route::patch('/promotions/{promotion}/toggle',[PromotionController::class, 'toggle'])->name('promotions.toggle')->middleware('can:catalog.editar');
 
         // Comunicaciones / WhatsApp — redirige al portal bixocrm o a settings
         Route::prefix('bixocrm')->group(function () {
@@ -309,7 +381,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Configuración
         Route::get('/settings',          [SettingsController::class, 'index'])->name('settings');
-        Route::post('/settings',         [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings',         [SettingsController::class, 'update'])->name('settings.update')->middleware('can:settings.negocio');
         Route::get('/settings/design',   [SettingsController::class, 'design'])->name('settings.design');
         Route::get('/settings/designer', [SettingsController::class, 'designer'])->name('settings.designer'); // nuevo Diseñador visual (Fase A)
 
@@ -318,96 +390,96 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/builder/progress', [\App\Http\Controllers\StoreBuilderController::class, 'progress'])->name('settings.builder.progress');
         Route::get('/settings/builder/checklist', [\App\Http\Controllers\StoreBuilderController::class, 'checklist'])->name('settings.builder.checklist');
         Route::get('/settings/builder/catalog/metrics', [\App\Http\Controllers\StoreBuilderController::class, 'catalogMetrics'])->name('settings.builder.metrics');
-        Route::post('/settings/builder/draft/settings', [\App\Http\Controllers\StoreBuilderController::class, 'saveDraftSettings'])->name('settings.builder.draft.settings');
-        Route::post('/settings/builder/design-preset', [\App\Http\Controllers\StoreBuilderController::class, 'applyDesignPreset'])->name('settings.builder.design-preset');
+        Route::post('/settings/builder/draft/settings', [\App\Http\Controllers\StoreBuilderController::class, 'saveDraftSettings'])->name('settings.builder.draft.settings')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/design-preset', [\App\Http\Controllers\StoreBuilderController::class, 'applyDesignPreset'])->name('settings.builder.design-preset')->middleware('can:settings.diseno');
         // Diseños guardados ("Mis plantillas")
         Route::get('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'index'])->name('design-templates.index');
-        Route::post('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'store'])->name('design-templates.store');
-        Route::post('/settings/design-templates/import', [\App\Http\Controllers\DesignTemplateController::class, 'import'])->name('design-templates.import');
-        Route::post('/settings/design-templates/{id}/apply', [\App\Http\Controllers\DesignTemplateController::class, 'apply'])->name('design-templates.apply');
-        Route::post('/settings/design-templates/{id}/version', [\App\Http\Controllers\DesignTemplateController::class, 'newVersion'])->name('design-templates.version');
-        Route::post('/settings/design-templates/{id}/restore/{versionNumber}', [\App\Http\Controllers\DesignTemplateController::class, 'restore'])->name('design-templates.restore');
-        Route::post('/settings/design-templates/{id}/duplicate', [\App\Http\Controllers\DesignTemplateController::class, 'duplicate'])->name('design-templates.duplicate');
-        Route::post('/settings/design-templates/{id}/toggle', [\App\Http\Controllers\DesignTemplateController::class, 'toggle'])->name('design-templates.toggle');
-        Route::put('/settings/design-templates/{id}', [\App\Http\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update');
+        Route::post('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'store'])->name('design-templates.store')->middleware('can:settings.diseno');
+        Route::post('/settings/design-templates/import', [\App\Http\Controllers\DesignTemplateController::class, 'import'])->name('design-templates.import')->middleware('can:settings.diseno');
+        Route::post('/settings/design-templates/{id}/apply', [\App\Http\Controllers\DesignTemplateController::class, 'apply'])->name('design-templates.apply')->middleware('can:settings.diseno');
+        Route::post('/settings/design-templates/{id}/version', [\App\Http\Controllers\DesignTemplateController::class, 'newVersion'])->name('design-templates.version')->middleware('can:settings.diseno');
+        Route::post('/settings/design-templates/{id}/restore/{versionNumber}', [\App\Http\Controllers\DesignTemplateController::class, 'restore'])->name('design-templates.restore')->middleware('can:settings.diseno');
+        Route::post('/settings/design-templates/{id}/duplicate', [\App\Http\Controllers\DesignTemplateController::class, 'duplicate'])->name('design-templates.duplicate')->middleware('can:settings.diseno');
+        Route::post('/settings/design-templates/{id}/toggle', [\App\Http\Controllers\DesignTemplateController::class, 'toggle'])->name('design-templates.toggle')->middleware('can:settings.diseno');
+        Route::put('/settings/design-templates/{id}', [\App\Http\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update')->middleware('can:settings.diseno');
         Route::get('/settings/design-templates/{id}/export', [\App\Http\Controllers\DesignTemplateController::class, 'export'])->name('design-templates.export');
-        Route::post('/settings/builder/publish', [\App\Http\Controllers\StoreBuilderController::class, 'publish'])->name('settings.builder.publish');
+        Route::post('/settings/builder/publish', [\App\Http\Controllers\StoreBuilderController::class, 'publish'])->name('settings.builder.publish')->middleware('can:settings.diseno');
         // Descartar el borrador y volver a lo publicado. Hasta ahora la única
         // salida de un borrador con cambios no deseados era publicarlos.
-        Route::post('/settings/builder/descartar-borrador', [\App\Http\Controllers\StoreBuilderController::class, 'discardDraft'])->name('settings.builder.discard');
+        Route::post('/settings/builder/descartar-borrador', [\App\Http\Controllers\StoreBuilderController::class, 'discardDraft'])->name('settings.builder.discard')->middleware('can:settings.diseno');
         Route::get('/settings/builder/preview', [\App\Http\Controllers\StoreBuilderController::class, 'preview'])->name('settings.builder.preview');
         Route::get('/settings/builder/catalog/products', [\App\Http\Controllers\StoreBuilderController::class, 'catalogList'])->name('settings.builder.catalog.list');
-        Route::post('/settings/builder/catalog/bulk', [\App\Http\Controllers\StoreBuilderController::class, 'catalogBulk'])->name('settings.builder.catalog.bulk');
+        Route::post('/settings/builder/catalog/bulk', [\App\Http\Controllers\StoreBuilderController::class, 'catalogBulk'])->name('settings.builder.catalog.bulk')->middleware('can:settings.diseno');
         Route::get('/settings/builder/copy/sources', [\App\Http\Controllers\StoreBuilderController::class, 'copySources'])->name('settings.builder.copy.sources');
-        Route::post('/settings/builder/copy', [\App\Http\Controllers\StoreBuilderController::class, 'copyStore'])->name('settings.builder.copy');
+        Route::post('/settings/builder/copy', [\App\Http\Controllers\StoreBuilderController::class, 'copyStore'])->name('settings.builder.copy')->middleware('can:settings.diseno');
         Route::get('/settings/builder/icons/search', [\App\Http\Controllers\StoreBuilderController::class, 'iconSearch'])->name('settings.builder.icons.search');
-        Route::post('/settings/builder/category-photo', [\App\Http\Controllers\StoreBuilderController::class, 'categoryPhoto'])->name('settings.builder.category-photo');
-        Route::post('/settings/builder/icons/assign', [\App\Http\Controllers\StoreBuilderController::class, 'iconAssign'])->name('settings.builder.icons.assign');
-        Route::post('/settings/design',  [SettingsController::class, 'updateDesign'])->name('settings.design.update');
-        Route::post('/settings/design/apply-template', [SettingsController::class, 'applyTemplate'])->name('settings.design.applyTemplate');
-        Route::post('/settings/design/apply-project-template', [SettingsController::class, 'applyProjectTemplate'])->name('settings.design.applyProjectTemplate');
-        Route::post('/settings/design/project-templates', [SettingsController::class, 'storeProjectTemplate'])->name('settings.design.projectTemplates.store');
-        Route::put('/settings/design/project-templates/{id}', [SettingsController::class, 'updateProjectTemplate'])->name('settings.design.projectTemplates.update');
-        Route::delete('/settings/design/project-templates/{id}', [SettingsController::class, 'destroyProjectTemplate'])->name('settings.design.projectTemplates.destroy');
+        Route::post('/settings/builder/category-photo', [\App\Http\Controllers\StoreBuilderController::class, 'categoryPhoto'])->name('settings.builder.category-photo')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/icons/assign', [\App\Http\Controllers\StoreBuilderController::class, 'iconAssign'])->name('settings.builder.icons.assign')->middleware('can:settings.diseno');
+        Route::post('/settings/design',  [SettingsController::class, 'updateDesign'])->name('settings.design.update')->middleware('can:settings.diseno');
+        Route::post('/settings/design/apply-template', [SettingsController::class, 'applyTemplate'])->name('settings.design.applyTemplate')->middleware('can:settings.diseno');
+        Route::post('/settings/design/apply-project-template', [SettingsController::class, 'applyProjectTemplate'])->name('settings.design.applyProjectTemplate')->middleware('can:settings.diseno');
+        Route::post('/settings/design/project-templates', [SettingsController::class, 'storeProjectTemplate'])->name('settings.design.projectTemplates.store')->middleware('can:settings.diseno');
+        Route::put('/settings/design/project-templates/{id}', [SettingsController::class, 'updateProjectTemplate'])->name('settings.design.projectTemplates.update')->middleware('can:settings.diseno');
+        Route::delete('/settings/design/project-templates/{id}', [SettingsController::class, 'destroyProjectTemplate'])->name('settings.design.projectTemplates.destroy')->middleware('can:settings.diseno');
         Route::get('/settings/experience', [\App\Http\Controllers\StoreExperienceController::class, 'index'])->name('settings.experience');
-        Route::post('/settings/experience/home/reorder', [\App\Http\Controllers\StoreExperienceController::class, 'reorderHome'])->name('settings.experience.home.reorder');
-        Route::post('/settings/experience/home/publish-all', [\App\Http\Controllers\StoreExperienceController::class, 'publishAll'])->name('settings.experience.home.publishAll');
-        Route::post('/settings/experience/home/{component}/publish', [\App\Http\Controllers\StoreExperienceController::class, 'publishOne'])->name('settings.experience.home.publishOne');
-        Route::delete('/settings/experience/home/{component}/draft', [\App\Http\Controllers\StoreExperienceController::class, 'discardDraft'])->name('settings.experience.home.discardDraft');
-        Route::post('/settings/experience/home/{component}', [\App\Http\Controllers\StoreExperienceController::class, 'saveHomeSection'])->name('settings.experience.home.save');
-        Route::post('/settings/experience/home/{component}/state', [\App\Http\Controllers\StoreExperienceController::class, 'sectionState'])->name('settings.experience.home.state'); // Diseñador: sólo estado
+        Route::post('/settings/experience/home/reorder', [\App\Http\Controllers\StoreExperienceController::class, 'reorderHome'])->name('settings.experience.home.reorder')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/publish-all', [\App\Http\Controllers\StoreExperienceController::class, 'publishAll'])->name('settings.experience.home.publishAll')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/{component}/publish', [\App\Http\Controllers\StoreExperienceController::class, 'publishOne'])->name('settings.experience.home.publishOne')->middleware('can:settings.diseno');
+        Route::delete('/settings/experience/home/{component}/draft', [\App\Http\Controllers\StoreExperienceController::class, 'discardDraft'])->name('settings.experience.home.discardDraft')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/{component}', [\App\Http\Controllers\StoreExperienceController::class, 'saveHomeSection'])->name('settings.experience.home.save')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/{component}/state', [\App\Http\Controllers\StoreExperienceController::class, 'sectionState'])->name('settings.experience.home.state')->middleware('can:settings.diseno'); // Diseñador: sólo estado
         Route::get('/settings/experience/preview', [\App\Http\Controllers\StoreExperienceController::class, 'preview'])->name('settings.experience.preview');
-        Route::post('/settings/experience/section', [\App\Http\Controllers\StoreExperienceController::class, 'section'])->name('settings.experience.section');
-        Route::delete('/settings/experience/section/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'deleteSection'])->name('settings.experience.section.delete');
-        Route::post('/settings/experience/page', [\App\Http\Controllers\StoreExperienceController::class, 'page'])->name('settings.experience.page');
-        Route::post('/settings/experience/popup', [\App\Http\Controllers\StoreExperienceController::class, 'popup'])->name('settings.experience.popup');
-        Route::post('/settings/storefront/header', [\App\Http\Controllers\StoreNavigationController::class, 'updateHeader'])->name('settings.storefront.header');
-        Route::post('/settings/storefront/publish', [\App\Http\Controllers\StoreNavigationController::class, 'publishStructure'])->name('settings.storefront.publish');
-        Route::post('/settings/storefront/menu/items', [\App\Http\Controllers\StoreNavigationController::class, 'storeItem'])->name('settings.storefront.menu.items.store');
-        Route::put('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'updateItem'])->name('settings.storefront.menu.items.update');
-        Route::delete('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'destroyItem'])->name('settings.storefront.menu.items.destroy');
-        Route::post('/settings/storefront/menu/reorder', [\App\Http\Controllers\StoreNavigationController::class, 'reorder'])->name('settings.storefront.menu.reorder');
+        Route::post('/settings/experience/section', [\App\Http\Controllers\StoreExperienceController::class, 'section'])->name('settings.experience.section')->middleware('can:settings.diseno');
+        Route::delete('/settings/experience/section/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'deleteSection'])->name('settings.experience.section.delete')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/page', [\App\Http\Controllers\StoreExperienceController::class, 'page'])->name('settings.experience.page')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/popup', [\App\Http\Controllers\StoreExperienceController::class, 'popup'])->name('settings.experience.popup')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/header', [\App\Http\Controllers\StoreNavigationController::class, 'updateHeader'])->name('settings.storefront.header')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/publish', [\App\Http\Controllers\StoreNavigationController::class, 'publishStructure'])->name('settings.storefront.publish')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/menu/items', [\App\Http\Controllers\StoreNavigationController::class, 'storeItem'])->name('settings.storefront.menu.items.store')->middleware('can:settings.diseno');
+        Route::put('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'updateItem'])->name('settings.storefront.menu.items.update')->middleware('can:settings.diseno');
+        Route::delete('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'destroyItem'])->name('settings.storefront.menu.items.destroy')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/menu/reorder', [\App\Http\Controllers\StoreNavigationController::class, 'reorder'])->name('settings.storefront.menu.reorder')->middleware('can:settings.diseno');
 
         // Perfiles de catálogo (opcional, desactivado por defecto)
-        Route::post('/settings/catalog-profiles/feature', [\App\Http\Controllers\CatalogProfileController::class, 'toggleFeature'])->name('settings.catalog-profiles.feature');
-        Route::post('/settings/catalog-profiles', [\App\Http\Controllers\CatalogProfileController::class, 'store'])->name('settings.catalog-profiles.store');
-        Route::post('/settings/catalog-profiles/quick', [\App\Http\Controllers\CatalogProfileController::class, 'quickCreate'])->name('settings.catalog-profiles.quick');
-        Route::put('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'update'])->name('settings.catalog-profiles.update')->where('id', '[0-9]+');
-        Route::delete('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'destroy'])->name('settings.catalog-profiles.destroy')->where('id', '[0-9]+');
-        Route::post('/settings/catalog-profiles/reorder', [\App\Http\Controllers\CatalogProfileController::class, 'reorder'])->name('settings.catalog-profiles.reorder');
-        Route::patch('/settings/experience/complaints/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'complaintStatus'])->name('settings.experience.complaint.status');
-        Route::post('/settings/flow', [SettingsController::class, 'updateFlow'])->name('settings.flow.update');
-        Route::post('/settings/flow/diagram', [SettingsController::class, 'updateDiagram'])->name('settings.flow.diagram');
-        Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo');
+        Route::post('/settings/catalog-profiles/feature', [\App\Http\Controllers\CatalogProfileController::class, 'toggleFeature'])->name('settings.catalog-profiles.feature')->middleware('can:settings.catalogos');
+        Route::post('/settings/catalog-profiles', [\App\Http\Controllers\CatalogProfileController::class, 'store'])->name('settings.catalog-profiles.store')->middleware('can:settings.catalogos');
+        Route::post('/settings/catalog-profiles/quick', [\App\Http\Controllers\CatalogProfileController::class, 'quickCreate'])->name('settings.catalog-profiles.quick')->middleware('can:settings.catalogos');
+        Route::put('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'update'])->name('settings.catalog-profiles.update')->where('id', '[0-9]+')->middleware('can:settings.catalogos');
+        Route::delete('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'destroy'])->name('settings.catalog-profiles.destroy')->where('id', '[0-9]+')->middleware('can:settings.catalogos');
+        Route::post('/settings/catalog-profiles/reorder', [\App\Http\Controllers\CatalogProfileController::class, 'reorder'])->name('settings.catalog-profiles.reorder')->middleware('can:settings.catalogos');
+        Route::patch('/settings/experience/complaints/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'complaintStatus'])->name('settings.experience.complaint.status')->middleware('can:settings.negocio');
+        Route::post('/settings/flow', [SettingsController::class, 'updateFlow'])->name('settings.flow.update')->middleware('can:settings.negocio');
+        Route::post('/settings/flow/diagram', [SettingsController::class, 'updateDiagram'])->name('settings.flow.diagram')->middleware('can:settings.negocio');
+        Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo')->middleware('can:settings.diseno');
         Route::get('/notifications/imports',  [SettingsController::class, 'importLogs'])->name('notifications.imports');
         Route::get('/settings/payments', [SettingsController::class, 'payments'])->name('settings.payments');
-        Route::post('/settings/payments',[SettingsController::class, 'updatePayments'])->name('settings.payments.update');
+        Route::post('/settings/payments',[SettingsController::class, 'updatePayments'])->name('settings.payments.update')->middleware('can:settings.pagos');
         Route::get('/settings/modules',  [SettingsController::class, 'modules'])->name('settings.modules');
         Route::get('/settings/qr',        [SettingsController::class, 'qr'])->name('settings.qr');
-        Route::post('/settings/qr',       [SettingsController::class, 'updateQr'])->name('settings.qr.save');
+        Route::post('/settings/qr',       [SettingsController::class, 'updateQr'])->name('settings.qr.save')->middleware('can:settings.qr');
         Route::get('/settings/seo',      [SettingsController::class, 'seo'])->name('settings.seo');
-        Route::post('/settings/seo',     [SettingsController::class, 'updateSeo'])->name('settings.seo.update');
-        Route::post('/settings/modules', [SettingsController::class, 'updateModules'])->name('settings.modules.update');
+        Route::post('/settings/seo',     [SettingsController::class, 'updateSeo'])->name('settings.seo.update')->middleware('can:settings.negocio');
+        Route::post('/settings/modules', [SettingsController::class, 'updateModules'])->name('settings.modules.update')->middleware('can:settings.negocio');
         // Cupones
-        Route::post('/coupons',          [SettingsController::class, 'storeCoupon'])->name('coupons.store');
-        Route::delete('/coupons/{id}',   [SettingsController::class, 'destroyCoupon'])->name('coupons.destroy');
-        Route::patch('/coupons/{id}/toggle', [SettingsController::class, 'toggleCoupon'])->name('coupons.toggle');
+        Route::post('/coupons',          [SettingsController::class, 'storeCoupon'])->name('coupons.store')->middleware('can:catalog.editar');
+        Route::delete('/coupons/{id}',   [SettingsController::class, 'destroyCoupon'])->name('coupons.destroy')->middleware('can:catalog.eliminar');
+        Route::patch('/coupons/{id}/toggle', [SettingsController::class, 'toggleCoupon'])->name('coupons.toggle')->middleware('can:catalog.editar');
 
         // WhatsApp canales desde el portal administrador
-        Route::post('/settings/canales',            [SettingsController::class, 'storeCanal'])->name('settings.canales.store');
-        Route::delete('/settings/canales/{canal}',  [SettingsController::class, 'destroyCanal'])->name('settings.canales.destroy');
+        Route::post('/settings/canales',            [SettingsController::class, 'storeCanal'])->name('settings.canales.store')->middleware('can:settings.catalogos');
+        Route::delete('/settings/canales/{canal}',  [SettingsController::class, 'destroyCanal'])->name('settings.canales.destroy')->middleware('can:settings.catalogos');
 
         // Propuestas BIXO
         Route::get('/proposals',              [ProposalController::class, 'index'])->name('proposals.index');
-        Route::post('/proposals',             [ProposalController::class, 'store'])->name('proposals.store');
-        Route::put('/proposals/{proposal}',   [ProposalController::class, 'update'])->name('proposals.update');
-        Route::delete('/proposals/{proposal}',[ProposalController::class, 'destroy'])->name('proposals.destroy');
+        Route::post('/proposals',             [ProposalController::class, 'store'])->name('proposals.store')->middleware('can:quotes.crear');
+        Route::put('/proposals/{proposal}',   [ProposalController::class, 'update'])->name('proposals.update')->middleware('can:quotes.editar');
+        Route::delete('/proposals/{proposal}',[ProposalController::class, 'destroy'])->name('proposals.destroy')->middleware('can:quotes.eliminar');
 
         // Certificados digitales
         Route::get('/certificados',                    [CertificadoController::class, 'index'])->name('certificados.index');
-        Route::post('/certificados',                   [CertificadoController::class, 'store'])->name('certificados.store');
-        Route::put('/certificados/{certificado}',      [CertificadoController::class, 'update'])->name('certificados.update');
-        Route::delete('/certificados/{certificado}',   [CertificadoController::class, 'destroy'])->name('certificados.destroy');
+        Route::post('/certificados',                   [CertificadoController::class, 'store'])->name('certificados.store')->middleware('can:invoices.editar');
+        Route::put('/certificados/{certificado}',      [CertificadoController::class, 'update'])->name('certificados.update')->middleware('can:invoices.editar');
+        Route::delete('/certificados/{certificado}',   [CertificadoController::class, 'destroy'])->name('certificados.destroy')->middleware('can:invoices.editar');
     });
 
     // ─── Herramientas operativas (URL corta, fuera de /panel) ────────────────
@@ -425,13 +497,18 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/revendedor/catalogo',[\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
 
         // Facturas
-        Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index');
-        Route::post('/invoices',              [InvoiceController::class, 'store'])->name('invoices.store');
-        Route::get('/invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show');
-        Route::put('/invoices/{invoice}',     [InvoiceController::class, 'update'])->name('invoices.update');
-        Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy');
-        Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf');
-        Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat');
+        // Estas rutas estaban SIN permiso alguno mientras sus gemelas
+        // `/facturas` (lineas ~1057) exigen `invoices.crear|editar|anular`.
+        // Mismo controlador, mismas acciones: por la URL corta cualquier
+        // miembro del proyecto —incluido un rol de solo lectura— emitia,
+        // modificaba y borraba comprobantes fiscales. Se igualan a sus gemelas.
+        Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index')->middleware('can:invoices.ver');
+        Route::post('/invoices',              [InvoiceController::class, 'store'])->name('invoices.store')->middleware('can:invoices.crear');
+        Route::get('/invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show')->middleware('can:invoices.ver');
+        Route::put('/invoices/{invoice}',     [InvoiceController::class, 'update'])->name('invoices.update')->middleware('can:invoices.editar');
+        Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy')->middleware('can:invoices.anular');
+        Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf')->middleware('can:invoices.ver');
+        Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat')->middleware('can:invoices.crear');
 
         // Cotizaciones
         // Un permiso por verbo: *.ver solo autoriza lectura. Antes iba un unico
@@ -464,7 +541,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/orders/{order}/events',       [OrderController::class, 'events'])->name('orders.events')->middleware(['module:orders', 'can:orders.ver']);
         Route::post('/orders/{order}/wa-sent',     [OrderController::class, 'waSent'])->name('orders.wa-sent')->middleware(['module:orders', 'can:orders.editar']);
         Route::get('/orders-export',               [OrderController::class, 'exportCsv'])->name('orders.export')->middleware(['module:orders', 'can:orders.ver']);
-        Route::post('/quotes/{quote}/convert',     [QuoteController::class, 'convert'])->name('quotes.convert')->middleware(['module:quotes', 'can:quotes.editar']);
+        // Mismo contrato dual A|B que su gemela de BixoSales (F1c): con
+        // 'can:quotes.editar' puro, un usuario del universo heredado veia el
+        // boton —QuoteAbilities le concede 'convertir'— y recibia 403 al
+        // pulsarlo. La capacidad anunciada y la ruta deben coincidir.
+        Route::post('/quotes/{quote}/convert',     [QuoteController::class, 'convert'])->name('quotes.convert')->middleware(['module:quotes', 'project.can:quotes.editar|manage-quotes']);
     });
 
     // Perfil de usuario
@@ -548,8 +629,16 @@ Route::get('/tienda/{profile}', function (string $profile, \Illuminate\Http\Requ
     return app(\App\Http\Controllers\PublicController::class)->shop($request, $project->slug, $profile);
 })->where('profile', '[a-z0-9-]+');
 
+// Las rutas de autenticacion se cargan ANTES del comodin publico: al estar al
+// final del archivo, `/{slug}` las capturaba y /forgot-password, /verify-email
+// y /confirm-password devolvian 404. Aqui ganan ellas, que es lo correcto:
+// ninguna tienda deberia llamarse "reset-password".
+require __DIR__.'/auth.php';
+
 // ─── Catálogo público ─────────────────────────────────────────────────────────
-$reserved = 'login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|bixofact|wa|cert';
+// `admin` faltaba en la lista: `routes/admin.php` se carga despues de este
+// archivo, asi que el comodin tapaba /admin (el panel del superadmin).
+$reserved = 'admin|login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|bixofact|wa|cert';
 Route::get('/storefront-preview/{project}', function (\App\Models\Project $project) {
     abort_unless($project->is_active, 404);
     if (request('page') === 'shop') {
@@ -855,130 +944,168 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
     Route::post('/logout',       [ComAuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['comercial.auth'])->group(function () {
-        Route::get('/',             [ComDashController::class, 'index'])->name('dashboard');
+        // Autorizacion por ruta. Antes TODO el portal colgaba solo de
+        // comercial.auth (sesion + proyecto), sin comprobar un solo permiso:
+        // cualquier usuario del proyecto podia crear, editar y borrar.
+        // Matriz aprobada: docs/auditoria/bixosales-matriz-autorizacion.md §3
+        // project.can admite alternativas "B|legacy" con semantica ANY.
+        Route::get('/',             [ComDashController::class, 'index'])->name('dashboard')->middleware('project.can:orders.ver|view-orders');
 
-        Route::get('/pos',  [PosController::class, 'indexComercial'])->name('pos');
-        Route::get('/venta-express', [PosController::class, 'express'])->name('ventas.express');
-        Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
-        Route::post('/pos/cotizar', [PosController::class, 'quote'])->name('pos.quote');
+        Route::get('/pos',  [PosController::class, 'indexComercial'])->name('pos')->middleware('can:pos.usar');
+        Route::get('/venta-express', [PosController::class, 'express'])->name('ventas.express')->middleware('can:pos.usar');
+        Route::post('/pos', [PosController::class, 'store'])->name('pos.store')->middleware('can:pos.usar');
+        Route::post('/pos/cotizar', [PosController::class, 'quote'])->name('pos.quote')->middleware('can:pos.usar');
 
         // Aprobación de pagos Yape/Plin (pedidos del bot en revisión)
-        Route::post('/pagos/pendientes', [\App\Http\Controllers\Api\PagoController::class, 'pendientes'])->name('pagos.pendientes');
-        Route::post('/pagos/aprobar',    [\App\Http\Controllers\Api\PagoController::class, 'aprobar'])->name('pagos.aprobar');
-        Route::post('/pagos/rechazar',   [\App\Http\Controllers\Api\PagoController::class, 'rechazar'])->name('pagos.rechazar');
+        // "pendientes" usa POST pero es una CONSULTA: lista los pagos en revision
+        // y no escribe nada. Es la unica excepcion verbo/semantica del portal.
+        Route::post('/pagos/pendientes', [\App\Http\Controllers\Api\PagoController::class, 'pendientes'])->name('pagos.pendientes')->middleware('can:payments.ver');
+        Route::post('/pagos/aprobar',    [\App\Http\Controllers\Api\PagoController::class, 'aprobar'])->name('pagos.aprobar')->middleware('can:payments.aprobar');
+        Route::post('/pagos/rechazar',   [\App\Http\Controllers\Api\PagoController::class, 'rechazar'])->name('pagos.rechazar')->middleware('can:payments.rechazar');
 
         // Revendedor: sus precios propios + su catálogo compartible
-        Route::get('/revendedor/precios',   [\App\Http\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios');
-        Route::post('/revendedor/precio',   [\App\Http\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar');
-        Route::post('/revendedor/catalogo', [\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle');
+        Route::get('/revendedor/precios',   [\App\Http\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios')->middleware('can:pos.usar');
+        Route::post('/revendedor/precio',   [\App\Http\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar')->middleware('can:pos.usar');
+        Route::post('/revendedor/catalogo', [\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
 
-        Route::get('/pedidos-bot',                  [RifaController::class, 'indexComercial'])->name('rifas');
-        Route::get('/pedidos-bot/monitoreo',         [RifaController::class, 'monitoreo'])->name('rifas.monitoreo');
-        Route::get('/pedidos-bot/exportar',          [RifaController::class, 'exportarComercial'])->name('rifas.exportar');
-        Route::post('/pedidos-bot/{venta}/validar', [RifaController::class, 'confirmarPago'])->name('rifas.validar');
-        Route::post('/pedidos-bot/{venta}/enviar',  [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
-        Route::post('/pedidos-bot/{venta}/cancelar',[RifaController::class, 'cancelar'])->name('rifas.cancelar');
-        Route::post('/pedidos-bot/{venta}/editar',   [RifaController::class, 'editarComercial'])->name('rifas.editar');
-        Route::post('/pedidos-bot/{venta}/eliminar',  [RifaController::class, 'eliminarComercial'])->name('rifas.eliminar');
-        Route::post('/pedidos-bot/{venta}/recordar',  [RifaController::class, 'recordar'])->name('rifas.recordar');
-        Route::post('/pedidos-bot/{venta}/enviar-membresia', [RifaController::class, 'enviarConMembresia'])->name('rifas.enviar.membresia');
-        Route::post('/pedidos-bot/nuevo-manual', [RifaController::class, 'nuevoManual'])->name('rifas.nuevo-manual');
-        Route::get('/consultar-dni/{dni}', [RifaController::class, 'consultarDni'])->name('rifas.consultar-dni');
+        Route::get('/pedidos-bot',                  [RifaController::class, 'indexComercial'])->name('rifas')->middleware('can:rifas.ver');
+        Route::get('/pedidos-bot/monitoreo',         [RifaController::class, 'monitoreo'])->name('rifas.monitoreo')->middleware('can:rifas.ver');
+        Route::get('/pedidos-bot/exportar',          [RifaController::class, 'exportarComercial'])->name('rifas.exportar')->middleware('can:rifas.ver');
+        Route::post('/pedidos-bot/{venta}/validar', [RifaController::class, 'confirmarPago'])->name('rifas.validar')->middleware('can:rifas.validar');
+        Route::post('/pedidos-bot/{venta}/enviar',  [RifaController::class, 'enviarTicket'])->name('rifas.enviar')->middleware('can:rifas.validar');
+        Route::post('/pedidos-bot/{venta}/cancelar',[RifaController::class, 'cancelar'])->name('rifas.cancelar')->middleware('can:rifas.cancelar');
+        Route::post('/pedidos-bot/{venta}/editar',   [RifaController::class, 'editarComercial'])->name('rifas.editar')->middleware('can:rifas.validar');
+        Route::post('/pedidos-bot/{venta}/eliminar',  [RifaController::class, 'eliminarComercial'])->name('rifas.eliminar')->middleware('can:rifas.cancelar');
+        Route::post('/pedidos-bot/{venta}/recordar',  [RifaController::class, 'recordar'])->name('rifas.recordar')->middleware('can:rifas.validar');
+        Route::post('/pedidos-bot/{venta}/enviar-membresia', [RifaController::class, 'enviarConMembresia'])->name('rifas.enviar.membresia')->middleware('can:rifas.validar');
+        Route::post('/pedidos-bot/nuevo-manual', [RifaController::class, 'nuevoManual'])->name('rifas.nuevo-manual')->middleware('can:rifas.validar');
+        Route::get('/consultar-dni/{dni}', [RifaController::class, 'consultarDni'])->name('rifas.consultar-dni')->middleware('can:rifas.ver');
 
         // WooCommerce
-        Route::get('/woo/orders',  [\App\Http\Controllers\WooSyncController::class, 'index'])->name('woo.orders');
-        Route::post('/woo/sync',   [\App\Http\Controllers\WooSyncController::class, 'sync'])->name('woo.sync');
-        Route::get('/woo/stats',   [\App\Http\Controllers\WooSyncController::class, 'stats'])->name('woo.stats');
+        Route::get('/woo/orders',  [\App\Http\Controllers\WooSyncController::class, 'index'])->name('woo.orders')->middleware('can:catalog.ver');
+        Route::post('/woo/sync',   [\App\Http\Controllers\WooSyncController::class, 'sync'])->name('woo.sync')->middleware('can:catalog.importar');
+        Route::get('/woo/stats',   [\App\Http\Controllers\WooSyncController::class, 'stats'])->name('woo.stats')->middleware('can:catalog.ver');
 
         // Tickets manuales WordPress
-        Route::get('/conversaciones', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'index'])->name('conversaciones');
-        Route::get('/conversaciones/{id}/mensajes', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'mensajes'])->name('conversaciones.mensajes');
-        Route::get('/tickets-manuales', [\App\Http\Controllers\TicketsWpController::class, 'index'])->name('tickets.wp');
-        Route::get('/tickets-manuales/buscar', [\App\Http\Controllers\TicketsWpController::class, 'buscar'])->name('tickets.wp.buscar');
-        Route::post('/tickets-manuales/eliminar', [\App\Http\Controllers\TicketsWpController::class, 'eliminar'])->name('tickets.wp.eliminar');
+        Route::get('/conversaciones', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'index'])->name('conversaciones')->middleware('can:tickets.ver');
+        Route::get('/conversaciones/{id}/mensajes', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'mensajes'])->name('conversaciones.mensajes')->middleware('can:tickets.ver');
+        Route::get('/tickets-manuales', [\App\Http\Controllers\TicketsWpController::class, 'index'])->name('tickets.wp')->middleware('can:tickets.ver');
+        Route::get('/tickets-manuales/buscar', [\App\Http\Controllers\TicketsWpController::class, 'buscar'])->name('tickets.wp.buscar')->middleware('can:tickets.ver');
+        Route::post('/tickets-manuales/eliminar', [\App\Http\Controllers\TicketsWpController::class, 'eliminar'])->name('tickets.wp.eliminar')->middleware('can:tickets.eliminar');
 
-        Route::get('/pedidos',                [OrderController::class, 'index'])->name('pedidos');
-        Route::post('/pedidos',               [OrderController::class, 'store'])->name('pedidos.store');
-        Route::get('/pedidos/{order}',        [OrderController::class, 'show'])->name('pedidos.show');
-        Route::put('/pedidos/{order}',        [OrderController::class, 'update'])->name('pedidos.update');
-        Route::delete('/pedidos/{order}',     [OrderController::class, 'destroy'])->name('pedidos.destroy');
-        Route::post('/pedidos/{order}/wa-action',   [WaBotController::class, 'portalAction'])->name('pedidos.wa.action');
-        Route::post('/pedidos/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('pedidos.wa.delivery');
-        Route::patch('/pedidos/{order}/kitchen',    [OrderController::class, 'updateKitchen'])->name('pedidos.kitchen');
-        Route::get('/cocina',                       [OrderController::class, 'kitchen'])->name('cocina');
-        Route::get('/mesas',                        [MesaController::class, 'index'])->name('mesas');
-        Route::get('/mesas/data',                   [MesaController::class, 'data'])->name('mesas.data');
+        Route::get('/pedidos',                [OrderController::class, 'index'])->name('pedidos')->middleware('project.can:orders.ver|view-orders');
+        Route::post('/pedidos',               [OrderController::class, 'store'])->name('pedidos.store')->middleware('project.can:orders.crear|manage-orders');
+        Route::get('/pedidos/{order}',        [OrderController::class, 'show'])->name('pedidos.show')->middleware('project.can:orders.ver|view-orders');
+        // update toca cliente, productos, precios y condiciones comerciales:
+        // exige orders.editar a secas. Almacen NO entra por aqui.
+        Route::put('/pedidos/{order}',        [OrderController::class, 'update'])->name('pedidos.update')->middleware('project.can:orders.editar|manage-orders');
+        Route::delete('/pedidos/{order}',     [OrderController::class, 'destroy'])->name('pedidos.destroy')->middleware('project.can:orders.eliminar|manage-orders');
+        Route::post('/pedidos/{order}/wa-action',   [WaBotController::class, 'portalAction'])->name('pedidos.wa.action')->middleware('project.can:orders.editar|manage-orders');
+        // Preparacion y entrega: tambien accesibles a logistica/almacen, que
+        // cambian estado sin poder tocar datos comerciales.
+        Route::post('/pedidos/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('pedidos.wa.delivery')->middleware('project.can:orders.editar|manage-logistics');
+        Route::patch('/pedidos/{order}/kitchen',    [OrderController::class, 'updateKitchen'])->name('pedidos.kitchen')->middleware('project.can:orders.editar|manage-logistics');
+        // Estas cuatro faltaban: la vista de Pedidos las llamaba con la URL del
+        // PANEL (url('/orders')/...) aun renderizada dentro del portal, de modo
+        // que se evaluaban con los permisos del panel. changeLaundryStatus ya
+        // contemplaba routeIs('bixosales.*') para una ruta que nunca se creo.
+        // Se reutilizan los handlers existentes, sin duplicar logica.
+        Route::post('/pedidos/{order}/pay',            [OrderController::class, 'pay'])->name('pedidos.pay')->middleware('project.can:orders.editar|manage-orders');
+        Route::get('/pedidos/{order}/events',          [OrderController::class, 'events'])->name('pedidos.events')->middleware('project.can:orders.ver|view-orders');
+        Route::post('/pedidos/{order}/wa-sent',        [OrderController::class, 'waSent'])->name('pedidos.wa-sent')->middleware('project.can:orders.editar|manage-orders');
+        Route::post('/pedidos/{order}/laundry-status', [WaBotController::class, 'changeLaundryStatus'])->name('pedidos.laundry-status')->middleware('project.can:orders.editar|manage-logistics');
+        Route::get('/cocina',                       [OrderController::class, 'kitchen'])->name('cocina')->middleware('project.can:orders.ver|view-orders');
+        Route::get('/mesas',                        [MesaController::class, 'index'])->name('mesas')->middleware('project.can:orders.ver|view-orders');
+        Route::get('/mesas/data',                   [MesaController::class, 'data'])->name('mesas.data')->middleware('project.can:orders.ver|view-orders');
 
         // ── MAPA OPERATIVO ────────────────────────────────────────────────────
         Route::prefix('mapa')->name('mapa.')->group(function () {
-            Route::get('/',                                   [OperationalMapController::class, 'index'])->name('index');
-            Route::get('/maps/{map}/objects',                 [OperationalMapController::class, 'objects'])->name('objects');
-            Route::post('/maps',                              [OperationalMapController::class, 'storemap'])->name('maps.store');
-            Route::post('/maps/{map}/objects',               [OperationalMapController::class, 'storeObject'])->name('objects.store');
-            Route::patch('/objects/{object}/move',            [OperationalMapController::class, 'move'])->name('objects.move');
-            Route::patch('/objects/{object}/status',          [OperationalMapController::class, 'changeStatus'])->name('objects.status');
-            Route::patch('/objects/{object}/amount',          [OperationalMapController::class, 'updateAmount'])->name('objects.amount');
-            Route::patch('/objects/{object}/responsible',     [OperationalMapController::class, 'assignResponsible'])->name('objects.responsible');
-            Route::post('/objects/{object}/alerts',           [OperationalMapController::class, 'addAlert'])->name('objects.alerts.add');
-            Route::delete('/objects/{object}/alerts',         [OperationalMapController::class, 'clearAlerts'])->name('objects.alerts.clear');
-            Route::post('/objects/{object}/requests',         [OperationalMapController::class, 'createRequest'])->name('objects.requests.store');
-            Route::get('/objects/{object}/history',           [OperationalMapController::class, 'history'])->name('objects.history');
-            Route::put('/objects/{object}',                   [OperationalMapController::class, 'updateObject'])->name('objects.update');
-            Route::delete('/objects/{object}',                [OperationalMapController::class, 'destroyObject'])->name('objects.destroy');
+            // Lectura con mapa.ver; TODA mutacion con mapa.editar (11 rutas).
+            Route::get('/',                                   [OperationalMapController::class, 'index'])->name('index')->middleware('can:mapa.ver');
+            Route::get('/maps/{map}/objects',                 [OperationalMapController::class, 'objects'])->name('objects')->middleware('can:mapa.ver');
+            Route::post('/maps',                              [OperationalMapController::class, 'storemap'])->name('maps.store')->middleware('can:mapa.editar');
+            Route::post('/maps/{map}/objects',               [OperationalMapController::class, 'storeObject'])->name('objects.store')->middleware('can:mapa.editar');
+            Route::patch('/objects/{object}/move',            [OperationalMapController::class, 'move'])->name('objects.move')->middleware('can:mapa.editar');
+            Route::patch('/objects/{object}/status',          [OperationalMapController::class, 'changeStatus'])->name('objects.status')->middleware('can:mapa.editar');
+            Route::patch('/objects/{object}/amount',          [OperationalMapController::class, 'updateAmount'])->name('objects.amount')->middleware('can:mapa.editar');
+            Route::patch('/objects/{object}/responsible',     [OperationalMapController::class, 'assignResponsible'])->name('objects.responsible')->middleware('can:mapa.editar');
+            Route::post('/objects/{object}/alerts',           [OperationalMapController::class, 'addAlert'])->name('objects.alerts.add')->middleware('can:mapa.editar');
+            Route::delete('/objects/{object}/alerts',         [OperationalMapController::class, 'clearAlerts'])->name('objects.alerts.clear')->middleware('can:mapa.editar');
+            Route::post('/objects/{object}/requests',         [OperationalMapController::class, 'createRequest'])->name('objects.requests.store')->middleware('can:mapa.editar');
+            Route::get('/objects/{object}/history',           [OperationalMapController::class, 'history'])->name('objects.history')->middleware('can:mapa.ver');
+            Route::put('/objects/{object}',                   [OperationalMapController::class, 'updateObject'])->name('objects.update')->middleware('can:mapa.editar');
+            Route::delete('/objects/{object}',                [OperationalMapController::class, 'destroyObject'])->name('objects.destroy')->middleware('can:mapa.editar');
         });
 
         // Reservas
-        Route::get('/reservas',                     [ReservaController::class, 'index'])->name('reservas');
-        Route::post('/reservas',                    [ReservaController::class, 'store'])->name('reservas.store');
-        Route::put('/reservas/{appointment}',       [ReservaController::class, 'update'])->name('reservas.update');
-        Route::delete('/reservas/{appointment}',    [ReservaController::class, 'destroy'])->name('reservas.destroy');
-        Route::get('/reservas/calendar',            [ReservaController::class, 'calendar'])->name('reservas.calendar');
+        Route::get('/reservas',                     [ReservaController::class, 'index'])->name('reservas')->middleware('can:agenda.ver');
+        Route::post('/reservas',                    [ReservaController::class, 'store'])->name('reservas.store')->middleware('can:agenda.crear');
+        Route::put('/reservas/{appointment}',       [ReservaController::class, 'update'])->name('reservas.update')->middleware('can:agenda.editar');
+        Route::delete('/reservas/{appointment}',    [ReservaController::class, 'destroy'])->name('reservas.destroy')->middleware('can:agenda.eliminar');
+        Route::get('/reservas/calendar',            [ReservaController::class, 'calendar'])->name('reservas.calendar')->middleware('can:agenda.ver');
 
-        // Delivery
-        Route::get('/delivery',                     [DeliveryController::class, 'index'])->name('delivery');
-        Route::get('/delivery/data',                [DeliveryController::class, 'data'])->name('delivery.data');
-        Route::post('/delivery',                    [DeliveryController::class, 'store'])->name('delivery.store');
-        Route::put('/delivery/{order}/status',      [DeliveryController::class, 'updateStatus'])->name('delivery.status');
+        // Delivery — unica capacidad que solo existe en el universo legacy.
+        // Migracion a dominio.accion documentada en rbac-produccion-arin.md
+        Route::get('/delivery',                     [DeliveryController::class, 'index'])->name('delivery')->middleware('can:view-logistics');
+        Route::get('/delivery/data',                [DeliveryController::class, 'data'])->name('delivery.data')->middleware('can:view-logistics');
+        Route::post('/delivery',                    [DeliveryController::class, 'store'])->name('delivery.store')->middleware('can:manage-logistics');
+        Route::put('/delivery/{order}/status',      [DeliveryController::class, 'updateStatus'])->name('delivery.status')->middleware('can:manage-logistics');
 
-        // Caja / Tesorería
-        Route::get('/caja',                         [CajaController::class, 'index'])->name('caja');
-        Route::post('/caja/abrir',                  [CajaController::class, 'abrir'])->name('caja.abrir');
-        Route::post('/caja/{caja}/cerrar',          [CajaController::class, 'cerrar'])->name('caja.cerrar');
-        Route::post('/caja/{caja}/movimiento',      [CajaController::class, 'movimiento'])->name('caja.movimiento');
-        Route::get('/caja/{caja}/data',             [CajaController::class, 'data'])->name('caja.data');
+        // Caja / Tesorería — operaciones monetarias, permiso explicito por accion
+        Route::get('/caja',                         [CajaController::class, 'index'])->name('caja')->middleware('can:caja.ver');
+        Route::post('/caja/abrir',                  [CajaController::class, 'abrir'])->name('caja.abrir')->middleware('can:caja.abrir');
+        Route::post('/caja/{caja}/cerrar',          [CajaController::class, 'cerrar'])->name('caja.cerrar')->middleware('can:caja.cerrar');
+        Route::post('/caja/{caja}/movimiento',      [CajaController::class, 'movimiento'])->name('caja.movimiento')->middleware('can:caja.movimiento');
+        Route::get('/caja/{caja}/data',             [CajaController::class, 'data'])->name('caja.data')->middleware('can:caja.ver');
 
-        Route::get('/cotizaciones',           [QuoteController::class, 'index'])->name('cotizaciones');
-        Route::post('/cotizaciones',          [QuoteController::class, 'store'])->name('cotizaciones.store');
-        Route::get('/cotizaciones/{quote}',   [QuoteController::class, 'show'])->name('cotizaciones.show');
-        Route::put('/cotizaciones/{quote}',   [QuoteController::class, 'update'])->name('cotizaciones.update');
-        Route::put('/cotizaciones/{quote}/full', [QuoteController::class, 'updateFull'])->name('cotizaciones.update_full');
-        Route::delete('/cotizaciones/{quote}',[QuoteController::class, 'destroy'])->name('cotizaciones.destroy');
-        Route::post('/cotizaciones/{quote}/send', [QuoteController::class, 'send'])->name('cotizaciones.send');
-        Route::post('/cotizaciones/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('cotizaciones.duplicate');
-        Route::post('/cotizaciones/{quote}/seen',      [QuoteController::class, 'markSeen'])->name('cotizaciones.seen');
+        Route::get('/cotizaciones',           [QuoteController::class, 'index'])->name('cotizaciones')->middleware('project.can:quotes.ver|view-quotes');
+        Route::post('/cotizaciones',          [QuoteController::class, 'store'])->name('cotizaciones.store')->middleware('project.can:quotes.crear|manage-quotes');
+        Route::get('/cotizaciones/{quote}',   [QuoteController::class, 'show'])->name('cotizaciones.show')->middleware('project.can:quotes.ver|view-quotes');
+        Route::put('/cotizaciones/{quote}',   [QuoteController::class, 'update'])->name('cotizaciones.update')->middleware('project.can:quotes.editar|manage-quotes');
+        Route::put('/cotizaciones/{quote}/full', [QuoteController::class, 'updateFull'])->name('cotizaciones.update_full')->middleware('project.can:quotes.editar|manage-quotes');
+        Route::delete('/cotizaciones/{quote}',[QuoteController::class, 'destroy'])->name('cotizaciones.destroy')->middleware('project.can:quotes.eliminar|manage-quotes');
+        Route::post('/cotizaciones/{quote}/send', [QuoteController::class, 'send'])->name('cotizaciones.send')->middleware('project.can:quotes.editar|manage-quotes');
+        Route::post('/cotizaciones/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('cotizaciones.duplicate')->middleware('project.can:quotes.crear|manage-quotes');
+        // Acuse de lectura que dispara la propia vista: basta con poder leerla.
+        Route::post('/cotizaciones/{quote}/seen',      [QuoteController::class, 'markSeen'])->name('cotizaciones.seen')->middleware('project.can:quotes.ver|view-quotes');
+        // Convertir en PEDIDO (F1c). Nombre inequivoco: en el portal fiscal ya
+        // existe /f/{slug}/cotizaciones/{id}/convertir, que emite COMPROBANTE.
+        // Mismo permiso dual A|B que el resto de acciones de edicion; hasta
+        // ahora solo existia la ruta del panel con 'can:quotes.editar' puro, de
+        // modo que un usuario con el permiso heredado podia editar pero no
+        // convertir.
+        Route::post('/cotizaciones/{quote}/convertir-pedido', [QuoteController::class, 'convert'])->name('cotizaciones.convertir_pedido')->middleware('project.can:quotes.editar|manage-quotes');
 
-        Route::get('/facturas',               [InvoiceController::class, 'index'])->name('facturas');
-        Route::post('/facturas',              [InvoiceController::class, 'store'])->name('facturas.store');
-        Route::get('/facturas/{invoice}',     [InvoiceController::class, 'show'])->name('facturas.show');
-        Route::put('/facturas/{invoice}',     [InvoiceController::class, 'update'])->name('facturas.update');
-        Route::delete('/facturas/{invoice}',  [InvoiceController::class, 'destroy'])->name('facturas.destroy');
-        Route::get('/facturas/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('facturas.pdf');
-        Route::post('/facturas/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('facturas.sunat');
+        // Solo se añade middleware: NO se toca logica fiscal ni SUNAT.
+        Route::get('/facturas',               [InvoiceController::class, 'index'])->name('facturas')->middleware('can:invoices.ver');
+        Route::post('/facturas',              [InvoiceController::class, 'store'])->name('facturas.store')->middleware('can:invoices.crear');
+        Route::get('/facturas/{invoice}',     [InvoiceController::class, 'show'])->name('facturas.show')->middleware('can:invoices.ver');
+        Route::put('/facturas/{invoice}',     [InvoiceController::class, 'update'])->name('facturas.update')->middleware('can:invoices.editar');
+        Route::delete('/facturas/{invoice}',  [InvoiceController::class, 'destroy'])->name('facturas.destroy')->middleware('can:invoices.anular');
+        Route::get('/facturas/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('facturas.pdf')->middleware('can:invoices.ver');
+        Route::post('/facturas/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('facturas.sunat')->middleware('can:invoices.crear');
 
-        Route::get('/clientes',               [ClientController::class, 'index'])->name('clientes');
-        Route::post('/clientes',              [ClientController::class, 'store'])->name('clientes.store');
-        Route::put('/clientes/{client}',      [ClientController::class, 'update'])->name('clientes.update');
-        Route::delete('/clientes/{client}',   [ClientController::class, 'destroy'])->name('clientes.destroy');
+        Route::get('/clientes',               [ClientController::class, 'index'])->name('clientes')->middleware('project.can:clients.ver|view-clients');
+        Route::post('/clientes',              [ClientController::class, 'store'])->name('clientes.store')->middleware('project.can:clients.crear|manage-clients');
+        Route::put('/clientes/{client}',      [ClientController::class, 'update'])->name('clientes.update')->middleware('project.can:clients.editar|manage-clients');
+        Route::delete('/clientes/{client}',   [ClientController::class, 'destroy'])->name('clientes.destroy')->middleware('project.can:clients.eliminar|manage-clients');
 
-        Route::get('/reportes/ventas-bot',    [ReporteController::class, 'ventasBot'])->name('reportes.ventas');
-        Route::get('/reportes/seguimiento',   [ReporteController::class, 'seguimientoBot'])->name('reportes.seguimiento');
-        Route::get('/reportes/ventas',        [ReporteController::class, 'ventas'])->name('reportes.ventas.general');
-        Route::get('/reportes/top-productos', [ReporteController::class, 'topProductos'])->name('reportes.top.productos');
-        Route::get('/reportes/rentabilidad',  [ReporteController::class, 'rentabilidad'])->name('reportes.rentabilidad');
-        Route::get('/reportes/dashboard-data',[ReporteController::class, 'dashboardData'])->name('reportes.dashboard.data');
-        Route::get('/reportes/inventario',    [ReporteController::class, 'inventario'])->name('reportes.inventario');
+        // F2 v1 — Cuentas por Cobrar (LECTURA sobre datos existentes; la
+        // entidad contable llega en F2b/F3 con diseño auditado). Mismo permiso
+        // que los reportes: es una vista agregada, no muta nada.
+        Route::get('/cuentas',                [\App\Http\Controllers\CxcController::class, 'index'])->name('cuentas')->middleware('can:reports.ver');
+        // Ver la deuda y CAMBIAR las condiciones de cobro son cosas distintas:
+        // lo segundo exige settings.pagos, no reports.ver.
+        Route::post('/cuentas/condiciones',   [\App\Http\Controllers\CxcController::class, 'guardarCondiciones'])->name('cuentas.condiciones')->middleware('project.can:settings.pagos|manage-settings');
+
+        Route::get('/reportes/ventas-bot',    [ReporteController::class, 'ventasBot'])->name('reportes.ventas')->middleware('can:reports.ver');
+        Route::get('/reportes/seguimiento',   [ReporteController::class, 'seguimientoBot'])->name('reportes.seguimiento')->middleware('can:reports.ver');
+        Route::get('/reportes/ventas',        [ReporteController::class, 'ventas'])->name('reportes.ventas.general')->middleware('can:reports.ver');
+        Route::get('/reportes/top-productos', [ReporteController::class, 'topProductos'])->name('reportes.top.productos')->middleware('can:reports.ver');
+        Route::get('/reportes/rentabilidad',  [ReporteController::class, 'rentabilidad'])->name('reportes.rentabilidad')->middleware('can:reports.ver');
+        Route::get('/reportes/dashboard-data',[ReporteController::class, 'dashboardData'])->name('reportes.dashboard.data')->middleware('can:reports.ver');
+        Route::get('/reportes/inventario',    [ReporteController::class, 'inventario'])->name('reportes.inventario')->middleware('can:reports.ver');
     });
 });
 
-require __DIR__.'/auth.php';
 Route::get('/test-membresia', function(){ return 'OK'; });

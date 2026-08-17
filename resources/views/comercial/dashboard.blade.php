@@ -20,11 +20,16 @@ $kpi = match(true) {
 // Semáforo — lógica real simple
 $semV = $varVentas === null ? 'gray' : ($varVentas >= 0 ? 'green' : ($varVentas >= -10 ? 'yellow' : 'red'));
 $semP = $pendientes === 0 ? 'green' : ($pendientes <= 5 ? 'yellow' : 'red');
-$semScore = $semScore ?? 87;
-
-// Score ring deg
-$scoreDeg = round($semScore * 3.6);
-$scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4444');
+// El marcador SOLO existe de verdad en proyectos de rifas, que es la unica
+// rama que lo calcula. Aqui habia `$semScore = $semScore ?? 87`, asi que
+// cualquier otro negocio veia un **87/100 inventado** presentado como "estado
+// general del negocio", con su anillo y su barra. Un numero falso en el que
+// alguien puede basar una decision es peor que no tener el widget.
+$hayScore   = isset($semScore) && $semScore !== null;
+$scoreDeg   = $hayScore ? round($semScore * 3.6) : 0;
+$scoreColor = $hayScore
+    ? ($semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4444'))
+    : '#E5E8EF';
 @endphp
 
 {{-- ══════════════════════════════════════════════════════
@@ -35,7 +40,8 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
     {{-- ── SECCIÓN 1: AVAN SCORE + SEMÁFORO ── --}}
     <div class="co-header">
 
-        {{-- BIXO Score --}}
+        {{-- Marcador: solo si el proyecto lo calcula de verdad. --}}
+        @if($hayScore)
         <div class="score-card">
             <div class="score-ring-lg" style="background: conic-gradient({{ $scoreColor }} {{ $scoreDeg }}deg, #E5E8EF 0);">
                 <div class="score-inner-lg">
@@ -59,6 +65,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Semáforo empresarial --}}
         <div class="semaforo-card">
@@ -108,12 +115,52 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                 <span class="kpi-mini-trend" style="color:#9CA3AF">activos ahora</span>
             </div>
             <div class="kpi-mini">
-                <p class="kpi-mini-label">WhatsApp</p>
-                <p class="kpi-mini-val">{{ $waPendientes }}</p>
-                <span class="kpi-mini-trend" style="color:#9CA3AF">en proceso</span>
+                <p class="kpi-mini-label">Por cobrar</p>
+                <p class="kpi-mini-val" style="color:{{ ($porCobrar ?? 0) > 0 ? '#D97706' : '#10B981' }}">S/ {{ number_format($porCobrar ?? 0, 0) }}</p>
+                <a href="{{ route('bixosales.cuentas') }}" class="kpi-mini-trend" style="color:#4F46E5;text-decoration:none;font-weight:700;padding:15px 8px;margin:-15px -8px;display:inline-block">cobrar ahora →</a>
             </div>
         </div>
     </div>
+
+    {{-- ── VENTAS POR CANAL (mes) — multicanal real ── --}}
+    @if(isset($canales))
+    <div class="co-section">
+        <div class="co-section-header">
+            <div>
+                <p class="section-label">MULTICANAL</p>
+                <h2 class="section-title">¿Por dónde estás vendiendo este mes?</h2>
+            </div>
+            <div style="text-align:right">
+                <p style="font-size:11px;color:#9CA3AF;margin:0">Total del mes</p>
+                <p style="font-size:20px;font-weight:800;color:#111827;margin:0">S/ {{ number_format($ventasMesTotal ?? 0, 2) }}</p>
+                @if(($meta ?? 0) > 0)
+                <p style="font-size:11px;font-weight:700;margin:2px 0 0;color:{{ ($metaPct ?? 0) >= 100 ? '#059669' : '#4F46E5' }}">{{ $metaPct }}% de tu meta (S/ {{ number_format($meta, 0) }})</p>
+                @endif
+            </div>
+        </div>
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:18px 20px">
+            @php
+                $canalColors = ['Tienda virtual' => '#4F46E5', 'POS / Mostrador' => '#0EA5E9', 'WhatsApp' => '#25D366', 'Cotizaciones' => '#8B5CF6', 'Otros' => '#9CA3AF'];
+                $maxCanal = max(1, collect($canales)->max('t'));
+            @endphp
+            @forelse($canales as $nombre => $c)
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+                <span style="width:9px;height:9px;border-radius:50%;background:{{ $canalColors[$nombre] ?? '#9CA3AF' }};flex-shrink:0"></span>
+                <span style="width:130px;font-size:12.5px;font-weight:700;color:#374151;flex-shrink:0">{{ $nombre }}</span>
+                <div style="flex:1;height:10px;background:#F3F4F6;border-radius:99px;overflow:hidden">
+                    <div style="height:100%;border-radius:99px;background:{{ $canalColors[$nombre] ?? '#9CA3AF' }};width:{{ max(3, $c['t'] / $maxCanal * 100) }}%"></div>
+                </div>
+                <span style="width:110px;text-align:right;font-size:13px;font-weight:800;color:#111827">S/ {{ number_format($c['t'], 2) }}</span>
+                <span style="width:78px;text-align:right;font-size:11px;color:#9CA3AF">{{ $c['n'] }} venta{{ $c['n'] === 1 ? '' : 's' }} · {{ $ventasMesTotal > 0 ? round($c['t'] / $ventasMesTotal * 100) : 0 }}%</span>
+            </div>
+            @empty
+            <div style="text-align:center;padding:22px;color:#9CA3AF;font-size:13px">
+                Aún no hay ventas este mes. Empieza con <a href="{{ route('bixosales.ventas.express') }}" style="color:#4F46E5;font-weight:800">⚡ Venta Express</a>
+            </div>
+            @endforelse
+        </div>
+    </div>
+    @endif
 
     {{-- ── SECCIÓN 2: MAPA OPERATIVO ── --}}
     <div class="co-section">
@@ -335,7 +382,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
                 @endif
             </div>
             <a href="{{ route('bixosales.pedidos') }}"
-               style="font-size:12px; color:var(--blue); text-decoration:none; font-weight:500;">
+               style="font-size:12px; color:var(--blue); text-decoration:none; font-weight:500; padding:14px 8px; margin:-14px -8px;">
                 Ver todos →
             </a>
         </div>
@@ -473,7 +520,7 @@ $scoreColor = $semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4
             <div class="co-card-header">
                 <p class="section-label">ÚLTIMOS PEDIDOS</p>
                 <a href="{{ route('bixosales.pedidos') }}"
-                   style="font-size:11px; color:var(--blue); text-decoration:none;">Ver todos →</a>
+                   style="font-size:11px; color:var(--blue); text-decoration:none; padding:14px 8px; margin:-14px -8px;">Ver todos →</a>
             </div>
             @forelse($pedidosRecientes->take(8) as $o)
             @php

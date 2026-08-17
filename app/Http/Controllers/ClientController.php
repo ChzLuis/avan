@@ -29,6 +29,79 @@ class ClientController extends Controller
     }
 
     /**
+     * Ficha del cliente. Las rutas `clients.show`, `clients.create` y
+     * `clients.edit` estaban declaradas apuntando a metodos que NO existian:
+     * pedir `/clients/{id}` devolvia **500** en produccion. No se detecto
+     * porque ninguna vista enlaza ahi, pero esa URL es justo la ficha.
+     *
+     * Doble naturaleza, igual que Pedidos y Cotizaciones: JSON para AJAX,
+     * interfaz completa para navegacion HTML.
+     */
+    public function show(Request $request, Client $client)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        abort_unless($client->project_id === $project->id, 403);
+
+        if (! ($request->expectsJson() || $request->ajax())) {
+            return $this->index();
+        }
+
+        return response()->json([
+            'cliente'   => $client,
+            'resumen'   => $this->resumenDe($project, $client),
+            'pedidos'   => $client->orders()->latest()->limit(20)
+                ->get(['id', 'total', 'status', 'payment_status', 'created_at']),
+            'cotizaciones' => $client->quotes()->latest()->limit(20)
+                ->get(['id', 'total', 'status', 'payment_status', 'created_at']),
+        ]);
+    }
+
+    /**
+     * Consolidacion comercial y financiera del cliente. Hasta ahora la ficha
+     * solo sabia CONTAR pedidos y citas: no habia forma de responder "cuanto me
+     * debe este cliente" sin salir a Cuentas por Cobrar y buscarlo a mano.
+     * Se deriva del libro de cobros, en centavos exactos.
+     */
+    private function resumenDe(Project $project, Client $client): array
+    {
+        $deudaCents = 0;
+        $vendidoCents = 0;
+
+        foreach ($client->orders as $o) {
+            $totalC = \App\Support\LineMath::toCents(\App\Support\LineMath::canon((string) $o->total));
+            $vendidoCents += $totalC;
+            if (in_array(strtolower((string) $o->status), ['cancelled', 'cancelado', 'anulado'], true)) {
+                continue;
+            }
+            $deudaCents += max(0, $totalC - \App\Support\Ledger::cobradoCents($project->id, 'order', $o->id));
+        }
+
+        return [
+            'pedidos'      => $client->orders->count(),
+            'cotizaciones' => $client->quotes->count(),
+            'vendido'      => \App\Support\LineMath::present(\App\Support\LineMath::format($vendidoCents)),
+            'deuda'        => \App\Support\LineMath::present(\App\Support\LineMath::format($deudaCents)),
+            'deuda_cents'  => $deudaCents,
+        ];
+    }
+
+    /**
+     * `create` y `edit` existen como ruta desde siempre pero el alta y la
+     * edicion se hacen por AJAX contra `store`/`update` desde el listado. Se
+     * resuelven devolviendo el listado en vez de reventar con 500.
+     */
+    public function create()
+    {
+        return redirect()->route(request()->routeIs('bixosales.*') ? 'bixosales.clientes' : 'clients');
+    }
+
+    public function edit(Client $client)
+    {
+        return $this->create();
+    }
+
+    /**
      * Vista de pipeline (Kanban) del CRM: leads agrupados por etapa comercial.
      * Es la otra mitad del Copilot: aquí el vendedor gestiona lo que la extensión capturó.
      */

@@ -398,6 +398,26 @@ class StoreExperienceController extends Controller
                 'content.items.*.icon' => ['nullable', 'string', 'max:30'], 'content.items.*.value' => ['nullable', 'string', 'max:30'],
                 'content.items.*.title' => ['nullable', 'string', 'max:80'],
             ],
+            // `category_rows` estaba REGISTRADA como componente y ofrecida por
+            // la plantilla computienda, pero era la unica de las 20 sin arma
+            // aqui. Como el match no tenia `default`, guardar "Filas por
+            // categoria" desde el constructor lanzaba UnhandledMatchError: un
+            // 500 en un camino que el usuario recorre.
+            'category_rows' => [
+                'content.limit'     => ['required', 'integer', 'min:2', 'max:10'],
+                'content.show_head' => ['nullable', 'boolean'],
+                'content.rows'      => ['nullable', 'array', 'max:12'],
+                'content.rows.*.category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('project_id', $projectId)],
+                'content.rows.*.title'       => ['nullable', 'string', 'max:120'],
+                'content.rows.*.enabled'     => ['nullable', 'boolean'],
+                'content.rows.*.sort_order'  => ['nullable', 'integer', 'min:0'],
+            ],
+            // Y un `default`, que es el defecto de fondo: sin el, CUALQUIER
+            // componente nuevo que se registre y se olvide aqui vuelve a
+            // reventar con 500. El componente ya se valida contra la lista
+            // oficial mas arriba, asi que no aflojar nada dejarlo pasar sin
+            // reglas especificas.
+            default => [],
         };
 
         return array_merge($rules, $specific);

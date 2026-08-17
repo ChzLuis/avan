@@ -132,7 +132,13 @@
         $activeTemplateIsSupported = in_array($activeTemplate, $supportedTemplateKeys, true);
         $appliedTplKey = request('applied');
         $initialAppliedTheme = ($appliedTplKey && isset($allTemplates[$appliedTplKey]))
-          ? ['name' => $allTemplates[$appliedTplKey]['label'], 'description' => \Illuminate\Support\Str::limit($allTemplates[$appliedTplKey]['description'], 60)]
+          // Mismas claves que usa la ruta por JS (theme.name / theme.description,
+          // que salen de `name` y `short_description`). Con `label`/`description`
+          // la MISMA accion mostraba un texto al aplicar la plantilla y otro
+          // distinto al recargar con ?applied.
+          ? ['name' => $allTemplates[$appliedTplKey]['name'] ?? $allTemplates[$appliedTplKey]['label'],
+             'description' => \Illuminate\Support\Str::limit(
+                 $allTemplates[$appliedTplKey]['short_description'] ?? $allTemplates[$appliedTplKey]['description'] ?? '', 60)]
           : null;
       @endphp
 

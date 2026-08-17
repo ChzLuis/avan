@@ -20,7 +20,11 @@ class StorefrontHomepageBuilderTest extends TestCase
 
     private function project(): Project
     {
-        $user = User::factory()->create();
+        // La pantalla de Diseño clasico quedo retirada: `design()` redirige al
+        // Constructor salvo que un SUPERADMIN pida `?classic=1`, que es la
+        // salida de emergencia. Las pruebas que ejercen ese HTML necesitan por
+        // tanto un superadmin; si no, solo verian el redirect.
+        $user = User::factory()->create(['is_superadmin' => 1]);
         $project = Project::create([
             'owner_id' => $user->id,
             'name' => 'Tienda Builder',
@@ -62,14 +66,24 @@ class StorefrontHomepageBuilderTest extends TestCase
         ];
     }
 
-    public function test_defaults_create_the_eight_canonical_sections_once(): void
+    /**
+     * Lo que protege este contrato es que `ensure()` sea IDEMPOTENTE: una
+     * seccion por componente registrado, la llames las veces que la llames.
+     *
+     * El numero estaba fijado a 8 y el canon crecio a 20, asi que chocaba con
+     * su propia ultima asercion —que ya compara contra la lista viva—. Se
+     * cuenta contra el canon: si manana se registra un componente mas, el
+     * contrato sigue valiendo, y si `ensure()` duplicara algo, falla igual.
+     */
+    public function test_defaults_create_the_canonical_sections_once(): void
     {
         $project = $this->project();
         StorefrontSections::ensure($project);
         StorefrontSections::ensure($project);
 
         $sections = $project->storeSections()->where('page', 'home')->get();
-        $this->assertCount(8, $sections);
+        $this->assertCount(count(StorefrontSections::COMPONENTS), $sections,
+            'una seccion por componente: ni de menos, ni duplicadas');
         $this->assertEqualsCanonicalizing(array_keys(StorefrontSections::COMPONENTS), $sections->pluck('component')->all());
     }
 
@@ -110,7 +124,7 @@ class StorefrontHomepageBuilderTest extends TestCase
     public function test_admin_builder_and_public_store_render_without_errors(): void
     {
         $project = $this->project();
-        $adminView = app(SettingsController::class)->design();
+        $adminView = app(SettingsController::class)->design(Request::create('/settings/design', 'GET', ['classic' => 1]));
         $this->assertCount(8, $adminView->getData()['homeSections']);
         $this->assertTrue(
             $adminView->getData()['homeSections']->every(fn ($section) => $section->project_id === $project->id)
@@ -173,7 +187,10 @@ class StorefrontHomepageBuilderTest extends TestCase
         }
 
         $sections = $project->storeSections()->where('page', 'home')->get();
-        $this->assertCount(8, $sections);
+        // Contra el canon vivo, no contra un 8 que se quedo atras: este es el
+        // contrato que destapo que `category_rows` reventaba con 500 al
+        // guardarse, porque recorre TODOS los componentes registrados.
+        $this->assertCount(count(StorefrontSections::COMPONENTS), $sections);
         $this->assertTrue($sections->every(fn ($section) => !$section->has_draft && $section->is_enabled));
     }
 
@@ -200,7 +217,7 @@ class StorefrontHomepageBuilderTest extends TestCase
         view()->share('activeProject', $project);
         request()->merge(['s' => 'constructor']);
 
-        $html = app(SettingsController::class)->design()->render();
+        $html = app(SettingsController::class)->design(Request::create('/settings/design', 'GET', ['classic' => 1]))->render();
         $this->assertStringContainsString('?s=plantilla', $html);
         $this->assertStringContainsString('?s=constructor', $html);
         $this->assertSame(2, substr_count($html, 'data-primary-designer-tab='));
@@ -215,13 +232,13 @@ class StorefrontHomepageBuilderTest extends TestCase
         request()->merge(['s' => 'templates']);
         $this->assertStringContainsString(
             'data-designer-section="plantilla"',
-            app(SettingsController::class)->design()->render()
+            app(SettingsController::class)->design(Request::create('/settings/design', 'GET', ['classic' => 1]))->render()
         );
 
         request()->merge(['s' => 'valor-desconocido']);
         $this->assertStringContainsString(
             'data-designer-section="constructor"',
-            app(SettingsController::class)->design()->render()
+            app(SettingsController::class)->design(Request::create('/settings/design', 'GET', ['classic' => 1]))->render()
         );
     }
 
@@ -232,7 +249,7 @@ class StorefrontHomepageBuilderTest extends TestCase
         view()->share('activeProject', $project);
         request()->merge(['s' => 'constructor']);
 
-        $html = app(SettingsController::class)->design()->render();
+        $html = app(SettingsController::class)->design(Request::create('/settings/design', 'GET', ['classic' => 1]))->render();
         $this->assertStringContainsString('data-design-scroll-container', $html);
         $this->assertStringContainsString("event.preventDefault()", $html);
         $this->assertStringContainsString("scroller.scrollTo", $html);

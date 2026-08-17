@@ -23,6 +23,14 @@ final class StorefrontTheme
 
         return [
             'key' => $key,
+            // `name` y `description` NO estaban, y el selector de plantillas
+            // las exige: su guard hace
+            // `if (!json.theme.name || !json.theme.description) throw`, asi que
+            // aplicar una plantilla mostraba SIEMPRE "La respuesta de la
+            // plantilla esta incompleta" aunque el servidor la hubiera guardado
+            // bien. El usuario veia un error en una operacion que si funciono.
+            'name' => (string) ($definition['name'] ?? $definition['label'] ?? ucfirst($key)),
+            'description' => (string) ($definition['short_description'] ?? $definition['description'] ?? ''),
             'label' => (string) ($definition['label'] ?? ucfirst($key)),
             'category' => (string) ($definition['category'] ?? 'General'),
             'family' => self::family($key, $cardStyle),

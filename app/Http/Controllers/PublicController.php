@@ -103,6 +103,24 @@ class PublicController extends Controller
             : (string) $project->setting('catalog_template', 'default');
         $view = self::PRODUCTION_TEMPLATE_VIEWS[$template] ?? null;
 
+        // Si la plantilla elegida no tiene vista, la tienda cae a la de por
+        // defecto y responde 200 con OTRA plantilla, sin avisar a nadie: ni al
+        // negocio, que la eligio, ni al operador. `editorial`, `luxe` y
+        // `bistro` estan declaradas y son ofrecibles pero NO tienen Blade.
+        // Hoy ningun proyecto las usa (solo `computienda` y `ecommerce`), asi
+        // que esto es una trampa latente: se deja registrada para que se
+        // detecte el dia que alguien las elija, en vez de fallar en silencio.
+        if ($view && ! view()->exists($view)) {
+            // Las claves del contexto son las que fija el contrato
+            // (`StorefrontStructureV2Test`): `project_id` y `template`. Las
+            // habia escrito en español y el propio contrato lo caza.
+            \Illuminate\Support\Facades\Log::warning('compatibility fallback: plantilla sin vista', [
+                'project_id' => $project->id,
+                'template'   => $template,
+                'view'       => $view,
+            ]);
+        }
+
         return $view && view()->exists($view) ? $view : null;
     }
 
@@ -148,12 +166,93 @@ class PublicController extends Controller
         return $project->catalogProfiles()->inMenu()->orderBy('sort_order')->orderBy('name')->get();
     }
 
+    /**
+     * Catálogo filtrado por categoría con URL legible: /tienda/c/computadoras.
+     *
+     * No duplica nada de `shop()`: resuelve el slug a id, lo inyecta en la
+     * petición como si hubiera llegado por `?category=` y delega. Así el
+     * catálogo, los filtros y la paginación siguen funcionando exactamente
+     * igual, y la forma antigua sigue viva.
+     *
+     * Si el slug no existe, 404 — mejor que devolver el catálogo entero y hacer
+     * creer al visitante que esa categoría está vacía.
+     */
+    public function shopPorCategoria(Request $request, string $slug, string $categoria)
+    {
+        $project = $this->project($slug);
+
+        $cat = \App\Models\Category::where('project_id', $project->id)
+            ->where('slug', $categoria)
+            ->first();
+
+        if (! $cat) {
+            abort(404);
+        }
+
+        $request->merge(['category' => (string) $cat->id]);
+        $request->attributes->set('url_ya_canonica', true);
+
+        return $this->shop($request, $slug);
+    }
+
     public function shop(Request $request, string $slug, ?string $profile = null)
     {
         $project = $this->project($slug);
 
+        // ═══ 301 de la forma antigua a la legible ═══
+        // /tienda?category=394 → /tienda/c/computadoras, para que los enlaces ya
+        // compartidos no queden en una URL de segunda y el buscador indexe una
+        // sola dirección por categoría.
+        //
+        // Con tres guardas, porque este método sirve tanto páginas como datos:
+        //  1. Nunca en peticiones JSON: el catálogo pagina con `?format=json`
+        //     y una redirección ahí rompería el scroll infinito.
+        //  2. Solo si `category` es el ÚNICO parámetro: con filtros de precio,
+        //     orden o página, redirigir perdería lo que el visitante eligió.
+        //  3. Solo si la categoría existe y tiene slug.
+        // `shopPorCategoria()` marca la petición: ya viene de la URL legible y
+        // le inyectó `category`, así que redirigirla la mandaría a sí misma.
+        if ($request->isMethod('GET')
+            && $profile === null
+            && ! $request->attributes->get('url_ya_canonica')
+            && $request->query('format') !== 'json'
+            && ! $request->expectsJson()
+            && array_keys($request->query()) === ['category']
+            && ctype_digit((string) $request->query('category'))
+        ) {
+            $cat = \App\Models\Category::where('project_id', $project->id)
+                ->where('id', (int) $request->query('category'))
+                ->first();
+
+            if ($cat && filled($cat->slug)) {
+                return redirect(\App\Support\StorefrontNavigation::categoryUrl($project, $cat), 301);
+            }
+        }
+
         // Perfil de catálogo activo (si la funcionalidad está habilitada y el slug
         // corresponde a un perfil habilitado de esta tienda). Es null en el flujo normal.
+        // ═══ Un solo segmento para perfiles y categorías ═══
+        // /tienda/nino (perfil) y /tienda/discos-y-memorias (categoría) comparten
+        // sitio. Antes las categorías llevaban un prefijo `c/` para no chocar,
+        // pero esa letra suelta no significa nada para quien lee la URL.
+        // Se resuelve por orden: primero perfil, luego categoría. Si el nombre
+        // coincidiera, manda el perfil — es la pieza con identidad propia.
+        if ($profile !== null && ! $request->attributes->get('url_ya_canonica')) {
+            $esPerfil = $this->catalogProfilesEnabled($project)
+                && $project->catalogProfiles()->where('slug', $profile)->where('is_enabled', true)->exists();
+
+            if (! $esPerfil) {
+                $cat = \App\Models\Category::where('project_id', $project->id)
+                    ->where('slug', $profile)->first();
+
+                if ($cat) {
+                    $request->merge(['category' => (string) $cat->id]);
+                    $request->attributes->set('url_ya_canonica', true);
+                    $profile = null;
+                }
+            }
+        }
+
         $activeProfile = $this->resolveActiveProfile($project, $profile);
 
         // Plantillas de producción (computienda, etc.): su /tienda usa la MISMA
@@ -338,15 +437,21 @@ class PublicController extends Controller
             $settings = array_merge($projectTemplate->settings, $settings);
         }
 
-        // Cargar árbol: padres con hijos, cada nodo con sus productos y servicios
+        // Cargar árbol: padres con hijos, cada nodo con sus productos y servicios.
+        // El filtro de precio replica la regla de CatalogQueryService: un producto
+        // sin precio no se puede comprar y la rejilla ya lo excluía. Aquí no se
+        // aplicaba, así que los contadores del filtro lateral y las secciones de
+        // portada contaban productos que la tienda nunca llegaba a mostrar: se
+        // leía "26 productos" junto a un filtro que decía "57".
+        $vendible = fn($q) => $q->where('is_available', true)->where('price', '>', 0);
         $categories = $project->categories()
             ->where('is_active', true)
             ->whereNull('parent_id')
             ->with([
-                'products' => fn($q) => $q->where('is_available', true)->with('mainImage')->orderBy('sort_order'),
+                'products' => fn($q) => $vendible($q)->with('mainImage')->orderBy('sort_order'),
                 'services' => fn($q) => $q->where('is_available', true)->orderBy('sort_order'),
                 'children' => fn($q) => $q->where('is_active', true)->with([
-                    'products' => fn($q2) => $q2->where('is_available', true)->with('mainImage')->orderBy('sort_order'),
+                    'products' => fn($q2) => $vendible($q2)->with('mainImage')->orderBy('sort_order'),
                     'services' => fn($q2) => $q2->where('is_available', true)->orderBy('sort_order'),
                 ])->orderBy('sort_order'),
             ])
@@ -354,12 +459,12 @@ class PublicController extends Controller
 
         // Productos para secciones de la tienda. take(24) = tope del límite
         // configurable de la sección de productos del constructor.
-        $newArrivals = $project->products()->where('is_available', true)
+        $newArrivals = $vendible($project->products())
             ->with(['mainImage','category'])->latest()->take(24)->get();
-        $onSale = $project->products()->where('is_available', true)
+        $onSale = $vendible($project->products())
             ->whereNotNull('compare_price')->whereColumn('compare_price', '>', 'price')
             ->with(['mainImage','category'])->take(24)->get();
-        $featured = $project->products()->where('is_available', true)
+        $featured = $vendible($project->products())
             ->with(['mainImage','category'])->inRandomOrder()->take(24)->get();
 
         $productRatings = \App\Models\Review::where('project_id', $project->id)
@@ -482,6 +587,8 @@ class PublicController extends Controller
             'items'            => 'required|array|min:1',
             'items.*.product_id' => 'nullable|integer',
             'items.*.name'       => 'nullable|string|max:255',
+            // Se sigue ACEPTANDO para no romper a los clientes que ya lo
+            // envian, pero es informativo: el precio real sale del catalogo.
             'items.*.price'      => 'nullable|numeric|min:0',
             'items.*.quantity'   => 'required|integer|min:1',
             'payment_method'   => 'nullable|string|max:80',
@@ -490,31 +597,77 @@ class PublicController extends Controller
         ]);
 
         return DB::transaction(function () use ($project, $data) {
-            // Verificar y descontar stock con lock pesimista
+            // Verificar stock con lock pesimista. Se agrupa por producto ANTES de
+            // validar: un mismo producto puede venir en varias líneas del carrito y
+            // validar cada línea por separado dejaría pasar la suma (2 líneas de 4
+            // contra un stock de 5 pasarían las dos y el stock quedaría en -3).
+            $pedidoPorProducto = [];
             foreach ($data['items'] as $item) {
                 if (empty($item['product_id'])) continue;
+                $pid = (int) $item['product_id'];
+                $pedidoPorProducto[$pid] = ($pedidoPorProducto[$pid] ?? 0) + (int) ($item['quantity'] ?? 1);
+            }
 
+            foreach ($pedidoPorProducto as $pid => $qtyTotal) {
                 $product = Product::allProjects()
-                    ->where('id', $item['product_id'])
+                    ->where('id', $pid)
                     ->where('project_id', $project->id)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$product) continue;
 
-                if ($product->stock !== null) {
-                    $qty = (int) ($item['quantity'] ?? 1);
-                    if ($product->stock < $qty) {
-                        return response()->json([
-                            'ok'      => false,
-                            'message' => "Stock insuficiente para \"{$product->name}\" (disponible: {$product->stock}).",
-                        ], 422);
-                    }
-                    $product->decrement('stock', $qty);
+                // Solo se VALIDA aquí (con el lock ya tomado). El descuento se hace
+                // después de crear el pedido, para que el Kardex pueda apuntar a él.
+                if ($product->stock !== null && $product->stock < $qtyTotal) {
+                    return response()->json([
+                        'ok'      => false,
+                        'message' => "Stock insuficiente para \"{$product->name}\" (disponible: {$product->stock}).",
+                    ], 422);
                 }
             }
 
-            $subtotal   = collect($data['items'])->sum(fn($i) => ($i['price'] ?? 0) * ($i['quantity'] ?? 1));
+            // ── El precio lo pone el CATALOGO, nunca el comprador ────────────
+            // Esta ruta es publica y aceptaba `items.*.price` del cuerpo de la
+            // peticion: bastaba con enviar {product_id:7, name:"Laptop",
+            // price:0.01} para comprar a un centimo, porque solo se recurria a
+            // la base `if ($pid && (!$name || !$price))`. El stock se descontaba
+            // de verdad y el pedido entraba a Cuentas por Cobrar como bueno.
+            //
+            // Ahora cada linea se resuelve contra el catalogo del proyecto: por
+            // id, y si no lo trae, por nombre exacto (hay pedidos reales asi).
+            // Lo que no se puede verificar, no se vende.
+            $resueltos = [];
+            foreach ($data['items'] as $idx => $item) {
+                $prod = null;
+                if (! empty($item['product_id'])) {
+                    $prod = Product::allProjects()->where('project_id', $project->id)
+                        ->where('id', $item['product_id'])->first();
+                }
+                if (! $prod && ! empty($item['name'])) {
+                    $prod = Product::allProjects()->where('project_id', $project->id)
+                        ->where('name', $item['name'])->first();
+                }
+                if (! $prod) {
+                    return response()->json([
+                        'ok'      => false,
+                        'message' => 'No pudimos verificar uno de los productos de tu pedido. '
+                                   . 'Actualiza la página y vuelve a intentarlo.',
+                    ], 422);
+                }
+                $resueltos[$idx] = $prod;
+            }
+
+            // Suma en CENTAVOS con el precio del catalogo (LineMath), no con
+            // flotantes sobre datos del cliente.
+            $subtotalCents = 0;
+            foreach ($data['items'] as $idx => $item) {
+                $subtotalCents += \App\Support\LineMath::lineCents(
+                    \App\Support\LineMath::canon((string) $resueltos[$idx]->price),
+                    (int) $item['quantity']
+                );
+            }
+            $subtotal   = (float) \App\Support\LineMath::format($subtotalCents);
             $shipping   = (float) ($data['shipping_cost'] ?? 0);
             $discount   = 0.0;
             $couponCode = null;
@@ -547,21 +700,30 @@ class PublicController extends Controller
                 'payment_proof'    => $data['payment_proof'] ?? null,
             ]);
 
-            foreach ($data['items'] as $item) {
-                $pid = $item['product_id'] ?? null;
-                $name = $item['name'] ?? null;
-                $price = $item['price'] ?? null;
-                if ($pid && (!$name || !$price)) {
-                    $prod = Product::allProjects()->where('id', $pid)->where('project_id', $project->id)->first();
-                    $name  = $name  ?: ($prod->name  ?? 'Producto');
-                    $price = $price ?: ($prod->price ?? 0);
-                }
+            foreach ($data['items'] as $idx => $item) {
+                // Producto ya resuelto arriba contra el catalogo: nombre, precio
+                // e id salen de la base, no de lo que mando el navegador. De
+                // paso queda enlazado el `product_id` aunque el carrito no lo
+                // trajera, que era como se perdia la trazabilidad al Kardex.
+                $prod  = $resueltos[$idx];
+                $pid   = $prod->id;
                 $order->items()->create([
                     'product_id' => $pid,
-                    'name'       => $name ?: 'Producto',
-                    'price'      => $price ?: 0,
+                    'name'       => $prod->name,
+                    'price'      => $prod->price,
                     'quantity'   => $item['quantity'],
                 ]);
+
+                // Descuento de stock vía Kardex, ya con el pedido creado para referenciarlo.
+                if ($pid) {
+                    $prodStock = Product::allProjects()->where('id', $pid)->where('project_id', $project->id)->first();
+                    if ($prodStock) {
+                        \App\Support\InventoryLedger::registrar(
+                            $prodStock, -abs((int) $item['quantity']), 'venta',
+                            null, 'Venta en tienda online', 'order', $order->id, null
+                        );
+                    }
+                }
             }
 
             // Marcar carrito abandonado como recuperado

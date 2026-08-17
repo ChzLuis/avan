@@ -1,4 +1,4 @@
-@props(['project', 'settings' => [], 'popup' => null, 'sections' => collect(), 'aboutPage' => null, 'storeView' => 'home', 'ownFooter' => false, 'ownWhatsapp' => false])
+@props(['project', 'settings' => [], 'popup' => null, 'sections' => collect(), 'aboutPage' => null, 'storeView' => 'home', 'ownFooter' => false, 'ownWhatsapp' => false, 'activeProfile' => null])
 
 @php
     $safeColor = static fn ($value, $fallback) => is_string($value) && preg_match('/^#[0-9a-fA-F]{6}$/', $value) ? $value : $fallback;
@@ -18,6 +18,24 @@
     $headerText = $safeColor($settings['header_text_color'] ?? null, '#111827');
     $footerBg = $safeColor($settings['footer_bg_color'] ?? null, '#0f172a');
     $footerText = $safeColor($settings['footer_text_color'] ?? null, '#ffffff');
+
+    // ═══ Identidad del perfil de catálogo activo ═══
+    // Este runtime pinta el encabezado y el pie con `!important` sobre
+    // `--store-header-bg`, una variable paralela a `--header-bg` que usa la
+    // plantilla. La plantilla SÍ aplicaba los colores del perfil, pero esta
+    // capa los volvía a pisar porque no sabía que existían los perfiles: al
+    // entrar en un perfil verde el encabezado seguía cian. Aquí se entera.
+    $perfilActivo = $activeProfile;
+    if ($perfilActivo) {
+        if (!empty($perfilActivo->primary_color)) {
+            $primary = $safeColor($perfilActivo->primary_color, $primary);
+            $accent  = $primary;
+        }
+        if (!empty($perfilActivo->secondary_color))  $secondary = $safeColor($perfilActivo->secondary_color, $secondary);
+        if (!empty($perfilActivo->header_bg_color))  $headerBg  = $safeColor($perfilActivo->header_bg_color, $headerBg);
+        if (!empty($perfilActivo->header_text_color))$headerText= $safeColor($perfilActivo->header_text_color, $headerText);
+        if (!empty($perfilActivo->footer_bg_color))  $footerBg  = $safeColor($perfilActivo->footer_bg_color, $footerBg);
+    }
     $fontTitle = preg_replace('/[^a-zA-Z0-9 _-]/', '', $settings['font_title'] ?? $settings['font'] ?? 'Inter');
     $fontBody = preg_replace('/[^a-zA-Z0-9 _-]/', '', $settings['font_body'] ?? $settings['font'] ?? 'Inter');
     $radius = ['sharp' => '0px', 'soft' => '8px', 'rounded' => '16px', 'pill' => '9999px'][$settings['border_radius'] ?? 'rounded'] ?? '16px';
@@ -31,6 +49,12 @@
     $faviconUrl = $assetUrl($settings['favicon_url'] ?? null);
     $heroImageUrl = $assetUrl($settings['hero_image'] ?? null);
     $heroOverlay = max(0, min(90, (int) ($settings['hero_overlay'] ?? 45))) / 100;
+    // Alineacion del hero normalizada UNA vez, con el mismo criterio que
+    // usan las plantillas del servidor.
+    $alineacionHero = $settings['hero_align'] ?? 'center';
+    if (! in_array($alineacionHero, ['left', 'center', 'right'], true)) {
+        $alineacionHero = 'center';
+    }
     $whatsappCountry = preg_replace('/\D/', '', $settings['quote_whatsapp_country'] ?? '51');
     $whatsapp = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? $project->whatsapp ?? '');
     if ($whatsapp && $whatsappCountry && !str_starts_with($whatsapp, $whatsappCountry)) $whatsapp = $whatsappCountry.$whatsapp;
@@ -96,7 +120,16 @@
         'heroImage' => $effectiveHeroImage,
         'heroBackground' => $safeColor($settings['hero_bg_color'] ?? null, $primary),
         'heroOverlay' => $heroOverlay,
-        'heroAlign' => $settings['hero_align'] ?? 'center',
+        // Mismo criterio que las plantillas del servidor: sin lista blanca, un
+        // valor invalido viajaba crudo al cliente y acababa en
+        // `hero.style.textAlign` (linea ~584), donde el navegador lo ignora. No
+        // es inyectable —asignar a una propiedad CSS concreta no deja escapar—
+        // pero servidor y cliente discrepaban: uno caia a su respaldo y el otro
+        // se quedaba sin alineacion.
+        // Se lee UNA vez: comprobar con `?? 'center'` y luego volver a acceder
+        // a la clave revienta cuando no existe (el respaldo pasa la lista
+        // blanca y el segundo acceso ya no encuentra nada).
+        'heroAlign' => $alineacionHero,
         'heroHeight' => $settings['hero_height'] ?? 'medium',
         'cta1Show' => $enabled('hero_cta1_show'),
         'cta1Text' => $effectiveHeroCtaText,
