@@ -12,7 +12,7 @@ class PosController extends Controller
     public function index()
     {
         /** @var \App\Models\Project $project */
-        $project = app('active_project');
+        $project = $this->proyectoActivo();
         $products = $project->products()
             ->with(['images' => fn($q) => $q->where('is_main', true)])
             ->orderBy('name')
@@ -84,14 +84,20 @@ class PosController extends Controller
     public function store(Request $request)
     {
         /** @var \App\Models\Project $project */
-        $project = app('active_project');
+        $project = $this->proyectoActivo();
         $data = $request->validate([
             'client_name'    => 'nullable|string|max:100',
             'client_phone'   => 'nullable|string|max:30',
+            'client_id'      => 'nullable|integer',
+            'paid'           => 'nullable|boolean',
             'payment_method' => 'required|string|max:80',
             'notes'          => 'nullable|string',
             'table_number'   => 'nullable|string|max:10',
             'order_type'     => 'nullable|string|max:20',
+            'delivery_type'    => 'nullable|in:recojo,delivery',
+            'delivery_address' => 'nullable|string|max:255',
+            'promised_at'      => 'nullable|date',
+            'advance_amount'   => 'nullable|numeric|min:0',
             'items'          => 'required|array|min:1',
             'items.*.product_id' => 'nullable|integer',
             'items.*.service_id' => 'nullable|integer',
@@ -100,16 +106,60 @@ class PosController extends Controller
             'items.*.quantity'   => 'required|integer|min:1',
         ]);
 
-        // Seguridad: ningún ítem puede venderse por debajo de su precio mínimo.
+        // Seguridad: ningún ítem puede venderse por debajo de su precio mínimo,
+        // y solo puede descontar del precio de catálogo quien tenga permiso
+        // orders.descuento (regla "cambiar precio o aplicar descuento con permiso").
+        // can() en vez de hasPermissionTo(): este ultimo lanza excepcion si el
+        // permiso no esta sembrado y tumbaba la venta con un 500.
+        $canDiscount = auth()->user()?->is_superadmin || $project->owner_id === auth()->id() || (bool) auth()->user()?->can('orders.descuento');
+
+        // Precio con el que el POS carga cada producto: el propio del revendedor
+        // si lo tiene, si no el sugerido. Comparar contra products.price daba 403
+        // en ventas normales, porque el sugerido casi siempre es MENOR que el de
+        // catalogo y el vendedor no habia tocado nada.
+        $misPrecios = \App\Models\ResellerPrice::where('project_id', $project->id)
+            ->where('user_id', auth()->id())
+            ->pluck('price', 'product_id');
+
+        $faltantes = [];
         foreach ($data['items'] as $it) {
             if (!empty($it['product_id'])) {
-                $min = Product::where('project_id', $project->id)->where('id', $it['product_id'])->value('price_min');
-                if ($min !== null && (float) $it['price'] < (float) $min - 0.001) {
+                $prod = Product::where('project_id', $project->id)->where('id', $it['product_id'])
+                    ->first(['id', 'name', 'price', 'price_min', 'price_suggested', 'stock']);
+                if (!$prod) continue;
+
+                if ($prod->price_min !== null && (float) $it['price'] < (float) $prod->price_min - 0.001) {
                     return response()->json([
                         'ok' => false,
-                        'error' => "El producto \"{$it['name']}\" no puede venderse por debajo de S/ " . number_format($min, 2) . '.',
+                        'error' => "El producto \"{$it['name']}\" no puede venderse por debajo de S/ " . number_format($prod->price_min, 2) . '.',
                     ], 422);
                 }
+
+                $precioBase = (float) ($misPrecios[$prod->id] ?? $prod->price_suggested ?? $prod->price);
+                if (!$canDiscount && (float) $it['price'] < $precioBase - 0.001) {
+                    return response()->json([
+                        'ok' => false,
+                        'error' => "No tienes permiso para aplicar descuento en \"{$it['name']}\".",
+                    ], 403);
+                }
+
+                // El mostrador no validaba stock: se podian vender 10 unidades
+                // habiendo 2 y el saldo quedaba en negativo sin avisar a nadie.
+                if ($prod->stock !== null) {
+                    $pedido = ($faltantes[$prod->id]['pedido'] ?? 0) + (int) $it['quantity'];
+                    $faltantes[$prod->id] = ['nombre' => $prod->name, 'stock' => (int) $prod->stock, 'pedido' => $pedido];
+                }
+            }
+        }
+
+        // Se valida el TOTAL por producto: el mismo articulo puede venir en varias
+        // lineas del ticket y linea por linea la suma se colaria.
+        foreach ($faltantes as $f) {
+            if ($f['pedido'] > $f['stock']) {
+                return response()->json([
+                    'ok' => false,
+                    'error' => "Stock insuficiente para \"{$f['nombre']}\": quedan {$f['stock']} y estás vendiendo {$f['pedido']}.",
+                ], 422);
             }
         }
 
@@ -119,16 +169,51 @@ class PosController extends Controller
         $order = $project->orders()->create([
             'client_name'    => $data['client_name'] ?? ($hasMesa ? 'Mesa ' . $data['table_number'] : 'Cliente mostrador'),
             'client_phone'   => $data['client_phone'] ?? null,
+            'client_id'      => $data['client_id'] ?? null,
+            'created_by'     => auth()->id(),
+            'payment_status' => !empty($data['paid']) ? 'paid' : 'pending',
             'payment_method' => $data['payment_method'],
             'sales_channel'  => 'pos',
             'status'         => $hasMesa ? 'process' : 'done',
             // Sin mesa no hay flujo de cocina → 'done' (la columna es NOT NULL en producción).
             'kitchen_status' => $hasMesa ? 'pending' : 'done',
             'table_number'   => $data['table_number'] ?? null,
-            'order_type'     => $data['order_type'] ?? null,
+            'order_type'     => $data['order_type'] ?? 'mostrador',
+            'delivery_type'    => $data['delivery_type'] ?? null,
+            'delivery_address' => $data['delivery_address'] ?? null,
+            'promised_at'      => $data['promised_at'] ?? null,
+            'advance_amount'   => $data['advance_amount'] ?? null,
+            'document_status'  => 'pending',
             'notes'          => $data['notes'] ?? null,
             'total'          => $total,
         ]);
+
+        // F3c: el cobro del mostrador entra al LIBRO. La venta ya nace con su
+        // `payment_status`, pero sin asiento ese dinero no seria enumerable ni
+        // conciliable: una venta pagada en efectivo tiene que dejar su rastro
+        // igual que una aprobada por el bot.
+        $cobradoCents = 0;
+        if (! empty($data['paid'])) {
+            $cobradoCents = \App\Support\LineMath::toCents(\App\Support\LineMath::canon((string) $total));
+        } elseif (! empty($data['advance_amount']) && (float) $data['advance_amount'] > 0) {
+            $cobradoCents = \App\Support\LineMath::toCents(
+                \App\Support\LineMath::canon(number_format((float) $data['advance_amount'], 2, '.', ''))
+            );
+        }
+        if ($cobradoCents > 0) {
+            // La columna ya la escribio create(); se limpia para que el libro
+            // sea la unica fuente y la proyeccion no sume dos veces lo mismo.
+            $order->forceFill(['advance_amount' => null])->save();
+            \App\Support\Ledger::registrar($project, $order, $cobradoCents,
+                $data['payment_method'] ?? null, null, 'pos');
+        }
+
+        // CRM automático: venta pagada con cliente identificado → etapa "ganado".
+        if (!empty($data['paid']) && !empty($data['client_id'])) {
+            \App\Models\Client::allProjects()->where('project_id', $project->id)
+                ->where('id', $data['client_id'])
+                ->update(['etapa' => 'ganado', 'ultima_actividad' => now()]);
+        }
 
         foreach ($data['items'] as $item) {
             $order->items()->create([
@@ -139,11 +224,16 @@ class PosController extends Controller
                 'quantity'   => $item['quantity'],
             ]);
 
+            // El descuento pasa por el Kardex: así la venta queda registrada en el
+            // historial del producto y el saldo siempre cuadra con la existencia.
             if (!empty($item['product_id'])) {
-                Product::where('id', $item['product_id'])
-                    ->where('project_id', $project->id)
-                    ->whereNotNull('stock')
-                    ->decrement('stock', $item['quantity']);
+                $prod = Product::where('id', $item['product_id'])->where('project_id', $project->id)->first();
+                if ($prod) {
+                    \App\Support\InventoryLedger::registrar(
+                        $prod, -abs((int) $item['quantity']), 'venta',
+                        null, 'Venta en punto de venta', 'order', $order->id
+                    );
+                }
             }
         }
 
@@ -219,7 +309,7 @@ class PosController extends Controller
     public function quote(Request $request)
     {
         /** @var \App\Models\Project $project */
-        $project = app('active_project');
+        $project = $this->proyectoActivo();
         $data = $request->validate([
             'client_name'  => 'nullable|string|max:100',
             'client_phone' => 'nullable|string|max:30',
@@ -233,6 +323,7 @@ class PosController extends Controller
         $total = collect($data['items'])->sum(fn ($i) => $i['price'] * $i['quantity']);
 
         $quote = $project->quotes()->create([
+            'client_id'   => $request->input('client_id'),
             'client_name' => $data['client_name'] ?: 'Cliente mostrador',
             'client_phone'=> $data['client_phone'] ?? null,
             'notes'       => $data['notes'] ?? null,
@@ -242,6 +333,13 @@ class PosController extends Controller
             'token'       => \Illuminate\Support\Str::random(48),
             'sent_at'     => now(),
         ]);
+
+        // CRM automático: cotización creada con cliente → etapa "propuesta".
+        if ($request->filled('client_id')) {
+            \App\Models\Client::allProjects()->where('project_id', $project->id)
+                ->where('id', $request->input('client_id'))
+                ->update(['etapa' => 'propuesta', 'ultima_actividad' => now()]);
+        }
 
         foreach ($data['items'] as $item) {
             $quote->items()->create([
@@ -257,6 +355,92 @@ class PosController extends Controller
             'total' => $total,
             'url'   => url('/b/' . $project->slug . '/c/' . $quote->token),
         ]);
+    }
+
+    /** BIXO Venta Express: productos primero, cliente opcional o precargado, cierre en un paso. */
+    public function express(Request $request)
+    {
+        $isSales = request()->routeIs('bixosales.*');
+        $project = $this->proyectoActivo();
+
+        // "BIXO empieza con lo que ya conoce": si llegamos desde el CRM, un
+        // pedido anterior, una cotización o una conversación de WhatsApp,
+        // precargamos ese cliente para no volver a registrarlo.
+        $preload = null;
+        if ($request->filled('client_id')) {
+            $c = \App\Models\Client::allProjects()->where('project_id', $project->id)->find($request->integer('client_id'));
+            if ($c) $preload = ['id' => $c->id, 'name' => $c->name, 'phone' => (string) $c->phone];
+        } elseif ($request->filled('from_order')) {
+            $o = Order::allProjects()->where('project_id', $project->id)->find($request->integer('from_order'));
+            if ($o) $preload = ['id' => $o->client_id, 'name' => $o->client_name, 'phone' => (string) $o->client_phone];
+        } elseif ($request->filled('from_quote')) {
+            $q = \App\Models\Quote::allProjects()->where('project_id', $project->id)->find($request->integer('from_quote'));
+            if ($q) $preload = ['id' => $q->client_id, 'name' => $q->client_name, 'phone' => (string) $q->client_phone];
+        } elseif ($request->filled('phone')) {
+            $normalized = preg_replace('/\D/', '', (string) $request->input('phone'));
+            $c = \App\Models\Client::allProjects()->where('project_id', $project->id)
+                ->where('phone', 'like', '%'.$normalized.'%')->first();
+            $preload = $c ? ['id' => $c->id, 'name' => $c->name, 'phone' => (string) $c->phone] : ['id' => null, 'name' => null, 'phone' => $normalized];
+        }
+
+        $clientsLite = \App\Models\Client::allProjects()->where('project_id', $project->id)
+            ->orderByDesc('updated_at')->limit(300)
+            ->get(['id', 'name', 'phone', 'email'])
+            ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'phone' => (string) $c->phone])->values();
+
+        $productsLite = Product::allProjects()->where('project_id', $project->id)
+            ->where('is_available', true)->with('mainImage')
+            ->orderBy('name')->limit(400)->get()
+            ->map(fn ($pr) => [
+                'id' => $pr->id, 'name' => $pr->name, 'price' => (float) $pr->price,
+                'sku' => (string) ($pr->sku ?? ''), 'barcode' => (string) ($pr->barcode ?? ''), 'stock' => $pr->stock,
+                'image' => $pr->mainImage?->url ? $this->resolveImageUrl($pr->mainImage->url) : null,
+            ])->values();
+
+        // Frecuentes: los más vendidos (últimos 90 días)
+        $frequentIds = \DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.project_id', $project->id)
+            ->where('orders.created_at', '>=', now()->subDays(90))
+            ->whereNotNull('order_items.product_id')
+            ->selectRaw('order_items.product_id, SUM(order_items.quantity) as n')
+            ->groupBy('order_items.product_id')->orderByDesc('n')->limit(8)->pluck('product_id');
+
+        $paymentMethods = $this->catValues($project, 'payment_method');
+        $yape = [
+            'number' => preg_replace('/\D/', '', (string) $project->setting('payment_yape_number', '')),
+            'name'   => (string) $project->setting('payment_yape_name', $project->name),
+            'qr'     => ($q = (string) $project->setting('payment_yape_qr', '')) ? (str_starts_with($q, 'http') ? $q : asset('storage/'.$q)) : null,
+        ];
+
+        return view('ventas.express', [
+            'project' => $project,
+            'portalLayout' => $isSales ? 'comercial' : 'panel',
+            'clientsLite' => $clientsLite,
+            'productsLite' => $productsLite,
+            'frequentIds' => $frequentIds,
+            'paymentMethods' => $paymentMethods,
+            'yape' => $yape,
+            'storeUrl' => $isSales ? route('bixosales.pos.store') : route('pos.store'),
+            'quoteUrl' => $isSales ? route('bixosales.pos.quote') : route('pos.quote'),
+            'preload' => $preload,
+            'canDiscount' => auth()->user()?->is_superadmin || $project->owner_id === auth()->id() || (bool) auth()->user()?->can('orders.descuento'),
+        ]);
+    }
+
+    /**
+     * Resuelve el proyecto segun el portal desde el que se llama.
+     *
+     * El portal comercial tiene su propia sesion (comercial_project_id). Venta
+     * Express se pintaba con ese proyecto pero posteaba a un store() que leia
+     * active_project: con las dos sesiones abiertas el pedido caia en el proyecto
+     * equivocado, y sin sesion de panel reventaba en 500.
+     */
+    private function proyectoActivo(): Project
+    {
+        return request()->routeIs('bixosales.*')
+            ? Project::findOrFail(session('comercial_project_id'))
+            : app('active_project');
     }
 
     private function catValues(Project $project, string $type): \Illuminate\Support\Collection

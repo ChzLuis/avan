@@ -37,7 +37,7 @@ class PagoController extends Controller
     {
         $project = $this->project($r);
         $q = Order::where('project_id', $project->id)
-            ->where('payment_status', 'en_revision')
+            ->whereIn('payment_status', ['under_review', 'en_revision'])  // canonico + alias legacy
             ->latest();
 
         // La extensión puede pedir solo los de un teléfono (el chat abierto).
@@ -63,12 +63,37 @@ class PagoController extends Controller
         $data = $r->validate(['order_id' => 'required|integer']);
         $order = Order::where('project_id', $project->id)->findOrFail($data['order_id']);
 
-        $order->payment_status = 'pagado';
-        $order->status = 'pagado';
+        // Aprobar un pago NO completa la venta: el estado comercial no se
+        // toca. Antes se escribia status='pagado' —valor ajeno al vocabulario
+        // comercial— y era el origen de los pedidos legacy 20-22.
+        //
+        // F3b: el cobro entra al LIBRO en vez de pisar `payment_status`. Asi la
+        // aprobacion del bot es un asiento conciliable, con su origen, y no una
+        // mutacion que borra la anterior. La respuesta JSON no cambia.
+        $desde = $order->payment_status;
+        $saldo = \App\Support\Ledger::saldoCents($project->id, $order);
+
+        if ($saldo > 0) {
+            // null = "salda lo que falte", calculado dentro de la transaccion.
+            \App\Support\Ledger::registrar($project, $order, null,
+                $order->payment_method, $order->payment_reference, 'bot');
+        } else {
+            // Ya estaba cobrado (reintento del bot): idempotente, no se duplica
+            // el asiento ni se devuelve error — el bot reintenta y no debe ver
+            // un fallo por algo que ya hizo bien.
+            \App\Support\Ledger::proyectar($project, $order);
+        }
+
+        $order->refresh();
         $order->notes = trim(($order->notes ? $order->notes . "\n" : '')
             . '✅ Pago APROBADO el ' . now()->format('d/m/Y H:i')
             . (auth()->user() ? ' por ' . auth()->user()->name : ''));
         $order->save();
+
+        \App\Models\OrderEvent::log($project->id, 'payment_status', [
+            'from' => $desde, 'to' => 'paid', 'source' => 'aprobacion_bot',
+            'user' => auth()->user()?->name,
+        ], $order->id);
 
         return response()->json([
             'ok' => true,
@@ -85,10 +110,29 @@ class PagoController extends Controller
         $order = Order::where('project_id', $project->id)->findOrFail($data['order_id']);
 
         $motivo = $data['motivo'] ?? 'No pudimos validar el comprobante';
-        $order->payment_status = 'pendiente';
+        $desde = $order->payment_status;
+
+        // F3b: si habia cobros registrados se REVIERTEN con su motivo —queda el
+        // rastro de que hubo correccion— en vez de pisar el estado. Si no habia
+        // ninguno, la proyeccion devuelve el pedido a 'pending' igualmente.
+        foreach (\App\Models\Payment::where('project_id', $project->id)
+                     ->where('payable_type', 'order')->where('payable_id', $order->id)
+                     ->whereNull('reverses_id')->get() as $asiento) {
+            if (! \App\Models\Payment::where('reverses_id', $asiento->id)->exists()) {
+                \App\Support\Ledger::revertir($asiento, $motivo);
+            }
+        }
+        \App\Support\Ledger::proyectar($project, $order->refresh());
+
+        $order->refresh();
         $order->notes = trim(($order->notes ? $order->notes . "\n" : '')
             . '❌ Pago RECHAZADO el ' . now()->format('d/m/Y H:i') . ' — ' . $motivo);
         $order->save();
+
+        \App\Models\OrderEvent::log($project->id, 'payment_status', [
+            'from' => $desde, 'to' => 'pending', 'source' => 'rechazo_bot',
+            'motivo' => $motivo, 'user' => auth()->user()?->name,
+        ], $order->id);
 
         return response()->json([
             'ok' => true,

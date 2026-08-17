@@ -7,38 +7,120 @@
 <x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Pedidos">
 
 <style>
-.ord-list-item { display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s; }
-.ord-list-item:hover { background:#f9fafb; }
-.ord-list-item.active { background:#eef2ff; border-left:3px solid #4f46e5; }
-.ord-avatar { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0; }
+/* Clases heredadas que SIGUEN en uso por el detalle trasladado al cajón.
+   Se conservan tal cual; solo se descartaron las del maestro-detalle
+   (.ord-list-item, .ord-avatar, .ord-back-btn, .ord-col-detail). */
 .status-pill { display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap; }
-.s-pending    { background:#fef9c3;color:#854d0e; }
-.s-process    { background:#dbeafe;color:#1e40af; }
-.s-done       { background:#dcfce7;color:#166534; }
-.s-cancelled  { background:#fee2e2;color:#991b1b; }
-.s-btn { padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;border:2px solid transparent;cursor:pointer;transition:all .15s; }
-.s-btn.active  { border-color:currentColor; }
-.kpi-card { background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 18px; }
+.s-pending   { background:#fef9c3;color:#854d0e; }
+.s-process   { background:#dbeafe;color:#1e40af; }
+.s-done      { background:#dcfce7;color:#166534; }
+.s-cancelled { background:#fee2e2;color:#991b1b; }
+.s-btn { display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--tactil-min, 44px);padding:0 14px;border-radius:8px;font-size:12px;font-weight:600;border:2px solid transparent;cursor:pointer;transition:all .15s; }
+/* Cierre del drawer y botones de icono: area tactil completa (medidos 28x18). */
+#ped-drawer [aria-label="Cerrar detalle"] { min-width:var(--tactil-min, 44px);min-height:var(--tactil-min, 44px);display:inline-flex;align-items:center;justify-content:center; }
+#ped-drawer button, #ped-drawer a.s-btn, #ped-drawer select { min-height:var(--tactil-min, 44px); }
+/* Toolbar y pestañas de la lista (medidos 30-34px): objetivo tactil 44 en TODO
+   control interactivo del modulo. El shell queda fuera (carril UX1). */
+[x-init="initPedidos()"] :is(button, a[href], select, input:not([type=checkbox]):not([type=radio]), [role=button]) {
+  min-height:var(--tactil-min, 44px);
+}
+[x-init="initPedidos()"] .flex.flex-wrap.gap-1\.5, [x-init="initPedidos()"] .flex.items-center.gap-2 { gap:var(--tactil-gap, 8px); }
+#ped-drawer .flex.gap-1\.5 > .s-btn, #ped-drawer .flex.gap-2 > * { }
+
+.s-btn.active { border-color:currentColor; }
 .detail-section { background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:12px; }
 .detail-section-header { padding:10px 16px;background:#f9fafb;border-bottom:1px solid #f3f4f6;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280; }
 .ch-tag { display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px; }
-.ch-pos       { background:#ede9fe;color:#6d28d9; }
-.ch-whatsapp  { background:#dcfce7;color:#166534; }
+.ch-pos { background:#ede9fe;color:#6d28d9; }
+.ch-whatsapp { background:#dcfce7;color:#166534; }
 .ch-ecommerce { background:#dbeafe;color:#1e40af; }
-.ch-default   { background:#f3f4f6;color:#6b7280; }
-</style>
+.ch-default { background:#f3f4f6;color:#6b7280; }
+.kpi-card { background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 18px; }
 
-<div class="flex flex-col flex-1 overflow-hidden bg-gray-50" x-data="{
+/* Densidad 44 px por fila: acordada como estándar. Una futura opción
+   "Compacta" podría bajar a 36 px, pero queda fuera de este paso. */
+.ped-th { padding:8px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #e5e7eb; white-space:nowrap; }
+.ped-td { padding:0 12px; height:44px; vertical-align:middle; }
+
+.ped-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:8px; font-size:12px; font-weight:600; transition:background .15s,color .15s,box-shadow .15s; white-space:nowrap; }
+.ped-btn-primary { background:#4f46e5; color:#fff; }
+.ped-btn-primary:hover { background:#4338ca; }
+.ped-btn-ghost { background:#f3f4f6; color:#4b5563; }
+.ped-btn-ghost:hover { background:#e5e7eb; }
+
+.ped-kpi { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 12px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; text-align:left; transition:border-color .15s, box-shadow .15s; }
+.ped-kpi:hover { border-color:#c7d2fe; }
+.ped-kpi.is-active { border-color:#4f46e5; box-shadow:0 0 0 3px rgba(79,70,229,.10); }
+.ped-kpi-lbl { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; }
+.ped-kpi-val { font-size:17px; font-weight:800; line-height:1.1; }
+
+.pf-select { font-size:11px; padding:5px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; color:#4b5563; max-width:170px; flex-shrink:0; }
+.pf-select:focus { outline:none; border-color:#818cf8; box-shadow:0 0 0 3px rgba(99,102,241,.10); }
+
+/* Estado heredado (status='pagado' en 3 pedidos): se muestra tal cual y
+   marcado, en vez de esconderlo bajo una etiqueta que no le corresponde. */
+.status-pill.s-legacy { background:#f3f4f6; color:#6b7280; border:1px dashed #d1d5db; }
+.status-pill.s-paid    { background:#dcfce7; color:#166534; }
+.status-pill.s-partial { background:#fef3c7; color:#92400e; }
+.status-pill.s-refunded,.status-pill.s-rejected { background:#fee2e2; color:#991b1b; }
+
+/* ══ Progreso del pedido ══
+   Pasado con marca, actual destacado, futuro neutro. */
+.ped-steps { display:flex; flex-direction:column; gap:2px; list-style:none; margin:0; padding:0; }
+.ped-step-btn { display:flex; align-items:center; gap:10px; width:100%; padding:7px 8px; border-radius:8px; text-align:left; font-size:12px; transition:background .15s; }
+.ped-step-dot { display:flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:99px; border:2px solid #d1d5db; background:#fff; flex-shrink:0; }
+.ped-step-lbl { font-weight:600; color:#9ca3af; }
+.ped-step.es-pasada .ped-step-dot { background:#10b981; border-color:#10b981; color:#fff; }
+.ped-step.es-pasada .ped-step-lbl { color:#4b5563; }
+.ped-step.es-actual .ped-step-dot { border-color:#4f46e5; box-shadow:0 0 0 3px rgba(79,70,229,.15); }
+.ped-step.es-actual .ped-step-lbl { color:#312e81; font-weight:800; }
+.ped-step.es-actual .ped-step-btn { background:#eef2ff; }
+button.ped-step-btn:hover { background:#f3f4f6; cursor:pointer; }
+div.ped-step-btn { cursor:default; }
+
+/* Fila: hover sutil y marca clara cuando su cajón está abierto. */
+tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
+
+/* ══ Cajón de detalle ══
+   Superpuesto, no columna: la tabla conserva el ancho completo. */
+#ped-drawer {
+    position:fixed; top:var(--topbar-h,52px); right:0; bottom:0;
+    z-index:70; width:clamp(560px,42vw,680px); max-width:100vw;
+    background:#fff; border-left:1px solid #e5e7eb;
+    box-shadow:-8px 0 24px rgba(15,23,42,.10);
+    display:flex; flex-direction:column;
+    transition:transform .22s ease;
+}
+#ped-drawer.hidden-panel { transform:translateX(100%); box-shadow:none; pointer-events:none; }
+.ped-drawer-top { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 16px; border-bottom:1px solid #e5e7eb; }
+.ped-drawer-body { flex:1; overflow-y:auto; padding:16px; background:#f9fafb; }
+
+#ped-overlay { position:fixed; top:var(--topbar-h,52px); left:0; right:0; bottom:0; z-index:69; background:rgba(15,23,42,.28); }
+
+/* NO 100vw: con anclaje a la derecha, 100vw mete el borde izquierdo debajo del
+   sidebar y le recorta las primeras letras a cada línea. Lección del Paso 1. */
+@media (max-width:768px) {
+    #ped-drawer { width:calc(100vw - var(--sidebar-w,56px)); }
+}
+@media (prefers-reduced-motion:reduce) {
+    #ped-drawer { transition:none; }
+}
+</style>
+<div class="flex flex-col flex-1 overflow-hidden bg-gray-50" x-init="initPedidos()" x-data="{
     @php
-        $esLavanderia = \App\Support\OrderFlow::supportsFlow($project->category ?? '');
-        $lavStates = $esLavanderia ? \App\Support\OrderFlow::activeStates($project) : [];
+        // Copia unica desde el controlador: antes este bloque recomputaba
+        // supportsFlow() por su cuenta y el drawer mostraba la rama de flujo
+        // aunque la capacidad estuviera apagada. `conFlujo` sustituye al
+        // nombre ambiguo `esLavanderia` (retail no es lavanderia).
+        $conFlujo  = !empty($flujoOperativo);
+        $lavStates = $flujoOperativo;
     @endphp
-    esLavanderia: {{ $esLavanderia ? 'true' : 'false' }},
+    conFlujo: {{ $conFlujo ? 'true' : 'false' }},
     lavStates: {{ Js::from(collect($lavStates)->map(fn($s) => [
         'key'=>$s['key'], 'label'=>$s['label'], 'icon'=>$s['icon'], 'color'=>$s['color'],
     ])->values()) }},
-    orders: {{ Js::from($orders->map(function($o) use ($project, $esLavanderia) {
-        $sla = $esLavanderia && $o->laundry_status ? \App\Support\OrderFlow::slaStatus($project, $o) : null;
+    orders: {{ Js::from($orders->map(function($o) use ($project, $conFlujo) {
+        $sla = $conFlujo && $o->laundry_status ? \App\Support\OrderFlow::slaStatus($project, $o) : null;
         return [
         'id'             => $o->id,
         'tag_code'       => $o->tag_code ?? '',
@@ -49,36 +131,123 @@
         'pieces_count'   => $o->pieces_count ?? 0,
         'sla_level'      => $sla['level'] ?? '',
         'sla_minutes'    => $sla['minutes'] ?? 0,
-        'total'          => (float)$o->total,
+        // String canonico (UX2): un float aqui reintroduce binario en el
+        // importe antes de pintarlo (mismo contrato que Cotizaciones F1c).
+        'total'          => \App\Support\LineMath::canon((string) $o->total),
         'notes'          => $o->notes,
         'payment_method' => $o->payment_method ?? '',
         'sales_channel'  => $o->sales_channel ?? '',
         'created_at'     => $o->created_at->format('d/m/Y H:i'),
         'created_ts'     => $o->created_at->timestamp,
         'items_count'    => $o->items->count(),
-        'items'          => $o->items->map(fn($i) => ['name'=>$i->name,'price'=>(float)$i->price,'quantity'=>(int)$i->quantity])->values(),
+        // Origen del pedido (FK poblada en F1b): permite mostrar
+        // "Originada en COT-x" y cerrar el circulo de trazabilidad.
+        'quote_id'       => $o->quote_id,
+        // price/discount como string canonico (UX2, mismo contrato F1c);
+        // quantity entero: no es dinero.
+        'items'          => $o->items->map(fn($i) => ['name'=>$i->name,'price'=>\App\Support\LineMath::canon((string)$i->price),'quantity'=>(int)$i->quantity,'discount'=>\App\Support\LineMath::canon((string)($i->discount ?? 0))])->values(),
         'wa_number'      => $o->wa_number ?? '',
         'wa_status'      => $o->wa_status ?? '',
         'delivery_address'=> $o->delivery_address ?? '',
         'shipping_cost'  => (float)($o->shipping_cost ?? 0),
+        'payment_status' => $o->payment_status ?: 'pending',
+        'pill_comercial' => \App\Support\OrderStatus::comercialPresentacion($o->status),
+        'pill_pago'      => \App\Support\OrderStatus::pagoPresentacion($o->payment_status),
+        'debe'           => \App\Support\OrderStatus::debe($o->status, $o->payment_status),
+        'comercial_key'  => \App\Support\OrderStatus::comercialCanonico($o->status),
+        'pago_key'       => \App\Support\OrderStatus::pago($o->payment_status),
+        'created_at_full'=> $o->created_at->format('d/m/Y H:i'),
+        'updated_ts'     => $o->updated_at ? $o->updated_at->timestamp : $o->created_at->timestamp,
+        'responsable'    => $o->delivery_person_name ?: ($o->created_by ? ('Usuario #'.$o->created_by) : ''),
         'payment_proof'  => $o->payment_proof ? (str_starts_with($o->payment_proof,'http') ? $o->payment_proof : str_replace('http://','https://',asset('storage/'.$o->payment_proof))) : null,
     ]; })) }},
     paymentMethods:    {{ Js::from($paymentMethods) }},
     paymentConditions: {{ Js::from($paymentConditions) }},
     salesChannels:     {{ Js::from($salesChannels) }},
+    kpis: {{ Js::from($kpis ?? []) }},
+    payModal: false,
+    payForm: { status:'paid', method:'', amount:'', reference:'' },
+    cobros: [],
+    waOpen: false,
+    events: [],
+
+    /* Dinero exacto (UX2): centavos BigInt + separadores sobre el string,
+       sin pasar por float (mismo contrato que Cotizaciones F1c). */
+    odCentsDe(txt) {
+        const m = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(String(txt ?? '').trim());
+        if (!m) return 0n;
+        const v = BigInt(m[2]) * 100n + BigInt((m[3] || '').padEnd(2, '0'));
+        return m[1] === '-' ? -v : v;
+    },
+    odPresent(exacto) {
+        const m = /^(-?)(\d+)\.(\d{2})$/.exec(String(exacto));
+        if (!m) return String(exacto);
+        return m[1] + m[2].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + m[3];
+    },
+    money(v){
+        const c = typeof v === 'bigint' ? v : this.odCentsDe(v);
+        const neg = c < 0n ? '-' : ''; const a = c < 0n ? -c : c;
+        return 'S/ ' + neg + this.odPresent((a / 100n) + '.' + String(a % 100n).padStart(2, '0'));
+    },
+    isPendingPay(o){ return !!o.debe; },
+    async registerPay(){
+        if(!this.selected) return;
+        const res = await fetch(`{{ $ordersApiBase }}/${this.selected.id}/pay`, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'},
+            body: JSON.stringify({ status:this.payForm.status, method:this.payForm.method||null, amount:this.payForm.amount||null, reference:this.payForm.reference||null }) });
+        // El estado y el adelanto los DERIVA el servidor desde el libro de
+        // cobros, asi que se toman de su respuesta en vez de suponerlos: antes
+        // se pintaba el estado sin esperar y la pantalla podia mentir si el
+        // servidor rechazaba.
+        let data = null; try { data = await res.json(); } catch(e) {}
+        if(res.ok){
+            const srv = data?.order || {};
+            this.selected.payment_status = srv.payment_status ?? this.payForm.status;
+            this.selected.advance_amount = srv.advance_amount ?? this.selected.advance_amount;
+            if(this.payForm.method) this.selected.payment_method = this.payForm.method;
+            this.cobros = data?.cobros || [];
+            const o = this.orders.find(x=>x.id===this.selected.id);
+            if(o){ o.payment_status = this.selected.payment_status; o.debe = this.selected.payment_status!=='paid'; }
+            this.payModal=false; this.loadEvents();
+        } else {
+            // 422 de validacion trae errors.amount; el del libro trae message.
+            const msg = data?.errors?.amount?.[0] || data?.message || 'No se pudo registrar el pago.';
+            alert(msg);
+        }
+    },
+    async loadEvents(){
+        if(!this.selected){ this.events=[]; return; }
+        try{ const r = await fetch(`{{ $ordersApiBase }}/${this.selected.id}/events`, {headers:{'Accept':'application/json'}}); const d = await r.json(); this.events = d.events||[]; }catch(e){ this.events=[]; }
+    },
+    waPhone(o){ let n=(o.client_phone||o.wa_number||'').replace(/\D/g,''); if(n.length===9) n='51'+n; return n; },
+    waTemplates(o){
+        const store = {{ Js::from($project->name) }};
+        const items = (o.items||[]).map(i=>`- ${i.quantity} x ${i.name}`).join('%0A');
+        const total = this.money(o.total);
+        return [
+            { key:'confirmacion', label:'Confirmación del pedido', text:`Hola ${o.client_name} 👋, confirmamos tu pedido #${o.id} en ${store}:%0A${items}%0ATotal: ${total}. ¡Gracias por tu compra!` },
+            { key:'solicitud_pago', label:'Solicitud de pago', text:`Hola ${o.client_name}, tu pedido #${o.id} en ${store} está listo para ser confirmado. Total a pagar: ${total}. ¿Te enviamos los datos de pago?` },
+            { key:'confirmacion_pago', label:'Confirmación de pago', text:`Hola ${o.client_name}, ¡recibimos tu pago de tu pedido #${o.id} en ${store}! Ya estamos preparándolo. Te avisamos cuando esté listo. 🙌` },
+            { key:'pedido_listo', label:'Pedido listo', text:`Hola ${o.client_name} 🎉, tu pedido #${o.id} de ${store} ya está listo. Coordinemos la entrega o el recojo cuando gustes.` },
+            { key:'estado', label:'Estado del pedido', text:`Hola ${o.client_name}, te contamos que tu pedido #${o.id} en ${store} está en proceso. Cualquier consulta, por aquí. 😊` },
+        ];
+    },
+    async sendWa(o, tpl){
+        const phone = this.waPhone(o);
+        if(!phone){ alert('El pedido no tiene teléfono.'); return; }
+        window.open(`https://wa.me/${phone}?text=${tpl.text}`, '_blank');
+        this.waOpen=false;
+        try{ await fetch(`{{ $ordersApiBase }}/${o.id}/wa-sent`, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body: JSON.stringify({template:tpl.key,to:phone}) }); this.loadEvents(); }catch(e){}
+    },
 
     search: '',
-    filterStatus: '',
     selected: null,
-    creating: false,
     saving: false,
-    form: { client_name:'', client_phone:'', notes:'', status:'pending', payment_method:'', items:[{name:'',price:'',quantity:1}] },
 
     statuses: {
-        pending:   { label:'Nuevo',          icon:'🟡', cls:'s-pending'  },
-        process:   { label:'En proceso',     icon:'🔵', cls:'s-process'  },
-        done:      { label:'Completado',     icon:'🟢', cls:'s-done'     },
-        cancelled: { label:'Cancelado',      icon:'🔴', cls:'s-cancelled' },
+        pending:   { label:'Nuevo',          cls:'s-pending'  },
+        process:   { label:'En proceso',     cls:'s-process'  },
+        done:      { label:'Completado',     cls:'s-done'     },
+        cancelled: { label:'Cancelado',      cls:'s-cancelled' },
     },
 
     // ── Lavandería: helpers de estado (leen del flujo configurado en admin) ──
@@ -110,7 +279,7 @@
         await this._postLaundry(o, next.key);
     },
     async _postLaundry(o, key) {
-        const res = await fetch(`/orders/${o.id}/laundry-status`, {
+        const res = await fetch(`{{ $ordersApiBase }}/${o.id}/laundry-status`, {
             method:'POST',
             headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
             body: JSON.stringify({ status: key })
@@ -125,14 +294,6 @@
         } else { alert('No se pudo cambiar el estado'); }
     },
 
-    get filtered() {
-        return this.orders.filter(o => {
-            const s = !this.search || o.client_name.toLowerCase().includes(this.search.toLowerCase()) || String(o.id).includes(this.search);
-            const f = !this.filterStatus
-                || (this.esLavanderia ? o.laundry_status === this.filterStatus : o.status === this.filterStatus);
-            return s && f;
-        });
-    },
 
     avatarColor(name) {
         const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6'];
@@ -148,6 +309,13 @@
         return Math.floor(d/86400)+'d';
     },
 
+    /* Canal con etiqueta humana: 'cotizacion' cruda se veia en lista y drawer. */
+    chLabel(ch) {
+        const mapa = { whatsapp:'WhatsApp', cotizacion:'Cotización', pos:'POS',
+                       web:'Web', mostrador:'Mostrador', manual:'Manual', tienda:'Tienda' };
+        if (!ch) return '';
+        return mapa[ch] || (ch.charAt(0).toUpperCase() + ch.slice(1));
+    },
     chClass(ch) {
         if (!ch) return 'ch-default';
         if (ch === 'whatsapp') return 'ch-whatsapp';
@@ -159,8 +327,10 @@
     select(o) {
         this.selected = {...o};
         this.form = { status: o.status, notes: o.notes||'', payment_method: o.payment_method||'' };
-        this.creating = false;
+        // En móvil el detalle abre como pantalla completa: siempre desde arriba
+        setTimeout(() => document.querySelector('.ped-drawer-body')?.scrollTo({top:0}), 50);
         this.refreshSelected();
+        this.loadEvents();
     },
 
     async refreshSelected() {
@@ -172,35 +342,30 @@
             if (!res.ok) return;
             const data = await res.json();
             const o = data.order ?? data;
+            // El API devuelve fechas ISO crudas; sin esto pisan la fecha ya
+            // formateada de la lista y el detalle muestra 2026-08-14T21:41:15Z.
+            delete o.created_at; delete o.updated_at;
             const idx = this.orders.findIndex(x => x.id === o.id);
             if (idx > -1) this.orders[idx] = {...this.orders[idx], ...o};
             this.selected = {...this.selected, ...o};
+            // Cobros del pedido: sin esto el historial solo lo veria quien
+            // acaba de registrar uno, no quien abre el pedido despues.
+            this.cobros = data.cobros || [];
         } catch(e) {}
     },
 
-    openNew() {
-        this.selected = null; this.creating = true;
-        this.form = { client_name:'', client_phone:'', notes:'', status:'pending', payment_method:'', items:[{name:'',price:'',quantity:1}] };
-    },
 
-    addItem()    { this.form.items.push({name:'',price:'',quantity:1}); },
-    removeItem(i){ this.form.items.splice(i,1); },
-    get formTotal() { return this.form.items.reduce((s,i)=>s+(parseFloat(i.price)||0)*(parseInt(i.quantity)||1),0); },
 
     async save() {
         this.saving = true;
         const base   = '{{ $ordersApiBase }}';
-        const url    = this.creating ? base : base+'/'+this.selected.id;
-        const method = this.creating ? 'POST' : 'PUT';
-        const body   = this.creating
-            ? { ...this.form }
-            : { status: this.form.status, notes: this.form.notes, payment_method: this.form.payment_method };
+        // El alta vive en el Paso 4: aqui solo se edita el pedido abierto.
+        const url    = base + '/' + this.selected.id;
+        const method = 'PUT';
+        const body   = { status: this.form.status, notes: this.form.notes, payment_method: this.form.payment_method };
         const res  = await fetch(url, { method, headers:{'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}, body: JSON.stringify(body) });
         const data = await res.json();
-        if (this.creating) {
-            this.orders.unshift({...data.order, items:data.order.items||[], items_count:(data.order.items||[]).length});
-            this.selected = data.order; this.creating = false;
-        } else {
+        {
             const idx = this.orders.findIndex(o=>o.id===data.order.id);
             if (idx>-1) this.orders[idx]={...this.orders[idx],...data.order};
             this.selected = {...this.selected,...data.order};
@@ -227,18 +392,18 @@
         });
         if (!res.ok) { alert('Error al eliminar ('+res.status+')'); return; }
         this.orders = this.orders.filter(o=>o.id!==this.selected.id);
-        this.selected = null; this.creating = false;
+        this.selected = null;
     },
 
     waStatusLabel: {
         pending:          { label:'Pago pendiente',    color:'text-yellow-600 bg-yellow-50', icon:'⏳' },
-        pago_recibido:    { label:'Pago recibido',     color:'text-blue-600 bg-blue-50',     icon:'💳' },
-        pago_confirmado:  { label:'Pago confirmado',   color:'text-indigo-600 bg-indigo-50', icon:'✅' },
-        preparando:       { label:'Preparando',        color:'text-orange-600 bg-orange-50', icon:'📦' },
-        en_camino:        { label:'En camino',         color:'text-purple-600 bg-purple-50', icon:'🚚' },
-        entregado:        { label:'Entregado',         color:'text-green-600 bg-green-50',   icon:'🎉' },
-        entregado_espera: { label:'Esperando cliente', color:'text-teal-600 bg-teal-50',     icon:'📲' },
-        problema:         { label:'Problema',          color:'text-red-600 bg-red-50',       icon:'❌' },
+        pago_recibido:    { label:'Pago recibido',     color:'text-blue-600 bg-blue-50',     icon:'' },
+        pago_confirmado:  { label:'Pago confirmado',   color:'text-indigo-600 bg-indigo-50', icon:'' },
+        preparando:       { label:'Preparando',        color:'text-orange-600 bg-orange-50', icon:'' },
+        en_camino:        { label:'En camino',         color:'text-purple-600 bg-purple-50', icon:'' },
+        entregado:        { label:'Entregado',         color:'text-green-600 bg-green-50',   icon:'' },
+        entregado_espera: { label:'Esperando cliente', color:'text-teal-600 bg-teal-50',     icon:'' },
+        problema:         { label:'Problema',          color:'text-red-600 bg-red-50',       icon:'' },
     },
     waActing: false,
     async waAction(action) {
@@ -260,360 +425,389 @@
     },
     waActionsFor(ws) {
         if (!ws) return [];
-        if (ws==='pending'||ws==='pago_recibido') return [{ key:'confirmar_pago', label:'✅ Confirmar pago', cls:'bg-indigo-600 text-white' }];
-        if (ws==='pago_confirmado'||ws==='preparando') return [{ key:'en_camino', label:'🚚 En camino', cls:'bg-indigo-600 text-white' }];
-        if (ws==='en_camino') return [{ key:'entregado', label:'🎉 Entregado', cls:'bg-green-600 text-white' }];
+        if (ws==='pending'||ws==='pago_recibido') return [{ key:'confirmar_pago', label:'Confirmar pago', cls:'bg-indigo-600 text-white' }];
+        if (ws==='pago_confirmado'||ws==='preparando') return [{ key:'en_camino', label:'En camino', cls:'bg-indigo-600 text-white' }];
+        if (ws==='en_camino') return [{ key:'entregado', label:'Entregado', cls:'bg-green-600 text-white' }];
         return [];
+    },
+
+    // ══ Filtros combinables (AND) ══════════════════════════════════════════
+    // Un solo objeto de filtros. Las vistas rápidas y los KPIs escriben AQUÍ,
+    // no en un sistema paralelo: antes convivían `tab`, `filterStatus` y los
+    // KPIs del servidor con criterios distintos que no cuadraban entre sí.
+    f: { comercial:'', pago:'', operacion:'', canal:'', fecha:'', responsable:'' },
+    vistaActiva: 'todos',
+    hojaFiltros: false,
+    puede: {{ Js::from($puede ?? []) }},
+    filaOrigen: null,
+
+    vistas: [
+        { key:'todos',      label:'Todos' },
+        { key:'por_cobrar', label:'Por cobrar' },
+        { key:'atrasados',  label:'Atrasados' },
+        { key:'hoy',        label:'Hoy' },
+        { key:'preparacion',label:'En proceso' },      // filtro comercial status=process
+        { key:'listos',     label:'Completados' },    // filtro comercial status=done
+    ],
+
+    aplicarVista(key) {
+        this.limpiarFiltros(false);
+        this.vistaActiva = key;
+        if (key === 'por_cobrar')       this.f.pago = 'pending';
+        else if (key === 'nuevos')      this.f.comercial = 'pending';
+        else if (key === 'preparacion') this.f.comercial = 'process';
+        else if (key === 'listos')      this.f.comercial = 'done';
+        else if (key === 'hoy')         this.f.fecha = 'hoy';
+        // 'atrasados' no es un valor de campo sino una regla temporal; se
+        // resuelve en filtered() leyendo vistaActiva.
+    },
+
+    limpiarFiltros(resetVista = true) {
+        this.f = { comercial:'', pago:'', operacion:'', canal:'', fecha:'', responsable:'' };
+        this.search = '';
+        if (resetVista) this.vistaActiva = 'todos';
+    },
+
+    get filtrosActivos() {
+        return Object.values(this.f).filter(v => v !== '').length;
+    },
+
+    get responsables() {
+        return [...new Set(this.orders.map(o => o.responsable).filter(Boolean))].sort();
+    },
+
+    get filtered() {
+        const q     = (this.search || '').toLowerCase().trim();
+        const ahora = Math.floor(Date.now() / 1000);
+
+        return this.orders.filter(o => {
+            if (q) {
+                const enTexto = (o.client_name || '').toLowerCase().includes(q)
+                    || String(o.id).includes(q)
+                    || (o.tag_code || '').toLowerCase().includes(q)
+                    || (o.client_phone || '').includes(q);
+                if (!enTexto) return false;
+            }
+            if (this.f.comercial   && o.comercial_key !== this.f.comercial) return false;
+            if (this.f.pago        && o.pago_key      !== this.f.pago)      return false;
+            if (this.f.canal       && o.sales_channel !== this.f.canal)     return false;
+            if (this.f.responsable && o.responsable   !== this.f.responsable) return false;
+            if (this.f.operacion   && (o.laundry_status || '') !== this.f.operacion) return false;
+
+            if (this.f.fecha) {
+                const dias = this.f.fecha === 'hoy' ? 1 : Number(this.f.fecha);
+                if ((ahora - o.created_ts) > dias * 86400) return false;
+            }
+
+            // Mismo criterio que el KPI del servidor: activo y sin tocar +48 h.
+            if (this.vistaActiva === 'atrasados') {
+                const activo = !['done','cancelled'].includes(o.comercial_key);
+                if (!activo || (ahora - o.updated_ts) < 172800) return false;
+            }
+            return true;
+        });
+    },
+
+    // ══ Presentación: los tres estados, separados ══════════════════════════
+    // Etiqueta y color vienen calculados por OrderStatus en el servidor, para
+    // no repetir aquí el mapa de sinónimos (pagado → paid).
+    claseEtapa(key) {
+        if (!this.selected) return 'es-futura';
+        const orden = Object.keys(this.statuses);
+        const i = orden.indexOf(key), actual = orden.indexOf(this.selected.status);
+        if (actual < 0) return 'es-futura';
+        return i < actual ? 'es-pasada' : (i === actual ? 'es-actual' : 'es-futura');
+    },
+    pillComercial(o){ return o.pill_comercial || { label:'—', cls:'s-legacy' }; },
+    pillPago(o){ return o.pill_pago || { label:'Debe', cls:'s-pending' }; },
+    estadoOperativo(o){
+        const e = this.lavStates.find(s => s.key === o.laundry_status);
+        // Sin emoji delante (DoD): el label ya es explicito y la pill da color.
+        return e ? e.label : '';
+    },
+    responsable(o){ return o.responsable || '—'; },
+
+    // ══ Drawer enlazable ═══════════════════════════════════════════════════
+    // La URL es el estado. Abrir empuja /pedidos/{id} al historial y cerrar
+    // vuelve atrás, así Atrás/Adelante del navegador funcionan solos. Los
+    // filtros y el scroll no se tocan: viven en Alpine, no en el DOM.
+    abrirPedido(o, el) {
+        this.filaOrigen = el || null;
+        this.select(o);
+        const url = '{{ $ordersApiBase }}/' + o.id;
+        if (window.location.pathname !== url) history.pushState({ pedido:o.id }, '', url);
+    },
+
+    cerrarPedido() {
+        this.selected = null;
+        const base = '{{ $ordersApiBase }}';
+        if (window.location.pathname !== base) {
+            // back() si el drawer lo abrió esta misma sesión de navegación;
+            // replaceState si se entró directo por URL, para no salir del sitio.
+            if (history.state && history.state.pedido) history.back();
+            else history.replaceState({}, '', base);
+        }
+    },
+
+    initPedidos() {
+        window.addEventListener('popstate', (e) => {
+            const id = e.state && e.state.pedido;
+            if (id) { const o = this.orders.find(x => x.id === id); if (o) this.select(o); }
+            else { this.selected = null; }
+        });
+
+        // Entrada directa a /pedidos/{id}: el listado ya está pintado y el
+        // pedido se abre después, conservando filtros y posición.
+        @if (!empty($pedidoInicial))
+            this.$nextTick(() => {
+                const o = this.orders.find(x => x.id === {{ (int) $pedidoInicial }});
+                if (o) { this.select(o); history.replaceState({ pedido:o.id }, '', window.location.pathname); }
+            });
+        @endif
     },
 }">
 
-{{-- ══ Header ══════════════════════════════════════════════════════════════ --}}
-<div class="flex-shrink-0 px-5 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
-    <h1 class="text-base font-bold text-gray-900">Pedidos</h1>
-    <button @click="openNew()" class="btn-primary text-xs px-4 py-2 flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-        Nuevo pedido
+{{-- ══ Cabecera ═══════════════════════════════════════════════════════════ --}}
+<div class="flex-shrink-0 px-4 sm:px-6 py-3 border-b border-gray-200 bg-white flex items-center justify-between gap-3 flex-wrap">
+    <div class="min-w-0">
+        <h1 class="text-base sm:text-lg font-bold text-gray-900">Pedidos</h1>
+        <p class="text-[11px] text-gray-500 mt-0.5 hidden sm:block">Centro operativo de pedidos</p>
+    </div>
+    <div class="flex items-center gap-2 flex-shrink-0">
+        @if ($puede['ver'] ?? false)
+            <a href="{{ $isSales ? route('bixosales.pedidos') : route('orders') }}-export"
+               class="ped-btn ped-btn-ghost"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0 4-4m-4 4-4-4M4 19h16"/></svg>Exportar</a>
+        @endif
+        {{-- Paso 4 aún no existe: en lugar de un CTA hacia una ruta inexistente,
+             apunta a Venta Express, que ya está en producción y protegida. --}}
+        @if ($puede['crear'] ?? false)
+            <a href="{{ $isSales ? route('bixosales.ventas.express') : route('ventas.express') }}"
+               class="ped-btn ped-btn-primary"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>Nuevo pedido</a>
+        @endif
+    </div>
+</div>
+
+{{-- ══ KPIs ═══════════════════════════════════════════════════════════════ --}}
+{{-- Clicables: aplican la MISMA vista rápida que la barra, no un filtrado
+     alternativo. Calculados solo en servidor (OrderController@index). --}}
+<div class="flex-shrink-0 grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-200">
+    {{-- La cobranza vive en Cuentas por Cobrar: aqui el primer KPI es
+         comercial. "Por cobrar" sobrevive solo como vista rapida (filtro). --}}
+    <button @click="aplicarVista('nuevos')" class="ped-kpi" :class="vistaActiva==='nuevos' && 'is-active'">
+        <span class="ped-kpi-lbl">Nuevos</span>
+        <span class="ped-kpi-val text-amber-700">{{ $kpis['nuevos'] ?? 0 }}</span>
+    </button>
+    <button @click="aplicarVista('todos')" class="ped-kpi" :class="vistaActiva==='todos' && 'is-active'">
+        <span class="ped-kpi-lbl">Activos</span>
+        <span class="ped-kpi-val text-blue-600">{{ $kpis['activos'] ?? 0 }}</span>
+    </button>
+    {{-- Los KPIs son SIEMPRE comerciales; no se simula Operacion con el
+         status comercial. Las metricas operativas llegaran con la evolucion
+         propia del modulo Operacion. --}}
+    <button @click="aplicarVista('listos')" class="ped-kpi" :class="vistaActiva==='listos' && 'is-active'">
+        <span class="ped-kpi-lbl">Completados</span>
+        <span class="ped-kpi-val text-emerald-600">{{ $kpis['completados'] ?? 0 }}</span>
+    </button>
+    <button @click="aplicarVista('atrasados')" class="ped-kpi" :class="vistaActiva==='atrasados' && 'is-active'">
+        <span class="ped-kpi-lbl">Atrasados +48h</span>
+        <span class="ped-kpi-val text-red-600">{{ $kpis['atrasados'] ?? 0 }}</span>
     </button>
 </div>
 
-{{-- ══ BODY ══════════════════════════════════════════════════════════════════ --}}
-<div class="flex flex-1 overflow-hidden">
+@include('orders._filtros')
 
-{{-- ── LISTA ─────────────────────────────────────────────────────────────── --}}
-<div class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0" style="width:320px">
-
-    {{-- Search + filtros --}}
-    <div class="px-3 py-2.5 border-b border-gray-100 space-y-2 flex-shrink-0">
-        <div class="relative">
-            <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
-            <input x-model="search" type="text" placeholder="Buscar por nombre o #ID..." class="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-        </div>
-        {{-- Filtros: lavandería usa los estados del flujo; otros rubros usan status genérico --}}
-        <div class="flex gap-1 overflow-x-auto pb-0.5">
-            <button @click="filterStatus=''" :class="filterStatus==='' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">Todos <span x-text="'('+orders.length+')'"></span></button>
-            <template x-if="esLavanderia">
-                <template x-for="st in lavStates" :key="st.key">
-                    <button @click="filterStatus=st.key"
-                            :style="filterStatus===st.key ? ('background:'+st.color+';color:#fff') : ''"
-                            :class="filterStatus===st.key ? '' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
-                            class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">
-                        <span x-text="st.icon"></span> <span x-text="st.label"></span>
-                    </button>
-                </template>
-            </template>
-            <template x-if="!esLavanderia">
-                <span class="flex gap-1">
-                    <button @click="filterStatus='pending'" :class="filterStatus==='pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🟡 Nuevos</button>
-                    <button @click="filterStatus='process'" :class="filterStatus==='process' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🔵 En proceso</button>
-                    <button @click="filterStatus='done'" :class="filterStatus==='done' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition flex-shrink-0">🟢 Completados</button>
-                </span>
-            </template>
-        </div>
-    </div>
-
-    {{-- Items --}}
-    <div class="overflow-y-auto flex-1">
-        <div x-show="filtered.length===0" class="py-12 text-center text-gray-400 text-sm">Sin pedidos</div>
-        <template x-for="o in filtered" :key="o.id">
-            <div @click="select(o)" class="ord-list-item" :class="selected && selected.id===o.id ? 'active' : ''">
-                {{-- Avatar --}}
-                <div class="ord-avatar" :style="'background:'+avatarColor(o.client_name)+';color:#fff'" x-text="(o.client_name||'?')[0].toUpperCase()"></div>
-                {{-- Info --}}
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between gap-1 mb-0.5">
-                        <p class="text-sm font-semibold text-gray-900 truncate" x-text="o.client_name"></p>
-                        <p class="text-sm font-black text-gray-900 flex-shrink-0" x-text="'S/'+parseFloat(o.total).toFixed(0)"></p>
-                    </div>
-                    <div class="flex items-center justify-between gap-1">
-                        <div class="flex items-center gap-1.5">
-                            {{-- Estado: lavandería usa color del flujo; otros usan pill genérica --}}
-                            <template x-if="esLavanderia && lavState(o)">
-                                <span class="status-pill" :style="'background:'+lavColor(o)+'1a;color:'+lavColor(o)" x-text="lavLabel(o)"></span>
-                            </template>
-                            <template x-if="!esLavanderia || !lavState(o)">
-                                <span class="status-pill" :class="(statuses[o.status]||{}).cls" x-text="(statuses[o.status]||{}).label"></span>
-                            </template>
-                            {{-- Semáforo de tiempo (SLA) --}}
-                            <template x-if="esLavanderia && o.sla_level && o.sla_level!=='ok'">
-                                <span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:'+slaColor(o)" :title="'Tiempo: '+o.sla_minutes+' min'"></span>
-                            </template>
-                            <span x-show="o.sales_channel" class="ch-tag" :class="chClass(o.sales_channel)" x-text="o.sales_channel"></span>
-                        </div>
-                        <span class="text-[10px] text-gray-400 flex-shrink-0" x-text="timeAgo(o.created_ts)"></span>
-                    </div>
-                    <p class="text-[10px] text-gray-400 mt-0.5" x-text="o.items_count+' ítem(s) · #'+o.id"></p>
-                </div>
-            </div>
-        </template>
-    </div>
+{{-- ══ Listado a ancho completo ═══════════════════════════════════════════ --}}
+<div class="flex flex-col flex-1 overflow-hidden bg-white">
+    @include('orders._fila')
 </div>
 
-{{-- ── DETALLE ───────────────────────────────────────────────────────────── --}}
-<div class="flex-1 overflow-y-auto bg-gray-50 p-5">
-
-    {{-- Empty state --}}
-    <div x-show="!selected && !creating" class="h-full flex items-center justify-center flex-col gap-3 text-gray-300">
-        <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        <p class="text-sm text-gray-400">Selecciona un pedido</p>
-    </div>
-
-    {{-- FORMULARIO NUEVO --}}
-    <template x-if="creating">
-        <div class="max-w-2xl mx-auto space-y-4">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-bold text-gray-900">Nuevo pedido</h2>
-                <button @click="creating=false" class="text-gray-400 hover:text-gray-600 text-sm">✕ Cancelar</button>
-            </div>
-
-            <div class="detail-section">
-                <div class="detail-section-header">Cliente</div>
-                <div class="p-4 grid grid-cols-2 gap-3">
-                    <div class="col-span-2">
-                        <label class="label">Nombre *</label>
-                        <input x-model="form.client_name" class="input" placeholder="Nombre del cliente">
-                    </div>
-                    <div>
-                        <label class="label">Teléfono</label>
-                        <input x-model="form.client_phone" class="input" placeholder="999 999 999">
-                    </div>
-                    <div x-show="paymentMethods.length > 0">
-                        <label class="label">Método de pago</label>
-                        <select x-model="form.payment_method" class="input text-sm">
-                            <option value="">—</option>
-                            <template x-for="m in paymentMethods" :key="m"><option :value="m" x-text="m"></option></template>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-section">
-                <div class="detail-section-header">Productos / Servicios</div>
-                <div class="p-4 space-y-2">
-                    <template x-for="(item, i) in form.items" :key="i">
-                        <div class="flex gap-2 items-center">
-                            <input x-model="form.items[i].name" class="input text-sm flex-1" placeholder="Descripción">
-                            <input type="number" x-model="form.items[i].price" class="input text-sm w-24" placeholder="Precio" step="0.01" min="0">
-                            <input type="number" x-model="form.items[i].quantity" class="input text-sm w-16" placeholder="Cant." min="1">
-                            <button @click="removeItem(i)" class="text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
-                        </div>
-                    </template>
-                    <button @click="addItem()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1">+ Agregar línea</button>
-                    <div class="flex justify-end pt-2 border-t border-gray-100">
-                        <p class="text-sm font-bold text-gray-900">Total: S/ <span x-text="formTotal.toFixed(2)"></span></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-section">
-                <div class="detail-section-header">Notas</div>
-                <div class="p-4">
-                    <textarea x-model="form.notes" class="input resize-none text-sm" rows="2" placeholder="Instrucciones, referencias, etc."></textarea>
-                </div>
-            </div>
-
-            <button @click="save()" :disabled="saving" class="btn-primary w-full py-3 text-sm font-bold"
-                    x-text="saving ? 'Guardando...' : 'Crear pedido'"></button>
-        </div>
-    </template>
-
-    {{-- DETALLE PEDIDO --}}
-    <template x-if="selected && !creating">
-        <div class="max-w-2xl mx-auto space-y-4">
-
-            {{-- Header --}}
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-xs font-mono text-gray-400" x-text="'#'+selected.id"></span>
-                        <span x-show="selected.sales_channel" class="ch-tag" :class="chClass(selected.sales_channel)" x-text="selected.sales_channel"></span>
-                    </div>
-                    <h2 class="text-xl font-black text-gray-900" x-text="selected.client_name"></h2>
-                    <p class="text-xs text-gray-400 mt-0.5" x-text="selected.created_at"></p>
-                </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <button @click="del()" class="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1.5 transition">Eliminar</button>
-                </div>
-            </div>
-
-            {{-- Cambio de estado --}}
-            <div class="detail-section">
-                <div class="detail-section-header">Estado del pedido</div>
-
-                {{-- Lavandería: estados del flujo + botón avanzar --}}
-                <template x-if="esLavanderia && lavStates.length">
-                    <div class="p-3 space-y-2.5">
-                        <div class="flex gap-1.5 flex-wrap">
-                            <template x-for="st in lavStates" :key="st.key">
-                                <button @click="changeLaundry(st.key)"
-                                        :style="selected.laundry_status===st.key ? ('background:'+st.color+';color:#fff') : ''"
-                                        :class="selected.laundry_status===st.key ? '' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
-                                        class="s-btn text-xs transition">
-                                    <span x-text="st.icon"></span> <span x-text="st.label"></span>
-                                </button>
-                            </template>
-                        </div>
-                        {{-- Botón avanzar al siguiente estado --}}
-                        <template x-if="lavNext(selected)">
-                            <button @click="advanceLaundry(selected)"
-                                    class="w-full py-2 rounded-lg text-sm font-semibold text-white transition flex items-center justify-center gap-1.5"
-                                    :style="'background:'+(lavNext(selected)?.color||'#4f46e5')">
-                                Avanzar a <span x-text="lavNext(selected)?.icon+' '+lavNext(selected)?.label"></span> →
-                            </button>
-                        </template>
-                        {{-- Semáforo de tiempo en estado actual --}}
-                        <template x-if="selected.sla_level && selected.sla_level!=='ok'">
-                            <div class="text-xs px-3 py-2 rounded-lg flex items-center gap-2"
-                                 :style="'background:'+slaColor(selected)+'1a;color:'+slaColor(selected)">
-                                <span class="w-2 h-2 rounded-full" :style="'background:'+slaColor(selected)"></span>
-                                <span x-text="'Lleva '+selected.sla_minutes+' min en este estado'"></span>
-                                <span x-show="selected.sla_level==='over'" class="font-bold">· ¡Atrasado!</span>
-                            </div>
-                        </template>
-                    </div>
-                </template>
-
-                {{-- Otros rubros: estados genéricos --}}
-                <template x-if="!esLavanderia || !lavStates.length">
-                    <div class="p-3 flex gap-2 flex-wrap">
-                        <template x-for="(st, key) in statuses" :key="key">
-                            <button @click="quickStatus(key)"
-                                    :class="selected.status===key ? 'ring-2 ring-offset-1 ring-indigo-500 '+st.cls : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
-                                    class="s-btn text-xs transition"
-                                    x-text="st.icon+' '+st.label">
-                            </button>
-                        </template>
-                    </div>
-                </template>
-            </div>
-
-            {{-- Cliente --}}
-            <div class="detail-section">
-                <div class="detail-section-header">Cliente</div>
-                <div class="p-4 flex items-center gap-3">
-                    <div class="ord-avatar w-10 h-10 text-base" :style="'background:'+avatarColor(selected.client_name)+';color:#fff'" x-text="(selected.client_name||'?')[0].toUpperCase()"></div>
-                    <div>
-                        <p class="text-sm font-semibold text-gray-900" x-text="selected.client_name"></p>
-                        <template x-if="selected.client_phone">
-                            <a :href="'https://wa.me/51'+selected.client_phone.replace(/\D/g,'')" target="_blank"
-                               class="text-xs text-green-600 hover:underline flex items-center gap-1 mt-0.5">
-                                <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
-                                <span x-text="selected.client_phone"></span>
-                            </a>
-                        </template>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Productos --}}
-            <div class="detail-section">
-                <div class="detail-section-header">Productos</div>
-                <template x-if="selected.items && selected.items.length > 0">
-                    <div>
-                        <template x-for="(it, i) in selected.items" :key="i">
-                            <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0">
-                                <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                                    <span class="text-xs font-bold text-gray-500" x-text="it.quantity+'×'"></span>
-                                </div>
-                                <p class="flex-1 text-sm text-gray-800" x-text="it.name"></p>
-                                <div class="text-right flex-shrink-0">
-                                    <p class="text-sm font-semibold text-gray-900" x-text="'S/ '+(it.price*it.quantity).toFixed(2)"></p>
-                                    <p class="text-[10px] text-gray-400" x-text="'S/ '+it.price.toFixed(2)+' c/u'"></p>
-                                </div>
-                            </div>
-                        </template>
-                        <div class="flex justify-between items-center px-4 py-3 bg-gray-50">
-                            <span class="text-xs text-gray-500" x-text="(selected.items||[]).reduce((s,i)=>s+i.quantity,0)+' unidades'"></span>
-                            <span class="text-lg font-black text-gray-900" x-text="'S/ '+parseFloat(selected.total).toFixed(2)"></span>
-                        </div>
-                    </div>
-                </template>
-                <template x-if="!selected.items || selected.items.length === 0">
-                    <div class="px-4 py-3 flex justify-between items-center">
-                        <span class="text-sm text-gray-500" x-text="selected.items_count+' ítem(s)'"></span>
-                        <span class="text-lg font-black text-gray-900" x-text="'S/ '+parseFloat(selected.total).toFixed(2)"></span>
-                    </div>
-                </template>
-            </div>
-
-            {{-- Pago + Notas en grid --}}
-            <div class="grid grid-cols-2 gap-4">
-                <div class="detail-section">
-                    <div class="detail-section-header">Pago</div>
-                    <div class="p-4 space-y-2">
-                        <div>
-                            <label class="label text-[10px]">Método</label>
-                            <select x-model="form.payment_method" class="input text-sm mt-0.5">
-                                <option value="">—</option>
-                                <template x-for="m in paymentMethods" :key="m"><option :value="m" x-text="m"></option></template>
-                            </select>
-                        </div>
-                        <div x-show="selected.payment_proof" class="mt-1">
-                            <label class="label text-[10px]">Comprobante</label>
-                            <a :href="selected.payment_proof" target="_blank" class="block mt-1">
-                                <img :src="selected.payment_proof" class="rounded-lg border border-gray-200 max-h-32 w-full object-contain hover:opacity-90 transition">
-                            </a>
-                        </div>
-                        <div x-show="!selected.payment_proof" class="text-[10px] text-gray-400 bg-gray-50 rounded-lg p-2 text-center">Sin comprobante aún</div>
-                    </div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-section-header">Notas internas</div>
-                    <div class="p-4">
-                        <textarea x-model="form.notes" class="input resize-none text-sm w-full" rows="4" placeholder="Observaciones, instrucciones..."></textarea>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Tracking WhatsApp --}}
-            <template x-if="selected.sales_channel === 'whatsapp'">
-                <div class="detail-section border-green-200" style="border-color:#bbf7d0">
-                    <div class="detail-section-header" style="background:#f0fdf4;color:#166534">WhatsApp — Seguimiento</div>
-                    <div class="p-4 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs text-gray-600">+51 <span x-text="selected.wa_number"></span></p>
-                            <span class="status-pill" :class="(waStatusLabel[selected.wa_status]||{}).color"
-                                  x-text="(waStatusLabel[selected.wa_status]||{}).icon+' '+((waStatusLabel[selected.wa_status]||{}).label||'—')"></span>
-                        </div>
-                        {{-- Steps --}}
-                        <div class="flex items-center gap-1 overflow-x-auto py-1">
-                            <template x-for="step in [
-                                {key:'pending',label:'Recibido',icon:'🛒'},
-                                {key:'pago_recibido',label:'Pago enviado',icon:'💳'},
-                                {key:'pago_confirmado',label:'Confirmado',icon:'✅'},
-                                {key:'en_camino',label:'En camino',icon:'🚚'},
-                                {key:'entregado',label:'Entregado',icon:'🎉'},
-                            ]" :key="step.key">
-                                <div class="flex flex-col items-center gap-1 flex-shrink-0">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition"
-                                         :class="['pending','pago_recibido','pago_confirmado','en_camino','entregado'].indexOf(selected.wa_status) >= ['pending','pago_recibido','pago_confirmado','en_camino','entregado'].indexOf(step.key) ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-200 text-gray-300'"
-                                         x-text="step.icon"></div>
-                                    <p class="text-[9px] text-gray-500 whitespace-nowrap" x-text="step.label"></p>
-                                </div>
-                                <div class="w-6 h-0.5 bg-gray-200 flex-shrink-0 mb-4" x-show="step.key !== 'entregado'"></div>
-                            </template>
-                        </div>
-                        <div class="flex gap-2 flex-wrap">
-                            <template x-for="btn in waActionsFor(selected.wa_status)" :key="btn.key">
-                                <button @click="waAction(btn.key)" :disabled="waActing" :class="btn.cls"
-                                        class="text-xs px-4 py-2 rounded-lg font-semibold disabled:opacity-50 transition"
-                                        x-text="waActing ? 'Enviando...' : btn.label"></button>
-                            </template>
-                            <button @click="refreshSelected()" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition">↻ Actualizar</button>
-                        </div>
-                    </div>
-                </div>
-            </template>
-
-            {{-- Guardar --}}
-            <div class="flex gap-3">
-                <button @click="save()" :disabled="saving" class="btn-primary px-8 py-2.5 text-sm font-bold"
-                        x-text="saving ? 'Guardando...' : 'Guardar cambios'"></button>
-            </div>
-
-        </div>
-    </template>
-
-</div>{{-- /detalle --}}
-</div>{{-- /body --}}
+@include('orders._drawer')
 </div>
+
+{{-- ── Exportación: nota de pedido (PDF/imagen) y ticket 58mm ─────────────────
+     El pedido seleccionado se lee del estado Alpine del contenedor principal.
+     Mismo patrón probado en Cotizaciones: HTML off-screen → html2canvas → jsPDF. --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function odLineCents(price, qty, disc) {
+    const rx = /^\d+(\.\d{1,2})?$/;
+    const p = String(price ?? '0'), d = String(disc ?? '0');
+    if (!rx.test(p) || !rx.test(d)) return 0n;
+    const toC = (s) => { const [e, f=''] = s.split('.'); return BigInt(e)*100n + BigInt(f.padEnd(2,'0')); };
+    return (toC(p) * BigInt(Math.max(1, parseInt(qty)||1)) * (10000n - toC(d)) + 5000n) / 10000n;
+}
+function odLineFmt(c) { return (c/100n) + '.' + String(c%100n).padStart(2,'0'); }
+
+function currentOrder() {
+    const root = document.querySelector('[x-data]');
+    const al = root ? (root.__x?.$data ?? window.Alpine?.$data(root)) : null;
+    return al?.selected || null;
+}
+
+function orderPayLabel(o) {
+    return ({pending:'PAGO PENDIENTE', partial:'ADELANTO RECIBIDO', paid:'PAGADO', rejected:'PAGO RECHAZADO', refunded:'REEMBOLSADO'})[o.payment_status||'pending'] || 'PAGO PENDIENTE';
+}
+
+function buildOrderDocHtml() {
+    const o = currentOrder();
+    if (!o) return null;
+    const biz  = {{ Js::from($project->name) }};
+    const ruc  = {{ Js::from($project->setting('ruc') ?? '') }};
+    const tel  = {{ Js::from($project->phone ?? '') }};
+    const dir  = {{ Js::from($project->address ?? '') }};
+    const centsDe = t => { const m = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(String(t ?? '').trim()); if (!m) return 0n; const v = BigInt(m[2]) * 100n + BigInt((m[3] || '').padEnd(2, '0')); return m[1] === '-' ? -v : v; };
+    const fmt = n => { const c = typeof n === 'bigint' ? n : centsDe(n); const neg = c < 0n ? '-' : ''; const a = c < 0n ? -c : c; const ent = String(a / 100n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return 'S/ ' + neg + ent + '.' + String(a % 100n).padStart(2, '0'); };
+    const paid = (o.payment_status||'pending') === 'paid';
+    const items = (o.items||[]);
+    const envio = Number(o.shipping_cost||0);
+    const rows = items.map(i => `<tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;font-size:13px">${i.name}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:center;font-size:13px">${i.quantity}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:right;font-size:13px">${fmt(i.price)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:right;font-size:13px;font-weight:600">${fmt(odLineCents(i.price, i.quantity, i.discount))}</td>
+    </tr>`).join('');
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <style>body{font-family:Arial,sans-serif;margin:0;padding:32px;color:#111827;background:#fff}*{box-sizing:border-box}</style></head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid #4f46e5">
+        <div>
+            <h2 style="margin:0;font-size:19px">${biz}</h2>
+            ${ruc ? `<div style="font-size:11px;color:#6b7280">RUC ${ruc}</div>` : ''}
+            ${dir ? `<div style="font-size:11px;color:#6b7280">${dir}</div>` : ''}
+            ${tel ? `<div style="font-size:11px;color:#6b7280">Tel: ${tel}</div>` : ''}
+        </div>
+        <div style="text-align:right">
+            <div style="font-size:20px;font-weight:800;color:#4f46e5">NOTA DE PEDIDO</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px">#${String(o.id).padStart(6,'0')} · ${o.created_at||''}</div>
+            <div style="display:inline-block;margin-top:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;${paid ? 'background:#dcfce7;color:#15803d' : 'background:#fef3c7;color:#b45309'}">${orderPayLabel(o)}</div>
+        </div>
+    </div>
+    <div style="background:#f9fafb;border-radius:8px;padding:12px 14px;margin-bottom:20px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:5px">Cliente</div>
+        <div style="font-size:14px;font-weight:600">${o.client_name||''}</div>
+        ${o.client_phone ? `<div style="font-size:12px;color:#6b7280">Tel: ${o.client_phone}</div>` : ''}
+        ${o.delivery_address ? `<div style="font-size:12px;color:#6b7280">Entrega: ${o.delivery_address}</div>` : ''}
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+        <thead><tr style="background:#4f46e5">
+            <th style="padding:9px 10px;text-align:left;color:#fff;font-size:11px;font-weight:600;border-radius:6px 0 0 0">Descripción</th>
+            <th style="padding:9px 10px;text-align:center;color:#fff;font-size:11px;font-weight:600">Cant.</th>
+            <th style="padding:9px 10px;text-align:right;color:#fff;font-size:11px;font-weight:600">Precio</th>
+            <th style="padding:9px 10px;text-align:right;color:#fff;font-size:11px;font-weight:600;border-radius:0 6px 0 0">Importe</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+    </table>
+    <div style="display:flex;justify-content:flex-end">
+        <div style="min-width:220px">
+            ${envio > 0 ? `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:#6b7280"><span>Envío</span><span>${fmt(envio)}</span></div>` : ''}
+            ${o.payment_method ? `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:#6b7280"><span>Método de pago</span><span>${o.payment_method}</span></div>` : ''}
+            <div style="display:flex;justify-content:space-between;padding:9px 0 3px;font-size:18px;font-weight:800;border-top:2px solid #4f46e5;margin-top:5px;color:#4f46e5"><span>Total</span><span>${fmt(o.total)}</span></div>
+        </div>
+    </div>
+    ${o.notes ? `<div style="margin-top:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e"><b>Notas:</b> ${o.notes}</div>` : ''}
+    <div style="text-align:center;font-size:9px;color:#9ca3af;margin-top:26px;padding-top:10px;border-top:1px dashed #d1d5db">
+        Documento referencial — no es un comprobante de pago electrónico.<br>¡Gracias por su compra!
+    </div>
+    </body></html>`;
+}
+
+function buildOrderTicketHtml() {
+    const o = currentOrder();
+    if (!o) return null;
+    const biz = {{ Js::from($project->name) }};
+    const ruc = {{ Js::from($project->setting('ruc') ?? '') }};
+    const centsDe = t => { const m = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(String(t ?? '').trim()); if (!m) return 0n; const v = BigInt(m[2]) * 100n + BigInt((m[3] || '').padEnd(2, '0')); return m[1] === '-' ? -v : v; };
+    const fmt = n => { const c = typeof n === 'bigint' ? n : centsDe(n); const neg = c < 0n ? '-' : ''; const a = c < 0n ? -c : c; const ent = String(a / 100n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return 'S/ ' + neg + ent + '.' + String(a % 100n).padStart(2, '0'); };
+    const paid = (o.payment_status||'pending') === 'paid';
+    const envio = Number(o.shipping_cost||0);
+    const rows = (o.items||[]).map(i => `<div style="margin-bottom:4px">
+        <div>${i.name}</div>
+        <div style="display:flex;justify-content:space-between;color:#444"><span>${i.quantity} x ${fmt(i.price)}${(parseFloat(i.discount)||0)>0 ? ' -'+i.discount+'%' : ''}</span><span>${fmt(odLineCents(i.price, i.quantity, i.discount))}</span></div>
+    </div>`).join('');
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <style>
+        @page { size: 58mm auto; margin: 2mm; }
+        body{font-family:'Courier New',monospace;margin:0;padding:6px;color:#111;width:52mm;font-size:11px}
+        *{box-sizing:border-box}
+        .dash{border-top:1px dashed #333;margin:6px 0}
+        .center{text-align:center}
+    </style></head><body>
+    <div class="center" style="font-weight:700;font-size:13px">${biz}</div>
+    ${ruc ? `<div class="center" style="font-size:10px;color:#444">RUC ${ruc}</div>` : ''}
+    <div class="center" style="font-size:10px;color:#444">${o.created_at||''} · PED-${String(o.id).padStart(6,'0')}</div>
+    ${o.client_name ? `<div class="center" style="font-size:10px;margin-top:3px">${o.client_name}</div>` : ''}
+    <div class="dash"></div>
+    ${rows}
+    <div class="dash"></div>
+    ${envio > 0 ? `<div style="display:flex;justify-content:space-between"><span>Envío</span><span>${fmt(envio)}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:13px"><span>TOTAL</span><span>${fmt(o.total)}</span></div>
+    ${o.payment_method ? `<div style="display:flex;justify-content:space-between;font-size:10px;color:#444"><span>Pago</span><span>${o.payment_method}</span></div>` : ''}
+    <div class="center" style="font-weight:700;margin-top:6px">${paid ? '*** PAGADO ***' : '* PAGO PENDIENTE *'}</div>
+    <div class="center" style="font-size:9px;color:#666;margin-top:8px">Documento referencial, no es<br>comprobante de pago electrónico.</div>
+    <div class="center" style="font-size:10px;margin-top:6px">¡Gracias por su compra!</div>
+    </body></html>`;
+}
+
+async function renderOffscreenOrder(html, widthPx) {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + widthPx + 'px;height:1px;border:none';
+    document.body.appendChild(iframe);
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+    await new Promise(r => setTimeout(r, 600));
+    const canvas = await html2canvas(iframe.contentDocument.body, {scale:2, useCORS:true, backgroundColor:'#fff', width:widthPx});
+    document.body.removeChild(iframe);
+    return canvas;
+}
+
+async function exportOrderPDF() {
+    const html = buildOrderDocHtml();
+    if (!html) { alert('No hay pedido seleccionado'); return; }
+    const { jsPDF } = window.jspdf;
+    const canvas = await renderOffscreenOrder(html, 800);
+    const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const pW = pdf.internal.pageSize.getWidth();
+    const pH = pdf.internal.pageSize.getHeight();
+    const imgH = pW / (canvas.width / canvas.height);
+    if (imgH <= pH) {
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pW, imgH);
+    } else {
+        let yPos = 0, remaining = canvas.height;
+        while (remaining > 0) {
+            const sliceH = Math.min(remaining, Math.floor(canvas.width * pH / pW));
+            const sc = document.createElement('canvas');
+            sc.width = canvas.width; sc.height = sliceH;
+            sc.getContext('2d').drawImage(canvas, 0, yPos, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+            if (yPos > 0) pdf.addPage();
+            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pW, sliceH * pW / canvas.width);
+            yPos += sliceH; remaining -= sliceH;
+        }
+    }
+    pdf.save('pedido-' + (currentOrder()?.id || 'export') + '.pdf');
+}
+
+async function exportOrderImg() {
+    const html = buildOrderDocHtml();
+    if (!html) { alert('No hay pedido seleccionado'); return; }
+    const canvas = await renderOffscreenOrder(html, 800);
+    const link = document.createElement('a');
+    link.download = 'pedido-' + (currentOrder()?.id || 'export') + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+function printOrderTicket() {
+    const html = buildOrderTicketHtml();
+    if (!html) { alert('No hay pedido seleccionado'); return; }
+    const w = window.open('', '_blank', 'width=350,height=600');
+    w.document.open(); w.document.write(html); w.document.close();
+    // Bandera anti doble impresión: load y el timeout de respaldo pueden
+    // dispararse ambos (mismo bug que hubo en el ticket de cotizaciones).
+    let printed = false;
+    const doPrint = () => { if (printed) return; printed = true; w.focus(); w.print(); };
+    w.onload = doPrint;
+    setTimeout(doPrint, 400);
+}
+</script>
 </x-portal-layout>
