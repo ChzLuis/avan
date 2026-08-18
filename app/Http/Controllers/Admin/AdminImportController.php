@@ -36,15 +36,30 @@ class AdminImportController extends Controller
             if (empty($row[0])) continue; // nombre vacío
 
             try {
-                Product::create([
+                $stockInicial = is_numeric($row[2] ?? '') ? (int) $row[2] : 0;
+
+                // El producto NACE en cero y la existencia entra como
+                // movimiento: asi el Kardex explica de donde salio cada
+                // unidad. Crear con `stock` directo dejaba existencias sin
+                // origen, que es justo lo que un inventario auditable no
+                // puede permitirse.
+                $product = Product::create([
                     'project_id'   => $project->id,
                     'name'         => $row[0] ?? '',
                     'price'        => is_numeric($row[1] ?? '') ? $row[1] : 0,
-                    'stock'        => is_numeric($row[2] ?? '') ? (int)$row[2] : 0,
+                    'stock'        => 0,
                     'description'  => $row[3] ?? null,
                     'sku'          => $row[4] ?? null,
                     'is_available' => true,
                 ]);
+
+                if ($stockInicial > 0) {
+                    \App\Support\InventoryLedger::registrar(
+                        $product, $stockInicial, 'importacion', null,
+                        'Importación masiva desde CSV', 'import', null, auth()->id()
+                    );
+                }
+
                 $created++;
             } catch (\Exception $e) {
                 $errors[] = "Fila " . ($i + 2) . ": " . $e->getMessage();

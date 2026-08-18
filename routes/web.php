@@ -341,9 +341,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/company/groups/{userGroup}', [UserGroupController::class, 'destroy'])->name('groups.destroy')->middleware('can:settings.negocio');
 
         // Inventario y Kardex
-        Route::get('/inventario',                  [\App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index')->middleware(['module:catalog', 'can:catalog.ver']);
-        Route::post('/inventario/movimiento',      [\App\Http\Controllers\InventoryController::class, 'store'])->name('inventory.store')->middleware(['module:catalog', 'can:catalog.editar']);
-        Route::get('/inventario/{product}/kardex', [\App\Http\Controllers\InventoryController::class, 'kardex'])->name('inventory.kardex')->middleware(['module:catalog', 'can:catalog.ver']);
+        // Inventario tiene modulo y permisos propios (`inventory.*`), pero las
+        // rutas se gateaban con los del catalogo. Se aceptan ambos pares: los
+        // 3 roles que solo tienen `catalog.ver` y el negocio que aun no
+        // activo el modulo `inventory` conservan el acceso, y el permiso
+        // propio empieza a valer desde ya.
+        Route::get('/inventario',                  [\App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/movimiento',      [\App\Http\Controllers\InventoryController::class, 'store'])->name('inventory.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::get('/inventario/{product}/kardex', [\App\Http\Controllers\InventoryController::class, 'kardex'])->name('inventory.kardex')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
 
         // Proveedores
         // proveedores.ver / proveedores.editar ya existian en la tabla de permisos

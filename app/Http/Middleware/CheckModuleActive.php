@@ -8,11 +8,20 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckModuleActive
 {
+    /**
+     * Acepta alternativas separadas por `|`, igual que CheckPermission:
+     * `module:inventory|catalog` deja pasar a quien tenga cualquiera de los
+     * dos. Sirve para mover una seccion a su modulo propio sin dejar fuera a
+     * los negocios que aun estan en el anterior.
+     */
     public function handle(Request $request, Closure $next, string $moduleKey): Response
     {
         $project = app('active_project');
 
-        if (!$project || !$project->hasModule($moduleKey)) {
+        $alternativas = array_filter(array_map('trim', explode('|', $moduleKey)));
+        $tieneAlguno  = $project && collect($alternativas)->contains(fn ($m) => $project->hasModule($m));
+
+        if (!$tieneAlguno) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Módulo no disponible.'], 403);
             }

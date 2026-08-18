@@ -16,6 +16,8 @@ class Product extends Model {
     public function project()   { return $this->belongsTo(Project::class); }
     public function category()  { return $this->belongsTo(Category::class); }
     public function images()    { return $this->hasMany(ProductImage::class)->orderBy('sort_order'); }
+    /** Kardex del producto: cada entrada y salida, de la mas reciente atras. */
+    public function movimientos() { return $this->hasMany(InventoryMovement::class)->latest('id'); }
     public function mainImage() { return $this->hasOne(ProductImage::class)->where('is_main', true); }
     public function reviews()   { return $this->hasMany(Review::class); }
     public function catalogProfiles() { return $this->belongsToMany(StoreCatalogProfile::class, 'store_catalog_profile_product'); }
