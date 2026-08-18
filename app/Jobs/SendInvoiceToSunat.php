@@ -27,12 +27,18 @@ class SendInvoiceToSunat implements ShouldQueue
 
         app()->instance('active_project', $invoice->project);
 
-        // Proveedor de facturación según config del proyecto (default: nubefact)
-        $provider = $invoice->project->setting('billing_provider', 'nubefact');
+        // Proveedor fiscal del proyecto. Cada negocio elige el suyo: hay
+        // quien trabaja con Nubefact y quien con APIsPERU, y las credenciales
+        // de uno no sirven para el otro.
+        $provider = (string) $invoice->project->setting('billing_provider', '');
 
         $result = match ($provider) {
             'apisperu' => (new ApisPeruService())->enviar($invoice),
-            default    => (new NubefactService())->enviar($invoice),
+            'nubefact' => (new NubefactService())->enviar($invoice),
+            // Sin proveedor elegido no se asume ninguno: mandar a configurar
+            // Nubefact a quien iba a usar APIsPERU solo confunde.
+            default    => ['ok' => false, 'message' =>
+                'Elige el proveedor de facturación electrónica (Nubefact o APIsPERU) en Ajustes → Facturación.'],
         };
 
         // Si el envío falló antes de llegar a la API (p.ej. credenciales sin

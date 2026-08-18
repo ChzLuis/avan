@@ -919,7 +919,7 @@
                     </div>
                     <div>
                         <h3 class="text-sm font-semibold text-gray-800">Facturación Electrónica SUNAT</h3>
-                        <p class="text-xs text-gray-500">Configura Nubefact para emitir facturas y boletas electrónicas</p>
+                        <p class="text-xs text-gray-500">Elige tu proveedor —Nubefact o APIsPERU— y configura sus credenciales para emitir facturas y boletas electrónicas</p>
                     </div>
                 </div>
 
@@ -966,7 +966,8 @@
                     </div>
 
                     {{-- Proveedor de facturación electrónica + credenciales (un solo x-data) --}}
-                    @php $billingProvider = $selP->setting('billing_provider', 'nubefact'); @endphp
+                    {{-- Sin proveedor elegido no se preselecciona ninguno: la eleccion es del negocio. --}}
+                    @php $billingProvider = $selP->setting('billing_provider', ''); @endphp
                     <div x-data="{ prov: '{{ $billingProvider }}' }" class="space-y-4">
 
                         <div class="bg-indigo-50 rounded-xl p-4 space-y-3 border border-indigo-100">
