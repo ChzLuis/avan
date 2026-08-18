@@ -6,8 +6,21 @@
             <h1 class="text-lg font-bold text-gray-800">Constructor de bots</h1>
             <p class="text-xs text-gray-500">Crea flujos que responden con la info real de tu negocio (catálogo, precios, IA).</p>
         </div>
-        <a href="{{ route('bot-flows.editor.new') }}"
-           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">+ Nuevo bot</a>
+        <div class="flex items-center gap-2">
+            {{-- Camino recomendado: un bot de tienda que ya funciona, en vez de
+                 un lienzo en blanco donde hay que armar el flujo desde cero. --}}
+            <form method="POST" action="{{ route('bot-flows.plantilla') }}">
+                @csrf
+                <button type="submit"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">
+                    🛒 Crear bot de tienda
+                </button>
+            </form>
+            <a href="{{ route('bot-flows.editor.new') }}"
+               class="px-4 py-2 border border-gray-300 hover:border-indigo-400 hover:text-indigo-600 text-gray-600 text-sm font-medium rounded-lg">
+                Empezar en blanco
+            </a>
+        </div>
     </div>
 
     @if($flows->isEmpty())

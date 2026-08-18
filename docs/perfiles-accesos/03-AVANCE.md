@@ -578,3 +578,72 @@ dato de producción.
 elegida, así que se dejó como operación **exclusiva del superadmin**, con
 confirmación en la interfaz y un test que comprueba que un usuario normal no
 puede ejecutarlo.
+
+---
+
+## Corrección del mapeo · 2026-08-16 (posterior a la Fase 6)
+
+Antes de migrar las rutas se midió, contra los roles reales de producción, si la
+traducción ensanchaba el acceso de alguien. **Ensanchaba.** La herencia hace que
+el nivel más alto de un área conceda los inferiores, y tres permisos estaban mal
+colocados:
+
+| Mapeo original | Qué regalaba |
+|---|---|
+| `attendance.fichar` → `personal.trabajar` | El **vendedor** pasaba a poder crear y editar EMPLEADOS solo por fichar su propia entrada |
+| `roles.gestionar` → `configuracion.administrar` | El **gerente**, que tiene `settings.pagos` del mismo nivel, ganaba la gestión de perfiles: la escalada cerrada al inicio de este trabajo |
+| `catalog-integrations.*` → `catalogo.*` | Cualquiera que pudiera VER el catálogo entraba a la pantalla de conexión del ERP |
+
+Los tres corregidos. `attendance.fichar` y `roles.gestionar` quedan **sin
+equivalente**: son ortogonales a las 12 áreas, como Reportes.
+`catalog-integrations.*` pasa a Configuración, y `manage` se queda en *Trabajar*
+—no en *Administrar*— porque subirlo le daba al gerente los medios de pago.
+
+Se añadió `test_la_traduccion_no_regala_capacidades_sensibles`, que reproduce los
+perfiles reales y falla si alguno ganaría gestionar perfiles, crear empleados,
+cambiar medios de cobro o borrar productos solo por traducir.
+
+**Una regresión propia, detectada y corregida.** La migración correctora borraba
+los canónicos antes de leer el origen, y `agenda.ver` y `caja.ver` pertenecen a
+las dos generaciones: al borrarlos desaparecían del origen y `contador`,
+`solo_lectura` y `vendedor` se quedaban sin acceso a Caja. Ninguno tiene usuarios.
+Se restauró producción desde la copia previa y se reaplicó leyendo antes de
+borrar. Verificado: los tres tienen su `caja.ver`.
+
+**Aviso de método.** El primer análisis usó datos truncados a 1024 caracteres por
+el límite de `GROUP_CONCAT` de MySQL. Hay que subir `group_concat_max_len` antes
+de sacar conclusiones de un volcado de permisos.
+
+---
+
+## Migración de rutas al modelo canónico · **INTENTADA Y REVERTIDA** · 2026-08-16
+
+**Qué se intentó.** Reescribir las 278 expresiones `can:` de `routes/web.php` a
+los permisos canónicos, más las comprobaciones dentro de controladores y de
+`OrderAbilities` / `QuoteAbilities`.
+
+**Por qué se revirtió.** La parte de rutas y controladores funcionó. Lo que no
+funcionó fue actualizar las pruebas: se hizo un reemplazo mecánico sobre 20
+archivos de test y **eso destruyó su intención**, no solo sus nombres:
+
+* `SettingsAuthorizationTest::test_settings_editar_no_es_la_llave_de_configuracion`
+  concedía `settings.ver` + `settings.editar` y esperaba 403. Traducido a
+  `configuracion.ver` + `configuracion.administrar`, la herencia hace que
+  Administrar SÍ conceda el acceso: el test pasaba a probar lo contrario.
+* `ProjectIsolationTest::TODOS` quedó con entradas duplicadas sin sentido, porque
+  varios permisos antiguos caen en el mismo canónico.
+
+Se revirtió todo: `routes/web.php` desde copia local, los cuatro controladores y
+las dos clases de capacidades con `sed` inverso, y los 21 archivos de test con
+`git checkout`. Verificado después: **217 pruebas en verde** y cero rutas
+canónicas en producción.
+
+**Lección.** Los tests de autorización codifican intención ligada a la
+granularidad antigua —«tener X no basta para Y»—. Al colapsar seis permisos de
+catálogo en tres niveles, algunas de esas afirmaciones dejan de tener sentido y
+otras cambian de significado. **No se pueden traducir en masa: hay que revisarlas
+una a una.**
+
+**Estado.** Las rutas siguen exigiendo los permisos antiguos, que es el estado
+verificado y estable. Los perfiles ya tienen ambas generaciones, así que la
+migración puede hacerse cuando se aborden los tests con el cuidado que piden.

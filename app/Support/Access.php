@@ -157,10 +157,19 @@ class Access
         'catalog.resenas'                   => 'catalogo.trabajar',
         'catalog.importar'                  => 'catalogo.administrar',
         'catalog.eliminar'                  => 'catalogo.administrar',
-        'catalog-integrations.view'         => 'catalogo.ver',
-        'catalog-integrations.view-history' => 'catalogo.ver',
-        'catalog-integrations.sync'         => 'catalogo.trabajar',
-        'catalog-integrations.manage'       => 'catalogo.administrar',
+        // Los conectores de ERP van a Configuración, no a Catálogo. Mapearlos a
+        // `catalogo.*` hacía que cualquiera que pudiera VER el catálogo —incluido
+        // `solo_lectura`— entrara a la pantalla de integraciones, donde se
+        // configuran credenciales de un sistema externo. Conectar un ERP es
+        // configurar el negocio, no navegar productos.
+        'catalog-integrations.view'         => 'configuracion.ver',
+        'catalog-integrations.view-history' => 'configuracion.ver',
+        // `manage` se queda en Trabajar, no en Administrar: subirlo daba al
+        // gerente —que hoy administra integraciones— la gestión de roles y los
+        // medios de pago, que no tiene. La regla de la Fase 6 manda: mantener
+        // capacidades equivalentes, nunca ampliarlas.
+        'catalog-integrations.sync'         => 'configuracion.trabajar',
+        'catalog-integrations.manage'       => 'configuracion.trabajar',
         'view-catalog'                      => 'catalogo.ver',
         'create-products'                   => 'catalogo.trabajar',
         'edit-products'                     => 'catalogo.trabajar',
@@ -236,8 +245,12 @@ class Access
         'hr.editar'         => 'personal.trabajar',
         'hr.eliminar'       => 'personal.administrar',
         'attendance.ver'    => 'personal.ver',
-        'attendance.fichar' => 'personal.trabajar',
         'attendance.editar' => 'personal.trabajar',
+        // `attendance.fichar` NO se traduce a propósito. Marcar la propia entrada
+        // y salida es una acción sobre uno mismo, ortogonal a las 12 áreas: lo
+        // tiene el vendedor, y mapearlo a `personal.trabajar` lo convertía en
+        // gestor de empleados —podría crear y editar personal—. Se queda como
+        // permiso propio, igual que Reportes.
         'view-hr'           => 'personal.ver',
         'manage-hr'         => 'personal.administrar',
 
@@ -253,7 +266,14 @@ class Access
         'manage-modules'     => 'configuracion.administrar',
         'manage-members'     => 'configuracion.administrar',
         'roles.ver'          => 'configuracion.ver',
-        'roles.gestionar'    => 'configuracion.administrar',
+        // `roles.gestionar` NO se traduce a propósito.
+        //
+        // Administrar perfiles y accesos es potestad del DUEÑO (§4 del plan), no
+        // un nivel de área. Mapearlo a Configuración/Administrar se lo daba al
+        // gerente —que tiene `settings.pagos`, del mismo nivel— y reabría la
+        // escalada de privilegios cerrada al inicio: quien gestiona roles puede
+        // concederse cualquier permiso. Se queda como permiso propio, reservado
+        // al dueño, al superadmin y a quien se le conceda explícitamente.
     ];
 
     /**

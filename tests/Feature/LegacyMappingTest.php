@@ -52,12 +52,25 @@ class LegacyMappingTest extends TestCase
         'view-logistics', 'view-orders', 'view-quotes', 'view-requests',
     ];
 
-    /** Sin equivalente a propósito: módulos sin uso y Reportes, que es transversal. */
+    /**
+     * Sin equivalente a propósito.
+     *
+     * Los dos últimos no son módulos muertos: se excluyeron porque traducirlos
+     * ENSANCHABA el acceso de roles reales.
+     */
     private const SIN_EQUIVALENTE = [
-        'reports.ver', 'reports.exportar',
+        // Módulos sin uso o inexistentes
         'rifas.ver', 'rifas.validar', 'rifas.cancelar',
         'tickets.ver', 'tickets.eliminar',
         'view-requests', 'manage-requests',
+        // Transversal: se ve lo que ya puedes ver por el área del dato
+        'reports.ver', 'reports.exportar',
+        // Fichar la propia entrada no es gestionar personal: mapearlo a
+        // personal.trabajar convertía al vendedor en gestor de empleados
+        'attendance.fichar',
+        // Administrar perfiles es potestad del Dueño (§4), no un nivel de área:
+        // en Configuración/Administrar se lo daba al gerente y reabría la escalada
+        'roles.gestionar',
     ];
 
     protected function setUp(): void
@@ -116,6 +129,69 @@ class LegacyMappingTest extends TestCase
     }
 
     /**
+     * Ninguna traducción puede ENSANCHAR el acceso de un rol.
+     *
+     * Este test detectó tres errores de criterio del mapeo. La herencia hace que
+     * el nivel más alto de un área conceda los inferiores, así que un permiso mal
+     * colocado regala capacidades que el perfil no tenía.
+     *
+     * @dataProvider rolesRealesDeProduccion
+     */
+    public function test_la_traduccion_no_regala_capacidades_sensibles(string $rol, array $legacy): void
+    {
+        $nuevos = Access::traducir($legacy);
+        $this->assertNotEmpty($nuevos, "El perfil `{$rol}` no tradujo a ningún permiso canónico.");
+
+        $prohibido = [
+            'roles.gestionar'  => 'gestionar perfiles y accesos',
+            'hr.crear'         => 'crear empleados',
+            'hr.editar'        => 'editar empleados',
+            'settings.pagos'   => 'cambiar los medios de cobro',
+            'catalog.eliminar' => 'borrar productos',
+        ];
+
+        foreach ($prohibido as $permiso => $queEs) {
+            if (in_array($permiso, $legacy, true)) {
+                continue;   // ya lo tenía: no es ensanche
+            }
+
+            $canon = Access::MAPEO_LEGACY[$permiso] ?? null;
+            if (!$canon) {
+                continue;   // excluido del mapeo: imposible ganarlo
+            }
+
+            $lograria = in_array($canon, $nuevos, true);
+            foreach (Access::equivalentesSuperiores($canon) as $superior) {
+                $lograria = $lograria || in_array($superior, $nuevos, true);
+            }
+
+            $this->assertFalse($lograria, "El perfil `{$rol}` ganaría {$queEs} solo por traducir.");
+        }
+    }
+
+    public static function rolesRealesDeProduccion(): array
+    {
+        return [
+            'revendedor (10 usuarios)' => ['revendedor', [
+                'catalog.ver', 'clients.crear', 'clients.editar', 'clients.ver',
+                'orders.crear', 'orders.ver', 'pos.usar',
+                'quotes.crear', 'quotes.editar', 'quotes.ver', 'reports.ver',
+            ]],
+            'vendedor' => ['vendedor', [
+                'agenda.crear', 'agenda.ver', 'attendance.fichar', 'caja.ver', 'catalog.ver',
+                'clients.crear', 'clients.editar', 'clients.ver', 'invoices.crear', 'invoices.ver',
+                'orders.cancelar', 'orders.crear', 'orders.descuento', 'orders.editar', 'orders.ver',
+                'payments.ver', 'pos.usar', 'quotes.crear', 'quotes.editar', 'quotes.ver', 'reports.ver',
+            ]],
+            'solo_lectura' => ['solo_lectura', [
+                'agenda.ver', 'attendance.ver', 'caja.ver', 'catalog.ver', 'clients.ver',
+                'hr.ver', 'inventory.ver', 'invoices.ver', 'mapa.ver', 'orders.ver',
+                'payments.ver', 'proveedores.ver', 'quotes.ver', 'reports.ver', 'tickets.ver',
+            ]],
+        ];
+    }
+
+    /**
      * El corazón de la Fase 6: cada rol conserva lo que podía hacer.
      *
      * Se recrea el reparto real de producción y se comprueba que, tras traducir,
@@ -141,9 +217,10 @@ class LegacyMappingTest extends TestCase
 
         $esperado = [
             // Vende y cobra en mostrador, con potestad de descuento; anula pedidos.
+            // NO gana Personal: fichar su propia entrada no le hace gestor de empleados.
             'vendedor' => ['agenda.trabajar', 'caja.ver', 'catalogo.ver', 'clientes.trabajar',
                            'cobros.ver', 'cotizaciones.trabajar', 'facturacion.trabajar',
-                           'pedidos.administrar', 'personal.trabajar', 'pos.administrar'],
+                           'pedidos.administrar', 'pos.administrar'],
             // Manda en catálogo e inventario; de pedidos solo mira y mueve el reparto.
             'almacen'  => ['catalogo.administrar', 'inventario.trabajar', 'pedidos.trabajar'],
             // Manda en el dinero; del resto solo mira.

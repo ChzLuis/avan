@@ -39,6 +39,29 @@ class BotFlowController extends Controller
         return view('bot-flows.editor', compact('project', 'flow'));
     }
 
+    /**
+     * Crea un bot de tienda listo para usar a partir de la plantilla estándar.
+     *
+     * Nace DESACTIVADO a propósito: el dueño lo revisa, cambia los textos que
+     * quiera y lo enciende él. Activar un bot que habla con clientes reales sin
+     * que nadie lo haya leído es la clase de sorpresa que no se arregla luego.
+     */
+    public function desdePlantilla()
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+
+        $flow = BotFlow::create([
+            'project_id' => $project->id,
+            'nombre'     => \App\Support\FlowEngine\PlantillaTienda::NOMBRE,
+            'activo'     => false,
+            'definicion' => \App\Support\FlowEngine\PlantillaTienda::definicion($project),
+        ]);
+
+        return redirect()->route('bot-flows.editor', $flow)
+            ->with('success', 'Bot de tienda creado. Revisa los textos y actívalo cuando estés conforme.');
+    }
+
     /** Guardar la definición del flujo (autosave desde el editor). */
     public function save(Request $request, BotFlow $flow)
     {

@@ -10,9 +10,24 @@ class TicketsWpController extends Controller
     const API_URL = 'https://pruebatusuerte.com.pe/wp-json/bixo/v1/tickets';
     const API_KEY = 'bixo-tickets-2024';
 
-    public function index(Request $request)
+    /**
+     * Este modulo habla con el WordPress de UN cliente concreto
+     * (pruebatusuerte.com.pe). Estaba abierto a cualquier proyecto cuyo
+     * usuario tuviera `tickets.ver`, asi que desde otro negocio se listaban
+     * y se borraban tickets ajenos. Esconder el enlace del menu no es una
+     * barrera: la URL sigue ahi. Lo decide el proyecto.
+     */
+    private function proyectoDelModulo(): \App\Models\Project
     {
         $project = \App\Models\Project::findOrFail(session('comercial_project_id', 1));
+        abort_unless((int) $project->setting('modulo_tickets_wp', 0) === 1, 404);
+
+        return $project;
+    }
+
+    public function index(Request $request)
+    {
+        $project = $this->proyectoDelModulo();
         $buscar  = trim($request->get('buscar', ''));
         $offset  = (int)$request->get('offset', 0);
         $limit   = 100;
@@ -40,6 +55,8 @@ class TicketsWpController extends Controller
 
     public function buscar(Request $request)
     {
+        $this->proyectoDelModulo();
+
         $dni = trim($request->get('dni', ''));
         if (!$dni) return response()->json(['ok' => false, 'error' => 'dni requerido']);
 
@@ -54,6 +71,8 @@ class TicketsWpController extends Controller
 
     public function eliminar(Request $request)
     {
+        $this->proyectoDelModulo();
+
         $codigo = trim($request->input('codigo', ''));
         if (!$codigo) return response()->json(['ok' => false, 'error' => 'codigo requerido']);
 
