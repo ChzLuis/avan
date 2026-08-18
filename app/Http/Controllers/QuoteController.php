@@ -33,13 +33,17 @@ class QuoteController extends Controller
         // deducir permisos con @can sueltos, que acaban desincronizados de las
         // rutas. 'convertir' ya incorpora el modulo de pedidos del proyecto.
         $puede             = \App\Support\QuoteAbilities::para(auth()->user(), $project);
+        // Cartera del negocio: enlazar el documento con la ficha del cliente
+        // es lo que hace que su historial y su deuda existan.
+        $clients           = $project->clients()->orderBy('name')
+            ->get(['id', 'name', 'phone', 'email', 'direccion', 'empresa']);
         // Deep link: si se entro por /cotizaciones/{id} en navegacion HTML,
         // la vista abre esa cotizacion sin pedirla otra vez por AJAX.
         $cotizacionInicial = $cotizacionInicial?->id;
 
         return view('quotes.index', compact(
             'project', 'quotes', 'paymentMethods', 'paymentConditions',
-            'portalLayout', 'products', 'puede', 'cotizacionInicial'
+            'portalLayout', 'products', 'puede', 'cotizacionInicial', 'clients'
         ));
     }
 

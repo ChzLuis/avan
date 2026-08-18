@@ -409,6 +409,7 @@
 .q-sugerencia { display:flex; align-items:center; justify-content:space-between; gap:var(--q-s3); width:100%; padding:8px 10px; border:none; background:none; border-radius:7px; font-size:var(--q-t-sm); color:var(--q-tx); text-align:left; cursor:pointer; }
 .q-sugerencia:hover { background:var(--q-pri-soft); }
 .q-sug-precio { color:var(--q-pri); font-weight:700; flex-shrink:0; font-variant-numeric:tabular-nums; }
+.q-cliente-ficha { display:inline-flex; align-items:center; gap:4px; margin-top:4px; font-size:11px; font-weight:600; color:var(--q-ok); }
 .q-prod-txt { position:relative; }
 
 .q-btn-peligro { background:var(--q-dan) !important; }
@@ -711,6 +712,17 @@
         ])->toArray(),
     ])) }},
 
+    clientes: {{ Js::from($clients->map(fn($c) => [
+        'id'    => $c->id,
+        'name'  => $c->name,
+        'phone' => $c->phone ?? '',
+        'email' => $c->email ?? '',
+        // La cartera no guarda documento fiscal: ese dato solo vive en el
+        // documento. La empresa si, y sirve para distinguir homonimos.
+        'dir'   => $c->direccion ?? '',
+        'empresa' => $c->empresa ?? '',
+    ])) }},
+
     products: {{ Js::from($products->map(fn($p) => [
         'id'    => $p->id,
         'name'  => $p->name,
@@ -748,6 +760,7 @@
     /* Estado de la grilla: en que linea esta el cursor y que sugiere el
        catalogo para lo que se esta escribiendo. */
     lineaFoco: null, sugerencias: [], guardandoCampo: false, temporizadorGuardado: null,
+    clientesSugeridos: [],
 
     /* Dialogo de confirmacion unico. Dice QUE va a pasar y con que documento,
        que es lo que un confirm() del navegador no puede contar. */
@@ -935,6 +948,30 @@
         if (!ultima || String(ultima.description || '').trim() !== '') {
             this.form.items.push({description:'', price:'', quantity:1, discount:0});
         }
+    },
+
+    /* Cartera del negocio: se busca por nombre, telefono o documento,
+       que son las tres formas en que se identifica a alguien por telefono. */
+    buscarCliente(valor) {
+        const q = String(valor || '').trim().toLowerCase();
+        if (q.length < 2) { this.clientesSugeridos = []; return; }
+        this.clientesSugeridos = this.clientes.filter(c =>
+            c.name.toLowerCase().includes(q) ||
+            (c.phone || '').includes(q) ||
+            (c.empresa || '').toLowerCase().includes(q)
+        ).slice(0, 6);
+    },
+
+    /* Enlaza el documento con la ficha y trae sus datos. Sin esto el nombre
+       era texto suelto y el cliente no acumulaba historial. */
+    usarCliente(c) {
+        this.form.client_id     = c.id;
+        this.form.client_name   = c.name;
+        this.form.client_phone  = c.phone || this.form.client_phone;
+        this.form.client_email  = c.email || this.form.client_email;
+        this.form.client_address = c.dir || this.form.client_address;
+        this.clientesSugeridos = [];
+        this.guardarCampo();
     },
 
     alEscribirLinea(i, valor) {
@@ -1151,6 +1188,7 @@
             client_name: q.client_name||'', client_phone: q.client_phone||'',
             client_email: q.client_email||'', client_doc_type: q.client_doc_type||'',
             client_doc_number: q.client_doc_number||'', client_address: q.client_address||'',
+            client_id: q.client_id || null,
             notes: q.notes||'', valid_until: q.valid_until||'', status: q.status,
             payment_status: q.payment_status||'pending', paid_amount: q.paid_amount ?? '',
             payment_method: q.payment_method||'', payment_condition: q.payment_condition||'',
@@ -1172,7 +1210,7 @@
     openNew() {
         this.selected = null; this.creating = true; this.portalUrl = '';
         this.actividad = []; this.guardadoEn = null;
-        this.form = { client_name:'', client_phone:'', client_email:'', client_doc_type:'', client_doc_number:'', client_address:'', notes:'', valid_until:'', status:'draft', payment_status:'pending', paid_amount:'', payment_method:'', payment_condition:'', items:[{description:'',price:'',quantity:1,discount:0}] };
+        this.form = { client_name:'', client_phone:'', client_email:'', client_doc_type:'', client_doc_number:'', client_address:'', client_id:null, notes:'', valid_until:'', status:'draft', payment_status:'pending', paid_amount:'', payment_method:'', payment_condition:'', items:[{description:'',price:'',quantity:1,discount:0}] };
         if(window.innerWidth < 1024) { this.panel = 'detail'; window.scrollTo({top:0}); }
     },
 
@@ -1256,6 +1294,9 @@
             client_name: this.form.client_name, client_phone: this.form.client_phone,
             client_email: this.form.client_email, client_doc_type: this.form.client_doc_type,
             client_doc_number: this.form.client_doc_number, client_address: this.form.client_address,
+            // El enlace con la ficha del cliente: sin esto el documento no
+            // aparece en su historial ni suma a su deuda.
+            client_id: this.form.client_id,
             notes: this.form.notes, valid_until: this.form.valid_until,
             payment_method: this.form.payment_method, payment_condition: this.form.payment_condition,
             status: this.form.status,
@@ -1667,10 +1708,30 @@
                 </div>
                 <div class="q-section-body">
                     <div class="q-lectura q-inline" :class="editable ? '' : 'q-inline-off'">
-                        <div class="q-lectura-item">
+                        <div class="q-lectura-item" style="position:relative">
                             <label for="cli-nombre">Nombre</label>
-                            <input id="cli-nombre" type="text" x-model="form.client_name" @change="guardarCampo()"
-                                   :readonly="!editable" placeholder="Nombre completo">
+                            <input id="cli-nombre" type="text" x-model="form.client_name"
+                                   :readonly="!editable" placeholder="Nombre completo" autocomplete="off"
+                                   @input="buscarCliente($event.target.value)"
+                                   @focus="buscarCliente(form.client_name)"
+                                   @blur="setTimeout(() => clientesSugeridos = [], 150)"
+                                   @change="guardarCampo()">
+                            {{-- Sugerencias de la cartera: elegir uno enlaza el
+                                 documento con su ficha, que es lo que hace que
+                                 el historial del cliente exista. --}}
+                            <div class="q-sugerencias" x-show="clientesSugeridos.length" x-cloak>
+                                <template x-for="c in clientesSugeridos" :key="c.id">
+                                    <button type="button" class="q-sugerencia" @mousedown.prevent="usarCliente(c)">
+                                        <span x-text="c.name"></span>
+                                        <span class="q-sug-precio" x-text="c.phone || c.empresa || ''"></span>
+                                    </button>
+                                </template>
+                            </div>
+                            <span class="q-cliente-ficha" x-show="form.client_id" x-cloak
+                                  title="Este documento está enlazado con la ficha del cliente">
+                                <svg class="q-ico-xs" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                                En la cartera
+                            </span>
                         </div>
                         <div class="q-lectura-item">
                             <label for="cli-cel">Celular</label>

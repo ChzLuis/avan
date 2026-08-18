@@ -1108,6 +1108,9 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/facturas/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('facturas.sunat')->middleware('can:invoices.crear');
 
         Route::get('/clientes',               [ClientController::class, 'index'])->name('clientes')->middleware('project.can:clients.ver|view-clients');
+        // La ficha 360 (`show`) estaba escrita —calcula lo vendido y la deuda
+        // desde el libro de cobros— pero no tenia ruta: nadie podia llamarla.
+        Route::get('/clientes/{client}',      [ClientController::class, 'show'])->name('clientes.show')->middleware('project.can:clients.ver|view-clients');
         Route::post('/clientes',              [ClientController::class, 'store'])->name('clientes.store')->middleware('project.can:clients.crear|manage-clients');
         Route::put('/clientes/{client}',      [ClientController::class, 'update'])->name('clientes.update')->middleware('project.can:clients.editar|manage-clients');
         Route::delete('/clientes/{client}',   [ClientController::class, 'destroy'])->name('clientes.destroy')->middleware('project.can:clients.eliminar|manage-clients');
