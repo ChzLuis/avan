@@ -1,4 +1,8 @@
 <x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="POS — Caja">
+@php
+    // Mismo criterio de liberacion que el menu del portal.
+    $modRevendedor = \App\Support\ModulosPortal::liberados($project, auth()->id())['revendedor'] ?? false;
+@endphp
 <div class="flex flex-1 overflow-hidden pb-16 md:pb-0" x-data="Object.assign(posApp(), { posTab: 'catalog' })" x-init="init()" style="height:calc(100vh - 56px);">
 
 {{-- ══════════════════════════════════════════════════════
@@ -11,13 +15,46 @@
     <div class="flex flex-col border-b border-gray-100 flex-shrink-0">
         {{-- Tabs --}}
         <div class="flex items-center border-b border-gray-100 px-4 pt-2 gap-4">
-            {{-- Toggle "Vender fácil" (Modo Revendedor) --}}
+            {{-- Rejilla o lista, en la misma fila que Productos/Servicios.
+                 Abajo, al final de los filtros de categoria, se perdia: esa
+                 fila desplaza en horizontal y con muchas categorias el
+                 selector quedaba fuera de la vista.
+                 Va primero en el HTML y con `ml-auto order-last` para que
+                 empuje a la derecha tambien cuando "Vender fácil" no existe. --}}
+            <div class="ml-auto order-last mb-1 flex flex-shrink-0 rounded-lg border border-gray-200 p-0.5"
+                 role="group" aria-label="Formato del catálogo">
+                <button type="button" @click="setVista('grid')" title="Ver en cuadrícula" aria-label="Ver en cuadrícula"
+                        :aria-pressed="vista === 'grid' ? 'true' : 'false'"
+                        :class="vista === 'grid' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'"
+                        class="p-1.5 rounded-md transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/>
+                    </svg>
+                </button>
+                <button type="button" @click="setVista('lista')" title="Ver en lista" aria-label="Ver en lista"
+                        :aria-pressed="vista === 'lista' ? 'true' : 'false'"
+                        :class="vista === 'lista' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'"
+                        class="p-1.5 rounded-md transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- "Vender fácil" es el Modo Revendedor: cambia el precio que se
+                 escribe, enseña margen y cobra en un paso. En un negocio que
+                 no revende no significa nada y solo estorba en la barra, asi
+                 que sigue el mismo criterio que el menu: se ofrece a quien lo
+                 usa (tiene precios propios) o a quien lo libere con el ajuste
+                 `modulo_revendedor`. --}}
+            @if($modRevendedor)
             <button @click="resellerMode = !resellerMode"
                     :class="resellerMode ? 'bg-green-500 text-white border-green-500 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-green-400'"
-                    class="ml-auto order-last mb-1 flex items-center gap-1.5 px-3 py-1.5 border-2 rounded-full text-xs font-bold transition">
+                    class="order-last mr-2 mb-1 flex items-center gap-1.5 px-3 py-1.5 border-2 rounded-full text-xs font-bold transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span x-text="resellerMode ? 'Vender fácil: ON' : 'Vender fácil'"></span>
             </button>
+            @endif
             <button @click="catalogTab='products'"
                     :class="catalogTab==='products' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-400 hover:text-gray-600'"
                     class="pb-2 text-sm transition flex items-center gap-1.5">
@@ -77,7 +114,7 @@
                     <button x-show="search||filterCat" @click="search=''; filterCat=null" class="text-xs text-indigo-500 mt-1 hover:underline">Limpiar filtros</button>
                 </div>
             </template>
-            <div class="grid gap-2.5" style="grid-template-columns: repeat(auto-fill, minmax(120px,1fr));">
+            <div x-show="vista === 'grid'" class="grid gap-2.5" style="grid-template-columns: repeat(auto-fill, minmax(120px,1fr));">
                 <template x-for="p in filteredProducts" :key="p.id">
                     <button @click="resellerMode ? openQuickSale(p) : addToCart(p)"
                             :disabled="p.stock !== null && p.stock !== undefined && p.stock <= 0"
@@ -108,6 +145,47 @@
                     </button>
                 </template>
             </div>
+
+            {{-- Lista: una fila por producto, nombre completo y cifras
+                 alineadas. Con 106 productos y nombres largos, la rejilla
+                 obliga a leer en zigzag y corta los nombres a dos lineas. --}}
+            <div x-show="vista === 'lista'" x-cloak class="divide-y divide-gray-100 rounded-xl border border-gray-100 overflow-hidden bg-white">
+                <template x-for="p in filteredProducts" :key="'l'+p.id">
+                    <button @click="resellerMode ? openQuickSale(p) : addToCart(p)"
+                            :disabled="p.stock !== null && p.stock !== undefined && p.stock <= 0"
+                            :class="(p.stock !== null && p.stock !== undefined && p.stock <= 0) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-50/60 active:bg-indigo-100'"
+                            class="w-full flex items-center gap-3 px-3 py-2 text-left transition">
+                        <div class="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                            <template x-if="p.image">
+                                <img :src="p.image" :alt="p.name" class="w-full h-full object-cover">
+                            </template>
+                            <template x-if="!p.image">
+                                <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </template>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-800 truncate" x-text="p.name"></p>
+                            <template x-if="p.stock !== null && p.stock !== undefined">
+                                <p class="text-[11px] font-medium"
+                                   :class="p.stock <= 0 ? 'text-red-500' : p.stock <= 5 ? 'text-amber-500' : 'text-gray-400'"
+                                   x-text="p.stock <= 0 ? 'Sin stock' : 'Stock: ' + p.stock"></p>
+                            </template>
+                        </div>
+                        <p class="flex-shrink-0 text-sm font-bold text-indigo-600 tabular-nums" x-text="'S/ ' + p.price.toFixed(2)"></p>
+                        <span class="flex-shrink-0 w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center relative">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                            </svg>
+                            <template x-if="cartQty(p.id, 'product') > 0">
+                                <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+                                      x-text="cartQty(p.id, 'product')"></span>
+                            </template>
+                        </span>
+                    </button>
+                </template>
+            </div>
         </div>
         <div x-show="catalogTab==='services'">
             <template x-if="filteredServices.length === 0">
@@ -115,7 +193,7 @@
                     <p class="text-sm">Sin servicios</p>
                 </div>
             </template>
-            <div class="grid gap-2.5" style="grid-template-columns: repeat(auto-fill, minmax(120px,1fr));">
+            <div x-show="vista === 'grid'" class="grid gap-2.5" style="grid-template-columns: repeat(auto-fill, minmax(120px,1fr));">
                 <template x-for="s in filteredServices" :key="s.id">
                     <button @click="addToCart(s)"
                             class="relative bg-white border-2 border-gray-100 rounded-2xl p-2.5 text-left hover:border-purple-400 hover:shadow-lg transition-all group active:scale-95 active:bg-purple-50">
@@ -132,6 +210,34 @@
                         <p class="text-sm font-black text-purple-600 mt-1" x-text="'S/ ' + s.price.toFixed(2)"></p>
                         <p x-show="s.duration_min" class="text-[10px] text-gray-400 mt-0.5"
                            x-text="s.duration_min >= 60 ? Math.floor(s.duration_min/60)+'h'+(s.duration_min%60?s.duration_min%60+'m':'') : s.duration_min+'min'"></p>
+                    </button>
+                </template>
+            </div>
+
+            <div x-show="vista === 'lista'" x-cloak class="divide-y divide-gray-100 rounded-xl border border-gray-100 overflow-hidden bg-white">
+                <template x-for="s in filteredServices" :key="'l'+s.id">
+                    <button @click="addToCart(s)"
+                            class="w-full flex items-center gap-3 px-3 py-2 text-left transition hover:bg-purple-50/60 active:bg-purple-100">
+                        <div class="w-10 h-10 flex-shrink-0 rounded-lg bg-purple-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-800 truncate" x-text="s.name"></p>
+                            <p x-show="s.duration_min" class="text-[11px] text-gray-400"
+                               x-text="s.duration_min >= 60 ? Math.floor(s.duration_min/60)+'h'+(s.duration_min%60?s.duration_min%60+'m':'') : s.duration_min+'min'"></p>
+                        </div>
+                        <p class="flex-shrink-0 text-sm font-bold text-purple-600 tabular-nums" x-text="'S/ ' + s.price.toFixed(2)"></p>
+                        <span class="flex-shrink-0 w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center relative">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                            </svg>
+                            <template x-if="cartQty(s.id, 'service') > 0">
+                                <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+                                      x-text="cartQty(s.id, 'service')"></span>
+                            </template>
+                        </span>
                     </button>
                 </template>
             </div>
@@ -757,37 +863,168 @@
      MODAL — Cotización generada
 ══════════════════════════════════════════════════════ --}}
 <div x-show="quoteModal" x-cloak
-     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-     @click.self="quoteModal = false">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center" @click.stop>
-        <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+     class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+     role="dialog" aria-modal="true" aria-labelledby="cot-modal-titulo"
+     @keydown.escape.window="cerrarCotizacion()">
+
+    {{-- Fondo --}}
+    <div x-show="quoteModal" @click="cerrarCotizacion()"
+         x-transition:enter="transition ease-out duration-200 motion-reduce:transition-none"
+         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150 motion-reduce:transition-none"
+         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+
+    {{-- Panel. x-trap encierra el teclado dentro del dialogo y, al cerrarlo,
+         devuelve el foco al boton que lo abrio: el plugin Focus ya estaba
+         registrado en resources/js/app.js exactamente para esto. --}}
+    <div x-trap.noscroll="quoteModal" x-ref="cotPanel"
+         x-show="quoteModal"
+         x-transition:enter="transition ease-out duration-200 motion-reduce:transition-none"
+         x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+         x-transition:leave="transition ease-in duration-150 motion-reduce:transition-none"
+         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+         class="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto overscroll-contain">
+
+        <button type="button" @click="cerrarCotizacion()"
+                class="absolute top-2.5 right-2.5 w-11 h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-slate-400"
+                aria-label="Cerrar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
             </svg>
-        </div>
-        <h3 class="text-2xl font-black text-gray-900 mb-1">¡Cotización lista!</h3>
-        <p class="text-3xl font-black text-amber-600 my-2" x-text="'S/ ' + lastTotal.toFixed(2)"></p>
-        <p class="text-gray-400 text-sm mb-4">Comparte el enlace con tu cliente</p>
+        </button>
 
-        <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-4">
-            <input type="text" readonly :value="lastQuoteUrl" @focus="$event.target.select()"
-                   class="flex-1 text-xs text-gray-600 bg-transparent outline-none truncate">
-            <button @click="copyQuoteLink()"
-                    class="text-xs font-bold px-2 py-1 rounded-lg transition flex-shrink-0"
-                    :class="copied ? 'bg-green-100 text-green-700' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'"
-                    x-text="copied ? '¡Copiado!' : 'Copiar'"></button>
-        </div>
+        <div class="px-6 pt-8 pb-6 sm:px-7">
 
-        <div class="flex gap-2">
-            <a :href="'https://wa.me/?text=' + encodeURIComponent('Le comparto su cotización: ' + lastQuoteUrl)" target="_blank"
-               class="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-2xl transition text-sm flex items-center justify-center gap-1.5">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                WhatsApp
+            {{-- Confirmacion --}}
+            <div class="flex flex-col items-center text-center">
+                <div x-show="quoteModal"
+                     x-transition:enter="transition ease-out duration-200 delay-75 motion-reduce:transition-none"
+                     x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+                     class="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
+                    <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                    </svg>
+                </div>
+
+                {{-- El foco entra por el titulo, no por la X: asi un lector de
+                     pantalla anuncia "Cotizacion creada" al abrirse el dialogo
+                     en vez de "boton cerrar", y no se ve un anillo de foco
+                     sobre el unico control destructivo del modal. --}}
+                <h2 id="cot-modal-titulo" x-ref="cotTitulo" tabindex="-1" autofocus
+                    class="mt-4 text-xl font-semibold text-slate-900 tracking-tight focus:outline-none">
+                    Cotización creada
+                </h2>
+                <p class="mt-1 text-sm text-slate-500">
+                    <span x-text="cot.number"></span>
+                    <span x-show="cot.age"> · <span x-text="cot.age"></span></span>
+                </p>
+
+                <p class="mt-4 text-3xl font-bold text-amber-600 tabular-nums tracking-tight"
+                   x-text="cot.currency + ' ' + lastTotal.toFixed(2)"></p>
+            </div>
+
+            {{-- Ficha del documento --}}
+            <div class="mt-5 rounded-xl border border-slate-200 divide-y divide-slate-100">
+                <div class="flex items-center gap-2.5 px-4 py-3">
+                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"/>
+                    </svg>
+                    <p class="text-sm text-slate-600 min-w-0 truncate">
+                        <template x-if="cot.client_name">
+                            <span>Cliente: <span class="font-medium text-slate-900" x-text="cot.client_name"></span></span>
+                        </template>
+                        <template x-if="!cot.client_name">
+                            <span class="text-slate-400">Cliente no registrado</span>
+                        </template>
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2.5 px-4 py-3">
+                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/>
+                    </svg>
+                    <p class="text-sm text-slate-600">
+                        <span x-text="cot.items_count + (cot.items_count === 1 ? ' producto' : ' productos')"></span>
+                        <span x-show="cot.valid_until"> · Vence <span x-text="cot.valid_until"></span></span>
+                    </p>
+                </div>
+
+                <div class="px-4 py-3">
+                    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
+                          :class="cot.shared ? 'border-slate-200 bg-slate-50 text-slate-600' : 'border-amber-200 bg-amber-50 text-amber-700'">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                        </svg>
+                        <span x-text="cot.shared ? 'Compartida por WhatsApp' : cot.status_label"></span>
+                    </span>
+                </div>
+            </div>
+
+            {{-- Accion principal --}}
+            <a x-ref="cotWhatsapp"
+               :href="'https://wa.me/' + waDigits(paymentForm.client_phone) + '?text=' + encodeURIComponent('Le comparto su cotización ' + cot.number + ': ' + lastQuoteUrl)"
+               target="_blank" rel="noopener"
+               @click="cot.shared = true"
+               class="mt-5 w-full h-12 px-4 rounded-xl bg-[#25D366] hover:bg-[#1eb955] text-white font-semibold text-sm flex items-center justify-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                Enviar por WhatsApp
             </a>
-            <button @click="quoteModal = false; clearCart(); mode='sale'"
-                    class="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition text-sm">
-                Cerrar
-            </button>
+
+            {{-- Acciones secundarias. Solo se pintan si el usuario puede entrar
+                 a Cotizaciones: un boton que garantiza 403 no es una accion,
+                 es una trampa. El servidor devuelve esas URL en null si no. --}}
+            <div class="mt-2.5 grid grid-cols-2 gap-2.5" x-show="cot.view_url || cot.pdf_url">
+                <a x-show="cot.view_url" :href="cot.view_url" target="_blank" rel="noopener"
+                   class="h-11 px-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm flex items-center justify-center gap-2 transition min-w-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                    </svg>
+                    <span class="truncate">Ver cotización</span>
+                </a>
+                <a x-show="cot.pdf_url" :href="cot.pdf_url" target="_blank" rel="noopener"
+                   class="h-11 px-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm flex items-center justify-center gap-2 transition min-w-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <svg class="w-4 h-4 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75h6m-6 3h3M9.75 3.104A2.25 2.25 0 0 0 8.25 3H5.625c-.621 0-1.125.504-1.125 1.125v15.75c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V9.75a2.25 2.25 0 0 0-.659-1.591l-4.5-4.5A2.25 2.25 0 0 0 12.75 3H9.75Z"/>
+                    </svg>
+                    <span class="truncate">Descargar PDF</span>
+                </a>
+            </div>
+
+            {{-- Enlace publico, en segundo plano --}}
+            <div class="mt-4 flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200 pl-3 pr-1.5 py-1.5">
+                <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/>
+                </svg>
+                <input type="text" readonly x-ref="cotEnlace" :value="lastQuoteUrl"
+                       @focus="$event.target.select()" aria-label="Enlace público de la cotización"
+                       class="flex-1 min-w-0 bg-transparent border-0 p-0 text-xs text-slate-500 outline-none focus:ring-0 truncate">
+                <button type="button" @click="copyQuoteLink()"
+                        class="flex-shrink-0 h-8 px-3 rounded-md text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        :class="copied ? 'bg-emerald-50 text-emerald-700' : 'bg-white border border-slate-300 text-indigo-600 hover:bg-indigo-50'"
+                        x-text="copied ? 'Copiado' : 'Copiar'"></button>
+            </div>
+            <p x-show="copyManual" x-cloak class="mt-1.5 text-xs text-slate-500">
+                Tu navegador no permitió copiar automáticamente. El enlace ya está seleccionado: pulsa Ctrl+C.
+            </p>
+
+            {{-- Continuar trabajando --}}
+            <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                <button type="button" @click="nuevaCotizacion()"
+                        class="text-sm font-medium text-slate-500 hover:text-slate-800 transition py-1 focus:outline-none focus:ring-2 focus:ring-slate-400 rounded">
+                    Crear otra cotización
+                </button>
+                <a x-show="cot.list_url" :href="cot.list_url"
+                   class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition py-1 inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded">
+                    Ir a cotizaciones
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+                    </svg>
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -879,6 +1116,7 @@ function posApp() {
         cart: [],
         mode: 'sale',          // 'sale' = venta directa | 'quote' = cotización
         resellerMode: false,   // "Vender fácil" — experiencia enfocada en el revendedor
+        vista: 'grid',         // 'grid' | 'lista' — formato del catalogo
         quickSale: { open: false, item: null, price: 0, qty: 1 },  // popup Venta Rápida
         processing: false,
         showCustom: false,
@@ -887,6 +1125,20 @@ function posApp() {
         successModal: false,
         quoteModal: false,
         lastQuoteUrl: '',
+        copyManual: false,
+        // Lo que el servidor confirmo haber guardado. La confirmacion se pinta
+        // de aqui, nunca del carrito en memoria, para que no ensene un
+        // documento distinto del que se acaba de emitir. `shared` es lo unico
+        // que vive solo en el navegador: sabemos que se pulso el boton de
+        // WhatsApp, no que el cliente lo haya recibido, asi que no se guarda
+        // como estado del documento ni se llama "Enviada".
+        cot: {
+            number: '', client_name: '', items_count: 0, valid_until: '',
+            status: '', status_label: 'Pendiente de envío', currency: 'S/',
+            view_url: null, pdf_url: null, list_url: null,
+            created_ts: 0, age: '', shared: false,
+        },
+        cotReloj: null,
         copied: false,
         lastTotal: 0,
         lastChange: 0,
@@ -913,7 +1165,10 @@ function posApp() {
             this.paymentForm.method = 'Efectivo';
             @endif
             // Recordar preferencia de "Vender fácil"
-            this.resellerMode = localStorage.getItem('pos_reseller_mode') === '1';
+            // Sin boton para apagarlo, un 'ON' viejo en localStorage dejaria
+            // al cajero atrapado en un modo que ya no puede ver ni cambiar.
+            this.resellerMode = @json($modRevendedor) && localStorage.getItem('pos_reseller_mode') === '1';
+            this.vista = localStorage.getItem('pos_vista') === 'lista' ? 'lista' : 'grid';
             this.$watch('resellerMode', v => localStorage.setItem('pos_reseller_mode', v ? '1' : '0'));
             if (this.products.length === 0 && this.services.length > 0) {
                 this.catalogTab = 'services';
@@ -1108,6 +1363,37 @@ function posApp() {
         removeFromCart(idx) { this.cart.splice(idx, 1); },
         clearCart() { this.cart = []; this.paymentForm.received = 0; this.showCustom = false; },
 
+        // Un solo canal para hablar con el servidor desde el mostrador.
+        // Antes, cualquier fallo se resumia en "Error al registrar la venta" o
+        // "No se pudo generar la cotizacion": el cajero no podia distinguir una
+        // sesion caducada (419, se arregla recargando) de una falta de permiso
+        // (403) o de un limite de stock (422). Ahora el motivo se dice.
+        async postJson(url, payload) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+            let data = null;
+            try { data = await res.json(); } catch (e) { data = null; }
+            if (res.ok && data && data.ok) return data;
+
+            if (res.status === 419 || res.status === 401) {
+                throw new Error('Tu sesión expiró. Recarga la página (F5), vuelve a iniciar sesión y repite la operación. El carrito no se pierde si no cierras la pestaña.');
+            }
+            if (res.status === 403) {
+                throw new Error((data && (data.error || data.message)) || 'No tienes permiso para esta acción.');
+            }
+            if (res.status === 422 && data && data.errors) {
+                throw new Error(Object.values(data.errors).flat().join('\n'));
+            }
+            throw new Error((data && (data.error || data.message)) || ('El servidor respondió ' + res.status + '.'));
+        },
+
         async charge() {
             if (this.cart.length === 0 || !this.paymentForm.method || this.processing) return;
             if (this.splitPayment && Math.abs((this.paymentForm.amount1 + this.paymentForm.amount2) - this.cartTotal) >= 0.01) return;
@@ -1116,14 +1402,7 @@ function posApp() {
                 ? `${this.paymentForm.method} (S/${this.paymentForm.amount1.toFixed(2)}) + ${this.paymentForm.method2} (S/${this.paymentForm.amount2.toFixed(2)})`
                 : this.paymentForm.method;
             try {
-                const res = await fetch('{{ route("pos.store", $project) }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
+                const data = await this.postJson('{{ route("pos.store", $project) }}', {
                         client_name:    this.paymentForm.client_name || null,
                         client_phone:   this.paymentForm.client_phone || null,
                         payment_method: payMethod,
@@ -1137,10 +1416,8 @@ function posApp() {
                             price:      this.itemTotal(i) / i.qty,
                             quantity:   i.qty,
                         })),
-                    }),
                 });
-                const data = await res.json();
-                if (data.ok) {
+                {
                     this.lastTotal  = parseFloat(data.total);
                     this.lastChange = (!this.splitPayment && this.paymentForm.method === 'Efectivo')
                         ? Math.max(0, this.paymentForm.received - this.lastTotal) : 0;
@@ -1170,27 +1447,23 @@ function posApp() {
                     this.paymentForm.table_number  = '';
                     this.showClientFields = false;
                     this.splitPayment = false;
-                } else {
-                    alert(data.error || 'Error al registrar la venta.');
                 }
             } catch (e) {
-                alert('Error de conexión.');
+                alert(e.message || 'Error de conexión.');
             }
             this.processing = false;
+        },
+
+        setVista(v) {
+            this.vista = v;
+            try { localStorage.setItem('pos_vista', v); } catch (e) {}
         },
 
         async createQuote() {
             if (this.cart.length === 0 || this.processing) return;
             this.processing = true;
             try {
-                const res = await fetch('{{ route("pos.quote", $project) }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
+                const data = await this.postJson('{{ route("pos.quote", $project) }}', {
                         client_name:  this.paymentForm.client_name || null,
                         client_phone: this.paymentForm.client_phone || null,
                         notes:        this.paymentForm.notes || null,
@@ -1199,25 +1472,94 @@ function posApp() {
                             price:    this.itemTotal(i) / i.qty,
                             quantity: i.qty,
                         })),
-                    }),
                 });
-                const data = await res.json();
-                if (data.ok) {
-                    this.lastTotal   = parseFloat(data.total);
-                    this.lastQuoteUrl = data.url;
-                    this.quoteModal  = true;
-                } else {
-                    alert('No se pudo generar la cotización.');
-                }
+                this.lastTotal    = parseFloat(data.total);
+                this.lastQuoteUrl = data.url;
+                this.cot = {
+                    number:       data.number || '',
+                    client_name:  data.client_name || '',
+                    items_count:  data.items_count || 0,
+                    valid_until:  data.valid_until || '',
+                    status:       data.status || '',
+                    status_label: data.status_label || 'Pendiente de envío',
+                    currency:     data.currency || 'S/',
+                    view_url:     data.view_url || null,
+                    pdf_url:      data.pdf_url || null,
+                    list_url:     data.list_url || null,
+                    created_ts:   data.created_ts || 0,
+                    age:          'hace unos segundos',
+                    shared:       false,
+                };
+                this.copied = false;
+                this.copyManual = false;
+                this.abrirCotizacion();
             } catch (e) {
-                alert('Error de conexión.');
+                alert(e.message || 'Error de conexión.');
             }
             this.processing = false;
         },
 
+        // Si el cajero anoto el celular, WhatsApp abre la conversacion con ese
+        // cliente en vez del selector de contactos. Nueve digitos = celular
+        // peruano, que es lo que se teclea en el mostrador.
+        waDigits(phone) {
+            const d = (phone || '').replace(/\D/g, '');
+            if (!d) return '';
+            return d.length === 9 ? '51' + d : d;
+        },
+
+        abrirCotizacion() {
+            this.quoteModal = true;
+            this.$nextTick(() => this.$refs.cotTitulo?.focus());
+            // "hace unos segundos" tiene que dejar de ser verdad cuando deja de
+            // serlo: el reloj se para al cerrar para no dejar timers colgando.
+            clearInterval(this.cotReloj);
+            this.cotReloj = setInterval(() => { this.cot.age = this.edadCotizacion(); }, 20000);
+        },
+
+        edadCotizacion() {
+            if (!this.cot.created_ts) return '';
+            const s = Math.max(0, Math.floor(Date.now() / 1000) - this.cot.created_ts);
+            if (s < 60)   return 'hace unos segundos';
+            const m = Math.floor(s / 60);
+            if (m < 60)   return m === 1 ? 'hace 1 minuto' : 'hace ' + m + ' minutos';
+            const h = Math.floor(m / 60);
+            return h === 1 ? 'hace 1 hora' : 'hace ' + h + ' horas';
+        },
+
+        cerrarCotizacion() {
+            if (!this.quoteModal) return;
+            this.quoteModal = false;
+            clearInterval(this.cotReloj);
+            this.cotReloj = null;
+        },
+
+        // "Crear otra": cierra la confirmacion y deja el mostrador listo para la
+        // siguiente. NO reenvia nada ni toca la cotizacion ya creada, que queda
+        // guardada; solo limpia el carrito y los datos del cliente anterior.
+        nuevaCotizacion() {
+            this.cerrarCotizacion();
+            this.clearCart();
+            this.paymentForm.client_name  = '';
+            this.paymentForm.client_phone = '';
+            this.paymentForm.notes        = '';
+            this.mode = 'quote';
+        },
+
         async copyQuoteLink() {
-            try { await navigator.clipboard.writeText(this.lastQuoteUrl); this.copied = true; setTimeout(() => this.copied = false, 1500); }
-            catch (e) { window.prompt('Copia el enlace:', this.lastQuoteUrl); }
+            this.copyManual = false;
+            try {
+                await navigator.clipboard.writeText(this.lastQuoteUrl);
+                this.copied = true;
+                setTimeout(() => this.copied = false, 1800);
+            } catch (e) {
+                // Sin portapapeles (http sin TLS, permiso denegado): se deja el
+                // enlace seleccionado y se dice como copiarlo, en vez de un
+                // prompt del navegador que interrumpe el flujo.
+                this.copyManual = true;
+                this.$refs.cotEnlace?.focus();
+                this.$refs.cotEnlace?.select();
+            }
         },
 
         printTicket() {

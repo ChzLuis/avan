@@ -2328,7 +2328,8 @@ function openQuickView(p) {
   document.getElementById('qv-btn-view').onclick = function() {
     closeQuickView();
     // Llama al store Alpine
-    var store = document.querySelector('[x-data]').__x && document.querySelector('[x-data]').__x.$data;
+    var _raiz = document.querySelector('[x-data]');
+    var store = _raiz && (window.Alpine && window.Alpine.$data ? window.Alpine.$data(_raiz) : (_raiz.__x && _raiz.__x.$data));
     if (store && store.openProduct) store.openProduct(p.id);
     else if (window.Alpine) {
       Alpine.store && Alpine.store('ec') ? Alpine.store('ec').openProduct(p.id) : null;

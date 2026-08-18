@@ -349,12 +349,54 @@ class PosController extends Controller
             ]);
         }
 
+        // La confirmacion del mostrador enseña lo que se acaba de crear, y eso
+        // tiene que decirlo el servidor: si la pintara el navegador con lo que
+        // cree recordar del carrito, el vendedor podria enviar al cliente un
+        // documento distinto del guardado. Numero, cliente, vigencia, estado y
+        // enlaces salen todos de la fila recien escrita.
+        $comercial = $request->routeIs('bixosales.*');
+        $usuario   = auth()->user();
+        $puedeVer  = $project->hasModule('quotes') && (
+            $usuario?->is_superadmin
+            || $project->owner_id === $usuario?->id
+            || $usuario?->can('quotes.ver')
+            || $usuario?->can('view-quotes')
+        );
+
+        $estado = \App\Support\QuoteStatus::comercialPresentacion($quote->status);
+
         return response()->json([
-            'ok'    => true,
-            'quote_id' => $quote->id,
-            'total' => $total,
-            'url'   => url('/b/' . $project->slug . '/c/' . $quote->token),
+            'ok'            => true,
+            'quote_id'      => $quote->id,
+            'number'        => $quote->etiqueta,
+            'client_name'   => $quote->client_name,
+            'items_count'   => count($data['items']),
+            'created_ts'    => $quote->created_at->timestamp,
+            'issued_at'     => $quote->created_at->format('d/m/Y'),
+            'valid_until'   => self::fechaCorta($quote->valid_until),
+            'status'        => \App\Support\QuoteStatus::comercial($quote->status),
+            'status_label'  => $estado['label'],
+            // Cotizaciones no tiene columna de moneda todavia; se declara aqui
+            // para que la vista no la de por supuesta y el dia que exista se
+            // cambie en un solo sitio.
+            'currency'      => 'S/',
+            'total'         => $total,
+            'url'           => url('/b/' . $project->slug . '/c/' . $quote->token),
+            'view_url'      => $puedeVer ? ($comercial ? route('bixosales.cotizaciones.show', $quote) : route('quotes.show', $quote)) : null,
+            'pdf_url'       => $puedeVer ? ($comercial ? route('bixosales.cotizaciones.pdf', $quote) : route('quotes.pdf', $quote)) : null,
+            'list_url'      => $puedeVer ? ($comercial ? route('bixosales.cotizaciones') : route('quotes')) : null,
         ]);
+    }
+
+    /** "23 ago. 2026" sin depender del locale instalado en el servidor. */
+    private static function fechaCorta($fecha): ?string
+    {
+        if (!$fecha) {
+            return null;
+        }
+        $meses = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'];
+
+        return $fecha->day . ' ' . $meses[$fecha->month - 1] . ' ' . $fecha->year;
     }
 
     /** BIXO Venta Express: productos primero, cliente opcional o precargado, cierre en un paso. */

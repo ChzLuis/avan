@@ -977,7 +977,8 @@ async function bbSaveNewState() {
     if (!key || !label) { bbToast('Key y etiqueta requeridos', 'error'); return; }
 
     // Necesitamos el flow_id — lo obtenemos del Alpine store
-    const alpine = document.querySelector('[x-data]').__x.$data;
+    const _raiz = document.querySelector('[x-data]');
+    const alpine = window.Alpine?.$data(_raiz) ?? _raiz.__x.$data;
     if (!alpine.flowId) { bbToast('Primero carga un bot en la pestaña Flujo', 'error'); return; }
 
     try {
@@ -1001,7 +1002,8 @@ async function bbSaveNewTransition() {
     const toStateId = document.getElementById('nt-to-state').value;
     if (!toStateId) { bbToast('Selecciona el estado destino', 'error'); return; }
 
-    const alpine = document.querySelector('[x-data]').__x.$data;
+    const _raiz = document.querySelector('[x-data]');
+    const alpine = window.Alpine?.$data(_raiz) ?? _raiz.__x.$data;
     if (!alpine.selectedState) { bbToast('Selecciona un estado primero', 'error'); return; }
 
     try {
