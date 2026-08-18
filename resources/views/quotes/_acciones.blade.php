@@ -13,17 +13,9 @@
     `accepted` lo revalida `convert()`. La UI no es la barrera.
 --}}
 
-{{-- Relación con el pedido generado --}}
-<template x-if="pedidoDeEstaCotizacion">
-    <div class="q-rel">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-        </svg>
-        <span>Convertida a</span>
-        <a :href="urlPedido(pedidoDeEstaCotizacion)" class="q-rel-link"
-           x-text="'PED-' + pedidoDeEstaCotizacion"></a>
-    </div>
-</template>
+{{-- La relacion con el pedido ya NO se pinta aqui: era una franja entera
+     bajo la cabecera para decir 'Convertida a PED-34'. Ahora es un chip en
+     la propia cabecera, junto al estado. --}}
 
 {{-- Aviso de resultado. 'already' se comunica como información, no como error --}}
 <div x-show="avisoConvertir" x-cloak class="q-aviso-ok" role="status" aria-live="polite">
@@ -38,15 +30,9 @@
     <button type="button" class="q-aviso-cerrar" @click="error=''" aria-label="Descartar el error">✕</button>
 </div>
 
-{{-- Disparador. Solo aparece si el servidor lo aceptaría --}}
-<template x-if="puedeConvertirAhora">
-    <button type="button" class="q-btn-convertir" @click="modalConvertir = true">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-        </svg>
-        Convertir en pedido
-    </button>
-</template>
+{{-- El boton de convertir vive en el panel derecho, bajo el Resumen: es el
+     siguiente paso comercial, no una accion suelta a media pantalla. Aqui se
+     quedan el aviso y la confirmacion, que son transversales. --}}
 
 {{-- Confirmación: dice QUÉ va a pasar, no "¿estás seguro?" --}}
 <template x-if="modalConvertir">

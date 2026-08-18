@@ -18,27 +18,91 @@
 <x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Cotizaciones">
 
 <style>
+/* ══ Contrato visual de Cotizaciones ═══════════════════════════════════
+   Los valores viven aqui y NO dentro de cada componente: asi el ritmo es
+   uno solo y un ajuste no obliga a perseguir treinta reglas sueltas. Se
+   reutilizan los tokens del panel (--texto, --borde…) donde ya existen. */
+.q-wrap {
+  --q-bg:#F7F8FC; --q-card:#FFFFFF;
+  --q-tx:#111827; --q-tx2:#64748B; --q-tx3:#94A3B8;
+  --q-bd:#E5E7EB; --q-bd-soft:#EEF0F4;
+  --q-pri:#4F46E5; --q-pri-hover:#4338CA; --q-pri-soft:#EEF2FF;
+  --q-ok:#16A34A;  --q-ok-soft:#ECFDF3;
+  --q-warn:#D97706; --q-warn-soft:#FFF7E6;
+  --q-dan:#DC2626; --q-dan-soft:#FEF2F2;
+  --q-conv:#7C3AED; --q-conv-soft:#F3E8FF;
+
+  --q-t-xs:12px; --q-t-sm:13px; --q-t-base:14px; --q-t-md:15px;
+  --q-t-lg:18px; --q-t-xl:22px; --q-t-2xl:26px;
+
+  --q-s1:4px; --q-s2:8px; --q-s3:12px; --q-s4:16px; --q-s5:20px; --q-s6:24px; --q-s8:32px;
+  --q-r-sm:6px; --q-r-md:8px; --q-r-lg:12px; --q-r-xl:14px;
+
+  --q-lista:328px; --q-panel:310px;
+  --q-sombra:0 1px 2px rgba(15,23,42,.03);
+  --q-trans:color 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
 /* ── Reset & Base ── */
-.q-wrap { display:flex; height:calc(100vh - 56px); overflow:hidden; background:#f8f9fb; font-family:inherit; }
+/* `flex:1` y `width:100%`: en el panel, el contenedor padre es un flex, y sin
+   esto .q-wrap se queda con el ancho de su contenido (548px de 1680) dejando
+   media pantalla en blanco a la derecha. En el portal comercial el padre no
+   es flex y por eso alli no se notaba. */
+.q-wrap { display:flex; flex:1; width:100%; min-width:0; height:calc(100vh - 56px); overflow:hidden; background:var(--q-bg); font-family:inherit; }
 
 /* ── Sidebar lista ── */
-.q-sidebar { width:300px; flex-shrink:0; display:flex; flex-direction:column; background:#fff; border-right:1px solid #e5e7eb; }
-.q-sidebar-head { padding:10px 12px; border-bottom:1px solid #e5e7eb; display:flex; gap:8px; align-items:center; }
-.q-search { flex:1; border:1px solid #e5e7eb; border-radius:8px; padding:6px 10px 6px 30px; font-size:12px; outline:none; background:#f8f9fb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%239ca3af' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center; }
-.q-search:focus { border-color:#6366f1; background-color:#fff; }
-.q-btn-new { background:#4f46e5; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
-.q-btn-new:hover { background:#4338ca; }
-.q-filters { display:flex; gap:4px; padding:8px 12px; border-bottom:1px solid #f3f4f6; overflow-x:auto; }
-.q-filter { border:none; border-radius:20px; padding:3px 10px; font-size:11px; font-weight:500; cursor:pointer; background:#f3f4f6; color:#5b6270; white-space:nowrap; }
-.q-filter.active { background:#eef2ff; color:#4338ca; }
+.q-sidebar { width:var(--q-lista); min-width:var(--q-lista); max-width:var(--q-lista); flex-shrink:0; display:flex; flex-direction:column; background:var(--q-card); border-right:1px solid var(--q-bd); }
+.q-sidebar-titulo { padding:var(--q-s4) var(--q-s3) var(--q-s2); display:flex; align-items:center; justify-content:space-between; gap:var(--q-s2); }
+.q-sidebar-titulo h2 { font-size:var(--q-t-md); font-weight:700; color:var(--q-tx); margin:0; letter-spacing:-.01em; }
+.q-sidebar-head { padding:0 var(--q-s3) var(--q-s2); display:flex; gap:var(--q-s2); align-items:center; }
+.q-filtros-btn { width:38px; height:38px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--q-bd); border-radius:var(--q-r-md); background:var(--q-card); color:var(--q-tx2); cursor:pointer; transition:var(--q-trans); }
+.q-filtros-btn:hover { background:#F8FAFC; }
+.q-filtros-btn svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; }
+.q-search { flex:1; height:38px; border:1px solid var(--q-bd); border-radius:var(--q-r-md); padding:0 var(--q-s3) 0 32px; font-size:var(--q-t-sm); outline:none; transition:var(--q-trans); background:var(--q-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%239ca3af' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center; }
+.q-search:focus { border-color:var(--q-pri); box-shadow:0 0 0 3px rgba(79,70,229,.10); }
+.q-btn-new { width:32px; height:32px; padding:0; font-size:18px; line-height:1; display:inline-flex; align-items:center; justify-content:center; background:var(--q-pri); color:#fff; border:none; border-radius:var(--q-r-md); font-size:var(--q-t-xs); font-weight:600; cursor:pointer; white-space:nowrap; transition:var(--q-trans); }
+.q-btn-new:hover { background:var(--q-pri-hover); }
+.q-filters { display:flex; flex-wrap:wrap; gap:6px; padding:0 var(--q-s3) var(--q-s3); }
+
+.q-filter { height:32px; padding:0 10px; border:none; border-radius:999px; font-size:var(--q-t-xs); font-weight:500; cursor:pointer; background:#F8FAFC; color:var(--q-tx2); white-space:nowrap; flex-shrink:0; transition:var(--q-trans); }
+.q-filter:hover { background:var(--q-bd-soft); }
+.q-filter.active { background:var(--q-pri-soft); color:var(--q-pri); box-shadow:inset 0 0 0 1px #C7D2FE; }
 .q-list { overflow-y:auto; flex:1; }
-.q-item { padding:10px 14px; border-bottom:1px solid #f3f4f6; cursor:pointer; display:flex; align-items:center; gap:10px; transition:background .1s; }
-.q-item:hover { background:#f8f9fb; }
-.q-item.active { background:#eef2ff; border-left:3px solid #6366f1; }
+/* Fila de la lista: cliente, codigo+fecha, monto y estado. Nada mas.
+   Sin borde por fila —eran 40 lineas horizontales— : separa el espacio, y
+   la seleccion se marca con fondo y una barra a la izquierda. */
+.q-item { min-height:78px; padding:var(--q-s3) var(--q-s4); cursor:pointer; display:flex; align-items:flex-start; gap:var(--q-s2); border-left:3px solid transparent; border-bottom:1px solid var(--q-bd-soft); transition:var(--q-trans); }
+.q-item-fila1 { display:flex; align-items:baseline; justify-content:space-between; gap:var(--q-s2); }
+.q-item-fila2 { display:flex; align-items:center; justify-content:space-between; gap:var(--q-s2); margin-top:3px; }
+.q-item-cliente { font-size:var(--q-t-sm); color:var(--q-tx2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.q-item-fecha { font-size:var(--q-t-xs); color:var(--q-tx3); margin-top:3px; }
+
+.q-item:hover { background:#FAFBFE; }
+.q-item.active { background:#F3F4FF; border-left-color:#6366F1; border-radius:0 var(--q-r-md) var(--q-r-md) 0; }
+.q-item-check { margin-top:3px; width:14px; height:14px; border-radius:4px; border:1.5px solid #d1d5db; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transition:opacity .12s; }
+.q-item:hover .q-item-check, .q-item-check.q-check-visible, .q-item-check:focus-visible { opacity:1; }
+@media (pointer:coarse) { .q-item-check { opacity:1; } }
 .q-item-body { flex:1; min-width:0; }
-.q-item-name { font-size:13px; font-weight:600; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.q-item-meta { font-size:11px; color:var(--texto-debil, #5b6270); margin-top:1px; display:flex; gap:6px; align-items:center; }
-.q-item-total { font-size:12px; font-weight:700; color:#374151; flex-shrink:0; }
+.q-item-name { font-size:var(--q-t-sm); font-weight:600; color:var(--q-tx); display:flex; align-items:center; gap:var(--q-s1); min-width:0; }
+.q-item-name > span:last-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.q-item-punto { width:7px; height:7px; border-radius:50%; background:#ef4444; flex-shrink:0; }
+.q-item-meta { font-size:var(--q-t-xs); color:var(--q-tx3); margin-top:3px; display:flex; gap:var(--q-s1); align-items:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.q-item-num { display:inline-flex; align-items:center; gap:var(--q-s1); font-size:var(--q-t-base); font-weight:700; color:var(--q-tx); font-variant-numeric:tabular-nums; flex-shrink:0; }
+.q-item-der { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+.q-lista-cuenta { padding:0 var(--q-s3) var(--q-s2); font-size:var(--q-t-xs); color:var(--q-tx3); font-weight:600; }
+.q-item-total { font-size:var(--q-t-base); font-weight:700; color:var(--q-tx); flex-shrink:0; font-variant-numeric:tabular-nums; }
+
+/* Plegado de la lista: solo en escritorio. */
+@media(min-width:1024px){
+  .q-sidebar.q-lista-plegada { display:none !important; }
+}
+.q-rail-oculto { display:none !important; }
+
+/* Plegado de la lista */
+.q-colapsar { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:6px; padding:11px; border:none; border-top:1px solid #f3f4f6; background:#fff; color:#6b7280; font-size:12px; font-weight:600; cursor:pointer; }
+.q-colapsar:hover { background:#f8f9fb; color:#374151; }
+.q-rail { flex-shrink:0; width:26px; border:none; border-right:1px solid #e5e7eb; background:#fff; color:#9ca3af; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.q-rail:hover { background:#f3f4f6; color:#4338ca; }
 
 /* ── Badges estado ── */
 .qbadge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; text-transform:uppercase; letter-spacing:.3px; }
@@ -56,36 +120,148 @@
 .pbadge-refunded { background:#fee2e2; color:#b91c1c; }
 
 /* ── Zona central ── */
+/* 'Volver a la lista' es de movil: en escritorio la lista esta al lado. */
+.q-volver { display:none !important; }
+@media(max-width:1023px){ .q-volver { display:flex !important; } }
 .q-main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
-.q-main-head { padding:12px 20px; border-bottom:1px solid #e5e7eb; background:#fff; display:flex; align-items:center; gap:12px; flex-shrink:0; }
-.q-main-title { font-size:15px; font-weight:700; color:#111827; }
-.q-main-sub { font-size:12px; color:var(--texto-debil, #5b6270); }
-.q-main-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
+
+/* ══ Cabecera del documento ══════════════════════════════════════════
+   Una accion primaria (enviar), una secundaria fuerte (WhatsApp) y el resto
+   plegado en "Mas". Antes eran seis botones apilados con el mismo peso. */
+/* Cabecera del documento: fila 1 titulo + acciones, fila 2 cliente/fecha +
+   estado. Una sola declaracion para las dos. */
+.q-main-head {
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--q-s3) var(--q-s4);
+  padding:18px var(--q-s5) var(--q-s4); background:var(--q-card); flex-shrink:0;
+  border-bottom:1px solid var(--q-bd);
+}
+.q-head-id { flex:1 1 240px; min-width:0; }
+.q-main-title { font-size:32px; font-weight:750; letter-spacing:-.025em; color:var(--q-tx); line-height:1.1; }
+.q-head-meta { display:flex; flex-wrap:wrap; align-items:center; gap:var(--q-s1) var(--q-s3); margin-top:var(--q-s2); }
+.q-head-chip { display:inline-flex; align-items:center; gap:var(--q-s1); font-size:var(--q-t-sm); color:var(--q-tx2); }
+.q-head-chip.q-chip-cliente { font-size:var(--q-t-base); font-weight:700; color:var(--q-tx); }
+/* Pedido generado: referencia compacta, no franja. */
+.q-head-ped { display:inline-flex; align-items:center; gap:var(--q-s2); font-size:var(--q-t-sm); color:var(--q-tx2); }
+.q-ped-link { font-weight:600; color:var(--q-pri); text-decoration:none; font-variant-numeric:tabular-nums; }
+.q-ped-link:hover { text-decoration:underline; }
+.q-ico-xs { width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+.q-ico-sm { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+
+.q-head-acciones { display:flex; align-items:center; gap:var(--q-s2); flex-wrap:wrap; }
+.q-cta {
+  display:inline-flex; align-items:center; gap:var(--q-s2); height:42px; padding:0 18px;
+  border:none; border-radius:var(--q-r-md); font-size:var(--q-t-sm); font-weight:600; cursor:pointer;
+  background:var(--q-pri); color:#fff; transition:var(--q-trans);
+}
+.q-cta:hover:not(:disabled) { background:var(--q-pri-hover); }
+.q-cta:disabled { opacity:.55; cursor:not-allowed; }
+.q-cta-wa { background:#16a34a; }
+.q-cta-wa:hover { background:#15803d; }
+.q-cta-ghost { height:42px; padding:0 var(--q-s4); background:var(--q-card); color:var(--q-tx); border:1px solid var(--q-bd); font-weight:500; }
+.q-cta-ghost:hover { background:#F8FAFC; border-color:#D8DCE4; }
+.q-menu {
+  position:absolute; top:calc(100% + 6px); right:0; width:220px; background:var(--q-card);
+  border:1px solid var(--q-bd); border-radius:10px; padding:6px;
+  box-shadow:0 10px 30px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.04);
+  z-index:200; max-height:min(70vh, 520px); overflow-y:auto;
+}
+/* Si no cabe por debajo, se abre hacia arriba (lo decide el componente). */
+.q-menu.q-menu-arriba { top:auto; bottom:calc(100% + 6px); }
+.q-menu button, .q-menu a {
+  display:flex; align-items:center; width:100%; min-height:36px; text-align:left;
+  padding:var(--q-s2) 10px; border:none; background:none; border-radius:7px;
+  font-size:12.5px; font-weight:500; color:var(--q-tx); cursor:pointer;
+  text-decoration:none; transition:var(--q-trans);
+}
+.q-menu button:hover, .q-menu a:hover { background:#F8FAFC; }
+.q-menu button:disabled { opacity:.5; cursor:not-allowed; }
+
+/* Estado compacto: un desplegable, no una franja de botones */
+.q-head-sub {
+  display:flex; align-items:center; gap:var(--q-s5); flex-wrap:wrap;
+  padding:0; background:transparent; flex-shrink:0; margin-left:auto;
+}
+/* La cabecera cierra con una linea; el bloque entero es una sola pieza. */
+.q-head-fila2 { display:flex; align-items:center; gap:var(--q-s4); flex-wrap:wrap; width:100%; margin-top:var(--q-s2); }
+.q-estado-wrap { display:inline-flex; align-items:center; gap:8px; }
+.q-estado-label { font-size:var(--q-t-sm); color:var(--q-tx2); font-weight:500; }
+.q-estado-select {
+  display:inline-flex; align-items:center;
+  height:36px; padding:0 32px 0 12px; border-radius:var(--q-r-md); font-size:var(--q-t-sm); font-weight:600;
+  border:1px solid; cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 9px center; background-size:12px;
+}
+.q-estado-select:disabled { cursor:not-allowed; opacity:.7; }
+.q-estado-draft    { background-color:var(--q-warn-soft); color:var(--q-warn); border-color:#FDE68A; }
+.q-estado-sent     { background-color:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.q-estado-accepted { background-color:var(--q-ok-soft); color:var(--q-ok); border-color:#BBF7D0; }
+.q-estado-rejected { background-color:var(--q-dan-soft); color:var(--q-dan); border-color:#FECACA; }
+.q-estado {
+  display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:8px;
+  font-size:12.5px; font-weight:700;
+}
+.q-estado-converted { background:var(--q-conv-soft); color:var(--q-conv); border-color:#DDD6FE; background-image:none; padding-right:11px; }
+.q-guardado { display:inline-flex; align-items:center; gap:var(--q-s1); font-size:var(--q-t-xs); color:var(--q-tx2); font-weight:500; margin-left:auto; }
+.q-guardado svg { color:var(--q-ok); }
+
 
 /* ── Tabla de productos ── */
-.q-table-wrap { background:#fff; border-radius:12px; border:1px solid #e5e7eb; overflow:hidden; }
 .q-table { width:100%; border-collapse:collapse; }
-.q-table th { font-size:11px; font-weight:600; color:#5b6270; text-transform:uppercase; letter-spacing:.4px; padding:8px 12px; background:#f9fafb; border-bottom:1px solid #e5e7eb; text-align:left; }
+.q-table th { height:38px; font-size:11px; font-weight:600; color:var(--q-tx3); padding:0 var(--q-s3); background:#FAFBFC; border-bottom:1px solid var(--q-bd-soft); border-top:1px solid var(--q-bd-soft); text-align:left; text-transform:none; letter-spacing:0; }
 .q-table th.r, .q-table td.r { text-align:right; }
-.q-table td { padding:6px 8px; border-bottom:1px solid #f3f4f6; vertical-align:middle; }
+.q-table th.c, .q-table td.c { text-align:center; }
 .q-table tr:last-child td { border-bottom:none; }
 .q-table tr:hover td { background:#fafafa; }
 .q-td-input { border:1px solid transparent; border-radius:6px; padding:5px 8px; font-size:13px; width:100%; background:transparent; outline:none; color:#111827; transition:border .15s,background .15s; min-width:0; }
 .q-td-input:focus { border-color:#6366f1; background:#fff; box-shadow:0 0 0 3px rgba(99,102,241,.1); }
 .q-td-input.desc { min-width:180px; }
 .q-td-input.num  { width:72px; text-align:right; }
-.q-td-sub { font-size:13px; font-weight:600; color:#374151; white-space:nowrap; text-align:right; }
+.q-td-sub { font-size:var(--q-t-sm); font-weight:700; color:var(--q-tx); white-space:nowrap; text-align:right; }
+
+/* Tabla de LECTURA: importes ya formateados, sin cajas de formulario.
+   Antes el precio se leia como '60.00' dentro de un input; ahora dice
+   'S/ 60.00', que es como se habla de dinero. */
+.q-tabla-lectura td { height:58px; padding:var(--q-s2) 14px; font-size:var(--q-t-sm); white-space:nowrap; color:var(--q-tx2); font-variant-numeric:tabular-nums; border-bottom:1px solid var(--q-bd-soft); }
+.q-tabla-lectura .q-td-desc { font-size:13.5px; font-weight:600; color:var(--q-tx); line-height:1.35; }
+.q-td-desc-pct { color:var(--q-tx3); }
+/* Miniatura del catalogo. Cuando la linea no es un producto (un servicio
+   escrito a mano) va un marcador neutro: la columna no se descuadra y no
+   se inventa una imagen. */
+.q-prod { display:flex; align-items:center; gap:var(--q-s3); min-width:0; }
+.q-prod-img { width:42px; height:42px; border-radius:7px; object-fit:contain; background:#F8FAFC; border:1px solid var(--q-bd-soft); flex-shrink:0; }
+.q-prod-vacia { display:flex; align-items:center; justify-content:center; color:#CBD5E1; }
+.q-prod-vacia svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.q-prod-txt { display:flex; flex-direction:column; gap:2px; min-width:0; white-space:normal; }
+.q-prod-sub { font-size:11.5px; color:var(--q-tx2); }
+.q-td-acciones { width:40px; text-align:center; padding-left:0 !important; padding-right:4px !important; }
+.q-fila-mas { width:28px; height:28px; border:none; background:none; border-radius:var(--q-r-sm); color:#CBD5E1; cursor:pointer; transition:var(--q-trans); display:inline-flex; align-items:center; justify-content:center; }
+.q-fila-mas svg { width:16px; height:16px; fill:currentColor; }
+.q-fila-mas:hover { background:var(--q-bd-soft); color:var(--q-tx); }
+.q-tabla-lectura tr:last-child td { border-bottom:none; }
+.q-tabla-lectura tr:hover td { background:#FCFDFF; }
+.q-tabla-vacia { text-align:center; color:var(--q-tx3); font-size:var(--q-t-sm); height:auto !important; padding:28px var(--q-s3) !important; }
+.q-tabla-pie { min-height:46px; display:flex; align-items:center; justify-content:space-between; gap:var(--q-s3); padding:0 14px; font-size:var(--q-t-sm); color:var(--q-tx2); border-top:1px solid var(--q-bd-soft); }
+.q-pie-sub { color:var(--q-tx2); }
+.q-tabla-pie strong { font-size:var(--q-t-base); font-weight:700; color:var(--q-tx); margin-left:var(--q-s2); font-variant-numeric:tabular-nums; }
 .q-add-row { width:100%; border:none; background:none; padding:8px 12px; font-size:12px; color:#6366f1; cursor:pointer; text-align:left; display:flex; align-items:center; gap:6px; }
 .q-add-row:hover { background:#f5f3ff; }
 
 /* ── Buscador catálogo ── */
+.q-agregar-wrap { position:relative; }
+.q-agregar { display:inline-flex; align-items:center; gap:var(--q-s1); height:32px; padding:0 var(--q-s2); border:none; border-radius:var(--q-r-sm); background:transparent; color:var(--q-pri); font-size:var(--q-t-sm); font-weight:600; cursor:pointer; transition:var(--q-trans); }
+.q-agregar:hover { background:var(--q-pri-soft); }
+.q-catalog-pop { position:absolute; top:calc(100% + 6px); right:0; width:340px; max-width:78vw; background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 12px 32px rgba(15,23,42,.14); z-index:200; padding:10px; }
+.q-catalog-vacio { font-size:12px; color:#9ca3af; margin:0; padding:10px 4px; }
+.q-catalog-manual { width:100%; margin-top:6px; border:none; border-top:1px solid #f3f4f6; background:none; padding:8px 4px 2px; font-size:12.5px; font-weight:600; color:#4f46e5; cursor:pointer; text-align:left; }
 .q-catalog-wrap { position:relative; }
 .q-catalog-input { border:1.5px dashed #c7d2fe; border-radius:8px; padding:7px 12px 7px 32px; font-size:12px; width:100%; outline:none; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%236366f1' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center; color:#374151; }
+.q-catalog-input { border-style:solid; border-color:#e5e7eb; }
 .q-catalog-input:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.1); }
-.q-catalog-drop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.1); z-index:100; overflow:hidden; max-height:220px; overflow-y:auto; }
-.q-catalog-item { display:flex; align-items:center; justify-content:space-between; padding:8px 14px; cursor:pointer; border-bottom:1px solid #f3f4f6; gap:8px; }
+.q-catalog-drop { margin-top:8px; max-height:240px; overflow-y:auto; }
+.q-catalog-item { display:flex; align-items:center; justify-content:space-between; padding:9px 10px; cursor:pointer; border-radius:8px; gap:8px; }
 .q-catalog-item:hover { background:#f5f3ff; }
-.q-catalog-item:last-child { border-bottom:none; }
+
 .q-catalog-name { font-size:12px; font-weight:500; color:#111827; }
 .q-catalog-sku  { font-size:10px; color:var(--texto-debil, #5b6270); }
 .q-catalog-price{ font-size:12px; font-weight:700; color:#6366f1; flex-shrink:0; }
@@ -95,16 +271,89 @@
 .q-field label { font-size:11px; font-weight:600; color:#5b6270; display:block; margin-bottom:3px; }
 .q-field input, .q-field select, .q-field textarea { width:100%; border:1px solid #e5e7eb; border-radius:8px; padding:7px 10px; font-size:13px; outline:none; color:#111827; background:#fff; transition:border .15s; }
 .q-field input:focus, .q-field select:focus, .q-field textarea:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.1); }
-.q-section { background:#fff; border-radius:12px; border:1px solid #e5e7eb; overflow:hidden; }
-.q-section-head { padding:10px 16px; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; }
-.q-section-title { font-size:12px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.4px; }
-.q-section-body { padding:14px 16px; }
+.q-section { background:var(--q-card); border-radius:var(--q-r-lg); border:1px solid var(--q-bd); box-shadow:var(--q-sombra); overflow:hidden; }
+.q-section-head { padding:var(--q-s4) 18px var(--q-s3); min-height:auto; display:flex; align-items:center; justify-content:space-between; gap:var(--q-s3); }
+.q-section-title { display:inline-flex; align-items:center; gap:var(--q-s2); font-size:var(--q-t-base); font-weight:700; color:var(--q-tx); }
+.q-section-body { padding:0 18px 18px; }
+
+/* Tarjeta de LECTURA: los datos se leen como texto, no dentro de inputs. */
+.q-lectura { display:grid; grid-template-columns:minmax(180px,1.2fr) minmax(140px,.8fr) minmax(180px,1fr) minmax(140px,.8fr); gap:var(--q-s4) var(--q-s6); }
+@media (min-width:1280px) and (max-width:1599px){ .q-lectura { grid-template-columns:repeat(3, minmax(0,1fr)); } }
+@media (max-width:1279px){ .q-lectura { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+.q-lectura-item { min-width:0; }
+.q-lectura-item p { overflow-wrap:anywhere; }
+.q-lectura-item label { display:block; font-size:var(--q-t-xs); font-weight:500; color:var(--q-tx3); margin-bottom:var(--q-s1); }
+.q-lectura-item p { font-size:var(--q-t-base); color:var(--q-tx); margin:0; word-break:break-word; font-weight:600; line-height:1.45; }
+.q-editar { display:inline-flex; align-items:center; gap:var(--q-s1); border:none; background:none; color:var(--q-pri); border-radius:var(--q-r-sm); padding:var(--q-s1) var(--q-s2); font-size:var(--q-t-xs); font-weight:600; cursor:pointer; transition:var(--q-trans); }
+.q-editar:hover { background:var(--q-pri-soft); }
 
 /* ── Panel derecho ── */
-.q-panel { width:240px; flex-shrink:0; display:flex; flex-direction:column; gap:var(--tactil-gap, 8px); padding:16px 14px; overflow-y:auto; background:#f8f9fb; border-left:1px solid #e5e7eb; }
-.q-summary { background:#fff; border-radius:12px; border:1px solid #e5e7eb; padding:14px; }
-.q-summary-row { display:flex; justify-content:space-between; font-size:12px; color:#5b6270; padding:3px 0; }
-.q-summary-total { display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:#111827; padding-top:8px; margin-top:6px; border-top:2px solid #e5e7eb; }
+.q-panel { width:var(--q-panel); min-width:var(--q-panel); flex-shrink:0; display:flex; flex-direction:column; gap:var(--q-s3); padding:var(--q-s3); overflow-y:auto; background:transparent; align-self:flex-start; position:sticky; top:0; max-height:100%; }
+
+/* Tarjeta del panel: Resumen, Siguiente paso y Actividad comparten caja para
+   que la columna derecha se lea como una sola pieza y no como tres widgets. */
+.q-resumen, .q-sec, .q-actividad { background:var(--q-card); border-radius:var(--q-r-lg); border:1px solid var(--q-bd); box-shadow:var(--q-sombra); padding:18px; }
+.q-resumen-head { display:flex; align-items:center; gap:var(--q-s2); font-size:var(--q-t-base); font-weight:700; color:var(--q-tx); margin-bottom:var(--q-s3); }
+.q-resumen-fila { display:flex; justify-content:space-between; align-items:baseline; gap:var(--q-s2); font-size:var(--q-t-sm); color:var(--q-tx2); padding:var(--q-s1) 0; font-variant-numeric:tabular-nums; }
+.q-resumen-fila > span:last-child { color:var(--q-tx); font-weight:500; }
+.q-resumen-fila .q-desc { color:#b45309; font-weight:600; }
+/* El Total es la cifra por la que se decide: tipografia mayor y linea que lo
+   separa del desglose. */
+.q-resumen-total { display:flex; align-items:baseline; justify-content:space-between; gap:var(--q-s3); padding-top:var(--q-s4); margin-top:var(--q-s4); border-top:1px solid var(--q-bd); }
+.q-resumen-total span { font-size:var(--q-t-md); font-weight:700; color:var(--q-tx); }
+.q-resumen-total strong { font-size:30px; font-weight:750; color:var(--q-pri); letter-spacing:-.025em; line-height:1.1; font-variant-numeric:tabular-nums; }
+.q-resumen-nota { font-size:var(--q-t-xs); color:var(--q-tx3); margin:var(--q-s2) 0 0; }
+.q-detalle-btn { display:flex; align-items:center; justify-content:center; gap:var(--q-s2); width:100%; height:38px; margin-top:var(--q-s4); border:1px solid var(--q-bd); border-radius:var(--q-r-md); background:var(--q-card); color:var(--q-pri); font-size:var(--q-t-sm); font-weight:600; cursor:pointer; transition:var(--q-trans); }
+.q-detalle-btn:hover { background:var(--q-pri-soft); border-color:#C7D2FE; }
+.q-detalle-btn svg { transition:transform 150ms ease; }
+.q-detalle { margin-top:var(--q-s3); padding-top:var(--q-s3); border-top:1px solid var(--q-bd-soft); display:flex; flex-direction:column; gap:var(--q-s2); }
+.q-detalle-fila { display:flex; justify-content:space-between; gap:var(--q-s2); font-size:var(--q-t-xs); color:var(--q-tx2); }
+.q-detalle-fila > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.q-detalle-fila > span:last-child { font-variant-numeric:tabular-nums; color:var(--q-tx); font-weight:600; flex-shrink:0; }
+
+/* Acciones secundarias: presentes, pero sin peso de boton primario. */
+.q-sec { padding:var(--q-s2); display:flex; flex-direction:column; gap:2px; }
+.q-sec-item { display:flex; align-items:center; gap:10px; width:100%; min-height:36px; padding:var(--q-s2) 10px; border:none; border-radius:var(--q-r-md); background:transparent; font-size:var(--q-t-sm); font-weight:500; color:#374151; text-align:left; cursor:pointer; text-decoration:none; transition:background .15s; }
+.q-sec-item:hover:not(:disabled) { background:#F8FAFC; }
+.q-sec-item:disabled { opacity:.5; cursor:not-allowed; }
+.q-sec-item svg { flex-shrink:0; color:#9ca3af; }
+.q-sec-danger { color:#b91c1c; }
+.q-sec-danger:hover { background:#fee2e2; }
+.q-sec-danger svg { color:#dc2626; }
+
+/* Actividad: hechos reales de `order_events`, en orden inverso. */
+.q-actividad-vacio { font-size:var(--q-t-xs); color:var(--q-tx3); margin:0; }
+.q-timeline { list-style:none; margin:0; padding:0; }
+.q-act-item { position:relative; display:flex; gap:var(--q-s2); align-items:flex-start; padding:0 0 18px 24px; }
+.q-act-item:last-child { padding-bottom:0; }
+/* El punto y la linea se dibujan sobre el propio item: asi la linea nace
+   del punto y no de un hueco de flex. */
+/* Punto de color segun el hecho: creado, enviado, visto por el cliente,
+   guardado. El color lo decide el evento, no el orden en la lista. */
+.q-act-item::before {
+  content:''; position:absolute; left:4px; top:4px; width:9px; height:9px;
+  border-radius:50%; background:#C7D2FE; z-index:1; box-shadow:0 0 0 3px var(--q-card);
+}
+.q-act-item:not(:last-child)::after {
+  content:''; position:absolute; left:8px; top:16px; bottom:-2px; width:1px; background:var(--q-bd);
+}
+.q-act-cliente::before   { background:#2563EB; }
+.q-act-exito::before     { background:var(--q-ok); }
+.q-act-convertida::before{ background:var(--q-conv); }
+.q-act-punto { display:none; }
+.q-act-item:first-child .q-act-punto { background:#4f46e5; }
+.q-act-cuerpo { flex:1; min-width:0; }
+.q-act-titulo { font-size:12.5px; font-weight:600; color:var(--q-tx); margin:0; line-height:1.35; }
+.q-act-detalle { font-size:11.5px; color:var(--q-tx2); margin:var(--q-s1) 0 0; line-height:1.4; }
+.q-act-quien { color:var(--q-tx3); }
+.q-act-hora { font-size:11px; color:var(--q-tx3); white-space:nowrap; flex-shrink:0; margin-top:1px; }
+.q-act-mas { width:100%; margin-top:var(--q-s3); border:none; border-top:1px solid var(--q-bd-soft); background:none; padding:var(--q-s3) 0 0; font-size:12.5px; font-weight:600; color:var(--q-pri); cursor:pointer; }
+.q-menu-titulo { font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--q-tx3); margin:var(--q-s2) 10px 3px; }
+.q-menu-titulo:first-child { margin-top:2px; }
+.q-notas { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.q-lectura-item p.q-notas, .q-lectura-item p[x-ref='notas'] { font-size:var(--q-t-sm); line-height:1.45; font-weight:500; }
+.q-vermas { border:none; background:none; padding:4px 0 0; font-size:12.5px; font-weight:600; color:#4f46e5; cursor:pointer; }
+
 .q-actions { display:flex; flex-direction:column; gap:var(--tactil-gap, 8px); }
 .q-btn { border:none; border-radius:8px; padding:9px 14px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:7px; justify-content:center; transition:opacity .15s,background .15s; width:100%; }
 .q-btn:disabled { opacity:.5; cursor:not-allowed; }
@@ -117,21 +366,53 @@
 .q-btn-danger   { background:#fff; color:#b91c1c; border:1px solid #fee2e2; }
 .q-btn-danger:hover { background:#fee2e2; }
 
-/* ── Estado timeline ── */
-.q-status-bar { display:flex; gap:4px; align-items:center; }
-.q-status-step { flex:1; text-align:center; font-size:10px; font-weight:600; padding:4px 2px; border-radius:6px; cursor:pointer; border:1.5px solid transparent; transition:all .15s; }
-.q-status-step.done   { background:#dcfce7; color:#15803d; border-color:#bbf7d0; }
-.q-status-step.active { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
-/* Rechazada como estado ACTUAL: negativo inequivoco, nunca verde ni azul. */
-.q-status-step.rechazada { background:var(--peligro-suave, #fee2e2); color:var(--peligro-fuerte, #b91c1c); border-color:#fecaca; font-weight:800; }
-.q-status-step.idle   { background:#f3f4f6; color:var(--texto-debil, #5b6270); }
 
-/* ── Portal minimalista ── */
-.q-portal { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.q-portal-label { font-size:11px; font-weight:700; color:#166534; flex:1; min-width:80px; }
-.q-portal-btns { display:flex; gap:4px; }
-.q-portal-btn { border:1px solid #bbf7d0; background:#fff; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:600; color:#374151; cursor:pointer; display:flex; align-items:center; gap:3px; }
-.q-portal-btn:hover { background:#dcfce7; }
+/* ── Edicion en el sitio ──────────────────────────────────────────────
+   El campo se lee como texto y se escribe donde esta. El borde aparece al
+   apuntarlo o al enfocarlo: asi la tarjeta no parece un formulario pero
+   tampoco esconde que se puede editar. */
+.q-inline input, .q-inline select, .q-inline textarea {
+  width:100%; border:1px solid transparent; border-radius:var(--q-r-sm);
+  background:transparent; padding:5px 8px; margin:-5px -8px;
+  font:inherit; font-size:var(--q-t-base); font-weight:600; color:var(--q-tx);
+  transition:var(--q-trans); appearance:none;
+}
+.q-inline textarea { font-weight:500; font-size:var(--q-t-sm); line-height:1.45; resize:none; overflow:hidden; }
+.q-inline input:hover:not([readonly]), .q-inline select:hover:not(:disabled), .q-inline textarea:hover:not([readonly]) {
+  border-color:var(--q-bd); background:#FBFCFE;
+}
+.q-inline input:focus, .q-inline select:focus, .q-inline textarea:focus {
+  outline:none; border-color:var(--q-pri); background:var(--q-card);
+  box-shadow:0 0 0 3px rgba(79,70,229,.10);
+}
+.q-inline input::placeholder, .q-inline textarea::placeholder { color:var(--q-tx3); font-weight:400; }
+/* Documento cerrado: ni borde, ni cursor de texto, ni sombra de campo. */
+.q-inline-off input, .q-inline-off select, .q-inline-off textarea { cursor:default; }
+.q-inline-off input:hover, .q-inline-off select:hover, .q-inline-off textarea:hover { border-color:transparent; background:transparent; }
+.q-inline-nota { font-size:var(--q-t-xs); font-weight:600; color:var(--q-tx3); }
+
+/* Celdas de la grilla de productos */
+.q-cel { width:100%; border:1px solid transparent; border-radius:var(--q-r-sm); background:transparent; padding:6px 8px; font:inherit; transition:var(--q-trans); }
+.q-cel-desc { font-size:13.5px; font-weight:600; color:var(--q-tx); }
+.q-cel-num  { font-size:var(--q-t-sm); color:var(--q-tx2); text-align:right; font-variant-numeric:tabular-nums; -moz-appearance:textfield; }
+.q-cel-num::-webkit-outer-spin-button, .q-cel-num::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.q-table td.c .q-cel-num { text-align:center; }
+.q-grid:not(.q-inline-off) .q-cel:hover:not([readonly]) { border-color:var(--q-bd); background:#FBFCFE; }
+.q-cel:focus { outline:none; border-color:var(--q-pri); background:var(--q-card); box-shadow:0 0 0 3px rgba(79,70,229,.10); }
+.q-cel::placeholder { color:var(--q-tx3); font-weight:400; }
+/* La fila en blanco del final: presente pero sin peso hasta que se escribe. */
+.q-fila-nueva td { color:var(--q-tx3); }
+.q-fila-nueva .q-prod-img { opacity:.45; }
+
+/* Sugerencias del catalogo bajo la celda */
+.q-sugerencias { position:absolute; z-index:60; top:calc(100% + 4px); left:0; min-width:280px; max-width:420px; background:var(--q-card); border:1px solid var(--q-bd); border-radius:10px; box-shadow:0 10px 30px rgba(15,23,42,.10); padding:4px; max-height:230px; overflow-y:auto; }
+.q-sugerencia { display:flex; align-items:center; justify-content:space-between; gap:var(--q-s3); width:100%; padding:8px 10px; border:none; background:none; border-radius:7px; font-size:var(--q-t-sm); color:var(--q-tx); text-align:left; cursor:pointer; }
+.q-sugerencia:hover { background:var(--q-pri-soft); }
+.q-sug-precio { color:var(--q-pri); font-weight:700; flex-shrink:0; font-variant-numeric:tabular-nums; }
+.q-prod-txt { position:relative; }
+
+.q-btn-peligro { background:var(--q-dan) !important; }
+.q-btn-peligro:hover:not(:disabled) { background:#B91C1C !important; }
 
 /* ── Empty state ── */
 .q-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#d1d5db; }
@@ -141,12 +422,36 @@
       celular no se podía guardar, cobrar ni exportar una cotización. ── */
 @media(max-width:1023px){
   .q-wrap { height:auto; min-height:calc(100vh - 56px); flex-direction:column; overflow:visible; }
+  /* En tablet y movil la lista es la pantalla anterior, no una columna: el
+     plegado no tiene sentido y el rail estorbaria. */
   .q-sidebar { width:100%; border-right:none; }
+  .q-colapsar, .q-rail { display:none; }
+  .q-main-head { padding:16px 16px 12px; }
+  .q-head-sub { padding:0 16px 14px; }
+  .q-main-body { padding:16px 16px 24px; }
+  .q-main-title { font-size:26px; }
+  .q-guardado { margin-left:0; }
+  .q-catalog-pop { right:auto; left:0; width:min(340px, 88vw); }
   .q-main { min-height:0; }
   .q-main-body { overflow:visible; }
   .q-main-head { flex-wrap:wrap; }
-  .q-status-bar { min-width:0 !important; width:100%; }
-  .q-panel { width:100%; border-left:none; border-top:2px solid #e5e7eb; order:3; }
+  /* Orden en movil: cabecera, acciones, RESUMEN, y luego el documento.
+     `display:contents` sube los hijos de .q-main a la columna principal, y
+     asi el panel puede colocarse entre la cabecera y el contenido sin
+     duplicar una sola linea de marcado. */
+  .q-main, .q-doc { display:contents !important; }
+  .q-main-head { order:1; }
+  .q-head-sub  { order:2; }
+  .q-volver    { order:0; }
+  /* El panel tambien se disuelve para que sus tres tarjetas se coloquen
+     por separado: Resumen arriba (es lo que se consulta) y Actividad al
+     final, detras del documento. */
+  .q-panel { display:contents !important; }
+  .q-resumen   { order:3; margin:0 16px; }
+  .q-main-body { order:4; }
+  .q-acciones-barra, .q-empty { order:5; }
+  .q-sec       { order:6; margin:0 16px; }
+  .q-actividad { order:7; margin:0 16px 24px; }
   .q-client-grid { grid-template-columns:1fr; }
 }
 
@@ -166,11 +471,16 @@
 
 /* 2. Objetivos táctiles: 44×44 reales con separación, en TODO control
       independiente (no solo en los principales). */
-.q-status-step { min-height:44px; padding:var(--esp-2, 8px) var(--esp-1, 4px); border:1.5px solid transparent; background:none; font:inherit; font-size:11px; font-weight:600; }
-.q-status-step:disabled { cursor:not-allowed; opacity:.55; }
-.q-status-bar  { gap:var(--esp-2, 8px); }
-.q-filter      { min-height:44px; padding:var(--esp-2, 8px) var(--esp-3, 12px); }
-.q-filters     { gap:var(--esp-2, 8px); }
+/* El stepper de cuatro pasos se retiro: decia UNA cosa —en que estado esta—
+   y para decirla ocupaba una franja entera. Ahora lo dice el desplegable de
+   la cabecera. Los objetivos tactiles pasan a los controles que SI existen. */
+.q-estado-select, .q-editar, .q-sec-item, .q-cta, .q-cta-wa, .q-cta-ghost { min-height:36px; }
+@media (pointer:coarse) {
+  .q-estado-select, .q-editar, .q-sec-item, .q-cta, .q-cta-wa, .q-cta-ghost { min-height:44px; }
+}
+/* En pantalla tactil el chip crece hasta el objetivo de 44 px; con raton
+   se queda en los 32 px del contrato visual. */
+@media (pointer:coarse) { .q-filter { min-height:44px; } }
 .q-item        { min-height:56px; }
 
 /* 3. Foco visible SIEMPRE (no solo con teclado en navegadores viejos). */
@@ -215,7 +525,7 @@
 /* 6. Móvil ≤640 px: cada línea deja de ser fila y pasa a FICHA.
       Cero scroll interno y sin ocultar ninguna columna: el descuento y el
       subtotal son justo lo que se revisa. */
-@media (max-width:1024px) {
+@media (max-width:1023px) {
   .q-table, .q-table tbody, .q-table tr, .q-table td { display:block; width:100%; }
   .q-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   .q-table tr { border:1px solid var(--borde, #e5e7eb); border-radius:12px; padding:10px 12px;
@@ -234,7 +544,27 @@
 
 
 /* 8. Ajustes finos medidos en el navegador, no supuestos. */
-@media (max-width:1024px) {
+/* 66. La linea de producto en estrecho: nombre, 'cant x precio' y el
+   subtotal destacado. Cinco filas etiqueta/valor gastaban 300 px por
+   producto para decir lo mismo. */
+@media (max-width:1023px) {
+  .q-tabla-lectura tr { padding:12px 14px; }
+  .q-tabla-lectura td { height:auto; padding:2px 0; border-bottom:none; }
+  .q-tabla-lectura .q-table td[data-label="Producto"] { display:block !important; padding-bottom:6px; }
+  .q-tabla-lectura td[data-label="Producto"]::before { display:none; }
+  .q-tabla-lectura .q-table td[data-label="Cant."],
+  .q-tabla-lectura .q-table td[data-label="Precio"],
+  .q-tabla-lectura .q-table td[data-label="Desc."] { display:inline-flex !important; width:auto !important; gap:6px; padding:0 14px 0 0; justify-content:flex-start; }
+  .q-tabla-lectura td[data-label="Cant."]::before,
+  .q-tabla-lectura td[data-label="Precio"]::before,
+  .q-tabla-lectura td[data-label="Desc."]::before { font-size:11px; font-weight:500; color:var(--q-tx3); text-transform:none; }
+  .q-tabla-lectura .q-table td[data-label="Subtotal"] { margin-top:8px; padding-top:8px; border-top:1px solid var(--q-bd-soft); }
+  .q-tabla-lectura .q-td-acciones { position:absolute; top:10px; right:10px; width:auto; }
+  .q-tabla-lectura tr { position:relative; }
+  .q-tabla-pie { padding:10px 2px 0; }
+}
+
+@media (max-width:1023px) {
   .q-table td { flex-wrap:wrap; }
   .q-table td::before { flex:1 1 auto; min-width:0; }
   .q-table td .q-td-input { flex:0 0 auto; max-width:100%; width:auto; min-width:0; }
@@ -255,7 +585,7 @@
 /* Botones de icono: area tactil completa aunque el glifo sea pequeño. */
 .q-wrap button:has(> svg:only-child), .q-icon-btn { min-width:44px; min-height:44px; }
 /* Separacion minima entre controles contiguos. */
-.q-section-head, .q-summary-actions, .q-portal-actions, .q-acciones-barra { gap:var(--tactil-gap, 8px); }
+.q-section-head, .q-acciones-barra { gap:var(--tactil-gap, 8px); }
 
 /* 10. Controles de icono: el glifo es pequeño, el area tactil no.
        Medido: el boton de eliminar linea daba 20x44. */
@@ -286,16 +616,34 @@
   .q-sidebar.hidden, .q-main.hidden { display:none; }
 }
 
-/* 14. Los cuatro estados SIN recorte en estrecho (hallazgo: 'Rechazada'
-       cortada a 320 por el min-width:300px inline compitiendo con el rail).
-       Rejilla 2x2 con objetivos de 44 px y separacion de 8 px. */
+/* 14. Estrecho: la cabecera no puede empujar el titulo fuera de pantalla.
+       Las acciones bajan a su propia linea y el estado se queda arriba, que
+       es el dato que se consulta de un vistazo. */
 @media (max-width:640px) {
-  .q-status-bar { min-width:0 !important; width:100%;
-    display:grid; grid-template-columns:1fr 1fr; gap:var(--tactil-gap, 8px); }
-  .q-status-step { width:100%; }
+  .q-head-acciones { width:100%; justify-content:flex-start; flex-wrap:wrap; }
+  .q-head-sub { gap:10px; }
+  .q-cta, .q-cta-wa { flex:1; justify-content:center; }
+  .q-lectura { grid-template-columns:1fr; }
 }
-@media (min-width:641px) and (max-width:1023px) {
-  .q-status-bar { min-width:0 !important; flex-wrap:wrap; }
+
+/* 15. Portatil de 1366 y 1440: el documento manda. El panel derecho cede
+       ancho antes que la zona central, y la lista se estrecha un poco. */
+@media (min-width:1200px) and (max-width:1599px) {
+  .q-wrap { --q-lista:246px; --q-panel:248px; }
+}
+/* 1024-1199: no caben las tres columnas sin ahogar el documento, asi que la
+   lista arranca plegada y queda a un clic en el rail. */
+@media (min-width:1024px) and (max-width:1199px) {
+  .q-wrap { --q-lista:240px; --q-panel:240px; }
+  .q-main-title { font-size:26px; }
+}
+@media (min-width:1024px) and (max-width:1439px) {
+  .q-item-total { font-size:12.5px; }
+  .q-item-name  { font-size:13px; }
+  .q-filter { padding:4px 9px; font-size:11px; }
+  .q-panel   { width:268px; }
+  .q-main-title { font-size:28px; }
+  .q-resumen-total strong { font-size:25px; }
 }
 
 /* 7. Sin animación para quien la ha desactivado en su sistema. */
@@ -304,9 +652,15 @@
 }
 </style>
 
-<div class="q-wrap" x-init="montarHistorial()" x-data="{
+<div class="q-wrap" x-init="montarHistorial(); setInterval(() => ahora = Date.now(), 30000)" x-data="{
     quotes: {{ Js::from($quotes->map(fn($q) => [
         'id'               => $q->id,
+        // Numero de documento del negocio (COT-00001). El accesor cae al id
+        // solo para las filas anteriores a la numeracion.
+        'numero'           => $q->etiqueta,
+        // Autor del documento. Sin sesion (portal publico) no hay autor: la
+        // pidio el cliente.
+        'autor'            => $q->autor?->name,
         'client_name'      => $q->client_name,
         'client_phone'     => $q->client_phone ?? '',
         'client_email'     => $q->client_email ?? '',
@@ -338,6 +692,9 @@
         'payment_method'   => $q->payment_method ?? '',
         'payment_condition'=> $q->payment_condition ?? '',
         'created_at'       => $q->created_at->format('d/m/Y'),
+        // Fecha corta para la lista ('13 ago'): junto al codigo del
+        // documento, la fecha completa no cabe sin partir la linea.
+        'fecha_corta'      => $q->created_at->locale('es')->isoFormat('D MMM'),
         'token'            => $q->token ?? '',
         // Relacion 1:0..1 con el pedido (FK poblada en F1b). Es la primera
         // vez que la trazabilidad puede verse en pantalla.
@@ -354,7 +711,19 @@
         ])->toArray(),
     ])) }},
 
-    products: {{ Js::from($products->map(fn($p) => ['id'=>$p->id,'name'=>$p->name,'price'=>\App\Support\LineMath::canon((string) $p->price),'sku'=>$p->sku??''])) }},
+    products: {{ Js::from($products->map(fn($p) => [
+        'id'    => $p->id,
+        'name'  => $p->name,
+        'price' => \App\Support\LineMath::canon((string) $p->price),
+        'sku'   => $p->sku ?? '',
+        // Imagen principal del catalogo y una linea secundaria con lo que el
+        // producto ya tiene guardado (categoria o SKU). Nada inventado.
+        'img'   => optional($p->images->firstWhere('is_main', 1) ?: $p->images->first())->url,
+        // Linea secundaria: lo primero que el producto tenga guardado.
+        'sub'   => $p->category->name
+                   ?? (filled($p->description) ? \Illuminate\Support\Str::limit(strip_tags($p->description), 60) : null)
+                   ?? ($p->sku ? 'SKU: '.$p->sku : ''),
+    ])) }},
     paymentMethods:    {{ Illuminate\Support\Js::from($paymentMethods) }},
     paymentConditions: {{ Illuminate\Support\Js::from($paymentConditions) }},
 
@@ -368,6 +737,46 @@
     panel: 'list',
     selected: null, creating: false,
     saving: false, sending: false,
+    // Guardado discreto: la cabecera dice 'Guardado hace un momento' en vez
+    // de tener un boton Guardar del mismo tamano que 'Enviar cotizacion'.
+    // (Comillas SIMPLES: esto viaja dentro del atributo HTML x-data, y una
+    //  comilla doble aqui lo cierra y vuelca todo el componente a pantalla.)
+    guardadoEn: null, ahora: Date.now(),
+    actividad: [], actividadCargando: false, actividadTodo: false,
+    /* Cliente y Condiciones se CONSULTAN por defecto y se editan a peticion.
+       Al crear no hay nada que leer, asi que nacen abiertos. */
+    /* Estado de la grilla: en que linea esta el cursor y que sugiere el
+       catalogo para lo que se esta escribiendo. */
+    lineaFoco: null, sugerencias: [], guardandoCampo: false, temporizadorGuardado: null,
+
+    /* Dialogo de confirmacion unico. Dice QUE va a pasar y con que documento,
+       que es lo que un confirm() del navegador no puede contar. */
+    confirmar: { abierto:false, titulo:'', descripcion:'', boton:'', tono:'peligro', ocupado:false, accion:null },
+    pedirConfirmacion(opciones) {
+        this.confirmar = Object.assign(
+            { abierto:true, titulo:'', descripcion:'', boton:'Confirmar', tono:'peligro', ocupado:false, accion:null },
+            opciones
+        );
+    },
+    async ejecutarConfirmacion() {
+        if (this.confirmar.ocupado) return;
+        const accion = this.confirmar.accion;
+        this.confirmar.ocupado = true;
+        try { if (accion) await accion(); }
+        finally { this.confirmar.ocupado = false; this.confirmar.abierto = false; }
+    },
+    notasAbiertas: false, notasRecortadas: false, detalleTotales: false,
+    filtrosAbiertos: false,
+    /* Si la nota cabe entera, 'Ver mas' no pinta nada. Se mide el recorte
+       real en vez de contar caracteres, que depende del ancho de la caja. */
+    medirNotas() {
+        const el = this.$refs.notas;
+        this.notasRecortadas = !!el && !this.notasAbiertas && el.scrollHeight > el.clientHeight + 1;
+    },
+    /* Plegado de la lista. Se recuerda entre visitas: quien trabaja una
+       cotizacion larga la pliega una vez, no en cada carga. */
+    listaAbierta: window.innerWidth >= 1200 && localStorage.getItem('cot_lista') !== '0',
+    setLista(v) { this.listaAbierta = v; localStorage.setItem('cot_lista', v ? '1' : '0'); },
     convirtiendo: false, modalConvertir: false, convertidoOrderId: null,
     catalogSearch: '', catalogOpen: false,
     portalUrl: '',
@@ -385,31 +794,18 @@
     get filtered() {
         return this.quotes.filter(q => {
             const s = !this.search || q.client_name.toLowerCase().includes(this.search.toLowerCase()) || (q.client_phone||'').includes(this.search);
-            const f = this.filterStatus === 'por_cobrar'
-                ? (q.status === 'accepted' && (q.payment_status||'pending') !== 'paid')
-                : (!this.filterStatus || q.status === this.filterStatus);
+            const f = !this.filterStatus || q.status === this.filterStatus;
             return s && f;
         });
     },
 
-    get porCobrarCount() {
-        return this.quotes.filter(q => q.status === 'accepted' && (q.payment_status||'pending') !== 'paid').length;
-    },
+    /* Aqui vivian los tres calculos de cobro de la cotizacion. Sumaban en el
+       navegador lo que el cliente supuestamente debia: una sexta aritmetica
+       de dinero paralela, y sobre un documento que no se cobra. El dinero de
+       verdad lo lleva Cobranza sobre los pedidos.
+       (Ojo: este objeto viaja dentro de un atributo HTML x-data, asi que aqui
+       NO pueden aparecer comillas dobles ni siquiera en un comentario.) */
 
-    /* KPIs en CENTAVOS BigInt: sumar decenas de importes en float acumula
-       error justo en el numero que el vendedor usa para cobrar. */
-    get porCobrarCents() {
-        return this.quotes
-            .filter(q => q.status === 'accepted' && (q.payment_status||'pending') !== 'paid')
-            .reduce((c,q) => c + this.lmCentsDe(q.total) - (q.payment_status==='partial' ? this.lmCentsDe(q.paid_amount) : 0n), 0n);
-    },
-    get porCobrarTotal() { return this.porCobrarCents; },
-
-    get cobradoMesTotal() {
-        const now = new Date(); const y = now.getFullYear(), m = now.getMonth();
-        return this.quotes.filter(q => q.payment_status === 'paid' && q.updated_at && (d => d.getFullYear()===y && d.getMonth()===m)(new Date(q.updated_at)))
-            .reduce((c,q) => c + this.lmCentsDe(q.total), 0n);
-    },
 
     // Un cambio del cliente (rechazo o comprobante subido) que el vendedor
     // todavia no vio en el panel — no cuenta la simple aceptacion porque esa
@@ -422,14 +818,6 @@
     },
 
     get unseenCount() { return this.quotes.filter(q => this.isUnseen(q)).length; },
-
-    clientHistory(q) {
-        if (!q) return [];
-        return this.quotes.filter(o => o.id !== q.id && (
-            (q.client_id && o.client_id === q.client_id) ||
-            (q.client_phone && o.client_phone === q.client_phone)
-        )).slice(0, 5);
-    },
 
     duplicating: false,
     async duplicateQuote() {
@@ -456,7 +844,16 @@
     clearBulk() { this.bulkIds = []; },
     async bulkDelete() {
         if (!this.bulkIds.length || this.bulkRunning) return;
-        if (!confirm('¿Eliminar ' + this.bulkIds.length + ' cotización(es)? Esta acción no se puede deshacer.')) return;
+        const ids = [...this.bulkIds];
+        this.pedirConfirmacion({
+            titulo: 'Eliminar ' + ids.length + (ids.length === 1 ? ' cotización' : ' cotizaciones'),
+            descripcion: 'Se eliminarán los documentos seleccionados y sus líneas. Esta acción no se puede deshacer.',
+            boton: 'Eliminar ' + ids.length,
+            accion: () => this.bulkDeleteConfirmado(ids),
+        });
+    },
+
+    async bulkDeleteConfirmado(ids) {
         this.bulkRunning = true;
         for (const id of [...this.bulkIds]) {
             await fetch('{{ $quotesApiBase }}/'+id, {method:'DELETE',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}});
@@ -465,16 +862,6 @@
         if (this.selected && this.bulkIds.includes(this.selected.id)) { this.selected = null; this.creating = false; }
         this.bulkRunning = false;
         this.clearBulk();
-    },
-
-    sendPaymentReminder() {
-        if (!this.selected) return;
-        const clientWa = (this.selected.client_phone || '').replace(/\D/g, '');
-        if (!clientWa) { alert('Esta cotización no tiene un teléfono de cliente registrado'); return; }
-        const faltaCents = this.subtotalCents - (this.selected.payment_status==='partial' ? this.lmCentsDe(this.selected.paid_amount) : 0n);
-        const falta = faltaCents;
-        const msg = 'Hola ' + (this.selected.client_name||'') + ', te recordamos que tienes un saldo pendiente de ' + this.fmt(falta) + ' por la cotización #' + this.selected.id + '. ¡Gracias!';
-        window.open('https://wa.me/'+clientWa+'?text='+encodeURIComponent(msg),'_blank');
     },
 
     get filteredCatalog() {
@@ -525,6 +912,98 @@
        subtotalCents / grandTotalCents. */
     get subtotal() { return Number(this.subtotalCents) / 100; },
     get grandTotalCents() { return this.subtotalCents; },
+    /* Bruto = suma de precio x cantidad SIN descuento; descuento = lo que se
+       resta. `quotes` no guarda ni subtotal ni impuesto: el descuento vive por
+       linea, asi que el resumen lo agrega aqui en centavos enteros. */
+    get brutoCents() {
+        let c = 0n;
+        for (const i of this.form.items) {
+            if (!i.description) continue;
+            c += this.lmCentsDe(i.price) * BigInt(parseInt(i.quantity) || 0);
+        }
+        return c;
+    },
+    /* Un documento se edita mientras siga vivo. Convertido ya engendro un
+       pedido: reescribirlo haria mentir a esa trazabilidad, y el servidor lo
+       rechaza con 422 —asi que aqui tampoco se ofrece. */
+    get editable() { return this.puede.editar && !this.esConvertida; },
+
+    /* La ultima fila siempre esta vacia: es donde se escribe la siguiente
+       linea. Sin esto habria que pulsar 'agregar' antes de cada producto. */
+    asegurarFilaVacia() {
+        const ultima = this.form.items[this.form.items.length - 1];
+        if (!ultima || String(ultima.description || '').trim() !== '') {
+            this.form.items.push({description:'', price:'', quantity:1, discount:0});
+        }
+    },
+
+    alEscribirLinea(i, valor) {
+        this.lineaFoco = i;
+        const q = String(valor || '').trim().toLowerCase();
+        this.sugerencias = q.length < 2 ? [] : this.products
+            .filter(pr => pr.name.toLowerCase().includes(q) || (pr.sku || '').toLowerCase().includes(q))
+            .slice(0, 6);
+        this.asegurarFilaVacia();
+    },
+
+    cerrarSugerencias() { setTimeout(() => { this.sugerencias = []; this.lineaFoco = null; }, 120); },
+
+    /* Elegir del catalogo trae nombre y precio; la cantidad se respeta si ya
+       se habia escrito. */
+    usarProducto(i, pr) {
+        this.form.items[i].description = pr.name;
+        this.form.items[i].price = pr.price;
+        if (!this.form.items[i].quantity) this.form.items[i].quantity = 1;
+        this.sugerencias = []; this.lineaFoco = null;
+        this.asegurarFilaVacia();
+        this.guardarCampo();
+        this.$nextTick(() => this.$refs['qty' + i]?.focus());
+    },
+
+    quitarLinea(i) {
+        const linea = this.form.items[i];
+        const quitar = () => {
+            this.form.items.splice(i, 1);
+            this.asegurarFilaVacia();
+            this.guardarCampo();
+        };
+        // Una linea en blanco se va sin preguntar; una con importe, no.
+        if (!linea || !String(linea.description || '').trim()) return quitar();
+        this.pedirConfirmacion({
+            titulo: 'Quitar esta línea',
+            descripcion: '«' + linea.description + '» por ' + this.lmMoneda(this.lineTotal(linea))
+                + ' saldrá de la cotización y el total se recalculará.',
+            boton: 'Quitar línea',
+            accion: quitar,
+        });
+    },
+
+    /* Guardado al salir del campo, agrupando los cambios seguidos: escribir
+       nombre y telefono no son dos guardados. Sin boton 'Guardar': la
+       cabecera dice cuando fue el ultimo. */
+    guardarCampo() {
+        if (!this.editable || this.creating || !this.selected) return;
+        clearTimeout(this.temporizadorGuardado);
+        this.temporizadorGuardado = setTimeout(() => this.save(), 600);
+    },
+
+    /* La caja de notas crece con su contenido en vez de dejar un scroll de
+       dos lineas. */
+    autoAlto(el) {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 260) + 'px';
+    },
+
+    get actividadVisible() { return this.actividadTodo ? this.actividad : this.actividad.slice(0, 4); },
+    get descuentoCents() {
+        const d = this.brutoCents - this.subtotalCents;
+        return d > 0n ? d : 0n;
+    },
+    /* El PDF del documento, el mismo que se manda al cliente. */
+    get pdfUrl() {
+        return this.selected && !this.creating ? '{{ $quotesApiBase }}/' + this.selected.id + '/pdf' : '';
+    },
     get igv()      { return this.subtotal * 0; },
     get grandTotal(){ return this.subtotal + this.igv; },
 
@@ -558,18 +1037,12 @@
 
     statusLabel: { draft:'Borrador', sent:'Enviada', accepted:'Aceptada', rejected:'Rechazada', converted:'Convertida' },
 
-    /* Clase visual de cada paso del estado. Semantica EXPLICITA (F1c):
-       'rejected' esta FUERA de la secuencia draft->sent->accepted, asi que
-       jamas puede salir 'done'. El bug: indexOf('rejected') sobre el flujo
-       positivo da -1, y 0 > -1 marcaba Rechazada como completada estando la
-       cotizacion en Borrador — un estado de negocio falso en pantalla. */
-    claseEstado(clave) {
-        const flujo = ['draft', 'sent', 'accepted'];
-        if (this.form.status === clave) return clave === 'rejected' ? 'rechazada' : 'active';
-        if (clave === 'rejected') return 'idle';
-        const actual = flujo.indexOf(this.form.status), paso = flujo.indexOf(clave);
-        return (actual > -1 && paso > -1 && actual > paso) ? 'done' : 'idle';
-    },
+    /* Aqui vivia claseEstado(), que daba color a cada paso del stepper
+       comparando posiciones dentro del flujo draft->sent->accepted. Como
+       'rejected' esta FUERA de esa secuencia, la comparacion la marcaba como
+       completada —Rechazada en verde estando la cotizacion en Borrador—.
+       Con el estado como desplegable, el color lo da una clase por estado y
+       esa comparacion ya no existe. */
 
     /* Una convertida es documento historico: ni se edita ni cambia de estado. */
     get esConvertida() { return this.form.status === 'converted'; },
@@ -629,7 +1102,14 @@
        seleccion. Antes, /cotizaciones/{id} devolvia JSON crudo al navegador. */
     sincronizarUrl(id) {
         const url = id ? this.urlDetalle(id) : '{{ $quotesApiBase }}';
-        if (window.location.pathname !== url) history.pushState({ cotizacion: id || null }, '', url);
+        if (window.location.pathname === url) return;
+        /* pushState puede lanzar (origen distinto, historial lleno). Si lo
+           hacia a mitad de select(), la cotizacion se abria A MEDIAS: el
+           titulo cambiaba y el formulario se quedaba con los datos de la
+           anterior. La URL bonita es comodidad; abrir el documento es la
+           funcion. Visto en la validacion visual. */
+        try { history.pushState({ cotizacion: id || null }, '', url); }
+        catch (e) { /* sin URL bonita, pero el documento se abre igual */ }
     },
     montarHistorial() {
         window.addEventListener('popstate', (e) => {
@@ -678,6 +1158,10 @@
         };
         this.portalUrl = q.token ? '{{ url('/b/'.$project->slug.'/c/') }}/' + q.token : '';
         this.creating = false;
+        this.guardadoEn = null;
+        this.asegurarFilaVacia();
+        this.cargarActividad(q.id);
+        this.$nextTick(() => this.autoAlto(this.$refs.notas));
         if(window.innerWidth < 1024) { this.panel = 'detail'; window.scrollTo({top:0}); }
         if (this.isUnseen(q)) {
             q.seen_at = new Date().toISOString();
@@ -687,8 +1171,17 @@
 
     openNew() {
         this.selected = null; this.creating = true; this.portalUrl = '';
+        this.actividad = []; this.guardadoEn = null;
         this.form = { client_name:'', client_phone:'', client_email:'', client_doc_type:'', client_doc_number:'', client_address:'', notes:'', valid_until:'', status:'draft', payment_status:'pending', paid_amount:'', payment_method:'', payment_condition:'', items:[{description:'',price:'',quantity:1,discount:0}] };
         if(window.innerWidth < 1024) { this.panel = 'detail'; window.scrollTo({top:0}); }
+    },
+
+    /* El catalogo se abre a peticion y con el foco puesto en el buscador:
+       antes ocupaba una franja permanente aunque no se agregara nada. */
+    abrirCatalogo() {
+        if (!this.products.length) { this.addItem(); return; }
+        this.catalogOpen = true; this.catalogSearch = '';
+        this.$nextTick(() => this.$refs.catalogo?.focus());
     },
 
     addItem()     { this.form.items.push({description:'',price:'',quantity:1,discount:0}); this.$nextTick(()=>{ const inputs=document.querySelectorAll('.q-td-input.desc'); if(inputs.length) inputs[inputs.length-1].focus(); }); },
@@ -700,6 +1193,57 @@
         if (existing) { existing.quantity = (parseFloat(existing.quantity)||1) + 1; }
         else { this.form.items.push({description:p.name, price:p.price, quantity:1, discount:0}); }
         this.catalogSearch = ''; this.catalogOpen = false;
+    },
+
+    /* 'Y-m-d' es lo que exige <input type=date>; en lectura se dice
+       29/08/2026, que es como se escribe una fecha aqui. */
+    /* El descuento llega como decimal canonico ('0.00', '10.00'). Se decide
+       y se presenta SOBRE EL STRING: convertirlo a Number aqui abriria una
+       ruta numerica sobre un valor que el sistema trata como exacto, y el
+       contrato de dinero de esta pantalla lo prohibe. */
+    /* Indice del catalogo por nombre, para recuperar imagen y subtitulo de
+       una linea. Se construye una vez: recorrerlo por cada celda de cada
+       fila en cada repintado seria cuadratico. */
+    get catalogoIndice() {
+        const m = {};
+        for (const p of this.products) m[(p.name || '').trim().toLowerCase()] = p;
+        return m;
+    },
+    catalogoDe(desc) {
+        return this.catalogoIndice[String(desc || '').trim().toLowerCase()] || null;
+    },
+
+    descLegible(d) {
+        const t = String(d ?? '0').trim();
+        return (t || '0.00') + '%';
+    },
+
+    fechaLarga(iso) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+        return m ? m[3] + '/' + m[2] + '/' + m[1] : (iso || '');
+    },
+
+    get guardadoHace() {
+        if (!this.guardadoEn) return '';
+        const s = Math.max(0, Math.floor((this.ahora - this.guardadoEn) / 1000));
+        if (s < 60) return 'hace un momento';
+        const m = Math.floor(s / 60);
+        if (m < 60) return m === 1 ? 'hace 1 minuto' : 'hace ' + m + ' minutos';
+        const h = Math.floor(m / 60);
+        return h === 1 ? 'hace 1 hora' : 'hace ' + h + ' horas';
+    },
+
+    /* La actividad se pide al abrir el documento: son pocos eventos y
+       cambian cuando el cliente actua, asi que no sirve cachearla. */
+    async cargarActividad(id) {
+        this.actividad = []; this.actividadTodo = false;
+        if (!id) return;
+        this.actividadCargando = true;
+        try {
+            const r = await fetch('{{ $quotesApiBase }}/' + id + '/events', {headers:{'Accept':'application/json'}});
+            if (r.ok) { this.actividad = (await r.json()).eventos || []; }
+        } catch (e) { this.actividad = []; }
+        this.actividadCargando = false;
     },
 
     async save() {
@@ -747,15 +1291,30 @@
             if (this.creating) { this.quotes.unshift(row); } else { const idx=this.quotes.findIndex(x=>x.id===q.id); if(idx>-1) this.quotes[idx]=row; }
             this.selected = row; this.creating = false;
             this.form.items = (q.items||[]).map(i=>({...i,discount:i.discount||0}));
+            // Se marca el momento del guardado; el reloj de la cabecera lo
+            // convierte en 'hace un momento' / 'hace 3 minutos'.
+            this.guardadoEn = Date.now();
+            this.asegurarFilaVacia();
+            this.cargarActividad(this.selected.id);
         }
         this.saving = false;
     },
 
-    async del() {
-        if(!confirm('¿Eliminar esta cotización?')) return;
-        await fetch('{{ $quotesApiBase }}/'+this.selected.id, {method:'DELETE',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}});
-        this.quotes = this.quotes.filter(q=>q.id!==this.selected.id);
-        this.selected = null; this.creating = false; this.panel = 'list';
+    del() {
+        if (!this.selected) return;
+        const q = this.selected;
+        this.pedirConfirmacion({
+            titulo: 'Eliminar ' + (q.numero || 'la cotización'),
+            descripcion: 'Se eliminará el documento de ' + (q.client_name || 'este cliente')
+                + ' por ' + this.fmt(q.total) + ' y sus líneas. Esta acción no se puede deshacer.',
+            boton: 'Eliminar cotización',
+            accion: async () => {
+                const r = await fetch('{{ $quotesApiBase }}/'+q.id, {method:'DELETE',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}});
+                if (!r.ok) { this.error = 'No se pudo eliminar la cotización.'; return; }
+                this.quotes = this.quotes.filter(x => x.id !== q.id);
+                this.selected = null; this.creating = false; this.panel = 'list';
+            },
+        });
     },
 
     async setStatus(s) {
@@ -763,29 +1322,26 @@
         if (!this.creating && this.selected) await this.save();
     },
 
-    async setPaymentStatus(s) {
-        if (this.creating || !this.selected || this.payingStatus) return;
-        this.form.payment_status = s;
-        this.payingStatus = true;
-        const res = await fetch('{{ $quotesApiBase }}/'+this.selected.id, {
-            method: 'PUT',
-            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'},
-            body: JSON.stringify({ status: this.form.status, payment_status: s, paid_amount: s === 'partial' ? this.lmFmt(this.lmCentsDe(this.form.paid_amount)) : null }),
+    /* Aqui vivia el marcado de cobro: pasaba una COTIZACION a pagada, parcial
+       o pendiente. No se cobra un presupuesto — se convierte en pedido y se
+       cobra el pedido. */
+
+    sendToClient() {
+        if (!this.selected) return;
+        // Un primer envio no necesita confirmacion; un REenvio si: el cliente
+        // ya recibio ese enlace y va a volver a recibirlo.
+        if (!this.selected.token) return this.enviarAlCliente();
+        this.pedirConfirmacion({
+            titulo: 'Reenviar al cliente',
+            descripcion: 'Se generará de nuevo el enlace de ' + (this.selected.numero || 'la cotización')
+                + ' y el documento quedará como Enviada. El cliente verá la versión actual.',
+            boton: 'Reenviar',
+            tono: 'principal',
+            accion: () => this.enviarAlCliente(),
         });
-        this.payingStatus = false;
-        if (!res.ok) return;
-        const data = await res.json();
-        const q = data.quote;
-        if (q) {
-            this.selected.payment_status = q.payment_status;
-            this.selected.paid_amount = q.paid_amount;
-            const idx = this.quotes.findIndex(x=>x.id===q.id);
-            if (idx>-1) { this.quotes[idx].payment_status = q.payment_status; this.quotes[idx].paid_amount = q.paid_amount; }
-        }
     },
 
-    async sendToClient() {
-        if (!this.selected) return;
+    async enviarAlCliente() {
         this.sending = true;
         const res = await fetch('{{ $quotesApiBase }}/'+this.selected.id+'/send', {method:'POST',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}});
         const data = await res.json();
@@ -815,30 +1371,39 @@
 }">
 
 {{-- ══ SIDEBAR LISTA ══ --}}
-<div class="q-sidebar" :class="panel==='detail' ? 'hidden md:flex' : 'flex'">
+<div class="q-sidebar" :class="[panel==='detail' ? 'hidden md:flex' : 'flex', listaAbierta ? '' : 'q-lista-plegada']">
+    <div class="q-sidebar-titulo">
+        <h2>Cotizaciones</h2>
+        <button @click="openNew()" class="q-btn-new" x-show="puede.crear" title="Nueva cotización" aria-label="Nueva cotización">+</button>
+    </div>
     <div class="q-sidebar-head">
-        <input type="text" x-model="search" placeholder="Buscar cliente..." class="q-search">
-        <button @click="openNew()" class="q-btn-new">+ Nueva</button>
+        <input type="text" x-model="search" placeholder="Buscar cotización..." class="q-search">
+        {{-- Atajo a los filtros: la referencia lo pone junto al buscador. --}}
+        <button type="button" class="q-filtros-btn" @click="filtrosAbiertos = !filtrosAbiertos"
+                :aria-expanded="filtrosAbiertos ? 'true' : 'false'" aria-label="Filtros" title="Filtros">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M3 6h18M9 18h6"/></svg>
+        </button>
     </div>
-    <div x-show="porCobrarTotal>0 || cobradoMesTotal>0" style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid #f3f4f6">
-        <div style="flex:1;background:#fef3c7;border-radius:8px;padding:6px 10px">
-            <div style="font-size:9.5px;font-weight:700;color:#b45309;text-transform:uppercase">Por cobrar</div>
-            <div style="font-size:13px;font-weight:800;color:#92400e" x-text="fmt(porCobrarTotal)"></div>
-        </div>
-        <div style="flex:1;background:#dcfce7;border-radius:8px;padding:6px 10px">
-            <div style="font-size:9.5px;font-weight:700;color:#15803d;text-transform:uppercase">Cobrado este mes</div>
-            <div style="font-size:13px;font-weight:800;color:#166534" x-text="fmt(cobradoMesTotal)"></div>
-        </div>
-    </div>
+    {{-- Aqui vivian "POR COBRAR" y "COBRADO ESTE MES".
+         No se cobra una cotizacion: es un documento pre-venta, sin efecto
+         contable. La deuda nace del pedido y su comprobante, y se gestiona en
+         Cobranza. Tenerlos aqui invitaba a registrar dinero contra un
+         presupuesto — asi es como el "por cobrar" del negocio acababa
+         incluyendo plata que nadie debe. --}}
     <div class="q-filters">
         <button @click="filterStatus=''" class="q-filter" :class="filterStatus==='' ? 'active':''">Todas</button>
         <button @click="filterStatus='draft'" class="q-filter" :class="filterStatus==='draft' ? 'active':''">Borrador</button>
         <button @click="filterStatus='sent'" class="q-filter" :class="filterStatus==='sent' ? 'active':''">Enviadas</button>
         <button @click="filterStatus='accepted'" class="q-filter" :class="filterStatus==='accepted' ? 'active':''">Aceptadas</button>
-        <button @click="filterStatus='por_cobrar'" class="q-filter" :class="filterStatus==='por_cobrar' ? 'active':''" x-show="porCobrarCount>0">
-            💰 Por cobrar (<span x-text="porCobrarCount"></span>)
-        </button>
+        {{-- El filtro "por cobrar" tambien sale: filtraba cotizaciones por un
+             estado de cobro que no les corresponde. Lo que sí importa aqui es
+             cuáles están aceptadas y aún sin convertir en pedido. --}}
+        <button @click="filterStatus='converted'" class="q-filter" :class="filterStatus==='converted' ? 'active':''" x-show="filtrosAbiertos || filterStatus==='converted'" x-cloak>Convertidas</button>
     </div>
+    {{-- El recuento aparece solo cuando hay un filtro puesto: con la lista
+         completa a la vista no aporta nada. --}}
+    <div class="q-lista-cuenta" x-show="search || filterStatus" x-cloak
+         x-text="filtered.length + (filtered.length === 1 ? ' resultado' : ' resultados')"></div>
 
     {{-- Barra de selección múltiple --}}
     <div x-show="bulkActive" x-cloak style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#eef2ff;border-bottom:1px solid #e0e7ff">
@@ -873,38 +1438,50 @@
         </div>
         <template x-for="q in filtered" :key="q.id">
             <div class="q-item" :class="selected && selected.id===q.id ? 'active':''" :data-quote-id="q.id" tabindex="0" role="button" :aria-current="selected && selected.id===q.id ? 'true' : 'false'" @click="select(q)" @keydown.enter="select(q)" @keydown.space.prevent="select(q)">
-                <span @click.stop="toggleBulk(q.id)"
-                      style="width:15px;height:15px;border-radius:4px;border:1.5px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer"
-                      :style="bulkIds.includes(q.id) ? 'background:#6366f1;border-color:#6366f1' : 'background:#fff'">
+                <div class="q-item-body">
+                    {{-- El documento se identifica por su codigo; el cliente y
+                         la fecha lo acompañan. --}}
+                    <div class="q-item-fila1">
+                        <span class="q-item-num">
+                            <span x-show="isUnseen(q)" class="q-item-punto" title="Cambio nuevo del cliente"></span>
+                            <span x-text="q.numero"></span>
+                        </span>
+                        <span class="q-item-total" x-text="fmt(q.total)"></span>
+                    </div>
+                    <div class="q-item-fila2">
+                        <span class="q-item-cliente" x-text="q.client_name"></span>
+                        <span :class="'qbadge qbadge-'+q.status" x-text="(q.pill_comercial||{}).label || q.status"></span>
+                    </div>
+                    <div class="q-item-fecha" x-text="q.created_at"></div>
+                </div>
+                <span class="q-item-check" :class="(bulkActive || bulkIds.includes(q.id)) ? 'q-check-visible' : ''" @click.stop="toggleBulk(q.id)">
                     <svg x-show="bulkIds.includes(q.id)" width="9" height="9" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                 </span>
-                <div class="q-item-body">
-                    <div class="q-item-name" style="display:flex;align-items:center;gap:5px">
-                        <span x-show="isUnseen(q)" style="width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0" title="Cambio nuevo del cliente"></span>
-                        <span x-text="q.client_name"></span>
-                    </div>
-                    <div class="q-item-meta">
-                        <span x-text="q.created_at"></span>
-                        <span x-show="q.client_phone" x-text="'· '+q.client_phone"></span>
-                    </div>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-                    <span class="q-item-total" x-text="fmt(q.total)"></span>
-                    <span :class="'qbadge qbadge-'+q.status" x-text="(q.pill_comercial||{}).label || q.status"></span>
-                    <span x-show="q.vencida" class="qbadge" style="background:#fef3c7;color:#92400e" title="Su fecha de vigencia pasó">Vencida</span>
-                    <span x-show="q.status==='accepted'" :class="'pbadge pbadge-'+(q.payment_status||'pending')" x-text="{pending:'Por cobrar',partial:'Pago parcial',paid:'Pagado',refunded:'Reembolsado'}[q.payment_status||'pending']"></span>
-                </div>
             </div>
         </template>
         <div x-show="filtered.length===0" style="padding:40px 0;text-align:center;font-size:13px;color:var(--texto-debil, #5b6270)">Sin cotizaciones</div>
     </div>
+
+    {{-- Colapsar: leer una cotizacion larga no necesita ver las otras 40.
+         La preferencia se recuerda; volver a abrirla queda siempre a mano
+         en el borde izquierdo del documento. --}}
+    <button type="button" class="q-colapsar" @click="setLista(false)">
+        <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5"/></svg>
+        Colapsar lista
+    </button>
 </div>
+
+{{-- Con la lista plegada queda este rail para devolverla. --}}
+<button type="button" class="q-rail" :class="listaAbierta ? 'q-rail-oculto' : ''" @click="setLista(true)"
+        aria-label="Mostrar la lista de cotizaciones" title="Mostrar la lista">
+    <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5"/></svg>
+</button>
 
 {{-- ══ ZONA CENTRAL ══ --}}
 <div class="q-main" :class="panel==='list' ? 'hidden md:flex' : 'flex'">
 
     {{-- Back mobile --}}
-    <button @click="panel='list'" class="md:hidden" style="display:flex;align-items:center;gap:6px;padding:10px 16px;font-size:13px;color:#6b7280;border:none;background:#fff;border-bottom:1px solid #e5e7eb;width:100%;cursor:pointer">
+    <button @click="panel='list'" class="q-volver" style="display:flex;align-items:center;gap:6px;padding:10px 16px;font-size:13px;color:#6b7280;border:none;background:#fff;border-bottom:1px solid #e5e7eb;width:100%;cursor:pointer">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         Volver a la lista
     </button>
@@ -917,44 +1494,158 @@
     </div>
 
     <template x-if="selected || creating">
-    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+    {{-- Envoltorio del documento. Lleva clase porque en movil tambien tiene
+         que dejar subir a sus hijos a la columna principal (ver q-doc). --}}
+    <div class="q-doc" style="display:flex;flex-direction:column;height:100%;overflow:hidden">
 
         {{-- Header --}}
         <div class="q-main-head">
-            <div style="flex:1">
-                <div class="q-main-title" x-text="creating ? 'Nueva cotización' : 'Cotización #' + selected.id"></div>
-                <div class="q-main-sub" x-text="creating ? 'Completa los datos y agrega productos' : selected.created_at + (selected.client_name ? ' · ' + selected.client_name : '')"></div>
+            <div class="q-head-id">
+                {{-- El numero del documento, no su id interno: cada negocio
+                     numera desde COT-00001. Las filas anteriores a la
+                     numeracion caen al id para no quedarse sin nombre. --}}
+                <div class="q-main-title" x-text="creating ? 'Nueva cotización' : (selected.numero || ('COT-' + String(selected.id).padStart(5,'0')))"></div>
             </div>
-            {{-- Estado del documento.
-                 F1c: aqui habia un bug real, no solo cosmetico. Alpine itera un
-                 objeto como (valor, clave), pero el codigo trataba el primero
-                 como clave: pintaba x-text="label" (= 'draft') y llamaba a
-                 setStatus('Borrador'), un estado que el validador rechaza. Por
-                 eso se veian las claves crudas y ningun paso salia activo. --}}
-            <template x-if="!creating && esConvertida">
-                <div class="q-status-bar" style="min-width:300px">
-                    <span class="q-badge-convertida" title="Ya generó un pedido: su estado no puede cambiarse">Convertida en pedido</span>
-                </div>
-            </template>
-            <template x-if="!creating && !esConvertida">
-            <div class="q-status-bar" style="min-width:300px" role="group" aria-label="Estado de la cotización">
-                <template x-for="(etiqueta, clave) in {draft:'Borrador',sent:'Enviada',accepted:'Aceptada',rejected:'Rechazada'}" :key="clave">
-                    <button type="button"
-                         class="q-status-step"
-                         :class="claseEstado(clave)"
-                         :disabled="!puede.editar"
-                         :aria-pressed="form.status===clave ? 'true' : 'false'"
-                         @click="setStatus(clave)"
-                         x-text="etiqueta"></button>
+
+            {{-- Acciones principales: una primaria, una secundaria fuerte y el
+                 resto plegado. Antes eran seis botones apilados en la columna
+                 derecha, todos con el mismo peso: enviar al cliente —que es
+                 para lo que existe una cotizacion— pesaba igual que exportar. --}}
+            <div class="q-head-acciones">
+                <button class="q-cta" x-show="!creating && puede.editar"
+                        @click="sendToClient()" :disabled="sending || esConvertida"
+                        :title="esConvertida ? 'Ya generó el pedido PED-' + pedidoDeEstaCotizacion + ': reenviarla rompería su trazabilidad. Duplícala para negociar de nuevo.' : ''">
+                        <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/></svg>
+                    <span x-text="sending ? 'Generando...' : (selected?.token ? 'Reenviar cotización' : 'Enviar cotización')"></span>
+                </button>
+
+                <template x-if="creating">
+                    <button class="q-cta" @click="save()" :disabled="saving">
+                        <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>
+                        <span x-text="saving ? 'Guardando...' : 'Crear cotización'"></span>
+                    </button>
+                </template>
+
+                @if($project->whatsapp)
+                <button class="q-cta q-cta-wa" x-show="!creating && (selected?.token || portalUrl)" @click="sendWhatsApp()">
+                        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                    WhatsApp
+                </button>
+                @endif
+
+                {{-- 'Mas' recoge TODO lo que antes era una barra tecnica de
+                     nueve botones al pie del documento. Aqui van las acciones
+                     que no viven en el panel derecho: el enlace del cliente y
+                     los formatos alternativos de impresion. --}}
+                <template x-if="!creating">
+                    <div x-data="{mas:false}" style="position:relative">
+                        <button class="q-cta q-cta-ghost" @click="mas=!mas; if(mas) $nextTick(() => { const m=$el.parentElement.querySelector('.q-menu'); const r=$el.getBoundingClientRect(); m.classList.toggle('q-menu-arriba', window.innerHeight - r.bottom < m.offsetHeight + 16); })" @click.outside="mas=false" :aria-expanded="mas ? 'true':'false'">
+                            Más
+                            <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                        </button>
+                        {{-- Agrupado por a QUIEN sirve cada accion. Duplicar,
+                             Exportar PDF y Eliminar NO estan aqui: viven en el
+                             panel derecho y repetirlas obligaria a decidir dos
+                             veces donde pulsar. --}}
+                        <div x-show="mas" x-cloak class="q-menu">
+                            <template x-if="selected?.token || portalUrl">
+                                <div>
+                                    <p class="q-menu-titulo">Cliente</p>
+                                    <button type="button" @click="copyLink(); mas=false">Copiar enlace</button>
+                                    <a :href="portalUrl || ('{{ url('/b/'.$project->slug.'/c/') }}/'+(selected?.token||''))" target="_blank" rel="noopener" @click="mas=false">Ver portal del cliente</a>
+                                </div>
+                            </template>
+
+                            <p class="q-menu-titulo">Documento</p>
+                            <button type="button" @click="save(); mas=false" :disabled="saving || !puede.editar">
+                                <span x-text="saving ? 'Guardando...' : 'Guardar cambios'"></span>
+                            </button>
+
+                            <p class="q-menu-titulo">Descargar</p>
+                            <button type="button" onclick="exportQuoteImg()" @click="mas=false">Imagen para WhatsApp (PNG)</button>
+                            <button type="button" onclick="exportBoletaPDF()" @click="mas=false">Resumen en una hoja (PDF)</button>
+
+                            <p class="q-menu-titulo">Imprimir</p>
+                            <button type="button" onclick="printTicket()" @click="mas=false">Ticket 58 mm</button>
+                        </div>
+                    </div>
                 </template>
             </div>
-            </template>
+
+            {{-- Fila 2: de quien es el documento y en que estado esta. --}}
+            <div class="q-head-fila2">
+                <div class="q-head-meta">
+                    <template x-if="!creating && selected.client_name">
+                        <span class="q-head-chip q-chip-cliente">
+                            <svg class="q-ico-xs" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"/></svg>
+                            <span x-text="selected.client_name"></span>
+                        </span>
+                    </template>
+                    <template x-if="!creating">
+                        <span class="q-head-chip">
+                            <svg class="q-ico-xs" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>
+                            <span x-text="selected.created_at"></span>
+                        </span>
+                    </template>
+                    <template x-if="!creating && selected.autor">
+                        <span class="q-head-chip" title="Quién creó esta cotización">
+                            <svg class="q-ico-xs" viewBox="0 0 24 24" aria-hidden="true"><path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"/></svg>
+                            <span x-text="'Creada por ' + selected.autor"></span>
+                        </span>
+                    </template>
+                    <template x-if="creating">
+                        <span class="q-head-chip">Completa los datos y agrega productos</span>
+                    </template>
+                </div>
+        <div class="q-head-sub" x-show="!creating" x-cloak>
+            {{-- Convertida NO es un estado mas del desplegable: no se puede
+                 volver de ella. Se presenta con la misma forma (mismo alto,
+                 misma etiqueta 'Estado') para que la cabecera no cambie de
+                 composicion segun la cotizacion, pero deshabilitada. --}}
+            <label class="q-estado-wrap">
+                <span class="q-estado-label">Estado:</span>
+                <span class="q-estado-select q-estado-converted" x-show="esConvertida" title="Ya generó un pedido: su estado no puede cambiarse">Convertida</span>
+                <span x-show="!esConvertida" style="display:contents">
+                    {{-- :value y NO x-model. El desplegable no tiene opcion
+                         'Convertida' —no se puede volver a ella—, asi que con
+                         x-model el DOM escribia de vuelta en el modelo y una
+                         cotizacion ACEPTADA se leia como convertida al venir
+                         de ver una convertida. El flujo va en un solo
+                         sentido: el modelo pinta el select, y el cambio del
+                         usuario pasa por setStatus(), que valida. --}}
+                    <select class="q-estado-select" :class="'q-estado-'+form.status"
+                            :disabled="!puede.editar"
+                            :value="form.status"
+                            @change="setStatus($event.target.value)"
+                            aria-label="Estado de la cotización">
+                        <option value="draft">Borrador</option>
+                        <option value="sent">Enviada</option>
+                        <option value="accepted">Aceptada</option>
+                        <option value="rejected">Rechazada</option>
+                    </select>
+                </span>
+            </label>
+
+            {{-- El pedido generado, como referencia compacta. Antes ocupaba
+                 una franja entera bajo la cabecera para decir seis palabras. --}}
+            <span class="q-head-ped" x-show="pedidoDeEstaCotizacion">
+                    <span class="q-estado-label">Pedido generado:</span>
+                    <a :href="urlPedido(pedidoDeEstaCotizacion)" class="q-ped-link" x-text="'PED-' + pedidoDeEstaCotizacion"></a>
+                    <span aria-hidden="true">→</span>
+                </span>
+
+            <span class="q-guardado" x-show="guardadoEn" x-cloak>
+                <svg class="q-ico-xs" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                <span x-text="'Guardado ' + guardadoHace"></span>
+            </span>
+            </div>
+            </div>
         </div>
 
-        {{-- Conversión en pedido, relación con el PED y avisos (F1c) --}}
-        <div class="q-acciones-barra">
-            @include('quotes._acciones')
-        </div>
+        {{-- Avisos de conversion y modal de confirmacion. La relacion con el
+             PED y el boton de convertir salieron de aqui: el primero vive en
+             la cabecera y el segundo en el panel derecho. --}}
+        @include('quotes._acciones')
 
         <template x-if="form.status==='rejected' && selected?.reject_reason">
             <div style="background:#fef2f2;border-bottom:1px solid #fecaca;padding:8px 20px;font-size:12px;color:#991b1b">
@@ -964,176 +1655,223 @@
 
         <div class="q-main-body">
 
+            {{-- DATOS DEL CLIENTE --}}
+            <div class="q-section">
+                <div class="q-section-head">
+                    <span class="q-section-title"><svg class="q-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Cliente</span>
+                    {{-- Estado del guardado del bloque, en vez de un boton
+                         de edicion: se escribe encima y se guarda al salir
+                         del campo. --}}
+                    <span class="q-inline-nota" x-show="!editable" x-cloak
+                          x-text="esConvertida ? 'Documento cerrado' : 'Solo lectura'"></span>
+                </div>
+                <div class="q-section-body">
+                    <div class="q-lectura q-inline" :class="editable ? '' : 'q-inline-off'">
+                        <div class="q-lectura-item">
+                            <label for="cli-nombre">Nombre</label>
+                            <input id="cli-nombre" type="text" x-model="form.client_name" @change="guardarCampo()"
+                                   :readonly="!editable" placeholder="Nombre completo">
+                        </div>
+                        <div class="q-lectura-item">
+                            <label for="cli-cel">Celular</label>
+                            <input id="cli-cel" type="tel" x-model="form.client_phone" @change="guardarCampo()"
+                                   :readonly="!editable" placeholder="—">
+                        </div>
+                        <div class="q-lectura-item">
+                            <label for="cli-mail">Email</label>
+                            <input id="cli-mail" type="email" x-model="form.client_email" @change="guardarCampo()"
+                                   :readonly="!editable" placeholder="—">
+                        </div>
+                        <div class="q-lectura-item">
+                            <label for="cli-doc">DNI / RUC</label>
+                            <input id="cli-doc" type="text" x-model="form.client_doc_number" @change="guardarCampo()"
+                                   :readonly="!editable" placeholder="—">
+                        </div>
+                        <div class="q-lectura-item" style="grid-column:1/-1">
+                            <label for="cli-dir">Dirección</label>
+                            <input id="cli-dir" type="text" x-model="form.client_address" @change="guardarCampo()"
+                                   :readonly="!editable" placeholder="—">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- TABLA DE PRODUCTOS --}}
             <div class="q-section">
                 <div class="q-section-head">
                     <span class="q-section-title"><svg class="q-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Productos</span>
-                    <button @click="addItem()" style="font-size:12px;color:#6366f1;font-weight:600;border:none;background:none;cursor:pointer">+ Agregar línea</button>
-                </div>
-
-                {{-- Buscador catálogo --}}
-                @if($products->count())
-                <div style="padding:10px 14px;border-bottom:1px solid #f3f4f6">
-                    <div class="q-catalog-wrap">
-                        <input type="text" x-model="catalogSearch"
-                               @focus="catalogOpen=true" @input="catalogOpen=true"
-                               @keydown.escape="catalogOpen=false;catalogSearch=''"
-                               class="q-catalog-input" placeholder="Buscar producto del catálogo para agregar...">
-                        <div class="q-catalog-drop" x-show="catalogOpen && filteredCatalog.length" @click.outside="catalogOpen=false;catalogSearch=''">
-                            <template x-for="p in filteredCatalog" :key="p.id">
-                                <div class="q-catalog-item" @click="addFromCatalog(p)">
-                                    <div>
-                                        <div class="q-catalog-name" x-text="p.name"></div>
-                                        <div class="q-catalog-sku" x-show="p.sku" x-text="'SKU: '+p.sku"></div>
+                    {{-- El buscador del catalogo era una franja punteada a
+                         todo el ancho, siempre visible aunque no se estuviera
+                         agregando nada. Ahora se abre desde esta accion y se
+                         cierra sola al elegir o con Escape. --}}
+                    <div class="q-agregar-wrap" x-show="puede.editar">
+                        <button type="button" class="q-agregar" @click="abrirCatalogo()">
+                            <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            Agregar producto
+                        </button>
+                        @if($products->count())
+                        <div class="q-catalog-pop" x-show="catalogOpen" x-cloak
+                             @click.outside="catalogOpen=false;catalogSearch=''"
+                             @keydown.escape="catalogOpen=false;catalogSearch=''">
+                            <input type="text" x-model="catalogSearch" x-ref="catalogo"
+                                   class="q-catalog-input" placeholder="Buscar en el catálogo...">
+                            <div class="q-catalog-drop">
+                                <template x-for="p in filteredCatalog" :key="p.id">
+                                    <div class="q-catalog-item" @click="addFromCatalog(p)">
+                                        <div>
+                                            <div class="q-catalog-name" x-text="p.name"></div>
+                                            <div class="q-catalog-sku" x-show="p.sku" x-text="'SKU: '+p.sku"></div>
+                                        </div>
+                                        <span class="q-catalog-price" x-text="fmt(p.price)"></span>
                                     </div>
-                                    <span class="q-catalog-price" x-text="fmt(p.price)"></span>
-                                </div>
-                            </template>
+                                </template>
+                                <p class="q-catalog-vacio" x-show="!filteredCatalog.length">
+                                    Sin resultados. Puedes escribir la línea a mano.
+                                </p>
+                            </div>
+                            <button type="button" class="q-catalog-manual" @click="addItem(); catalogOpen=false; catalogSearch=''">
+                                Escribir una línea libre
+                            </button>
                         </div>
+                        @endif
                     </div>
                 </div>
-                @endif
 
-                <div class="q-table-wrap" style="border-radius:0;border:none">
+                <div class="q-table-wrap q-tabla-lectura q-grid" :class="editable ? '' : 'q-inline-off'">
                     <table class="q-table">
                         <thead>
                             <tr>
                                 <th style="width:40%">Producto / Descripción</th>
-                                <th class="r" style="width:10%">Cant.</th>
-                                <th class="r" style="width:14%">Precio</th>
-                                <th class="r" style="width:10%">Desc.%</th>
-                                <th class="r" style="width:14%">Subtotal</th>
-                                <th style="width:5%"></th>
+                                <th class="c" style="width:8%">Cant.</th>
+                                <th class="r" style="width:16%">Precio unitario</th>
+                                <th class="r" style="width:12%">Desc.</th>
+                                <th class="r" style="width:16%">Subtotal</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             <template x-for="(item, i) in form.items" :key="i">
-                                <tr>
-                                    <td data-label="Producto"><input class="q-td-input desc" x-model="form.items[i].description" placeholder="Descripción del producto"
-                                               @keydown.tab.prevent="$event.shiftKey ? (i>0?$refs['qty'+(i-1)].focus():null) : $refs['qty'+i].focus()"></td>
-                                    <td data-label="Cant."><input class="q-td-input num" type="number" x-model="form.items[i].quantity" :x-ref="'qty'+i" min="1" max="10000" step="1" inputmode="numeric" placeholder="1"
-                                               @keydown.tab.prevent="$refs['price'+i].focus()"></td>
-                                    <td data-label="Precio"><input class="q-td-input num" type="number" x-model="form.items[i].price" :x-ref="'price'+i" @keydown.tab.prevent="$refs['disc'+i]?.focus()" min="0" max="99999999.99" step="0.01" inputmode="decimal" placeholder="0.00"
-                                               ></td>
-                                    <td data-label="Desc.%">{{-- F1b: el descuento ya persiste (quote_items.discount) y viaja al pedido --}}<input class="q-td-input num" type="number" x-model="form.items[i].discount" :x-ref="'disc'+i" min="0" max="100" step="0.01" placeholder="0" inputmode="decimal" aria-label="Descuento porcentual de la línea" {{-- parseFloat solo para el borde rojo de validacion visual: no calcula ningun importe --}} :style="(parseFloat(form.items[i].discount)||0) > 100 || (parseFloat(form.items[i].discount)||0) < 0 ? 'border-color:#dc2626;background:#fef2f2' : ''"></td>
-                                    <td class="r" data-label="Subtotal"><span class="q-td-sub" x-text="lmMoneda(lineTotal(item))"></span></td>
-                                    <td style="text-align:center" data-label="">
-                                        <button @click="removeItem(i)" x-show="form.items.length>1" class="q-icon-btn" title="Eliminar línea" aria-label="Eliminar esta línea">✕</button>
+                                <tr :class="!item.description ? 'q-fila-nueva' : ''">
+                                    <td data-label="Producto">
+                                        <div class="q-prod">
+                                            {{-- Miniatura del catalogo cuando la linea corresponde a un
+                                                 producto; si es un servicio escrito a mano, marcador. --}}
+                                            <template x-if="catalogoDe(item.description)?.img">
+                                                <img class="q-prod-img" :src="catalogoDe(item.description).img" :alt="item.description" loading="lazy">
+                                            </template>
+                                            <template x-if="!catalogoDe(item.description)?.img">
+                                                <span class="q-prod-img q-prod-vacia" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                                </span>
+                                            </template>
+                                            <div class="q-prod-txt">
+                                                <input class="q-cel q-cel-desc" type="text" x-model="form.items[i].description"
+                                                       :readonly="!editable" :placeholder="i === form.items.length - 1 ? 'Escribe o busca un producto…' : 'Descripción'"
+                                                       @input="alEscribirLinea(i, $event.target.value)"
+                                                       @focus="lineaFoco = i" @blur="cerrarSugerencias()"
+                                                       @change="guardarCampo()"
+                                                       @keydown.enter.prevent="$refs['qty'+i]?.focus()"
+                                                       :x-ref="'desc'+i" autocomplete="off">
+                                                <span class="q-prod-sub" x-show="catalogoDe(item.description)?.sub" x-text="catalogoDe(item.description)?.sub"></span>
+                                                {{-- Sugerencias del catalogo bajo la celda: elegir uno
+                                                     trae su nombre y su precio. --}}
+                                                <div class="q-sugerencias" x-show="lineaFoco === i && sugerencias.length" x-cloak>
+                                                    <template x-for="pr in sugerencias" :key="pr.id">
+                                                        <button type="button" class="q-sugerencia" @mousedown.prevent="usarProducto(i, pr)">
+                                                            <span x-text="pr.name"></span>
+                                                            <span class="q-sug-precio" x-text="fmt(pr.price)"></span>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="c" data-label="Cant.">
+                                        <input class="q-cel q-cel-num" type="number" min="1" max="10000" step="1" inputmode="numeric"
+                                               x-model="form.items[i].quantity" :readonly="!editable" placeholder="1"
+                                               @change="guardarCampo()" :x-ref="'qty'+i">
+                                    </td>
+                                    <td class="r" data-label="Precio">
+                                        <input class="q-cel q-cel-num" type="number" min="0" max="99999999.99" step="0.01" inputmode="decimal"
+                                               x-model="form.items[i].price" :readonly="!editable" placeholder="0.00"
+                                               @change="guardarCampo()" :x-ref="'price'+i">
+                                    </td>
+                                    <td class="r" data-label="Desc.">
+                                        {{-- Porcentaje por linea (quote_items.discount): viaja al pedido. --}}
+                                        <input class="q-cel q-cel-num" type="number" min="0" max="100" step="0.01" inputmode="decimal"
+                                               x-model="form.items[i].discount" :readonly="!editable" placeholder="0"
+                                               aria-label="Descuento porcentual de la línea"
+                                               @change="guardarCampo()"
+                                               {{-- parseFloat solo para el aviso visual: no calcula ningun importe --}}
+                                               :style="(parseFloat(form.items[i].discount)||0) > 100 || (parseFloat(form.items[i].discount)||0) < 0 ? 'color:#dc2626;font-weight:700' : ''">
+                                    </td>
+                                    <td class="r" data-label="Subtotal">
+                                        <span class="q-td-sub" x-show="item.description" x-text="lmMoneda(lineTotal(item))"></span>
+                                    </td>
+                                    <td class="q-td-acciones" data-label="">
+                                        <button type="button" class="q-fila-mas" x-show="editable && item.description"
+                                                @click="quitarLinea(i)"
+                                                aria-label="Quitar esta línea" title="Quitar esta línea">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                        </button>
                                     </td>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
-                    <button class="q-add-row" @click="addItem()">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                        Agregar línea
-                    </button>
-                </div>
-            </div>
-
-            {{-- DATOS DEL CLIENTE --}}
-            <div class="q-section">
-                <div class="q-section-head"><span class="q-section-title"><svg class="q-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Cliente</span></div>
-                <div class="q-section-body">
-                    <div class="q-client-grid">
-                        <div class="q-field"><label>Nombre *</label><input type="text" x-model="form.client_name" placeholder="Nombre completo"></div>
-                        <div class="q-field"><label>Celular</label><input type="tel" x-model="form.client_phone" placeholder="999 999 999"></div>
-                        <div class="q-field"><label>Email</label><input type="email" x-model="form.client_email" placeholder="cliente@email.com"></div>
-                        <div class="q-field"><label>DNI / RUC</label><input type="text" x-model="form.client_doc_number" placeholder="12345678"></div>
-                        <div class="q-field" style="grid-column:1/-1"><label>Dirección</label><input type="text" x-model="form.client_address" placeholder="Av. Principal 123, Lima"></div>
+                    <div class="q-tabla-pie">
+                        <span x-text="'Total de productos: ' + form.items.filter(x => x.description).length"></span>
+                        <span class="q-pie-sub">Subtotal <strong x-text="fmt(grandTotalCents)"></strong></span>
                     </div>
-
-                    {{-- Historial: otras cotizaciones del mismo cliente --}}
-                    <template x-if="!creating && selected && clientHistory(selected).length">
-                        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6">
-                            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
-                                Otras cotizaciones de este cliente (<span x-text="clientHistory(selected).length"></span>)
-                            </div>
-                            <div style="display:flex;flex-direction:column;gap:4px">
-                                <template x-for="h in clientHistory(selected)" :key="h.id">
-                                    <button type="button" @click="select(h)"
-                                            style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border:1px solid #f3f4f6;border-radius:6px;background:#fff;cursor:pointer;text-align:left">
-                                        <span style="font-size:11.5px;color:#374151">#<span x-text="h.id"></span> · <span x-text="h.created_at"></span></span>
-                                        <span style="display:flex;align-items:center;gap:6px">
-                                            <span style="font-size:11.5px;font-weight:700;color:#374151" x-text="fmt(h.total)"></span>
-                                            <span :class="'qbadge qbadge-'+h.status" x-text="{draft:'Borrador',sent:'Enviada',accepted:'Aceptada',rejected:'Rechazada',converted:'Convertida'}[h.status]"></span>
-                                        </span>
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-                    </template>
                 </div>
             </div>
 
             {{-- CONDICIONES --}}
             <div class="q-section">
-                <div class="q-section-head"><span class="q-section-title">📋 Condiciones</span></div>
+                <div class="q-section-head">
+                    <span class="q-section-title"><svg class="q-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>Condiciones</span>
+                    <span class="q-inline-nota" x-show="!editable" x-cloak
+                          x-text="esConvertida ? 'Documento cerrado' : 'Solo lectura'"></span>
+                </div>
                 <div class="q-section-body">
-                    <div class="q-client-grid">
-                        <div class="q-field"><label>Válida hasta</label><input type="date" x-model="form.valid_until"></div>
-                        <div class="q-field" x-show="paymentMethods.length">
-                            <label>Método de pago</label>
-                            <select x-model="form.payment_method"><option value="">—</option>
+                    <div class="q-lectura q-inline" :class="editable ? '' : 'q-inline-off'">
+                        <div class="q-lectura-item">
+                            <label for="cond-hasta">Válida hasta</label>
+                            <input id="cond-hasta" type="date" x-model="form.valid_until" @change="guardarCampo()"
+                                   :readonly="!editable" :disabled="!editable">
+                        </div>
+                        <div class="q-lectura-item">
+                            <label for="cond-metodo">Método de pago</label>
+                            {{-- Con lista configurada se elige; sin ella se
+                                 escribe, que es lo que hoy hace el negocio. --}}
+                            <select id="cond-metodo" x-show="paymentMethods.length" x-model="form.payment_method"
+                                    @change="guardarCampo()" :disabled="!editable">
+                                <option value="">—</option>
                                 <template x-for="m in paymentMethods" :key="m"><option :value="m" x-text="m"></option></template>
                             </select>
+                            <input x-show="!paymentMethods.length" type="text" x-model="form.payment_method"
+                                   @change="guardarCampo()" :readonly="!editable" placeholder="—">
                         </div>
-                        <div class="q-field" x-show="paymentConditions.length">
-                            <label>Condición de pago</label>
-                            <select x-model="form.payment_condition"><option value="">—</option>
+                        <div class="q-lectura-item">
+                            <label for="cond-condicion">Condición de pago</label>
+                            <select id="cond-condicion" x-show="paymentConditions.length" x-model="form.payment_condition"
+                                    @change="guardarCampo()" :disabled="!editable">
+                                <option value="">—</option>
                                 <template x-for="c in paymentConditions" :key="c"><option :value="c" x-text="c"></option></template>
                             </select>
+                            <input x-show="!paymentConditions.length" type="text" x-model="form.payment_condition"
+                                   @change="guardarCampo()" :readonly="!editable" placeholder="—">
                         </div>
-                        <div class="q-field" style="grid-column:1/-1"><label>Notas internas</label><textarea x-model="form.notes" rows="2" placeholder="Observaciones, términos especiales..."></textarea></div>
+                        <div class="q-lectura-item" style="grid-column:1/-1">
+                            <label for="cond-notas">Notas internas</label>
+                            <textarea id="cond-notas" x-ref="notas" rows="2" x-model="form.notes"
+                                      @change="guardarCampo()" :readonly="!editable"
+                                      placeholder="Observaciones, términos especiales..."
+                                      @input="autoAlto($el)" x-effect="form.notes; $nextTick(() => autoAlto($refs.notas))"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {{-- PORTAL CLIENTE (solo si tiene token) --}}
-            <template x-if="!creating && (selected?.token || portalUrl)">
-                <div class="q-portal">
-                    <span class="q-portal-label">🔗 Portal cliente ✓</span>
-                    <div class="q-portal-btns">
-                        <button class="q-portal-btn" @click="copyLink()" title="Copiar enlace">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                            Copiar
-                        </button>
-                        <a class="q-portal-btn" :href="portalUrl || ('{{ url('/b/'.$project->slug.'/c/') }}/'+selected.token)" target="_blank">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
-                            Abrir
-                        </a>
-                        @if($project->whatsapp)
-                        <button class="q-portal-btn" @click="sendWhatsApp()" style="background:#25d366;color:#fff;border-color:#25d366">
-                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
-                            WA
-                        </button>
-                        @endif
-                        <button class="q-portal-btn" @click="exportMenu=!exportMenu" style="position:relative" x-data="{exportMenu:false}" @click.outside="exportMenu=false">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                            Exportar
-                            <div x-show="exportMenu" x-cloak style="position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.1);z-index:200;min-width:130px;overflow:hidden">
-                                <button onclick="exportQuotePDF()" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer;text-align:left" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                                    PDF
-                                </button>
-                                <button onclick="exportQuoteImg()" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer;text-align:left" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                    Imagen PNG
-                                </button>
-                                <div style="border-top:1px solid #f3f4f6;margin:4px 0"></div>
-                                <button onclick="exportBoletaPDF()" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer;text-align:left" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg>
-                                    Formato Boleta
-                                </button>
-                                <button onclick="printTicket()" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer;text-align:left" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
-                                    Formato Ticket
-                                </button>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            </template>
 
         </div>{{-- end q-main-body --}}
     </div>
@@ -1144,136 +1882,141 @@
 {{-- En móvil solo se muestra junto al detalle (panel==='detail'); en desktop siempre que haya selección --}}
 <div class="q-panel" x-show="(selected || creating) && (panel==='detail' || window.innerWidth>=1024)">
 
-    {{-- Resumen financiero --}}
-    <div class="q-summary">
-        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Resumen</div>
-        <div class="q-summary-row"><span>Subtotal</span><span x-text="fmt(subtotalCents)"></span></div>
-        <div class="q-summary-row" x-show="igv>0"><span>IGV (18%)</span><span x-text="fmt(0n)"></span></div>
-        <div class="q-summary-total"><span>Total</span><span x-text="fmt(grandTotalCents)"></span></div>
-        <div style="font-size:11px;color:var(--texto-debil, #5b6270);margin-top:6px" x-text="form.items.filter(i=>i.description).length + ' producto(s)'"></div>
+    {{-- Resumen financiero. El Total manda: es la cifra por la que se
+         decide. No hay linea de IGV porque `quotes` no guarda impuesto —
+         inventarle un 18% al documento seria decirle al cliente un precio
+         que el sistema no ha calculado. El descuento SI existe, por linea,
+         y se suma aqui. --}}
+    <div class="q-resumen">
+        <div class="q-resumen-head">
+            <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg>
+            Resumen
+        </div>
+        <div class="q-resumen-fila"><span>Subtotal</span><span x-text="fmt(brutoCents)"></span></div>
+        <div class="q-resumen-fila" x-show="descuentoCents > 0n" x-cloak>
+            <span>Descuento</span><span class="q-desc" x-text="'- ' + fmt(descuentoCents)"></span>
+        </div>
+        <div class="q-resumen-total">
+            <span>Total</span>
+            <strong x-text="fmt(grandTotalCents)"></strong>
+        </div>
+        <p class="q-resumen-nota" x-text="(n => n + (n === 1 ? ' producto' : ' productos'))(form.items.filter(i=>i.description).length)"></p>
+
+        <button type="button" class="q-detalle-btn" @click="detalleTotales = !detalleTotales"
+                :aria-expanded="detalleTotales ? 'true' : 'false'">
+            <span x-text="detalleTotales ? 'Ocultar detalle' : 'Ver detalle de totales'"></span>
+            <svg class="q-ico-sm" :style="detalleTotales ? 'transform:rotate(180deg)' : ''" viewBox="0 0 24 24" aria-hidden="true"><path d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </button>
+        {{-- El detalle es el desglose por linea: es lo unico que hay que
+             abrir, porque el documento no lleva impuesto. --}}
+        <div class="q-detalle" x-show="detalleTotales" x-cloak>
+            <template x-for="(item, i) in form.items.filter(x => x.description)" :key="'d'+i">
+                <div class="q-detalle-fila">
+                    <span x-text="item.description"></span>
+                    <span x-text="lmMoneda(lineTotal(item))"></span>
+                </div>
+            </template>
+        </div>
     </div>
 
-    {{-- Pago (cuenta por cobrar) — solo una vez aceptada --}}
-    <template x-if="!creating && form.status==='accepted'">
-        <div class="q-summary">
-            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">💰 Cobro</div>
+    {{-- Siguiente paso: convertir. Una cotizacion aceptada no se cobra, se
+         convierte en pedido; ahi nace la venta. --}}
+    <div class="q-resumen" x-show="!creating && form.status==='accepted' && puede.convertir" x-cloak>
+            <div class="q-resumen-head">Siguiente paso</div>
+            <p style="font-size:12px;color:#5b6270;margin:0 0 10px">
+                El cliente aceptó. Conviértela en pedido para registrar la venta y poder cobrarla.
+            </p>
+            <button type="button" class="q-cta" style="width:100%;justify-content:center"
+                    @click="convertir()" :disabled="convirtiendo">
+                <span x-text="convirtiendo ? 'Convirtiendo...' : 'Convertir en pedido'"></span>
+            </button>
+    </div>
 
-            {{-- Comprobante subido por el cliente --}}
-            <template x-if="selected?.payment_proof_url">
-                <div style="display:flex;gap:8px;align-items:center;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:8px;margin-bottom:10px">
-                    <a :href="selected.payment_proof_url" target="_blank">
-                        <img :src="selected.payment_proof_url" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0">
-                    </a>
-                    <div style="flex:1;min-width:0">
-                        <div style="font-size:11px;font-weight:700;color:#374151">Comprobante recibido</div>
-                        <div style="font-size:10px;color:var(--texto-debil, #5b6270)" x-text="selected.payment_proof_at"></div>
-                    </div>
-                    <button type="button" x-show="form.payment_status!=='paid'" @click="setPaymentStatus('paid')" :disabled="payingStatus"
-                            style="border:none;background:#15803d;color:#fff;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0">Aprobar</button>
-                </div>
-            </template>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
-                <button type="button" @click="setPaymentStatus('pending')" :disabled="payingStatus"
-                        :style="form.payment_status==='pending' ? 'background:#b45309;color:#fff;border-color:#b45309' : 'background:#fff;color:#6b7280;border-color:#e5e7eb'"
-                        style="border-radius:7px;border:1px solid;font-size:10.5px;font-weight:700;padding:6px 2px;cursor:pointer">Pendiente</button>
-                <button type="button" @click="setPaymentStatus('partial')" :disabled="payingStatus"
-                        :style="form.payment_status==='partial' ? 'background:#a16207;color:#fff;border-color:#a16207' : 'background:#fff;color:#6b7280;border-color:#e5e7eb'"
-                        style="border-radius:7px;border:1px solid;font-size:10.5px;font-weight:700;padding:6px 2px;cursor:pointer">Parcial</button>
-                <button type="button" @click="setPaymentStatus('paid')" :disabled="payingStatus"
-                        :style="form.payment_status==='paid' ? 'background:#15803d;color:#fff;border-color:#15803d' : 'background:#fff;color:#6b7280;border-color:#e5e7eb'"
-                        style="border-radius:7px;border:1px solid;font-size:10.5px;font-weight:700;padding:6px 2px;cursor:pointer">Pagado</button>
-            </div>
-            <template x-if="form.payment_status==='partial'">
-                <div style="margin-top:8px">
-                    <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:3px">Monto abonado</label>
-                    <div style="display:flex;gap:6px">
-                        <input type="number" x-model="form.paid_amount" step="0.01" min="0" placeholder="0.00"
-                               style="flex:1;border:1px solid #e5e7eb;border-radius:8px;padding:6px 8px;font-size:12px;outline:none"
-                               @keydown.enter="setPaymentStatus('partial')">
-                        <button type="button" @click="setPaymentStatus('partial')" :disabled="payingStatus"
-                                style="border:none;background:#6366f1;color:#fff;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer">Guardar</button>
-                    </div>
-                    <div style="font-size:11px;color:var(--texto-debil, #5b6270);margin-top:5px" x-show="form.paid_amount">
-                        Falta <span x-text="fmt(subtotalCents - lmCentsDe(form.paid_amount) > 0n ? subtotalCents - lmCentsDe(form.paid_amount) : 0n)"></span>
-                    </div>
-                </div>
-            </template>
-            <button type="button" x-show="form.payment_status!=='paid' && selected?.client_phone" @click="sendPaymentReminder()"
-                    style="width:100%;margin-top:10px;border:1px solid #bbf7d0;background:#fff;color:#166534;border-radius:8px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
-                <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
-                Recordatorio de pago
+    {{-- Acciones secundarias: presentes pero sin competir con "Enviar". --}}
+    <template x-if="!creating">
+        <div class="q-sec">
+            <button type="button" class="q-sec-item" @click="duplicateQuote()" :disabled="duplicating">
+                <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 16H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2m-6 12h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z"/></svg>
+                <span x-text="duplicating ? 'Duplicando...' : 'Duplicar cotización'"></span>
+            </button>
+            <a class="q-sec-item" :href="pdfUrl" target="_blank" rel="noopener" x-show="pdfUrl">
+                <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12.75h6m-6 3h3M9.75 3.104A2.25 2.25 0 0 0 8.25 3H5.625c-.621 0-1.125.504-1.125 1.125v15.75c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V9.75a2.25 2.25 0 0 0-.659-1.591l-4.5-4.5A2.25 2.25 0 0 0 12.75 3H9.75Z"/></svg>
+                Exportar PDF
+            </a>
+            <button type="button" class="q-sec-item q-sec-danger" @click="del()" x-show="puede.eliminar">
+                <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+                Eliminar cotización
             </button>
         </div>
     </template>
 
-    {{-- Acciones --}}
-    <div class="q-actions">
-        <button class="q-btn q-btn-primary" @click="save()" :disabled="saving">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            <span x-text="saving ? 'Guardando...' : 'Guardar'"></span>
-        </button>
-
-        <template x-if="!creating">
-            <button class="q-btn q-btn-outline" @click="sendToClient()" :disabled="sending">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                <span x-text="sending ? 'Generando...' : (selected?.token ? 'Reenviar enlace' : 'Generar enlace')"></span>
-            </button>
-        </template>
-
-        <template x-if="!creating">
-            <button class="q-btn q-btn-outline" @click="duplicateQuote()" :disabled="duplicating">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                <span x-text="duplicating ? 'Duplicando...' : 'Duplicar'"></span>
-            </button>
-        </template>
-
-        @if($project->whatsapp)
-        <template x-if="!creating && (selected?.token || portalUrl)">
-            <button class="q-btn q-btn-green" @click="sendWhatsApp()">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
-                WhatsApp
-            </button>
-        </template>
-        @endif
-
-        <template x-if="!creating">
-            <div x-data="{exportMenu:false}" style="position:relative">
-                <button class="q-btn q-btn-outline" @click="exportMenu=!exportMenu" @click.outside="exportMenu=false">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                    Exportar
-                </button>
-                <div x-show="exportMenu" x-cloak style="position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.12);z-index:200;overflow:hidden">
-                    <button onclick="exportQuotePDF()" style="display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                        PDF
-                    </button>
-                    <button onclick="exportQuoteImg()" style="display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        Imagen PNG
-                    </button>
-                    <div style="border-top:1px solid #f3f4f6;margin:4px 0"></div>
-                    <button onclick="exportBoletaPDF()" style="display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg>
-                        Formato Boleta
-                    </button>
-                    <button onclick="printTicket()" style="display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;border:none;background:none;font-size:12px;font-weight:500;color:#374151;cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
-                        Formato Ticket
-                    </button>
-                </div>
+    {{-- Actividad real: sale de `order_events`, que ya registraba creacion,
+         envio, aceptacion del cliente y conversion. Hasta ahora se escribia y
+         no habia forma de leerla: solo existia endpoint para pedidos. --}}
+    <template x-if="!creating">
+        <div class="q-actividad">
+            <div class="q-resumen-head">
+                <svg class="q-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                Actividad
             </div>
-        </template>
+            {{-- x-show y no x-if: anidados dentro del x-if del panel, los
+                 template no se re-evaluaban y 'Cargando…' se quedaba fijo en
+                 pantalla con la carga ya terminada (visto en la validacion).
+                 x-show alterna visibilidad sin recrear el nodo. --}}
+            <p class="q-actividad-vacio" x-show="actividadCargando">Cargando…</p>
+            <p class="q-actividad-vacio" x-show="!actividadCargando && actividad.length === 0">Sin movimientos todavía.</p>
+            {{-- Cuatro eventos: la actividad acompaña, no compite con el
+                 Resumen. El resto se despliega a peticion. --}}
+            {{-- Timeline: los hechos de un documento tienen orden, y una
+                 lista de filas sueltas no lo dice. La linea une los puntos y
+                 el ultimo no la continua. --}}
+            <ol class="q-timeline">
+                <template x-for="(ev, k) in actividadVisible" :key="k">
+                    <li class="q-act-item" :class="'q-act-' + (ev.tono || 'neutro')">
+                        <div class="q-act-cuerpo">
+                            <p class="q-act-titulo" x-text="ev.titulo"></p>
+                            <p class="q-act-detalle">
+                                <span x-text="ev.detalle"></span>
+                                <span class="q-act-quien" x-show="ev.quien" x-text="' · ' + ev.quien"></span>
+                            </p>
+                        </div>
+                        <span class="q-act-hora" :title="ev.fecha" x-text="ev.hace"></span>
+                    </li>
+                </template>
+            </ol>
+            <button type="button" class="q-act-mas" x-show="actividad.length > 4" x-cloak
+                    @click="actividadTodo = !actividadTodo"
+                    x-text="actividadTodo ? 'Ver menos' : 'Ver toda la actividad →'"></button>
+        </div>
+    </template>
 
-        <template x-if="!creating">
-            <button class="q-btn q-btn-outline" @click="del()" style="color:#dc2626;border-color:#fee2e2" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff'">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-                Eliminar
-            </button>
-        </template>
-    </div>
 
 </div>
+
+{{-- Confirmacion de acciones. Un solo dialogo para todas: dice que va a
+     pasar y sobre que documento, atrapa el foco y se cierra con Escape. --}}
+<template x-if="confirmar.abierto">
+    <div class="q-modal-fondo" @keydown.escape.window="if(!confirmar.ocupado) confirmar.abierto=false"
+         @click.self="if(!confirmar.ocupado) confirmar.abierto=false">
+        <div class="q-modal" role="dialog" aria-modal="true"
+             aria-labelledby="tituloConfirmar" aria-describedby="descConfirmar"
+             x-trap.noscroll="confirmar.abierto">
+            <h2 class="q-modal-titulo" id="tituloConfirmar" x-text="confirmar.titulo"></h2>
+            <p class="q-modal-desc" id="descConfirmar" x-text="confirmar.descripcion"></p>
+            <div class="q-modal-botones">
+                <button type="button" class="q-btn-secundario" @click="confirmar.abierto=false"
+                        :disabled="confirmar.ocupado">Cancelar</button>
+                <button type="button" class="q-btn-primario"
+                        :class="confirmar.tono === 'peligro' ? 'q-btn-peligro' : ''"
+                        @click="ejecutarConfirmacion()" :disabled="confirmar.ocupado"
+                        :aria-busy="confirmar.ocupado ? 'true' : 'false'" x-ref="confirmarAccion">
+                    <span x-show="!confirmar.ocupado" x-text="confirmar.boton"></span>
+                    <span x-show="confirmar.ocupado" x-cloak>Un momento…</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
 
 </div>
 
@@ -1318,8 +2061,8 @@ function esc(v) {
 }
 
 function buildQuoteHtml() {
-    const qWrap = document.querySelector('[x-data]');
-    const al = qWrap ? qWrap.__x?.$data : null;
+    const qWrap = document.querySelector('.q-wrap');
+    const al = qWrap ? (window.Alpine?.$data(qWrap) ?? qWrap.__x?.$data) : null;
     const q = al?.selected;
     const form = al?.form;
     if (!q) return null;
@@ -1407,8 +2150,32 @@ async function renderOffscreen(html, widthPx) {
 }
 
 function currentQuoteId() {
-    const al = document.querySelector('[x-data]').__x?.$data;
+    const raiz = document.querySelector('.q-wrap');
+    const al = raiz ? (window.Alpine?.$data(raiz) ?? raiz.__x?.$data) : null;
     return al?.selected?.id || 'export';
+}
+
+/* Nombre del archivo descargado: numero del documento y cliente.
+   Se limpia lo que un sistema de archivos no admite (/ \ : * ? " < > |) y
+   se recortan los acentos, que en Windows viajan mal entre equipos. */
+function nombreArchivoCotizacion(prefijo) {
+    const raiz = document.querySelector('.q-wrap');
+    const al = raiz ? (window.Alpine?.$data(raiz) ?? raiz.__x?.$data) : null;
+    const q = al?.selected;
+    if (!q) return prefijo + '-export';
+
+    const limpia = (t) => String(t || '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[\/:*?"<>|]+/g, ' ')
+        .replace(/\s+/g, ' ').trim().slice(0, 40)
+        // Windows no admite un nombre que acabe en punto, y 'S.A.C.' lo deja.
+        .replace(/[.\s]+$/, '');
+
+    const numero  = limpia(q.numero || ('COT-' + String(q.id).padStart(5, '0')));
+    const cliente = limpia(q.client_name);
+
+    return [numero, cliente, prefijo === 'cotizacion' ? '' : prefijo]
+        .filter(Boolean).join(' - ');
 }
 
 async function htmlToPdf(html, widthPx, filenamePrefix) {
@@ -1435,29 +2202,31 @@ async function htmlToPdf(html, widthPx, filenamePrefix) {
             yPos += sliceH; remaining -= sliceH;
         }
     }
-    pdf.save(filenamePrefix + '-' + currentQuoteId() + '.pdf');
+    pdf.save(nombreArchivoCotizacion(filenamePrefix) + '.pdf');
 }
 
 async function htmlToImg(html, widthPx, filenamePrefix) {
     if (!html) { alert('No hay cotización seleccionada'); return; }
     const canvas = await renderOffscreen(html, widthPx);
     const link = document.createElement('a');
-    link.download = filenamePrefix + '-' + currentQuoteId() + '.png';
+    link.download = nombreArchivoCotizacion(filenamePrefix) + '.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
 }
 
 async function exportQuotePDF() { await htmlToPdf(buildQuoteHtml(), 800, 'cotizacion'); }
 async function exportQuoteImg() { await htmlToImg(buildQuoteHtml(), 800, 'cotizacion'); }
-async function exportBoletaPDF() { await htmlToPdf(buildBoletaHtml(), 420, 'boleta'); }
-async function exportBoletaImg() { await htmlToImg(buildBoletaHtml(), 420, 'boleta'); }
+async function exportBoletaPDF() { await htmlToPdf(buildBoletaHtml(), 420, 'resumen'); }
+async function exportBoletaImg() { await htmlToImg(buildBoletaHtml(), 420, 'resumen'); }
 
-// ── Formato Boleta: documento compacto tipo comprobante, para imprimir o
-// adjuntar. NO es un comprobante SUNAT real (eso se emite desde Facturación) —
-// por eso lleva el aviso al pie. ──
+// ── Resumen en una hoja: la cotizacion condensada para imprimir o adjuntar.
+// Se llamaba 'boleta' y se titulaba BOLETA DE VENTA, que en Peru es un
+// comprobante SUNAT: prometia algo fiscal que no ocurre, y ademas se
+// contradecia con el aviso de su propio pie. El comprobante de verdad se
+// emite desde Facturacion. ──
 function buildBoletaHtml() {
-    const qWrap = document.querySelector('[x-data]');
-    const al = qWrap ? qWrap.__x?.$data : null;
+    const qWrap = document.querySelector('.q-wrap');
+    const al = qWrap ? (window.Alpine?.$data(qWrap) ?? qWrap.__x?.$data) : null;
     const q = al?.selected;
     const form = al?.form;
     if (!q) return null;
@@ -1488,8 +2257,8 @@ function buildBoletaHtml() {
     <div style="text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:2px dashed #d1d5db">
         <div style="font-size:15px;font-weight:800">${esc(biz)}</div>
         ${ruc ? `<div style="font-size:10.5px;color:#6b7280">RUC ${esc(ruc)}</div>` : ''}
-        <div style="font-size:13px;font-weight:700;margin-top:8px;letter-spacing:.5px">BOLETA DE VENTA</div>
-        <div style="font-size:10.5px;color:#6b7280">N° COT-${esc(String(q.id).padStart(6,'0'))} · ${esc(q.created_at || new Date().toLocaleDateString('es'))}</div>
+        <div style="font-size:13px;font-weight:700;margin-top:8px;letter-spacing:.5px">COTIZACIÓN</div>
+        <div style="font-size:10.5px;color:#6b7280">N° ${esc(q.numero || ('COT-' + String(q.id).padStart(5,'0')))} · ${esc(q.created_at || new Date().toLocaleDateString('es'))}</div>
     </div>
     <div style="font-size:11.5px;margin-bottom:10px">
         ${q.client_name ? `<div><b>Cliente:</b> ${esc(q.client_name)}</div>` : ''}
@@ -1512,13 +2281,13 @@ function buildBoletaHtml() {
     </body></html>`;
 }
 
-// ── Formato Ticket: recibo angosto para impresora térmica (58mm). Usa el
+// ── Ticket 58 mm: recibo angosto para impresora térmica. Usa el
 // diálogo de impresión del navegador en vez de generar un PDF: así el
 // usuario elige directo su impresora de tickets y evita los problemas de
 // nitidez de convertir a imagen a un ancho tan chico. ──
 function buildTicketHtml() {
-    const qWrap = document.querySelector('[x-data]');
-    const al = qWrap ? qWrap.__x?.$data : null;
+    const qWrap = document.querySelector('.q-wrap');
+    const al = qWrap ? (window.Alpine?.$data(qWrap) ?? qWrap.__x?.$data) : null;
     const q = al?.selected;
     const form = al?.form;
     if (!q) return null;
@@ -1552,7 +2321,7 @@ function buildTicketHtml() {
         .center{text-align:center}
     </style></head><body>
     <div class="center" style="font-weight:700;font-size:13px">${esc(biz)}</div>
-    <div class="center" style="font-size:10px;color:#444">${esc(q.created_at || new Date().toLocaleDateString('es'))} · COT-${esc(String(q.id).padStart(6,'0'))}</div>
+    <div class="center" style="font-size:10px;color:#444">${esc(q.created_at || new Date().toLocaleDateString('es'))} · ${esc(q.numero || ('COT-' + String(q.id).padStart(5,'0')))}</div>
     ${q.client_name ? `<div class="center" style="font-size:10px;margin-top:3px">${esc(q.client_name)}</div>` : ''}
     <div class="dash"></div>
     ${rows}

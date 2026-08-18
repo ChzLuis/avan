@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Employee;
 use App\Models\Module;
+use App\Models\OrderEvent;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\Quote;
@@ -109,21 +110,27 @@ class QuotesUiContractTest extends TestCase
         $this->assertFalse($puede['convertir'], 'sin Pedidos, el pedido no tendria donde vivir');
     }
 
-    public function test_el_stepper_pinta_etiquetas_y_envia_claves(): void
+    public function test_el_estado_pinta_etiquetas_y_envia_claves(): void
     {
         $this->entrar(['quotes.ver', 'quotes.editar']);
         $this->quote();
 
         $html = $this->get('/bixosales/cotizaciones')->getContent();
 
-        // Alpine entrega (valor, clave): el nombre de las variables importa.
-        $this->assertStringContainsString('x-for="(etiqueta, clave) in {draft:', $html);
-        $this->assertStringContainsString('x-text="etiqueta"', $html, 'se pinta la etiqueta en español');
-        $this->assertStringContainsString('@click="setStatus(clave)"', $html, 'se envia la clave canonica');
+        // El stepper de cuatro botones se sustituyo por un desplegable: ocupaba
+        // 300 px de ancho y una franja entera de alto para decir una sola cosa.
+        // Lo que NO cambia es el contrato: al usuario se le enseña la etiqueta
+        // en español y al servidor se le manda la clave canonica.
+        $this->assertStringContainsString('<option value="draft">Borrador</option>', $html);
+        $this->assertStringContainsString('<option value="sent">Enviada</option>', $html);
+        $this->assertStringContainsString('<option value="accepted">Aceptada</option>', $html);
+        $this->assertStringContainsString('<option value="rejected">Rechazada</option>', $html);
+        $this->assertStringContainsString('setStatus($event.target.value)', $html);
 
-        // El error exacto que habia: pintar la clave y enviar la etiqueta.
-        $this->assertStringNotContainsString('x-for="(s,label) in', $html);
-        $this->assertStringNotContainsString('@click="setStatus(s)"', $html);
+        // Y jamas al reves: mandar la etiqueta que el validador rechaza.
+        foreach (['setStatus(\'Borrador\')', 'setStatus(\'Enviada\')', 'value="Borrador"'] as $error) {
+            $this->assertStringNotContainsString($error, $html);
+        }
     }
 
     /**
@@ -139,19 +146,21 @@ class QuotesUiContractTest extends TestCase
 
         $html = $this->get('/bixosales/cotizaciones')->getContent();
 
-        // La clase se decide en UN helper con semantica explicita…
-        $this->assertStringContainsString('claseEstado(clave)', $html);
-        $this->assertStringContainsString(":class=\"claseEstado(clave)\"", $html);
-        // …que devuelve 'rechazada' (negativo) para el estado actual y nunca
-        // 'done' para un paso fuera del flujo.
-        $this->assertStringContainsString("return clave === 'rejected' ? 'rechazada' : 'active'", $html);
-        $this->assertStringContainsString("if (clave === 'rejected') return 'idle'", $html);
+        // El color lo decide una clase por estado, no una comparacion de
+        // posiciones dentro de un flujo: rechazada es roja y aceptada verde,
+        // y ninguna puede heredar el color de la otra.
+        // El color ya no se escribe suelto en cada regla: sale de los
+        // tokens del contrato visual. Lo que este test protege no es el hex
+        // —cambia con el diseno— sino que rechazada viva en la familia de
+        // PELIGRO y aceptada en la de EXITO, y que jamas compartan token.
+        $this->assertStringContainsString('.q-estado-rejected { background-color:var(--q-dan-soft); color:var(--q-dan)', $html);
+        $this->assertStringContainsString('.q-estado-accepted { background-color:var(--q-ok-soft); color:var(--q-ok)', $html);
+        $this->assertStringContainsString('--q-dan:#DC2626', $html);
+        $this->assertStringContainsString('--q-ok:#16A34A', $html);
+        $this->assertStringContainsString(':class="\'q-estado-\'+form.status"', $html);
+
         // La formula rota no puede volver.
-        $this->assertStringNotContainsString(
-            ".indexOf(form.status) > ['draft','sent','accepted'].indexOf(clave)", $html);
-        // Y el estilo negativo existe y no es el verde de exito.
-        $this->assertStringContainsString('.q-status-step.rechazada', $html);
-        $this->assertStringContainsString('--peligro-fuerte', $html);
+        $this->assertStringNotContainsString("indexOf('rejected')", $html);
     }
 
     public function test_el_boton_de_convertir_depende_de_permiso_estado_y_modulo(): void
@@ -214,5 +223,59 @@ class QuotesUiContractTest extends TestCase
         foreach (['>draft<', '>sent<', '>accepted<', '>rejected<', '>converted<'] as $crudo) {
             $this->assertStringNotContainsString($crudo, $html, "clave cruda visible: {$crudo}");
         }
+    }
+
+    /**
+     * La Actividad del panel derecho tiene que salir de hechos registrados.
+     * `order_events` llevaba tiempo escribiendo la vida de la cotizacion
+     * —creada, enviada, aceptada por el cliente, convertida— pero el unico
+     * endpoint de eventos filtraba por `order_id`: se escribia un historial
+     * que nadie podia leer. Este contrato fija que ahora se lee, y que se lee
+     * SOLO el del propio negocio.
+     */
+    public function test_la_actividad_devuelve_eventos_reales_de_la_cotizacion(): void
+    {
+        $this->entrar(['quotes.ver']);
+        $q = $this->quote();
+
+        OrderEvent::create([
+            'project_id' => $this->project->id, 'quote_id' => $q->id,
+            'action' => 'created', 'meta' => [], 'created_at' => now()->subHour(),
+        ]);
+        OrderEvent::create([
+            'project_id' => $this->project->id, 'quote_id' => $q->id,
+            'action' => 'quote_sent', 'meta' => [], 'created_at' => now(),
+        ]);
+
+        $eventos = $this->getJson("/bixosales/cotizaciones/{$q->id}/events")
+            ->assertSuccessful()
+            ->json('eventos');
+
+        $this->assertCount(2, $eventos);
+        foreach ($eventos as $e) {
+            foreach (['titulo', 'detalle', 'hace', 'fecha'] as $clave) {
+                $this->assertArrayHasKey($clave, $e);
+                $this->assertNotSame('', (string) $e[$clave]);
+            }
+        }
+    }
+
+    public function test_la_actividad_de_otro_negocio_no_se_lee(): void
+    {
+        $otro = Project::create([
+            'owner_id' => User::factory()->create()->id,
+            'name' => 'Ajeno', 'slug' => 'ajeno', 'category' => 'retail', 'is_active' => true,
+        ]);
+        $ajena = Quote::create([
+            'project_id' => $otro->id, 'client_name' => 'X',
+            'status' => 'draft', 'total' => '10.00', 'token' => str()->random(24),
+        ]);
+
+        $this->entrar(['quotes.ver']);
+
+        // Lo que se exige es que NO se lea: 403 o 404 valen, filtrarse no.
+        $r = $this->getJson("/bixosales/cotizaciones/{$ajena->id}/events");
+        $this->assertContains($r->status(), [403, 404]);
+        $this->assertStringNotContainsString('titulo', $r->getContent());
     }
 }
