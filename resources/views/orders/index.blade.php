@@ -123,6 +123,9 @@ tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
         $sla = $conFlujo && $o->laundry_status ? \App\Support\OrderFlow::slaStatus($project, $o) : null;
         return [
         'id'             => $o->id,
+        // Numero del negocio (PED-00001). El accesor cae al id solo para las
+        // filas anteriores a la numeracion.
+        'numero'         => $o->etiqueta,
         'tag_code'       => $o->tag_code ?? '',
         'client_name'    => $o->client_name,
         'client_phone'   => $o->client_phone,
@@ -158,7 +161,7 @@ tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
         'pago_key'       => \App\Support\OrderStatus::pago($o->payment_status),
         'created_at_full'=> $o->created_at->format('d/m/Y H:i'),
         'updated_ts'     => $o->updated_at ? $o->updated_at->timestamp : $o->created_at->timestamp,
-        'responsable'    => $o->delivery_person_name ?: ($o->created_by ? ('Usuario #'.$o->created_by) : ''),
+        'responsable'    => $o->delivery_person_name ?: ($o->autor?->name ?? ''),
         'payment_proof'  => $o->payment_proof ? (str_starts_with($o->payment_proof,'http') ? $o->payment_proof : str_replace('http://','https://',asset('storage/'.$o->payment_proof))) : null,
     ]; })) }},
     paymentMethods:    {{ Js::from($paymentMethods) }},
@@ -734,7 +737,7 @@ function buildOrderTicketHtml() {
     </style></head><body>
     <div class="center" style="font-weight:700;font-size:13px">${biz}</div>
     ${ruc ? `<div class="center" style="font-size:10px;color:#444">RUC ${ruc}</div>` : ''}
-    <div class="center" style="font-size:10px;color:#444">${o.created_at||''} · PED-${String(o.id).padStart(6,'0')}</div>
+    <div class="center" style="font-size:10px;color:#444">${o.created_at||''} · ${o.numero || ('PED-'+String(o.id).padStart(5,'0'))}</div>
     ${o.client_name ? `<div class="center" style="font-size:10px;margin-top:3px">${o.client_name}</div>` : ''}
     <div class="dash"></div>
     ${rows}

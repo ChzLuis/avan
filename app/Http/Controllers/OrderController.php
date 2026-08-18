@@ -16,7 +16,7 @@ class OrderController extends Controller
         $project = $isSales
             ? Project::findOrFail(session('comercial_project_id'))
             : app('active_project');
-        $orders            = $project->orders()->with('client','items')->latest()->limit(500)->get();
+        $orders            = $project->orders()->with('client','items','autor:id,name')->latest()->limit(500)->get();
 
         // ── KPIs: definicion UNICA ──
         // Antes se calculaban aqui cuatro y Alpine recalculaba otros cuatro

@@ -5,7 +5,7 @@ use App\Models\Traits\HasProjectScope;
 class Order extends Model {
     use HasProjectScope;
     protected $fillable = [
-        'project_id', 'created_by', 'client_id', 'quote_id', 'client_name', 'client_phone', 'client_email',
+        'project_id', 'serie', 'correlativo', 'numero', 'created_by', 'client_id', 'quote_id', 'client_name', 'client_phone', 'client_email',
         'status', 'notes', 'coupon_code', 'discount', 'delivery_address', 'shipping_cost', 'total',
         'payment_method', 'payment_condition', 'sales_channel', 'payment_status', 'payment_reference',
         'payment_gateway', 'wa_number', 'wa_status', 'payment_proof',
@@ -19,6 +19,44 @@ class Order extends Model {
         // laundry fields
         'tag_code', 'pieces_count', 'laundry_status', 'laundry_status_at', 'ready_notified_at',
     ];
+    /**
+     * Numeracion por negocio, igual que en Cotizaciones.
+     *
+     * El `id` es global entre todos los proyectos: el primer pedido de un
+     * cliente nuevo salia como "PED-187". El correlativo empieza en 1 para
+     * cada negocio y el UNIQUE del esquema garantiza que no se repita.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $order) {
+            if ($order->correlativo !== null || empty($order->project_id)) {
+                return;
+            }
+            $order->serie = $order->serie ?: 'PED';
+            // max()+1 con bloqueo: sin el, dos pedidos simultaneos del mismo
+            // negocio toman el mismo numero y chocan contra el UNIQUE.
+            $siguiente = static::query()->withoutGlobalScopes()
+                ->where('project_id', $order->project_id)
+                ->where('serie', $order->serie)
+                ->lockForUpdate()
+                ->max('correlativo');
+            $order->correlativo = (int) $siguiente + 1;
+            $order->numero = $order->serie.'-'.str_pad((string) $order->correlativo, 5, '0', STR_PAD_LEFT);
+        });
+    }
+
+    /**
+     * Como se nombra este pedido en pantalla, siempre igual. Las filas
+     * anteriores a la numeracion caen al id para no quedarse sin nombre.
+     */
+    public function getEtiquetaAttribute(): string
+    {
+        return $this->numero ?: 'PED-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+    }
+
+    /** Quien creo el pedido. */
+    public function autor() { return $this->belongsTo(User::class, 'created_by'); }
+
     /** Cotizacion de origen (FK canonica desde F1b; nullable). */
     public function quote() { return $this->belongsTo(Quote::class); }
 

@@ -129,12 +129,20 @@
                     <span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 text-[11px] font-black flex items-center justify-center flex-shrink-0">{{ $i + 1 }}</span>
                     <div class="flex-1 min-w-0">
                         <div class="text-sm font-semibold text-gray-800 truncate">{{ $r['nombre'] }}</div>
-                        <div class="text-[11px] text-gray-400">{{ $r['pedidos'] }} pedidos · ticket S/ {{ $fmt($r['ticket']) }}</div>
+                        {{-- Cotizadas y conversion: quien cotiza mucho y cierra
+                             poco no se veia en un ranking de solo ventas. --}}
+                        <div class="text-[11px] text-gray-400">
+                            {{ $r['pedidos'] }} pedidos · {{ $r['cotizadas'] ?? 0 }} cotizadas
+                            @if(($r['conversion'] ?? null) !== null)
+                                · <span class="{{ $r['conversion'] >= 50 ? 'text-emerald-600' : ($r['conversion'] >= 20 ? 'text-amber-600' : 'text-gray-400') }}">{{ $r['conversion'] }}% cierre</span>
+                            @endif
+                            · ticket S/ {{ $fmt($r['ticket']) }}
+                        </div>
                     </div>
                     <div class="text-sm font-black text-gray-900">S/ {{ $fmt($r['total']) }}</div>
                 </div>
             @empty
-                <div class="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3">Aún no hay ventas registradas por vendedor este mes.</div>
+                <div class="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3">Aún no hay ventas ni cotizaciones por vendedor este mes.</div>
             @endforelse
         </div>
     </div>

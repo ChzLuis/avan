@@ -84,16 +84,55 @@ class DashboardComercialController extends Controller
             $grafico[] = ['dia' => $d, 'total' => $val, 'acum' => $acum];
         }
 
-        // Ranking por vendedor (created_by) del mes
-        $ranking = $okOrders()->whereBetween('created_at', [now()->startOfMonth(), now()])
+        // Ranking por vendedor del mes. Ademas de lo vendido se cuenta lo
+        // COTIZADO: un vendedor que cotiza mucho y cierra poco es un dato de
+        // gestion que el ranking de solo ventas escondia.
+        $desdeMes  = now()->startOfMonth();
+        $cotizadas = \App\Models\Quote::where('project_id', $project->id)
+            ->whereBetween('created_at', [$desdeMes, now()])
+            ->whereNotNull('created_by')
+            ->selectRaw('created_by, COUNT(*) as n, SUM(total) as importe')
+            ->groupBy('created_by')->get()->keyBy('created_by');
+
+        // Un solo viaje a users para todo el ranking.
+        $nombres = \App\Models\User::whereIn('id', $cotizadas->keys()
+            ->merge($okOrders()->whereBetween('created_at', [$desdeMes, now()])
+                ->whereNotNull('created_by')->distinct()->pluck('created_by'))
+            ->unique())->pluck('name', 'id');
+
+        $ranking = $okOrders()->whereBetween('created_at', [$desdeMes, now()])
             ->whereNotNull('created_by')
             ->selectRaw('created_by, COUNT(*) as pedidos, SUM(total) as total')
             ->groupBy('created_by')->orderByDesc('total')->limit(6)->get()
-            ->map(function ($r) {
-                $u = \App\Models\User::find($r->created_by);
-                return ['nombre' => $u?->name ?? 'Usuario #'.$r->created_by, 'pedidos' => (int) $r->pedidos,
-                        'total' => (float) $r->total, 'ticket' => $r->pedidos ? $r->total / $r->pedidos : 0];
+            ->map(function ($r) use ($cotizadas, $nombres) {
+                $nCot = (int) ($cotizadas->get($r->created_by)->n ?? 0);
+
+                return [
+                    'nombre'     => $nombres[$r->created_by] ?? 'Usuario #'.$r->created_by,
+                    'pedidos'    => (int) $r->pedidos,
+                    'total'      => (float) $r->total,
+                    'ticket'     => $r->pedidos ? $r->total / $r->pedidos : 0,
+                    'cotizadas'  => $nCot,
+                    // Cuantas de sus cotizaciones acabaron en venta.
+                    'conversion' => $nCot ? (int) round($r->pedidos / $nCot * 100) : null,
+                ];
             });
+
+        // Quien cotiza pero todavia no vende no aparecia en ninguna parte, y
+        // es justo el caso que un gerente quiere ver.
+        $conVenta    = $ranking->pluck('nombre')->all();
+        $soloCotizan = $cotizadas
+            ->reject(fn ($c, $uid) => in_array($nombres[$uid] ?? 'Usuario #'.$uid, $conVenta, true))
+            ->map(fn ($c, $uid) => [
+                'nombre'     => $nombres[$uid] ?? 'Usuario #'.$uid,
+                'pedidos'    => 0,
+                'total'      => 0.0,
+                'ticket'     => 0.0,
+                'cotizadas'  => (int) $c->n,
+                'conversion' => 0,
+            ])->values();
+
+        $ranking = $ranking->concat($soloCotizan)->take(8)->values();
 
         // Alertas accionables (cada una enlaza al registro correspondiente)
         $alertas = [];
