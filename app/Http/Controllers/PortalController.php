@@ -35,6 +35,28 @@ class PortalController extends Controller
         return view('public.portal-quote', compact('project', 'quote', 'settings'));
     }
 
+    /**
+     * GET /b/{slug}/c/{token}/pdf — el MISMO documento, para imprimir.
+     *
+     * El boton "Imprimir / PDF" del portal hacia `window.print()` sobre la
+     * pagina, asi que el cliente se llevaba un tercer documento distinto del
+     * que ve el negocio: otra maqueta, sin columna de descuento y sin la nota
+     * legal. Ahora abre `quotes.pdf`, exactamente la misma vista que exporta
+     * el panel. La autorizacion es la posesion del token, igual que para ver
+     * la cotizacion.
+     */
+    public function pdf(string $slug, string $token)
+    {
+        $project = $this->getProject($slug);
+        $quote   = Quote::allProjects()
+                        ->where('token', $token)
+                        ->where('project_id', $project->id)
+                        ->with('items')
+                        ->firstOrFail();
+
+        return view('quotes.pdf', compact('project', 'quote'));
+    }
+
     // POST /b/{slug}/c/{token}/accept — cliente acepta la cotización
     public function accept(Request $request, string $slug, string $token)
     {

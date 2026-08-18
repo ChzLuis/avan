@@ -17,11 +17,18 @@ class QuoteController extends Controller
         // Eager-load de lo que la vista recorre de verdad: items (se serializan
         // todos) y order (la relacion con el pedido). Con solo 'client' cada
         // cotizacion disparaba dos consultas extra al pintar la lista.
-        $quotes            = $project->quotes()->with(['client', 'items', 'order'])->latest()->get();
+        $quotes            = $project->quotes()->with(['client', 'items', 'order', 'autor:id,name'])->latest()->get();
         $paymentMethods    = $this->catValues($project, 'payment_method');
         $paymentConditions = $this->catValues($project, 'payment_condition');
         $portalLayout      = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
-        $products          = $project->products()->where('is_available', true)->orderBy('name')->get(['id','name','price','sku']);
+        // La miniatura y la linea secundaria de cada producto salen del
+        // catalogo. Se cargan con eager loading: la tabla del documento las
+        // consulta por fila y sin esto serian dos consultas por producto.
+        $products          = $project->products()
+            ->where('is_available', true)
+            ->with(['images:id,product_id,url,is_main,sort_order', 'category:id,name'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'price', 'sku', 'category_id', 'description']);
         // Capacidades resueltas en un solo sitio (F1c): la vista no vuelve a
         // deducir permisos con @can sueltos, que acaban desincronizados de las
         // rutas. 'convertir' ya incorpora el modulo de pedidos del proyecto.
@@ -92,6 +99,8 @@ class QuoteController extends Controller
         foreach ($data['items'] as $item) {
             $quote->items()->create($item);
         }
+
+        \App\Models\OrderEvent::log($project->id, 'created', [], null, $quote->id);
 
         return response()->json(['quote' => $quote->load('items')]);
     }
@@ -193,8 +202,71 @@ class QuoteController extends Controller
         if (array_key_exists('payment_status', $data) && $data['payment_status'] !== $quote->payment_status) {
             \App\Models\OrderEvent::log($project->id, 'payment_status', ['from' => $quote->payment_status, 'to' => $data['payment_status']], null, $quote->id);
         }
+        // El cambio de estado es el hecho que un vendedor busca en el
+        // historial ("¿cuando la envie?", "¿cuando la aceptaron?"). Se registra
+        // el estado COMERCIAL, no la clave cruda que llego en la peticion: las
+        // entradas admiten sinonimos legacy y el historial no puede depender de
+        // cual escribio quien.
+        $estadoPrevio = \App\Support\QuoteStatus::comercial($quote->status);
         $quote->update($data);
+        if ($destino !== $estadoPrevio) {
+            \App\Models\OrderEvent::log($project->id, 'status_changed',
+                ['from' => $estadoPrevio, 'to' => $destino], null, $quote->id);
+        }
+
         return response()->json(['quote' => $quote]);
+    }
+
+    /**
+     * Retrato del documento para comparar antes y despues de una edicion.
+     *
+     * Se toman los campos que a una auditoria le importan: a quien se le
+     * cotiza, por cuanto, con que condiciones y con que lineas. El resto
+     * (marcas de tiempo, token) cambia solo y no dice nada.
+     */
+    private function retrato(Quote $quote): array
+    {
+        return [
+            'cliente'    => $quote->client_name,
+            'documento'  => $quote->client_doc_number,
+            'total'      => \App\Support\LineMath::canon((string) $quote->total),
+            'validez'    => optional($quote->valid_until)->format('Y-m-d'),
+            'metodo'     => $quote->payment_method,
+            'condicion'  => $quote->payment_condition,
+            'lineas'     => $quote->items->map(fn ($i) => $i->description
+                .' x'.$i->quantity
+                .' @'.\App\Support\LineMath::canon((string) $i->price)
+                .($i->discount > 0 ? ' -'.\App\Support\LineMath::canon((string) $i->discount).'%' : ''))
+                ->sort()->values()->all(),
+        ];
+    }
+
+    /**
+     * Registra QUE cambio, con su valor anterior y el nuevo. Solo lo que
+     * cambio de verdad: un historial que anota cada guardado aunque no varie
+     * nada se vuelve ilegible y deja de consultarse.
+     */
+    private function registrarEdicion(Project $project, Quote $quote, array $antes, array $despues): void
+    {
+        $cambios = [];
+        foreach ($despues as $campo => $valor) {
+            if (($antes[$campo] ?? null) === $valor) {
+                continue;
+            }
+            $cambios[$campo] = [
+                'de' => is_array($antes[$campo] ?? null) ? count($antes[$campo]) . ' línea(s)' : ($antes[$campo] ?? '—'),
+                'a'  => is_array($valor) ? count($valor) . ' línea(s)' : ($valor ?: '—'),
+            ];
+        }
+
+        if (! $cambios) {
+            return;
+        }
+
+        \App\Models\OrderEvent::log($project->id, 'edited', [
+            'campos' => array_keys($cambios),
+            'detalle' => $cambios,
+        ], null, $quote->id);
     }
 
     /** Reemplaza cliente, condiciones e ítems completos (edición de una cotización existente). */
@@ -206,6 +278,9 @@ class QuoteController extends Controller
         // Reescribir cliente, lineas o total de una convertida descuadraria el
         // pedido que ya nacio de ella.
         $this->bloquearSiConvertida($quote, 'editar su contenido');
+        // Retrato previo: sin el no hay 'antes' que comparar y el historial
+        // solo podria decir que alguien edito, no que cambio.
+        $antes = $this->retrato($quote->load('items'));
 
         $data = $request->validate([
             'client_name'         => 'required|string|max:100',
@@ -254,6 +329,8 @@ class QuoteController extends Controller
             $quote->items()->create($item);
         }
 
+        $this->registrarEdicion($project, $quote, $antes, $this->retrato($quote->fresh()->load('items')));
+
         return response()->json(['ok' => true, 'quote' => $quote->load('items')]);
     }
 
@@ -277,8 +354,74 @@ class QuoteController extends Controller
         $quote->status  = 'sent';
         $quote->save();
 
+        \App\Models\OrderEvent::log($project->id, 'quote_sent', [], null, $quote->id);
+
         $portalUrl = url('/b/' . $project->slug . '/c/' . $quote->token);
         return response()->json(['ok' => true, 'url' => $portalUrl, 'quote' => $quote]);
+    }
+
+    /**
+     * Documento imprimible de la cotizacion.
+     *
+     * Facturacion ya tenia su vista de impresion en el servidor; Cotizaciones
+     * no tenia ninguna: el unico "PDF" del modulo se armaba en el navegador
+     * rasterizando la pantalla con html2canvas, asi que salia como imagen, sin
+     * texto seleccionable y recalculando los importes por su cuenta. Esta vista
+     * imprime la fila guardada y calcula con LineMath, que es la unica
+     * aritmetica de dinero del sistema.
+     */
+    public function pdf(Quote $quote)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        abort_unless($quote->project_id === $project->id, 403);
+        $quote->load('items');
+
+        return view('quotes.pdf', compact('project', 'quote'));
+    }
+
+    /**
+     * Historial de la cotizacion.
+     *
+     * `order_events` lleva registrando desde hace tiempo lo que le pasa a una
+     * cotizacion —creada, enviada, aceptada o rechazada por el cliente,
+     * comprobante subido, convertida en pedido— pero NO habia forma de leerlo:
+     * el unico endpoint de eventos filtraba por `order_id`. Se escribia un
+     * historial que nadie podia ver.
+     */
+    public function events(Quote $quote)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        abort_unless($quote->project_id === $project->id, 403);
+
+        $eventos = \App\Models\OrderEvent::with('user:id,name')
+            ->where('project_id', $project->id)
+            ->where('quote_id', $quote->id)
+            ->orderByDesc('created_at')
+            ->limit(12)
+            ->get()
+            ->map(fn ($e) => [
+                'titulo'  => $e->titulo,
+                'detalle' => $e->label,
+                'hace'    => $e->created_at->locale('es')->diffForHumans(null, true),
+                'fecha'   => $e->created_at->format('d/m/Y H:i'),
+                // Quien lo hizo. Sin usuario es el cliente actuando desde su
+                // enlace, o el sistema: se dice, no se deja en blanco.
+                'quien'   => $e->user?->name
+                    ?? (str_contains($e->action, '_by_client') || $e->action === 'proof_uploaded'
+                        ? 'el cliente' : 'el sistema'),
+                // Color del punto en la linea de tiempo: lo decide QUE paso,
+                // no la posicion del evento en la lista.
+                'tono'    => match (true) {
+                    str_contains($e->action, '_by_client'), $e->action === 'proof_uploaded' => 'cliente',
+                    $e->action === 'converted'                                              => 'convertida',
+                    in_array($e->action, ['created', 'quote_sent'], true)                   => 'exito',
+                    default                                                                 => 'neutro',
+                },
+            ]);
+
+        return response()->json(['eventos' => $eventos]);
     }
 
     public function destroy(Quote $quote)
@@ -289,7 +432,23 @@ class QuoteController extends Controller
         // Borrarla dejaria al pedido sin origen (la FK es nullOnDelete: el
         // pedido sobreviviria huerfano y perderiamos la trazabilidad).
         $this->bloquearSiConvertida($quote, 'eliminarla');
+
+        // Constancia ANTES de borrar: despues de `delete()` ya no hay de
+        // donde sacar el numero, el cliente ni el importe. El evento queda
+        // aunque la fila desaparezca.
+        // SIN quote_id a proposito: la FK borra en cascada y el rastro se
+        // iria con el documento. El numero y el importe viajan dentro del
+        // evento, que es lo que queda para responder "que se borro".
+        \App\Models\OrderEvent::log($project->id, 'deleted', [
+            'numero'   => $quote->etiqueta,
+            'quote_id' => $quote->id,
+            'cliente'  => $quote->client_name,
+            'total'    => \App\Support\LineMath::canon((string) $quote->total),
+            'estado'   => \App\Support\QuoteStatus::comercial($quote->status),
+        ]);
+
         $quote->delete();
+
         return response()->json(['ok' => true]);
     }
 
@@ -438,9 +597,14 @@ class QuoteController extends Controller
         $project = app('active_project');
         abort_unless($quote->project_id === $project->id, 403);
 
+        // El numero NO se copia: una copia es un documento nuevo y tiene que
+        // llevar su propio correlativo. Si se replicara, chocaria contra el
+        // UNIQUE del negocio (o peor, dos documentos distintos compartirian
+        // nombre y nadie sabria a cual se refiere el cliente).
         $copy = $quote->replicate([
             'token', 'status', 'sent_at', 'rejected_at', 'reject_reason',
             'payment_status', 'paid_amount', 'paid_at', 'payment_proof_url', 'payment_proof_at', 'seen_at',
+            'correlativo', 'numero',
         ]);
         $copy->status = 'draft';
         $copy->payment_status = 'pending';
