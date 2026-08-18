@@ -6,7 +6,6 @@ use App\Models\Order;
 use App\Models\OrderEvent;
 use App\Models\Payment;
 use App\Models\Project;
-use App\Models\Quote;
 use App\Models\ReceivableTerm;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +33,7 @@ class Ledger
      */
     public static function registrar(
         Project $project,
-        Order|Quote $documento,
+        Order $documento,
         ?int $importeCents,
         string $metodo = null,
         string $referencia = null,
@@ -146,7 +145,7 @@ class Ledger
         return $asientos->sum(fn (Payment $p) => $p->importeConSigno());
     }
 
-    public static function saldoCents(int $projectId, Order|Quote $documento): int
+    public static function saldoCents(int $projectId, Order $documento): int
     {
         [$tipo, $totalCents] = self::datosDe($documento);
 
@@ -157,7 +156,7 @@ class Ledger
      * Recalcula la cache del documento desde el libro. Se llama SIEMPRE tras
      * mover el libro; nunca se actualiza el saldo por incremento.
      */
-    public static function proyectar(Project $project, Order|Quote $documento): void
+    public static function proyectar(Project $project, Order $documento): void
     {
         [$tipo, $totalCents] = self::datosDe($documento);
         $cobrado = self::cobradoCents($project->id, $tipo, $documento->id);
@@ -168,18 +167,10 @@ class Ledger
             default                   => 'partial',
         };
 
-        if ($tipo === 'order') {
-            $documento->forceFill([
-                'payment_status'  => $estado,
-                'advance_amount'  => LineMath::format($cobrado),
-            ])->save();
-        } else {
-            $documento->forceFill([
-                'payment_status' => $estado,
-                'paid_amount'    => LineMath::format($cobrado),
-                'paid_at'        => $estado === 'paid' ? ($documento->paid_at ?? now()) : null,
-            ])->save();
-        }
+        $documento->forceFill([
+            'payment_status'  => $estado,
+            'advance_amount'  => LineMath::format($cobrado),
+        ])->save();
     }
 
     /**
@@ -187,7 +178,7 @@ class Ledger
      * es un ajuste por proyecto (`cxc_plazo_dias`, 0 = contado) porque una
      * bodega cobra al contado y una distribuidora fia a 30 dias.
      */
-    public static function generarVencimiento(Project $project, Order|Quote $documento, int $plazoDias = null): ReceivableTerm
+    public static function generarVencimiento(Project $project, Order $documento, int $plazoDias = null): ReceivableTerm
     {
         [$tipo, $totalCents] = self::datosDe($documento);
         $plazo = $plazoDias ?? (int) $project->setting('cxc_plazo_dias', 0);
@@ -210,7 +201,7 @@ class Ledger
      * el adelanto que ya se habia cobrado desapareceria. Al tocar por primera
      * vez un documento asi, su adelanto se adopta como asiento heredado.
      */
-    private static function adoptarAdelantoHeredado(Project $project, Order|Quote $doc, string $tipo): void
+    private static function adoptarAdelantoHeredado(Project $project, Order $doc, string $tipo): void
     {
         $yaHayLibro = Payment::where('project_id', $project->id)
             ->where('payable_type', $tipo)->where('payable_id', $doc->id)->exists();
@@ -235,25 +226,31 @@ class Ledger
         ]);
     }
 
-    /** ['order'|'quote', total en centavos] */
-    private static function datosDe(Order|Quote $documento): array
+    /**
+     * ['order', total en centavos].
+     *
+     * El libro es de PEDIDOS. Una cotizacion es una oferta y no genera
+     * derecho de cobro hasta convertirse en pedido; mientras el libro
+     * admitiera cotizaciones, la cartera podia volver a incluir dinero que
+     * nadie debe. `payable_type` se conserva en el esquema por si en el
+     * futuro entra otro documento cobrable (una factura suelta, por ejemplo).
+     */
+    private static function datosDe(Order $documento): array
     {
-        $tipo = $documento instanceof Order ? 'order' : 'quote';
-
-        return [$tipo, LineMath::toCents(LineMath::canon((string) $documento->total))];
+        return ['order', LineMath::toCents(LineMath::canon((string) $documento->total))];
     }
 
-    private static function documento(string $tipo, int $id): Order|Quote
+    private static function documento(string $tipo, int $id): Order
     {
-        return $tipo === 'order' ? Order::findOrFail($id) : Quote::findOrFail($id);
+        return Order::findOrFail($id);
     }
 
-    private static function registrarEvento(Project $project, Order|Quote $doc, string $tipo, string $accion, array $meta): void
+    private static function registrarEvento(Project $project, Order $doc, string $tipo, string $accion, array $meta): void
     {
         OrderEvent::create([
             'project_id' => $project->id,
-            'order_id'   => $tipo === 'order' ? $doc->id : null,
-            'quote_id'   => $tipo === 'quote' ? $doc->id : null,
+            'order_id'   => $doc->id,
+            'quote_id'   => null,
             'user_id'    => auth()->id(),
             'action'     => $accion,
             'meta'       => $meta,
