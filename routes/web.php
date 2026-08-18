@@ -237,6 +237,7 @@ Route::middleware(['auth'])->group(function () {
         // Constructor visual de bots
         Route::get('/bots-flow',            [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
         Route::get('/bots-flow/nuevo',      [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
+        Route::post('/bots-flow/plantilla-tienda', [\App\Http\Controllers\BotFlowController::class, 'desdePlantilla'])->name('bot-flows.plantilla')->middleware('can:settings.negocio');
         Route::get('/bots-flow/{flow}',     [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
         Route::post('/bots-flow/{flow}',    [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save')->middleware('can:settings.negocio');
         Route::post('/bots-flow/{flow}/test',[\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test')->middleware('can:settings.negocio');
@@ -515,6 +516,8 @@ Route::middleware(['auth'])->group(function () {
         // can:quotes.ver sobre todo el resource y quien podia leer podia borrar.
         Route::get('/quotes',              [QuoteController::class, 'index'])->name('quotes')->middleware(['module:quotes', 'can:quotes.ver']);
         Route::get('/quotes/{quote}',      [QuoteController::class, 'show'])->name('quotes.show')->middleware(['module:quotes', 'can:quotes.ver']);
+        Route::get('/quotes/{quote}/pdf',  [QuoteController::class, 'pdf'])->name('quotes.pdf')->middleware(['module:quotes', 'can:quotes.ver']);
+        Route::get('/quotes/{quote}/events', [QuoteController::class, 'events'])->name('quotes.events')->middleware(['module:quotes', 'can:quotes.ver']);
         Route::post('/quotes',             [QuoteController::class, 'store'])->name('quotes.store')->middleware(['module:quotes', 'can:quotes.crear']);
         Route::match(['put', 'patch'], '/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update')->middleware(['module:quotes', 'can:quotes.editar']);
         Route::delete('/quotes/{quote}',   [QuoteController::class, 'destroy'])->name('quotes.destroy')->middleware(['module:quotes', 'can:quotes.eliminar']);
@@ -810,6 +813,7 @@ Route::post('/{slug}/mp-webhook',         [PaymentController::class, 'mpWebhook'
 // ─── Portal comercial del cliente ─────────────────────────────────────────────
 Route::get('/b/{slug}',           [PortalController::class, 'home'])->name('portal.home');
 Route::get('/b/{slug}/c/{token}', [PortalController::class, 'quote'])->name('portal.quote');
+Route::get('/b/{slug}/c/{token}/pdf', [PortalController::class, 'pdf'])->name('portal.quote.pdf');
 Route::post('/b/{slug}/c/{token}/accept', [PortalController::class, 'accept'])->name('portal.quote.accept')->middleware('throttle:10,1');
 Route::post('/b/{slug}/c/{token}/reject', [PortalController::class, 'reject'])->name('portal.quote.reject')->middleware('throttle:10,1');
 Route::post('/b/{slug}/c/{token}/proof',  [PortalController::class, 'proof'])->name('portal.quote.proof')->middleware('throttle:10,1');
@@ -1058,9 +1062,22 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/caja/{caja}/movimiento',      [CajaController::class, 'movimiento'])->name('caja.movimiento')->middleware('can:caja.movimiento');
         Route::get('/caja/{caja}/data',             [CajaController::class, 'data'])->name('caja.data')->middleware('can:caja.ver');
 
+        // Busqueda global de la barra superior. Sin middleware de modulo: el
+        // propio servicio decide grupo por grupo lo que este usuario puede
+        // ver, porque busca en varias secciones a la vez.
+        Route::get('/buscar', function (\Illuminate\Http\Request $request) {
+            return response()->json([
+                'grupos' => \App\Support\BusquedaGlobal::buscar(
+                    auth()->user(), app('active_project'), (string) $request->query('q', '')
+                ),
+            ]);
+        })->name('buscar');
+
         Route::get('/cotizaciones',           [QuoteController::class, 'index'])->name('cotizaciones')->middleware('project.can:quotes.ver|view-quotes');
         Route::post('/cotizaciones',          [QuoteController::class, 'store'])->name('cotizaciones.store')->middleware('project.can:quotes.crear|manage-quotes');
         Route::get('/cotizaciones/{quote}',   [QuoteController::class, 'show'])->name('cotizaciones.show')->middleware('project.can:quotes.ver|view-quotes');
+        Route::get('/cotizaciones/{quote}/pdf', [QuoteController::class, 'pdf'])->name('cotizaciones.pdf')->middleware('project.can:quotes.ver|view-quotes');
+        Route::get('/cotizaciones/{quote}/events', [QuoteController::class, 'events'])->name('cotizaciones.events')->middleware('project.can:quotes.ver|view-quotes');
         Route::put('/cotizaciones/{quote}',   [QuoteController::class, 'update'])->name('cotizaciones.update')->middleware('project.can:quotes.editar|manage-quotes');
         Route::put('/cotizaciones/{quote}/full', [QuoteController::class, 'updateFull'])->name('cotizaciones.update_full')->middleware('project.can:quotes.editar|manage-quotes');
         Route::delete('/cotizaciones/{quote}',[QuoteController::class, 'destroy'])->name('cotizaciones.destroy')->middleware('project.can:quotes.eliminar|manage-quotes');

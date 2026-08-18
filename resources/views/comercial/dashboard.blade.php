@@ -17,14 +17,6 @@ $kpi = match(true) {
     default             => ['v'=>'Ventas hoy','p'=>'Pedidos hoy','pend'=>'Por atender','acc'=>'Nueva venta','acc_route'=>'bixosales.pos'],
 };
 
-// Semáforo — lógica real simple
-$semV = $varVentas === null ? 'gray' : ($varVentas >= 0 ? 'green' : ($varVentas >= -10 ? 'yellow' : 'red'));
-$semP = $pendientes === 0 ? 'green' : ($pendientes <= 5 ? 'yellow' : 'red');
-// El marcador SOLO existe de verdad en proyectos de rifas, que es la unica
-// rama que lo calcula. Aqui habia `$semScore = $semScore ?? 87`, asi que
-// cualquier otro negocio veia un **87/100 inventado** presentado como "estado
-// general del negocio", con su anillo y su barra. Un numero falso en el que
-// alguien puede basar una decision es peor que no tener el widget.
 $hayScore   = isset($semScore) && $semScore !== null;
 $scoreDeg   = $hayScore ? round($semScore * 3.6) : 0;
 $scoreColor = $hayScore
@@ -33,145 +25,89 @@ $scoreColor = $hayScore
 @endphp
 
 {{-- ══════════════════════════════════════════════════════
-     CENTRO OPERATIVO
+     RESUMEN DEL NEGOCIO
+     Orden de lectura: como voy hoy → que tengo que hacer → por que
+     esta pasando → a donde entro. Antes la pantalla abria con un
+     marcador y un semaforo cuyas tres ultimas luces (Caja, Logistica,
+     Stock) eran constantes escritas a mano: decian "Stock: niveles
+     normales" sin consultar una sola fila del catalogo.
 ══════════════════════════════════════════════════════ --}}
 <div class="co-wrap" id="centroOp" x-data="centroOp()" x-init="init()">
 
-    {{-- ── SECCIÓN 1: AVAN SCORE + SEMÁFORO ── --}}
-    <div class="co-header">
-
-        {{-- Marcador: solo si el proyecto lo calcula de verdad. --}}
-        @if($hayScore)
-        <div class="score-card">
-            <div class="score-ring-lg" style="background: conic-gradient({{ $scoreColor }} {{ $scoreDeg }}deg, #E5E8EF 0);">
-                <div class="score-inner-lg">
-                    <span class="score-num">{{ $semScore }}</span>
-                    <span class="score-den">/100</span>
-                </div>
+    {{-- ── Cabecera ── --}}
+    <header class="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div class="min-w-0">
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-semibold tracking-tight text-slate-900">Resumen del negocio</h1>
+                @if($hayScore)
+                <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
+                      style="border-color:{{ $scoreColor }}33;background:{{ $scoreColor }}14;color:{{ $scoreColor }}">
+                    BIXO Score {{ $semScore }}/100
+                </span>
+                @endif
             </div>
-            <div class="score-info">
-                <p class="score-title">BIXO Score</p>
-                <p class="score-sub">
-                    @if($varVentas !== null)
-                        <span style="color:{{ $varVentas >= 0 ? '#10B981' : '#EF4444' }}">
-                            {{ $varVentas >= 0 ? '▲' : '▼' }} {{ abs($varVentas) }}% ventas vs ayer
-                        </span>
-                    @else
-                        Estado general del negocio
-                    @endif
-                </p>
-                <div class="score-bar-wrap">
-                    <div class="score-bar-fill" style="width:{{ $semScore }}%; background:{{ $scoreColor }};"></div>
-                </div>
-            </div>
-        </div>
-        @endif
-
-        {{-- Semáforo empresarial --}}
-        <div class="semaforo-card">
-            <p class="section-label">SEMÁFORO EMPRESARIAL</p>
-            <div class="sema-grid">
-                @php
-                $areas = [
-                    ['Comercial',   $semV,                   'Tendencia de ventas'],
-                    ['Operaciones', $pendientes<=3?'green':($pendientes<=8?'yellow':'red'), 'Pedidos activos: '.$pendientes],
-                    ['Caja',        'green',                 'Sin alertas'],
-                    ['Logística',   'yellow',                'Delivery en proceso'],
-                    ['Stock',       'green',                 'Niveles normales'],
-                ];
-                @endphp
-                @foreach($areas as [$alabel, $acolor, $ahint])
-                <div class="sema-item" title="{{ $ahint }}">
-                    <div class="sema-dot-lg sema-dot-{{ $acolor }}"></div>
-                    <span class="sema-label">{{ $alabel }}</span>
-                </div>
-                @endforeach
-            </div>
-        </div>
-
-        {{-- KPIs rápidos --}}
-        <div class="kpi-strip">
-            <div class="kpi-mini">
-                <p class="kpi-mini-label">{{ $kpi['v'] }}</p>
-                <p class="kpi-mini-val">S/ {{ number_format($ventasHoy, 0) }}</p>
+            <p class="mt-0.5 text-sm text-slate-500">
+                Hoy es {{ now()->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
                 @if($varVentas !== null)
-                <span class="kpi-mini-trend" style="color:{{ $varVentas>=0?'#059669':'#DC2626' }}">
-                    {{ $varVentas>=0?'▲':'▼' }} {{ abs($varVentas) }}%
-                </span>
+                    · <span class="font-medium {{ $varVentas >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                        {{ $varVentas >= 0 ? '+' : '' }}{{ $varVentas }}% en ventas vs ayer
+                    </span>
                 @endif
-            </div>
-            <div class="kpi-mini">
-                <p class="kpi-mini-label">{{ $kpi['p'] }}</p>
-                <p class="kpi-mini-val">{{ $pedidosHoy }}</p>
-                @if($varPedidos !== null)
-                <span class="kpi-mini-trend" style="color:{{ $varPedidos>=0?'#059669':'#DC2626' }}">
-                    {{ $varPedidos>=0?'▲':'▼' }} {{ abs($varPedidos) }}%
-                </span>
-                @endif
-            </div>
-            <div class="kpi-mini">
-                <p class="kpi-mini-label">{{ $kpi['pend'] }}</p>
-                <p class="kpi-mini-val" style="color:{{ $pendientes>0?'#F59E0B':'#10B981' }}">{{ $pendientes }}</p>
-                <span class="kpi-mini-trend" style="color:#9CA3AF">activos ahora</span>
-            </div>
-            <div class="kpi-mini">
-                <p class="kpi-mini-label">Por cobrar</p>
-                <p class="kpi-mini-val" style="color:{{ ($porCobrar ?? 0) > 0 ? '#D97706' : '#10B981' }}">S/ {{ number_format($porCobrar ?? 0, 0) }}</p>
-                <a href="{{ route('bixosales.cuentas') }}" class="kpi-mini-trend" style="color:#4F46E5;text-decoration:none;font-weight:700;padding:15px 8px;margin:-15px -8px;display:inline-block">cobrar ahora →</a>
-            </div>
+            </p>
         </div>
+        {{-- Las dos acciones de cabecera se ofrecian a todo el mundo. Un
+             vendedor sin permiso de cotizar veia el boton y se comia un 403
+             al pulsarlo: ofrecer lo que no se puede hacer es peor que no
+             ofrecerlo. Se comprueban los mismos permisos que exige la ruta. --}}
+        @php
+            $_u2 = auth()->user();
+            $_puedeVender  = $_u2?->is_superadmin || $_u2?->can('pos.usar');
+            $_puedeCotizar = $_u2?->is_superadmin || $_u2?->can('quotes.crear') || $_u2?->can('manage-quotes');
+        @endphp
+        <div class="flex flex-wrap items-center gap-2">
+            @if($_puedeVender)
+            <a href="{{ route('bixosales.pos') }}"
+               class="inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                Nueva venta
+            </a>
+            @endif
+            @if($_puedeCotizar)
+            <a href="{{ route('bixosales.cotizaciones') }}"
+               class="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                Nueva cotización
+            </a>
+            @endif
+        </div>
+    </header>
+
+    {{-- Orden de lectura: como voy → que hago → por que pasa → de donde
+         viene la venta. `items-start` es deliberado: cada tarjeta termina
+         donde termina su contenido y no se estira para igualar a su vecina,
+         que es lo que dejaba media pantalla en blanco. --}}
+    @include('comercial.panel.kpis')
+
+    <div class="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
+        <div class="lg:col-span-5">@include('comercial.panel.atencion')</div>
+        <div class="lg:col-span-7">@include('comercial.panel.ventas')</div>
     </div>
 
-    {{-- ── VENTAS POR CANAL (mes) — multicanal real ── --}}
-    @if(isset($canales))
+    <div class="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
+        <div class="lg:col-span-5">@include('comercial.panel.estado-pedidos')</div>
+        <div class="lg:col-span-7">@include('comercial.panel.canales')</div>
+    </div>
+
+    @if($esRest)
     <div class="co-section">
         <div class="co-section-header">
             <div>
-                <p class="section-label">MULTICANAL</p>
-                <h2 class="section-title">¿Por dónde estás vendiendo este mes?</h2>
-            </div>
-            <div style="text-align:right">
-                <p style="font-size:11px;color:#9CA3AF;margin:0">Total del mes</p>
-                <p style="font-size:20px;font-weight:800;color:#111827;margin:0">S/ {{ number_format($ventasMesTotal ?? 0, 2) }}</p>
-                @if(($meta ?? 0) > 0)
-                <p style="font-size:11px;font-weight:700;margin:2px 0 0;color:{{ ($metaPct ?? 0) >= 100 ? '#059669' : '#4F46E5' }}">{{ $metaPct }}% de tu meta (S/ {{ number_format($meta, 0) }})</p>
-                @endif
-            </div>
-        </div>
-        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:18px 20px">
-            @php
-                $canalColors = ['Tienda virtual' => '#4F46E5', 'POS / Mostrador' => '#0EA5E9', 'WhatsApp' => '#25D366', 'Cotizaciones' => '#8B5CF6', 'Otros' => '#9CA3AF'];
-                $maxCanal = max(1, collect($canales)->max('t'));
-            @endphp
-            @forelse($canales as $nombre => $c)
-            <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
-                <span style="width:9px;height:9px;border-radius:50%;background:{{ $canalColors[$nombre] ?? '#9CA3AF' }};flex-shrink:0"></span>
-                <span style="width:130px;font-size:12.5px;font-weight:700;color:#374151;flex-shrink:0">{{ $nombre }}</span>
-                <div style="flex:1;height:10px;background:#F3F4F6;border-radius:99px;overflow:hidden">
-                    <div style="height:100%;border-radius:99px;background:{{ $canalColors[$nombre] ?? '#9CA3AF' }};width:{{ max(3, $c['t'] / $maxCanal * 100) }}%"></div>
-                </div>
-                <span style="width:110px;text-align:right;font-size:13px;font-weight:800;color:#111827">S/ {{ number_format($c['t'], 2) }}</span>
-                <span style="width:78px;text-align:right;font-size:11px;color:#9CA3AF">{{ $c['n'] }} venta{{ $c['n'] === 1 ? '' : 's' }} · {{ $ventasMesTotal > 0 ? round($c['t'] / $ventasMesTotal * 100) : 0 }}%</span>
-            </div>
-            @empty
-            <div style="text-align:center;padding:22px;color:#9CA3AF;font-size:13px">
-                Aún no hay ventas este mes. Empieza con <a href="{{ route('bixosales.ventas.express') }}" style="color:#4F46E5;font-weight:800">⚡ Venta Express</a>
-            </div>
-            @endforelse
-        </div>
-    </div>
-    @endif
-
-    {{-- ── SECCIÓN 2: MAPA OPERATIVO ── --}}
-    <div class="co-section">
-        <div class="co-section-header">
-            <div>
-                <p class="section-label">MAPA OPERATIVO</p>
-                <h2 class="section-title">
-                    @if($esRest) Mesas
-                    @else Estado del negocio
-                    @endif
-                </h2>
+                <h2 class="text-sm font-semibold text-slate-900">Mesas</h2>
+                <p class="text-xs text-slate-500">Ocupación en tiempo real</p>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
                 {{-- Leyenda --}}
@@ -181,7 +117,6 @@ $scoreColor = $hayScore
                     <span class="ley-dot" style="background:#EF4444;"></span><span>Urgente</span>
                     <span class="ley-dot" style="background:#E5E8EF;"></span><span>Cerrada</span>
                 </div>
-                @if($esRest)
                 <a href="{{ route('bixosales.mesas') }}"
                    style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px;
                           background:var(--blue); color:#fff; border-radius:8px;
@@ -194,12 +129,9 @@ $scoreColor = $hayScore
                     </svg>
                     Abrir mapa completo
                 </a>
-                @endif
             </div>
         </div>
 
-        {{-- Mapa de mesas (restaurante) --}}
-        @if($esRest)
         <div class="mapa-grid" id="mapaMesas" x-ref="mapa">
             <template x-if="mesasLoading">
                 <div style="grid-column:1/-1; text-align:center; padding:40px 0; color:var(--muted);">
@@ -236,49 +168,20 @@ $scoreColor = $hayScore
             </template>
         </div>
 
-        {{-- No restaurante: vista operativa genérica --}}
-        @else
-        <div class="ops-grid">
-            {{-- Ventas semana visual --}}
-            <div class="ops-card ops-card-wide">
-                <p class="ops-card-title">Ventas últimos 7 días</p>
-                <div style="height:130px; position:relative;">
-                    <canvas id="chartVentas"></canvas>
-                </div>
-            </div>
-            {{-- Estados --}}
-            <div class="ops-card">
-                <p class="ops-card-title">Pedidos por estado</p>
-                <div style="height:100px; display:flex; align-items:center; justify-content:center;">
-                    <canvas id="chartEstados"></canvas>
-                </div>
-                <div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">
-                    @foreach($donaLabels as $i => $lbl)
-                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px;">
-                        <div style="display:flex; align-items:center; gap:5px;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:{{ $donaColors[$i] ?? '#9CA3AF' }};display:inline-block;"></span>
-                            <span style="color:var(--muted);">{{ $lbl }}</span>
-                        </div>
-                        <span style="font-weight:600;color:var(--text);">{{ $donaData[$i] ?? 0 }}</span>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-        @endif
     </div>
+    @endif
 
     {{-- ── SECCIÓN 3: OBJETOS OPERATIVOS ── --}}
     {{-- ══ PAGOS POR APROBAR (Yape/Plin reportados en el bot) ══ --}}
     <div class="co-section" x-data="pagosAprobar()" x-init="cargar()" x-show="pedidos.length > 0" x-cloak>
         <div class="co-section-header">
             <div>
-                <p class="section-label">PAGOS REPORTADOS</p>
-                <h2 class="section-title">
-                    💳 Por aprobar
-                    <span x-text="'(' + pedidos.length + ')'"
-                          style="background:#FEF3C7;color:#B45309;font-size:12px;padding:2px 10px;border-radius:999px;margin-left:6px;"></span>
+                <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    Pagos por aprobar
+                    <span x-text="pedidos.length"
+                          class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700"></span>
                 </h2>
+                <p class="text-xs text-slate-500">Yape/Plin reportados por el cliente</p>
             </div>
             <button @click="cargar()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:500;">↻ Actualizar</button>
         </div>
@@ -361,216 +264,16 @@ $scoreColor = $hayScore
     }
     </script>
 
-    <div class="co-section">
-        <div class="co-section-header">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div>
-                    <p class="section-label">OBJETOS OPERATIVOS</p>
-                    <h2 class="section-title">Activos ahora</h2>
-                </div>
-                @if($esLavanderia && $lavOverdue > 0)
-                <div x-data="{ n: {{ $lavOverdue }} }" x-init="
-                        try { const s=new AudioContext(); const o=s.createOscillator(); const g=s.createGain();
-                              o.connect(g); g.connect(s.destination); o.frequency.value=880; g.gain.value=0.05;
-                              o.start(); setTimeout(()=>o.stop(), 250); } catch(e){}"
-                     style="display:flex; align-items:center; gap:6px; background:#FEE2E2; color:#B91C1C;
-                            padding:5px 12px; border-radius:999px; font-size:12px; font-weight:700;
-                            animation:pulse 1.5s ease-in-out infinite;">
-                    🔴 <span x-text="n"></span> pedido{{ $lavOverdue > 1 ? 's' : '' }} atrasado{{ $lavOverdue > 1 ? 's' : '' }}
-                </div>
-                <style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }</style>
-                @endif
-            </div>
-            <a href="{{ route('bixosales.pedidos') }}"
-               style="font-size:12px; color:var(--blue); text-decoration:none; font-weight:500; padding:14px 8px; margin:-14px -8px;">
-                Ver todos →
-            </a>
-        </div>
+    {{-- La cola operativa sustituye a las tarjetas de "Pedidos en curso" y
+         al listado de "Ultimos pedidos": eran dos formas distintas de contar
+         los mismos pedidos que el KPI y el bloque de atencion ya cuentan.
+         "Acceso rapido" tambien sale — esa navegacion vive en el menu — y
+         "Productos mas vendidos" se va a Reportes, que es donde se analiza. --}}
+    @include('comercial.panel.cola-pedidos')
 
-        <div class="objetos-scroll">
-
-            {{-- Pedidos activos --}}
-            @forelse($pedidosRecientes->whereIn('status',['pending','process'])->take(8) as $o)
-            @php
-                if ($esLavanderia && $o->laundry_status) {
-                    // Lavandería: tiempo en el estado actual + SLA configurado
-                    $sla = \App\Support\LaundryFlow::slaStatus($project, $o);
-                    $mins = $sla['minutes'];
-                    $urgencia = $sla['level'] === 'over' ? 'red' : ($sla['level'] === 'warn' ? 'yellow' : 'green');
-                    $statusLabel = $lavStates[$o->laundry_status]['label'] ?? ucfirst($o->laundry_status);
-                } else {
-                    $mins = (int) $o->created_at->diffInMinutes(now());
-                    $urgencia = $mins >= 30 ? 'red' : ($mins >= 15 ? 'yellow' : 'green');
-                    $statusLabel = match($o->status) {
-                        'pending' => 'Nuevo',
-                        'process' => $esRest ? 'En cocina' : 'En proceso',
-                        default => 'Activo',
-                    };
-                }
-                $tiempoLabel = $mins < 60 ? $mins.'m' : intdiv($mins,60).'h '.($mins%60).'m';
-            @endphp
-            <a href="{{ route('bixosales.pedidos') }}" class="obj-card obj-{{ $urgencia }}">
-                <div class="obj-header">
-                    <div class="obj-icon obj-icon-{{ $urgencia }}">
-                        @if($o->sales_channel === 'whatsapp')
-                        <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.116 1.535 5.845L.057 23.571l5.926-1.553A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.901 0-3.681-.506-5.215-1.389l-.375-.222-3.516.922.938-3.428-.244-.394A9.957 9.957 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
-                        </svg>
-                        @elseif($o->order_type === 'delivery')
-                        <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10h10zM13 8h4l3 3v5h-7V8z"/>
-                        </svg>
-                        @else
-                        <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                        </svg>
-                        @endif
-                    </div>
-                    <div class="obj-meta">
-                        <p class="obj-name">Pedido #{{ $o->id }}</p>
-                        <p class="obj-sub">{{ $o->client_name }}</p>
-                    </div>
-                    <div class="timer timer-{{ $urgencia }}">
-                        ⏱ {{ $tiempoLabel }}
-                    </div>
-                </div>
-                <div class="obj-body">
-                    <div class="obj-row">
-                        <span class="obj-row-label">Estado</span>
-                        <span class="obj-status obj-status-{{ $urgencia }}">{{ $statusLabel }}</span>
-                    </div>
-                    <div class="obj-row">
-                        <span class="obj-row-label">Monto</span>
-                        <span class="obj-val">S/ {{ number_format($o->total, 2) }}</span>
-                    </div>
-                    @if($o->table_number)
-                    <div class="obj-row">
-                        <span class="obj-row-label">Mesa</span>
-                        <span class="obj-val">{{ $o->table_number }}</span>
-                    </div>
-                    @endif
-                </div>
-            </a>
-            @empty
-            <div style="grid-column:1/-1; padding:32px; text-align:center; color:var(--muted); font-size:13px;">
-                No hay pedidos activos en este momento.
-            </div>
-            @endforelse
-
-            {{-- Acción rápida --}}
-            <a href="{{ route($kpi['acc_route']) }}"
-               style="display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:10px; min-width:160px; padding:20px;
-                      border:2px dashed var(--border); border-radius:12px;
-                      text-decoration:none; cursor:pointer; transition:all .15s;
-                      color:var(--muted);"
-               onmouseover="this.style.borderColor='var(--blue)'; this.style.color='var(--blue)'; this.style.background='var(--blue-light)'"
-               onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--muted)'; this.style.background='none'">
-                <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4v16m8-8H4"/>
-                </svg>
-                <span style="font-size:12px; font-weight:600; text-align:center;">{{ $kpi['acc'] }}</span>
-            </a>
-        </div>
-    </div>
-
-    {{-- ── SECCIÓN 4: TOP PRODUCTOS + VENTAS ── --}}
-    <div class="co-section co-bottom-grid">
-
-        {{-- Top productos --}}
-        <div class="co-card">
-            <div class="co-card-header">
-                <p class="section-label">TOP PLANES MÁS VENDIDOS</p>
-            </div>
-            @forelse($topProductos as $i => $p)
-            <div class="top-item">
-                <span class="top-rank">{{ $i+1 }}</span>
-                <div class="top-info">
-                    <p class="top-name">{{ $p->name }}</p>
-                    <div class="top-bar-wrap">
-                        <div class="top-bar-fill"
-                             style="width:{{ $topProductos->first()->total > 0 ? round(($p->total/$topProductos->first()->total)*100) : 0 }}%">
-                        </div>
-                    </div>
-                </div>
-                <div class="top-nums">
-                    <p class="top-qty">{{ $p->qty }} {{ isset($semScore) ? ($p->qty == 1 ? 'ticket' : 'tickets') : 'uds' }}</p>
-                    <p class="top-total">S/ {{ number_format($p->total, 0) }}</p>
-                </div>
-            </div>
-            @empty
-            <p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;">Sin ventas aún</p>
-            @endforelse
-        </div>
-
-        {{-- Ventas 7 días (solo si no restaurante ya lo tiene arriba) --}}
-        @if($esRest)
-        <div class="co-card co-card-wide">
-            <div class="co-card-header">
-                <p class="section-label">VENTAS 7 DÍAS</p>
-            </div>
-            <div style="height:150px; position:relative;">
-                <canvas id="chartVentas"></canvas>
-            </div>
-        </div>
-        @endif
-
-        {{-- Recientes --}}
-        <div class="co-card {{ $esRest ? '' : 'co-card-wide' }}">
-            <div class="co-card-header">
-                <p class="section-label">ÚLTIMOS PEDIDOS</p>
-                <a href="{{ route('bixosales.pedidos') }}"
-                   style="font-size:11px; color:var(--blue); text-decoration:none; padding:14px 8px; margin:-14px -8px;">Ver todos →</a>
-            </div>
-            @forelse($pedidosRecientes->take(8) as $o)
-            @php
-                $sc = [
-                    'pending'     => ['#FEF9C3','#92400E'],
-                    'process'     => ['#DBEAFE','#1E40AF'],
-                    'done'        => ['#D1FAE5','#065F46'],
-                    'cancelled'   => ['#FEE2E2','#991B1B'],
-                    'pendiente'   => ['#F3F4F6','#6B7280'],
-                    'comprobante' => ['#FEF3C7','#B45309'],
-                    'pagado'      => ['#DBEAFE','#1D4ED8'],
-                    'enviado'     => ['#DCFCE7','#15803D'],
-                    'cancelado'   => ['#FEE2E2','#DC2626'],
-                ];
-                $sl = [
-                    'pending'     => 'Nuevo',
-                    'process'     => 'En proceso',
-                    'done'        => 'Completado',
-                    'cancelled'   => 'Cancelado',
-                    'pendiente'   => 'Sin pago',
-                    'comprobante' => 'Por validar',
-                    'pagado'      => 'Pago confirmado',
-                    'enviado'     => 'Completado',
-                    'cancelado'   => 'Cancelado',
-                ];
-                [$bg,$tc] = $sc[$o->status] ?? ['#F3F4F6','#6B7280'];
-            @endphp
-            <div style="display:flex; align-items:center; gap:10px;
-                        padding:8px 0; border-bottom:1px solid var(--border);">
-                <div style="flex:1; min-width:0;">
-                    <p style="font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                        {{ $o->client_name }}
-                    </p>
-                    <p style="font-size:10px; color:var(--muted-light);">
-                        {{ \Carbon\Carbon::parse($o->created_at)->locale('es')->diffForHumans() }}
-                    </p>
-                </div>
-                <p style="font-size:12px; font-weight:700; color:var(--text); white-space:nowrap;">
-                    S/ {{ number_format($o->total, 2) }}
-                </p>
-                <span style="font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px;
-                             background:{{ $bg }}; color:{{ $tc }}; white-space:nowrap;">
-                    {{ $sl[$o->status] ?? $o->status }}
-                </span>
-            </div>
-            @empty
-            <p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;">Sin pedidos aún</p>
-            @endforelse
-        </div>
-
+    <div class="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
+        <div class="lg:col-span-5">@include('comercial.panel.conversion')</div>
+        <div class="lg:col-span-7">@include('comercial.panel.actividad')</div>
     </div>
 
 </div>
@@ -799,50 +502,59 @@ $scoreColor = $hayScore
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// ── Chart ventas 7 días ──────────────────────────────────
-const ctxV = document.getElementById('chartVentas');
-if (ctxV) {
-    new Chart(ctxV, {
-        type: 'line',
-        data: {
-            labels: @json($labels7),
-            datasets: [{
-                data: @json($data7),
-                borderColor: '#2563EB',
-                backgroundColor: 'rgba(37,99,235,0.07)',
-                borderWidth: 2,
-                pointBackgroundColor: '#2563EB',
-                pointRadius: 3,
-                tension: 0.4, fill: true,
-            }]
+// ── Ventas: un solo grafico, tres rangos reales ──────────
+// Las tres series llegan calculadas del servidor. El selector cambia los
+// datos del mismo canvas; no hay tres graficos escondidos ni datos de
+// relleno para el rango que no se este mirando.
+function panelVentas(series) {
+    return {
+        series: series || {},
+        rango: '7d',
+        chart: null,
+        get actual() {
+            return this.series[this.rango] || { labels: [], data: [], total: 0, varianza: null, vacia: true };
         },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#F3F4F6' },
-                     ticks: { font: { size: 10 }, callback: v => 'S/ '+v } },
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
-            }
-        }
-    });
-}
-
-// ── Chart estados (dona) ─────────────────────────────────
-const ctxE = document.getElementById('chartEstados');
-if (ctxE) {
-    @php $donaColorsSafe = $donaColors ?? ['#FCD34D', '#60A5FA', '#34D399', '#F87171']; @endphp
-    new Chart(ctxE, {
-        type: 'doughnut',
-        data: {
-            labels: @json($donaLabels),
-            datasets: [{ data: @json($donaData),
-                backgroundColor: @json($donaColorsSafe),
-                borderWidth: 0 }]
+        fmt(n) {
+            return (Number(n) || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
-        options: { responsive: true, maintainAspectRatio: false,
-                   plugins: { legend: { display: false } }, cutout: '65%' }
-    });
+        init() {
+            this.$nextTick(() => this.pintar());
+        },
+        elegir(r) {
+            this.rango = r;
+            this.$nextTick(() => this.pintar());
+        },
+        pintar() {
+            const el = document.getElementById('chartVentas');
+            if (!el || typeof Chart === 'undefined' || this.actual.vacia) return;
+            if (this.chart) { this.chart.destroy(); this.chart = null; }
+            this.chart = new Chart(el, {
+                type: 'line',
+                data: {
+                    labels: this.actual.labels,
+                    datasets: [{
+                        data: this.actual.data,
+                        borderColor: '#4F46E5',
+                        backgroundColor: 'rgba(79,70,229,0.06)',
+                        borderWidth: 2,
+                        pointRadius: this.actual.labels.length > 14 ? 0 : 3,
+                        pointBackgroundColor: '#4F46E5',
+                        tension: 0.35, fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, border: { display: false }, grid: { color: '#F1F5F9' },
+                             ticks: { font: { size: 10 }, color: '#94A3B8', callback: v => 'S/ ' + v } },
+                        x: { border: { display: false }, grid: { display: false },
+                             ticks: { font: { size: 10 }, color: '#94A3B8', maxRotation: 0, autoSkipPadding: 12 } }
+                    }
+                }
+            });
+        },
+    };
 }
 
 // ── Alpine: Centro Operativo ─────────────────────────────

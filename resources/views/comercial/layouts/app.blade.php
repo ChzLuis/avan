@@ -5,6 +5,22 @@ $_has  = fn(string $key) => in_array($key, $_mods);
 $_hasBot    = $_pid ? \App\Models\WaCanal::where('project_id', $_pid)->exists() : false;
 $_isGerente = auth()->user()?->hasRole('gerente');
 
+// ¿Puede el usuario abrir esto? Mismo criterio que el middleware de la ruta:
+// superadmin pasa siempre, y basta con UNO de los permisos alternativos
+// (universo canonico "quotes.ver" o heredado "view-quotes").
+$_uq  = auth()->user();
+$_can = fn (string ...$ps) => (bool) ($_uq?->is_superadmin) || collect($ps)->contains(fn ($p) => (bool) $_uq?->can($p));
+
+    // Que modulos se le ofrecen a este negocio. El criterio vive en
+    // App\Support\ModulosPortal porque la misma pregunta se hace en el menu,
+    // en los atajos del cajon y en los accesos rapidos del panel.
+    $_mod = \App\Support\ModulosPortal::liberados($project, $_uq?->id);
+
+// Lo que la campana tiene que decir. Los tres contadores eran literales
+// escritos aqui (`3`, `5`, `8`): un aviso que no se corresponde con nada
+// enseña al usuario a ignorar la campana.
+$_avisos = \App\Support\AvisosPortal::resumen($project);
+
 $_cat = $project->category ?? 'default';
 $_nav = match(true) {
     in_array($_cat, ['restaurante','cafeteria']) => [
@@ -120,6 +136,20 @@ $_nav = match(true) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $project->name ?? 'Panel' }} — Operaciones</title>
+    {{-- Sin favicon propio, el navegador reutiliza el ultimo que vio para
+         arindg.com —el de otra tienda—, asi que la pestaña de TECSIST salia
+         con el icono de un cliente distinto. El panel ya lo resolvia asi;
+         este portal se habia quedado fuera.
+         Orden: favicon configurado → logo del negocio → icono de la raiz. --}}
+    @php
+        $_icono = $project->settings()->where('key', 'favicon_url')->value('value')
+            ?: $project->logo_url;
+    @endphp
+    <link rel="icon" href="{{ $_icono
+        ? (\Illuminate\Support\Str::startsWith($_icono, ['http://', 'https://'])
+            ? $_icono
+            : asset('storage/'.ltrim($_icono, '/')))
+        : asset('favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -301,6 +331,7 @@ $_nav = match(true) {
 
         /* ── Topbar botones ── */
         .top-btn {
+            position: relative;
             /* UX1: objetivo tactil 44 (medidos 34x34). */
             width: 44px; height: 44px;
             display: flex; align-items: center; justify-content: center;
@@ -324,6 +355,16 @@ $_nav = match(true) {
             pointer-events: none;
         }
         .badge-red    { background: var(--red);    color: #fff; }
+        /* Con algo critico la campana se nota, pero sin bailar: un halo que
+           late dos veces por segundo distrae; este tarda 2 s y se apaga si el
+           sistema pide menos movimiento. */
+        .top-btn-alerta { color: var(--red); }
+        .top-btn-alerta::before {
+            content: ''; position: absolute; inset: 2px; border-radius: 10px;
+            background: var(--red); opacity: .12; animation: latido 2s ease-in-out infinite;
+        }
+        @keyframes latido { 0%,100% { opacity: .10; } 50% { opacity: .22; } }
+        @media (prefers-reduced-motion: reduce) { .top-btn-alerta::before { animation: none; } }
         .badge-yellow { background: var(--yellow);  color: #fff; }
         .badge-blue   { background: var(--blue);    color: #fff; }
 
@@ -504,175 +545,125 @@ $_nav = match(true) {
             #topbar { padding-left: calc(var(--sidebar-w) + 8px); padding-right: 8px; }
             .search-box { max-width: none; }
         }
+        /* ══ MENU LATERAL ══════════════════════════════════════════════
+           Dos estados reales. Contraido: solo iconos con tooltip y
+           aria-label. Expandido: icono + nombre del modulo. Un rail de
+           iconos sin texto obliga a adivinar que hay detras de cada dibujo,
+           y quien entra por primera vez no tiene forma de saberlo. La
+           eleccion se recuerda en localStorage. */
+        #sidebar { transition: width .2s ease; overflow: hidden; }
+        .nav-scroll {
+            flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .nav-pie { width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 6px; }
+        .nav-label { display: none; }
+        .nav-grupo { display: none; }
+        .nav-sep { width: 28px; height: 1px; background: var(--border); margin: 8px 0 6px; }
+
+        .nav-marca {
+            display: flex; align-items: center; gap: 10px; text-decoration: none;
+            margin-bottom: 10px; flex-shrink: 0; width: 100%; justify-content: center;
+        }
+        .nav-marca-cuadro {
+            width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1D4ED8, #2563EB);
+            box-shadow: 0 2px 8px rgba(37,99,235,.35);
+            color: #fff; font-weight: 900; font-size: 15px; letter-spacing: -.5px;
+        }
+        body.nav-abierto .nav-marca-bloque,
+        #sidebar .nav-marca-bloque.nav-label { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+        .nav-marca-texto { font-size: 15px; font-weight: 800; letter-spacing: -.02em; color: var(--text); }
+        .nav-marca-empresa {
+            font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+            color: var(--muted-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* Estado activo: lo marca la fila entera, no solo el icono. */
+        .nav-item.active { background: var(--blue-light); color: var(--blue); font-weight: 600; }
+        .nav-item.active .nav-label { color: var(--blue); }
+
+        body.nav-abierto { --sidebar-w: 216px; }
+        body.nav-abierto #sidebar { align-items: stretch; padding-left: 10px; padding-right: 10px; }
+        body.nav-abierto .nav-scroll { align-items: stretch; }
+        body.nav-abierto .nav-pie { align-items: stretch; }
+        body.nav-abierto .nav-marca { justify-content: flex-start; padding-left: 4px; }
+        body.nav-abierto .nav-item { width: 100%; justify-content: flex-start; gap: 12px; padding: 0 10px; }
+        body.nav-abierto .nav-item svg { flex-shrink: 0; }
+        body.nav-abierto .nav-label {
+            display: inline; font-size: 13px; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        body.nav-abierto .nav-grupo {
+            display: block; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+            text-transform: uppercase; color: var(--muted-light);
+            margin: 10px 0 2px; padding: 0 10px;
+        }
+        body.nav-abierto .nav-sep { display: none; }
+        body.nav-abierto .nav-toggle svg { transform: rotate(180deg); }
+        /* Con el nombre delante, el tooltip sobra y tapaba contenido. */
+        body.nav-abierto .nav-item::after { content: none; }
+
+        /* ── Movil: cajon, no barra permanente ── */
+        #nav-overlay {
+            position: fixed; inset: 0; background: rgba(15,23,42,.45);
+            z-index: 100; display: none;
+        }
+        @media (max-width: 767px) {
+            :root { --sidebar-w: 0px; }
+            body.nav-abierto { --sidebar-w: 0px; }
+            #sidebar {
+                width: 232px; align-items: stretch; padding-left: 10px; padding-right: 10px;
+                transform: translateX(-100%); transition: transform .2s ease;
+            }
+            #sidebar.nav-movil-abierto { transform: translateX(0); box-shadow: var(--shadow-lg); }
+            #sidebar .nav-label { display: inline; font-size: 14px; font-weight: 500; }
+            #sidebar .nav-grupo { display: block; font-size: 10px; font-weight: 700;
+                letter-spacing: .06em; text-transform: uppercase; color: var(--muted-light);
+                margin: 10px 0 2px; padding: 0 10px; }
+            #sidebar .nav-sep { display: none; }
+            #sidebar .nav-item { width: 100%; justify-content: flex-start; gap: 12px; padding: 0 10px; }
+            #sidebar .nav-item::after { content: none; }
+            #sidebar .nav-scroll, #sidebar .nav-pie { align-items: stretch; }
+            #sidebar .nav-marca { justify-content: flex-start; padding-left: 4px; }
+            #nav-overlay { display: block; }
+            #topbar { padding-left: 8px; }
+            /* En el cajon ya se ven los nombres: "Expandir" no significa nada. */
+            .nav-toggle { display: none; }
+        }
+        .nav-menu-btn { display: none; }
+        @media (max-width: 767px) { .nav-menu-btn { display: flex; } }
+
+        @media (prefers-reduced-motion: reduce) { #sidebar, .nav-item { transition: none; } }
     </style>
+<style>
+/* Resultados del buscador global */
+.bs-pop { position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:300;
+  background:var(--surface, #fff); border:1px solid var(--border, #e5e7eb); border-radius:12px;
+  box-shadow:0 16px 40px rgba(15,23,42,.12); padding:6px; max-height:min(66vh, 460px); overflow-y:auto; }
+.bs-info { margin:0; padding:14px 12px; font-size:13px; color:var(--muted, #64748b); }
+.bs-grupo + .bs-grupo { margin-top:4px; border-top:1px solid var(--border, #eef0f4); padding-top:4px; }
+.bs-grupo-titulo { margin:6px 10px 2px; font-size:10.5px; font-weight:700; letter-spacing:.05em;
+  text-transform:uppercase; color:var(--muted, #94a3b8); }
+.bs-item { display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:9px 10px; border-radius:8px; text-decoration:none; color:inherit; }
+.bs-item:hover, .bs-item.activo { background:var(--primary-soft, #eef2ff); }
+.bs-item-txt { display:flex; flex-direction:column; min-width:0; }
+.bs-item-titulo { font-size:13.5px; font-weight:600; color:var(--text, #111827);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bs-item-detalle { font-size:11.5px; color:var(--muted, #64748b);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bs-item-importe { font-size:12.5px; font-weight:700; color:var(--primary, #4f46e5);
+  flex-shrink:0; font-variant-numeric:tabular-nums; }
+</style>
 </head>
 <body class="h-full antialiased"
+      :class="navAbierto ? 'nav-abierto' : ''"
       x-data="avanLayout()"
       x-init="init()">
 
-{{-- ══════════════════════════════════════
-     SIDEBAR
-══════════════════════════════════════ --}}
-<nav id="sidebar">
-
-    {{-- Logo --}}
-    <a href="{{ route('bixosales.dashboard') }}"
-       class="flex items-center justify-center w-11 h-11 rounded-xl mb-4 flex-shrink-0"
-       style="background: linear-gradient(135deg, #1D4ED8, #2563EB); box-shadow: 0 2px 8px rgba(37,99,235,.35);">
-        <span style="color:#fff; font-weight:900; font-size:15px; letter-spacing:-.5px;">A</span>
-    </a>
-
-    <div style="width:28px; height:1px; background:var(--border); margin-bottom:8px;"></div>
-
-    {{-- Centro Operativo --}}
-    <a href="{{ route('bixosales.dashboard') }}"
-       class="nav-item {{ request()->routeIs('bixosales.dashboard') ? 'active' : '' }}"
-       data-tip="Centro Operativo">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
-    </a>
-
-    {{-- Actividades --}}
-    <a href="{{ route('bixosales.pedidos') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.pedidos*') ? 'active' : '' }}"
-       data-tip="Actividades">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-        </svg>
-    </a>
-
-    {{-- Conversaciones (solo superadmin) --}}
-    @if($_hasBot && auth()->user()->is_superadmin)
-    <a href="{{ route('bixosales.rifas') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.rifas*') ? 'active' : '' }}"
-       data-tip="Conversaciones">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-        </svg>
-    </a>
-    @endif
-
-    {{-- Pedidos Web (WooCommerce) — solo superadmin --}}
-    @if(auth()->user()->is_superadmin)
-    <a href="{{ route('bixosales.woo.orders') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.woo.orders*') ? 'active' : '' }}"
-       data-tip="Pedidos Web">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-        </svg>
-    </a>
-    @endif
-
-    {{-- Conversaciones (solo superadmin) --}}
-    @if(auth()->user()->is_superadmin)
-    <a href="{{ route('bixosales.conversaciones') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.conversaciones*') ? 'active' : '' }}"
-       data-tip="Conversaciones">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-        </svg>
-    </a>
-    @endif
-
-    {{-- Tickets Manuales WordPress — solo superadmin --}}
-    @if(auth()->user()->is_superadmin)
-    <a href="{{ route('bixosales.tickets.wp') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.tickets.wp*') ? 'active' : '' }}"
-       data-tip="Tickets Manuales">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
-        </svg>
-    </a>
-    @endif
-
-    {{-- Indicadores --}}
-    <a href="{{ route('bixosales.reportes.ventas.general') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.reportes*') ? 'active' : '' }}"
-       data-tip="Indicadores">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-        </svg>
-    </a>
-
-    <div style="flex:1;"></div>
-
-    {{-- Cambiar Vista --}}
-    <button @click="vistaOpen = !vistaOpen"
-            class="nav-item"
-            :class="vistaOpen ? 'active' : ''"
-            data-tip="Cambiar Vista">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                  d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
-        </svg>
-    </button>
-
-    {{-- POS / Acción principal --}}
-    @if($_has('orders'))
-    <a href="{{ route('bixosales.pos') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.pos*') ? 'active' : '' }}"
-       data-tip="{{ $_nav['pos'] }}">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4v16m8-8H4"/>
-        </svg>
-    </a>
-    @endif
-
-    {{-- Mis precios y catálogo (Revendedor) --}}
-    @if(auth()->user()?->is_superadmin || (($project ?? null) && $project->owner_id===auth()->id()) || auth()->user()?->can('pos.usar'))
-    <a href="{{ route('bixosales.reseller.precios') }}"
-       class="nav-item mt-1 {{ request()->routeIs('bixosales.reseller.*') ? 'active' : '' }}"
-       data-tip="Mis precios y catálogo">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z"/>
-        </svg>
-    </a>
-    @endif
-
-    <div style="width:28px; height:1px; background:var(--border); margin: 8px 0;"></div>
-
-    {{-- Avatar / logout --}}
-    <div class="relative" x-data="{open:false}">
-        <button @click="open=!open"
-                class="nav-item"
-                data-tip="{{ auth()->user()->name ?? 'Usuario' }}">
-            <div style="width:28px; height:28px; border-radius:50%;
-                        background:var(--blue); color:#fff;
-                        display:flex; align-items:center; justify-content:center;
-                        font-size:11px; font-weight:700;">
-                {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
-            </div>
-        </button>
-        <div x-show="open" @click.outside="open=false" x-cloak
-             style="position:absolute; left:calc(100% + 8px); bottom:0; width:200px;
-                    background:var(--surface); border:1px solid var(--border);
-                    border-radius:12px; box-shadow:var(--shadow-lg); overflow:hidden; z-index:200;">
-            <div style="padding:12px 14px; border-bottom:1px solid var(--border);">
-                <p style="font-size:13px; font-weight:600; color:var(--text);">{{ auth()->user()->name ?? '' }}</p>
-                <p style="font-size:11px; color:var(--muted);">{{ auth()->user()->email ?? '' }}</p>
-            </div>
-            <form method="POST" action="{{ route('bixosales.logout') }}">
-                @csrf
-                <button type="submit"
-                        style="width:100%; text-align:left; padding:10px 14px;
-                               font-size:13px; color:var(--red); background:none;
-                               border:none; cursor:pointer; font-family:inherit;"
-                        onmouseover="this.style.background='var(--red-bg)'"
-                        onmouseout="this.style.background='none'">
-                    Cerrar sesión
-                </button>
-            </form>
-        </div>
-    </div>
-</nav>
+@include('comercial.layouts._sidebar')
 
 {{-- ══════════════════════════════════════
      PANEL CAMBIAR VISTA (flotante)
@@ -718,6 +709,16 @@ $_nav = match(true) {
 ══════════════════════════════════════ --}}
 <header id="topbar">
 
+    {{-- En movil el menu es un cajon: esta barra abre el de la IZQUIERDA. El
+         boton de la derecha sigue abriendo el panel de alertas. --}}
+    <button type="button" class="top-btn nav-menu-btn" @click="navMovil = !navMovil"
+            :aria-expanded="navMovil ? 'true' : 'false'" aria-controls="sidebar"
+            aria-label="Abrir menú" title="Menú">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+        </svg>
+    </button>
+
     {{-- Breadcrumb rubro --}}
     <span style="font-size:12px; font-weight:600; color:var(--blue);
                  background:var(--blue-light); padding:3px 10px;
@@ -734,7 +735,9 @@ $_nav = match(true) {
     @endif
 
     {{-- Búsqueda Global --}}
-    <div class="search-box" style="margin: 0 auto;">
+    <div class="search-box" style="margin:0 auto; position:relative;"
+         @click.outside="buscarAbierto = false"
+         @keydown.escape.window="buscarAbierto = false">
         <svg style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"
              fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -743,20 +746,65 @@ $_nav = match(true) {
         <input type="text"
                x-model="searchQ"
                style="min-height:44px"
-               placeholder="Buscar clientes, órdenes, mesas..."
-               @keydown.enter="if(searchQ.length>1) window.location='{{ route('bixosales.pedidos') }}?q='+searchQ">
+               {{-- El buscador decia "clientes, órdenes, mesas" en TODOS los
+                    negocios: una ferreteria no tiene mesas y leerlo ahi hace
+                    dudar de si el panel es el suyo. El rubro ya sabe como se
+                    llaman sus cosas ($_nav), asi que se lo preguntamos. --}}
+               placeholder="Buscar clientes, {{ mb_strtolower($_nav['pedidos']) }}, cotizaciones, productos..."
+               role="combobox" aria-autocomplete="list" aria-controls="resultados-busqueda"
+               :aria-expanded="buscarAbierto ? 'true' : 'false'"
+               @input.debounce.220ms="buscarGlobal()"
+               @focus="if (buscarGrupos.length) buscarAbierto = true"
+               @keydown.down.prevent="moverResultado(1)"
+               @keydown.up.prevent="moverResultado(-1)"
+               @keydown.enter.prevent="abrirResultado()">
         <kbd style="font-size:10px; color:var(--muted); background:var(--bg);
                     border:1px solid var(--border); padding:1px 6px; border-radius:4px;
                     white-space:nowrap;">⌘K</kbd>
+
+        {{-- Resultados predictivos. Cada grupo se pinta solo si el servidor
+             lo devolvio, y el servidor solo devuelve lo que este usuario
+             puede ver. --}}
+        <div class="bs-pop" id="resultados-busqueda" role="listbox" x-show="buscarAbierto" x-cloak>
+            <template x-if="buscarCargando">
+                <p class="bs-info">Buscando…</p>
+            </template>
+            <template x-if="!buscarCargando && !buscarGrupos.length && searchQ.length > 1">
+                <p class="bs-info">Sin resultados para «<span x-text="searchQ"></span>».</p>
+            </template>
+            <template x-for="g in buscarGrupos" :key="g.clave">
+                <div class="bs-grupo">
+                    <p class="bs-grupo-titulo" x-text="g.titulo"></p>
+                    <template x-for="it in g.items" :key="g.clave + it.url + it.titulo">
+                        <a :href="it.url" class="bs-item"
+                           :class="buscarIndice === buscarPlano.findIndex(x => x.url === it.url && x.titulo === it.titulo) ? 'activo' : ''"
+                           role="option"
+                           :aria-selected="buscarIndice === buscarPlano.findIndex(x => x.url === it.url && x.titulo === it.titulo) ? 'true' : 'false'">
+                            <span class="bs-item-txt">
+                                <span class="bs-item-titulo" x-text="it.titulo"></span>
+                                <span class="bs-item-detalle" x-show="it.detalle" x-text="it.detalle"></span>
+                            </span>
+                            <span class="bs-item-importe" x-show="it.importe" x-text="it.importe"></span>
+                        </a>
+                    </template>
+                </div>
+            </template>
+        </div>
     </div>
 
     {{-- Alertas --}}
-    <button class="top-btn" @click="abrirPanel('alertas', $event)" :aria-expanded="panelOpen && panelTab==='alertas' ? 'true':'false'" aria-controls="panel-right" title="Alertas">
+    <button class="top-btn {{ $_avisos['criticos'] > 0 ? 'top-btn-alerta' : '' }}"
+            @click="abrirPanel('alertas', $event)"
+            :aria-expanded="panelOpen && panelTab==='alertas' ? 'true':'false'" aria-controls="panel-right"
+            title="{{ $_avisos['total'] ? $_avisos['total'].' aviso(s) que requieren tu atención' : 'Sin avisos' }}"
+            aria-label="{{ $_avisos['total'] ? 'Avisos: '.$_avisos['total'] : 'Sin avisos' }}">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
-        <span class="badge badge-red">3</span>
+        @if($_avisos['total'] > 0)
+        <span class="badge {{ $_avisos['criticos'] > 0 ? 'badge-red' : 'badge-yellow' }}">{{ $_avisos['total'] }}</span>
+        @endif
     </button>
 
     {{-- Conversaciones (solo superadmin) --}}
@@ -766,7 +814,6 @@ $_nav = match(true) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
                   d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
         </svg>
-        <span class="badge badge-blue">5</span>
     </a>
     @endif
 
@@ -776,7 +823,9 @@ $_nav = match(true) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <span class="badge badge-yellow">8</span>
+        @if($_avisos['pendientes'] > 0)
+        <span class="badge badge-yellow">{{ $_avisos['pendientes'] > 99 ? '99+' : $_avisos['pendientes'] }}</span>
+        @endif
     </button>
 
     {{-- Panel toggle --}}
@@ -973,21 +1022,35 @@ $_nav = match(true) {
                     </a>
                     @endforeach
                 @else
-                    @if(count($_alertas) === 0)
+                    {{-- Los avisos salen de App\Support\AvisosPortal: cobro
+                         vencido, pedidos parados, stock bajo minimo y pagos
+                         por validar. Antes esta rama solo miraba el SLA de
+                         lavanderia y, como `supportsFlow()` es cierto para
+                         cualquier rubro, un comercio veia "Todo al dia"
+                         teniendo once documentos vencidos. --}}
+                    @if($_avisos['total'] === 0)
                         <div style="text-align:center; padding:32px 16px; color:var(--muted);">
                             <div style="font-size:28px; margin-bottom:8px;">✅</div>
-                            <p style="font-size:12px; font-weight:600;">Sin alertas activas</p>
-                            <p style="font-size:11px; margin-top:4px;">Todo al día</p>
+                            <p style="font-size:12px; font-weight:600;">Sin avisos</p>
+                            <p style="font-size:11px; margin-top:4px;">Nada vencido, parado ni bajo mínimo</p>
                         </div>
                     @endif
-                    @foreach($_alertas as $_a)
-                    <div class="alert-item {{ $_a['nivel'] === 'red' ? 'alert-red' : 'alert-yellow' }}">
-                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                            <span class="sema {{ $_a['nivel'] === 'red' ? 'sema-red' : 'sema-yellow' }}"></span>
-                            <span style="font-weight:600; color:{{ $_a['nivel'] === 'red' ? 'var(--red)' : '#92400E' }};">{{ $_a['titulo'] }}</span>
+                    @foreach($_avisos['avisos'] as $_a)
+                    <a href="{{ $_a['url'] }}" style="text-decoration:none; display:block;">
+                        <div class="alert-item {{ $_a['nivel'] === 'alto' ? 'alert-red' : 'alert-yellow' }}"
+                             style="cursor:pointer; transition:box-shadow .1s;"
+                             onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.08)'"
+                             onmouseout="this.style.boxShadow='none'">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;">
+                                <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                                    <span class="sema {{ $_a['nivel'] === 'alto' ? 'sema-red' : 'sema-yellow' }}"></span>
+                                    <span style="font-weight:600; color:{{ $_a['nivel'] === 'alto' ? 'var(--red)' : '#92400E' }};">{{ $_a['titulo'] }}</span>
+                                </div>
+                                <span style="font-size:10px; color:{{ $_a['nivel'] === 'alto' ? 'var(--red)' : '#B45309' }};">›</span>
+                            </div>
+                            <p style="color:{{ $_a['nivel'] === 'alto' ? '#991B1B' : '#92400E' }}; font-size:12px; margin:0;">{{ $_a['detalle'] }}</p>
                         </div>
-                        <p style="color:{{ $_a['nivel'] === 'red' ? '#991B1B' : '#92400E' }}; font-size:12px;">{{ $_a['desc'] }}</p>
-                    </div>
+                    </a>
                     @endforeach
                 @endif
             </div>
@@ -1063,6 +1126,7 @@ $_nav = match(true) {
             <p class="section-title">Acceso rápido</p>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
                 @if($_has('orders'))
+                @if($_can('pos.usar'))
                 <a href="{{ route('bixosales.pos') }}"
                    style="display:flex; flex-direction:column; align-items:center; gap:4px;
                           padding:8px 4px; border-radius:8px; border:1px solid var(--border);
@@ -1075,6 +1139,7 @@ $_nav = match(true) {
                     </svg>
                     <span style="font-size:10px; color:var(--muted); font-weight:500;">Vender</span>
                 </a>
+                @endif
                 @endif
                 @if($_nav['hasKitchen'])
                 <a href="{{ route('bixosales.mesas') }}"
@@ -1089,6 +1154,7 @@ $_nav = match(true) {
                     </svg>
                     <span style="font-size:10px; color:var(--muted); font-weight:500;">Mesas</span>
                 </a>
+                @if($_can('agenda.ver') && $_mod['reservas'])
                 <a href="{{ route('bixosales.reservas') }}"
                    style="display:flex; flex-direction:column; align-items:center; gap:4px;
                           padding:8px 4px; border-radius:8px; border:1px solid var(--border);
@@ -1102,7 +1168,8 @@ $_nav = match(true) {
                     <span style="font-size:10px; color:var(--muted); font-weight:500;">Reservas</span>
                 </a>
                 @endif
-                @if(!$_usaRifas)
+                @endif
+                @if(!$_usaRifas && $_can('caja.ver') && $_mod['caja'])
                 <a href="{{ route('bixosales.caja') }}"
                    style="display:flex; flex-direction:column; align-items:center; gap:4px;
                           padding:8px 4px; border-radius:8px; border:1px solid var(--border);
@@ -1116,6 +1183,7 @@ $_nav = match(true) {
                     <span style="font-size:10px; color:var(--muted); font-weight:500;">Caja</span>
                 </a>
                 @endif
+                @if($_can('reports.ver'))
                 <a href="{{ route('bixosales.reportes.ventas.general') }}"
                    style="display:flex; flex-direction:column; align-items:center; gap:4px;
                           padding:8px 4px; border-radius:8px; border:1px solid var(--border);
@@ -1128,6 +1196,7 @@ $_nav = match(true) {
                     </svg>
                     <span style="font-size:10px; color:var(--muted); font-weight:500;">Ver ventas</span>
                 </a>
+                @endif
             </div>
         </div>
     </div>
@@ -1225,6 +1294,13 @@ function avanLayout() {
     return {
         vista:      'operativa',
         vistaOpen:  false,
+        // El rail solo de iconos obliga a adivinar que hay detras de cada
+        // dibujo. Se puede expandir a icono+texto y la eleccion se recuerda.
+        // Sin preferencia guardada, en escritorio arranca EXPANDIDO: un rail
+        // de iconos sin texto no se entiende la primera vez. Quien lo contrae
+        // se lo encuentra contraido la proxima.
+        navAbierto: (localStorage.getItem('bixo.navAbierto') ?? (window.innerWidth >= 1280 ? '1' : '0')) === '1',
+        navMovil:   false,
         // Como cajón ya no roba ancho, pero arrancar abierto en escritorio
         // tapaba trabajo al entrar. Cerrado por defecto: se abre a demanda.
         panelOpen:  false,
@@ -1233,9 +1309,46 @@ function avanLayout() {
         abrirPanel(tab, ev){ this.panelTrigger = ev?.currentTarget || null; this.panelTab = tab; this.panelOpen = true; },
         panelTab:   'alertas',
         searchQ:    '',
+        /* Buscador global: grupos que devuelve el servidor, el plano para
+           moverse con el teclado y el indice resaltado. */
+        buscarAbierto: false, buscarCargando: false, buscarGrupos: [], buscarIndice: -1,
+        get buscarPlano() { return this.buscarGrupos.flatMap(g => g.items); },
+        async buscarGlobal() {
+            const q = (this.searchQ || '').trim();
+            this.buscarIndice = -1;
+            if (q.length < 2) { this.buscarGrupos = []; this.buscarAbierto = false; return; }
+            this.buscarAbierto = true; this.buscarCargando = true;
+            try {
+                const r = await fetch('{{ route('bixosales.buscar') }}?q=' + encodeURIComponent(q), {headers:{'Accept':'application/json'}});
+                this.buscarGrupos = r.ok ? ((await r.json()).grupos || []) : [];
+            } catch (e) { this.buscarGrupos = []; }
+            this.buscarCargando = false;
+        },
+        moverResultado(paso) {
+            const n = this.buscarPlano.length;
+            if (!n) return;
+            this.buscarAbierto = true;
+            this.buscarIndice = (this.buscarIndice + paso + n) % n;
+        },
+        /* Enter: abre lo resaltado; si no hay nada resaltado, el primero. Sin
+           resultados no se va a ningun sitio, que era lo que antes pasaba
+           siempre (acababas en Pedidos buscaras lo que buscaras). */
+        abrirResultado() {
+            const destino = this.buscarPlano[this.buscarIndice >= 0 ? this.buscarIndice : 0];
+            if (destino) window.location = destino.url;
+        },
+        alternarNav() {
+            this.navAbierto = !this.navAbierto;
+            try { localStorage.setItem('bixo.navAbierto', this.navAbierto ? '1' : '0'); } catch (e) {}
+        },
         init() {
+            // Antes esta escucha hacia `panelOpen = ancho >= 1024`, asi que
+            // cualquier redimension —o girar el movil— abria el cajon derecho
+            // aunque el usuario lo hubiera cerrado. Solo se cierra al pasar a
+            // pantalla pequeña; abrirlo es siempre decision del usuario.
             window.addEventListener('resize', () => {
-                this.panelOpen = window.innerWidth >= 1024;
+                if (window.innerWidth < 1024) { this.panelOpen = false; }
+                if (window.innerWidth >= 768) { this.navMovil = false; }
             });
         }
     };

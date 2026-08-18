@@ -70,9 +70,36 @@ class DashboardController extends Controller
         }
         uasort($canales, fn ($a, $b) => $b['t'] <=> $a['t']);
         $ventasMesTotal = array_sum(array_column($canales, 't'));
-        $porCobrar = (float) $project->orders()->where('status', '!=', 'cancelled')
-            ->where(fn ($q) => $q->whereNotIn('payment_status', ['paid', 'refunded'])->orWhereNull('payment_status'))
-            ->sum('total');
+        // ── Cobranza: la MISMA cartera que ve Cuentas por Cobrar ─────────
+        // Antes este KPI sumaba el total de los pedidos no pagados, sin restar
+        // adelantos ni incluir cotizaciones aceptadas: el panel y Cobranza
+        // daban dos cifras distintas para "cuanto me deben". Ahora las dos
+        // pantallas preguntan a App\Support\Cobranza.
+        // "Por cobrar" es la deuda que nace de una venta. Las cotizaciones
+        // aceptadas ya no suman aqui: no son deuda, son trabajo pendiente
+        // (convertirlas en pedido), y como tal se enseñan.
+        $cartera      = \App\Support\Cobranza::cartera($project);
+        $porCobrar    = $cartera['total_cents'] / 100;
+        $vencido      = $cartera['vencido_cents'] / 100;
+        $docsVencidos = $cartera['vencidas'];
+        $porConvertir = \App\Support\Cobranza::aceptadasSinConvertir($project);
+
+        // ── Stock critico ────────────────────────────────────────────────
+        // El catalogo guarda `stock_min` por producto desde siempre y el panel
+        // no lo miraba en ningun sitio: el semaforo decia "Stock: niveles
+        // normales" como texto fijo, sin consultar una sola fila.
+        $stockCritico = $project->products()
+            ->whereNotNull('stock')
+            ->whereRaw('stock <= COALESCE(stock_min, 0)')
+            ->count();
+
+        // ── Actividad reciente ───────────────────────────────────────────
+        // `order_events` ya registra los hechos del negocio (pagos, envios,
+        // conversiones, aceptaciones del cliente) y no se enseñaban en ninguna
+        // pantalla del portal.
+        $actividad = \App\Models\OrderEvent::where('project_id', $pid)
+            ->orderByDesc('created_at')->limit(6)->get();
+
         $meta = (float) $project->setting('sales_goal_month', 0);
         $metaPct = $meta > 0 ? round($ventasMesTotal / $meta * 100) : null;
 
@@ -84,14 +111,32 @@ class DashboardController extends Controller
             $data7[]   = round($semana->get($d)?->total ?? 0, 2);
         }
 
+        // ── Series para el selector 7 días / 30 días / este mes ───────────
+        // El panel solo tenia la serie de 7 dias, asi que el selector habria
+        // sido un adorno que cambia de pestaña sin cambiar de datos. Cada
+        // rango se consulta de verdad, con su total y su comparacion contra
+        // el periodo anterior de la MISMA longitud.
+        $series = [];
+        foreach ([['7d', 7], ['30d', 30]] as [$clave, $dias]) {
+            $series[$clave] = $this->serieVentas($project, now()->subDays($dias - 1)->startOfDay(), now()->endOfDay(), $dias);
+        }
+        $series['mes'] = $this->serieVentas($project, now()->startOfMonth(), now()->endOfDay(), (int) now()->day);
+
         $porEstado = Cache::remember("dashboard.estados.{$pid}.{$hoy}", 120, fn() =>
             $project->orders()
                 ->select('status', DB::raw('count(*) as total'))
                 ->groupBy('status')->pluck('total', 'status')
         );
 
-        // Lavandería: dona por estados del flujo configurado. Otros: estados genéricos.
-        if (\App\Support\OrderFlow::supportsFlow($project->category ?? '')) {
+        // Desglose por estados del flujo configurable SOLO si el negocio lo usa
+        // de verdad. `OrderFlow::supportsFlow()` devuelve true para cualquier
+        // rubro con categoria, asi que una ferreteria contaba sus pedidos por
+        // `laundry_status` —columna que nunca rellena— y el bloque salia en
+        // cero teniendo pedidos. Lo decide el dato, no el nombre del rubro.
+        $usaFlujoPropio = \App\Support\OrderFlow::supportsFlow($project->category ?? '')
+            && $project->orders()->whereNotNull('laundry_status')->exists();
+
+        if ($usaFlujoPropio) {
             $porLaundry = $project->orders()
                 ->select('laundry_status', DB::raw('count(*) as total'))
                 ->groupBy('laundry_status')->pluck('total', 'laundry_status');
@@ -120,6 +165,64 @@ class DashboardController extends Controller
                 ->groupBy('name')->orderByDesc('qty')->limit(5)->get()
         );
 
+        // "Por atender" no decia si esos pedidos estaban sin tocar o a medias.
+        // El desglose sale del mismo conteo por estado que ya se consulta.
+        $enProceso = (int) $porEstado->get('process', 0);
+
+        // ── Cola operativa: que atender primero ──────────────────────────
+        // Sustituye a las tarjetas de "Pedidos en curso", a "Ultimos pedidos"
+        // y a media tarjeta de estado: eran cinco representaciones del mismo
+        // pedido. Se ordena por antiguedad porque lo que lleva mas tiempo
+        // parado es lo que primero molesta al cliente.
+        $atencionUmbrales = [
+            'aviso'   => max(1, (int) $project->setting('orders_aviso_horas', 24)),
+            'critico' => max(2, (int) $project->setting('orders_critico_horas', 72)),
+        ];
+        $pedidosAtencion = $project->orders()
+            ->whereIn('status', ['pending', 'process'])
+            ->orderBy('created_at')
+            ->limit(8)
+            ->get(['id', 'client_name', 'status', 'total', 'created_at'])
+            ->map(function ($o) use ($atencionUmbrales) {
+                $horas = (int) $o->created_at->diffInHours(now());
+                return [
+                    'id'      => $o->id,
+                    'cliente' => $o->client_name ?: 'Cliente mostrador',
+                    'estado'  => $o->status === 'process' ? 'En proceso' : 'Nuevo',
+                    'horas'   => $horas,
+                    'tiempo'  => $horas < 48 ? $horas . ' h' : (int) floor($horas / 24) . ' d',
+                    'total'   => (float) $o->total,
+                    'nivel'   => $horas >= $atencionUmbrales['critico'] ? 'critico'
+                        : ($horas >= $atencionUmbrales['aviso'] ? 'aviso' : 'normal'),
+                ];
+            });
+        $pedidosAtencionTotal = $project->orders()->whereIn('status', ['pending', 'process'])->count();
+
+        // ── Conversion de cotizaciones ───────────────────────────────────
+        // Enviadas = las que llegaron al cliente alguna vez (`sent_at`), que
+        // incluye las que despues se aceptaron o convirtieron: si solo se
+        // contaran las que HOY siguen en 'sent', el porcentaje subiria cada
+        // vez que una cotizacion avanza, que es justo al reves.
+        // Conversion = convertidas / enviadas.
+        $estadosQuote = $project->quotes()
+            ->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+        $contarQuote = function (string $canonico) use ($estadosQuote) {
+            $total = 0;
+            foreach ($estadosQuote as $estado => $n) {
+                if (\App\Support\QuoteStatus::comercial((string) $estado) === $canonico) {
+                    $total += (int) $n;
+                }
+            }
+            return $total;
+        };
+        $enviadas = (int) $project->quotes()->whereNotNull('sent_at')->count();
+        $conversion = [
+            'enviadas'    => $enviadas,
+            'aceptadas'   => $contarQuote('accepted'),
+            'convertidas' => $contarQuote('converted'),
+            'pct'         => $enviadas > 0 ? round($contarQuote('converted') / $enviadas * 100, 1) : null,
+        ];
+
         $pedidosRecientes = $project->orders()->with('items')->latest()->take(10)->get();
 
         $varPedidos = $pedidosAyer > 0 ? round((($pedidosHoy - $pedidosAyer) / $pedidosAyer) * 100) : null;
@@ -127,6 +230,9 @@ class DashboardController extends Controller
 
         return view('comercial.dashboard', array_merge(
             compact('canales', 'ventasMesTotal', 'porCobrar', 'meta', 'metaPct'),
+            compact('vencido', 'docsVencidos', 'stockCritico', 'actividad', 'series', 'enProceso'),
+            compact('porConvertir'),
+            compact('pedidosAtencion', 'pedidosAtencionTotal', 'conversion'),
             [] ) + compact(
             'project',
             'pedidosHoy', 'pedidosAyer', 'varPedidos',
@@ -136,6 +242,45 @@ class DashboardController extends Controller
             'donaLabels', 'donaData', 'donaColors',
             'topProductos', 'pedidosRecientes'
         ));
+    }
+
+    /**
+     * Ventas por dia de un rango, con su total y la variacion contra el rango
+     * anterior de la misma longitud. Devuelve tambien `vacia` para que la
+     * vista pinte un estado vacio honesto en vez de una linea plana en cero
+     * que parece un grafico roto.
+     */
+    private function serieVentas(Project $project, \Illuminate\Support\Carbon $desde, \Illuminate\Support\Carbon $hasta, int $dias): array
+    {
+        $porDia = fn ($d, $h) => $project->orders()
+            ->whereIn('status', ['process', 'done'])
+            ->whereBetween('created_at', [$d, $h])
+            ->select(DB::raw('DATE(created_at) as fecha'), DB::raw('SUM(total) as total'))
+            ->groupBy('fecha')->pluck('total', 'fecha');
+
+        $actual = $porDia($desde, $hasta);
+
+        $labels = [];
+        $data   = [];
+        $cursor = $desde->copy();
+        while ($cursor->lte($hasta)) {
+            $labels[] = $cursor->locale('es')->isoFormat($dias > 14 ? 'D MMM' : 'ddd D');
+            $data[]   = round((float) ($actual[$cursor->toDateString()] ?? 0), 2);
+            $cursor->addDay();
+        }
+
+        $total   = array_sum($data);
+        $previo  = (float) $porDia($desde->copy()->subDays($dias), $desde->copy()->subSecond())->sum();
+        $varianza = $previo > 0 ? (int) round((($total - $previo) / $previo) * 100) : null;
+
+        return [
+            'labels'   => $labels,
+            'data'     => $data,
+            'total'    => $total,
+            'previo'   => $previo,
+            'varianza' => $varianza,
+            'vacia'    => $total <= 0,
+        ];
     }
 
     // ── Dashboard específico para proyectos de rifas ──────────────────────────
