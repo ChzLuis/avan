@@ -253,13 +253,17 @@ class QuotesVocabularyTest extends TestCase
             $this->assertStringNotContainsString($prohibido, $vista, "espanol residual: $prohibido");
         }
 
-        // Contador de cobros del mes cuenta el canonico
-        $this->assertStringContainsString("q.payment_status === 'paid'", $vista);
-        // Panel de importe parcial condicionado al canonico
-        $this->assertStringContainsString("x-if=\"form.payment_status==='partial'\"", $vista);
-        // Reembolso presente en badge y CSS
-        $this->assertStringContainsString("refunded:'Reembolsado'", $vista);
-        $this->assertStringContainsString('.pbadge-refunded', $vista);
+        // La interfaz de cobro sobre la COTIZACION ya no existe: una
+        // cotizacion es un documento pre-venta y no se cobra. Por eso este
+        // contrato ya no exige que use el vocabulario canonico de pago —
+        // exige que no hable de pago en absoluto. Lo que se cobra es el
+        // pedido, y ese vocabulario lo cubre OrderStatus.
+        foreach ([
+            'setPaymentStatus(', 'sendPaymentReminder(', 'Recordatorio de pago',
+            'Cobrado este mes', 'porCobrarTotal>0',
+        ] as $residuo) {
+            $this->assertStringNotContainsString($residuo, $vista, "cobro residual en cotizaciones: $residuo");
+        }
     }
 
     // ── Documentos: total persistido, sin 18% inventado ───────────────────
@@ -272,8 +276,18 @@ class QuotesVocabularyTest extends TestCase
             'ningun exportador puede sumar 18% mientras el editor calcula 0');
         $this->assertSame(0, substr_count($vista, 'IGV (18%)</span><span>${'),
             'sin lineas de IGV inventado en los documentos generados');
-        // El editor conserva su linea condicionada (igv>0, hoy siempre oculta)
-        $this->assertStringContainsString('x-show="igv>0"', $vista);
+
+        // El editor ya no pinta NI SIQUIERA una linea de IGV oculta. Antes
+        // existia condicionada a `igv>0` —un getter que devuelve 0 siempre—,
+        // asi que ocupaba sitio en el resumen para no decir nada. `quotes` no
+        // guarda impuesto: la unica presentacion honesta es no prometerlo.
+        $this->assertStringNotContainsString('x-show="igv>0"', $vista);
+        $this->assertSame(0, substr_count($vista, '<span>IGV'),
+            'el resumen del editor no puede mostrar una linea de IGV que el sistema no calcula');
+
+        // El getter sobrevive porque `grandTotal` lo suma; lo que no puede es
+        // dejar de ser cero mientras el modelo no tenga impuesto.
+        $this->assertStringContainsString('get igv()      { return this.subtotal * 0; }', $vista);
     }
 
     /**
@@ -332,8 +346,10 @@ class QuotesVocabularyTest extends TestCase
         $this->assertMatchesRegularExpression('/LineMath::canon\(\(string\)\s*\(?\$i->discount/', $vista);
 
         // El resumen se pinta desde CENTAVOS, no desde el number de conveniencia.
-        $this->assertStringContainsString('x-text="fmt(subtotalCents)"', $vista);
+        // Las tres cifras del panel —bruto, descuento y total— son BigInt.
+        $this->assertStringContainsString('x-text="fmt(brutoCents)"', $vista);
         $this->assertStringContainsString('x-text="fmt(grandTotalCents)"', $vista);
+        $this->assertStringContainsString("fmt(descuentoCents)", $vista);
         $this->assertStringNotContainsString('x-text="fmt(subtotal)"', $vista);
         $this->assertStringNotContainsString('x-text="fmt(grandTotal)"', $vista);
 

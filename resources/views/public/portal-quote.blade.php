@@ -6,19 +6,12 @@
 @php
   $primaryColor = $settings['primary_color'] ?? '#4f46e5';
   $logoUrl      = $project->logo_url ? asset('storage/'.$project->logo_url) : null;
-  $statusMap    = [
-      'draft'    => ['label'=>'Borrador',  'color'=>'#64748b', 'bg'=>'#f1f5f9'],
-      'sent'     => ['label'=>'Pendiente', 'color'=>'#d97706', 'bg'=>'#fef3c7'],
-      'accepted' => ['label'=>'Aceptada',  'color'=>'#16a34a', 'bg'=>'#dcfce7'],
-      'rejected' => ['label'=>'Rechazada', 'color'=>'#dc2626', 'bg'=>'#fee2e2'],
-      // F1c: faltaba. Una convertida caia en el fallback y se presentaba al
-      // cliente como "Borrador", ofreciendole Aceptar/Rechazar algo que ya era
-      // un pedido.
-      'converted'=> ['label'=>'Convertida', 'color'=>'#4338ca', 'bg'=>'#e0e7ff'],
-  ];
+  // El estado lo nombra App\Support\QuoteStatus::clientePresentacion, el
+  // MISMO que usa el PDF: antes el portal decia "Pendiente" y el documento
+  // que el cliente se descarga decia "Enviada" para la misma cotizacion.
   // Estado normalizado (las filas legacy 'borrador' del historial se leen bien)
   $estadoCanonico = \App\Support\QuoteStatus::comercial($quote->status);
-  $st = $statusMap[$estadoCanonico] ?? $statusMap['draft'];
+  $st = \App\Support\QuoteStatus::clientePresentacion($quote->status);
   // Vigencia DERIVADA: si venció y sigue abierta, no se ofrece Aceptar.
   $vencida = \App\Support\QuoteStatus::vencida($quote->status, $quote->valid_until);
   // Fecha en español SIN setlocale (F1c): un locale global afectaria a otras
@@ -128,13 +121,16 @@
         <p class="text-xs text-gray-400">Portal del cliente</p>
       </div>
     </div>
-    <button onclick="window.print()"
-            class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 transition">
+    {{-- Abre el MISMO documento que exporta el negocio, no una impresion de
+         esta pagina: antes `window.print()` daba un tercer papel distinto,
+         con otra maqueta, sin columna de descuento y sin la nota legal. --}}
+    <a href="{{ route('portal.quote.pdf', [$project->slug, $quote->token]) }}" target="_blank" rel="noopener"
+       class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 transition">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
       </svg>
       Imprimir / PDF
-    </button>
+    </a>
   </div>
 </header>
 
@@ -157,7 +153,7 @@
               {{ $st['label'] }}
             </span>
           </div>
-          <h1 class="text-3xl font-black text-gray-900">#{{ str_pad($quote->id, 4, '0', STR_PAD_LEFT) }}</h1>
+          <h1 class="text-3xl font-black text-gray-900">{{ $quote->etiqueta }}</h1>
           <p class="text-sm text-gray-500 mt-1">Emitida el {{ $fechaEs($quote->created_at) }}</p>
           @if($quote->valid_until)
           <p class="text-sm text-gray-500">Válida hasta el <strong>{{ $fechaEs($quote->valid_until) }}</strong></p>
@@ -367,7 +363,7 @@
         </button>
         @endif
         @if($project->whatsapp)
-        <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}?text={{ urlencode('Hola, tengo consultas sobre la cotización #'.str_pad($quote->id,4,'0',STR_PAD_LEFT)) }}"
+        <a href="https://wa.me/{{ preg_replace('/\D/','',$project->whatsapp) }}?text={{ urlencode('Hola, tengo consultas sobre la cotización '.$quote->etiqueta) }}"
            target="_blank"
            class="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border-2 border-gray-200 hover:border-green-400 hover:bg-green-50 text-sm font-semibold text-gray-700 transition">
           <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 24 24">

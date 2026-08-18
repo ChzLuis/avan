@@ -57,6 +57,29 @@ class QuoteStatus
         };
     }
 
+    /**
+     * Como se le nombra el estado AL CLIENTE.
+     *
+     * El portal publico tenia su propio mapa y el PDF usaba el comercial, asi
+     * que el mismo documento decia "Pendiente" en pantalla y "Enviada" en el
+     * papel que el cliente se descarga. Son el mismo documento: tienen que
+     * decir lo mismo, y en el idioma del cliente —a él "enviada" no le dice
+     * nada; lo que le importa es que está esperando su respuesta.
+     *
+     * @return array{label: string, color: string, bg: string}
+     */
+    public static function clientePresentacion(?string $raw): array
+    {
+        return match (self::comercial($raw)) {
+            'draft'     => ['label' => 'Borrador',   'color' => '#64748b', 'bg' => '#f1f5f9'],
+            'sent'      => ['label' => 'Pendiente',  'color' => '#d97706', 'bg' => '#fef3c7'],
+            'accepted'  => ['label' => 'Aceptada',   'color' => '#16a34a', 'bg' => '#dcfce7'],
+            'rejected'  => ['label' => 'Rechazada',  'color' => '#dc2626', 'bg' => '#fee2e2'],
+            'converted' => ['label' => 'Convertida', 'color' => '#4338ca', 'bg' => '#e0e7ff'],
+            default     => ['label' => 'Borrador',   'color' => '#64748b', 'bg' => '#f1f5f9'],
+        };
+    }
+
     public static function pago(?string $raw): string
     {
         $valor = strtolower(trim((string) $raw));

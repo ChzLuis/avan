@@ -233,40 +233,50 @@ class CxcTest extends TestCase
         ])->assertSessionHasErrors('cxc_plazo_dias');
     }
 
-    public function test_una_convertida_no_se_cuenta_dos_veces(): void
+    public function test_la_cartera_es_solo_de_ventas_ninguna_cotizacion_entra(): void
     {
         $this->entrar();
-        // Cotizacion convertida + su pedido: SOLO el pedido entra
+
+        // Convertida + su pedido: entra el pedido, que es la venta.
         $q = Quote::create(['project_id' => $this->project->id, 'client_name' => 'Conv',
             'status' => 'converted', 'payment_status' => 'pending', 'total' => '500.00']);
         Order::create(['project_id' => $this->project->id, 'client_name' => 'Conv',
             'status' => 'pending', 'payment_status' => 'pending', 'total' => '500.00',
             'quote_id' => $q->id]);
-        // Aceptada sin convertir: SI entra
+        // Aceptada sin convertir: tampoco. Es un presupuesto aceptado, no una
+        // venta: no reconoce ingreso ni genera obligacion de pago.
         Quote::create(['project_id' => $this->project->id, 'client_name' => 'Acc',
             'status' => 'accepted', 'payment_status' => 'pending', 'total' => '300.00']);
-        // Enviada: NO es deuda todavia
         Quote::create(['project_id' => $this->project->id, 'client_name' => 'Env',
             'status' => 'sent', 'payment_status' => 'pending', 'total' => '999.00']);
 
         $r = $this->get('/bixosales/cuentas')->assertSuccessful();
         $resumen = $r->viewData('resumen');
 
-        // 500 (pedido) + 300 (aceptada) = 800.00 — la convertida NO duplica
-        $this->assertSame('800.00', $resumen['total']);
-        $this->assertSame(2, $resumen['documentos']);
+        $this->assertSame('500.00', $resumen['total']);
+        $this->assertSame(1, $resumen['documentos']);
+        foreach ($r->viewData('filas') as $f) {
+            $this->assertSame('pedido', $f['tipo'], 'la cartera solo admite ventas');
+        }
     }
 
-    public function test_cotizacion_aceptada_con_pago_parcial(): void
+    public function test_lo_aceptado_sin_convertir_es_trabajo_pendiente_no_deuda(): void
     {
-        $this->entrar();
+        // Antes esta cotizacion aportaba S/ 10,000 al "por cobrar". El cliente
+        // acepto un presupuesto y adelanto dinero: no debe nada, y el adelanto
+        // es un pasivo (anticipo), no un activo. Ahora vive como accion.
         Quote::create(['project_id' => $this->project->id, 'client_name' => 'P',
             'status' => 'accepted', 'payment_status' => 'partial',
             'total' => '13420.10', 'paid_amount' => '3420.10']);
 
+        $this->entrar();
         $r = $this->get('/bixosales/cuentas')->assertSuccessful();
 
-        $this->assertSame('10,000.00', $r->viewData('resumen')['total']);
+        $this->assertSame('0.00', $r->viewData('resumen')['total']);
+
+        $pendiente = \App\Support\Cobranza::aceptadasSinConvertir($this->project);
+        $this->assertSame(1, $pendiente['n']);
+        $this->assertSame(1342010, $pendiente['cents']);
     }
 
     public function test_no_mezcla_proyectos(): void

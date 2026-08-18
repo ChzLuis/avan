@@ -23,6 +23,9 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap">
                 <div class="rounded-xl px-4 py-2 text-right" style="background:var(--aviso-suave, #fef3c7)">
+                    {{-- Deuda EXIGIBLE: la que nace de una venta. Antes esta
+                         cifra incluia las cotizaciones aceptadas sin convertir,
+                         que son una expectativa, no una obligacion de pago. --}}
                     <p class="text-[10px] font-bold uppercase tracking-wide" style="color:var(--aviso-fuerte, #b45309)">Por cobrar</p>
                     <p class="text-lg font-black" style="color:var(--aviso-fuerte, #b45309)">S/ {{ $resumen['total'] }}</p>
                 </div>
