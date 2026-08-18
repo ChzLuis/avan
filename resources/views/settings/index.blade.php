@@ -2,7 +2,7 @@
 <x-slot name="slot">
 
 @php
-    $s    = request('s', 'datos');
+    $s    = request('s', 'general');
     $selP = $project;
     $isOwnerOrSuper = auth()->user()?->is_superadmin || ($project && $project->owner_id === auth()->id());
 @endphp
@@ -98,18 +98,94 @@
          },
      }">
 
+<style>
+/* ===== BX — capa visual de la pantalla Negocios (autocontenida) ===== */
+.bx-top{display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.9rem 1.5rem; border-bottom:1px solid #E6EDEC; background:#fff; flex-shrink:0;}
+.bx-top h1{font-size:1.05rem; font-weight:700; color:#0A1826; margin:0; letter-spacing:-.01em;}
+.bx-top p{font-size:.76rem; color:#7C8B92; margin:.15rem 0 0;}
+.bx-new{display:inline-flex; align-items:center; gap:.45rem; padding:.55rem 1rem; border:0; border-radius:10px; cursor:pointer;
+    font-size:.85rem; font-weight:600; color:#04231C; background:linear-gradient(135deg,#17B890,#0FA8A0);
+    box-shadow:0 10px 22px -12px rgba(23,184,144,.8); transition:filter .15s, transform .12s;}
+.bx-new:hover{filter:brightness(1.04);} .bx-new:active{transform:translateY(1px);}
+
+.bx-side{border-right:1px solid #E6EDEC; background:#fff; flex-shrink:0;}
+.bx-tools{padding:.75rem .75rem .5rem; border-bottom:1px solid #EFF4F3;}
+.bx-search{display:flex; align-items:center; gap:.5rem; background:#F4F9F8; border:1px solid #E2ECEA; border-radius:10px; padding:.5rem .7rem;}
+.bx-search:focus-within{border-color:#17B890; box-shadow:0 0 0 3px rgba(23,184,144,.14); background:#fff;}
+.bx-search input{background:transparent; border:0; outline:none; font-size:.85rem; color:#0A1826; flex:1; min-width:0;}
+.bx-search input::placeholder{color:#9DACB2;}
+.bx-filters{display:flex; gap:.3rem; margin-top:.6rem;}
+.bx-chip{flex:1; display:inline-flex; align-items:center; justify-content:center; gap:.3rem; padding:.35rem .4rem; border:1px solid transparent;
+    border-radius:8px; background:#F1F6F5; color:#66787F; font-size:.74rem; font-weight:600; cursor:pointer; transition:background .15s, color .15s;}
+.bx-chip:hover{background:#E7F1EF; color:#33474F;}
+.bx-chip.on{background:#0A1826; color:#fff;}
+.bx-chip b{font-weight:700; opacity:.65; font-variant-numeric:tabular-nums;}
+.bx-chip.on b{opacity:.8;}
+
+.bx-item{width:100%; display:flex; align-items:center; gap:.7rem; padding:.65rem .9rem; background:none; border:0; border-left:3px solid transparent; cursor:pointer; text-align:left; transition:background .12s;}
+.bx-item:hover{background:#F7FBFA;}
+.bx-item.on{background:#EFFAF6; border-left-color:#17B890;}
+.bx-av{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.72rem; font-weight:700; background:#EEF3F2; color:#66787F; overflow:hidden;}
+.bx-item.on .bx-av{background:#17B890; color:#fff;}
+.bx-av img{width:100%; height:100%; object-fit:cover;}
+.bx-tx{flex:1; min-width:0;}
+.bx-tx .n{font-size:.86rem; font-weight:600; color:#16242B; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.bx-tx .s{font-size:.72rem; color:#8B9AA1; margin:.1rem 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
+.bx-dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+.bx-dot.ok{background:#17B890; box-shadow:0 0 0 3px rgba(23,184,144,.16);}
+.bx-dot.off{background:#CBD5D3;}
+.bx-add{width:100%; display:flex; align-items:center; gap:.7rem; padding:.65rem .9rem; background:none; border:0; border-left:3px solid transparent; cursor:pointer; text-align:left;}
+.bx-add:hover{background:#F0FAF7;}
+.bx-add.on{background:#EFFAF6; border-left-color:#17B890;}
+.bx-add .ic{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:#E3F6EF; color:#0FA8A0; flex-shrink:0;}
+.bx-add .n{font-size:.86rem; font-weight:600; color:#0FA8A0; margin:0;}
+.bx-add .s{font-size:.72rem; color:#8B9AA1; margin:.1rem 0 0;}
+
+/* --- Header del negocio --- */
+.bx-head{display:flex; align-items:center; gap:.85rem; padding:1rem 1.5rem; border-bottom:1px solid #E6EDEC; flex-shrink:0; flex-wrap:wrap;}
+.bx-head-av{width:42px; height:42px; border-radius:11px; background:#0A1826; color:#fff; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.85rem; flex-shrink:0; overflow:hidden;}
+.bx-head-av img{width:100%; height:100%; object-fit:cover;}
+.bx-head-tx{flex:1; min-width:0;}
+.bx-head-tx h2{font-size:1rem; font-weight:700; color:#0A1826; margin:0; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.bx-head-tx p{font-size:.76rem; color:#8B9AA1; margin:.18rem 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.bx-mono{font-variant-numeric:tabular-nums;}
+.bx-sep{margin:0 .35rem; opacity:.6;}
+.bx-domain{display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .65rem; border-radius:8px; text-decoration:none;
+    background:#F1F6F5; border:1px solid #E2ECEA; color:#38505A; font-size:.76rem; font-weight:600; max-width:16rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
+.bx-domain:hover{border-color:#17B890; color:#0FA8A0; background:#EFFAF6;}
+.bx-badge{display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .65rem; border-radius:999px; font-size:.72rem; font-weight:700; flex-shrink:0;}
+.bx-badge i{width:6px; height:6px; border-radius:50%; display:block;}
+.bx-badge.ok{background:#E6F7F1; color:#0B7A5E;} .bx-badge.ok i{background:#17B890;}
+.bx-badge.off{background:#F1F4F4; color:#7C8B92;} .bx-badge.off i{background:#B6C3C2;}
+
+/* --- Tabs --- */
+.bx-tabs{display:flex; gap:.2rem; padding:0 1.5rem; border-bottom:1px solid #E6EDEC; background:#fff; flex-shrink:0; overflow-x:auto;}
+.bx-tab{padding:.7rem .85rem; font-size:.85rem; color:#7C8B92; text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s, border-color .15s;}
+.bx-tab:hover{color:#16242B;}
+.bx-tab.on{color:#0A1826; font-weight:700; border-bottom-color:#17B890;}
+
+/* --- Formulario por secciones --- */
+.bx-form{max-width:62rem; display:flex; flex-direction:column; gap:1.1rem;}
+.bx-sec{border:1px solid #E6EDEC; border-radius:14px; background:#fff; padding:1.1rem 1.25rem 1.25rem;}
+.bx-sec-h{margin-bottom:.9rem; padding-bottom:.7rem; border-bottom:1px solid #F0F5F4;}
+.bx-sec-h h3{font-size:.9rem; font-weight:700; color:#0A1826; margin:0; display:flex; align-items:center; gap:.5rem;}
+.bx-sec-h p{font-size:.76rem; color:#8B9AA1; margin:.2rem 0 0;}
+.bx-tag{font-size:.62rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; background:#EDF1F7; color:#5B6B84; padding:.15rem .4rem; border-radius:5px;}
+.bx-actions{display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding-bottom:.5rem;}
+</style>
+
 {{-- TOP BAR (oculto en la pantalla dedicada de Flujo de estados) --}}
 @if($s !== 'flujo')
-<div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white flex-shrink-0">
+<div class="bx-top">
     <div>
-        <h1 class="text-lg font-semibold text-gray-800">Negocios</h1>
-        <p class="text-xs text-gray-400 mt-0.5" x-text="projects.length + (projects.length === 1 ? ' negocio registrado' : ' negocios registrados')"></p>
+        <h1>Negocios</h1>
+        <p x-text="projects.length + (projects.length === 1 ? ' negocio registrado' : ' negocios registrados')"></p>
     </div>
     @if($isOwnerOrSuper)
-    <button @click="openNew()"
-            class="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    <button @click="openNew()" class="bx-new">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
         </svg>
         Nuevo negocio
     </button>
@@ -121,107 +197,72 @@
 <div class="flex flex-1 overflow-hidden" {{-- mv is inherited from outer x-data --}}
      x-init="{{ !$isOwnerOrSuper ? 'mv = \'detail\'' : '' }}">
 
-@if($isOwnerOrSuper && $s !== 'flujo')
-{{-- ─── RAIL IZQUIERDA (oculto en Flujo de estados) ─────────────────── --}}
-<div class="w-14 border-r border-gray-200 bg-gray-50 hidden md:flex flex-col items-center py-3 gap-2 flex-shrink-0">
-
-    <div class="relative group">
-        <button @click="filterStatus=''; search=''"
-                :class="filterStatus==='' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-400 hover:text-gray-600'"
-                class="w-9 h-9 flex items-center justify-center rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-        </button>
-        <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">Todos</span>
-    </div>
-
-    <div class="relative group">
-        <button @click="filterStatus='activo'"
-                :class="filterStatus==='activo' ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:text-gray-600'"
-                class="w-9 h-9 flex items-center justify-center rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </button>
-        <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">Solo activos</span>
-    </div>
-
-    <div class="relative group">
-        <button @click="filterStatus='inactivo'"
-                :class="filterStatus==='inactivo' ? 'bg-gray-200 text-gray-600' : 'text-gray-400 hover:text-gray-600'"
-                class="w-9 h-9 flex items-center justify-center rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </button>
-        <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">Solo inactivos</span>
-    </div>
-
-</div>
-@endif{{-- /rail izquierda --}}
-
 {{-- ─── LISTA CENTRAL (oculta por completo en pantalla de Flujo de estados) ─── --}}
 @if($s !== 'flujo')
-<div class="border-r border-gray-200 bg-white flex-shrink-0"
-     :class="mv === 'detail' ? 'hidden md:flex md:flex-col md:w-72' : 'flex flex-col w-full md:w-72'">
+<div class="bx-side"
+     :class="mv === 'detail' ? 'hidden md:flex md:flex-col md:w-80' : 'flex flex-col w-full md:w-80'">
 
-    {{-- Búsqueda --}}
-    <div class="p-3 border-b border-gray-200 flex-shrink-0">
-        <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-            <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {{-- Búsqueda + filtros de estado (antes eran iconos sueltos sin etiqueta) --}}
+    <div class="bx-tools flex-shrink-0">
+        <div class="bx-search">
+            <svg width="15" height="15" style="color:#9DACB2; flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input type="text" x-model="search" placeholder="Buscar negocio..."
-                   class="bg-transparent text-sm outline-none flex-1 min-w-0 text-gray-700 placeholder-gray-400">
-            <button x-show="search" @click="search=''" class="text-gray-400 hover:text-gray-600">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <input type="text" x-model="search" placeholder="Buscar negocio...">
+            <button x-show="search" @click="search=''" style="background:none;border:0;cursor:pointer;color:#9DACB2;display:flex">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
         </div>
+        @if($isOwnerOrSuper)
+        <div class="bx-filters">
+            <button class="bx-chip" :class="filterStatus==='' ? 'on' : ''" @click="filterStatus=''">
+                Todos <b x-text="projects.length"></b>
+            </button>
+            <button class="bx-chip" :class="filterStatus==='activo' ? 'on' : ''" @click="filterStatus='activo'">
+                Activos <b x-text="projects.filter(p =&gt; p.is_active).length"></b>
+            </button>
+            <button class="bx-chip" :class="filterStatus==='inactivo' ? 'on' : ''" @click="filterStatus='inactivo'">
+                Pausados <b x-text="projects.filter(p =&gt; !p.is_active).length"></b>
+            </button>
+        </div>
+        @endif
     </div>
 
     {{-- Lista --}}
-    <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
+    <div class="flex-1 overflow-y-auto">
 
         {{-- Nuevo --}}
         @if($isOwnerOrSuper)
-        <button @click="openNew(); mv = 'detail'"
-                class="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition text-left"
-                :class="creating ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
-            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        <button @click="openNew(); mv = 'detail'" class="bx-add" :class="creating ? 'on' : ''">
+            <span class="ic">
+                <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
-            </div>
-            <div>
-                <p class="text-sm font-medium text-indigo-700">Nuevo negocio</p>
-                <p class="text-xs text-gray-400">Crear negocio</p>
-            </div>
+            </span>
+            <span class="bx-tx"><p class="n">Nuevo negocio</p><p class="s">Crear desde cero</p></span>
         </button>
         @endif
 
         <template x-for="p in filteredProjects" :key="p.id">
-            <button @click="selectProject(p.id); mv = 'detail'"
-                    class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
-                    :class="!creating && selected === p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                     :class="!creating && selected === p.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500'">
-                    <img x-show="p.logo_url" :src="p.logo_url" class="w-8 h-8 rounded-lg object-cover">
+            <button @click="selectProject(p.id); mv = 'detail'" class="bx-item"
+                    :class="!creating && selected === p.id ? 'on' : ''">
+                <span class="bx-av">
+                    <img x-show="p.logo_url" :src="p.logo_url" alt="">
                     <span x-show="!p.logo_url" x-text="p.name.substring(0,2).toUpperCase()"></span>
-                </div>
-                <div class="flex-1 min-w-0 text-left">
-                    <p class="text-sm font-medium text-gray-800 truncate" x-text="p.name"></p>
-                    <p class="text-xs text-gray-400 truncate" x-text="p.category || 'Sin categoría'"></p>
-                </div>
-                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      :class="p.is_active ? 'bg-green-400' : 'bg-gray-300'"></span>
+                </span>
+                <span class="bx-tx">
+                    <p class="n" x-text="p.name"></p>
+                    <p class="s" x-text="'/' + (p.slug || '') + (p.category ? ' · ' + p.category : '')"></p>
+                </span>
+                <span class="bx-dot" :class="p.is_active ? 'ok' : 'off'"
+                      :title="p.is_active ? 'Activo' : 'Pausado'"></span>
             </button>
         </template>
 
-        <div x-show="filteredProjects.length === 0" class="px-4 py-10 text-center text-sm text-gray-400">
-            Sin negocios
+        <div x-show="filteredProjects.length === 0" style="padding:2.5rem 1rem; text-align:center; font-size:.84rem; color:#9DACB2;">
+            Sin resultados
         </div>
     </div>
 </div>
@@ -399,48 +440,51 @@
 
             {{-- Header del panel (oculto en Flujo de estados: ya hay encabezado propio) --}}
             @if($s !== 'flujo')
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div class="bx-head">
+                <div class="bx-head-av">
                     @if($selP->logo_url)
-                        <img src="{{ $selP->logo_url }}" class="w-10 h-10 rounded-xl object-cover">
+                        <img src="{{ $selP->logo_url }}" alt="">
                     @else
                         {{ strtoupper(substr($selP->name, 0, 2)) }}
                     @endif
                 </div>
-                <div class="flex-1 min-w-0">
-                    <h2 class="font-semibold text-gray-800 text-base truncate">{{ $selP->name }}</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">
-                        {{ $selP->slug ? '/'.$selP->slug : 'Sin slug' }}
-                        @if($selP->category) · {{ $selP->category }} @endif
+                <div class="bx-head-tx">
+                    <h2>{{ $selP->name }}</h2>
+                    <p>
+                        <span class="bx-mono">{{ $selP->slug ? '/'.$selP->slug : 'Sin slug' }}</span>
+                        @if($selP->category)<span class="bx-sep">·</span>{{ $selP->category }}@endif
                     </p>
                 </div>
-                <span class="text-[11px] font-semibold px-2 py-1 rounded-full flex-shrink-0
-                             {{ $selP->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400' }}">
-                    {{ $selP->is_active ? 'Activo' : 'Inactivo' }}
+                @if($selP->custom_domain)
+                <a href="https://{{ $selP->custom_domain }}" target="_blank" rel="noopener" class="bx-domain" title="Abrir tienda">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5"/>
+                    </svg>
+                    {{ $selP->custom_domain }}
+                </a>
+                @endif
+                <span class="bx-badge {{ $selP->is_active ? 'ok' : 'off' }}">
+                    <i></i>{{ $selP->is_active ? 'Activo' : 'Pausado' }}
                 </span>
             </div>
             @endif
 
             {{-- Tabs (ocultos en la pantalla dedicada de Flujo de estados) --}}
-            <div class="flex border-b border-gray-200 px-6 bg-white flex-shrink-0 overflow-x-auto {{ $s === 'flujo' ? 'hidden' : '' }}">
+            <div class="bx-tabs {{ $s === 'flujo' ? 'hidden' : '' }}">
                 @php
+                // 4 pestañas agrupadas por lo que hace el usuario. Cada una
+                // acepta ademas sus claves antiguas para no romper enlaces
+                // guardados ni los redirect del controlador (?s=datos, ?s=envio...).
                 $tabs = [
-                    ['k'=>'datos',       'l'=>'Datos'],
-                    ['k'=>'adicionales', 'l'=>'Adicionales'],
-                    ['k'=>'envio',       'l'=>'Envío'],
-                    ['k'=>'cupones',      'l'=>'Cupones'],
-                    ['k'=>'facturacion',  'l'=>'Facturación'],
-                    ['k'=>'whatsapp',     'l'=>'WhatsApp'],
+                    ['k'=>'general',     'l'=>'General',     'alias'=>['datos','adicionales']],
+                    ['k'=>'venta',       'l'=>'Venta',       'alias'=>['envio','cupones']],
+                    ['k'=>'facturacion', 'l'=>'Facturación', 'alias'=>[]],
+                    ['k'=>'whatsapp',    'l'=>'WhatsApp',    'alias'=>[]],
                 ];
                 @endphp
                 @foreach($tabs as $tab)
                 <a href="{{ route('settings') }}?p={{ $selP->id }}&s={{ $tab['k'] }}"
-                   class="px-4 py-3 text-sm whitespace-nowrap transition border-b-2
-                          {{ $s === $tab['k']
-                             ? 'border-indigo-600 text-indigo-600 font-semibold'
-                             : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-                    {{ $tab['l'] }}
-                </a>
+                   class="bx-tab {{ ($s === $tab['k'] || in_array($s, $tab['alias'])) ? 'on' : '' }}">{{ $tab['l'] }}</a>
                 @endforeach
             </div>
 
@@ -458,11 +502,14 @@
             <div class="flex-1 {{ $s === 'flujo' ? 'overflow-hidden' : 'overflow-y-auto p-6' }}">
 
             {{-- TAB: Datos --}}
-            @if($s === 'datos')
-            <form method="POST" action="{{ route('settings.update') }}" class="space-y-4 max-w-2xl">
+            @if(in_array($s, ['general','datos']))
+            <form method="POST" action="{{ route('settings.update') }}" class="bx-form">
                 @csrf
                 <input type="hidden" name="project_id" value="{{ $selP->id }}">
-                <input type="hidden" name="_tab" value="datos">
+                <input type="hidden" name="_tab" value="general">
+
+                <div class="bx-sec">
+                    <div class="bx-sec-h"><h3>Identidad</h3><p>Cómo se llama el negocio y cómo se le encuentra.</p></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
                         <label class="label">Nombre del negocio <span class="text-red-500">*</span></label>
@@ -500,12 +547,23 @@
                             @endforeach
                         </select>
                     </div>
-                    @if(auth()->user()->is_superadmin ?? false)
                     <div class="sm:col-span-2">
-                        <label class="label">
-                            Dominio personalizado
-                            <span class="ml-1 text-[10px] font-semibold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Superadmin</span>
-                        </label>
+                        <label class="label">Descripción</label>
+                        <textarea name="description" class="input mt-1" rows="2"
+                                  placeholder="Descripción breve del negocio">{{ old('description', $selP->description) }}</textarea>
+                    </div>
+                </div>
+                </div>
+
+                @if(auth()->user()->is_superadmin ?? false)
+                <div class="bx-sec">
+                    <div class="bx-sec-h">
+                        <h3>Dominio propio <span class="bx-tag">Superadmin</span></h3>
+                        <p>La dirección con la que el cliente publica su tienda.</p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="label">Dominio personalizado</label>
                         <div class="mt-1 flex items-center rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
                             <span class="px-3 text-xs text-gray-400 border-r border-gray-200 py-2.5 bg-white whitespace-nowrap">https://</span>
                             <input type="text" name="custom_domain" class="flex-1 px-3 py-2.5 text-sm bg-gray-50 focus:outline-none border-0 min-w-0"
@@ -539,7 +597,13 @@
                             @endif
                         @endif
                     </div>
-                    @endif
+                    </div>
+                </div>
+                @endif
+
+                <div class="bx-sec">
+                    <div class="bx-sec-h"><h3>Modalidades de venta</h3><p>Enciende solo lo que este negocio necesita; el catálogo se adapta.</p></div>
+                    <div class="grid grid-cols-1 gap-4">
 
                     {{-- ═══ Modalidades de venta ═══
                          Hasta ahora TODA tienda cargaba con los campos de precio
@@ -590,6 +654,38 @@
                         </div>
                     </div>
 
+                    </div>
+                </div>
+
+                <div class="bx-sec">
+                    <div class="bx-sec-h"><h3>Contacto</h3><p>Los datos con los que el cliente te escribe o te ubica.</p></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label">Teléfono</label>
+                        <input type="text" name="phone" class="input mt-1" placeholder="+51 999 999 999"
+                               value="{{ old('phone', $selP->phone) }}">
+                    </div>
+                    <div>
+                        <label class="label">WhatsApp</label>
+                        <input type="text" name="whatsapp" class="input mt-1" placeholder="51999999999"
+                               value="{{ old('whatsapp', $selP->whatsapp) }}">
+                    </div>
+                    <div>
+                        <label class="label">Email de contacto</label>
+                        <input type="email" name="email" class="input mt-1" placeholder="contacto@negocio.com"
+                               value="{{ old('email', $selP->setting('email')) }}">
+                    </div>
+                    <div>
+                        <label class="label">Dirección</label>
+                        <input type="text" name="address" class="input mt-1" placeholder="Av. Principal 123, Lima"
+                               value="{{ old('address', $selP->address) }}">
+                    </div>
+                    </div>
+                </div>
+
+                <div class="bx-sec">
+                    <div class="bx-sec-h"><h3>Fiscal y regional</h3><p>Moneda, país y datos tributarios del negocio.</p></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="label">Moneda</label>
                         <select name="currency" class="input mt-1">
@@ -607,37 +703,14 @@
                         </select>
                     </div>
                     <div>
-                        <label class="label">Teléfono</label>
-                        <input type="text" name="phone" class="input mt-1" placeholder="+51 999 999 999"
-                               value="{{ old('phone', $selP->phone) }}">
-                    </div>
-                    <div>
-                        <label class="label">WhatsApp</label>
-                        <input type="text" name="whatsapp" class="input mt-1" placeholder="51999999999"
-                               value="{{ old('whatsapp', $selP->whatsapp) }}">
-                    </div>
-                    <div>
-                        <label class="label">Email de contacto</label>
-                        <input type="email" name="email" class="input mt-1" placeholder="contacto@negocio.com"
-                               value="{{ old('email', $selP->setting('email')) }}">
-                    </div>
-                    <div>
                         <label class="label">RUC</label>
                         <input type="text" name="ruc" class="input mt-1" placeholder="20123456789"
                                value="{{ old('ruc', $selP->setting('ruc')) }}">
                     </div>
-                    <div class="sm:col-span-2">
-                        <label class="label">Dirección</label>
-                        <input type="text" name="address" class="input mt-1" placeholder="Av. Principal 123, Lima"
-                               value="{{ old('address', $selP->address) }}">
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="label">Descripción</label>
-                        <textarea name="description" class="input mt-1" rows="3"
-                                  placeholder="Descripción breve del negocio">{{ old('description', $selP->description) }}</textarea>
                     </div>
                 </div>
-                <div class="pt-2 flex items-center justify-between gap-3">
+
+                <div class="bx-actions">
                     <button type="submit" class="btn-primary">Guardar cambios</button>
                     <button type="button"
                             onclick="if(confirm('¿Eliminar este negocio? Esta acción no se puede deshacer.')) { fetch('/projects/{{ $selP->id }}', { method:'DELETE', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'} }).then(r => r.ok ? window.location.href='/bixoadmin' : alert('Error al eliminar')); }"
@@ -649,12 +722,13 @@
             @endif
 
             {{-- TAB: Adicionales (Redes) --}}
-            @if($s === 'adicionales')
-            <form method="POST" action="{{ route('settings.update') }}" class="space-y-4 max-w-2xl">
+            @if(in_array($s, ['general','adicionales']))
+            <form method="POST" action="{{ route('settings.update') }}" class="bx-form">
                 @csrf
                 <input type="hidden" name="project_id" value="{{ $selP->id }}">
-                <input type="hidden" name="_tab" value="adicionales">
-                <p class="text-sm text-gray-500">Perfiles en redes sociales. Aparecen en tu catálogo público.</p>
+                <input type="hidden" name="_tab" value="general">
+                <div class="bx-sec">
+                <div class="bx-sec-h"><h3>Redes sociales</h3><p>Aparecen en el catálogo público de la tienda.</p></div>
                 @php
                 $socialFields = [
                     ['key'=>'facebook_url',  'label'=>'Facebook',    'placeholder'=>'https://facebook.com/tunegocio',   'color'=>'#1877F2'],
@@ -676,7 +750,8 @@
                 </div>
                 @endforeach
                 </div>
-                <div class="pt-2">
+                </div>
+                <div class="bx-actions">
                     <button type="submit" class="btn-primary">Guardar redes</button>
                 </div>
             </form>
@@ -687,7 +762,7 @@
             <form method="POST" action="{{ route('settings.update') }}" class="space-y-5 max-w-2xl">
                 @csrf
                 <input type="hidden" name="project_id" value="{{ $selP->id }}">
-                <input type="hidden" name="_tab" value="seo">
+                <input type="hidden" name="_tab" value="general">
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
                     <p class="font-semibold mb-1">¿Por qué es importante?</p>
                     <p class="text-xs text-blue-600 leading-relaxed">
@@ -732,11 +807,11 @@
             @endif
 
             {{-- TAB: ENVÍO --}}
-            @if($s === 'envio')
+            @if(in_array($s, ['venta','envio']))
             <form method="POST" action="{{ route('settings.update') }}" class="space-y-5 max-w-2xl">
                 @csrf
                 <input type="hidden" name="project_id" value="{{ $selP->id }}">
-                <input type="hidden" name="_tab" value="envio">
+                <input type="hidden" name="_tab" value="venta">
                 <p class="text-sm text-gray-500">Configura si cobras envío a tus clientes y si requieres dirección de entrega.</p>
 
                 <div class="flex items-center gap-3">
@@ -782,7 +857,7 @@
             @endif
 
             {{-- TAB: CUPONES --}}
-            @if($s === 'cupones')
+            @if(in_array($s, ['venta','cupones']))
             @php $coupons = $selP->coupons()->orderByDesc('created_at')->get(); @endphp
             <div x-data="{
                 coupons: {{ Illuminate\Support\Js::from($coupons->map(fn($c) => [
