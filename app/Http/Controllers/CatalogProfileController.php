@@ -128,6 +128,7 @@ class CatalogProfileController extends Controller
             'header_text_color' => $colorRule,
             'button_color' => $colorRule,
             'footer_bg_color' => $colorRule,
+            'announcement_bg_color' => $colorRule,
             'hero_title' => ['nullable', 'string', 'max:200'],
             'hero_description' => ['nullable', 'string', 'max:500'],
             // AVIF entra en la lista: los exportadores modernos lo generan por defecto y
@@ -147,16 +148,20 @@ class CatalogProfileController extends Controller
     /** Sube imágenes del perfil (mismo mecanismo que el resto del Diseñador). */
     private function handleUploads(Request $request, $project, array $data): array
     {
+        // Cada hueco pide un encuadre distinto: el logo se conserva entero y
+        // con su transparencia, mientras que los hero llenan su franja.
         $fileMap = [
-            'logo' => 'logo_path',
-            'mobile_logo' => 'mobile_logo_path',
-            'favicon' => 'favicon_path',
-            'hero_desktop' => 'hero_desktop_path',
-            'hero_mobile' => 'hero_mobile_path',
+            'logo' => ['logo_path', 'logo'],
+            'mobile_logo' => ['mobile_logo_path', 'logo'],
+            'favicon' => ['favicon_path', 'logo'],
+            'hero_desktop' => ['hero_desktop_path', 'banner'],
+            'hero_mobile' => ['hero_mobile_path', 'banner_movil'],
         ];
-        foreach ($fileMap as $input => $column) {
+        foreach ($fileMap as $input => [$column, $perfil]) {
             if ($request->hasFile($input)) {
-                $data[$column] = $request->file($input)->store("catalog-profiles/{$project->id}", 'public');
+                $data[$column] = \App\Support\Imagen\ProcesadorImagenes::ruta(
+                    $request->file($input), "catalog-profiles/{$project->id}", $perfil
+                );
             }
             unset($data[$input]);
         }

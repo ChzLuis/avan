@@ -13,7 +13,7 @@ class StoreCatalogProfile extends Model
         'is_enabled', 'is_default', 'show_in_menu', 'sort_order',
         'logo_path', 'mobile_logo_path', 'favicon_path',
         'primary_color', 'secondary_color', 'header_bg_color', 'header_text_color',
-        'button_color', 'footer_bg_color',
+        'button_color', 'footer_bg_color', 'announcement_bg_color',
         'hero_desktop_path', 'hero_mobile_path', 'hero_title', 'hero_description',
     ];
 
@@ -28,7 +28,7 @@ class StoreCatalogProfile extends Model
     public const VISUAL_KEYS = [
         'logo_path', 'mobile_logo_path', 'favicon_path',
         'primary_color', 'secondary_color', 'header_bg_color', 'header_text_color',
-        'button_color', 'footer_bg_color',
+        'button_color', 'footer_bg_color', 'announcement_bg_color',
         'hero_desktop_path', 'hero_mobile_path', 'hero_title', 'hero_description',
     ];
 
@@ -89,6 +89,9 @@ class StoreCatalogProfile extends Model
             'header_text_color' => ['header_text_color'],
             'button_color' => ['button_color'],
             'footer_bg_color' => ['footer_bg_color'],
+            // La barra de avisos: sin esto, al cambiar de mundo cambiaba
+            // todo menos ella, porque su color vive en un ajuste global.
+            'announcement_bg_color' => ['announcement_bg'],
             'hero_desktop_path' => ['hero_image', 'hero_image_desktop'],
             'hero_mobile_path' => ['hero_image_mobile'],
             'hero_title' => ['hero_title'],

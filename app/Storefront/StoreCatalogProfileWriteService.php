@@ -19,7 +19,8 @@ final class StoreCatalogProfileWriteService
 {
     private const VISUAL_TEXT_KEYS = [
         'primary_color', 'secondary_color', 'header_bg_color', 'header_text_color',
-        'button_color', 'footer_bg_color', 'hero_title', 'hero_description',
+        'button_color', 'footer_bg_color', 'announcement_bg_color',
+        'hero_title', 'hero_description',
     ];
 
     /** Crea un perfil con slug único por proyecto. */
