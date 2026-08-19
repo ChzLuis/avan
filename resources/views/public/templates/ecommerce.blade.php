@@ -4025,6 +4025,9 @@ body.tw-open #tweaks-fab{left:320px;}
     <button class="tw-save" id="tw-save-btn" onclick="twSave()">💾 Guardar cambios</button>
     <div class="tw-save-msg" id="tw-save-msg"></div>
     <button class="tw-reset" onclick="twReset()">↺ Restablecer valores</button>
+{{-- El dialogo del panel viaja con la barra de edicion, no con la tienda: el
+     cliente que compra no carga nada de esto. --}}
+@include('partials.avisos')
   </div>
 </div>
 

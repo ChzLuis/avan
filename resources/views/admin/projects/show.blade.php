@@ -87,7 +87,12 @@
                 @enderror
             </div>
 
-            <form method="POST" action="{{ route('admin.projects.toggle', $project) }}" class="mt-5">
+            <form method="POST" action="{{ route('admin.projects.toggle', $project) }}" class="mt-5"
+                  data-bx-titulo="{{ $project->is_active ? 'Suspender '.$project->name : 'Activar '.$project->name }}"
+                  data-bx-confirmar="{{ $project->is_active
+                      ? 'Su panel y su tienda dejarán de estar disponibles hasta que lo actives de nuevo.'
+                      : 'Su panel y su tienda vuelven a quedar disponibles.' }}"
+                  data-bx-boton="{{ $project->is_active ? 'Suspender' : 'Activar' }}">
                 @csrf @method('PATCH')
                 <button type="submit"
                         class="w-full py-2 rounded-xl text-sm font-medium border transition-colors
@@ -104,7 +109,10 @@
             <h3 class="text-sm font-semibold text-white mb-1">Subdominio / Dominio personalizado</h3>
             <p class="text-xs text-gray-500 mb-4">Asigna un subdominio (ej: <span class="text-gray-400">mitienda.arindg.com</span>) o dominio propio (ej: <span class="text-gray-400">mitienda.com</span>). El catálogo público estará disponible en esa URL.</p>
 
-            <form method="POST" action="{{ route('admin.projects.subdomain', $project) }}" class="flex items-end gap-3">
+            <form method="POST" action="{{ route('admin.projects.subdomain', $project) }}" class="flex items-end gap-3"
+                  data-bx-titulo="Cambiar la dirección pública"
+                  data-bx-confirmar="La tienda pasará a responder en la nueva dirección. Los enlaces y códigos QR ya repartidos con la anterior dejarán de funcionar."
+                  data-bx-boton="Cambiar dirección">
                 @csrf @method('PATCH')
                 <div class="flex-1">
                     <label class="text-xs text-gray-400 mb-1 block">Dominio</label>

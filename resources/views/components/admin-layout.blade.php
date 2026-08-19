@@ -237,5 +237,6 @@
     });
 })();
 </script>
+@include('partials.avisos')
 </body>
 </html>

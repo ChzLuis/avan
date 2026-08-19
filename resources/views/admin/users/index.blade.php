@@ -50,7 +50,12 @@
                     <td class="px-5 py-4 text-center">
                         <div class="flex items-center justify-center gap-2">
                             @if($user->id !== auth()->id())
-                            <form method="POST" action="{{ route('admin.users.toggle-admin', $user) }}">
+                            <form method="POST" action="{{ route('admin.users.toggle-admin', $user) }}"
+                                  data-bx-titulo="{{ $user->is_superadmin ? 'Quitar el acceso de administrador' : 'Dar acceso de administrador' }}"
+                                  data-bx-confirmar="{{ $user->is_superadmin
+                                      ? $user->name.' dejará de ver y administrar todos los negocios de la plataforma.'
+                                      : $user->name.' podrá ver y administrar TODOS los negocios de la plataforma, no solo los suyos.' }}"
+                                  data-bx-boton="{{ $user->is_superadmin ? 'Quitar admin' : 'Hacer admin' }}">
                                 @csrf @method('PATCH')
                                 <button type="submit"
                                         class="text-xs px-3 py-1.5 rounded-lg border transition-colors

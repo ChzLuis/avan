@@ -75,7 +75,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </a>
-                <form method="POST" action="{{ route('admin.projects.toggle', $project) }}" class="action-form">
+                <form method="POST" action="{{ route('admin.projects.toggle', $project) }}" class="action-form"
+                      data-bx-titulo="{{ $project->is_active ? 'Suspender '.$project->name : 'Activar '.$project->name }}"
+                      data-bx-confirmar="{{ $project->is_active
+                          ? 'Su panel y su tienda dejarán de estar disponibles hasta que lo actives de nuevo.'
+                          : 'Su panel y su tienda vuelven a quedar disponibles.' }}"
+                      data-bx-boton="{{ $project->is_active ? 'Suspender' : 'Activar' }}">
                     @csrf @method('PATCH')
                     <button type="submit" class="action-btn action-secondary">
                         {{ $project->is_active ? 'Suspender' : 'Activar' }}

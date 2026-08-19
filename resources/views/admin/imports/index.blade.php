@@ -99,7 +99,8 @@
                 </div>
                 <button type="submit"
                         class="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-opacity hover:opacity-90"
-                        style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+                        style="background:linear-gradient(135deg,#6366f1,#8b5cf6);"
+                        onclick="event.preventDefault(); bxConfirmar({ titulo: 'Importar {{ $card['title'] }}', descripcion: 'Se cargarán en la base de datos todas las filas del archivo. Revisa que sea el correcto: no hay deshacer.', boton: 'Importar', tono: 'principal' }).then(ok => { if (ok) this.form.requestSubmit(this); });">
                     Importar {{ $card['title'] }}
                 </button>
             </form>

@@ -54,16 +54,119 @@ class SinDialogosDelNavegadorTest extends TestCase
         )));
     }
 
-    /** El diálogo solo existe si el layout lo incluye: sin esto, no hay popup. */
-    public function test_los_dos_layouts_incluyen_el_dialogo(): void
+    /**
+     * Toda pantalla que llama al diálogo tiene que cargarlo.
+     *
+     * Sustituir un `alert()` por `bxAviso()` en una pantalla cuyo layout no
+     * incluye la partial deja el botón muerto: la función no existe y el aviso
+     * no aparece por ningún lado. Eso es peor que el cuadro gris, porque no se
+     * nota hasta que un cliente reporta que "no pasa nada".
+     *
+     * Pasó de verdad con tres layouts: el del superadmin, el de Comunicaciones
+     * y la barra de edición que el dueño ve dentro de su propia tienda.
+     */
+    public function test_toda_pantalla_que_llama_al_dialogo_lo_carga(): void
     {
-        foreach (['layouts/app.blade.php', 'comercial/layouts/app.blade.php'] as $layout) {
-            $this->assertStringContainsString(
-                "@include('partials.avisos')",
-                file_get_contents(resource_path('views/'.$layout)),
-                $layout.' no incluye el diálogo: sus pantallas se quedarían sin popup.'
-            );
+        $sinDialogo = [];
+
+        foreach ($this->vistas() as $ruta => $contenido) {
+            $rel = $this->relativa($ruta);
+
+            if ($rel === 'partials/avisos.blade.php' || ! $this->llamaAlDialogo($contenido)) {
+                continue;
+            }
+
+            if (! $this->tieneDialogo($rel, [])) {
+                $sinDialogo[] = $rel;
+            }
         }
+
+        $this->assertSame([], $sinDialogo, implode("\n", array_merge(
+            ['Estas vistas llaman a bxAviso/bxConfirmar sin que su layout cargue el diálogo:'],
+            $sinDialogo,
+            ['', "Añade @include('partials.avisos') antes de </body> en el layout que las envuelve."]
+        )));
+    }
+
+    /** Una vista tiene el diálogo si lo incluye, o si lo tiene quien la envuelve. */
+    private function tieneDialogo(string $rel, array $visitadas): bool
+    {
+        if (isset($visitadas[$rel]) || ! is_file(resource_path('views/'.$rel))) {
+            return false;   // ciclo, o un layout que no existe
+        }
+
+        $visitadas[$rel] = true;
+        $s = file_get_contents(resource_path('views/'.$rel));
+
+        if (str_contains($s, "@include('partials.avisos')")) {
+            return true;
+        }
+
+        foreach ($this->envolturas($rel, $s) as $padre) {
+            if ($this->tieneDialogo($padre, $visitadas)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Quién envuelve a esta vista: su layout, o —si es una parcial sin layout
+     * propio— cualquier vista que la incluya.
+     */
+    private function envolturas(string $rel, string $s): array
+    {
+        $padres = [];
+
+        // <x-app-layout>, <x-admin-layout>, <x-comercial-layout>...
+        // Unos son componentes anónimos (components/*.blade.php) y otros son
+        // clases en app/View/Components que apuntan a otra vista; se prueban
+        // las tres formas y basta con que una resuelva.
+        if (preg_match_all('/<x-([a-z0-9-]+)-layout/', $s, $m)) {
+            foreach ($m[1] as $nombre) {
+                $padres[] = 'components/'.$nombre.'-layout.blade.php';
+                $padres[] = 'layouts/'.$nombre.'.blade.php';
+
+                $clase = str_replace(' ', '', ucwords(str_replace('-', ' ', $nombre))).'Layout';
+                $archivo = app_path('View/Components/'.$clase.'.php');
+                if (is_file($archivo) && preg_match("/view\('([^']+)'\)/", file_get_contents($archivo), $v)) {
+                    $padres[] = str_replace('.', '/', $v[1]).'.blade.php';
+                }
+            }
+        }
+
+        if (preg_match('/@extends\([\'"]([^\'"]+)[\'"]\)/', $s, $m)) {
+            $padres[] = str_replace('.', '/', $m[1]).'.blade.php';
+        }
+
+        if ($padres !== []) {
+            return $padres;
+        }
+
+        // Parcial: la envuelve quien la incluya.
+        $nombreBlade = str_replace('/', '.', substr($rel, 0, -strlen('.blade.php')));
+        foreach ($this->vistas() as $otra => $texto) {
+            if (str_contains($texto, "'".$nombreBlade."'") || str_contains($texto, '"'.$nombreBlade.'"')) {
+                $padres[] = $this->relativa($otra);
+            }
+        }
+
+        return $padres;
+    }
+
+    private function llamaAlDialogo(string $s): bool
+    {
+        return (bool) preg_match('/\bbxAviso\s*\(|\bbxConfirmar\s*\(|data-bx-confirmar/', $s);
+    }
+
+    private function relativa(string $ruta): string
+    {
+        return str_replace(
+            [str_replace('\\', '/', resource_path('views')).'/', '\\'],
+            ['', '/'],
+            str_replace('\\', '/', $ruta)
+        );
     }
 
     /** Y expone las dos funciones globales con las que se le llama. */

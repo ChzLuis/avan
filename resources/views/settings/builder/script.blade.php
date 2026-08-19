@@ -387,6 +387,22 @@ function builderApp(cfg) {
             if (action === 'price_set') payload.value = parseFloat(this.bulkValue);
             if (action === 'price_adjust') payload.value = parseFloat(this.bulkPct);
             if ((action === 'price_set' || action === 'price_adjust') && isNaN(payload.value)) return;
+
+            /* Se aplica a todo lo marcado y no hay deshacer: el numero es lo que
+               hay que ver antes de aceptar, no el nombre de la accion. */
+            const queHace = {
+                publish:      'quedaran visibles en la tienda',
+                unpublish:    'dejaran de verse en la tienda',
+                price_set:    'pasaran a costar S/ ' + payload.value.toFixed(2),
+                price_adjust: 'cambiaran de precio un ' + payload.value + '%',
+            }[action] || 'se actualizaran';
+            if (! await bxConfirmar({
+                titulo: ids.length + (ids.length === 1 ? ' producto' : ' productos'),
+                descripcion: ids.length === 1
+                    ? 'El producto seleccionado ' + queHace + '.'
+                    : 'Los ' + ids.length + ' productos seleccionados ' + queHace + '.',
+                boton: 'Aplicar a ' + ids.length,
+            })) return;
             try {
                 const r = await fetch(cfg.catalogBulkUrl, {
                     method: 'POST',

@@ -118,7 +118,7 @@
                 {{-- Tipo de licencia --}}
                 <form method="POST" action="{{ route('admin.licenses.update-user', $c['user_id']) }}">
                     @csrf @method('PATCH')
-                    <select name="license_type" onchange="this.form.submit()"
+                    <select name="license_type" onchange="bxConfirmar({ titulo: 'Cambiar el tipo de licencia', descripcion: 'Una licencia nombrada queda atada a esta persona; una concurrente la comparte el equipo. Cambiarla afecta a quién puede entrar ahora mismo.', boton: 'Cambiar licencia' }).then(ok => ok ? this.form.submit() : this.form.reset())"
                             class="rounded-lg bg-gray-900 border border-gray-700 px-2 h-8 text-xs text-white outline-none focus:border-indigo-500">
                         <option value="concurrente" {{ $c['licencia'] === 'concurrente' ? 'selected' : '' }}>Concurrente</option>
                         <option value="nombrada"    {{ $c['licencia'] === 'nombrada'    ? 'selected' : '' }}>Nombrada</option>
@@ -194,7 +194,7 @@
                     <td class="px-5 py-2.5 text-right">
                         <form method="POST" action="{{ route('admin.licenses.update-user', $u->id) }}" class="inline">
                             @csrf @method('PATCH')
-                            <select name="license_type" onchange="this.form.submit()"
+                            <select name="license_type" onchange="bxConfirmar({ titulo: 'Cambiar el tipo de licencia', descripcion: 'Una licencia nombrada queda atada a esta persona; una concurrente la comparte el equipo. Cambiarla afecta a quién puede entrar ahora mismo.', boton: 'Cambiar licencia' }).then(ok => ok ? this.form.submit() : this.form.reset())"
                                     class="rounded-lg bg-gray-900 border border-gray-700 px-2 h-8 text-xs text-white outline-none focus:border-indigo-500">
                                 <option value="concurrente" {{ ($u->license_type ?: 'concurrente') === 'concurrente' ? 'selected' : '' }}>Concurrente</option>
                                 <option value="nombrada"    {{ $u->license_type === 'nombrada' ? 'selected' : '' }}>Nombrada</option>

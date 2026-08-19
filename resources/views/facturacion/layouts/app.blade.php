@@ -320,5 +320,6 @@ function sessionWatcherFact() {
     };
 }
 </script>
+@include('partials.avisos')
 </body>
 </html>
