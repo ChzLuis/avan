@@ -348,7 +348,7 @@ function deliveryPage() {
             this.modalAsignar=false;
         },
         async cambiarDs(o,ds) {
-            if(ds==='rejected'&&!confirm('¿Rechazar este pedido?')) return;
+            if (ds==='rejected' && ! await bxConfirmar({ descripcion: '¿Rechazar este pedido?' })) return;
             await this.updateDs(o,ds,{});
         },
         async updateDs(o,ds,extra) {

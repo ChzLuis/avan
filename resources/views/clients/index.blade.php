@@ -135,16 +135,17 @@
                         this.form     = { ...c };
                     }
                 } else {
-                    alert(json.message || 'Error al guardar');
+                    bxAviso(json.message || 'Error al guardar', 'error');
                 }
             } catch(err) {
-                alert('Error de red');
+                bxAviso('Error de red', 'error');
             }
             this.saving = false;
         },
 
         async del() {
-            if (!this.selected || !confirm('¿Eliminar este cliente?')) return;
+            if (!this.selected) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar este cliente?' })) return;
             this.deleting = true;
             try {
                 const res = await fetch(this.baseUrl + '/' + this.selected.id, {
@@ -160,7 +161,7 @@
                     this.creating = false;
                     this.form     = {};
                 }
-            } catch(err) { alert('Error de red'); }
+            } catch(err) { bxAviso('Error de red', 'error'); }
             this.deleting = false;
         },
      }"

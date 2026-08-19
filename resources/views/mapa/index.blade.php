@@ -1156,7 +1156,8 @@ function avanMapa() {
         },
 
         async delObj() {
-            if (!this.sel || !confirm('¿Eliminar '+this.sel.label+'?')) return;
+            if (!this.sel) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar ' + this.sel.label + '?' })) return;
             const r = await this.del(`/bixoadmin/mapa/objects/${this.sel.id}`);
             if (r?.ok) { this.objs=this.objs.filter(o=>o.id!==this.sel.id); this.closePanel(); this.toast('Eliminado','ok'); }
         },

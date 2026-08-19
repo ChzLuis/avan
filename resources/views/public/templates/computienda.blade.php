@@ -3689,7 +3689,7 @@
            ancho, con aire a los lados. Cuadrado y a todo el ancho de la
            tarjeta; `max-height` para que en un móvil bajo no empuje los
            botones fuera de la pantalla. */
-        .qv-media{flex:0 0 auto;width:100%;height:auto;aspect-ratio:1/1;max-height:46vh;padding:10px;box-sizing:border-box}
+        .qv-media{flex:0 0 auto;width:100%;height:auto;aspect-ratio:4/3;max-height:30vh;padding:10px;box-sizing:border-box}
         /* `cover` recortaba el producto: en una laptop se comía el teclado y la
            pantalla quedaba descentrada. `contain` muestra la pieza entera, que
            es lo que el comprador quiere ver antes de decidir. */
@@ -3703,7 +3703,12 @@
             color:#fff!important;background:rgba(15,23,42,.62)!important;border:0!important;
             box-shadow:0 2px 8px rgba(15,23,42,.28)}
         .qv-media .pdp-zoom-hint svg{width:18px!important;height:18px!important;display:block;color:#fff!important;stroke-width:2.2}
-        .qv-resumen{-webkit-line-clamp:3}
+        .qv-resumen{-webkit-line-clamp:2}
+        /* Jerarquia: 'Agregar al carrito' es LA accion. El enlace a la ficha
+           competia con el mismo peso visual (boton bordeado de 44px). Como
+           enlace de texto se entiende igual y libera espacio. */
+        .qv-view{min-height:34px;border:0;background:transparent;color:var(--primary);
+            font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
     }
     /* Solido: el verde que la gente reconoce sin leer. */
     body.cardwa-solid #storefront-main .catalog-card-inquiry{color:#fff!important;background:#25D366!important;border:1px solid #25D366!important}

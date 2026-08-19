@@ -803,7 +803,7 @@ function botBuilder() {
 
         // ── Delete state ───────────────────────────────
         async deleteState(id) {
-            if (!confirm('¿Eliminar este estado? Se eliminarán también sus transiciones.')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar este estado? Se eliminarán también sus transiciones.' })) return;
             try {
                 const r = await fetch(`${bbBase}/states/${id}`, {
                     method: 'DELETE',
@@ -845,7 +845,7 @@ function botBuilder() {
         },
 
         async deleteTransition(id) {
-            if (!confirm('¿Eliminar esta transición?')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar esta transición?' })) return;
             try {
                 const r = await fetch(`${bbBase}/transitions/${id}`, {
                     method: 'DELETE', headers: { 'X-CSRF-TOKEN': bbCsrf },

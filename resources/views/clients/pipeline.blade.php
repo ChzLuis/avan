@@ -67,8 +67,8 @@ function pipelineBoard() {
                     body: JSON.stringify({ etapa }),
                 });
                 if (r.ok) location.reload();
-                else alert('No se pudo mover el lead.');
-            } catch (err) { alert('Error de conexión.'); }
+                else bxAviso('No se pudo mover el lead.', 'error');
+            } catch (err) { bxAviso('Error de conexión.', 'error'); }
         },
     };
 }

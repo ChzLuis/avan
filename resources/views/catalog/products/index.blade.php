@@ -679,7 +679,12 @@ document.addEventListener('alpine:init', () => {
                 confirmLabel: 'Entiendo, continuar',
             });
             if (!ok) return;
-            const typed = window.prompt('Para confirmar, escribe exactamente el identificador del negocio:\n\n{{ $project->slug }}');
+            const typed = await bxConfirmar({
+                titulo: 'Escribe el identificador para confirmar',
+                descripcion: 'Para vaciar el catálogo, escribe exactamente el identificador del negocio: {{ $project->slug }}',
+                boton: 'Vaciar catálogo',
+                entrada: { etiqueta: 'Identificador del negocio', marcador: '{{ $project->slug }}', debeCoincidir: '{{ $project->slug }}' },
+            });
             if (typed !== '{{ $project->slug }}') {
                 window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Cancelado: el texto no coincidió.', type: 'warning' } }));
                 return;

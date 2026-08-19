@@ -102,7 +102,7 @@
          },
 
          async del() {
-             if (!confirm('¿Eliminar este catálogo y todos sus valores?')) return;
+             if (! await bxConfirmar({ descripcion: '¿Eliminar este catálogo y todos sus valores?' })) return;
              const res = await fetch(this.baseUrl + '/' + this.selected.id, {
                  method: 'DELETE',
                  headers: { 'X-CSRF-TOKEN': '{{ $csrf }}', 'Accept': 'application/json' }
@@ -157,7 +157,7 @@
          },
 
          async deleteValue(v) {
-             if (!confirm('¿Eliminar este valor?')) return;
+             if (! await bxConfirmar({ descripcion: '¿Eliminar este valor?' })) return;
              const res = await fetch(this.baseUrl + '/' + this.selected.id + '/values/' + v.id, {
                  method: 'DELETE',
                  headers: { 'X-CSRF-TOKEN': '{{ $csrf }}', 'Accept': 'application/json' }

@@ -474,7 +474,7 @@ function builderApp(cfg) {
             if (d && d.profile) { this.profiles.push(d.profile); this.newProfileName = ''; }
         },
         async profileDelete(p) {
-            if (!confirm('¿Eliminar el perfil "' + p.name + '"? Los productos no se borran.')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar el perfil "' + p.name + '"? Los productos no se borran.' })) return;
             const d = await this._profilePost(cfg.profileUrls.destroy.replace('987654321', p.id), { _method: 'DELETE' });
             if (d) this.profiles = this.profiles.filter(x => x.id !== p.id);
         },
@@ -753,7 +753,7 @@ function builderApp(cfg) {
                 });
                 const data = await res.json();
                 if (res.status === 409 && data.reason === 'warnings') { this.warningsToConfirm = [...(data.checklist.attention||[]), ...(data.checklist.recommendation||[])]; return; }
-                if (!res.ok) { alert(data.message || 'No se pudo publicar. Revisa los pendientes.'); return; }
+                if (!res.ok) { bxAviso(data.message || 'No se pudo publicar. Revisa los pendientes.', 'error'); return; }
                 this.warningsToConfirm = null;
                 this.publishSuccess = data;
                 this.pendingDrafts = false;
@@ -762,7 +762,7 @@ function builderApp(cfg) {
                 this.loadChecklist();
                 this.refreshPreview(true);
             } catch (e) {
-                alert('No se pudo publicar. Revisa tu conexión e inténtalo de nuevo.');
+                bxAviso('No se pudo publicar. Revisa tu conexión e inténtalo de nuevo.', 'error');
             } finally {
                 this.publishing = false;
             }

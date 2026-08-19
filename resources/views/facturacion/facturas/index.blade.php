@@ -646,11 +646,11 @@ function factPage() {
                 const data = await res.json();
                 if (data.ok) {
                     inv.sunat_status = 'accepted';
-                    alert('✅ Aceptada por SUNAT correctamente.');
+                    bxAviso('✅ Aceptada por SUNAT correctamente.', 'error');
                 } else {
-                    alert('❌ ' + (data.message ?? 'Error desconocido'));
+                    bxAviso('❌ ' + (data.message ?? 'Error desconocido'), 'error');
                 }
-            } catch(e) { alert('❌ Error de red: ' + e.message); }
+            } catch(e) { bxAviso('❌ Error de red: ' + e.message, 'error'); }
             this.sendingId = null;
         },
 

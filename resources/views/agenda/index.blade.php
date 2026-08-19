@@ -69,7 +69,7 @@
     },
 
     async del() {
-        if(!confirm('Eliminar esta cita?')) return;
+        if (! await bxConfirmar({ descripcion: 'Eliminar esta cita?' })) return;
         const base = window.location.pathname.replace(/\/[0-9]+\/appointments.*/,'') + '/' + {{ $project->id }};
         await fetch(base+'/appointments/'+this.selected.id, {method:'DELETE',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}});
         this.appointments=this.appointments.filter(a=>a.id!==this.selected.id); this.selected=null;

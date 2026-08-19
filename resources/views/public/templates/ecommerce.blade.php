@@ -4391,8 +4391,8 @@ async function twSave(auto = false) {
   }
 }
 
-function twReset() {
-  if (!confirm('¿Restablecer estilos visuales?')) return;
+async function twReset() {
+  if (! await bxConfirmar({ descripcion: '¿Restablecer estilos visuales?' })) return;
   document.documentElement.removeAttribute('style');
   document.documentElement.removeAttribute('data-theme');
   const d = document.getElementById('tw-dark');

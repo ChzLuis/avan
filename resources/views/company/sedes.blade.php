@@ -100,16 +100,17 @@
                         this.selected = json.sede;
                     }
                 } else {
-                    alert(json.message || 'Error al guardar');
+                    bxAviso(json.message || 'Error al guardar', 'error');
                 }
             } catch(e) {
-                alert('Error de red');
+                bxAviso('Error de red', 'error');
             }
             this.saving = false;
         },
 
         async destroy() {
-            if (!this.selected || !confirm('¿Eliminar esta sede?')) return;
+            if (!this.selected) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar esta sede?' })) return;
             this.deleting = true;
             try {
                 const res = await fetch(this.baseUrl + '/' + this.selected.id, {
@@ -124,7 +125,7 @@
                     this.selected = null;
                     this.form = {};
                 }
-            } catch(e) { alert('Error de red'); }
+            } catch(e) { bxAviso('Error de red', 'error'); }
             this.deleting = false;
         },
     }"

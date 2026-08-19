@@ -98,7 +98,7 @@
                                 {{-- Fondo del pie y letra del encabezado: el backend ya los
                                      guardaba pero el formulario no los ofrecia, asi que el pie
                                      no podia seguir el color del mundo activo. --}}
-                                @foreach(['primary_color'=>'Color principal','secondary_color'=>'Color secundario','header_bg_color'=>'Fondo encabezado','header_text_color'=>'Letra del encabezado','button_color'=>'Botones','footer_bg_color'=>'Fondo del pie'] as $ck=>$cl)
+                                @foreach(['primary_color'=>'Color principal','secondary_color'=>'Color secundario','header_bg_color'=>'Fondo encabezado','header_text_color'=>'Letra del encabezado','button_color'=>'Botones','footer_bg_color'=>'Fondo del pie','announcement_bg_color'=>'Barra de avisos'] as $ck=>$cl)
                                     <label><span>{{ $cl }}</span><div class="snb-color"><input type="color" name="{{ $ck }}" value="{{ $profile->{$ck} ?: '#ffffff' }}"><code>{{ $profile->{$ck} ?: 'heredar' }}</code></div></label>
                                 @endforeach
                             </div>
@@ -150,7 +150,7 @@
                                 <button type="submit" class="snb-primary">Guardar perfil</button>
                             </div>
                         </form>
-                        <form method="POST" action="{{ route('settings.catalog-profiles.destroy', $profile->id) }}" onsubmit="return confirm('¿Eliminar este perfil? No afecta productos ni stock.')">
+                        <form method="POST" action="{{ route('settings.catalog-profiles.destroy', $profile->id) }}" data-bx-confirmar="¿Eliminar este perfil? No afecta productos ni stock.">
                             @csrf @method('DELETE')
                             <button type="submit" class="snb-primary snb-delete" style="margin-top:8px">Eliminar perfil</button>
                         </form>

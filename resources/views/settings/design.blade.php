@@ -179,7 +179,7 @@
               setTimeout(() => window.location.assign(target.toString()), 450);
             } catch (error) {
               this.appliedMsg = '';
-              alert('Error: ' + (error.message || 'No se pudo aplicar la plantilla.'));
+              bxAviso('Error: ' + (error.message || 'No se pudo aplicar la plantilla.'), 'error');
             } finally {
               this.applying = false;
               this.applyingKey = '';
@@ -218,8 +218,8 @@
                     <div class="text-xs text-gray-400">{{ $pt->description }}</div>
                   </div>
                   <div class="flex items-center gap-2">
-                    <button type="button" class="text-sm px-2 py-1 bg-indigo-600 text-white rounded" @click="(async()=>{ const res=await fetch('{{ route('settings.design.applyProjectTemplate') }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({id:{{ $pt->id }},apply_to_project:'1'})}); const j=await res.json(); if(j.ok) location.reload(); else alert(j.message||'Error'); })()">Aplicar</button>
-                    <form method="POST" action="{{ route('settings.design.projectTemplates.destroy', $pt->id) }}" onsubmit="return confirm('Eliminar plantilla?');">
+                    <button type="button" class="text-sm px-2 py-1 bg-indigo-600 text-white rounded" @click="(async()=>{ const res=await fetch('{{ route('settings.design.applyProjectTemplate') }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({id:{{ $pt->id }},apply_to_project:'1'})}); const j=await res.json(); if(j.ok) location.reload(); else bxAviso(j.message||'Error', 'error'); })()">Aplicar</button>
+                    <form method="POST" action="{{ route('settings.design.projectTemplates.destroy', $pt->id) }}" data-bx-confirmar="¿Eliminar esta plantilla?" data-bx-boton="Eliminar">
                       @csrf @method('DELETE')
                       <button type="submit" class="text-sm px-2 py-1 bg-red-50 text-red-700 border border-red-100 rounded">Eliminar</button>
                     </form>
@@ -653,13 +653,13 @@
                           window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg, type: 'error' } }));
                       });
               },
-              quitarLogo() {
-                  if (!confirm('¿Quitar el logo del negocio?')) return;
+              async quitarLogo() {
+                  if (! await bxConfirmar({ descripcion: '¿Quitar el logo del negocio?', boton: 'Quitar logo' })) return;
                   this.logoPreview = '';
                   document.getElementById('logo_url_input').value = '';
               },
-              quitarFavi() {
-                  if (!confirm('¿Quitar el favicon?')) return;
+              async quitarFavi() {
+                  if (! await bxConfirmar({ descripcion: '¿Quitar el favicon?', boton: 'Quitar favicon' })) return;
                   this.faviPreview = '';
                   document.getElementById('favicon_url_input').value = '';
               }

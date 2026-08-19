@@ -1449,7 +1449,7 @@ function posApp() {
                     this.splitPayment = false;
                 }
             } catch (e) {
-                alert(e.message || 'Error de conexión.');
+                bxAviso(e.message || 'Error de conexión.', 'error');
             }
             this.processing = false;
         },
@@ -1494,7 +1494,7 @@ function posApp() {
                 this.copyManual = false;
                 this.abrirCotizacion();
             } catch (e) {
-                alert(e.message || 'Error de conexión.');
+                bxAviso(e.message || 'Error de conexión.', 'error');
             }
             this.processing = false;
         },

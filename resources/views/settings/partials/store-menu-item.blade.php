@@ -17,7 +17,7 @@
                 <label><span>Abrir enlace</span><select name="target"><option value="_self" @selected($item->target==='_self')>Misma pestaña</option><option value="_blank" @selected($item->target==='_blank')>Otra pestaña</option></select></label>
             </div>
             <div class="snb-checks"><label><input type="checkbox" name="is_enabled" value="1" @checked($item->is_enabled)><span>Visible</span></label><label><input type="checkbox" name="show_desktop" value="1" @checked($item->show_desktop)><span>Computadora</span></label><label><input type="checkbox" name="show_tablet" value="1" @checked($item->show_tablet)><span>Tablet</span></label><label><input type="checkbox" name="show_mobile" value="1" @checked($item->show_mobile)><span>Celular</span></label></div>
-            <div class="snb-actions"><button type="button" class="snb-primary snb-delete" onclick="if(confirm('¿Eliminar esta opción del menú?'))document.getElementById('delete-menu-item-{{ $item->id }}').submit()">Eliminar</button><button class="snb-primary">Guardar opción</button></div>
+            <div class="snb-actions"><button type="button" class="snb-primary snb-delete" onclick="bxConfirmar({ descripcion: '¿Eliminar esta opción del menú?', boton: 'Eliminar' }).then(ok => { if (ok) document.getElementById('delete-menu-item-{{ $item->id }}').submit(); })">Eliminar</button><button class="snb-primary">Guardar opción</button></div>
         </form>
         <form id="delete-menu-item-{{ $item->id }}" method="POST" action="{{ route('settings.storefront.menu.items.destroy',$item->id) }}" hidden>@csrf @method('DELETE')</form>
     </div>

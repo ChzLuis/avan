@@ -391,7 +391,7 @@ function certApp() {
 
         async save() {
             if (!this.form.alumno_nombre || !this.form.curso_nombre || !this.form.fecha_emision) {
-                alert('Completa: nombre del alumno, curso y fecha de emisión.');
+                bxAviso('Completa: nombre del alumno, curso y fecha de emisión.', 'error');
                 return;
             }
             this.saving = true;
@@ -417,7 +417,7 @@ function certApp() {
         },
 
         async del() {
-            if (!confirm('¿Eliminar este certificado? Esta acción no se puede deshacer.')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar este certificado? Esta acción no se puede deshacer.' })) return;
             const base = '{{ route("certificados.store") }}';
             await fetch(base + '/' + this.selected.id, {
                 method: 'DELETE',
@@ -434,7 +434,7 @@ function certApp() {
 
         copyLink() {
             const url = '{{ url("/cert") }}/' + this.selected.codigo;
-            navigator.clipboard.writeText(url).then(() => alert('Link copiado.'));
+            navigator.clipboard.writeText(url).then(() => bxAviso('Link copiado.', 'error'));
         },
 
         copyWA() {
@@ -449,7 +449,7 @@ function certApp() {
                 + '📅 *Fecha de emisión:* ' + c.fecha_emision + '\n\n'
                 + '🔗 *Verifica tu certificado aquí:*\n' + url + '\n\n'
                 + '_El código ' + c.codigo + ' garantiza la autenticidad de este documento._';
-            navigator.clipboard.writeText(msg).then(() => alert('Mensaje copiado. Pégalo en WhatsApp.'));
+            navigator.clipboard.writeText(msg).then(() => bxAviso('Mensaje copiado. Pégalo en WhatsApp.', 'error'));
         },
     };
 }

@@ -692,7 +692,7 @@ function invoicesApp() {
                 const upd = { sunat_status: 'accepted', status: 'sent', status_label: 'Enviada' };
                 if (idx > -1) this.invoices[idx] = { ...this.invoices[idx], ...upd };
                 this.selected = { ...this.selected, ...upd, sunat_error: null };
-                alert('✓ ' + (data.message || 'Aceptado por SUNAT'));
+                bxAviso('✓ ' + (data.message || 'Aceptado por SUNAT'), 'success');
             } else {
                 const errUpd = { sunat_status: 'rejected' };
                 const idx = this.invoices.findIndex(i => i.id === this.selected.id);
@@ -702,13 +702,13 @@ function invoicesApp() {
         },
 
         async deleteInvoice() {
-            if (!confirm('¿Eliminar este comprobante?')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar este comprobante?' })) return;
             const res = await fetch(`{{ $invoicesApiBase }}/` + this.selected.id, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
             });
             const data = await res.json();
-            if (!res.ok) { alert(data.message || 'No se pudo eliminar.'); return; }
+            if (!res.ok) { bxAviso(data.message || 'No se pudo eliminar.', 'error'); return; }
             this.invoices = this.invoices.filter(i => i.id !== this.selected.id);
             this.selected = null;
             this.panel = 'list';

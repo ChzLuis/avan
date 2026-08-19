@@ -336,7 +336,11 @@ function setPattern(pattern) {
 
 // ── Modal estado ──────────────────────────────────────────────
 function openNewState() {
-    if (!flowId) { if(confirm('No hay flujo creado. ¿Crear ahora?')) createFlow(); return; }
+    if (!flowId) {
+        bxConfirmar({ titulo: 'Sin flujo', descripcion: 'Este bot todavía no tiene un flujo. ¿Crearlo ahora?', boton: 'Crear flujo', tono: 'principal' })
+            .then(ok => { if (ok) createFlow(); });
+        return;
+    }
     editingStateId = null;
     stateImages    = [];
     renderPreviews();
@@ -377,7 +381,7 @@ async function saveState() {
         validation_error:    ['text','number'].includes(inputType) ? (document.getElementById('s-val-error').value.trim() || null) : null,
     };
 
-    if (!payload.key || !payload.label || !payload.message) { alert('Completa todos los campos requeridos'); return; }
+    if (!payload.key || !payload.label || !payload.message) { bxAviso('Completa todos los campos requeridos', 'error'); return; }
 
     const url    = editingStateId ? `${baseUrl}/states/${editingStateId}` : `${baseUrl}/states`;
     const method = editingStateId ? 'PUT' : 'POST';
@@ -389,7 +393,7 @@ async function saveState() {
     });
     const d = await r.json();
     if (d.ok) { closeModal(); location.reload(); }
-    else alert(d.message || 'Error al guardar');
+    else bxAviso(d.message || 'Error al guardar', 'error');
 }
 
 // ── Helpers escape ────────────────────────────────────────────
@@ -614,7 +618,7 @@ async function saveStateInline(id) {
         validation_max:      inputType === 'number' ? (document.getElementById('e-val-max').value !== '' ? parseInt(document.getElementById('e-val-max').value) : null) : null,
         validation_error:    ['text','number'].includes(inputType) ? (document.getElementById('e-val-error').value.trim() || null) : null,
     };
-    if (!payload.label || !payload.message) { alert('Completa nombre y mensaje'); return; }
+    if (!payload.label || !payload.message) { bxAviso('Completa nombre y mensaje', 'error'); return; }
     const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando…';
     try {
         const r = await fetch(`${baseUrl}/states/${id}`, {
@@ -632,15 +636,15 @@ async function saveStateInline(id) {
             if (row) row.querySelector('span.font-medium')?.setAttribute('textContent', payload.label);
             btn.textContent = '✓ Guardado'; btn.classList.add('bg-green-600'); btn.classList.remove('bg-indigo-600');
             setTimeout(() => { btn.textContent='Guardar cambios'; btn.classList.remove('bg-green-600'); btn.classList.add('bg-indigo-600'); btn.disabled=false; location.reload(); }, 1000);
-        } else { alert(d.message || 'Error al guardar'); btn.disabled=false; btn.textContent='Guardar cambios'; }
-    } catch(e) { alert('Error de conexión'); btn.disabled=false; btn.textContent='Guardar cambios'; }
+        } else { bxAviso(d.message || 'Error al guardar', 'error'); btn.disabled=false; btn.textContent='Guardar cambios'; }
+    } catch(e) { bxAviso('Error de conexión', 'error'); btn.disabled=false; btn.textContent='Guardar cambios'; }
 }
 
 // editState ya no abre modal — abre el panel inline
 function editState(id) { selectState(id); }
 
 async function deleteState(id) {
-    if (!confirm('¿Eliminar este estado? También se eliminarán sus transiciones.')) return;
+    if (! await bxConfirmar({ descripcion: '¿Eliminar este estado? También se eliminarán sus transiciones.' })) return;
     const r = await fetch(`${baseUrl}/states/${id}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN':csrf, 'Accept':'application/json' }
@@ -708,7 +712,7 @@ async function saveTransition(fromId) {
 }
 
 async function deleteTransition(id) {
-    if (!confirm('¿Eliminar esta transición?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Eliminar esta transición?' })) return;
     const r = await fetch(`${baseUrl}/transitions/${id}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN':csrf, 'Accept':'application/json' }
@@ -717,7 +721,7 @@ async function deleteTransition(id) {
 }
 
 async function importarDesdeJson() {
-    if (!confirm('¿Importar flujo desde el JSON de respaldo? Esto recreará todos los estados y transiciones.')) return;
+    if (! await bxConfirmar({ descripcion: '¿Importar flujo desde el JSON de respaldo? Esto recreará todos los estados y transiciones.' })) return;
     const r = await fetch(`${baseUrl}/flow/import-json`, {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':csrf, 'Accept':'application/json' },
@@ -725,10 +729,10 @@ async function importarDesdeJson() {
     });
     const data = await r.json();
     if (data.ok) {
-        alert(`✅ ${data.message}`);
+        bxAviso(`✅ ${data.message}`, 'error');
         location.reload();
     } else {
-        alert(`❌ Error: ${data.message}`);
+        bxAviso(`❌ Error: ${data.message}`, 'error');
     }
 }
 </script>

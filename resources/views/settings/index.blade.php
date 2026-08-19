@@ -77,7 +77,7 @@
          },
 
          async createProject() {
-             if (!this.form.name.trim()) { alert('El nombre es requerido'); return; }
+             if (!this.form.name.trim()) { bxAviso('El nombre es requerido', 'error'); return; }
              this.saving = true;
              const res = await fetch('{{ route('projects.store') }}', {
                  method: 'POST',
@@ -713,7 +713,7 @@
                 <div class="bx-actions">
                     <button type="submit" class="btn-primary">Guardar cambios</button>
                     <button type="button"
-                            onclick="if(confirm('¿Eliminar este negocio? Esta acción no se puede deshacer.')) { fetch('/projects/{{ $selP->id }}', { method:'DELETE', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'} }).then(r => r.ok ? window.location.href='/bixoadmin' : alert('Error al eliminar')); }"
+                            onclick="bxConfirmar({ titulo: 'Eliminar el negocio', descripcion: 'Se eliminará este negocio con todo lo que contiene. Esta acción no se puede deshacer.', boton: 'Eliminar negocio' }).then(ok => { if (!ok) return; fetch('/projects/{{ $selP->id }}', { method:'DELETE', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'} }).then(r => r.ok ? window.location.href='/bixoadmin' : bxAviso('Error al eliminar', 'error')); })"
                             class="text-sm text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg transition font-medium">
                         🗑 Eliminar negocio
                     </button>
@@ -897,7 +897,7 @@
                     if (d.ok) { const c = this.coupons.find(c => c.id === id); if (c) c.is_active = d.is_active; }
                 },
                 async remove(id) {
-                    if (!confirm('¿Eliminar este cupón?')) return;
+                    if (! await bxConfirmar({ descripcion: '¿Eliminar este cupón?' })) return;
                     await fetch('/bixoadmin/coupons/'+id, {
                         method: 'DELETE',
                         headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}'}
@@ -1194,7 +1194,7 @@
                     } catch(e) { this.saving = false; this.err = 'Error de conexión: ' + e.message; }
                 },
                 async remove(id) {
-                    if (!confirm('¿Eliminar este canal?')) return;
+                    if (! await bxConfirmar({ descripcion: '¿Eliminar este canal?' })) return;
                     await fetch('{{ url('/bixoadmin/settings/canales') }}/'+id, {
                         method: 'DELETE',
                         headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}'}

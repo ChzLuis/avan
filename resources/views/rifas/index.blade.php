@@ -142,26 +142,26 @@
 const csrf = document.querySelector('meta[name=csrf-token]').content;
 
 async function validar(id) {
-    if (!confirm('¿Validar este pago?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Validar este pago?' })) return;
     const r = await fetch(`/rifas/${id}/validar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
     const d = await r.json();
     if (d.ok) location.reload();
-    else alert('Error al validar');
+    else bxAviso('Error al validar', 'error');
 }
 
 async function enviarTicket(id) {
-    if (!confirm('¿Enviar el ticket por WhatsApp?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Enviar el ticket por WhatsApp?' })) return;
     const btn = event.target;
     btn.textContent = 'Enviando...';
     btn.disabled = true;
     const r = await fetch(`/rifas/${id}/enviar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
     const d = await r.json();
     if (d.ok) location.reload();
-    else { alert('Error al enviar'); btn.disabled = false; btn.textContent = '🎟️ Enviar ticket'; }
+    else { bxAviso('Error al enviar', 'error'); btn.disabled = false; btn.textContent = '🎟️ Enviar ticket'; }
 }
 
 async function cancelar(id) {
-    if (!confirm('¿Cancelar esta venta?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Cancelar esta venta?' })) return;
     const r = await fetch(`/rifas/${id}/cancelar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
     const d = await r.json();
     if (d.ok) location.reload();

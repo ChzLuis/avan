@@ -112,7 +112,7 @@
                 </div>
             </template>
             <div class="flex justify-between items-center pt-3">
-                <button x-show="cart.length" class="text-[11px] font-bold" style="color:var(--bx-red)" @click="confirm('¿Vaciar el carrito?') && (cart=[])">Vaciar</button>
+                <button x-show="cart.length" class="text-[11px] font-bold" style="color:var(--bx-red)" @click="bxConfirmar({ descripcion: '¿Vaciar el carrito? Se quitarán todos los productos.', boton: 'Vaciar' }).then(ok => { if (ok) cart = []; })">Vaciar</button>
                 <div class="text-right flex-1">
                     <span class="text-[11px] font-bold uppercase" style="color:var(--bx-ink2)">Total</span>
                     <span class="text-2xl font-black ml-2" style="color:var(--bx-ink)" x-text="money(total())"></span>

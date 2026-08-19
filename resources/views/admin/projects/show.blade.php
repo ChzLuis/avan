@@ -60,7 +60,7 @@
 
                 <form method="POST" action="{{ route('admin.projects.owner', $project) }}"
                       class="flex flex-wrap items-end gap-3 mt-3"
-                      onsubmit="return confirm('El negocio pasará a manos de la persona elegida, que tendrá control total sobre él. ¿Continuar?')">
+                      data-bx-confirmar="El negocio pasará a manos de la persona elegida, que tendrá control total sobre él. ¿Continuar?">
                     @csrf
                     <div>
                         <label class="block text-xs font-semibold text-gray-400 mb-1.5">Traspasar a</label>

@@ -211,11 +211,16 @@ function propuestas() {
             this.cargando = false;
         },
         async copiar(url) {
-            try { await navigator.clipboard.writeText(url); alert('Enlace copiado'); }
-            catch (e) { window.prompt('Copia el enlace:', url); }
+            try { await navigator.clipboard.writeText(url); bxAviso('Enlace copiado', 'exito'); }
+            catch (e) {
+                await bxConfirmar({
+                    titulo: 'Copia el enlace', descripcion: 'Tu navegador no permitió copiarlo solo. Selecciónalo y cópialo.',
+                    boton: 'Listo', tono: 'principal', cancelar: '', entrada: { etiqueta: 'Enlace', valor: url, soloLectura: true },
+                });
+            }
         },
         async eliminar(id) {
-            if (!confirm('¿Eliminar esta propuesta?')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar esta propuesta?' })) return;
             await fetch('{{ url()->current() }}/' + id, {
                 method: 'DELETE',
                 headers: {'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'},

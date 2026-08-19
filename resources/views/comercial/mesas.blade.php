@@ -675,7 +675,7 @@ function mesasBoard() {
 
         llamarCliente(i) {
             const c = this.listaEspera[i];
-            alert('Llamar a ' + c.nombre + ' — espera ' + this.tiempoEspera(c.at) + ' min');
+            bxAviso('Llamar a ' + c.nombre + ' — espera ' + this.tiempoEspera(c.at) + ' min', 'error');
         },
 
         // ── Cambio de mesa ─────────────────────────────────────────────────────

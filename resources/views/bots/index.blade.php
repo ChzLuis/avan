@@ -286,7 +286,7 @@ async function botAction(bot, action) {
 
 // ── Cambiar número (reset sesión WhatsApp) ─────────────────────
 async function resetSession(bot) {
-    if (!confirm('¿Cambiar número de WhatsApp?\n\nEsto borrará la sesión actual y mostrará un nuevo QR para vincular otro número.')) return;
+    if (! await bxConfirmar({ descripcion: '¿Cambiar número de WhatsApp?\n\nEsto borrará la sesión actual y mostrará un nuevo QR para vincular otro número.' })) return;
     showToast('Borrando sesión...', 'info');
     try {
         const res  = await fetch(`${baseUrl}/reset-session`, {
@@ -365,7 +365,7 @@ async function saveNewBot() {
 
 // ── Eliminar Bot ───────────────────────────────────────────────
 async function deleteBot(id, name) {
-    if (!confirm(`¿Eliminar el bot "${name}"? Se detendrá y se borrará su configuración.`)) return;
+    if (! await bxConfirmar({ descripcion: `¿Eliminar el bot "${name}"? Se detendrá y se borrará su configuración.` })) return;
     try {
         const res  = await fetch(`${baseUrl}/instances/${id}`, {
             method: 'DELETE',
@@ -443,13 +443,13 @@ async function loadVentas(bot) {
 }
 
 async function rifaValidar(id) {
-    if (!confirm('¿Validar este pago?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Validar este pago?' })) return;
     const r = await fetch(`/rifas/${id}/validar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
     const d = await r.json();
     if (d.ok) loadVentas('rifa');
 }
 async function rifaEnviar(id) {
-    if (!confirm('¿Enviar ticket por WhatsApp?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Enviar ticket por WhatsApp?' })) return;
     showToast('Generando y enviando ticket...', 'info');
     const r = await fetch(`/rifas/${id}/enviar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
     const d = await r.json();
@@ -457,7 +457,7 @@ async function rifaEnviar(id) {
     else showToast('Error al enviar', 'error');
 }
 async function rifaCancelar(id) {
-    if (!confirm('¿Cancelar esta venta?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Cancelar esta venta?' })) return;
     const r = await fetch(`/rifas/${id}/cancelar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
     const d = await r.json();
     if (d.ok) loadVentas('rifa');

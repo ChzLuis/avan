@@ -71,12 +71,12 @@
                    @if($tplMedia)<span class="text-amber-500" aria-hidden="true"> ⚠</span>@endif</a>
                 <button class="px-2.5 py-1.5 rounded-md border" @click="renaming=renaming==={{ $tpl->id }}?null:{{ $tpl->id }}">Renombrar</button>
                 <form method="POST" action="{{ route('design-templates.toggle', $tpl->id) }}">@csrf<input type="hidden" name="field" value="is_default"><button class="px-2.5 py-1.5 rounded-md border">Predet.</button></form>
-                <form method="POST" action="{{ route('design-templates.toggle', $tpl->id) }}" onsubmit="return confirm('¿Archivar esta plantilla? Podrás recuperarla luego.')">@csrf<input type="hidden" name="field" value="archived"><button class="px-2.5 py-1.5 rounded-md border text-red-500">Archivar</button></form>
+                <form method="POST" action="{{ route('design-templates.toggle', $tpl->id) }}" data-bx-confirmar="¿Archivar esta plantilla? Podrás recuperarla luego.">@csrf<input type="hidden" name="field" value="archived"><button class="px-2.5 py-1.5 rounded-md border text-red-500">Archivar</button></form>
             </div>
 
             {{-- Aplicar por partes --}}
             <form x-show="applying==={{ $tpl->id }}" x-cloak method="POST" action="{{ route('design-templates.apply', $tpl->id) }}"
-                  onsubmit="return confirm('Se aplicará al BORRADOR de {{ $project->name }}. Tu diseño publicado no cambia hasta que publiques. ¿Continuar?')"
+                  data-bx-confirmar="Se aplicará al BORRADOR de {{ $project->name }}. Tu diseño publicado no cambia hasta que publiques. ¿Continuar?"
                   class="border-t bg-gray-50 p-4 text-xs space-y-2">
                 @csrf
                 <strong class="text-gray-700">Qué aplicar a {{ $project->name }} (borrador):</strong>

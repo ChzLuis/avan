@@ -134,7 +134,12 @@ function resellerPrecios() {
 
         async copiar() {
             try { await navigator.clipboard.writeText(this.enlace); this.copiado = true; setTimeout(() => this.copiado = false, 1500); }
-            catch (e) { window.prompt('Copia tu enlace:', this.enlace); }
+            catch (e) {
+                await bxConfirmar({
+                    titulo: 'Copia tu enlace', descripcion: 'Tu navegador no permitió copiarlo solo. Selecciónalo y cópialo.',
+                    boton: 'Listo', tono: 'principal', cancelar: '', entrada: { etiqueta: 'Enlace', valor: this.enlace, soloLectura: true },
+                });
+            }
         },
 
         async guardar(p) {

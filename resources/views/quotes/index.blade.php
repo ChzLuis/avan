@@ -763,7 +763,7 @@
     clientesSugeridos: [],
 
     /* Dialogo de confirmacion unico. Dice QUE va a pasar y con que documento,
-       que es lo que un confirm() del navegador no puede contar. */
+       que es lo que un cuadro del navegador no puede contar. */
     confirmar: { abierto:false, titulo:'', descripcion:'', boton:'', tono:'peligro', ocupado:false, accion:null },
     pedirConfirmacion(opciones) {
         this.confirmar = Object.assign(
@@ -1285,7 +1285,11 @@
     },
 
     async save() {
-        if (!this.form.client_name.trim()) { alert('Ingresa el nombre del cliente'); return; }
+        if (!this.form.client_name.trim()) {
+            bxAviso('Falta el nombre del cliente', 'warning');
+            document.getElementById('cli-nombre')?.focus();
+            return;
+        }
         this.saving = true;
         const base = '{{ $quotesApiBase }}';
         const url  = this.creating ? base : base + '/' + this.selected.id;
@@ -1321,7 +1325,7 @@
             let msg = 'No se pudo guardar la cotización.';
             try { const err = await res.json(); msg = err.message || Object.values(err.errors||{}).flat()[0] || msg; } catch(e) {}
             this.saving = false;
-            alert(msg);
+            bxAviso(msg, 'error');
             return;
         }
         const data = await res.json();
@@ -1398,9 +1402,9 @@
 
     sendWhatsApp() {
         const link = this.portalUrl || (this.selected?.token ? '{{ url('/b/'.$project->slug.'/c/') }}/'+this.selected.token : '');
-        if (!link) { alert('Primero genera el enlace del portal'); return; }
+        if (!link) { bxAviso('Primero envía la cotización para generar su enlace', 'warning'); return; }
         const wa = '{{ preg_replace('/\D/','', $project->whatsapp ?? '') }}';
-        if (!wa) { alert('Configura el número de WhatsApp en ajustes'); return; }
+        if (!wa) { bxAviso('Configura el número de WhatsApp en Ajustes del negocio', 'warning'); return; }
         const msg = 'Hola ' + (this.selected?.client_name||'') + ', te comparto tu cotización: ' + link;
         window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(msg),'_blank');
     },
@@ -2240,7 +2244,7 @@ function nombreArchivoCotizacion(prefijo) {
 }
 
 async function htmlToPdf(html, widthPx, filenamePrefix) {
-    if (!html) { alert('No hay cotización seleccionada'); return; }
+    if (!html) { bxAviso('Abre una cotización antes de exportarla', 'warning'); return; }
     const { jsPDF } = window.jspdf;
     const canvas = await renderOffscreen(html, widthPx);
     const imgData = canvas.toDataURL('image/png');
@@ -2267,7 +2271,7 @@ async function htmlToPdf(html, widthPx, filenamePrefix) {
 }
 
 async function htmlToImg(html, widthPx, filenamePrefix) {
-    if (!html) { alert('No hay cotización seleccionada'); return; }
+    if (!html) { bxAviso('Abre una cotización antes de exportarla', 'warning'); return; }
     const canvas = await renderOffscreen(html, widthPx);
     const link = document.createElement('a');
     link.download = nombreArchivoCotizacion(filenamePrefix) + '.png';
@@ -2398,7 +2402,7 @@ function buildTicketHtml() {
 
 function printTicket() {
     const html = buildTicketHtml();
-    if (!html) { alert('No hay cotización seleccionada'); return; }
+    if (!html) { bxAviso('Abre una cotización antes de exportarla', 'warning'); return; }
     const w = window.open('', '_blank', 'width=350,height=600');
     w.document.open(); w.document.write(html); w.document.close();
     // document.write() en una ventana nueva puede disparar "load" antes de

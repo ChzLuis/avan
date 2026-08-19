@@ -218,7 +218,7 @@ function cerrarDni() {
 }
 
 async function eliminarTicketWP(codigo, btn) {
-    if (!confirm('¿Eliminar ' + codigo + ' de WordPress?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Eliminar ' + codigo + ' de WordPress?' })) return;
     btn.disabled = true;
     btn.textContent = '⏳';
     try {
@@ -231,12 +231,12 @@ async function eliminarTicketWP(codigo, btn) {
         if (data.ok) {
             btn.closest('div[style*="border-radius:10px"]').remove();
         } else {
-            alert('Error: ' + (data.error || 'no se pudo eliminar'));
+            bxAviso('Error: ' + (data.error || 'no se pudo eliminar'), 'error');
             btn.disabled = false;
             btn.textContent = '🗑️';
         }
     } catch(e) {
-        alert('Error de conexión');
+        bxAviso('Error de conexión', 'error');
         btn.disabled = false;
         btn.textContent = '🗑️';
     }

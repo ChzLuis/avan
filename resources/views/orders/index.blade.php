@@ -214,7 +214,7 @@ tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
         } else {
             // 422 de validacion trae errors.amount; el del libro trae message.
             const msg = data?.errors?.amount?.[0] || data?.message || 'No se pudo registrar el pago.';
-            alert(msg);
+            bxAviso(msg, 'error');
         }
     },
     async loadEvents(){
@@ -236,7 +236,7 @@ tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
     },
     async sendWa(o, tpl){
         const phone = this.waPhone(o);
-        if(!phone){ alert('El pedido no tiene teléfono.'); return; }
+        if(!phone){ bxAviso('El pedido no tiene teléfono.', 'error'); return; }
         window.open(`https://wa.me/${phone}?text=${tpl.text}`, '_blank');
         this.waOpen=false;
         try{ await fetch(`{{ $ordersApiBase }}/${o.id}/wa-sent`, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body: JSON.stringify({template:tpl.key,to:phone}) }); this.loadEvents(); }catch(e){}
@@ -294,7 +294,7 @@ tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
             // Mantener coherente el status genérico en la UI
             const map = { recibido:'pending', cotizado:'pending', entregado:'done', anulado:'cancelled' };
             o.status = map[d.laundry_status] || 'process';
-        } else { alert('No se pudo cambiar el estado'); }
+        } else { bxAviso('No se pudo cambiar el estado', 'error'); }
     },
 
 
@@ -389,11 +389,11 @@ tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
     },
 
     async del() {
-        if (!confirm('¿Eliminar este pedido?')) return;
+        if (! await bxConfirmar({ descripcion: '¿Eliminar este pedido?' })) return;
         const res = await fetch('{{ $ordersApiBase }}/'+this.selected.id, {
             method:'DELETE', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}
         });
-        if (!res.ok) { alert('Error al eliminar ('+res.status+')'); return; }
+        if (!res.ok) { bxAviso('Error al eliminar ('+res.status+')', 'error'); return; }
         this.orders = this.orders.filter(o=>o.id!==this.selected.id);
         this.selected = null;
     },
@@ -766,7 +766,7 @@ async function renderOffscreenOrder(html, widthPx) {
 
 async function exportOrderPDF() {
     const html = buildOrderDocHtml();
-    if (!html) { alert('No hay pedido seleccionado'); return; }
+    if (!html) { bxAviso('No hay pedido seleccionado', 'error'); return; }
     const { jsPDF } = window.jspdf;
     const canvas = await renderOffscreenOrder(html, 800);
     const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
@@ -792,7 +792,7 @@ async function exportOrderPDF() {
 
 async function exportOrderImg() {
     const html = buildOrderDocHtml();
-    if (!html) { alert('No hay pedido seleccionado'); return; }
+    if (!html) { bxAviso('No hay pedido seleccionado', 'error'); return; }
     const canvas = await renderOffscreenOrder(html, 800);
     const link = document.createElement('a');
     link.download = 'pedido-' + (currentOrder()?.id || 'export') + '.png';
@@ -802,7 +802,7 @@ async function exportOrderImg() {
 
 function printOrderTicket() {
     const html = buildOrderTicketHtml();
-    if (!html) { alert('No hay pedido seleccionado'); return; }
+    if (!html) { bxAviso('No hay pedido seleccionado', 'error'); return; }
     const w = window.open('', '_blank', 'width=350,height=600');
     w.document.open(); w.document.write(html); w.document.close();
     // Bandera anti doble impresión: load y el timeout de respaldo pueden

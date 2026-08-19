@@ -118,7 +118,7 @@
 
         async del() {
             if (!this.selected) return;
-            if (!confirm('¿Eliminar el rol «' + this.selected.display + '»? Esta acción no se puede deshacer.')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar el rol «' + this.selected.display + '»? Esta acción no se puede deshacer.' })) return;
             this.deleting = true;
             try {
                 const res = await fetch(this.baseUrl + '/' + this.selected.id, {
@@ -131,7 +131,7 @@
                     this.panel = 'list';
                 } else {
                     const d = await res.json();
-                    alert(d.error || 'No se puede eliminar: tiene usuarios asignados.');
+                    bxAviso(d.error || 'No se puede eliminar: tiene usuarios asignados.', 'error');
                 }
             } finally {
                 this.deleting = false;

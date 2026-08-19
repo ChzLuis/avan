@@ -211,7 +211,7 @@ function combosPage() {
         },
 
         async deleteCombo(c) {
-            if (!confirm(`¿Eliminar el combo "${c.name}"?`)) return;
+            if (! await bxConfirmar({ descripcion: `¿Eliminar el combo "${c.name}"?` })) return;
             const res = await fetch(`/bixoadmin/combos/${c.id}`, { method:'DELETE', headers:{'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content,'Accept':'application/json'} });
             if ((await res.json()).ok) this.combos = this.combos.filter(x=>x.id!==c.id);
         },

@@ -476,7 +476,7 @@ function reservasPage() {
         },
 
         async eliminar() {
-            if (!confirm('¿Eliminar esta reserva?')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar esta reserva?' })) return;
             const resp = await fetch(`/bixosales/reservas/${this.form.id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }

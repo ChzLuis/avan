@@ -85,7 +85,7 @@
           <td class="px-4 py-3">
             <div class="flex items-center gap-2">
               @if(in_array($demo->status, ['active','pending']))
-              <form action="{{ route('admin.demos.cancel', $demo) }}" method="POST" onsubmit="return confirm('¿Cancelar esta demo?')">
+              <form action="{{ route('admin.demos.cancel', $demo) }}" method="POST" data-bx-confirmar="¿Cancelar esta demo?">
                 @csrf
                 <button class="text-xs text-red-500 hover:text-red-700 font-medium">Cancelar</button>
               </form>

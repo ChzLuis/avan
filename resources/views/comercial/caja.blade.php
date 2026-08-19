@@ -351,7 +351,7 @@ function cajaPage() {
 
         async cerrarCaja() {
             if (this.cerrarForm.monto===null) { this.showToast('Ingresa el monto contado','error'); return; }
-            if (!confirm('¿Confirmar cierre de caja?')) return;
+            if (! await bxConfirmar({ descripcion: '¿Confirmar cierre de caja?' })) return;
             const resp = await fetch(`/bixosales/caja/${this.caja.id}/cerrar`, {
                 method: 'POST',
                 headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },

@@ -134,7 +134,7 @@ document.addEventListener('alpine:init', () => {
                     this.selected = data;
                     this.form     = { ...data };
                 }
-            } catch(e) { alert('Error al guardar'); }
+            } catch(e) { bxAviso('Error al guardar', 'error'); }
             this.saving = false;
         },
 

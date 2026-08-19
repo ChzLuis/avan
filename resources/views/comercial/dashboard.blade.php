@@ -240,7 +240,12 @@ $scoreColor = $hayScore
             },
             async aprobar(p) { await this.accion('{{ route("bixosales.pagos.aprobar") }}', { order_id: p.id }); },
             async rechazar(p) {
-                const motivo = prompt('¿Por qué rechazas el pago? (el cliente lo verá)', 'No pudimos validar el comprobante');
+                const motivo = await bxConfirmar({
+                    titulo: 'Rechazar el pago',
+                    descripcion: 'Escribe el motivo del rechazo. El cliente lo verá tal cual.',
+                    boton: 'Rechazar pago',
+                    entrada: { etiqueta: 'Motivo', requerido: true, valor: 'No pudimos validar el comprobante' },
+                });
                 if (motivo === null) return;
                 await this.accion('{{ route("bixosales.pagos.rechazar") }}', { order_id: p.id, motivo });
             },

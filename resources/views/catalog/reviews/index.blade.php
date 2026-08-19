@@ -24,7 +24,7 @@
             if (data.ok) r.is_approved = data.is_approved;
         },
         async destroy(r) {
-            if (!confirm('¿Eliminar esta reseña?')) return;
+            if (! await bxConfirmar({ descripcion: '¿Eliminar esta reseña?' })) return;
             const res = await fetch('{{ $base }}/reviews/' + r.id, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': '{{ $csrf }}', 'Accept': 'application/json' }

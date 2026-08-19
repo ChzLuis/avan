@@ -633,7 +633,7 @@ async function confirmarPagoRapido(id) {
         abrirSelectorPlan(id);
         return;
     }
-    if (!confirm('¿Confirmar el pago de este pedido?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Confirmar el pago de este pedido?' })) return;
     showToast('Confirmando...', 'info');
     const r = await fetch(`/bixosales/pedidos-bot/${id}/validar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf} });
     const d = await r.json();
@@ -642,7 +642,7 @@ async function confirmarPagoRapido(id) {
 }
 
 async function rifaCancelarRapido(id) {
-    if (!confirm('¿Rechazar este comprobante?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Rechazar este comprobante?' })) return;
     const r = await fetch(`/bixosales/pedidos-bot/${id}/cancelar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf} });
     const d = await r.json();
     if (d.ok) { showToast('Rechazado', 'error'); setTimeout(() => location.reload(), 900); }
@@ -711,7 +711,7 @@ async function rifaValidarSinTicket(id) {
         abrirSelectorPlan(id);
         return;
     }
-    if (!confirm('¿Confirmar este pago?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Confirmar este pago?' })) return;
     const r = await fetch(`/bixosales/pedidos-bot/${id}/validar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf} });
     const d = await r.json();
     if (d.ok) { showToast('Pago confirmado ✓','success'); setTimeout(()=>{ cerrarDetalle(); location.reload(); },1000); }
@@ -851,7 +851,7 @@ async function guardarEdicion() {
 }
 
 async function rifaCancelar(id) {
-    if (!confirm('¿Cancelar esta venta?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Cancelar esta venta?' })) return;
     const r = await fetch(`/bixosales/pedidos-bot/${id}/cancelar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf} });
     const d = await r.json();
     if (d.ok) { showToast('Venta cancelada','error'); setTimeout(()=>{ cerrarDetalle(); location.reload(); },1000); }
@@ -859,7 +859,7 @@ async function rifaCancelar(id) {
 }
 
 async function rifaEliminar(id) {
-    if (!confirm('¿Eliminar este pedido permanentemente?')) return;
+    if (! await bxConfirmar({ descripcion: '¿Eliminar este pedido permanentemente?' })) return;
     const r = await fetch(`/bixosales/pedidos-bot/${id}/eliminar`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf} });
     const d = await r.json();
     if (d.ok) { showToast('Pedido eliminado','error'); cerrarDetalle(); setTimeout(()=>location.reload(),800); }

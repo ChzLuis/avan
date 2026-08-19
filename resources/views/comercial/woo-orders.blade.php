@@ -200,7 +200,7 @@ async function sincronizar() {
             setTimeout(() => location.reload(), 1000);
         } else {
             if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Sincronizar'; }
-            alert('Error al sincronizar');
+            bxAviso('Error al sincronizar', 'error');
         }
     } catch(e) {
         if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Sincronizar'; }

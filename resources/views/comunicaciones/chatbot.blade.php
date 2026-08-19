@@ -287,7 +287,7 @@ function chatbotApp() {
 
         async guardar() {
             if (!this.form.nombre || !this.form.response_text) {
-                return alert('Nombre y mensaje de respuesta son requeridos.');
+                return bxAviso('Nombre y mensaje de respuesta son requeridos.', 'error');
             }
             this.guardando = true;
             try {
@@ -304,14 +304,14 @@ function chatbotApp() {
                     this.modal = false;
                     window.location.reload();
                 } else {
-                    alert('Error al guardar.');
+                    bxAviso('Error al guardar.', 'error');
                 }
-            } catch(e) { alert('Error de red.'); }
+            } catch(e) { bxAviso('Error de red.', 'error'); }
             this.guardando = false;
         },
 
         async eliminar(flow) {
-            if (!confirm(`¿Eliminar flow "${flow.nombre}"?`)) return;
+            if (! await bxConfirmar({ descripcion: `¿Eliminar flow "${flow.nombre}"?` })) return;
             const res = await fetch(`{{ url('/bixocrm/chatbot/flows') }}/${flow.id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },

@@ -210,7 +210,7 @@ function configuracion() {
         },
 
         async guardar() {
-            if (!this.form.nombre || !this.form.tipo) return alert('Nombre y tipo son requeridos');
+            if (!this.form.nombre || !this.form.tipo) return bxAviso('Nombre y tipo son requeridos', 'error');
             this.guardando = true;
             const res = await fetch('{{ route('bixocrm.canales.guardar') }}', {
                 method: 'POST',
@@ -225,13 +225,13 @@ function configuracion() {
                 this.modal = false;
                 window.location.reload();
             } else {
-                alert('Error al guardar');
+                bxAviso('Error al guardar', 'error');
             }
             this.guardando = false;
         },
 
         async eliminar(id, nombre) {
-            if (!confirm(`¿Eliminar "${nombre}"? Se perderán todas sus conversaciones.`)) return;
+            if (! await bxConfirmar({ descripcion: `¿Eliminar "${nombre}"? Se perderán todas sus conversaciones.` })) return;
             const res = await fetch(`{{ url('/bixocrm/canales') }}/${id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },

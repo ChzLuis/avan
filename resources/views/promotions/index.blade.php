@@ -175,7 +175,7 @@ function promoPage() {
             if(data.ok){ const i=this.promos.findIndex(x=>x.id===p.id); if(i>=0) this.promos[i].is_active=data.is_active; }
         },
         async deletePromo(p) {
-            if(!confirm(`¿Eliminar "${p.name}"?`)) return;
+            if (! await bxConfirmar({ descripcion: `¿Eliminar "${p.name}"?` })) return;
             const res=await fetch(`/bixoadmin/promotions/${p.id}`,{method:'DELETE',headers:{'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content,'Accept':'application/json'}});
             if((await res.json()).ok) this.promos=this.promos.filter(x=>x.id!==p.id);
         },

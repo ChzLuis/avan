@@ -14,7 +14,7 @@
     </div>
     @if($resumen['sesiones_huerfanas'] > 0)
     <form method="POST" action="{{ route('admin.licenses.revoke-idle') }}"
-          onsubmit="return confirm('Se cerrarán {{ $resumen['sesiones_huerfanas'] }} sesión(es) sin actividad en los últimos {{ \App\Support\LicenseManager::MINUTOS_PARA_INACTIVO }} minutos. Quien esté trabajando ahora no se ve afectado. ¿Continuar?')">
+          data-bx-confirmar="Se cerrarán {{ $resumen['sesiones_huerfanas'] }} sesión(es) sin actividad en los últimos {{ \App\Support\LicenseManager::MINUTOS_PARA_INACTIVO }} minutos. Quien esté trabajando ahora no se ve afectado. ¿Continuar?">
         @csrf
         <button class="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25">
             Liberar {{ $resumen['sesiones_huerfanas'] }} sesión(es) inactivas
@@ -127,7 +127,7 @@
 
                 @if($c['user_id'] !== auth()->id())
                 <form method="POST" action="{{ route('admin.licenses.revoke-user', $c['user_id']) }}"
-                      onsubmit="return confirm('Se cerrarán todas las sesiones de {{ $c['nombre'] }}. Si está trabajando, perderá lo que no haya guardado. ¿Continuar?')">
+                      data-bx-confirmar="Se cerrarán todas las sesiones de {{ $c['nombre'] }}. Si está trabajando, perderá lo que no haya guardado. ¿Continuar?">
                     @csrf
                     <button class="px-3 h-8 rounded-lg text-xs font-semibold bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25">
                         Cerrar todas
