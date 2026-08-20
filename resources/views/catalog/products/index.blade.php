@@ -49,6 +49,15 @@
     .pe-hint { font-size: 11px; color: #94A3B8; margin-top: 4px; line-height: 1.4; }
     .pe-hint-ok { font-size: 11px; color: #059669; margin-top: 4px; }
     .pe-section-title { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: .05em; }
+    /* Las miniaturas no pueden empujar su columna mas alto que la foto principal:
+       con quince imagenes la pestana crecia sin fin. */
+    @media (min-width: 768px) { .pe-thumbs { max-height: 32rem; overflow-y: auto; } }
+    /* Las acciones de una imagen aparecen tambien al llegar con el teclado, no
+       solo al pasar el raton por encima. */
+    .group:focus-within .pe-acts { opacity: 1; }
+    /* Con una sola imagen, el boton de agregar ocupa el alto que le sobra a la
+       columna en vez de quedarse enano al lado de una foto grande. */
+    .pe-add { flex: 1 1 auto; min-height: 5rem; }
     .pe-btn { height: 42px; padding: 0 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background-color .15s ease, border-color .15s ease, color .15s ease; white-space: nowrap; }
     .pe-btn-sm { height: 36px; padding: 0 12px; font-size: 12.5px; }
     .pe-btn-primary { background: #4F46E5; color: #fff; }
@@ -2244,7 +2253,7 @@ document.addEventListener('alpine:init', () => {
                 </div>
 
                 {{-- TAB: IMAGENES --}}
-                <div x-show="tab==='imagenes'" x-cloak class="p-6 max-w-3xl space-y-4"
+                <div x-show="tab==='imagenes'" x-cloak class="p-6 max-w-5xl space-y-4"
                      x-data="{
                         uploading: false, imgError: '', replacingId: null,
                         async uploadFiles(files) {
@@ -2294,68 +2303,92 @@ document.addEventListener('alpine:init', () => {
                         $imgActionBtn = 'w-7 h-7 rounded-lg bg-white/95 hover:bg-white text-gray-700 flex items-center justify-center transition shadow-sm';
                     @endphp
 
-                    {{-- IMAGEN PRINCIPAL + AGREGAR --}}
-                    <div class="grid grid-cols-2 gap-4">
-                        {{-- Principal --}}
-                        <template x-if="selected?.images?.find(i => i.is_main) || selected?.images?.[0]">
-                            <div class="group relative aspect-square rounded-xl overflow-hidden pe-card">
-                                <img :src="(selected.images.find(i => i.is_main) || selected.images[0]).url" class="w-full h-full object-cover">
-                                <div class="absolute top-2.5 left-2.5 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">Principal</div>
-                                <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5"
-                                     x-data="{ get main() { return selected.images.find(i => i.is_main) || selected.images[0]; } }">
-                                    <button @click="window.open(main.url, '_blank')" :class="'{{ $imgActionBtn }}'" title="Ver">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    </button>
-                                    <label :class="'{{ $imgActionBtn }} cursor-pointer'" title="Reemplazar">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                        <input type="file" accept="image/*" class="hidden" @change="replaceImage(main, $event.target.files[0]); $event.target.value=''">
-                                    </label>
-                                    <button @click="removeImage(main)" :class="'{{ $imgActionBtn }} hover:text-red-600'" title="Eliminar">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </template>
-                        <template x-if="!(selected?.images?.length)">
-                            <div class="aspect-square rounded-xl pe-card border-dashed flex flex-col items-center justify-center gap-2 text-gray-300">
-                                <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                                <span class="text-xs">Sin imagen principal</span>
-                            </div>
-                        </template>
-
-                        {{-- Zona de arrastrar y soltar --}}
-                        <label class="aspect-square rounded-xl border-2 border-dashed transition cursor-pointer
-                                      flex flex-col items-center justify-center gap-1.5 group"
-                               :class="isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50'"
-                               x-data="imageDropzone(files => uploadFiles(files))"
-                               @dragenter.prevent="onDragEnter($event)"
-                               @dragover.prevent
-                               @dragleave.prevent="onDragLeave()"
-                               @drop.prevent="onDrop($event)">
-                            <div class="w-9 h-9 rounded-full flex items-center justify-center transition"
-                                 :class="isDragging ? 'bg-indigo-500' : 'bg-gray-100 group-hover:bg-indigo-100'">
-                                <svg class="w-4 h-4 transition" :class="isDragging ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                            </div>
-                            <span class="text-xs font-semibold text-center px-1" :class="isDragging ? 'text-indigo-600' : 'text-gray-500 group-hover:text-indigo-600'"
-                                  x-text="isDragging ? 'Suelta aquí' : 'Agregar o arrastrar'"></span>
-                            <span class="text-[10px] text-gray-400 text-center px-2">JPG · PNG · WebP<br>Máx. 4 MB</span>
-                            <input type="file" accept="image/*" multiple class="hidden"
-                                   @change="uploadFiles(Array.from($event.target.files)); $event.target.value = ''">
-                        </label>
+                    {{-- Encabezado: cuantas hay y para que sirve el orden --}}
+                    <div class="flex items-end justify-between gap-3 flex-wrap">
+                        <div>
+                            <p class="pe-section-title">Imágenes del producto</p>
+                            <p class="text-xs text-gray-400 mt-0.5"
+                               x-text="(selected?.images || []).length
+                                        ? (selected.images.length === 1
+                                            ? 'Una imagen. La principal es la que ve el cliente en la tienda.'
+                                            : selected.images.length + ' imágenes. La principal encabeza la ficha; las demás siguen este orden.')
+                                        : 'Todavía no hay ninguna imagen.'"></p>
+                        </div>
+                        <span x-show="uploading" x-cloak class="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
+                            <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                            </svg>
+                            Subiendo...
+                        </span>
                     </div>
 
-                    {{-- OTRAS IMÁGENES --}}
-                    <template x-if="(selected?.images || []).length > 1">
-                        <div>
-                            <p class="pe-section-title mb-2">Otras imágenes</p>
-                            <div class="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
-                                <template x-for="img in (selected.images || []).filter(i => !i.is_main)" :key="img.id">
-                                    <div class="group relative aspect-square rounded-lg overflow-hidden border border-gray-200">
-                                        <img :src="img.url" class="w-full h-full object-cover">
-                                        <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1">
-                                            <button @click="makeMain(img)" class="w-6 h-6 rounded-md bg-white/95 hover:bg-white flex items-center justify-center" title="Marcar como principal">
+                    {{-- La principal manda: ocupa dos tercios. Las demas y el boton de
+                         agregar viven a su lado, no debajo, para que el hueco vacio
+                         deje de pesar visualmente tanto como el producto. --}}
+                    <div class="grid gap-3 md:grid-cols-3">
+
+                        {{-- PRINCIPAL --}}
+                        <div :class="(selected?.images || []).length ? 'md:col-span-2' : 'md:col-span-3'">
+                            <template x-if="selected?.images?.find(i => i.is_main) || selected?.images?.[0]">
+                                <div class="group relative aspect-square rounded-xl overflow-hidden pe-card bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-400">
+                                    {{-- `contain` y no `cover`: aqui se revisa la foto, y una
+                                         que sale recortada es justo la que hay que poder ver
+                                         entera para decidir cambiarla. --}}
+                                    <img :src="(selected.images.find(i => i.is_main) || selected.images[0]).url"
+                                         class="w-full h-full object-contain" alt="Imagen principal del producto">
+                                    <div class="absolute top-2.5 left-2.5 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">Principal</div>
+                                    <div class="absolute inset-0 pe-acts bg-black/45 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5"
+                                         x-data="{ get main() { return selected.images.find(i => i.is_main) || selected.images[0]; } }">
+                                        <button @click="window.open(main.url, '_blank')" :class="'{{ $imgActionBtn }}'" title="Ver a tamaño real">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        </button>
+                                        <label :class="'{{ $imgActionBtn }} cursor-pointer'" title="Reemplazar">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            <input type="file" accept="image/*" class="hidden" @change="replaceImage(main, $event.target.files[0]); $event.target.value=''">
+                                        </label>
+                                        <button @click="removeImage(main)" :class="'{{ $imgActionBtn }} hover:text-red-600'" title="Eliminar">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            {{-- Sin ninguna imagen la zona de subida ocupa el sitio de la
+                                 principal, que es donde el ojo la busca. --}}
+                            <template x-if="!(selected?.images?.length)">
+                                <label class="aspect-square rounded-xl border-2 border-dashed transition cursor-pointer
+                                              flex flex-col items-center justify-center gap-2 group"
+                                       :class="isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50'"
+                                       x-data="imageDropzone(files => uploadFiles(files))"
+                                       @dragenter.prevent="onDragEnter($event)" @dragover.prevent
+                                       @dragleave.prevent="onDragLeave()" @drop.prevent="onDrop($event)">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center transition"
+                                         :class="isDragging ? 'bg-indigo-500' : 'bg-gray-100 group-hover:bg-indigo-100'">
+                                        <svg class="w-5 h-5 transition" :class="isDragging ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                        </svg>
+                                    </div>
+                                    <span class="text-sm font-semibold" :class="isDragging ? 'text-indigo-600' : 'text-gray-600 group-hover:text-indigo-600'"
+                                          x-text="isDragging ? 'Suelta aquí' : 'Agrega la primera imagen'"></span>
+                                    <span class="text-xs text-gray-400">Arrástrala aquí o haz clic para elegirla</span>
+                                    <input type="file" accept="image/*" multiple class="hidden"
+                                           @change="uploadFiles(Array.from($event.target.files)); $event.target.value = ''">
+                                </label>
+                            </template>
+                        </div>
+
+                        {{-- LAS DEMAS, Y DEBAJO EL BOTON DE AGREGAR --}}
+                        <div x-show="(selected?.images || []).length" class="flex flex-col gap-2.5 pe-thumbs">
+                            <div class="grid grid-cols-3 md:grid-cols-2 gap-2.5">
+                                <template x-for="(img, i) in (selected.images || []).filter(x => !x.is_main)" :key="img.id">
+                                    <div class="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-slate-50">
+                                        <img :src="img.url" class="w-full h-full object-contain" :alt="'Imagen ' + (i + 2) + ' del producto'">
+                                        {{-- El numero dice en que orden las vera el cliente. --}}
+                                        <span class="absolute top-1 left-1 w-4 h-4 rounded bg-white/90 text-[9px] font-bold text-gray-500 flex items-center justify-center"
+                                              x-text="i + 2"></span>
+                                        <div class="absolute inset-0 pe-acts bg-black/45 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1">
+                                            <button @click="makeMain(img)" class="w-6 h-6 rounded-md bg-white/95 hover:bg-white flex items-center justify-center" title="Hacer principal">
                                                 <svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.783.57-1.838-.196-1.538-1.118l1.286-3.957a1 1 0 00-.363-1.118l-3.37-2.448c-.782-.57-.38-1.81.588-1.81h4.163a1 1 0 00.95-.69l1.285-3.958z"/></svg>
                                             </button>
                                             <button @click="removeImage(img)" class="w-6 h-6 rounded-md bg-white/95 hover:bg-white text-red-600 flex items-center justify-center" title="Eliminar">
@@ -2365,10 +2398,27 @@ document.addEventListener('alpine:init', () => {
                                     </div>
                                 </template>
                             </div>
-                        </div>
-                    </template>
 
-                    <div x-show="uploading" class="text-xs text-indigo-600 font-medium">Subiendo imagen...</div>
+                            <label class="pe-add rounded-lg border-2 border-dashed transition cursor-pointer py-4 px-2
+                                          flex flex-col items-center justify-center gap-1 group"
+                                   :class="isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50'"
+                                   x-data="imageDropzone(files => uploadFiles(files))"
+                                   @dragenter.prevent="onDragEnter($event)" @dragover.prevent
+                                   @dragleave.prevent="onDragLeave()" @drop.prevent="onDrop($event)">
+                                <div class="w-7 h-7 rounded-full flex items-center justify-center transition"
+                                     :class="isDragging ? 'bg-indigo-500' : 'bg-gray-100 group-hover:bg-indigo-100'">
+                                    <svg class="w-3.5 h-3.5 transition" :class="isDragging ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                </div>
+                                <span class="text-[11px] font-semibold text-center leading-tight" :class="isDragging ? 'text-indigo-600' : 'text-gray-500 group-hover:text-indigo-600'"
+                                      x-text="isDragging ? 'Suelta aquí' : 'Agregar o arrastrar'"></span>
+                                <input type="file" accept="image/*" multiple class="hidden"
+                                       @change="uploadFiles(Array.from($event.target.files)); $event.target.value = ''">
+                            </label>
+                        </div>
+                    </div>
+
                     <div x-show="imgError" x-text="imgError" class="text-xs text-red-600"></div>
 
                     <p class="text-xs text-gray-400 flex items-start gap-1.5">
