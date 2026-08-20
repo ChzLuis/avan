@@ -4,7 +4,9 @@
  * tests, ni mirar la pantalla detectan que una pieza se salga: hay que revisar
  * las coordenadas. Con el logo al 220% el recuadro blanco del logo empezaba en
  * y = -14 (se cortaba por arriba) y bajaba hasta tapar el texto superior, que
- * es blanco sobre blanco y por eso desaparecia sin dejar rastro.
+ * es blanco sobre blanco y por eso desaparecia sin dejar rastro. El logo iba
+ * ademas sobre un recuadro blanco que la vista previa no dibuja: se quito, la
+ * descarga tiene que ser lo mismo que se ve en pantalla.
  *
  * La correccion compone el encabezado en cascada —la banda crece con el logo,
  * el QR se coloca despues y encoge si hace falta— en vez de usar constantes
@@ -57,14 +59,13 @@ function revisa(nombre, p, h, w) {
     if (y + alto > h + 0.01) mal.push(que + ' se sale por abajo (' + (y + alto).toFixed(1) + ' > ' + h + ')');
   };
 
-  dentro('el recuadro del logo', p.caja.y, p.caja.h);
   dentro('el logo', p.logo.y, p.logo.h);
   dentro('la tarjeta del QR', p.tarjeta.y, p.tarjeta.h);
 
-  if (p.caja.x < -0.01) mal.push('el recuadro del logo se sale por el lado');
+  if (p.logo.x < -0.01) mal.push('el logo se sale por el lado');
   if (p.tarjeta.x < -0.01) mal.push('la tarjeta del QR se sale por el lado');
   if (p.textoTop > p.tarjeta.y) mal.push('el texto de arriba queda tapado por la tarjeta del QR');
-  if (p.textoTop - p.fTop < p.caja.y + p.caja.h - 0.01) mal.push('el texto de arriba pisa el recuadro del logo');
+  if (p.textoTop - p.fTop < p.logo.y + p.logo.h - 0.01) mal.push('el texto de arriba pisa el logo');
   if (p.textoTop > p.banda) mal.push('el texto de arriba se sale de la banda de color');
   if (p.textoBot - p.fBot < p.qr.y + p.qr.s - 0.01) mal.push('el texto de abajo pisa el QR');
   if (p.url - p.fUrl < p.textoBot - 0.01) mal.push('la url pisa el texto de abajo');
@@ -103,8 +104,7 @@ for (const [fmt, [w, h]] of Object.entries(FORMATOS)) {
 const ctx = { form: { logoSize: 220, header: '#0A7A80', showUrl: true, showLogo: true, bg: '#fff' } };
 const p = obj.plano.call(ctx, 1080, 1350, { width: 600, height: 600 });
 console.log('\nBaby Toncito · flyer · logo 220% · cabecera #0A7A80');
-console.log('  recuadro del logo   y=' + p.caja.y.toFixed(1) + '  alto=' + p.caja.h.toFixed(1) + '   (antes: y=-14.4, cortado)');
-console.log('  logo                ' + p.logo.w.toFixed(0) + 'x' + p.logo.h.toFixed(0) + ' px');
+console.log('  logo                y=' + p.logo.y.toFixed(1) + '  ' + p.logo.w.toFixed(0) + 'x' + p.logo.h.toFixed(0) + ' px   (antes su recuadro empezaba en y=-14.4, cortado)');
 console.log('  texto de arriba     y=' + p.textoTop.toFixed(1) + '   tarjeta del QR y=' + p.tarjeta.y.toFixed(1) + '   (antes el texto caia debajo de la tarjeta)');
 console.log('  banda de color      ' + p.banda.toFixed(1) + '   QR ' + p.qr.s.toFixed(0) + 'px');
 
