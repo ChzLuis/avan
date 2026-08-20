@@ -1615,48 +1615,24 @@ document.addEventListener('alpine:init', () => {
                             <p class="text-[13px] font-bold text-white tracking-wide">{{ $priceConfig['header'] }}</p>
                         </div>
                         @php
-                            // Opciones fijas por rubro (ignoran el catálogo genérico de unidades)
-                            $unidadesRubro = match(true) {
-                                in_array($pCat, ['restaurante','cafeteria']) => ['Plato','Porción','1/4 pollo','1/2 pollo','Pollo entero','Ración','Combo','Bandeja','Para llevar'],
-                                in_array($pCat, ['peluqueria','salon_belleza']) => ['Por sesión','Por hora','Tratamiento completo','Paquete','Media sesión'],
-                                $pCat === 'clinica' => ['Consulta','Sesión','Paquete sesiones','Control','Emergencia'],
-                                $pCat === 'veterinaria' => ['Unidad','Dosis','Consulta','Frasco','Caja','Sobre'],
-                                $pCat === 'gimnasio' => ['Mensual','Trimestral','Semestral','Anual','Por clase','Por sesión'],
-                                $pCat === 'educacion' => ['Mensual','Por ciclo','Por módulo','Anual','Por sesión','Presencial','Virtual'],
-                                default => null, // usa el catálogo normal
-                            };
+                            // Lo del negocio primero, las presentaciones de su rubro
+                            // despues y la tabla oficial de medidas al final.
+                            $gruposUnidad = \App\Support\UnidadesMedida::paraNegocio($pCat, $units->pluck('label')->all());
                         @endphp
                         <div class="p-4 {{ $priceConfig['body_bg'] }} grid grid-cols-3 gap-4">
                             <div>
                                 <label class="pe-label">{{ $priceConfig['unidad_lbl'] }}</label>
-                                @if($unidadesRubro !== null)
-                                {{-- Selector fijo según rubro --}}
-                                <div x-data="{ custom: !['', @foreach($unidadesRubro as $u)'{{ $u }}',@endforeach].includes(form.unit) && form.unit !== '' }">
-                                    <select x-show="!custom" @change="if($event.target.value==='__otro__'){ custom=true; form.unit=''; } else { form.unit=$event.target.value; }" class="pe-input">
-                                        <option value="">Seleccionar</option>
-                                        @foreach($unidadesRubro as $u)
-                                        <option value="{{ $u }}" :selected="form.unit==='{{ $u }}'">{{ $u }}</option>
-                                        @endforeach
-                                        <option value="__otro__">Otra presentación...</option>
-                                    </select>
-                                    <div x-show="custom" class="flex gap-1">
-                                        <input type="text" x-model="form.unit" class="pe-input flex-1" placeholder="{{ $priceConfig['unidad_ph'] }}" x-ref="customUnit" x-init="$watch('custom', v => v && $nextTick(()=>$refs.customUnit.focus()))">
-                                        <button type="button" @click="custom=false; form.unit=''" class="px-2 py-1.5 text-xs text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg">↩</button>
-                                    </div>
-                                </div>
-                                @else
-                                <template x-if="units.length > 0">
-                                    <select x-model="form.unit" class="pe-input">
-                                        <option value="">Seleccionar</option>
-                                        <template x-for="u in units" :key="u">
-                                            <option :value="u" x-text="u"></option>
-                                        </template>
-                                    </select>
-                                </template>
-                                <template x-if="units.length === 0">
-                                    <input type="text" x-model="form.unit" class="pe-input" placeholder="{{ $priceConfig['unidad_ph'] }}">
-                                </template>
-                                @endif
+                                {{-- Se escribe y filtra, como el desplegable de un ERP; lo
+                                     que no este en la lista se puede teclear igual. --}}
+                                <input type="text" x-model="form.unit" list="pe-unidades" autocomplete="off"
+                                       class="pe-input" placeholder="{{ $priceConfig['unidad_ph'] }}">
+                                <datalist id="pe-unidades">
+                                    @foreach($gruposUnidad as $grupo => $unidades)
+                                    @foreach($unidades as $u)
+                                    <option value="{{ $u }}">{{ $grupo }}</option>
+                                    @endforeach
+                                    @endforeach
+                                </datalist>
                             </div>
                             <div>
                                 <label class="pe-label">{{ $priceConfig['precio_lbl'] }}</label>
@@ -1732,13 +1708,25 @@ document.addEventListener('alpine:init', () => {
                                         @change="const m={'unidad':1,'par':2,'media docena':6,'docena':12};
                                                  if(m[form.wholesale_unit]) form.wholesale_min_qty=m[form.wholesale_unit];">
                                     <option value="">Sin especificar</option>
-                                    <option value="unidad">Unidad (1)</option>
-                                    <option value="par">Par (2)</option>
-                                    <option value="media docena">Media docena (6)</option>
-                                    <option value="docena">Docena (12)</option>
-                                    <option value="caja">Caja (cantidad libre)</option>
-                                    <option value="paquete">Paquete (cantidad libre)</option>
-                                    <option value="saco">Saco (cantidad libre)</option>
+                                    <optgroup label="Completan la cantidad mínima">
+                                        <option value="unidad">Unidad (1)</option>
+                                        <option value="par">Par (2)</option>
+                                        <option value="media docena">Media docena (6)</option>
+                                        <option value="docena">Docena (12)</option>
+                                    </optgroup>
+                                    <optgroup label="Cantidad libre">
+                                        <option value="caja">Caja</option>
+                                        <option value="paquete">Paquete</option>
+                                        <option value="saco">Saco</option>
+                                    </optgroup>
+                                    {{-- La misma tabla de medidas del campo Unidad: quien
+                                         vende al por mayor por millar o por tonelada tambien
+                                         tiene que poder decirlo. --}}
+                                    <optgroup label="Unidades de medida">
+                                        @foreach(\App\Support\UnidadesMedida::todas() as $u)
+                                        <option value="{{ $u }}">{{ $u }}</option>
+                                        @endforeach
+                                    </optgroup>
                                 </select>
                                 <p class="pe-hint">Al elegirla se completa la cantidad mínima</p>
                             </div>
