@@ -198,7 +198,11 @@ class BixoSalesAuthorizationTest extends TestCase
         // negocio. No muta deuda —ni importes ni estados— pero escribe ajustes,
         // asi que va con `settings.pagos|manage-settings` y no basta con
         // `reports.ver`, que es lo que deja ver la pantalla.
-        $this->assertSame(61, $mutadoras, 'El portal deberia tener 61 rutas con verbo mutador');
+        // +2 en F4: facturas/{invoice}/nota y /baja, las dos vias legales para
+        // corregir un comprobante que SUNAT ya acepto. Ambas van con
+        // `invoices.anular`: quien no puede anular tampoco puede emitir una
+        // nota de credito, que es una anulacion con otro nombre.
+        $this->assertSame(63, $mutadoras, 'El portal deberia tener 63 rutas con verbo mutador');
         $this->assertSame([], $abiertas, 'Rutas mutadoras sin permiso: ' . implode(', ', $abiertas));
     }
 

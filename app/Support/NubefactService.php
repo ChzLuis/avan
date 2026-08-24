@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Invoice;
+use App\Support\Sunat\Catalogos;
 
 class NubefactService
 {
@@ -28,14 +29,12 @@ class NubefactService
             default        => 2,
         };
 
-        // Tipo de documento del cliente según manual
-        $tipoDoc = match (strtoupper($invoice->client_doc_type ?? '')) {
-            'DNI'       => '1',
-            'CE'        => '4',
-            'RUC'       => '6',
-            'PASAPORTE' => '7',
-            default     => '-', // ventas menores a S/.700 y otros
-        };
+        /* Catalogo 06. Nubefact usa los mismos codigos y reserva '-' para la
+           boleta sin documento (ventas menores), asi que solo se recurre a el
+           cuando de verdad no hay numero que declarar. */
+        $tipoDoc = trim((string) $invoice->client_doc_number) === ''
+            ? '-'
+            : Catalogos::codigoDocumentoIdentidad($invoice->client_doc_type, $invoice->client_doc_number);
 
         $moneda = $invoice->currency === 'USD' ? 2 : 1;
 
@@ -49,7 +48,8 @@ class NubefactService
             $prcUnit = $qty > 0 ? round($total / $qty, 6) : 0;
 
             return [
-                'unidad_de_medida'          => $it->unit ?? 'NIU',
+                // Catalogo 03: el producto guarda "CAJA" y SUNAT espera "BX".
+                'unidad_de_medida'          => Catalogos::codigoUnidad($it->unit),
                 'codigo'                    => '',
                 'descripcion'               => $it->description,
                 'cantidad'                  => $qty,
@@ -100,6 +100,7 @@ class NubefactService
             'total_incluido_percepcion'         => '',
             'detraccion'                        => false,
             'observaciones'                     => $invoice->notes ?? '',
+            // Se rellenan mas abajo solo si el comprobante es una nota.
             'documento_que_se_modifica_tipo'    => '',
             'documento_que_se_modifica_serie'   => '',
             'documento_que_se_modifica_numero'  => '',
@@ -111,29 +112,25 @@ class NubefactService
             'items'                             => $items,
         ];
 
-        // Según el manual: POST a la RUTA directamente (sin sufijo /facturas ni /boletas)
-        // Authorization: {token} directamente, sin prefijo "Token token="
-        $ch = curl_init(rtrim($url, '/'));
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Accept: application/json',
-                'Authorization: ' . $token,
-            ],
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+        /* Una nota es un documento sobre otro. Nubefact quiere el tipo en su
+           propia numeracion (1 factura, 2 boleta), la serie y el numero por
+           separado, y el motivo del catalogo 09/10 sin el cero de delante. */
+        if ($invoice->esNota()) {
+            [$afSerie, $afNumero] = array_pad(explode('-', (string) $invoice->afecta_numero, 2), 2, '');
 
-        $body = curl_exec($ch);
-        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err  = curl_error($ch);
-        curl_close($ch);
+            $payload['documento_que_se_modifica_tipo']   = $invoice->afecta_tipo === '03' ? 2 : 1;
+            $payload['documento_que_se_modifica_serie']  = $afSerie;
+            $payload['documento_que_se_modifica_numero'] = (int) ltrim($afNumero, '0');
 
-        \Log::debug('Nubefact REQUEST', ['url' => rtrim($url, '/'), 'payload' => $payload]);
-        \Log::debug('Nubefact RESPONSE', ['http' => $http, 'body' => $body, 'curl_error' => $err]);
+            $motivo = (int) ltrim((string) $invoice->motivo_codigo, '0');
+            if ($invoice->type === 'nota_credito') {
+                $payload['tipo_de_nota_de_credito'] = $motivo;
+            } else {
+                $payload['tipo_de_nota_de_debito'] = $motivo;
+            }
+        }
+
+        [$http, $body, $err] = $this->post($url, $token, $payload);
 
         if ($err) {
             $invoice->update(['sunat_status' => 'error', 'sunat_error' => $err]);
@@ -174,5 +171,96 @@ class NubefactService
         ]);
 
         return ['ok' => false, 'message' => is_string($errorMsg) ? $errorMsg : json_encode($errorMsg)];
+    }
+
+    /**
+     * Anulacion en Nubefact: misma URL, otra operacion.
+     *
+     * Nubefact resuelve la baja de una pasada y devuelve el enlace del PDF de
+     * la comunicacion; no hay ticket que consultar despues.
+     */
+    public function anular(Invoice $invoice): array
+    {
+        $project = $invoice->project;
+        $url     = $project->setting('nubefact_url');
+        $token   = $project->setting('nubefact_token');
+
+        if (! $url || ! $token) {
+            return ['ok' => false, 'message' => 'Configura la URL y Token de Nubefact en Ajustes → Facturación.'];
+        }
+
+        [$serie, $correlativo] = array_pad(explode('-', (string) $invoice->numero, 2), 2, '');
+
+        $payload = [
+            'operacion'           => 'generar_anulacion',
+            'tipo_de_comprobante' => $invoice->type === 'boleta' ? 2 : 1,
+            'serie'               => $serie,
+            'numero'              => (int) ltrim($correlativo, '0'),
+            'motivo'              => $invoice->baja_motivo ?: 'Error en la emisión',
+            'codigo_unico'        => '',
+        ];
+
+        [$http, $body, $err] = $this->post($url, $token, $payload);
+
+        \Log::debug('Nubefact BAJA', ['http' => $http, 'body' => $body, 'curl_error' => $err]);
+
+        if ($err) {
+            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => $err]);
+            return ['ok' => false, 'message' => 'Error de conexión: ' . $err];
+        }
+
+        $resp = json_decode($body, true);
+
+        if (! is_array($resp) || isset($resp['errors'])) {
+            $motivo = $resp['errors'] ?? 'Nubefact no aceptó la anulación.';
+            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => is_string($motivo) ? $motivo : json_encode($motivo)]);
+            return ['ok' => false, 'message' => is_string($motivo) ? $motivo : 'Nubefact no aceptó la anulación.'];
+        }
+
+        $invoice->update([
+            'baja_estado' => 'accepted',
+            'baja_ticket' => $resp['numero'] ?? null,
+            'baja_error'  => null,
+            'baja_at'     => now(),
+            'status'      => 'cancelled',
+        ]);
+
+        return ['ok' => true, 'message' => 'Anulación comunicada a SUNAT.'];
+    }
+
+    /**
+     * Una sola puerta de salida hacia Nubefact.
+     *
+     * Segun el manual se hace POST a la RUTA directamente —sin sufijo
+     * /facturas ni /boletas— y la cabecera Authorization lleva el token tal
+     * cual, sin el prefijo "Token token=" que usan otros proveedores.
+     *
+     * @return array{0:int,1:string|bool,2:string}  [http, cuerpo, error de red]
+     */
+    private function post(string $url, string $token, array $payload): array
+    {
+        $ch = curl_init(rtrim($url, '/'));
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'Authorization: ' . $token,
+            ],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $body = curl_exec($ch);
+        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err  = curl_error($ch);
+        curl_close($ch);
+
+        \Log::debug('Nubefact REQUEST', ['url' => rtrim($url, '/'), 'payload' => $payload]);
+        \Log::debug('Nubefact RESPONSE', ['http' => $http, 'body' => $body, 'curl_error' => $err]);
+
+        return [(int) $http, $body, (string) $err];
     }
 }

@@ -24,6 +24,7 @@ use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\Facturacion\NotaController;
 use App\Http\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\CertificadoController;
@@ -238,9 +239,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/bots-flow',            [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
         Route::get('/bots-flow/nuevo',      [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
         Route::post('/bots-flow/plantilla-tienda', [\App\Http\Controllers\BotFlowController::class, 'desdePlantilla'])->name('bot-flows.plantilla')->middleware('can:settings.negocio');
+        Route::post('/bots-flow/plantilla-comercial', [\App\Http\Controllers\BotFlowController::class, 'desdePlantillaComercial'])->name('bot-flows.plantilla-comercial');
+        Route::post('/bots-flow/ia', [\App\Http\Controllers\BotFlowController::class, 'toggleIa'])->name('bot-flows.ia');
         Route::get('/bots-flow/{flow}',     [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
         Route::post('/bots-flow/{flow}',    [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save')->middleware('can:settings.negocio');
         Route::post('/bots-flow/{flow}/test',[\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test')->middleware('can:settings.negocio');
+        Route::post('/bots-flow/{flow}/restaurar',[\App\Http\Controllers\BotFlowController::class, 'restaurarPlantilla'])->name('bot-flows.restaurar')->middleware('can:settings.negocio');
         Route::delete('/bots-flow/{flow}',  [\App\Http\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy')->middleware('can:settings.negocio');
 
         // Agenda
@@ -515,6 +519,12 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy')->middleware('can:invoices.anular');
         Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf')->middleware('can:invoices.ver');
         Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat')->middleware('can:invoices.crear');
+
+        // Corregir un comprobante que SUNAT ya acepto. Borrar la fila lo dejaba
+        // vivo en SUNAT con su IGV declarado; estas son las dos vias legales.
+        Route::get('/invoices/{invoice}/nota',  [NotaController::class, 'opciones'])->name('invoices.nota.opciones')->middleware('can:invoices.ver');
+        Route::post('/invoices/{invoice}/nota', [NotaController::class, 'store'])->name('invoices.nota')->middleware('can:invoices.anular');
+        Route::post('/invoices/{invoice}/baja', [NotaController::class, 'darDeBaja'])->name('invoices.baja')->middleware('can:invoices.anular');
 
         // Cotizaciones
         // Un permiso por verbo: *.ver solo autoriza lectura. Antes iba un unico
@@ -886,6 +896,11 @@ Route::prefix('f/{slug}')->name('facturacion.')->group(function () {
         Route::get('/facturas/{invoice}/pdf',   [InvoiceController::class, 'pdfPortal'])->name('facturas.pdf');
         Route::post('/facturas/{invoice}/sunat',[InvoiceController::class, 'sendSunatPortal'])->name('facturas.sunat');
 
+        // Las mismas dos vias legales para corregir, tambien en el portal.
+        Route::get('/facturas/{invoice}/nota',  [NotaController::class, 'opcionesPortal'])->name('facturas.nota.opciones');
+        Route::post('/facturas/{invoice}/nota', [NotaController::class, 'storePortal'])->name('facturas.nota');
+        Route::post('/facturas/{invoice}/baja', [NotaController::class, 'darDeBajaPortal'])->name('facturas.baja');
+
         Route::get('/clientes',            [ClientController::class, 'indexPortal'])->name('clientes');
         Route::post('/clientes',           [ClientController::class, 'storePortal'])->name('clientes.store');
         Route::put('/clientes/{client}',   [ClientController::class, 'updatePortal'])->name('clientes.update');
@@ -1106,6 +1121,10 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::delete('/facturas/{invoice}',  [InvoiceController::class, 'destroy'])->name('facturas.destroy')->middleware('can:invoices.anular');
         Route::get('/facturas/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('facturas.pdf')->middleware('can:invoices.ver');
         Route::post('/facturas/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('facturas.sunat')->middleware('can:invoices.crear');
+
+        Route::get('/facturas/{invoice}/nota',  [NotaController::class, 'opciones'])->name('facturas.nota.opciones')->middleware('can:invoices.ver');
+        Route::post('/facturas/{invoice}/nota', [NotaController::class, 'store'])->name('facturas.nota')->middleware('can:invoices.anular');
+        Route::post('/facturas/{invoice}/baja', [NotaController::class, 'darDeBaja'])->name('facturas.baja')->middleware('can:invoices.anular');
 
         Route::get('/clientes',               [ClientController::class, 'index'])->name('clientes')->middleware('project.can:clients.ver|view-clients');
         // La ficha 360 (`show`) estaba escrita —calcula lo vendido y la deuda

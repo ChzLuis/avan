@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Invoice;
+use App\Support\Sunat\Catalogos;
 
 /**
  * Emisión de comprobantes electrónicos vía APIsPERU (formato Greenter).
@@ -37,11 +38,9 @@ class ApisPeruService
             default        => '/invoice/send',
         };
 
-        $tipoDoc = match ($invoice->type) {
-            'factura' => '01',
-            'boleta'  => '03',
-            default   => '01',
-        };
+        // Catalogo 01. Antes cualquier tipo distinto de factura/boleta caia en
+        // '01': una nota de credito viajaba declarada como factura.
+        $tipoDoc = Catalogos::codigoComprobante($invoice->type);
 
         $payload = $this->buildPayload($invoice, $tipoDoc);
 
@@ -102,20 +101,91 @@ class ApisPeruService
     }
 
     /** Construye el JSON en formato Greenter que APIsPERU espera. */
+    /**
+     * Comunicacion de baja: el comprobante deja de surtir efecto.
+     *
+     * SUNAT no la resuelve al instante —devuelve un ticket que hay que
+     * consultar despues—, asi que aqui se guarda ese ticket y la baja queda
+     * en curso hasta que se confirme.
+     */
+    public function anular(Invoice $invoice): array
+    {
+        $project = $invoice->project;
+        $token   = $project->setting('apisperu_token');
+
+        if (! $token) {
+            return ['ok' => false, 'message' => 'Configura el Token de APIsPERU en Ajustes → Facturación.'];
+        }
+
+        [$serie, $correlativo] = array_pad(explode('-', (string) $invoice->numero, 2), 2, '');
+
+        $payload = [
+            'fecGeneracion'   => $invoice->issue_date?->format('Y-m-d') ?? now()->toDateString(),
+            'fecComunicacion' => now()->toDateString(),
+            // Correlativo de la propia comunicacion: una por dia y negocio.
+            'correlativo'     => (string) $this->correlativoDeBaja($invoice),
+            'company' => [
+                'ruc'         => $invoice->emisor_ruc,
+                'razonSocial' => $invoice->emisor_razon_social,
+            ],
+            'details' => [[
+                'tipoDoc'       => $invoice->codigoSunat(),
+                'serie'         => $serie,
+                'correlativo'   => (string) (int) ltrim($correlativo, '0'),
+                'desMotivoBaja' => $invoice->baja_motivo ?: 'Error en la emisión',
+            ]],
+        ];
+
+        [$http, $body, $err] = $this->post(self::URL . '/voided/send', $token, $payload);
+
+        \Log::debug('APIsPERU BAJA', ['http' => $http, 'body' => $body, 'curl_error' => $err]);
+
+        if ($err) {
+            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => $err]);
+            return ['ok' => false, 'message' => 'Error de conexión: ' . $err];
+        }
+
+        $resp = json_decode($body, true);
+
+        if (! is_array($resp) || ($resp['success'] ?? null) === false) {
+            $motivo = $resp['message'] ?? ($resp['error'] ?? 'SUNAT no aceptó la baja.');
+            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => is_string($motivo) ? $motivo : json_encode($motivo)]);
+            return ['ok' => false, 'message' => is_string($motivo) ? $motivo : 'SUNAT no aceptó la baja.'];
+        }
+
+        $invoice->update([
+            'baja_estado' => 'accepted',
+            'baja_ticket' => $resp['ticket'] ?? null,
+            'baja_error'  => null,
+            'baja_at'     => now(),
+            'status'      => 'cancelled',
+        ]);
+
+        return ['ok' => true, 'message' => 'Baja comunicada a SUNAT.', 'ticket' => $resp['ticket'] ?? null];
+    }
+
+    /** Cuantas bajas lleva hoy el negocio: SUNAT numera las comunicaciones. */
+    private function correlativoDeBaja(Invoice $invoice): int
+    {
+        return Invoice::allProjects()
+            ->where('project_id', $invoice->project_id)
+            ->whereDate('baja_at', now()->toDateString())
+            ->count() + 1;
+    }
+
     private function buildPayload(Invoice $invoice, string $tipoDoc): array
     {
         $project = $invoice->project;
         $ubigeo  = $project->setting('apisperu_ubigeo') ?: '150101';
         $moneda  = $invoice->currency === 'USD' ? 'USD' : 'PEN';
 
-        // Tipo de documento del cliente
-        $cliTipoDoc = match (strtoupper($invoice->client_doc_type ?? '')) {
-            'DNI'       => '1',
-            'CE'        => '4',
-            'RUC'       => '6',
-            'PASAPORTE' => '7',
-            default     => '0', // sin documento (varios / boleta genérica)
-        };
+        // Catalogo 06. Sin tipo declarado se deduce del numero (11 digitos es
+        // RUC, 8 es DNI) en vez de mandar '0' —no domiciliado—, que es lo que
+        // hacia antes con cualquier cosa que no reconociera.
+        $cliTipoDoc = Catalogos::codigoDocumentoIdentidad(
+            $invoice->client_doc_type,
+            $invoice->client_doc_number
+        );
 
         $details = $invoice->items->map(function ($it) {
             $total   = round((float) $it->total, 2);
@@ -128,7 +198,8 @@ class ApisPeruService
             return [
                 'tipAfeIgv'        => '10', // Gravado - Operación Onerosa
                 'codProducto'      => (string) ($it->product_id ?? ''),
-                'unidad'           => $it->unit ?: 'NIU',
+                // Catalogo 03: el producto guarda "CAJA" y SUNAT espera "BX".
+                'unidad'           => Catalogos::codigoUnidad($it->unit),
                 'descripcion'      => $it->description,
                 'cantidad'         => $qty,
                 'mtoValorUnitario' => $valUnit,
@@ -182,6 +253,21 @@ class ApisPeruService
                 'value' => $this->numeroALetras($total, $moneda),
             ]],
         ];
+
+        /* Una nota de credito o debito es un documento sobre otro: sin el tipo
+           y el numero del afectado y un codigo de motivo del catalogo 09/10,
+           SUNAT la rechaza aunque los importes esten bien. */
+        if ($invoice->esNota()) {
+            $payload['tipDocAfectado'] = $invoice->afecta_tipo ?: Catalogos::codigoComprobante('factura');
+            $payload['numDocfectado']  = $invoice->afecta_numero;
+            $payload['codMotivo']      = $invoice->motivo_codigo;
+            $payload['desMotivo']      = $invoice->motivo_descripcion
+                ?: (Catalogos::MOTIVOS_NOTA_CREDITO[$invoice->motivo_codigo] ?? 'Anulación de la operación');
+
+            // El tipo de nota va aparte del tipo de comprobante.
+            $payload['tipoNota'] = $invoice->motivo_codigo;
+            unset($payload['formaPago'], $payload['tipoOperacion']);
+        }
 
         // Cliente con dirección si existe
         if ($invoice->client_address) {
