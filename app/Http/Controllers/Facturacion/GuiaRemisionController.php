@@ -215,6 +215,19 @@ class GuiaRemisionController extends Controller
         ]);
     }
 
+    /**
+     * La representacion impresa: lo que viaja fisicamente con la mercaderia.
+     * Sin esto la guia existia en SUNAT pero el chofer no llevaba nada que
+     * ensenar en un control.
+     */
+    public function pdf(GuiaRemision $guia)
+    {
+        $project = $this->soloDeMiNegocio($guia);
+        $guia->load('items', 'invoice');
+
+        return view('facturacion.guias.pdf', compact('project', 'guia'));
+    }
+
     public function show(GuiaRemision $guia)
     {
         $this->soloDeMiNegocio($guia);

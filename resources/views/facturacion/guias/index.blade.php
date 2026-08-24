@@ -79,7 +79,11 @@
                                 <p class="text-xs text-red-600 mt-1 max-w-xs break-words">{{ $g->sunat_error }}</p>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <a href="{{ route('guias.pdf', $g->id) }}" target="_blank"
+                               class="text-xs font-semibold text-gray-500 hover:text-gray-800 mr-3">
+                                Imprimir
+                            </a>
                             @if($g->sunat_status !== 'accepted')
                             <button @click="reenviar({{ $g->id }})"
                                     class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">

@@ -169,6 +169,22 @@ class GuiaRemisionTest extends TestCase
         $this->assertSame(['T001-00000001', 'T001-00000002'], $numeros);
     }
 
+    /** La representación impresa: lo que el chofer enseña en un control. */
+    public function test_la_guia_tiene_representacion_impresa(): void
+    {
+        $this->postJson('/guias', $this->datosPrivado())->assertSuccessful();
+        $guia = GuiaRemision::latest('id')->first();
+
+        $html = $this->get('/guias/'.$guia->id.'/pdf')->assertSuccessful()->getContent();
+
+        $this->assertStringContainsString('GUÍA DE REMISIÓN ELECTRÓNICA', $html);
+        $this->assertStringContainsString($guia->numero, $html);
+        $this->assertStringContainsString('Ferretería El Sol EIRL', $html);
+        $this->assertStringContainsString('ABC123', $html, 'la placa impresa va sin guion, como en el XML');
+        $this->assertStringContainsString('no acredita la venta', $html, 'la leyenda que evita confundir guía con factura');
+        $this->assertStringContainsString('qr-code', $html, 'lleva su QR');
+    }
+
     /** Una guía aceptada por SUNAT no se borra. */
     public function test_una_guia_aceptada_no_se_borra(): void
     {

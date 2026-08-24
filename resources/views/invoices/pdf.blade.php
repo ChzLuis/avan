@@ -1,3 +1,35 @@
+@php
+    // La denominacion legal del comprobante, como la exige la representacion
+    // impresa. "Factura" a secas no es la denominacion, es una abreviatura.
+    $denominacion = match ($invoice->type) {
+        'factura'      => 'FACTURA ELECTRÓNICA',
+        'boleta'       => 'BOLETA DE VENTA ELECTRÓNICA',
+        'nota_credito' => 'NOTA DE CRÉDITO ELECTRÓNICA',
+        'nota_debito'  => 'NOTA DE DÉBITO ELECTRÓNICA',
+        default        => strtoupper($invoice->getTypeLabel()),
+    };
+
+    // El logo del negocio, de donde ya lo toma la tienda.
+    $logoPdf = $project->setting('logo_url') ?: ($project->logo_url ?? null);
+    $logoPdf = $logoPdf ? (str_starts_with($logoPdf, 'http') ? $logoPdf : asset('storage/'.ltrim($logoPdf, '/'))) : null;
+
+    // El QR normado: RUC|tipo|serie|correlativo|IGV|total|fecha|tipoDocCli|numDocCli|hash
+    $qrDatos = implode('|', [
+        $invoice->emisor_ruc,
+        $invoice->codigoSunat(),
+        $invoice->serie,
+        $invoice->correlativo,
+        number_format((float) $invoice->igv, 2, '.', ''),
+        number_format((float) $invoice->total, 2, '.', ''),
+        $invoice->issue_date?->format('Y-m-d'),
+        \App\Support\Sunat\Catalogos::codigoDocumentoIdentidad($invoice->client_doc_type, $invoice->client_doc_number),
+        $invoice->client_doc_number ?: '-',
+        $invoice->sunat_hash ?: '',
+    ]);
+
+    $enLetras = \App\Support\Sunat\MontoEnLetras::de((float) $invoice->total, $invoice->currency);
+    $anulado  = $invoice->status === 'cancelled' || $invoice->baja_estado === 'accepted';
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -70,6 +102,29 @@
   .footer-brand { font-size: 10px; color: #d1d5db; font-weight: 600; letter-spacing: .3px; }
   .footer-sub { font-size: 9px; color: #d1d5db; font-style: italic; margin-top: 2px; }
 
+  /* Logo del negocio junto al emisor */
+  .emisor-wrap { display: flex; gap: 14px; align-items: flex-start; }
+  .emisor-logo { max-height: 58px; max-width: 150px; object-fit: contain; }
+
+  /* Recuadro clasico del comprobante: RUC + denominacion + numero */
+  .doc-box { border: 2px solid #111; border-radius: 8px; padding: 10px 18px; text-align: center; min-width: 215px; }
+  .doc-box-ruc { font-size: 11px; font-weight: 700; color: #374151; }
+  .doc-box-tipo { font-size: 12px; font-weight: 800; color: #111; margin: 4px 0; letter-spacing: .3px; }
+
+  /* Nota: a que documento afecta y por que */
+  .nota-ref { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; margin-bottom: 20px; font-size: 10.5px; color: #92400e; line-height: 1.7; }
+  .nota-ref strong { color: #78350f; }
+
+  .en-letras { font-size: 10.5px; color: #374151; font-weight: 600; margin-bottom: 16px; }
+
+  /* Pie legal: QR + leyenda de representacion impresa */
+  .legal-row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+  .legal-qr { width: 92px; height: 92px; flex-shrink: 0; }
+  .legal-text { font-size: 9.5px; color: #6b7280; line-height: 1.7; }
+
+  /* Marca de agua de un comprobante sin efecto */
+  .anulado { position: fixed; top: 42%; left: 0; right: 0; text-align: center; font-size: 72px; font-weight: 900; color: rgba(220, 38, 38, .16); transform: rotate(-18deg); letter-spacing: 8px; pointer-events: none; z-index: 5; }
+
   /* ── PRINT ── */
   @media print {
     body { font-size: 10.5px; }
@@ -79,6 +134,7 @@
 </style>
 </head>
 <body>
+@if($anulado)<div class="anulado">ANULADO</div>@endif
 <div class="page">
 
   {{-- Botones --}}
@@ -95,21 +151,28 @@
 
   {{-- Header --}}
   <div class="header">
-    <div>
-      <div class="emisor-name">{{ $invoice->emisor_razon_social ?: $project->name }}</div>
-      <div class="emisor-detail">
-        @if($invoice->emisor_ruc)RUC: {{ $invoice->emisor_ruc }}<br>@endif
-        @if($invoice->emisor_direccion){{ $invoice->emisor_direccion }}@endif
+    <div class="emisor-wrap">
+      @if($logoPdf)<img class="emisor-logo" src="{{ $logoPdf }}" alt="">@endif
+      <div>
+        <div class="emisor-name">{{ $invoice->emisor_razon_social ?: $project->name }}</div>
+        <div class="emisor-detail">
+          @if($invoice->emisor_direccion){{ $invoice->emisor_direccion }}@endif
+        </div>
       </div>
     </div>
     <div class="doc-badge">
-      <div class="doc-tipo">{{ $invoice->getTypeLabel() }}</div>
-      <div class="doc-numero">{{ $invoice->numero }}</div>
+      {{-- El recuadro con RUC, denominacion y numero es el formato que exige
+           la representacion impresa; el nombre corto no basta. --}}
+      <div class="doc-box">
+        <div class="doc-box-ruc">RUC {{ $invoice->emisor_ruc }}</div>
+        <div class="doc-box-tipo">{{ $denominacion }}</div>
+        <div class="doc-numero" style="font-size:18px;">{{ $invoice->numero }}</div>
+      </div>
       @if($invoice->issue_date)
-      <div class="doc-fecha">{{ $invoice->issue_date->format('d/m/Y') }}</div>
+      <div class="doc-fecha">Emisión: {{ $invoice->issue_date->format('d/m/Y') }}</div>
       @endif
       <div>
-        <span class="pill pill-{{ $invoice->status }}">{{ $invoice->getStatusLabel() }}</span>
+        <span class="pill pill-{{ $invoice->status }}">{{ $anulado ? 'Anulada' : $invoice->getStatusLabel() }}</span>
       </div>
     </div>
   </div>
@@ -127,6 +190,16 @@
       @if($invoice->client_email){{ $invoice->client_email }}@endif
     </div>
   </div>
+
+  @if($invoice->esNota())
+  {{-- Una nota sin su documento afectado no dice nada: es lo primero que
+       mira quien la recibe y lo que exige el formato. --}}
+  <div class="nota-ref">
+    <strong>Documento que modifica:</strong>
+    {{ $invoice->afecta_tipo === '03' ? 'Boleta' : 'Factura' }} {{ $invoice->afecta_numero }}<br>
+    <strong>Motivo ({{ $invoice->motivo_codigo }}):</strong> {{ $invoice->motivo_descripcion }}
+  </div>
+  @endif
 
   {{-- Items --}}
   <table>
@@ -184,15 +257,24 @@
     </div>
   </div>
 
+  <div class="en-letras">{{ $enLetras }}</div>
+
   @if($invoice->notes)
   <div class="notes"><strong>Observaciones:</strong> {{ $invoice->notes }}</div>
   @endif
 
-  @if($invoice->sunat_hash)
-  <div class="sunat-box">
-    <strong>Hash CDR SUNAT:</strong> {{ $invoice->sunat_hash }}
+  <div class="legal-row">
+    {{-- El QR normado. Se pinta al imprimir; sin conexion queda el texto,
+         que tambien es valido como resumen. --}}
+    <img class="legal-qr" alt="QR del comprobante"
+         src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&ecc=M&data={{ urlencode($qrDatos) }}">
+    <div class="legal-text">
+      Representación impresa de la {{ $denominacion }}.<br>
+      @if($invoice->sunat_hash)<strong>Hash:</strong> {{ $invoice->sunat_hash }}<br>@endif
+      @if($invoice->sunat_status === 'accepted')Aceptada por SUNAT.@else Pendiente de aceptación por SUNAT.@endif
+      Consulte el documento en el portal de SUNAT o del emisor.
+    </div>
   </div>
-  @endif
 
   {{-- Footer --}}
   <div class="footer">

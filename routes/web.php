@@ -533,6 +533,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/guias/opciones',        [GuiaRemisionController::class, 'opciones'])->name('guias.opciones')->middleware('can:invoices.ver');
         Route::post('/guias',                [GuiaRemisionController::class, 'store'])->name('guias.store')->middleware('can:invoices.crear');
         Route::get('/guias/{guia}',          [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
+        Route::get('/guias/{guia}/pdf',      [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');
         Route::post('/guias/{guia}/enviar',  [GuiaRemisionController::class, 'enviar'])->name('guias.enviar')->middleware('can:invoices.crear');
         Route::delete('/guias/{guia}',       [GuiaRemisionController::class, 'destroy'])->name('guias.destroy')->middleware('can:invoices.anular');
 

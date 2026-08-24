@@ -249,6 +249,41 @@ class NotasYBajaTest extends TestCase
         $this->assertTrue($sinEnviar->sePuedeBorrar());
     }
 
+    /**
+     * La representación impresa lleva lo que exige el formato: denominación
+     * oficial, QR, importe en letras y —en una nota— el documento que
+     * modifica y el motivo.
+     */
+    public function test_la_representacion_impresa_lleva_lo_legal(): void
+    {
+        $factura = $this->facturaAceptada();
+
+        $html = $this->get('/invoices/'.$factura->id.'/pdf')->assertSuccessful()->getContent();
+
+        $this->assertStringContainsString('FACTURA ELECTRÓNICA', $html, 'la denominación oficial, no la abreviatura');
+        $this->assertStringContainsString('RUC 20512345678', $html);
+        $this->assertStringContainsString('SON CIENTO DIECIOCHO CON 00/100 SOLES', $html, 'el importe en letras (leyenda 1000)');
+        $this->assertStringContainsString('qr-code', $html, 'el QR normado');
+        $this->assertStringContainsString('Representación impresa', $html);
+    }
+
+    /** Y la nota impresa dice a qué afecta y por qué. */
+    public function test_la_nota_impresa_dice_a_que_documento_afecta(): void
+    {
+        $factura = $this->facturaAceptada();
+
+        $this->postJson('/invoices/'.$factura->id.'/nota', [
+            'type' => 'nota_credito', 'motivo_codigo' => '01',
+        ])->assertSuccessful();
+
+        $nota = Invoice::where('type', 'nota_credito')->latest('id')->first();
+        $html = $this->get('/invoices/'.$nota->id.'/pdf')->assertSuccessful()->getContent();
+
+        $this->assertStringContainsString('NOTA DE CRÉDITO ELECTRÓNICA', $html);
+        $this->assertStringContainsString('F001-00000007', $html, 'el documento que modifica');
+        $this->assertStringContainsString('Anulación de la operación', $html, 'el motivo, legible');
+    }
+
     /** Dos emisiones seguidas nunca comparten número. */
     public function test_el_correlativo_no_se_repite(): void
     {

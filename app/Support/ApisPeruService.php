@@ -329,28 +329,7 @@ class ApisPeruService
     /** Convierte el monto a letras para la leyenda 1000 (simplificado). */
     private function numeroALetras(float $monto, string $moneda): string
     {
-        $entero   = (int) floor($monto);
-        $decimal  = (int) round(($monto - $entero) * 100);
-        $unidad   = $moneda === 'USD' ? 'DÓLARES AMERICANOS' : 'SOLES';
-        $enLetras = $this->enteroALetras($entero);
-        return sprintf('SON %s CON %02d/100 %s', $enLetras, $decimal, $unidad);
-    }
-
-    private function enteroALetras(int $n): string
-    {
-        if ($n === 0) return 'CERO';
-        $unidades = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE', 'DIEZ',
-            'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE', 'VEINTE'];
-        $decenas = ['', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
-        $centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
-
-        $texto = '';
-        if ($n >= 1000000) { $texto .= $this->enteroALetras(intdiv($n, 1000000)) . ' MILLONES '; $n %= 1000000; }
-        if ($n >= 1000)    { $m = intdiv($n, 1000); $texto .= ($m === 1 ? 'MIL ' : $this->enteroALetras($m) . ' MIL '); $n %= 1000; }
-        if ($n >= 100)     { $texto .= ($n === 100 ? 'CIEN ' : $centenas[intdiv($n, 100)] . ' '); $n %= 100; }
-        if ($n <= 20)      { $texto .= $unidades[$n]; }
-        else               { $texto .= $decenas[intdiv($n, 10)]; if ($n % 10) $texto .= ' Y ' . $unidades[$n % 10]; }
-
-        return trim($texto);
+        // La misma leyenda que imprime el PDF: si divergen, el papel miente.
+        return \App\Support\Sunat\MontoEnLetras::de($monto, $moneda);
     }
 }
