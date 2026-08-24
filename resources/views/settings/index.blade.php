@@ -1038,6 +1038,30 @@
                                 <p class="text-xs text-gray-400 mt-1">Para boletas (DNI) · Nubefact demo: BBB1</p>
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Serie Nota de Crédito</label>
+                                <input type="text" name="serie_nota_credito" maxlength="4" class="input"
+                                       placeholder="Igual que el documento"
+                                       value="{{ old('serie_nota_credito', $selP->setting('serie_nota_credito')) }}">
+                                <p class="text-xs text-gray-400 mt-1">Vacío: usa la serie del comprobante que corrige</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Serie Nota de Débito</label>
+                                <input type="text" name="serie_nota_debito" maxlength="4" class="input"
+                                       placeholder="Igual que el documento"
+                                       value="{{ old('serie_nota_debito', $selP->setting('serie_nota_debito')) }}">
+                                <p class="text-xs text-gray-400 mt-1">Debe empezar por la misma letra que el afectado</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Serie Guía de Remisión</label>
+                                <input type="text" name="serie_guia" maxlength="4" class="input"
+                                       placeholder="T001"
+                                       value="{{ old('serie_guia', $selP->setting('serie_guia', 'T001')) }}">
+                                <p class="text-xs text-gray-400 mt-1">La de un remitente empieza por T</p>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Proveedor de facturación electrónica + credenciales (un solo x-data) --}}

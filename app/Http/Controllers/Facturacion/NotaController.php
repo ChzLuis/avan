@@ -171,9 +171,12 @@ class NotaController extends Controller
         abort_unless(
             $invoice->sePuedeDarDeBaja(),
             422,
-            $invoice->sunat_status !== 'accepted'
-                ? 'Solo se da de baja un comprobante que SUNAT ya aceptó. Este todavía no lo está: bórralo o vuelve a enviarlo.'
-                : 'Este comprobante ya tiene una baja en curso o aceptada.'
+            match (true) {
+                $invoice->sunat_status !== 'accepted' => 'Solo se da de baja un comprobante que SUNAT ya aceptó. Este todavía no lo está: bórralo o vuelve a enviarlo.',
+                $invoice->type === 'boleta' => 'Una boleta no se da de baja de una en una: va en el resumen diario de bajas. Para dejarla sin efecto, emite una nota de crédito.',
+                $invoice->esNota() => 'Una nota no se da de baja: se corrige emitiendo otra sobre el comprobante original.',
+                default => 'Este comprobante ya tiene una baja en curso o aceptada.',
+            }
         );
 
         $data = $request->validate([

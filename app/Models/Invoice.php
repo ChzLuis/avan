@@ -124,12 +124,19 @@ class Invoice extends Model
         return $this->sunat_status !== 'accepted' && $this->baja_estado !== 'accepted';
     }
 
-    /** La baja solo cabe sobre lo que SUNAT ya aceptó y no se ha dado de baja. */
+    /**
+     * La baja solo cabe sobre una FACTURA que SUNAT ya aceptó.
+     *
+     * Una boleta no se da de baja de una en una: va en el resumen diario de
+     * bajas, que es otro documento y otro endpoint. Ofrecer el botón igual
+     * garantizaría el rechazo, y se descubriría con la venta ya anulada en el
+     * sistema y viva en SUNAT. Para una boleta, la salida es la nota de crédito.
+     */
     public function sePuedeDarDeBaja(): bool
     {
         return $this->sunat_status === 'accepted'
-            && ! in_array($this->baja_estado, ['pending', 'accepted'], true)
-            && ! $this->esNota();
+            && $this->type === 'factura'
+            && ! in_array($this->baja_estado, ['pending', 'accepted'], true);
     }
 
     /** Y la nota, sobre una factura o boleta aceptada. */

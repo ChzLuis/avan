@@ -207,6 +207,25 @@ class NotasYBajaTest extends TestCase
         $this->assertNull($factura->fresh()->baja_estado);
     }
 
+    /**
+     * Una boleta no se da de baja de una en una: va en el resumen diario de
+     * bajas. Ofrecer el boton garantizaria el rechazo.
+     */
+    public function test_una_boleta_no_se_da_de_baja_individualmente(): void
+    {
+        $boleta = $this->facturaAceptada([
+            'type' => 'boleta', 'serie' => 'B001', 'correlativo' => 4,
+            'numero' => Invoice::buildNumero('B001', 4),
+        ]);
+
+        $this->postJson('/invoices/'.$boleta->id.'/baja', ['motivo' => 'error del cajero'])
+            ->assertStatus(422);
+
+        $this->assertNull($boleta->fresh()->baja_estado);
+        // Pero si admite nota de credito, que es la salida correcta.
+        $this->assertTrue($boleta->admiteNota());
+    }
+
     /** Y no se da de baja lo que SUNAT nunca aceptó. */
     public function test_no_se_da_de_baja_lo_que_no_esta_aceptado(): void
     {

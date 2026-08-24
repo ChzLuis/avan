@@ -528,7 +528,9 @@
                                         Nota de débito
                                     </button>
                                 </div>
-                                <button @click="darDeBaja()" :disabled="bajaEnCurso"
+                                {{-- La baja individual es solo para facturas: una boleta
+                                     va en el resumen diario de bajas. --}}
+                                <button x-show="selected.type === 'factura'" @click="darDeBaja()" :disabled="bajaEnCurso"
                                         class="w-full py-2 px-3 rounded-lg text-xs font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition disabled:opacity-60">
                                     <span x-text="bajaEnCurso ? 'Comunicando baja...' : 'Comunicar baja a SUNAT'"></span>
                                 </button>
