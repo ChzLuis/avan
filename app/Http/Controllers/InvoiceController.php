@@ -293,10 +293,26 @@ class InvoiceController extends Controller
 
     // ── Portal Facturación ────────────────────────────────────────────────────
 
+    /** La misma consulta, desde el panel: el negocio sale de la sesion. */
+    public function lookupRucPanel(Request $request)
+    {
+        /** @var Project $project */
+        $project = app('active_project');
+
+        return $this->consultarRuc($project, (string) $request->get('ruc', ''));
+    }
+
     public function lookupRuc(Request $request, string $slug)
     {
         $project = $this->projectBySlug($slug);
-        $ruc = preg_replace('/\D/', '', $request->get('ruc', ''));
+
+        return $this->consultarRuc($project, (string) $request->get('ruc', ''));
+    }
+
+    /** El nucleo de la consulta: un solo sitio para las dos puertas. */
+    private function consultarRuc(Project $project, string $rucCrudo)
+    {
+        $ruc = preg_replace('/\D/', '', $rucCrudo);
 
         if (strlen($ruc) !== 11) {
             return response()->json(['ok' => false, 'message' => 'RUC debe tener 11 dígitos.']);

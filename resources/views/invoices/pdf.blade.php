@@ -283,8 +283,8 @@
       @if($invoice->emisor_ruc) &nbsp;·&nbsp; RUC {{ $invoice->emisor_ruc }}@endif
     </div>
     <div style="text-align:right;">
-      <div class="footer-brand">BIXO</div>
-      <div class="footer-sub">Sistema de Gestión</div>
+      <div class="footer-brand">BIXO<span style="font-size:7px;vertical-align:super;">®</span> <span style="font-weight:400;color:#9ca3af;">by</span> Eskala</div>
+      <div class="footer-sub">© {{ date('Y') }} Eskala Group · BIXO®</div>
     </div>
   </div>
 

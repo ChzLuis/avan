@@ -527,6 +527,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/invoices/{invoice}/nota', [NotaController::class, 'store'])->name('invoices.nota')->middleware('can:invoices.anular');
         Route::post('/invoices/{invoice}/baja', [NotaController::class, 'darDeBaja'])->name('invoices.baja')->middleware('can:invoices.anular');
 
+        // Consulta RUC: rellena razon social y direccion desde el padron. El
+        // portal ya la tenia; el panel obligaba a teclearlo a mano.
+        Route::get('/invoices-ruc', [InvoiceController::class, 'lookupRucPanel'])->name('invoices.ruc')->middleware('can:invoices.ver');
+
         // Guias de remision: el documento que viaja con la mercaderia. La
         // factura dice que se vendio; en un control de carretera piden esta.
         Route::get('/guias',                 [GuiaRemisionController::class, 'index'])->name('guias.index')->middleware('can:invoices.ver');

@@ -171,7 +171,17 @@
                         </div>
                         <div>
                             <label class="label">Nro. doc.</label>
-                            <input x-model="form.client_doc_number" type="text" maxlength="15" class="input">
+                            <div class="flex gap-1.5">
+                                <input x-model="form.client_doc_number" type="text" maxlength="15" class="input flex-1"
+                                       @keydown.enter.prevent="buscarRuc()">
+                                {{-- Rellena razon social y direccion desde el padron de SUNAT:
+                                     teclear mal el nombre del receptor es motivo de nota de credito. --}}
+                                <button type="button" @click="buscarRuc()" :disabled="buscandoRuc || (form.client_doc_number||'').length !== 11"
+                                        x-show="form.client_doc_type === 'RUC'"
+                                        class="px-3 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 transition">
+                                    <span x-text="buscandoRuc ? '...' : 'SUNAT'"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -639,6 +649,7 @@ function invoicesApp() {
         motivosDebito:  @json(\App\Support\Sunat\Catalogos::MOTIVOS_NOTA_DEBITO),
         notaAbierta: false, notaTipo: 'nota_credito', notaMotivo: '01',
         notaDetalle: '', notaEnCurso: false, bajaEnCurso: false,
+        buscandoRuc: false,
         editStatus: '',
         saving: false,
         saveError: '',
@@ -773,6 +784,28 @@ function invoicesApp() {
             this.selected.status_label = { draft:'Borrador', issued:'Emitida', sent:'Enviada', cancelled:'Anulada' }[this.editStatus] || this.editStatus;
             const idx = this.invoices.findIndex(i => i.id === this.selected.id);
             if (idx > -1) { this.invoices[idx].status = this.editStatus; this.invoices[idx].status_label = this.selected.status_label; }
+        },
+
+        /* El padron de SUNAT escribe mejor que nadie la razon social. */
+        async buscarRuc() {
+            const ruc = (this.form.client_doc_number || '').replace(/\D/g, '');
+            if (ruc.length !== 11 || this.buscandoRuc) return;
+
+            this.buscandoRuc = true;
+            const res = await fetch(`{{ route('invoices.ruc') }}?ruc=${ruc}`, {
+                headers: { 'Accept': 'application/json' },
+            });
+            const data = await res.json().catch(() => ({}));
+            this.buscandoRuc = false;
+
+            if (!data.ok) {
+                bxAviso(data.message || 'No se pudo consultar el RUC.', 'error');
+                return;
+            }
+
+            this.form.client_name    = data.razon_social || this.form.client_name;
+            this.form.client_address = data.direccion || this.form.client_address;
+            bxAviso('Datos traídos del padrón de SUNAT.', 'exito');
         },
 
         abrirNota(tipo) {

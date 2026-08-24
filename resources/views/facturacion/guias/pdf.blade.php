@@ -201,7 +201,10 @@
     <div class="footer-left">
       {{ $guia->emisor_razon_social ?: $project->name }} &nbsp;·&nbsp; RUC {{ $guia->emisor_ruc }}
     </div>
-    <div class="footer-brand">BIXO</div>
+    <div style="text-align:right;">
+      <div class="footer-brand">BIXO<span style="font-size:7px;vertical-align:super;">®</span> <span style="font-weight:400;color:#9ca3af;">by</span> Eskala</div>
+      <div style="font-size:9px;color:#d1d5db;font-style:italic;margin-top:2px;">© {{ date('Y') }} Eskala Group · BIXO®</div>
+    </div>
   </div>
 
 </div>
