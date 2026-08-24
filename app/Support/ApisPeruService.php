@@ -256,6 +256,9 @@ class ApisPeruService
             'company' => [
                 'ruc'         => $invoice->emisor_ruc,
                 'razonSocial' => $invoice->emisor_razon_social,
+                // Sin esto el XML lleva el PartyName vacio y SUNAT lo observa
+                // (aviso 4092 en la validacion real).
+                'nombreComercial' => $project->setting('nombre_comercial') ?: $invoice->emisor_razon_social,
                 'address'     => [
                     'direccion'    => $invoice->emisor_direccion ?: '-',
                     'provincia'    => 'LIMA',

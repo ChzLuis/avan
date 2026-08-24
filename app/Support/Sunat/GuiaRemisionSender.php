@@ -150,6 +150,10 @@ final class GuiaRemisionSender
            vehiculo y el conductor del propio negocio. Declarar los dos —o
            ninguno— es motivo de rechazo. */
         if ($guia->esPublico()) {
+            /* En publico SUNAT exige cuando se entregan los bienes al
+               transportista (error 3617 si falta): es la fecha del traslado,
+               que es cuando el negocio se desprende de ellos. */
+            $envio['fecEntregaBienes'] = $guia->fecha_traslado->format('Y-m-d\TH:i:sP');
             $envio['transportista'] = [
                 'tipoDoc'     => '6',
                 'numDoc'      => $guia->transportista_ruc,
@@ -179,6 +183,7 @@ final class GuiaRemisionSender
             'company' => [
                 'ruc'         => $guia->emisor_ruc,
                 'razonSocial' => $guia->emisor_razon_social,
+                'nombreComercial' => $guia->emisor_razon_social,
             ],
             'destinatario' => [
                 'tipoDoc'   => $guia->destinatario_doc_tipo ?: '1',
@@ -195,10 +200,13 @@ final class GuiaRemisionSender
         ];
 
         if ($guia->invoice_id && $guia->invoice) {
-            // El comprobante que respalda el traslado, si lo hay.
+            // El comprobante que respalda el traslado. SUNAT exige tambien
+            // quien lo emitio (error 3380 sin el RUC del emisor).
             $payload['addDocs'] = [[
-                'tipo'  => $guia->invoice->codigoSunat(),
-                'nro'   => $guia->invoice->numero,
+                'tipo'     => $guia->invoice->codigoSunat(),
+                'tipoDesc' => $guia->invoice->getTypeLabel(),
+                'nro'      => $guia->invoice->numero,
+                'emisor'   => (string) ($guia->invoice->emisor_ruc ?: $guia->emisor_ruc),
             ]];
         }
 
