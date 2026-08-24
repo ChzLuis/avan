@@ -46,6 +46,8 @@ class Project extends Model
     public function orders(): HasMany       { return $this->hasMany(Order::class); }
     public function quotes(): HasMany       { return $this->hasMany(Quote::class); }
     public function invoices(): HasMany     { return $this->hasMany(Invoice::class); }
+    /** Las guías dicen cómo viajó la mercadería; las facturas, qué se vendió. */
+    public function guiasRemision(): HasMany { return $this->hasMany(GuiaRemision::class); }
     public function appointments(): HasMany { return $this->hasMany(Appointment::class); }
     public function employees(): HasMany    { return $this->hasMany(Employee::class); }
     public function settings(): HasMany     { return $this->hasMany(ProjectSetting::class); }

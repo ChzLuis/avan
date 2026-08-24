@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Traits\HasProjectScope;
+use App\Support\Sunat\Catalogos;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * La guía de remisión del remitente.
+ *
+ * La factura dice qué se vendió; la guía dice cómo viajó. En un control de
+ * carretera piden esta, no aquella.
+ */
+class GuiaRemision extends Model
+{
+    use HasProjectScope;
+
+    protected $table = 'guias_remision';
+
+    protected $fillable = [
+        'project_id', 'invoice_id', 'order_id', 'client_id',
+        'serie', 'correlativo', 'numero',
+        'emisor_razon_social', 'emisor_ruc',
+        'destinatario_nombre', 'destinatario_doc_tipo', 'destinatario_doc_numero',
+        'motivo_codigo', 'motivo_descripcion', 'fecha_traslado', 'modalidad',
+        'peso_total', 'peso_unidad', 'bultos',
+        'partida_ubigeo', 'partida_direccion', 'llegada_ubigeo', 'llegada_direccion',
+        'transportista_ruc', 'transportista_razon_social', 'transportista_mtc',
+        'vehiculo_placa', 'conductor_doc_tipo', 'conductor_doc_numero',
+        'conductor_nombres', 'conductor_apellidos', 'conductor_licencia',
+        'status', 'sunat_status', 'sunat_ticket', 'sunat_hash', 'sunat_cdr',
+        'sunat_error', 'sunat_sent_at', 'observaciones', 'created_by',
+    ];
+
+    protected $casts = [
+        'fecha_traslado' => 'date',
+        'peso_total'     => 'decimal:3',
+        'sunat_sent_at'  => 'datetime',
+    ];
+
+    /** Con transportista contratado; si no, va en vehículo propio. */
+    public const PUBLICO  = '01';
+    public const PRIVADO  = '02';
+
+    public function project() { return $this->belongsTo(Project::class); }
+    public function invoice() { return $this->belongsTo(Invoice::class); }
+    public function order()   { return $this->belongsTo(Order::class); }
+    public function client()  { return $this->belongsTo(Client::class); }
+    public function items()   { return $this->hasMany(GuiaRemisionItem::class); }
+    public function creadoPor() { return $this->belongsTo(User::class, 'created_by'); }
+
+    public static function buildNumero(string $serie, int $correlativo): string
+    {
+        return $serie.'-'.str_pad((string) $correlativo, Invoice::DIGITOS_CORRELATIVO, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Reserva el siguiente número de la serie.
+     *
+     * Mismo bloqueo que en las facturas: dos despachos a la vez no pueden
+     * llevarse el mismo número de guía.
+     *
+     * @return array{0:int,1:string}
+     */
+    public static function emitirNumero(int $projectId, string $serie): array
+    {
+        return DB::transaction(function () use ($projectId, $serie) {
+            $max = static::allProjects()
+                ->where('project_id', $projectId)
+                ->where('serie', $serie)
+                ->lockForUpdate()
+                ->max('correlativo');
+
+            $correlativo = ($max ?? 0) + 1;
+
+            return [$correlativo, self::buildNumero($serie, $correlativo)];
+        });
+    }
+
+    public function esPublico(): bool
+    {
+        return $this->modalidad === self::PUBLICO;
+    }
+
+    public function motivoLegible(): string
+    {
+        return Catalogos::MOTIVOS_TRASLADO[$this->motivo_codigo] ?? ($this->motivo_descripcion ?: 'Traslado');
+    }
+
+    public function estadoSunatLegible(): string
+    {
+        return match ($this->sunat_status) {
+            'accepted' => 'Aceptada por SUNAT',
+            'pending'  => 'Enviando a SUNAT...',
+            'rejected' => 'Rechazada por SUNAT',
+            'error'    => 'No se pudo enviar',
+            default    => 'Sin enviar',
+        };
+    }
+
+    /** Una guía aceptada no se borra: se anula, como cualquier documento fiscal. */
+    public function sePuedeBorrar(): bool
+    {
+        return $this->sunat_status !== 'accepted';
+    }
+}

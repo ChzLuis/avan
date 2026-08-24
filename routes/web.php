@@ -25,6 +25,7 @@ use App\Http\Controllers\PosController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\Facturacion\NotaController;
+use App\Http\Controllers\Facturacion\GuiaRemisionController;
 use App\Http\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\CertificadoController;
@@ -525,6 +526,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/invoices/{invoice}/nota',  [NotaController::class, 'opciones'])->name('invoices.nota.opciones')->middleware('can:invoices.ver');
         Route::post('/invoices/{invoice}/nota', [NotaController::class, 'store'])->name('invoices.nota')->middleware('can:invoices.anular');
         Route::post('/invoices/{invoice}/baja', [NotaController::class, 'darDeBaja'])->name('invoices.baja')->middleware('can:invoices.anular');
+
+        // Guias de remision: el documento que viaja con la mercaderia. La
+        // factura dice que se vendio; en un control de carretera piden esta.
+        Route::get('/guias',                 [GuiaRemisionController::class, 'index'])->name('guias.index')->middleware('can:invoices.ver');
+        Route::get('/guias/opciones',        [GuiaRemisionController::class, 'opciones'])->name('guias.opciones')->middleware('can:invoices.ver');
+        Route::post('/guias',                [GuiaRemisionController::class, 'store'])->name('guias.store')->middleware('can:invoices.crear');
+        Route::get('/guias/{guia}',          [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
+        Route::post('/guias/{guia}/enviar',  [GuiaRemisionController::class, 'enviar'])->name('guias.enviar')->middleware('can:invoices.crear');
+        Route::delete('/guias/{guia}',       [GuiaRemisionController::class, 'destroy'])->name('guias.destroy')->middleware('can:invoices.anular');
 
         // Cotizaciones
         // Un permiso por verbo: *.ver solo autoriza lectura. Antes iba un unico
