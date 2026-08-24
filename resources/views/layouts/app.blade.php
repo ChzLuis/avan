@@ -1170,6 +1170,9 @@
             @endif
             @if(auth()->user()?->is_superadmin || $activeProject?->owner_id===auth()->id() || auth()->user()?->can('invoices.ver'))
                 <a href="{{ $pid?route('bixosales.facturas'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.facturas*') ? 'active' : '' }}">Facturas</a>
+                {{-- La guia acompana a la mercaderia; va al lado de la factura
+                     porque casi siempre se emiten una detras de otra. --}}
+                <a href="{{ $pid?route('guias.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('guias.*') ? 'active' : '' }}">Guías de remisión</a>
                 @if($sbLabels['cotizaciones'] !== null)
                 <a href="{{ $pid?route('bixosales.cotizaciones'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.cotizaciones*') ? 'active' : '' }}">{{ $sbLabels['cotizaciones'] }}</a>
                 @endif

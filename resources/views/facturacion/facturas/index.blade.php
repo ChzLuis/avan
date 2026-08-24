@@ -2,6 +2,9 @@
     $esBoleta    = $docType === 'boleta';
     $titulo      = $esBoleta ? 'Boletas Electrónicas' : 'Facturas Electrónicas';
     $sunatUrl  = route('facturacion.facturas.sunat', [$project->slug, '__ID__']);
+    $notaUrl   = route('facturacion.facturas.nota',  [$project->slug, '__ID__']);
+    $bajaUrl   = route('facturacion.facturas.baja',  [$project->slug, '__ID__']);
+    $motivosNc = \App\Support\Sunat\Catalogos::MOTIVOS_NOTA_CREDITO;
     $showUrl   = route('facturacion.facturas.show',  [$project->slug, '__ID__']);
     $pdfBase   = url("f/{$project->slug}/facturas");
     $createUrl = $esBoleta ? route('facturacion.boletas.create', $project->slug) : route('facturacion.facturas.create', $project->slug);
@@ -165,6 +168,16 @@
                                         <svg x-show="sendingId === inv.id" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                        </svg>
+                                    </button>
+                                </template>
+                                {{-- Corregir: un comprobante aceptado ya no se borra --}}
+                                <template x-if="inv.sunat_status === 'accepted' && inv.baja_estado !== 'accepted' && !['nota_credito','nota_debito'].includes(inv.type)">
+                                    <button @click="abrirNota(inv)"
+                                            title="Nota de crédito o baja"
+                                            class="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
                                         </svg>
                                     </button>
                                 </template>
@@ -602,6 +615,9 @@ function factPage() {
         docType:      '{{ $docType }}',
         search: '',
         sendingId: null,
+        // Motivos del catalogo 09: escribirlos a mano es lo que hace que SUNAT
+        // rechace la nota.
+        motivosNc: @json($motivosNc),
         modalVer:  false,
         verData:   null,
         modalHist: false,
@@ -612,6 +628,54 @@ function factPage() {
         histData:  null,
 
         init() {},
+
+        /* Un comprobante aceptado no se borra: o se corrige con una nota de
+           credito, o se comunica su baja. Se pregunta cual de las dos. */
+        async abrirNota(inv) {
+            const opciones = Object.entries(this.motivosNc)
+                .map(([codigo, texto]) => codigo + ' - ' + texto).join('
+');
+
+            const motivo = await bxConfirmar({
+                titulo: 'Nota de crédito sobre ' + inv.numero,
+                descripcion: 'Se emitirá por el importe completo y se enviará a SUNAT. '
+                    + 'Escribe el código del motivo:
+
+' + opciones,
+                boton: 'Emitir nota',
+                tono: 'principal',
+                entrada: { etiqueta: 'Código del motivo', valor: '01', requerido: true },
+            });
+
+            if (!motivo) return;
+
+            const codigo = String(motivo).trim().padStart(2, '0');
+            if (!this.motivosNc[codigo]) {
+                bxAviso('El código ' + codigo + ' no está en el catálogo de SUNAT.', 'error');
+                return;
+            }
+
+            const res = await fetch('{{ $notaUrl }}'.replace('__ID__', inv.id), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ type: 'nota_credito', motivo_codigo: codigo }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                bxAviso(data.message || 'No se pudo emitir la nota.', 'error');
+                return;
+            }
+
+            if (data.nota) this.invoices.unshift(data.nota);
+            bxAviso(data.message || 'Nota emitida.', 'exito');
+        },
+
 
         async verFactura(inv) {
             const url  = '{{ $showUrl }}'.replace('__ID__', inv.id);

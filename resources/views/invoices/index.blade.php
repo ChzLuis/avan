@@ -60,13 +60,13 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 mt-1">
-                    <span class="text-[11px] text-gray-400"
+                    <span class="text-xs text-gray-400"
                           :class="{
                             'text-purple-600 font-medium': inv.type==='boleta',
                             'text-indigo-600 font-medium': inv.type==='factura'
                           }"
                           x-text="inv.type_label"></span>
-                    <span class="text-[11px] text-gray-400" x-text="inv.issue_date || ''"></span>
+                    <span class="text-xs text-gray-400" x-text="inv.issue_date || ''"></span>
                     <template x-if="inv.sunat_status">
                         <span class="text-[10px] px-1 py-0.5 rounded bg-green-50 text-green-600 border border-green-200"
                               x-text="'SUNAT: '+inv.sunat_status"></span>
@@ -509,6 +509,38 @@
                         <template x-if="selected.sunat_error">
                             <p class="text-xs text-red-600 break-words" x-text="selected.sunat_error"></p>
                         </template>
+                        {{-- Un comprobante aceptado ya no se borra: se corrige.
+                             Estas son las dos vias legales, y aparecen justo
+                             donde el usuario acaba de leer que SUNAT lo acepto. --}}
+                        <template x-if="selected.sunat_status === 'accepted' && selected.baja_estado !== 'accepted' && !['nota_credito','nota_debito'].includes(selected.type)">
+                            <div class="pt-2 border-t border-gray-100 space-y-2">
+                                <p class="text-xs text-gray-500 leading-snug">
+                                    Ya no se puede borrar: existe en SUNAT. Para dejarlo sin efecto,
+                                    emite una nota de crédito o comunica la baja.
+                                </p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button @click="abrirNota('nota_credito')"
+                                            class="py-2 px-2 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition">
+                                        Nota de crédito
+                                    </button>
+                                    <button @click="abrirNota('nota_debito')"
+                                            class="py-2 px-2 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">
+                                        Nota de débito
+                                    </button>
+                                </div>
+                                <button @click="darDeBaja()" :disabled="bajaEnCurso"
+                                        class="w-full py-2 px-3 rounded-lg text-xs font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition disabled:opacity-60">
+                                    <span x-text="bajaEnCurso ? 'Comunicando baja...' : 'Comunicar baja a SUNAT'"></span>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template x-if="selected.baja_estado">
+                            <p class="text-xs pt-2 border-t border-gray-100"
+                               :class="selected.baja_estado === 'accepted' ? 'text-red-600 font-semibold' : 'text-gray-500'"
+                               x-text="{pending:'Baja en tramite ante SUNAT...',accepted:'Dada de baja ante SUNAT.',rejected:'SUNAT no acepto la baja.'}[selected.baja_estado] ?? ''"></p>
+                        </template>
+
                         <template x-if="selected.sunat_status !== 'accepted' && selected.status !== 'cancelled'">
                             <button @click="enviarSunat()"
                                     :disabled="sendingSunat"
@@ -531,6 +563,63 @@
 </div>
 </div>
 
+{{-- ══ Emitir una nota sobre el comprobante ══════════════════════════════
+     El motivo sale del catalogo oficial (09 para credito, 10 para debito):
+     escribirlo a mano es lo que hace que SUNAT rechace la nota. --}}
+<div x-show="notaAbierta" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0" style="background:rgba(15,23,42,.5)" @click="notaAbierta = false"></div>
+    <div class="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h3 class="text-base font-bold text-gray-900"
+                x-text="notaTipo === 'nota_debito' ? 'Nota de débito' : 'Nota de crédito'"></h3>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Sobre <span class="font-semibold" x-text="selected?.numero"></span>
+                · <span x-text="notaTipo === 'nota_debito' ? 'aumenta el importe' : 'anula o rebaja el importe'"></span>
+            </p>
+        </div>
+
+        <div class="px-5 py-4 space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Motivo</label>
+                <select x-model="notaMotivo" class="w-full rounded-lg border-gray-300 text-sm">
+                    <template x-for="(texto, codigo) in (notaTipo === 'nota_debito' ? motivosDebito : motivosCredito)" :key="codigo">
+                        <option :value="codigo" x-text="codigo + ' — ' + texto"></option>
+                    </template>
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Los motivos son los del catálogo de SUNAT.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">
+                    Detalle <span class="font-normal text-gray-400">(opcional)</span>
+                </label>
+                <input type="text" x-model="notaDetalle" maxlength="250"
+                       class="w-full rounded-lg border-gray-300 text-sm"
+                       placeholder="Se usa el texto del motivo si lo dejas vacío">
+            </div>
+
+            <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                <p class="text-xs text-amber-800 leading-snug">
+                    Se emitirá por el importe completo del comprobante
+                    (<span x-text="selected ? 'S/ ' + (Number(selected.total)||0).toFixed(2) : ''"></span>) y se enviará a SUNAT.
+                    Una nota emitida no se puede deshacer.
+                </p>
+            </div>
+        </div>
+
+        <div class="px-5 py-3 bg-gray-50 flex justify-end gap-2">
+            <button @click="notaAbierta = false" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600">
+                Cancelar
+            </button>
+            <button @click="emitirNota()" :disabled="notaEnCurso || !notaMotivo"
+                    class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
+                <span x-text="notaEnCurso ? 'Emitiendo...' : 'Emitir y enviar'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
 <script>
 function invoicesApp() {
     return {
@@ -542,6 +631,12 @@ function invoicesApp() {
         selected: null,
         creating: false,
         sendingSunat: false,
+        // Notas de credito/debito y baja: los motivos vienen del catalogo
+        // oficial, no de una lista escrita a mano en la pantalla.
+        motivosCredito: @json(\App\Support\Sunat\Catalogos::MOTIVOS_NOTA_CREDITO),
+        motivosDebito:  @json(\App\Support\Sunat\Catalogos::MOTIVOS_NOTA_DEBITO),
+        notaAbierta: false, notaTipo: 'nota_credito', notaMotivo: '01',
+        notaDetalle: '', notaEnCurso: false, bajaEnCurso: false,
         editStatus: '',
         saving: false,
         saveError: '',
@@ -676,6 +771,86 @@ function invoicesApp() {
             this.selected.status_label = { draft:'Borrador', issued:'Emitida', sent:'Enviada', cancelled:'Anulada' }[this.editStatus] || this.editStatus;
             const idx = this.invoices.findIndex(i => i.id === this.selected.id);
             if (idx > -1) { this.invoices[idx].status = this.editStatus; this.invoices[idx].status_label = this.selected.status_label; }
+        },
+
+        abrirNota(tipo) {
+            this.notaTipo    = tipo;
+            // El motivo por defecto es el primero de su catalogo: '01' es
+            // 'Anulacion de la operacion' en credito y 'Intereses por mora' en
+            // debito, que son los casos habituales de cada uno.
+            this.notaMotivo  = '01';
+            this.notaDetalle = '';
+            this.notaAbierta = true;
+        },
+
+        async emitirNota() {
+            if (this.notaEnCurso) return;
+            this.notaEnCurso = true;
+
+            const res = await fetch(`{{ $invoicesApiBase }}/` + this.selected.id + '/nota', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: this.notaTipo,
+                    motivo_codigo: this.notaMotivo,
+                    motivo_descripcion: this.notaDetalle || null,
+                }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            this.notaEnCurso = false;
+
+            if (!res.ok) {
+                bxAviso(data.message || 'No se pudo emitir la nota.', 'error');
+                return;
+            }
+
+            this.notaAbierta = false;
+            // La nota es un comprobante mas: aparece en la lista al momento,
+            // sin recargar, para que se vea que quedo emitida.
+            if (data.nota) this.invoices.unshift(data.nota);
+            bxAviso(data.message || 'Nota emitida.', 'exito');
+        },
+
+        async darDeBaja() {
+            const motivo = await bxConfirmar({
+                titulo: 'Comunicar la baja a SUNAT',
+                descripcion: 'El comprobante ' + this.selected.numero + ' quedara sin efecto. '
+                    + 'Su numero no se reutiliza. Escribe el motivo, que viaja a SUNAT.',
+                boton: 'Comunicar baja',
+                entrada: { etiqueta: 'Motivo de la baja', requerido: true, marcador: 'Error en el RUC del cliente' },
+            });
+
+            if (!motivo) return;
+
+            this.bajaEnCurso = true;
+            const res = await fetch(`{{ $invoicesApiBase }}/` + this.selected.id + '/baja', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ motivo }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            this.bajaEnCurso = false;
+
+            if (!res.ok) {
+                bxAviso(data.message || 'No se pudo comunicar la baja.', 'error');
+                return;
+            }
+
+            const upd = { baja_estado: 'pending', status: 'cancelled', status_label: 'Anulada' };
+            const idx = this.invoices.findIndex(i => i.id === this.selected.id);
+            if (idx > -1) this.invoices[idx] = { ...this.invoices[idx], ...upd };
+            this.selected = { ...this.selected, ...upd };
+            bxAviso(data.message || 'Baja en tramite.', 'exito');
         },
 
         async enviarSunat() {

@@ -22,16 +22,34 @@ use Illuminate\Validation\Rule;
  */
 class GuiaRemisionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $project = $this->negocio();
 
         $guias = $project->guiasRemision()
             ->with('items')
             ->latest('id')
-            ->paginate(30);
+            ->limit(200)
+            ->get();
 
-        return response()->json(['guias' => $guias]);
+        if ($request->wantsJson()) {
+            return response()->json(['guias' => $guias]);
+        }
+
+        return view('facturacion.guias.index', [
+            'project'     => $project,
+            'guias'       => $guias,
+            'serie'       => $this->serie($project),
+            'motivos'     => Catalogos::MOTIVOS_TRASLADO,
+            'modalidades' => Catalogos::MODALIDADES_TRASLADO,
+            'unidades'    => Catalogos::UNIDADES,
+            // Solo las facturas y boletas aceptadas pueden respaldar un traslado.
+            'comprobantes' => $project->invoices()
+                ->whereIn('type', ['factura', 'boleta'])
+                ->where('sunat_status', 'accepted')
+                ->latest('id')->limit(50)
+                ->get(['id', 'numero', 'client_name', 'client_doc_number', 'client_address']),
+        ]);
     }
 
     /** Lo que el formulario necesita: catálogos y, si viene de una venta, sus datos. */
