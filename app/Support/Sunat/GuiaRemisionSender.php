@@ -17,7 +17,8 @@ use App\Models\GuiaRemision;
  */
 final class GuiaRemisionSender
 {
-    private const APISPERU_URL = 'https://facturacion.apisperu.com/api/v1/despatch/send';
+    private const APISPERU_URL        = 'https://facturacion.apisperu.com/api/v1/despatch/send';
+    private const APISPERU_STATUS_URL = 'https://facturacion.apisperu.com/api/v1/despatch/status';
 
     public function enviar(GuiaRemision $guia): array
     {
@@ -46,10 +47,77 @@ final class GuiaRemisionSender
             $this->payloadApisPeru($guia)
         );
 
-        return $this->interpretar($guia, $http, $body, $err, function (array $resp) {
+        $resultado = $this->interpretar($guia, $http, $body, $err, function (array $resp) {
             // APIsPERU devuelve ticket o CDR cuando la guia entra de verdad.
             return isset($resp['ticket']) || isset($resp['cdrResponse']) || ($resp['success'] ?? null) === true;
         });
+
+        /* La GRE es asincrona: el ticket solo dice que el XML entro en cola.
+           El veredicto —aceptada o rechazada, y por que— esta en el estado.
+           Quedarse con el ticket como si fuera la aceptacion es como dar la
+           baja por hecha sin leer la respuesta: la prueba real devolvio ticket
+           y el veredicto final fue un rechazo por la placa. */
+        if (($resultado['ok'] ?? false) && ! empty($resultado['ticket'])) {
+            sleep(2);
+
+            return $this->consultarVeredicto($guia, $token, $resultado['ticket']);
+        }
+
+        return $resultado;
+    }
+
+    /** El veredicto final de una guia enviada: /despatch/status con el ticket. */
+    public function consultarVeredicto(GuiaRemision $guia, string $token, string $ticket): array
+    {
+        $url = self::APISPERU_STATUS_URL
+            .'?ticket='.urlencode($ticket)
+            .'&ruc='.urlencode((string) $guia->emisor_ruc);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json', 'Authorization: Bearer '.$token],
+            CURLOPT_TIMEOUT        => 45,
+        ]);
+        $body = curl_exec($ch);
+        $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        \Log::debug('GUIA STATUS', ['guia' => $guia->numero, 'http' => $http, 'body' => $body]);
+
+        $d = json_decode((string) $body, true) ?: [];
+        $sunat = is_array($d['sunatResponse'] ?? null) ? $d['sunatResponse'] : $d;
+        $cdr   = $sunat['cdrResponse'] ?? null;
+
+        // Aceptada de verdad: CDR con codigo 0 (o exito explicito con CDR).
+        if (is_array($cdr) && (string) ($cdr['code'] ?? '') === '0') {
+            $guia->update([
+                'sunat_status' => 'accepted',
+                'sunat_cdr'    => json_encode($cdr, JSON_UNESCAPED_UNICODE),
+                'sunat_error'  => null,
+            ]);
+
+            return ['ok' => true, 'message' => 'Guía '.$guia->numero.' aceptada por SUNAT: '.($cdr['description'] ?? '')];
+        }
+
+        // Rechazo con motivo: es la respuesta que hay que ensenar tal cual.
+        if (($sunat['success'] ?? null) === false || isset($sunat['error'])) {
+            $motivo = $sunat['error']['message'] ?? ($cdr['description'] ?? null);
+            $motivo = is_string($motivo) ? $motivo : json_encode($sunat['error'] ?? $cdr, JSON_UNESCAPED_UNICODE);
+
+            return $this->falla($guia, 'SUNAT rechazó la guía: '.$motivo);
+        }
+
+        // Aun en cola: se queda en pending con su ticket, sin mentir.
+        $guia->update(['sunat_status' => 'pending', 'sunat_ticket' => $ticket]);
+
+        return ['ok' => true, 'message' => 'Guía '.$guia->numero.' en cola de SUNAT (ticket '.$ticket.'). Consulta el estado en unos segundos.'];
+    }
+
+    /** Las placas van sin guiones ni espacios: "ABC-123" es el error 2567. */
+    private static function placa(?string $placa): string
+    {
+        return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $placa));
     }
 
     /** El cuerpo que espera APIsPERU, aparte para poder comprobarlo sin enviarlo. */
@@ -89,14 +157,17 @@ final class GuiaRemisionSender
                 'nroMtc'      => $guia->transportista_mtc ?: '',
             ];
         } else {
-            $envio['vehiculo'] = ['placa' => $guia->vehiculo_placa];
-            $envio['chofer']   = [
+            $envio['vehiculo'] = ['placa' => self::placa($guia->vehiculo_placa)];
+            // El schema del proveedor pide `choferes` como lista, con el
+            // principal marcado; `chofer` a secas provoca un 500 sin detalle.
+            $envio['choferes'] = [[
+                'tipo'      => 'Principal',
                 'tipoDoc'   => $guia->conductor_doc_tipo ?: '1',
                 'nroDoc'    => $guia->conductor_doc_numero,
                 'nombres'   => $guia->conductor_nombres,
                 'apellidos' => $guia->conductor_apellidos,
                 'licencia'  => $guia->conductor_licencia,
-            ];
+            ]];
         }
 
         $payload = [
@@ -195,7 +266,7 @@ final class GuiaRemisionSender
             $payload['transportista_denominacion']     = $guia->transportista_razon_social;
             $payload['transportista_placa_numero']     = '';
         } else {
-            $payload['transportista_placa_numero']  = $guia->vehiculo_placa;
+            $payload['transportista_placa_numero']  = self::placa($guia->vehiculo_placa);
             $payload['conductor_documento_tipo']    = $guia->conductor_doc_tipo ?: '1';
             $payload['conductor_documento_numero']  = $guia->conductor_doc_numero;
             $payload['conductor_nombre']            = $guia->conductor_nombres;
@@ -227,26 +298,34 @@ final class GuiaRemisionSender
             return $this->falla($guia, 'El proveedor respondió algo que no se entiende (HTTP '.$http.').');
         }
 
+        /* La senal viene anidada: {"xml": ..., "sunatResponse": {"success":
+           true, "ticket": ...}}. Se normaliza antes de decidir; mirarla solo
+           en la raiz rechazaba guias que si habian entrado. */
+        $sunat = is_array($resp['sunatResponse'] ?? null) ? $resp['sunatResponse'] : $resp;
+
         /* Un HTTP de error o un cuerpo con `error` es un no, aunque no traiga
            la clave que se estuviera mirando. Sin esto una guia rechazada se
            guardaba como aceptada y el camion salia con un papel sin valor. */
-        if ($http >= 400 || isset($resp['error']) || isset($resp['errors']) || ! $aceptada($resp)) {
-            $motivo = $resp['error'] ?? ($resp['errors'] ?? ($resp['message'] ?? null));
-            $motivo = is_string($motivo) ? $motivo : ($motivo ? json_encode($motivo, JSON_UNESCAPED_UNICODE) : null);
+        if ($http >= 400 || ! empty($resp['error']) || isset($resp['errors']) || ! $aceptada($sunat)) {
+            $motivo = $resp['error'] ?? ($resp['errors'] ?? ($resp['message'] ?? ($sunat['error'] ?? null)));
+            $motivo = is_string($motivo) && $motivo !== '' ? $motivo : ($motivo ? json_encode($motivo, JSON_UNESCAPED_UNICODE) : null);
 
             return $this->falla($guia, $motivo ?: 'SUNAT no aceptó la guía (HTTP '.$http.').');
         }
 
+        $ticket = $sunat['ticket'] ?? ($sunat['numTicket'] ?? ($resp['ticket'] ?? null));
+
         $guia->update([
             'sunat_status'  => 'accepted',
-            'sunat_ticket'  => $resp['ticket'] ?? ($resp['numero'] ?? null),
-            'sunat_hash'    => $resp['hash'] ?? ($resp['codigo_hash'] ?? null),
-            'sunat_cdr'     => isset($resp['cdrResponse']) ? json_encode($resp['cdrResponse'], JSON_UNESCAPED_UNICODE) : null,
+            'sunat_ticket'  => $ticket,
+            'sunat_hash'    => $sunat['hash'] ?? ($resp['hash'] ?? null),
+            'sunat_cdr'     => isset($sunat['cdrResponse']) ? json_encode($sunat['cdrResponse'], JSON_UNESCAPED_UNICODE) : null,
             'sunat_error'   => null,
             'sunat_sent_at' => now(),
         ]);
 
-        return ['ok' => true, 'message' => 'Guía '.$guia->numero.' aceptada por SUNAT.'];
+        return ['ok' => true, 'message' => 'Guía '.$guia->numero.' aceptada por SUNAT.'
+            .($ticket ? ' Ticket '.$ticket.'.' : ''), 'ticket' => $ticket];
     }
 
     private function falla(GuiaRemision $guia, string $motivo): array

@@ -206,7 +206,9 @@ class GuiaRemisionTest extends TestCase
         $this->assertSame('01', $payload['envio']['codTraslado']);
         $this->assertSame(GuiaRemision::PRIVADO, $payload['envio']['modTraslado']);
         $this->assertSame(250.5, $payload['envio']['pesoTotal']);
-        $this->assertSame('ABC-123', $payload['envio']['vehiculo']['placa']);
+        // La placa viaja normalizada: "ABC-123" con guion es el error 2567
+        // de SUNAT (lo devolvio la validacion real contra el servidor).
+        $this->assertSame('ABC123', $payload['envio']['vehiculo']['placa']);
         $this->assertArrayNotHasKey('transportista', $payload['envio'], 'en privado no hay transportista');
         $this->assertSame('BG', $payload['details'][0]['unidad']);
     }
@@ -224,7 +226,7 @@ class GuiaRemisionTest extends TestCase
         $this->assertSame('01', $payload['motivo_de_traslado']);
         $this->assertSame(250.5, $payload['peso_bruto_total']);
         $this->assertSame('KGM', $payload['peso_bruto_unidad_de_medida']);
-        $this->assertSame('ABC-123', $payload['transportista_placa_numero']);
+        $this->assertSame('ABC123', $payload['transportista_placa_numero'], 'la placa viaja sin guion');
         $this->assertSame('Q45678912', $payload['conductor_numero_licencia']);
         $this->assertSame('BG', $payload['items'][0]['unidad_de_medida']);
     }
