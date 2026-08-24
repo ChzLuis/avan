@@ -47,7 +47,8 @@ final class GuiaRemisionSender
         );
 
         return $this->interpretar($guia, $http, $body, $err, function (array $resp) {
-            return ($resp['success'] ?? null) !== false && ! isset($resp['errors']);
+            // APIsPERU devuelve ticket o CDR cuando la guia entra de verdad.
+            return isset($resp['ticket']) || isset($resp['cdrResponse']) || ($resp['success'] ?? null) === true;
         });
     }
 
@@ -226,10 +227,14 @@ final class GuiaRemisionSender
             return $this->falla($guia, 'El proveedor respondió algo que no se entiende (HTTP '.$http.').');
         }
 
-        if (! $aceptada($resp)) {
-            $motivo = $resp['errors'] ?? ($resp['message'] ?? 'SUNAT no aceptó la guía.');
+        /* Un HTTP de error o un cuerpo con `error` es un no, aunque no traiga
+           la clave que se estuviera mirando. Sin esto una guia rechazada se
+           guardaba como aceptada y el camion salia con un papel sin valor. */
+        if ($http >= 400 || isset($resp['error']) || isset($resp['errors']) || ! $aceptada($resp)) {
+            $motivo = $resp['error'] ?? ($resp['errors'] ?? ($resp['message'] ?? null));
+            $motivo = is_string($motivo) ? $motivo : ($motivo ? json_encode($motivo, JSON_UNESCAPED_UNICODE) : null);
 
-            return $this->falla($guia, is_string($motivo) ? $motivo : json_encode($motivo, JSON_UNESCAPED_UNICODE));
+            return $this->falla($guia, $motivo ?: 'SUNAT no aceptó la guía (HTTP '.$http.').');
         }
 
         $guia->update([

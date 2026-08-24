@@ -120,13 +120,20 @@ class ApisPeruService
         [$serie, $correlativo] = array_pad(explode('-', (string) $invoice->numero, 2), 2, '');
 
         $payload = [
-            'fecGeneracion'   => $invoice->issue_date?->format('Y-m-d') ?? now()->toDateString(),
-            'fecComunicacion' => now()->toDateString(),
+            'fecGeneracion'   => ($invoice->issue_date ?? now())->format('Y-m-d\TH:i:sP'),
+            'fecComunicacion' => now()->format('Y-m-d\TH:i:sP'),
             // Correlativo de la propia comunicacion: una por dia y negocio.
             'correlativo'     => (string) $this->correlativoDeBaja($invoice),
             'company' => [
                 'ruc'         => $invoice->emisor_ruc,
                 'razonSocial' => $invoice->emisor_razon_social,
+                'address'     => [
+                    'direccion'    => $invoice->emisor_direccion ?: '-',
+                    'provincia'    => 'LIMA',
+                    'departamento' => 'LIMA',
+                    'distrito'     => 'LIMA',
+                    'ubigueo'      => $project->setting('apisperu_ubigeo') ?: '150101',
+                ],
             ],
             'details' => [[
                 'tipoDoc'       => $invoice->codigoSunat(),
@@ -147,21 +154,37 @@ class ApisPeruService
 
         $resp = json_decode($body, true);
 
-        if (! is_array($resp) || ($resp['success'] ?? null) === false) {
-            $motivo = $resp['message'] ?? ($resp['error'] ?? 'SUNAT no aceptó la baja.');
-            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => is_string($motivo) ? $motivo : json_encode($motivo)]);
-            return ['ok' => false, 'message' => is_string($motivo) ? $motivo : 'SUNAT no aceptó la baja.'];
+        /* La baja solo esta hecha si la respuesta lo dice. Antes bastaba con
+           que no dijera lo contrario, y un HTTP 500 con {"error": ...} pasaba
+           por aceptado: el comprobante quedaba marcado de baja en el sistema y
+           vivo en SUNAT.
+
+           La senal viene anidada: {"xml": ..., "sunatResponse": {"success":
+           true, "ticket": "..."}}. Se mira ahi, y tambien en la raiz por si el
+           proveedor la aplana en otra version. */
+        $sunat  = is_array($resp) ? ($resp['sunatResponse'] ?? $resp) : [];
+        $ticket = $sunat['ticket'] ?? ($resp['ticket'] ?? null);
+        $acepta = ($sunat['success'] ?? null) === true || $ticket !== null || isset($sunat['cdrResponse']);
+
+        if ($http >= 400 || ! is_array($resp) || ! empty($resp['error']) || isset($resp['errors']) || ! $acepta) {
+            $motivo = $resp['error'] ?? ($resp['message'] ?? ($resp['errors'] ?? ($sunat['error'] ?? null)));
+            $motivo = is_string($motivo) && $motivo !== '' ? $motivo : ($motivo ? json_encode($motivo, JSON_UNESCAPED_UNICODE) : null);
+            $motivo = $motivo ?: 'SUNAT no aceptó la baja (HTTP '.$http.').';
+
+            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => $motivo]);
+
+            return ['ok' => false, 'message' => $motivo];
         }
 
         $invoice->update([
             'baja_estado' => 'accepted',
-            'baja_ticket' => $resp['ticket'] ?? null,
+            'baja_ticket' => $ticket,
             'baja_error'  => null,
             'baja_at'     => now(),
             'status'      => 'cancelled',
         ]);
 
-        return ['ok' => true, 'message' => 'Baja comunicada a SUNAT.', 'ticket' => $resp['ticket'] ?? null];
+        return ['ok' => true, 'message' => 'Baja comunicada a SUNAT. Ticket '.$ticket.'.', 'ticket' => $ticket];
     }
 
     /** Cuantas bajas lleva hoy el negocio: SUNAT numera las comunicaciones. */
