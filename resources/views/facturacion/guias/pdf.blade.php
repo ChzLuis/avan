@@ -137,6 +137,7 @@
     </tbody>
   </table>
 
+  <div class="bloque-cierre">
   @if($guia->observaciones)
   <div class="obs"><strong>Observaciones:</strong> {{ $guia->observaciones }}</div>
   @endif
@@ -156,6 +157,7 @@
         no acredita la venta ni otorga crédito fiscal.
       </div>
     </div>
+  </div>
   </div>
 
 </x-doc.hoja>

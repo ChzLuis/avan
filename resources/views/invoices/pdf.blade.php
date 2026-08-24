@@ -128,7 +128,8 @@
     </tbody>
   </table>
 
-  {{-- Cierre: condiciones + totales --}}
+  {{-- Cierre: condiciones + totales + letras + validacion, como un bloque --}}
+  <div class="bloque-cierre">
   <div class="cierre">
     <div class="cierre-izq">
       @if($invoice->notes)
@@ -168,6 +169,7 @@
         Consulte el documento en el portal de SUNAT o del emisor.
       </div>
     </div>
+  </div>
   </div>
 
 </x-doc.hoja>
