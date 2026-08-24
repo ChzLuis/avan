@@ -33,7 +33,13 @@ final class MontoEnLetras
         $centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
 
         $texto = '';
-        if ($n >= 1000000) { $texto .= self::entero(intdiv($n, 1000000)).' MILLONES '; $n %= 1000000; }
+        if ($n >= 1000000) {
+            $m = intdiv($n, 1000000);
+            // "UN MILLÓN", no "UNO MILLONES": la leyenda se lee en voz alta
+            // al firmar y viaja igual al XML.
+            $texto .= ($m === 1 ? 'UN MILLÓN ' : self::entero($m).' MILLONES ');
+            $n %= 1000000;
+        }
         if ($n >= 1000)    { $m = intdiv($n, 1000); $texto .= ($m === 1 ? 'MIL ' : self::entero($m).' MIL '); $n %= 1000; }
         if ($n >= 100)     { $texto .= ($n === 100 ? 'CIEN ' : $centenas[intdiv($n, 100)].' '); $n %= 100; }
         if ($n <= 20)      { $texto .= $unidades[$n]; }

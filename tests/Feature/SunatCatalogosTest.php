@@ -125,6 +125,21 @@ class SunatCatalogosTest extends TestCase
         $this->assertSame('09', Catalogos::codigoComprobante('guia_remision'));
     }
 
+    /**
+     * El importe en letras se escribe como se lee: "UN MILLÓN", no "UNO
+     * MILLONES". La leyenda va en el XML y en el papel que se firma.
+     */
+    public function test_el_importe_en_letras_se_escribe_como_se_lee(): void
+    {
+        $de = fn (float $m) => \App\Support\Sunat\MontoEnLetras::de($m);
+
+        $this->assertSame('SON CIENTO DIECIOCHO CON 00/100 SOLES', $de(118));
+        $this->assertSame('SON UN MILLÓN DOSCIENTOS CINCUENTA Y SIETE MIL OCHOCIENTOS NOVENTA Y CUATRO CON 50/100 SOLES', $de(1257894.50));
+        $this->assertSame('SON DOS MILLONES CON 00/100 SOLES', $de(2000000));
+        $this->assertSame('SON MIL CON 00/100 SOLES', $de(1000));
+        $this->assertSame('SON CERO CON 50/100 SOLES', $de(0.50));
+    }
+
     /** Los motivos de nota son los del Anexo N.º 8, no una lista propia. */
     public function test_los_motivos_de_nota_son_los_oficiales(): void
     {
