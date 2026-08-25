@@ -18,6 +18,16 @@
     <div class="px-4 py-3 flex items-center gap-2 border-b" style="border-color:#e5e7eb;">
         <input x-model="search" type="text" placeholder="Buscar..."
                class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                {{-- El Registro de Ventas del mes, listo para el contador. --}}
+                <div class="flex items-center gap-1.5">
+                    <input type="month" x-model="mesRegistro" class="input" style="max-width:160px"
+                           max="{{ now()->format('Y-m') }}">
+                    <a :href="`{{ route('invoices.registro') }}?mes=${mesRegistro}`"
+                       class="pe-btn pe-btn-sm pe-btn-secondary whitespace-nowrap"
+                       title="Registro de Ventas del mes (CSV para el contador)">
+                        Registro de Ventas
+                    </a>
+                </div>
         <select x-model="filterType" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none">
             <option value="">Todos</option>
             <option value="boleta">Boleta</option>
@@ -654,6 +664,7 @@ function invoicesApp() {
         notaAbierta: false, notaTipo: 'nota_credito', notaMotivo: '01',
         notaDetalle: '', notaEnCurso: false, bajaEnCurso: false,
         buscandoRuc: false,
+        mesRegistro: '{{ now()->format('Y-m') }}',
         editStatus: '',
         saving: false,
         saveError: '',

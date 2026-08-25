@@ -288,6 +288,81 @@ class InvoiceController extends Controller
         return response()->json(['ok' => true, 'message' => 'Enviando a SUNAT en segundo plano...']);
     }
 
+    /**
+     * El Registro de Ventas del periodo, como CSV para el contador.
+     *
+     * Las notas de credito restan (asentadas en negativo), las de debito
+     * suman, y un comprobante anulado o dado de baja se declara con importe
+     * cero y su marca: el registro los lista, no los esconde.
+     */
+    public function registroVentas(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+
+        $mes = $request->get('mes') ?: now()->format('Y-m');
+        abort_unless(preg_match('/^\d{4}-\d{2}$/', $mes), 422, 'El periodo va como AAAA-MM.');
+
+        $desde = $mes.'-01';
+        $hasta = date('Y-m-t', strtotime($desde));
+
+        $comprobantes = Invoice::where('project_id', $project->id)
+            ->whereBetween('issue_date', [$desde, $hasta])
+            ->orderBy('issue_date')->orderBy('numero')
+            ->get();
+
+        $filas = [];
+        $totBase = 0.0; $totIgv = 0.0; $totTotal = 0.0;
+
+        foreach ($comprobantes as $c) {
+            $anulado = $c->status === 'cancelled' || $c->baja_estado === 'accepted';
+            // La nota de credito resta: asi se asienta en el registro.
+            $signo = $c->type === 'nota_credito' ? -1 : 1;
+
+            $base  = $anulado ? 0.0 : $signo * (float) $c->subtotal;
+            $igv   = $anulado ? 0.0 : $signo * (float) $c->igv;
+            $total = $anulado ? 0.0 : $signo * (float) $c->total;
+
+            $totBase += $base; $totIgv += $igv; $totTotal += $total;
+
+            $filas[] = [
+                $c->issue_date?->format('d/m/Y'),
+                $c->getTypeLabel(),
+                $c->numero,
+                $c->client_doc_type ?: '-',
+                $c->client_doc_number ?: '-',
+                $c->client_name,
+                $c->esNota() ? $c->afecta_numero : '',
+                number_format($base, 2, '.', ''),
+                number_format($igv, 2, '.', ''),
+                number_format($total, 2, '.', ''),
+                $c->currency,
+                $anulado ? 'ANULADO' : $c->estadoSunatLegible(),
+            ];
+        }
+
+        $out = fopen('php://temp', 'r+');
+        // El BOM: sin el, Excel abre las tildes rotas.
+        fwrite($out, "ï»¿");
+        fputcsv($out, ['REGISTRO DE VENTAS '.$mes.' — '.($project->setting('razon_social') ?: $project->name).' — RUC '.$project->setting('ruc')], ';');
+        fputcsv($out, ['Fecha', 'Tipo', 'Numero', 'Doc.', 'Nro. Doc.', 'Cliente', 'Modifica a', 'Base imponible', 'IGV', 'Total', 'Moneda', 'Estado'], ';');
+        foreach ($filas as $f) {
+            fputcsv($out, $f, ';');
+        }
+        fputcsv($out, ['', '', '', '', '', '', 'TOTALES',
+            number_format($totBase, 2, '.', ''), number_format($totIgv, 2, '.', ''), number_format($totTotal, 2, '.', ''), '', ''], ';');
+        rewind($out);
+        $csv = stream_get_contents($out);
+        fclose($out);
+
+        $nombre = 'registro-ventas-'.$mes.'-'.($project->setting('ruc') ?: $project->id).'.csv';
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$nombre.'"',
+        ]);
+    }
+
     public function pdf(Invoice $invoice)
     {
         /** @var \App\Models\Project $project */

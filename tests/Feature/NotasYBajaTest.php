@@ -308,6 +308,40 @@ class NotasYBajaTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors(['issue_date']);
     }
 
+    /**
+     * El Registro de Ventas del mes: las notas de crédito restan, lo anulado
+     * se declara con importe cero, y los totales cuadran.
+     */
+    public function test_el_registro_de_ventas_suma_resta_y_declara(): void
+    {
+        $this->facturaAceptada();                                            // +118.00
+        $this->facturaAceptada(['type' => 'boleta', 'serie' => 'B001', 'correlativo' => 2,
+            'numero' => Invoice::buildNumero('B001', 2), 'subtotal' => '50.00', 'igv' => '9.00', 'total' => '59.00']);  // +59.00
+        $this->facturaAceptada(['type' => 'nota_credito', 'serie' => 'F001', 'correlativo' => 3,
+            'numero' => Invoice::buildNumero('F001', 3), 'afecta_numero' => 'F001-00000007',
+            'subtotal' => '100.00', 'igv' => '18.00', 'total' => '118.00']); // -118.00
+        $this->facturaAceptada(['correlativo' => 4, 'numero' => Invoice::buildNumero('F001', 4),
+            'status' => 'cancelled']);                                       // anulada: 0
+
+        $csv = $this->get('/invoices-registro?mes='.now()->format('Y-m'))
+            ->assertSuccessful()
+            ->assertHeader('Content-Disposition')
+            ->getContent();
+
+        $this->assertStringContainsString('REGISTRO DE VENTAS', $csv);
+        $this->assertStringContainsString('F001-00000007', $csv);
+        $this->assertStringContainsString('-118.00', $csv, 'la nota de crédito asienta en negativo');
+        $this->assertStringContainsString('ANULADO', $csv, 'lo anulado se declara, no se esconde');
+        // Totales: 118 + 59 - 118 + 0 = 59.00 de total; base 50; IGV 9.
+        $this->assertStringContainsString('TOTALES;50.00;9.00;59.00', $csv);
+    }
+
+    /** Y el periodo mal escrito no revienta: se rechaza con el formato. */
+    public function test_el_registro_exige_el_periodo_bien_escrito(): void
+    {
+        $this->get('/invoices-registro?mes=agosto')->assertStatus(422);
+    }
+
     /** Dos emisiones seguidas nunca comparten número. */
     public function test_el_correlativo_no_se_repite(): void
     {

@@ -530,6 +530,8 @@ Route::middleware(['auth'])->group(function () {
         // Consulta RUC: rellena razon social y direccion desde el padron. El
         // portal ya la tenia; el panel obligaba a teclearlo a mano.
         Route::get('/invoices-ruc', [InvoiceController::class, 'lookupRucPanel'])->name('invoices.ruc')->middleware('can:invoices.ver');
+        // El Registro de Ventas del periodo: lo que pide el contador cada mes.
+        Route::get('/invoices-registro', [InvoiceController::class, 'registroVentas'])->name('invoices.registro')->middleware('can:invoices.ver');
 
         // Guias de remision: el documento que viaja con la mercaderia. La
         // factura dice que se vendio; en un control de carretera piden esta.

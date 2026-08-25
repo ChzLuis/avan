@@ -286,17 +286,30 @@ function guiasPage() {
             this.abierta = true;
         },
 
-        /* Si el traslado nace de una venta, el destinatario y la direccion ya
-           estan en el comprobante: volver a teclearlos solo introduce erratas. */
-        desdeVenta() {
+        /* Si el traslado nace de una venta, el destinatario, la direccion y
+           LOS BIENES ya estan en el comprobante: volver a teclearlos solo
+           introduce erratas. Las lineas llegan del endpoint de opciones con
+           la unidad ya traducida al codigo de SUNAT. */
+        async desdeVenta() {
             if (!this.form.invoice_id) return;
 
             const opcion = this.$el.querySelector(`option[value="${this.form.invoice_id}"]`);
-            if (!opcion) return;
+            if (opcion) {
+                this.form.destinatario_nombre     = opcion.dataset.nombre || this.form.destinatario_nombre;
+                this.form.destinatario_doc_numero = opcion.dataset.doc    || this.form.destinatario_doc_numero;
+                this.form.llegada_direccion       = opcion.dataset.dir    || this.form.llegada_direccion;
+            }
 
-            this.form.destinatario_nombre     = opcion.dataset.nombre || this.form.destinatario_nombre;
-            this.form.destinatario_doc_numero = opcion.dataset.doc    || this.form.destinatario_doc_numero;
-            this.form.llegada_direccion       = opcion.dataset.dir    || this.form.llegada_direccion;
+            const res = await fetch(`{{ route('guias.opciones') }}?invoice_id=${this.form.invoice_id}`, {
+                headers: { 'Accept': 'application/json' },
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (data.desde_venta?.items?.length) {
+                this.form.items = data.desde_venta.items.map(i => ({
+                    description: i.description, unit: i.unit, quantity: i.quantity,
+                }));
+            }
         },
 
         async emitir() {
