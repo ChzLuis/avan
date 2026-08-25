@@ -1,158 +1,357 @@
 <x-app-layout>
 <x-slot name="slot">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 @php
-    $value = fn ($key, $default = '') => $storefrontContext->setting($key, $default);
-    $logo = $value('logo_url') ? asset('storage/' . $value('logo_url')) : null;
-    $primary = $value('primary_color', '#e85d04');
-    $isRestaurant = \App\Support\BusinessTerms::usaMesas($project);
-    $days = ['monday' => 'Lunes', 'tuesday' => 'Martes', 'wednesday' => 'Miércoles', 'thursday' => 'Jueves', 'friday' => 'Viernes', 'saturday' => 'Sábado', 'sunday' => 'Domingo'];
-    $savedSchedule = json_decode($value('qr_schedule', '{}'), true) ?: [];
+    /**
+     * Datos de la tienda. Todo sale del proyecto activo: esta pantalla es de
+     * BIXO y la usa cualquier negocio, no hay nada fijo de ninguna tienda.
+     */
+    $ajuste = fn ($key, $default = '') => $storefrontContext->setting($key, $default) ?: $default;
+
+    // Color valido o el neutro del storefront. Un hex a medio escribir pinta
+    // negro y el usuario cree que rompio algo.
+    $color = fn ($v, $fb) => (is_string($v) && preg_match('/^#[0-9a-fA-F]{6}$/', $v)) ? $v : $fb;
+
+    $primary   = $color($ajuste('primary_color'),   '#4f46e5');
+    $secondary = $color($ajuste('secondary_color'), '#6366f1');
+    $accent    = $color($ajuste('accent_color'),    $primary);
+
+    // El Constructor guarda el logo como header_logo_url; leyendo solo
+    // logo_url las tiendas nuevas aparecian sin logo.
+    $logoRaw = $ajuste('header_logo_url') ?: ($ajuste('logo_url') ?: ($project->logo_url ?? ''));
+    $logo    = $logoRaw
+        ? (str_starts_with($logoRaw, 'http') || str_starts_with($logoRaw, '/')
+            ? $logoRaw
+            : asset('storage/' . ltrim($logoRaw, '/')))
+        : null;
+
+    $isRestaurant  = \App\Support\BusinessTerms::usaMesas($project);
+    $days          = ['lun'=>'Lunes','mar'=>'Martes','mie'=>'Miércoles','jue'=>'Jueves','vie'=>'Viernes','sab'=>'Sábado','dom'=>'Domingo'];
+    $savedSchedule = json_decode($ajuste('qr_schedule', '{}'), true) ?: [];
 @endphp
 
-<div x-data="storeQr()" x-init="init()" class="min-h-full bg-slate-50 pb-24">
-  <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-    <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 lg:px-8">
-      <div>
-        <h1 class="text-base font-bold text-slate-900">Código QR de mi tienda</h1>
-        <p class="mt-0.5 text-xs text-slate-500">Personaliza y descarga el código QR que llevará a tus clientes directamente a tu catálogo.</p>
-      </div>
-      <button @click="save" :disabled="saving" class="hidden rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition disabled:opacity-60 md:inline-flex" :style="`background:${form.header}`">
-        <span x-text="saving ? 'Guardando…' : 'Guardar cambios'"></span>
-      </button>
+<div class="qrx" x-data="qrStudio()" x-init="arrancar()">
+
+  {{-- ══════════ CABECERA ══════════ --}}
+  <header class="qrx-top">
+    <div>
+      <h1>Código QR y material</h1>
+      <p>Crea el QR de tu tienda y un flyer listo para imprimir o compartir.</p>
+    </div>
+    <div class="qrx-estado" aria-live="polite">
+      <span x-show="estado==='pendiente'" class="es-gris">Cambios sin guardar…</span>
+      <span x-show="estado==='guardando'" class="es-gris">Guardando…</span>
+      <span x-show="estado==='guardado'" x-cloak class="es-ok">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        Guardado
+      </span>
+      <span x-show="estado==='error'" x-cloak class="es-mal">No se pudo guardar</span>
+      <span x-show="!estado" class="es-tenue">Los cambios se guardan solos</span>
     </div>
   </header>
 
-  <main class="qr-layout mx-auto max-w-7xl gap-5 px-4 py-5 lg:px-8">
-    {{-- Vista previa --}}
-    <section class="lg:sticky lg:top-20 lg:self-start">
-      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-          <div><h2 class="text-sm font-bold text-slate-800">Vista previa</h2><p class="text-xs text-slate-500">Así lo verán tus clientes</p></div>
-          <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold" :class="publicUrl ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'" x-text="publicUrl ? 'Enlace público' : 'Dominio pendiente'"></span>
+  <main class="qrx-main">
+
+    {{-- ══════════ IZQUIERDA · VISTA PREVIA ══════════ --}}
+    <section class="qrx-preview">
+      <div class="qrx-sticky">
+
+        <div class="qrx-seg" role="tablist">
+          <button role="tab" :aria-selected="vista==='qr'"    :class="vista==='qr'?'on':''"    @click="vista='qr';   pintar()">Código QR</button>
+          <button role="tab" :aria-selected="vista==='flyer'" :class="vista==='flyer'?'on':''" @click="vista='flyer';pintar()">Flyer</button>
         </div>
-        <div class="bg-slate-100 p-4 sm:p-7">
-          <div id="qr-card" class="mx-auto max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl" :style="`--header:${form.header};--qrbg:${form.bg}`">
-            <div class="px-6 pb-8 pt-6 text-center text-white" style="background:var(--header)">
-              <template x-if="form.showLogo && logo"><img :src="logo" class="mx-auto mb-3 max-h-12 max-w-40 object-contain" alt="Logo del negocio"></template>
-              <p x-show="!form.showLogo || !logo" class="text-lg font-black" x-text="name"></p>
-              <p class="mt-2 text-sm font-medium text-white/90" x-text="form.topText"></p>
-            </div>
-            <div class="relative mx-5 -mt-5 rounded-2xl bg-white p-4 text-center shadow-lg">
-              <template x-if="publicUrl"><img :src="qrUrl(600, 'png')" class="mx-auto aspect-square w-full max-w-56 rounded-lg" alt="Código QR de la tienda"></template>
-              <template x-if="!publicUrl"><div class="mx-auto flex aspect-square w-full max-w-56 flex-col items-center justify-center rounded-lg border-2 border-dashed border-amber-200 bg-amber-50 px-5 text-center text-xs font-medium text-amber-800"><span class="mb-2 text-2xl">⌁</span>Configura un dominio público para generar tu QR</div></template>
-            </div>
-            <div class="px-6 pb-6 pt-4 text-center">
-              <p class="text-sm font-bold text-slate-800" x-text="form.bottomText"></p>
-              <p x-show="form.showUrl" class="mt-2 truncate font-mono text-[11px] text-slate-500" x-text="shortUrl"></p>
-              <p class="mt-4 text-[10px] text-slate-300">Tecnología de BIXO</p>
-            </div>
-          </div>
+
+        <div class="qrx-lienzo" :class="vista==='flyer' ? 'es-flyer' : 'es-qr'">
+          {{-- Un unico canvas para ver y para descargar: lo que se ve es
+               exactamente el archivo que se baja, no una maqueta parecida. --}}
+          <canvas id="qrx-canvas" x-ref="lienzo"></canvas>
+          <div x-show="cargando" class="qrx-cargando" x-cloak><span></span></div>
         </div>
-        <div class="grid grid-cols-2 gap-2 border-t border-slate-100 p-3 sm:grid-cols-4">
-          <button @click="download('png')" :disabled="!publicUrl" class="qr-action">PNG</button>
-          <button @click="download('flyer')" :disabled="!publicUrl" class="qr-action">Flyer</button>
-          <button @click="share" :disabled="!publicUrl" class="qr-action">Compartir</button>
-          <button @click="testQr" :disabled="!publicUrl" class="qr-action">Probar QR</button>
+
+        @if(!$isPublicUrl)
+        <p class="qrx-alerta">
+          Tu tienda todavía no tiene una dirección pública. Configura un dominio para que el QR funcione fuera de tu red.
+        </p>
+        @endif
+        <p x-show="avisoContraste" x-cloak class="qrx-alerta" x-text="avisoContraste"></p>
+
+        <div class="qrx-rapidos">
+          <button class="qrx-btn" @click="descargar(vista==='qr'?'qr':'flyer')" :disabled="!publicUrl">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
+            Descargar
+          </button>
+          <button class="qrx-btn-sec" @click="compartir()" :disabled="!publicUrl">Compartir</button>
+          <button class="qrx-btn-sec" @click="probar()" :disabled="!publicUrl">Probar</button>
         </div>
       </div>
-      <div x-show="!publicUrl" class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-        Necesitas configurar un dominio público para generar un QR descargable. Las direcciones locales no se pueden compartir con tus clientes.
-      </div>
-      <div x-show="contrastWarning" class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800" x-text="contrastWarning"></div>
     </section>
 
-    {{-- Configuración --}}
-    <section class="space-y-3">
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="text-sm font-bold text-slate-800">Información</h2>
-        <p class="mt-1 text-xs text-slate-500">Este enlace se genera automáticamente desde tu tienda pública.</p>
-        <div class="mt-3 flex gap-2">
-          <input readonly :value="publicUrl || 'Dominio público pendiente'" class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          <button @click="copyUrl" :disabled="!publicUrl" class="rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700 disabled:opacity-40">Copiar</button>
-          <a x-show="publicUrl" :href="publicUrl" target="_blank" class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Abrir</a>
+    {{-- ══════════ DERECHA · CONFIGURACIÓN ══════════ --}}
+    <section class="qrx-config">
+
+      {{-- 1 · Información --}}
+      <div class="qrx-card">
+        <h2>Dirección de tu tienda</h2>
+        <p class="qrx-nota">Es la página a la que llega quien escanea el código.</p>
+        <div class="qrx-url">
+          <input type="text" readonly :value="publicUrl || 'Sin dominio público configurado'">
+          <button class="qrx-btn-sec" @click="copiarUrl()" :disabled="!publicUrl">Copiar</button>
+          <button class="qrx-btn-sec" @click="probar()" :disabled="!publicUrl">Abrir</button>
         </div>
       </div>
 
-      <details open class="qr-panel"><summary>Diseño <span>Personaliza colores y tamaño</span></summary>
-        <div class="grid gap-4 pt-4 sm:grid-cols-2">
-          <label class="qr-field">Tamaño <small x-text="form.size + ' px'"></small><input x-model.number="form.size" type="range" min="160" max="1200" step="20"></label>
-          <label class="qr-field">Margen <small x-text="form.margin + ' módulos'"></small><input x-model.number="form.margin" type="range" min="0" max="12"></label>
-          <label class="qr-field">Color del QR<input x-model="form.fg" type="color"></label>
-          <label class="qr-field">Color de fondo<input x-model="form.bg" type="color"></label>
-          <label class="qr-field">Color del encabezado<input x-model="form.header" type="color"></label>
-          <label class="qr-field">Calidad<select x-model="form.quality"><option value="standard">Estándar</option><option value="high">Alta resolución</option></select></label>
+      {{-- 2 · Plantilla --}}
+      <div class="qrx-card">
+        <h2>Estilo</h2>
+        <p class="qrx-nota">Cambia el diseño completo de la pieza.</p>
+        <div class="qrx-plantillas">
+          <template x-for="p in plantillas" :key="p.id">
+            <button class="qrx-tpl" :class="form.template===p.id?'on':''" @click="usarPlantilla(p.id)">
+              <span class="mini"><canvas :data-tpl-mini="p.id"></canvas></span>
+              <span x-text="p.label"></span>
+            </button>
+          </template>
         </div>
-        <p class="mt-3 text-xs text-slate-500">El QR usa corrección alta de errores y conserva sus patrones de escaneo.</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <template x-for="preset in presets" :key="preset.key"><button @click="applyPreset(preset)" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" x-text="preset.label"></button></template>
-          <button @click="reset" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-rose-600">Restablecer diseño</button>
+      </div>
+
+      {{-- 3 · Marca --}}
+      <div class="qrx-card">
+        <h2>Tu marca</h2>
+        <label class="qrx-check">
+          <input type="checkbox" x-model="form.showLogo">
+          <span>Mostrar el logo{{ $logo ? '' : ' (esta tienda aún no tiene logo cargado)' }}</span>
+        </label>
+
+        <div x-show="form.showLogo && tieneLogo" class="qrx-sub" x-cloak>
+          <span class="qrx-lab">Tamaño del logo</span>
+          <div class="qrx-seg chico">
+            <button :class="form.logoSize==70?'on':''"  @click="form.logoSize=70">Pequeño</button>
+            <button :class="form.logoSize==110?'on':''" @click="form.logoSize=110">Normal</button>
+            <button :class="form.logoSize==160?'on':''" @click="form.logoSize=160">Grande</button>
+          </div>
         </div>
+
+        <div class="qrx-colores">
+          <div class="qrx-campo">
+            <span class="qrx-lab">Color principal</span>
+            <div class="qrx-color">
+              <input type="color" x-model="form.header">
+              <input type="text" maxlength="7" spellcheck="false" :value="form.header.toUpperCase()" @input="hex($event,'header')" @blur="$event.target.value=form.header.toUpperCase()">
+            </div>
+          </div>
+          <div class="qrx-campo">
+            <span class="qrx-lab">Color del texto</span>
+            <div class="qrx-color">
+              <input type="color" x-model="form.textColor">
+              <input type="text" maxlength="7" spellcheck="false" :value="form.textColor.toUpperCase()" @input="hex($event,'textColor')" @blur="$event.target.value=form.textColor.toUpperCase()">
+            </div>
+          </div>
+        </div>
+
+        <button class="qrx-link" @click="coloresDeMarca()">Usar los colores de mi tienda</button>
+      </div>
+
+      {{-- 4 · Textos --}}
+      <div class="qrx-card">
+        <h2>Textos</h2>
+        <label class="qrx-campo">
+          <span class="qrx-lab">Título</span>
+          <input type="text" x-model="form.topText" maxlength="120" placeholder="Escanea y visita nuestra tienda">
+        </label>
+        <label class="qrx-campo">
+          <span class="qrx-lab">Subtítulo</span>
+          <input type="text" x-model="form.subtitle" maxlength="140" placeholder="Descubre todos nuestros productos">
+        </label>
+        <label class="qrx-campo">
+          <span class="qrx-lab">Texto inferior</span>
+          <input type="text" x-model="form.bottomText" maxlength="120" placeholder="Escanea y mira nuestros productos">
+        </label>
+        <div class="qrx-checks">
+          <label class="qrx-check"><input type="checkbox" x-model="form.showName"><span>Nombre del negocio</span></label>
+          <label class="qrx-check"><input type="checkbox" x-model="form.showUrl"><span>Dirección web</span></label>
+          <label class="qrx-check"><input type="checkbox" x-model="form.showBixo"><span>Firma de BIXO</span></label>
+        </div>
+      </div>
+
+      {{-- 5 · Flyer --}}
+      <div class="qrx-card">
+        <h2>Flyer</h2>
+        <p class="qrx-nota">Formato de la pieza que vas a descargar.</p>
+        <div class="qrx-formatos">
+          <template x-for="f in formatos" :key="f.id">
+            <button class="qrx-fmt" :class="form.format===f.id?'on':''" @click="form.format=f.id; if(vista==='flyer') pintar()">
+              <span class="marco" :style="`aspect-ratio:${f.w}/${f.h}`"></span>
+              <b x-text="f.label"></b>
+              <small x-text="f.w+'×'+f.h"></small>
+            </button>
+          </template>
+        </div>
+
+        <div class="qrx-colores">
+          <label class="qrx-campo">
+            <span class="qrx-lab">Fondo</span>
+            <select x-model="form.background">
+              <option value="solido">Color sólido</option>
+              <option value="degradado">Degradado</option>
+            </select>
+          </label>
+          <div class="qrx-campo">
+            <span class="qrx-lab">Suavidad de la banda <b x-text="form.tinte + '%'"></b></span>
+            <input type="range" min="0" max="90" step="5" x-model.number="form.tinte">
+          </div>
+        </div>
+
+        <div class="qrx-colores">
+          <div class="qrx-campo">
+            <span class="qrx-lab">Fondo de la pieza</span>
+            <div class="qrx-color">
+              <input type="color" x-model="form.cardColor">
+              <input type="text" maxlength="7" spellcheck="false" :value="form.cardColor.toUpperCase()" @input="hex($event,'cardColor')">
+            </div>
+          </div>
+          <div class="qrx-campo">
+            <span class="qrx-lab">Texto del cuerpo</span>
+            <div class="qrx-color">
+              <input type="color" x-model="form.bodyColor">
+              <input type="text" maxlength="7" spellcheck="false" :value="form.bodyColor.toUpperCase()" @input="hex($event,'bodyColor')">
+            </div>
+          </div>
+        </div>
+
+        <div class="qrx-campo">
+          <span class="qrx-lab">Tamaño del código en el flyer</span>
+          <div class="qrx-seg chico">
+            <button :class="form.qrScale==88?'on':''"  @click="form.qrScale=88">Pequeño</button>
+            <button :class="form.qrScale==100?'on':''" @click="form.qrScale=100">Normal</button>
+            <button :class="form.qrScale==112?'on':''" @click="form.qrScale=112">Grande</button>
+          </div>
+        </div>
+        <div class="qrx-checks">
+          <label class="qrx-check"><input type="checkbox" x-model="form.showTrama"><span>Decoración de fondo en la cabecera</span></label>
+          <label class="qrx-check"><input type="checkbox" x-model="form.showBrackets"><span>Escuadras en las esquinas del código</span></label>
+        </div>
+        <label class="qrx-check"><input type="checkbox" x-model="form.showBenefits"><span>Mostrar beneficios</span></label>
+        <div x-show="form.showBenefits" class="qrx-sub" x-cloak>
+          <template x-for="(b,i) in form.benefits" :key="i">
+            <div class="qrx-benef-fila">
+              <select x-model="form.icons[i]" class="qrx-icono">
+                <option value="bolsa">🛍</option>
+                <option value="corazon">♥</option>
+                <option value="oferta">%</option>
+                <option value="envio">🚚</option>
+                <option value="check">✓</option>
+              </select>
+              <input type="text" class="qrx-benef" maxlength="40" x-model="form.benefits[i]" :placeholder="'Beneficio '+(i+1)">
+            </div>
+          </template>
+          <p class="qrx-nota">Máximo 4. Deja uno vacío para ocultarlo.</p>
+        </div>
+      </div>
+
+      {{-- 6 · Código QR (avanzado) --}}
+      <details class="qrx-card qrx-avanzado">
+        <summary><h2>Ajustes del código</h2><span>Tamaño, colores y lectura</span></summary>
+        <div class="qrx-colores">
+          <div class="qrx-campo">
+            <span class="qrx-lab">Color del código</span>
+            <div class="qrx-color">
+              <input type="color" x-model="form.fg">
+              <input type="text" maxlength="7" spellcheck="false" :value="form.fg.toUpperCase()" @input="hex($event,'fg')" @blur="$event.target.value=form.fg.toUpperCase()">
+            </div>
+          </div>
+          <div class="qrx-campo">
+            <span class="qrx-lab">Fondo del código</span>
+            <div class="qrx-color">
+              <input type="color" x-model="form.bg">
+              <input type="text" maxlength="7" spellcheck="false" :value="form.bg.toUpperCase()" @input="hex($event,'bg')" @blur="$event.target.value=form.bg.toUpperCase()">
+            </div>
+          </div>
+        </div>
+
+        <label class="qrx-campo">
+          <span class="qrx-lab">Margen del código <b x-text="form.margin + ' módulos'"></b></span>
+          <input type="range" min="1" max="8" step="1" x-model.number="form.margin">
+          <span class="qrx-nota">El borde en blanco alrededor. Menos de 1 dificulta la lectura.</span>
+        </label>
+
+        <label class="qrx-check">
+          <input type="checkbox" x-model="form.logoInQr" :disabled="!tieneLogo">
+          <span>Poner el logo dentro del código</span>
+        </label>
+        <p class="qrx-nota">Se dibuja pequeño y sobre un fondo blanco, sin tapar las esquinas de lectura. El código usa corrección alta de errores, así sigue escaneando.</p>
+
+        <label class="qrx-campo">
+          <span class="qrx-lab">Calidad de descarga</span>
+          <select x-model="form.quality">
+            <option value="standard">Estándar</option>
+            <option value="high">Alta (impresión)</option>
+          </select>
+        </label>
       </details>
 
-      <details class="qr-panel"><summary>Texto <span>Mensajes que acompañan al QR</span></summary>
-        <div class="space-y-3 pt-4">
-          <label class="qr-field">Texto superior<input x-model="form.topText" maxlength="120" placeholder="Escanea y visita nuestra tienda"></label>
-          <label class="qr-field">Texto inferior<input x-model="form.bottomText" maxlength="120" placeholder="Realiza tu pedido por WhatsApp"></label>
-          <label class="flex items-center gap-2 text-sm text-slate-700"><input x-model="form.showLogo" type="checkbox"> Mostrar logo del negocio en el encabezado</label>
-          <label class="flex items-center gap-2 text-sm text-slate-700"><input x-model="form.showUrl" type="checkbox"> Mostrar URL corta en el material</label>
+      {{-- 7 · Descargar --}}
+      <div class="qrx-card">
+        <h2>Descargar y compartir</h2>
+        <div class="qrx-desc">
+          <button class="qrx-btn" @click="descargar('qr')" :disabled="!publicUrl">Código QR (PNG)</button>
+          <button class="qrx-btn" @click="descargar('flyer')" :disabled="!publicUrl">Flyer (PNG)</button>
+          <button class="qrx-btn-sec" @click="descargar('svg')" :disabled="!publicUrl">Código en SVG</button>
+          <button class="qrx-btn-sec" @click="compartir()" :disabled="!publicUrl">Compartir</button>
         </div>
-      </details>
-
-      <details class="qr-panel"><summary>Descarga y compartir <span>Material listo para imprimir o redes</span></summary>
-        <div class="grid grid-cols-2 gap-2 pt-4 sm:grid-cols-3">
-          <button @click="download('png')" :disabled="!publicUrl" class="qr-download">Solo QR PNG</button>
-          <button @click="download('svg')" :disabled="!publicUrl" class="qr-download">QR SVG</button>
-          <button @click="download('flyer')" :disabled="!publicUrl" class="qr-download">Flyer vertical</button>
-          <button @click="download('square')" :disabled="!publicUrl" class="qr-download">Tarjeta redes</button>
-          <button @click="download('a4')" :disabled="!publicUrl" class="qr-download">A4 imprimir</button>
-          <button @click="share" :disabled="!publicUrl" class="qr-download">WhatsApp</button>
-        </div>
-        <label class="qr-field mt-4">Mensaje para compartir<textarea x-model="form.shareMessage" rows="3"></textarea></label>
-      </details>
+        <label class="qrx-campo">
+          <span class="qrx-lab">Mensaje al compartir</span>
+          <textarea x-model="form.shareMessage" rows="2" maxlength="500"></textarea>
+        </label>
+      </div>
 
       @if($isRestaurant)
-      <details class="qr-panel"><summary>Opciones para QR por mesa <span>Configuración existente para restaurantes</span></summary>
-        <div class="grid gap-3 pt-4 sm:grid-cols-2">
-          <label class="qr-field">Experiencia<select x-model="form.mode"><option value="catalog">Solo carta</option><option value="orders">Carta y pedidos</option></select></label>
-          <label class="qr-field">Cantidad de mesas<input x-model.number="form.tableCount" min="1" max="50" type="number"></label>
-          <label class="qr-field">Recepción<select x-model="form.reception"><option value="auto">Automática</option><option value="manual">Manual</option></select></label>
-          <label class="qr-field">Cobro<select x-model="form.payment"><option value="cashier">En caja</option><option value="waiter">Con mozo</option></select></label>
+      {{-- 8 · Mesas (se conserva tal cual: lo leen Mesas y Reservas) --}}
+      <details class="qrx-card qrx-avanzado">
+        <summary><h2>QR por mesa</h2><span>Configuración para restaurantes</span></summary>
+        <div class="qrx-colores">
+          <label class="qrx-campo"><span class="qrx-lab">Modo</span>
+            <select x-model="form.mode"><option value="catalog">Catálogo</option><option value="orders">Pedidos en mesa</option></select>
+          </label>
+          <label class="qrx-campo"><span class="qrx-lab">Número de mesas</span>
+            <input type="number" min="1" max="50" x-model.number="form.tableCount">
+          </label>
+          <label class="qrx-campo"><span class="qrx-lab">Recepción</span>
+            <select x-model="form.reception"><option value="auto">Automática</option><option value="manual">Manual</option></select>
+          </label>
+          <label class="qrx-campo"><span class="qrx-lab">Cobro</span>
+            <select x-model="form.payment"><option value="cashier">En caja</option><option value="waiter">En mesa</option></select>
+          </label>
         </div>
-        <div class="mt-4 border-t border-slate-100 pt-4">
-          <p class="text-xs font-bold text-slate-700">Horario de QR por mesa</p>
-          <p class="mt-1 text-xs text-slate-500">Se conserva la configuración que ya usabas para activar pedidos.</p>
-          <div class="mt-3 grid gap-2 sm:grid-cols-2">
-            @foreach($days as $day => $label)
-              @php($hours = $savedSchedule[$day] ?? ['enabled' => false, 'start' => '09:00', 'end' => '22:00'])
-              <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 text-xs">
-                <label class="flex min-w-20 items-center gap-1.5 font-semibold text-slate-700"><input name="qr_schedule[{{ $day }}][enabled]" value="1" type="checkbox" @checked(!empty($hours['enabled']))>{{ $label }}</label>
-                <input name="qr_schedule[{{ $day }}][start]" value="{{ $hours['start'] ?? '09:00' }}" type="time" class="min-w-0 rounded border-slate-200 px-1 py-1 text-xs">
-                <span class="text-slate-400">–</span>
-                <input name="qr_schedule[{{ $day }}][end]" value="{{ $hours['end'] ?? '22:00' }}" type="time" class="min-w-0 rounded border-slate-200 px-1 py-1 text-xs">
-              </div>
-            @endforeach
-          </div>
+        <div class="qrx-horario">
+          @foreach($days as $day => $label)
+            @php $hours = $savedSchedule[$day] ?? []; @endphp
+            <div class="fila">
+              <label><input name="qr_schedule[{{ $day }}][enabled]" value="1" type="checkbox" @checked(!empty($hours['enabled']))>{{ $label }}</label>
+              <input name="qr_schedule[{{ $day }}][start]" value="{{ $hours['start'] ?? '09:00' }}" type="time">
+              <span>a</span>
+              <input name="qr_schedule[{{ $day }}][end]" value="{{ $hours['end'] ?? '22:00' }}" type="time">
+            </div>
+          @endforeach
         </div>
       </details>
       @endif
+
     </section>
   </main>
-
-  <div class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white p-3 md:hidden"><button @click="save" :disabled="saving" class="w-full rounded-xl py-3 text-sm font-bold text-white" :style="`background:${form.header}`" x-text="saving ? 'Guardando…' : 'Guardar cambios'"></button></div>
 </div>
 
-<style>
-.qr-layout{display:grid}.qr-layout>*{min-width:0}@media (min-width:1024px){.qr-layout{grid-template-columns:minmax(330px,.9fr) minmax(420px,1.1fr)}}
-.qr-panel{border:1px solid #e2e8f0;border-radius:16px;background:#fff;padding:16px;box-shadow:0 1px 2px rgb(15 23 42/.04)}
-.qr-panel summary{cursor:pointer;list-style:none;font-size:14px;font-weight:700;color:#1e293b}.qr-panel summary::-webkit-details-marker{display:none}.qr-panel summary span{display:block;margin-top:3px;font-size:12px;font-weight:400;color:#64748b}
-.qr-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#334155}.qr-field small{font-weight:500;color:#64748b}.qr-field input:not([type=color]):not([type=checkbox]),.qr-field select,.qr-field textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px;font-size:13px;font-weight:400;color:#334155}.qr-field input[type=color]{height:38px;width:100%;cursor:pointer;border:1px solid #cbd5e1;border-radius:10px;padding:3px}.qr-field input[type=range]{accent-color:var(--header,#e85d04)}
-.qr-action,.qr-download{border:1px solid #e2e8f0;border-radius:10px;padding:9px;font-size:12px;font-weight:700;color:#334155;transition:.15s}.qr-action:hover,.qr-download:hover{background:#f8fafc}.qr-action:disabled,.qr-download:disabled{cursor:not-allowed;opacity:.4}
-</style>
+@include('settings.partials.qr-estilos')
+@include('settings.partials.qr-composiciones')
+@include('settings.partials.qr-script', [
+    'baseUrl'     => $baseUrl,
+    'isPublicUrl' => $isPublicUrl,
+    'logo'        => $logo,
+    'primary'     => $primary,
+    'secondary'   => $secondary,
+    'accent'      => $accent,
+])
 
-<script>
-const QR_URL = @json($baseUrl); const QR_PUBLIC = @json($isPublicUrl); const QR_LOGO = @json($logo); const QR_NAME = @json($project->name); const QR_CSRF = document.querySelector('meta[name="csrf-token"]').content;
-function storeQr(){return {publicUrl:QR_PUBLIC?QR_URL:'',logo:QR_LOGO,name:QR_NAME,saving:false,contrastWarning:'',presets:[{key:'classic',label:'Clásico',fg:'#111827',bg:'#ffffff',header:'#334155'},{key:'brand',label:'Colores de marca',fg:'#111827',bg:'#ffffff',header:@json($primary)},{key:'orange',label:'Naranja',fg:'#3b1d00',bg:'#ffffff',header:'#ea580c'},{key:'dark',label:'Oscuro',fg:'#ffffff',bg:'#111827',header:'#111827'},{key:'minimal',label:'Minimalista',fg:'#000000',bg:'#ffffff',header:'#ffffff'}],form:{size:+@json($value('qr_size', 600)),margin:+@json($value('qr_margin', 2)),fg:@json($value('qr_foreground', '#111827')),bg:@json($value('qr_background', '#ffffff')),header:@json($value('qr_header_color', $primary)),topText:@json($value('qr_top_text', 'Escanea y visita nuestra tienda')),bottomText:@json($value('qr_bottom_text', 'Escanea y mira nuestros productos')),showLogo:@json($value('qr_show_logo', '1') === '1'),showUrl:@json($value('qr_show_url', '1') === '1'),quality:@json($value('qr_quality', 'standard')),preset:@json($value('qr_preset', 'brand')),shareMessage:@json($value('qr_share_message', '¡Hola! Te compartimos nuestra tienda: ') . ' ' . $baseUrl),mode:@json($value('qr_mode','catalog')),tableCount:+@json($value('qr_table_count',10)),reception:@json($value('qr_reception','auto')),payment:@json($value('qr_payment','cashier'))},init(){this.$watch('form.fg',()=>this.checkContrast());this.$watch('form.bg',()=>this.checkContrast());this.checkContrast()},get shortUrl(){return this.publicUrl.replace(/^https?:\/\//,'')},qrUrl(size,format){if(!this.publicUrl)return '';return 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(this.publicUrl)+'&color='+this.form.fg.slice(1)+'&bgcolor='+this.form.bg.slice(1)+'&margin='+this.form.margin+'&ecc=H&format='+format},checkContrast(){const c=x=>{x=x.slice(1);let a=[0,2,4].map(i=>parseInt(x.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:((v+.055)/1.055)**2.4);return .2126*a[0]+.7152*a[1]+.0722*a[2]};let ratio=(Math.max(c(this.form.fg),c(this.form.bg))+.05)/(Math.min(c(this.form.fg),c(this.form.bg))+.05);this.contrastWarning=ratio<4?'El contraste es bajo; usa colores más distintos para asegurar que el QR se escanee bien.':''},applyPreset(p){Object.assign(this.form,{fg:p.fg,bg:p.bg,header:p.header,preset:p.key});this.checkContrast()},async reset(){if(!await bxConfirmar({descripcion:'Se restablecerán los colores y textos del QR a los valores originales. Perderás lo que hayas ajustado sin guardar.',boton:'Restablecer'}))return;Object.assign(this.form,{size:600,margin:2,fg:'#111827',bg:'#ffffff',header:@json($primary),topText:'Escanea y visita nuestra tienda',bottomText:'Escanea y mira nuestros productos',showLogo:true,showUrl:true,quality:'standard',preset:'brand'});this.checkContrast()},async copyUrl(){try{await navigator.clipboard.writeText(this.publicUrl);toast('URL copiada','success')}catch(e){toast('No se pudo copiar la URL','error')}},testQr(){window.open(this.publicUrl,'_blank','noopener');toast('Abrimos tu tienda para comprobar el enlace','success')},share(){let text=encodeURIComponent(this.form.shareMessage.replace(QR_URL,this.publicUrl));window.open('https://wa.me/?text='+text,'_blank','noopener')},async download(type){if(!this.publicUrl)return;try{if(type==='svg'||type==='png'){let blob=await fetch(this.qrUrl(this.form.quality==='high'?1200:600,type)).then(r=>r.blob());downloadBlob(blob,`${slug(this.name)}-qr.${type}`);toast('Descarga lista','success');return}let canvas=await this.material(type);canvas.toBlob(b=>{downloadBlob(b,`${slug(this.name)}-${type}.png`);toast('Descarga lista','success')},'image/png',1)}catch(e){toast('No se pudo generar la descarga','error')}},async material(type){let sizes={flyer:[1080,1350],square:[1080,1080],a4:[2480,3508]},[w,h]=sizes[type]||sizes.flyer,c=document.createElement('canvas'),ctx=c.getContext('2d'),scale=this.form.quality==='high'?1:0.6;c.width=w*scale;c.height=h*scale;ctx.scale(scale,scale);ctx.fillStyle=this.form.bg;ctx.fillRect(0,0,w,h);ctx.fillStyle=this.form.header;ctx.fillRect(0,0,w,Math.round(h*.28));ctx.fillStyle='#fff';ctx.textAlign='center';let logo=null;if(this.form.showLogo&&this.logo){try{logo=await loadQr(this.logo)}catch(e){}}if(logo){let ratio=Math.min(170/logo.width,70/logo.height),lw=logo.width*ratio,lh=logo.height*ratio;ctx.drawImage(logo,(w-lw)/2,45,lw,lh)}else{ctx.font='bold 52px sans-serif';ctx.fillText(this.name,w/2,105)}ctx.font='600 34px sans-serif';ctx.fillText(this.form.topText,w/2,175);let img=await loadQr(this.qrUrl(1000,'png'));let s=Math.min(w*.62,h*.48),x=(w-s)/2,y=h*.27;ctx.fillStyle='#fff';ctx.fillRect(x-30,y-30,s+60,s+60);ctx.drawImage(img,x,y,s,s);ctx.fillStyle='#1e293b';ctx.font='bold 38px sans-serif';ctx.fillText(this.form.bottomText,w/2,y+s+100);if(this.form.showUrl){ctx.fillStyle='#64748b';ctx.font='28px monospace';ctx.fillText(this.shortUrl,w/2,y+s+150)}ctx.fillStyle='#94a3b8';ctx.font='22px sans-serif';ctx.fillText('Escanea y mira nuestros productos · BIXO',w/2,h-55);return c},async save(){this.saving=true;try{let f=new FormData();f.append('_token',QR_CSRF);Object.entries({qr_mode:this.form.mode,qr_table_count:this.form.tableCount,qr_reception:this.form.reception,qr_payment:this.form.payment,qr_size:this.form.size,qr_margin:this.form.margin,qr_foreground:this.form.fg,qr_background:this.form.bg,qr_header_color:this.form.header,qr_top_text:this.form.topText,qr_bottom_text:this.form.bottomText,qr_share_message:this.form.shareMessage,qr_preset:this.form.preset,qr_quality:this.form.quality,qr_show_logo:+this.form.showLogo,qr_show_url:+this.form.showUrl}).forEach(([k,v])=>f.append(k,v));document.querySelectorAll('[name^="qr_schedule["]').forEach(i=>{if(i.type!=='checkbox'||i.checked)f.append(i.name,i.value)});let r=await fetch(@json(route('settings.qr.save')),{method:'POST',headers:{'X-CSRF-TOKEN':QR_CSRF,Accept:'application/json'},body:f}),d=await r.json();if(!r.ok||!d.ok)throw Error();toast('Cambios guardados','success')}catch(e){toast('No se pudieron guardar los cambios','error')}finally{this.saving=false}}}}
-function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')};function downloadBlob(b,n){let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};function loadQr(s){return new Promise((ok,no)=>{let i=new Image;i.crossOrigin='anonymous';i.onload=()=>ok(i);i.onerror=no;i.src=s})};function toast(m,t){let e=document.createElement('div');e.className='fixed right-4 top-20 z-50 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-lg '+(t==='success'?'bg-emerald-600':'bg-rose-600');e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
-</script>
 </x-slot>
 </x-app-layout>
