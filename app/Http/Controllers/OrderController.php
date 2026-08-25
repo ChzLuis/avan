@@ -164,6 +164,21 @@ class OrderController extends Controller
     }
 
     // ── Lavandería: etiqueta imprimible de la bolsa (ticket con código + QR) ───
+    /** La nota de pedido en A4, sobre la familia visual de documentos. */
+    public function pdf(Order $order)
+    {
+        $isSales = request()->routeIs('bixosales.*');
+        /** @var \App\Models\Project $project */
+        $project = $isSales
+            ? \App\Models\Project::findOrFail(session('comercial_project_id'))
+            : app('active_project');
+        abort_unless($order->project_id === $project->id, 403);
+
+        $order->load('items');
+
+        return view('orders.pdf', compact('order', 'project'));
+    }
+
     public function tag(Order $order)
     {
         $isSales = request()->routeIs('bixosales.*');

@@ -627,11 +627,11 @@ tbody tr.is-selected { background:#eef2ff; box-shadow:inset 3px 0 0 #4f46e5; }
 @include('orders._drawer')
 </div>
 
-{{-- ── Exportación: nota de pedido (PDF/imagen) y ticket 58mm ─────────────────
+{{-- ── Exportación: imagen para WhatsApp y ticket 58mm ────────────────────────
      El pedido seleccionado se lee del estado Alpine del contenedor principal.
-     Mismo patrón probado en Cotizaciones: HTML off-screen → html2canvas → jsPDF. --}}
+     La nota A4 ya NO se fabrica aquí: la sirve el servidor (orders.pdf) sobre
+     la familia visual de documentos. html2canvas queda solo para la imagen. --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 function odLineCents(price, qty, disc) {
     const rx = /^\d+(\.\d{1,2})?$/;
@@ -764,30 +764,14 @@ async function renderOffscreenOrder(html, widthPx) {
     return canvas;
 }
 
-async function exportOrderPDF() {
-    const html = buildOrderDocHtml();
-    if (!html) { bxAviso('No hay pedido seleccionado', 'error'); return; }
-    const { jsPDF } = window.jspdf;
-    const canvas = await renderOffscreenOrder(html, 800);
-    const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
-    const pW = pdf.internal.pageSize.getWidth();
-    const pH = pdf.internal.pageSize.getHeight();
-    const imgH = pW / (canvas.width / canvas.height);
-    if (imgH <= pH) {
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pW, imgH);
-    } else {
-        let yPos = 0, remaining = canvas.height;
-        while (remaining > 0) {
-            const sliceH = Math.min(remaining, Math.floor(canvas.width * pH / pW));
-            const sc = document.createElement('canvas');
-            sc.width = canvas.width; sc.height = sliceH;
-            sc.getContext('2d').drawImage(canvas, 0, yPos, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-            if (yPos > 0) pdf.addPage();
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pW, sliceH * pW / canvas.width);
-            yPos += sliceH; remaining -= sliceH;
-        }
-    }
-    pdf.save('pedido-' + (currentOrder()?.id || 'export') + '.pdf');
+function exportOrderPDF() {
+    // La nota ya no se fabrica en el navegador (jsPDF partía una captura en
+    // páginas: borrosa y con un diseño ajeno). El servidor la sirve sobre la
+    // misma familia visual que cotizaciones y comprobantes, y se imprime o
+    // guarda desde el diálogo del navegador, como los demás documentos.
+    const o = currentOrder();
+    if (!o) { bxAviso('No hay pedido seleccionado', 'error'); return; }
+    window.open(`{{ $ordersApiBase }}/${o.id}/pdf`, '_blank');
 }
 
 async function exportOrderImg() {

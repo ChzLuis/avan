@@ -571,6 +571,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/orders/{order}/wa-delivery', [WaBotController::class, 'updateDelivery'])->name('orders.wa.delivery')->middleware(['module:orders', 'can:orders.editar']);
         Route::post('/orders/{order}/laundry-status', [WaBotController::class, 'changeLaundryStatus'])->name('orders.laundry-status')->middleware(['module:orders', 'can:orders.editar']);
         Route::get('/orders/{order}/tag',          [OrderController::class, 'tag'])->name('orders.tag')->middleware(['module:orders', 'can:orders.ver']);
+        Route::get('/orders/{order}/pdf',          [OrderController::class, 'pdf'])->name('orders.pdf')->middleware(['module:orders', 'can:orders.ver']);
         Route::post('/orders/{order}/pay',         [OrderController::class, 'pay'])->name('orders.pay')->middleware(['module:orders', 'can:orders.editar']);
         Route::post('/orders/{order}/issue-document', [OrderController::class, 'issueDocument'])->name('orders.issue-document')->middleware(['module:orders', 'can:orders.editar']);
         Route::get('/orders/{order}/events',       [OrderController::class, 'events'])->name('orders.events')->middleware(['module:orders', 'can:orders.ver']);
@@ -1039,6 +1040,7 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/tickets-manuales/eliminar', [\App\Http\Controllers\TicketsWpController::class, 'eliminar'])->name('tickets.wp.eliminar')->middleware('can:tickets.eliminar');
 
         Route::get('/pedidos',                [OrderController::class, 'index'])->name('pedidos')->middleware('project.can:orders.ver|view-orders');
+        Route::get('/pedidos/{order}/pdf',    [OrderController::class, 'pdf'])->name('pedidos.pdf')->middleware('project.can:orders.ver|view-orders');
         Route::post('/pedidos',               [OrderController::class, 'store'])->name('pedidos.store')->middleware('project.can:orders.crear|manage-orders');
         Route::get('/pedidos/{order}',        [OrderController::class, 'show'])->name('pedidos.show')->middleware('project.can:orders.ver|view-orders');
         // update toca cliente, productos, precios y condiciones comerciales:

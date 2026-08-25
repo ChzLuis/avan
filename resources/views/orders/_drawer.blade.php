@@ -135,7 +135,7 @@
                          una fila y el tercero suelto). Como grupo de 3 columnas
                          siempre quedan alineados; en sm+ vuelven al flujo flex. --}}
                     <div class="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:gap-2">
-                        <button onclick="exportOrderPDF()" title="Descargar la nota de pedido en PDF (A4)"
+                        <button onclick="exportOrderPDF()" title="Abrir la nota de pedido en A4 para imprimir o guardar en PDF"
                                 class="s-btn bg-white text-gray-700 border border-gray-200 hover:bg-indigo-50 justify-center">Nota PDF</button>
                         <button onclick="exportOrderImg()" title="Guardar el pedido como imagen para enviarlo por WhatsApp"
                                 class="s-btn bg-white text-gray-700 border border-gray-200 hover:bg-indigo-50 justify-center">Imagen</button>

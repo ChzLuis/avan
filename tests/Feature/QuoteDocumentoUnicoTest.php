@@ -53,6 +53,10 @@ class QuoteDocumentoUnicoTest extends TestCase
     public function test_el_pdf_publico_es_el_mismo_documento_que_exporta_el_negocio(): void
     {
         [$project, $quote] = $this->cotizacion();
+        // Una linea con descuento: la columna Dscto. solo existe cuando algun
+        // item lo tiene, igual que en el comprobante (misma familia visual).
+        $quote->items()->create(['description' => 'Mouse inalámbrico',
+            'price' => 100, 'quantity' => 1, 'discount' => 10]);
 
         $res = $this->get("/b/{$project->slug}/c/{$quote->token}/pdf")->assertOk();
 
@@ -60,7 +64,8 @@ class QuoteDocumentoUnicoTest extends TestCase
             ->assertSee('PRUEBA')
             ->assertSee('All-in-One HP 24&quot; i5 8GB', false)
             ->assertSee('3,299.00')
-            ->assertSee('Desc.')                                 // la columna que el portal no tenia
+            ->assertSee('Dscto.')                                // la columna que el portal no tenia
+            ->assertSee('90.00')                                 // 100 − 10%, por LineMath
             ->assertSee('no constituye comprobante de pago');    // la nota legal
     }
 
