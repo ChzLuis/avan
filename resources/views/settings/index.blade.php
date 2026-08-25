@@ -1062,6 +1062,13 @@
                                 <p class="text-xs text-gray-400 mt-1">La de un remitente empieza por T</p>
                             </div>
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cuentas para el pago</label>
+                            <textarea name="cuentas_bancarias" rows="3" class="input font-mono text-xs"
+                                      placeholder="BCP Soles: 191-1234567-0-01&#10;CCI: 002-191-001234567001-56&#10;Yape/Plin: 999 999 999">{{ old('cuentas_bancarias', $selP->setting('cuentas_bancarias')) }}</textarea>
+                            <p class="text-xs text-gray-400 mt-1">Una cuenta por línea. Salen impresas en facturas y boletas, junto a los totales.</p>
+                        </div>
                     </div>
 
                     {{-- Proveedor de facturación electrónica + credenciales (un solo x-data) --}}

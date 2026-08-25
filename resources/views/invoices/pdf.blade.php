@@ -140,8 +140,14 @@
   <div class="bloque-cierre">
   <div class="cierre">
     <div class="cierre-izq">
+      @php $cuentas = trim((string) $project->setting('cuentas_bancarias')); @endphp
+      @if($cuentas !== '' && ! $invoice->esNota())
+      {{-- El dato que mas se copia a mano: a donde transferir. --}}
+      <div class="dato-etq" style="margin-bottom:1.4mm;">Cuentas para el pago</div>
+      <div style="font-size:8pt; color:#475569; line-height:1.8; font-variant-numeric:tabular-nums;">{!! nl2br(e($cuentas)) !!}</div>
+      @endif
       @if($invoice->notes)
-      <div class="obs" style="margin-bottom:0;"><strong>Observaciones:</strong> {{ $invoice->notes }}</div>
+      <div class="obs" style="margin-bottom:0; margin-top:{{ $cuentas !== '' ? '3mm' : '0' }};"><strong>Observaciones:</strong> {{ $invoice->notes }}</div>
       @endif
     </div>
     <div class="totales">
