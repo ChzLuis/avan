@@ -327,6 +327,25 @@ class ComercialDashboardTest extends TestCase
             ->assertDontSee('sin aceptar por SUNAT');
     }
 
+    /** Mercaderia que salio por VENTA sin factura ni boleta vinculada: el
+     *  resumen lo grita. Consignacion o traslado interno no alarman. */
+    public function test_una_guia_por_venta_sin_comprobante_avisa_y_la_consignacion_no(): void
+    {
+        $base = [
+            'project_id' => $this->project->id, 'serie' => 'T001',
+            'destinatario_nombre' => 'Cliente QA', 'fecha_traslado' => now()->addDay(),
+            'modalidad' => \App\Models\GuiaRemision::PRIVADO, 'peso_total' => 10, 'peso_unidad' => 'KGM',
+            'partida_direccion' => 'A', 'llegada_direccion' => 'B', 'status' => 'issued',
+        ];
+        \App\Models\GuiaRemision::create($base + ['correlativo' => 1, 'numero' => 'T001-00000001', 'motivo_codigo' => '01']);
+        \App\Models\GuiaRemision::create($base + ['correlativo' => 2, 'numero' => 'T001-00000002', 'motivo_codigo' => '05']);
+        $this->entrar();
+
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertSee('1 entrega por venta sin comprobante');
+    }
+
     /** El proyecto recien creado abre con la guia de dia uno: pasos que salen
      *  de consultas reales, no de casillas que alguien marca a mano. */
     public function test_el_proyecto_nuevo_ve_el_checklist_de_arranque(): void

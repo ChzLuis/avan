@@ -265,4 +265,27 @@ class GuiaRemisionTest extends TestCase
         $this->assertArrayNotHasKey('chofer', $payload['envio']);
     }
 
+    /** El semaforo de documentacion: cada motivo dice si el traslado exige
+     *  comprobante. Una guia por VENTA sin factura vinculada queda en ambar;
+     *  consignacion y traslado interno no piden nada. */
+    public function test_el_semaforo_de_documentacion_depende_del_motivo_y_del_vinculo(): void
+    {
+        $casos = [
+            ['01', null, 'pendiente', 'Pendiente de comprobante'],
+            ['05', null, 'consignacion', 'sin comprobante por ahora'],
+            ['14', null, 'no_confirmada', 'aún no confirmada'],
+            ['04', null, 'no_requiere', 'No requiere'],
+        ];
+        foreach ($casos as $i => [$motivo, $invoiceId, $clave, $texto]) {
+            $this->postJson('/guias', $this->datosPrivado(['motivo_codigo' => $motivo]))->assertSuccessful();
+            $guia = GuiaRemision::latest('id')->first();
+            [$c, $t] = $guia->documentacion();
+            $this->assertSame($clave, $c, "motivo $motivo");
+            $this->assertStringContainsString($texto, $t, "motivo $motivo");
+        }
+
+        // La lista pinta el semaforo de cada fila.
+        $this->get('/guias')->assertOk()->assertSee('Pendiente de comprobante');
+    }
+
 }

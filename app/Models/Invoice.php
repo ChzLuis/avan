@@ -115,6 +115,26 @@ class Invoice extends Model
     }
 
     /**
+     * Notas del CDR cuando SUNAT acepto CON observaciones. El veredicto de
+     * SUNAT tiene tres salidas (aceptada, aceptada con observacion, rechazada)
+     * y colapsar las dos primeras esconde exactamente lo que SUNAT quiso
+     * anotar. Salen del CDR ya guardado: no hace falta columna nueva.
+     */
+    public function observacionesSunat(): array
+    {
+        if ($this->sunat_status !== 'accepted' || ! $this->sunat_cdr) {
+            return [];
+        }
+        $resp  = json_decode((string) $this->sunat_cdr, true) ?: [];
+        $cdr   = $resp['sunatResponse']['cdrResponse'] ?? $resp['cdrResponse'] ?? [];
+        $notas = $cdr['notes'] ?? [];
+
+        return is_array($notas)
+            ? array_values(array_filter(array_map(fn ($n) => trim((string) (is_array($n) ? json_encode($n) : $n)), $notas)))
+            : [];
+    }
+
+    /**
      * Un comprobante aceptado por SUNAT ya no se borra: se corrige con una nota
      * de crédito o se da de baja. Borrar la fila deja al negocio debiendo el
      * IGV de una venta que en su sistema ya no existe.

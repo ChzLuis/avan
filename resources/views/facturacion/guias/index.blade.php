@@ -62,6 +62,15 @@
                             <p class="text-xs text-gray-400">
                                 {{ $g->esPublico() ? 'Transporte público' : 'Vehículo '.$g->vehiculo_placa }}
                             </p>
+                            @php [$docClave, $docTexto, $docTono] = $g->documentacion(); @endphp
+                            {{-- Semaforo de documentacion: un traslado por venta sin
+                                 comprobante vinculado es mercaderia sin sustento. --}}
+                            <span class="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium
+                                @class([
+                                    'bg-green-100 text-green-700'   => $docTono === 'verde',
+                                    'bg-amber-100 text-amber-700'   => $docTono === 'ambar',
+                                    'bg-gray-100 text-gray-500'     => $docTono === 'gris',
+                                ])">{{ $docTexto }}</span>
                         </td>
                         <td class="px-4 py-3 text-right text-gray-700 whitespace-nowrap">
                             {{ rtrim(rtrim(number_format((float) $g->peso_total, 3, '.', ''), '0'), '.') }}

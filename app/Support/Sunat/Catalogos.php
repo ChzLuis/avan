@@ -189,6 +189,10 @@ final class Catalogos
         '08' => 'Importación',
         '09' => 'Exportación',
         '13' => 'Otros',
+        '14' => 'Venta sujeta a confirmación del comprador',
+        '17' => 'Traslado de bienes para transformación',
+        '18' => 'Traslado por emisor itinerante de comprobantes de pago',
+        '19' => 'Traslado de mercancía extranjera',
     ];
 
     /** Cómo se traslada: con transportista (público) o con vehículo propio. */

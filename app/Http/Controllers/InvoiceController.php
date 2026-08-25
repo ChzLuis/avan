@@ -33,6 +33,7 @@ class InvoiceController extends Controller
             'status_label'=> $inv->getStatusLabel(),
             'issue_date'  => $inv->issue_date?->format('Y-m-d'),
             'sunat_status'=> $inv->sunat_status,
+            'sunat_obs'   => count($inv->observacionesSunat()),
         ]);
 
         $portalLayout = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';

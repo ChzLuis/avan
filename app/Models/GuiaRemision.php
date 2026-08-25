@@ -89,6 +89,27 @@ class GuiaRemision extends Model
         return Catalogos::MOTIVOS_TRASLADO[$this->motivo_codigo] ?? ($this->motivo_descripcion ?: 'Traslado');
     }
 
+    /**
+     * Semaforo de documentacion: ¿este traslado tiene el comprobante que su
+     * motivo exige? Una guia por VENTA entregada sin factura ni boleta es
+     * mercaderia que salio sin sustento de venta — el caso "150 guias pero
+     * 100 comprobantes" que nadie puede explicar despues. Derivado del motivo
+     * y del vinculo, sin columnas nuevas.
+     */
+    public function documentacion(): array
+    {
+        if ($this->invoice_id) {
+            return ['vinculada', 'Comprobante vinculado', 'verde'];
+        }
+
+        return match ($this->motivo_codigo) {
+            '01'    => ['pendiente', 'Pendiente de comprobante', 'ambar'],
+            '14'    => ['no_confirmada', 'Venta aún no confirmada', 'gris'],
+            '05'    => ['consignacion', 'Consignación · sin comprobante por ahora', 'gris'],
+            default => ['no_requiere', 'No requiere comprobante', 'gris'],
+        };
+    }
+
     public function estadoSunatLegible(): string
     {
         return match ($this->sunat_status) {

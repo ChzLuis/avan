@@ -99,12 +99,14 @@
                     <template x-if="inv.sunat_status">
                         <span class="text-[10px] px-1 py-0.5 rounded border"
                               :class="{
-                                'bg-green-50 text-green-600 border-green-200': inv.sunat_status==='accepted',
-                                'bg-amber-50 text-amber-700 border-amber-200': inv.sunat_status==='pending',
+                                'bg-green-50 text-green-600 border-green-200': inv.sunat_status==='accepted' && !inv.sunat_obs,
+                                'bg-amber-50 text-amber-700 border-amber-200': inv.sunat_status==='pending' || (inv.sunat_status==='accepted' && inv.sunat_obs),
                                 'bg-red-50 text-red-600 border-red-200': ['error','rejected'].includes(inv.sunat_status),
                                 'bg-gray-50 text-gray-500 border-gray-200': !['accepted','pending','error','rejected'].includes(inv.sunat_status)
                               }"
-                              x-text="({accepted:'Aceptada SUNAT', pending:'En SUNAT', error:'Error de envío', rejected:'Rechazada SUNAT'})[inv.sunat_status] || inv.sunat_status"></span>
+                              x-text="inv.sunat_status==='accepted' && inv.sunat_obs
+                                        ? 'Aceptada con observación'
+                                        : ({accepted:'Aceptada SUNAT', pending:'En SUNAT', error:'Error de envío', rejected:'Rechazada SUNAT'})[inv.sunat_status] || inv.sunat_status"></span>
                     </template>
                 </div>
             </div>

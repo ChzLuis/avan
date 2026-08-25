@@ -15,9 +15,13 @@
 
     $anulado = $invoice->status === 'cancelled' || $invoice->baja_estado === 'accepted';
 
-    // El estado real del documento, con su color. Verde solo para lo positivo.
+    // El estado real del documento, con su color. Verde solo para lo positivo;
+    // las tres salidas del CDR de SUNAT se distinguen: aceptada, aceptada con
+    // observacion (valida, pero SUNAT anoto algo) y rechazada.
+    $observada = $invoice->observacionesSunat() !== [];
     [$badge, $tono] = match (true) {
         $anulado                              => ['Anulada', 'gris'],
+        $invoice->sunat_status === 'accepted' && $observada => ['Aceptada con observación', 'ambar'],
         $invoice->sunat_status === 'accepted' => ['Aceptada SUNAT', 'verde'],
         $invoice->sunat_status === 'pending'  => ['En SUNAT', 'ambar'],
         in_array($invoice->sunat_status, ['rejected', 'error'], true) => ['Rechazada', 'rojo'],

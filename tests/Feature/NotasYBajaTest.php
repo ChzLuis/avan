@@ -450,4 +450,29 @@ class NotasYBajaTest extends TestCase
     {
         $this->get('/invoices')->assertOk();
     }
+
+    /** El CDR de SUNAT tiene TRES salidas: aceptada, aceptada con observacion
+     *  y rechazada. Colapsar las dos primeras esconde lo que SUNAT anoto. */
+    public function test_una_aceptada_con_observaciones_se_distingue_de_la_limpia(): void
+    {
+        $limpia = $this->facturaAceptada(['sunat_cdr' => json_encode([
+            'sunatResponse' => ['success' => true, 'cdrResponse' => ['code' => '0', 'notes' => []]],
+        ])]);
+        $observada = $this->facturaAceptada(['correlativo' => 8, 'numero' => Invoice::buildNumero('F001', 8),
+            'sunat_cdr' => json_encode(['sunatResponse' => ['success' => true, 'cdrResponse' => [
+                'code' => '0', 'notes' => ['4092 - El XML no contiene el tag o no existe informacion del nombre comercial'],
+            ]]])]);
+
+        $this->assertSame([], $limpia->observacionesSunat());
+        $this->assertCount(1, $observada->observacionesSunat());
+
+        // El PDF lo dice con todas sus letras.
+        $this->get('/invoices/'.$observada->id.'/pdf')->assertOk()
+            ->assertSee('Aceptada con observación');
+        $this->get('/invoices/'.$limpia->id.'/pdf')->assertOk()
+            ->assertDontSee('Aceptada con observación');
+
+        // Y el listado expone la marca para el badge.
+        $this->get('/invoices')->assertOk()->assertSee('sunat_obs');
+    }
 }

@@ -115,6 +115,16 @@ class DashboardController extends Controller
             'dias' => $enRiesgoSunat->min(fn ($i) => max(0, 3 - (int) $i->issue_date->diffInDays(now()->startOfDay()))),
         ];
 
+        // ── Guias por venta sin comprobante ──────────────────────────────
+        // Una guia con motivo VENTA que salio sin factura ni boleta vinculada
+        // es mercaderia entregada sin sustento de venta: el caso "150 guias
+        // pero 100 comprobantes" que nadie puede explicar despues.
+        $guiasSinComprobante = \App\Models\GuiaRemision::where('project_id', $pid)
+            ->where('motivo_codigo', '01')
+            ->whereNull('invoice_id')
+            ->where('status', '!=', 'cancelled')
+            ->count();
+
         // ── Checklist de arranque ────────────────────────────────────────
         // La guia de dia uno: los pasos que separan un proyecto recien
         // creado de un negocio operando, cada uno comprobado contra los
@@ -292,7 +302,7 @@ class DashboardController extends Controller
 
         return view('comercial.dashboard', array_merge(
             compact('canales', 'ventasMesTotal', 'porCobrar', 'meta', 'metaPct'),
-            compact('vencido', 'docsVencidos', 'stockCritico', 'sunatRiesgo', 'arranque', 'actividad', 'series', 'enProceso'),
+            compact('vencido', 'docsVencidos', 'stockCritico', 'sunatRiesgo', 'guiasSinComprobante', 'arranque', 'actividad', 'series', 'enProceso'),
             compact('porConvertir'),
             compact('pedidosAtencion', 'pedidosAtencionTotal', 'conversion'),
             [] ) + compact(
