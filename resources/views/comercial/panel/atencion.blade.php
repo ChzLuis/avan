@@ -6,6 +6,20 @@
 @php
     $avisos = [];
 
+    // El unico aviso con fecha de muerte: SUNAT deja de aceptar el envio a
+    // los 3 dias de la emision, asi que va primero y con la cuenta atras.
+    if (($sunatRiesgo['n'] ?? 0) > 0) {
+        $n = $sunatRiesgo['n'];
+        $dias = $sunatRiesgo['dias'];
+        $avisos[] = [
+            'nivel' => 'alto',
+            'titulo' => $n.' comprobante'.($n === 1 ? '' : 's').' sin aceptar por SUNAT',
+            'detalle' => $dias === 0 ? 'El plazo de envío vence HOY' : 'Al más urgente le quedan '.$dias.' día'.($dias === 1 ? '' : 's').' de plazo',
+            'accion' => 'Enviar', 'url' => route('bixosales.facturas'),
+            'icono' => 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z',
+        ];
+    }
+
     if (($docsVencidos ?? 0) > 0) {
         $avisos[] = [
             'nivel' => 'alto',

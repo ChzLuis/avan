@@ -93,6 +93,28 @@ class DashboardController extends Controller
             ->whereRaw('stock <= COALESCE(stock_min, 0)')
             ->count();
 
+        // ── Comprobantes en riesgo ante SUNAT ────────────────────────────
+        // SUNAT solo acepta envios hasta 3 dias despues de la emision: un
+        // comprobante en error que nadie mira en ese plazo muere para
+        // siempre. La lista de facturas ya lo avisa, pero habia que abrirla;
+        // el resumen es la pantalla que si se mira todos los dias. Los
+        // 'pending' recientes no cuentan: acaban de emitirse y su job de
+        // envio esta en camino.
+        $enRiesgoSunat = $project->invoices()
+            ->whereDate('issue_date', '>=', now()->subDays(3)->toDateString())
+            ->where(function ($q) {
+                $q->where('sunat_status', 'error')
+                  ->orWhere(function ($q) {
+                      $q->where('sunat_status', 'pending')
+                        ->where('updated_at', '<', now()->subMinutes(30));
+                  });
+            })
+            ->get(['issue_date']);
+        $sunatRiesgo = [
+            'n'    => $enRiesgoSunat->count(),
+            'dias' => $enRiesgoSunat->min(fn ($i) => max(0, 3 - (int) $i->issue_date->diffInDays(now()->startOfDay()))),
+        ];
+
         // ── Actividad reciente ───────────────────────────────────────────
         // `order_events` ya registra los hechos del negocio (pagos, envios,
         // conversiones, aceptaciones del cliente) y no se enseñaban en ninguna
@@ -230,7 +252,7 @@ class DashboardController extends Controller
 
         return view('comercial.dashboard', array_merge(
             compact('canales', 'ventasMesTotal', 'porCobrar', 'meta', 'metaPct'),
-            compact('vencido', 'docsVencidos', 'stockCritico', 'actividad', 'series', 'enProceso'),
+            compact('vencido', 'docsVencidos', 'stockCritico', 'sunatRiesgo', 'actividad', 'series', 'enProceso'),
             compact('porConvertir'),
             compact('pedidosAtencion', 'pedidosAtencionTotal', 'conversion'),
             [] ) + compact(

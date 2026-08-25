@@ -281,4 +281,49 @@ class ComercialDashboardTest extends TestCase
             ->assertSee('Atender')
             ->assertSee(route('bixosales.pedidos'), false);
     }
+
+    /** Un comprobante que SUNAT aun no acepta muere a los 3 dias: el resumen
+     *  lo avisa con la cuenta atras, y va antes que cualquier otro aviso. */
+    public function test_un_comprobante_en_error_dentro_del_plazo_avisa_con_cuenta_atras(): void
+    {
+        $this->project->invoices()->create([
+            'type' => 'factura', 'serie' => 'F001', 'correlativo' => 7, 'numero' => 'F001-00000007',
+            'client_name' => 'Cliente QA', 'subtotal' => '100.00', 'igv' => '18.00', 'total' => '118.00',
+            'currency' => 'PEN', 'issue_date' => now()->subDay()->toDateString(),
+            'status' => 'issued', 'sunat_status' => 'error',
+        ]);
+        $this->entrar();
+
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertSee('1 comprobante sin aceptar por SUNAT')
+            ->assertSee('2 días de plazo')
+            ->assertSee(route('bixosales.facturas'), false);
+    }
+
+    /** Un 'pending' recien emitido no es una alarma: su job de envio esta en
+     *  camino. Y uno ya fuera del plazo tampoco: ya no se puede enviar. */
+    public function test_ni_el_pending_recien_emitido_ni_el_ya_vencido_disparan_el_aviso(): void
+    {
+        $base = [
+            'type' => 'factura', 'serie' => 'F001', 'client_name' => 'Cliente QA',
+            'subtotal' => '100.00', 'igv' => '18.00', 'total' => '118.00',
+            'currency' => 'PEN', 'status' => 'issued',
+        ];
+        // Recien emitido, en cola.
+        $this->project->invoices()->create($base + [
+            'correlativo' => 8, 'numero' => 'F001-00000008',
+            'issue_date' => now()->toDateString(), 'sunat_status' => 'pending',
+        ]);
+        // En error pero ya irrecuperable: fuera de los 3 dias.
+        $this->project->invoices()->create($base + [
+            'correlativo' => 9, 'numero' => 'F001-00000009',
+            'issue_date' => now()->subDays(10)->toDateString(), 'sunat_status' => 'error',
+        ]);
+        $this->entrar();
+
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertDontSee('sin aceptar por SUNAT');
+    }
 }
