@@ -123,6 +123,9 @@ class InvoiceController extends Controller
             'items.*.unit_price'  => 'required|numeric|min:0',
             // F4: el descuento por linea ya se puede facturar.
             'items.*.discount'    => 'nullable|numeric|decimal:0,2|min:0|max:100',
+        ], [
+            'issue_date.after_or_equal'  => 'SUNAT rechaza comprobantes con fecha de emisión de más de 3 días: la más antigua permitida hoy es el '.now()->subDays(3)->format('d/m/Y').'. Para una venta anterior, factura con la fecha de hoy.',
+            'issue_date.before_or_equal' => 'La fecha de emisión no puede ser futura.',
         ]);
 
         $type   = $data['type'];
