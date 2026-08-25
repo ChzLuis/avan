@@ -19,6 +19,10 @@ Schedule::job(new \App\Jobs\ExpireDemos)->dailyAt('02:00');
 // su sync_interval_minutes — sin condición por proveedor aquí.
 Schedule::command('catalog:sync')->everyFifteenMinutes()->withoutOverlapping();
 
+// Ningun comprobante muere en silencio: lo que fallo al enviarse se reintenta
+// cada hora mientras siga dentro del plazo de 3 dias de SUNAT.
+Schedule::command('facturacion:reintentar')->hourly()->withoutOverlapping();
+
 // Conciliación completa nocturna: detecta productos que ya no existen en el
 // ERP y los marca huérfanos (nunca en una corrida incremental parcial).
 Schedule::command('catalog:sync --full')->dailyAt('03:30')->withoutOverlapping();

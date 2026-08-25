@@ -16,18 +16,10 @@
 
     {{-- Header lista --}}
     <div class="px-4 py-3 flex items-center gap-2 border-b" style="border-color:#e5e7eb;">
-        <input x-model="search" type="text" placeholder="Buscar..."
+</div>
+<input x-model="search" type="text" placeholder="Buscar..."
                class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                {{-- El Registro de Ventas del mes, listo para el contador. --}}
-                <div class="flex items-center gap-1.5">
-                    <input type="month" x-model="mesRegistro" class="input" style="max-width:160px"
-                           max="{{ now()->format('Y-m') }}">
-                    <a :href="`{{ route('invoices.registro') }}?mes=${mesRegistro}`"
-                       class="pe-btn pe-btn-sm pe-btn-secondary whitespace-nowrap"
-                       title="Registro de Ventas del mes (CSV para el contador)">
-                        Registro de Ventas
-                    </a>
-                </div>
+
         <select x-model="filterType" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none">
             <option value="">Todos</option>
             <option value="boleta">Boleta</option>
@@ -41,6 +33,29 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
         </button>
+    </div>
+
+    @if(($porVencer['cuantos'] ?? 0) > 0)
+    {{-- La cuenta atras del plazo de SUNAT: un sistema que avisa, no uno que
+         deja morir comprobantes en silencio. --}}
+    <div class="px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-xs text-amber-800 leading-snug">
+        <strong>{{ $porVencer['cuantos'] }} comprobante(s) sin aceptar por SUNAT</strong>
+        @if(($porVencer['dias'] ?? null) !== null)
+            — al más urgente le {{ $porVencer['dias'] == 1 ? 'queda 1 día' : 'quedan '.$porVencer['dias'].' días' }}@if($porVencer['dias'] === 0) <strong> (vence HOY)</strong>@endif.
+        @endif
+        Se reintentan solos cada hora; pasado el plazo ya no se pueden enviar.
+    </div>
+    @endif
+
+    {{-- El Registro de Ventas del mes, listo para el contador. --}}
+    <div class="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
+        <input type="month" x-model="mesRegistro" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 flex-1 focus:outline-none"
+               max="{{ now()->format('Y-m') }}">
+        <a :href="`{{ route('invoices.registro') }}?mes=${mesRegistro}`"
+           class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+           title="CSV del periodo para el contador">
+            Registro de Ventas
+        </a>
     </div>
 
     {{-- Lista --}}

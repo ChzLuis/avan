@@ -37,7 +37,20 @@ class InvoiceController extends Controller
         $portalLayout = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
         $serieFactura = $project->setting('serie_factura') ?? 'F001';
         $serieBoleta  = $project->setting('serie_boleta')  ?? 'B001';
-        return view('invoices.index', compact('project', 'invoices', 'portalLayout', 'serieFactura', 'serieBoleta'));
+
+        /* Los que corren peligro: en error o clavados en pending, con el plazo
+           de 3 dias de SUNAT corriendo. El mas urgente marca la cuenta atras. */
+        $enRiesgo = $invoices->filter(fn ($i) =>
+            in_array($i->sunat_status, ['error', 'pending'], true)
+            && $i->issue_date
+            && $i->issue_date->gte(now()->subDays(3)->startOfDay())
+        );
+        $porVencer = [
+            'cuantos' => $enRiesgo->count(),
+            'dias'    => $enRiesgo->min(fn ($i) => max(0, 3 - (int) $i->issue_date->diffInDays(now()->startOfDay()))),
+        ];
+
+        return view('invoices.index', compact('project', 'invoices', 'portalLayout', 'serieFactura', 'serieBoleta', 'porVencer'));
     }
 
     public function show(Invoice $invoice)

@@ -342,6 +342,32 @@ class NotasYBajaTest extends TestCase
         $this->get('/invoices-registro?mes=agosto')->assertStatus(422);
     }
 
+    /**
+     * Ningún comprobante muere en silencio: lo que falló al enviarse se
+     * reencola cada hora mientras siga dentro del plazo de 3 días; lo ya
+     * vencido no se reintenta (sería inútil), se informa.
+     */
+    public function test_el_reintento_automatico_respeta_el_plazo(): void
+    {
+        // Dentro del plazo, en error: se reencola.
+        $viva = $this->facturaAceptada(['sunat_status' => 'error',
+            'issue_date' => now()->subDay()->toDateString()]);
+
+        // Fuera del plazo, en error: ya no tiene arreglo.
+        $muerta = $this->facturaAceptada(['sunat_status' => 'error', 'correlativo' => 8,
+            'numero' => Invoice::buildNumero('F001', 8),
+            'issue_date' => now()->subDays(6)->toDateString()]);
+
+        // Una sola asercion: ambos datos viven en la misma linea de resumen.
+        $this->artisan('facturacion:reintentar')
+            ->expectsOutputToContain('Reintentados: 1 comprobantes, 0 guías. Vencidos: 1.')
+            ->assertSuccessful();
+
+        Queue::assertPushed(SendInvoiceToSunat::class, 1);
+        $this->assertSame('pending', $viva->fresh()->sunat_status, 'la viva vuelve a la cola');
+        $this->assertSame('error', $muerta->fresh()->sunat_status, 'la vencida no se toca');
+    }
+
     /** Dos emisiones seguidas nunca comparten número. */
     public function test_el_correlativo_no_se_repite(): void
     {
