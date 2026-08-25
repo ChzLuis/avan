@@ -45,19 +45,19 @@
   .hoja { width: 210mm; margin: 0 auto; padding: 0 15mm; position: relative; }
 
   /* El contenido reserva el sitio del pie, que vive anclado al fondo. */
-  .contenido { padding-bottom: 24mm; }
+  .contenido { padding-bottom: 2mm; }
 
   /* La franja corporativa: fina, dos tiempos, sin estridencia. */
-  .franja { display: flex; height: 1.8mm; margin: 0 -15mm 9mm; }
+  .franja { display: flex; height: 1.8mm; margin: 0 -15mm 7mm; }
   .franja span:first-child { flex: 1; background: var(--pri); }
   .franja span:last-child  { width: 38mm; background: var(--acc); }
 
   /* ── Encabezado ─────────────────────────────────────────────── */
-  .enc { display: flex; justify-content: space-between; align-items: flex-start; gap: 10mm; margin-bottom: 9mm; }
+  .enc { display: flex; justify-content: space-between; align-items: flex-start; gap: 10mm; margin-bottom: 7mm; }
   .enc-emisor { display: flex; gap: 6mm; align-items: flex-start; min-width: 0; }
   .enc-logo { max-height: 24mm; max-width: 52mm; object-fit: contain; flex-shrink: 0; }
   .enc-nombre { font-size: 13pt; font-weight: 800; color: #0F172A; letter-spacing: -.2pt; line-height: 1.24; }
-  .enc-detalle { font-size: 8.5pt; color: #64748B; margin-top: 2mm; line-height: 1.65; }
+  .enc-detalle { font-size: 8pt; color: #64748B; margin-top: 2mm; line-height: 1.55; }
 
   /* ── Tarjeta del comprobante ────────────────────────────────── */
   .tarjeta { border: .5mm solid var(--pri); border-radius: 3mm; min-width: 66mm; max-width: 74mm;
@@ -78,7 +78,7 @@
   .badge-gris   { background: #F1F5F9; color: #475569; }
 
   /* ── Sección con etiqueta corporativa ("FACTURADO A", etc.) ─── */
-  .secc { border-left: 1.1mm solid var(--acc); padding: .8mm 0 1.4mm 5mm; margin-bottom: 7mm; }
+  .secc { border-left: 1.1mm solid var(--acc); padding: .8mm 0 1.4mm 5mm; margin-bottom: 6mm; }
   .secc-etiqueta { font-size: 7pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1pt; color: var(--pri); margin-bottom: 2mm; }
   .secc-titulo { font-size: 12pt; font-weight: 800; color: #0F172A; line-height: 1.35; overflow-wrap: anywhere; }
   .secc-detalle { font-size: 8.5pt; color: #475569; margin-top: 1.6mm; line-height: 1.75; }
@@ -89,7 +89,7 @@
   .dato-val { font-size: 8.5pt; font-weight: 600; color: #1E293B; margin-top: .6mm; }
 
   /* ── Tabla de bienes/servicios ───────────────────────────────── */
-  table.items { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 7mm; }
+  table.items { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 6mm; }
   table.items thead { display: table-header-group; }   /* se repite en cada página */
   table.items thead tr { background: var(--pri); }
   table.items thead th { background: var(--pri); color: #fff; padding: 3.2mm 3.4mm;
@@ -133,9 +133,9 @@
   .nota-ref .dato-val { color: #78350F; }
 
   /* ── Módulo de validación: QR + hash + estado SUNAT ──────────── */
-  .validacion { display: flex; gap: 7mm; align-items: flex-start; border: .3mm solid #E2E8F0;
-      border-radius: 3mm; padding: 5.5mm 6mm; page-break-inside: avoid; }
-  .validacion-qr { width: 30mm; height: 30mm; flex-shrink: 0; }
+  .validacion { display: flex; gap: 6mm; align-items: flex-start; border: .3mm solid #E2E8F0;
+      border-radius: 3mm; padding: 4.5mm 5.5mm; page-break-inside: avoid; }
+  .validacion-qr { width: 26mm; height: 26mm; flex-shrink: 0; }
   .validacion-titulo { font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1pt;
       color: var(--pri); margin-bottom: 2.4mm; }
   .validacion-titulo::before { content: ''; display: inline-block; width: 2.4mm; height: 2.4mm; border-radius: .8mm;
@@ -216,12 +216,17 @@
 (function () {
   var MM = 96 / 25.4;                    // 1 mm en px CSS (96 dpi)
   var PAGINA = 275 * MM;                 // alto imprimible por página
+  var PIE    = 22 * MM;                  // lo que el pie ocupa en la última
   var hoja = document.getElementById('hoja');
 
   function anclar() {
     hoja.style.minHeight = '';
+    // Se mide el documento como queda IMPRESO: sin los botones de pantalla.
+    var ocultos = [].slice.call(document.querySelectorAll('.no-print'));
+    ocultos.forEach(function (el) { el.dataset.d = el.style.display; el.style.display = 'none'; });
     var alto = hoja.scrollHeight;
-    var paginas = Math.max(1, Math.ceil((alto - 2) / PAGINA));
+    ocultos.forEach(function (el) { el.style.display = el.dataset.d || ''; });
+    var paginas = Math.max(1, Math.ceil((alto + PIE - 2) / PAGINA));
     hoja.style.minHeight = (paginas * PAGINA - 2) + 'px';
   }
 
