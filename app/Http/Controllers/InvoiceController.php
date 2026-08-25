@@ -100,7 +100,10 @@ class InvoiceController extends Controller
             'type'                => 'required|in:boleta,factura,nota_credito,nota_debito',
             'serie'               => 'nullable|string|max:10',
             'correlativo'         => 'nullable|integer|min:1',
-            'issue_date'          => 'nullable|date',
+            // SUNAT rechaza envios con fecha de emision de mas de 3 dias
+            // calendario, y una fecha futura tampoco entra. Bloquearlo aqui
+            // evita emitir un comprobante condenado al rechazo.
+            'issue_date'          => 'nullable|date|after_or_equal:'.now()->subDays(3)->toDateString().'|before_or_equal:'.now()->toDateString(),
             'due_date'            => 'nullable|date',
             'client_name'        => 'required|string|max:200',
             'client_phone'       => 'nullable|string|max:30',

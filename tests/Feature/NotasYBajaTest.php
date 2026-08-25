@@ -284,6 +284,30 @@ class NotasYBajaTest extends TestCase
         $this->assertStringContainsString('Anulación de la operación', $html, 'el motivo, legible');
     }
 
+    /**
+     * La fecha de emisión solo puede ser hoy o hasta 3 días atrás: SUNAT
+     * rechaza envíos más antiguos y el sistema no debe dejar emitir un
+     * comprobante condenado al rechazo.
+     */
+    public function test_no_se_emite_con_fecha_fuera_del_plazo_de_sunat(): void
+    {
+        $base = [
+            'type' => 'factura',
+            'client_name' => 'Cliente', 'client_doc_type' => 'RUC', 'client_doc_number' => '20512345678',
+            'items' => [['description' => 'X', 'price' => '10.00', 'unit_price' => '10.00', 'quantity' => 1]],
+        ];
+
+        // Dentro del plazo: hoy y hace 2 días.
+        $this->postJson('/invoices', $base + ['issue_date' => now()->toDateString()])->assertSuccessful();
+        $this->postJson('/invoices', $base + ['issue_date' => now()->subDays(2)->toDateString()])->assertSuccessful();
+
+        // Fuera: hace 5 días (SUNAT lo rechazaría) y mañana (futura).
+        $this->postJson('/invoices', $base + ['issue_date' => now()->subDays(5)->toDateString()])
+            ->assertStatus(422)->assertJsonValidationErrors(['issue_date']);
+        $this->postJson('/invoices', $base + ['issue_date' => now()->addDay()->toDateString()])
+            ->assertStatus(422)->assertJsonValidationErrors(['issue_date']);
+    }
+
     /** Dos emisiones seguidas nunca comparten número. */
     public function test_el_correlativo_no_se_repite(): void
     {

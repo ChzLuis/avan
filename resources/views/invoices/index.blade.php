@@ -143,7 +143,11 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="label">Fecha emisión</label>
-                        <input x-model="form.issue_date" type="date" class="input">
+                        {{-- SUNAT rechaza envios con fecha de emision de mas de
+                             3 dias: el calendario no ofrece fechas condenadas. --}}
+                        <input x-model="form.issue_date" type="date" class="input"
+                               min="{{ now()->subDays(3)->toDateString() }}" max="{{ now()->toDateString() }}">
+                        <p class="text-[10px] text-gray-400 mt-0.5">Hoy o hasta 3 días atrás: SUNAT rechaza fechas anteriores.</p>
                     </div>
                     <div>
                         <label class="label">Vencimiento</label>

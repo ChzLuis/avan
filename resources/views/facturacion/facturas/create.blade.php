@@ -100,6 +100,7 @@
                     <div>
                         <label class="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Fecha de emisión</label>
                         <input type="date" x-model="form.issue_date"
+                               min="{{ now()->subDays(3)->toDateString() }}" max="{{ now()->toDateString() }}"
                                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 {{ $esBoleta ? 'focus:ring-emerald-400' : 'focus:ring-blue-400' }}">
                     </div>
                     <div>
