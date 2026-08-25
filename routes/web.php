@@ -991,6 +991,10 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         // Matriz aprobada: docs/auditoria/bixosales-matriz-autorizacion.md §3
         // project.can admite alternativas "B|legacy" con semantica ANY.
         Route::get('/',             [ComDashController::class, 'index'])->name('dashboard')->middleware('project.can:orders.ver|view-orders');
+        // Ocultar la guia de arranque escribe un ajuste del negocio: mismo
+        // criterio que /cuentas/condiciones — ver el panel no basta para
+        // decidir por todo el equipo que la guia sobra.
+        Route::post('/arranque/ocultar', [ComDashController::class, 'ocultarArranque'])->name('arranque.ocultar')->middleware('project.can:settings.negocio|manage-settings');
 
         Route::get('/pos',  [PosController::class, 'indexComercial'])->name('pos')->middleware('can:pos.usar');
         Route::get('/venta-express', [PosController::class, 'express'])->name('ventas.express')->middleware('can:pos.usar');

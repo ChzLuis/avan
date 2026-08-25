@@ -115,6 +115,46 @@ class DashboardController extends Controller
             'dias' => $enRiesgoSunat->min(fn ($i) => max(0, 3 - (int) $i->issue_date->diffInDays(now()->startOfDay()))),
         ];
 
+        // ── Checklist de arranque ────────────────────────────────────────
+        // La guia de dia uno: los pasos que separan un proyecto recien
+        // creado de un negocio operando, cada uno comprobado contra los
+        // datos (no contra una casilla que alguien marca). Desaparece solo
+        // al completarse; el boton "Ocultar" queda para el negocio que dejo
+        // un paso sin hacer a proposito.
+        $arranque = null;
+        if (! $project->setting('arranque_oculto')) {
+            $pasos = array_values(array_filter([
+                [
+                    'titulo'  => 'Pon el logo de tu negocio',
+                    'detalle' => 'Sale en tu tienda y en tus documentos',
+                    'hecho'   => (bool) $project->setting('logo_url'),
+                    'url'     => route('settings'),
+                ],
+                $project->hasModule('catalog') ? [
+                    'titulo'  => 'Sube tu primer producto',
+                    'detalle' => 'El catálogo es la base de todo lo demás',
+                    'hecho'   => $project->products()->exists(),
+                    'url'     => route('products.index'),
+                ] : null,
+                [
+                    'titulo'  => 'Registra tu primera venta',
+                    'detalle' => 'Desde el POS o creando un pedido',
+                    'hecho'   => $project->orders()->exists(),
+                    'url'     => route('bixosales.pos'),
+                ],
+                $project->hasModule('invoices') ? [
+                    'titulo'  => 'Activa tu facturación electrónica',
+                    'detalle' => 'Conecta tu RUC para emitir a SUNAT',
+                    'hecho'   => (bool) $project->setting('apisperu_token'),
+                    'url'     => route('settings'),
+                ] : null,
+            ]));
+            $hechos = count(array_filter($pasos, fn ($p) => $p['hecho']));
+            if ($hechos < count($pasos)) {
+                $arranque = ['pasos' => $pasos, 'hechos' => $hechos, 'total' => count($pasos)];
+            }
+        }
+
         // ── Actividad reciente ───────────────────────────────────────────
         // `order_events` ya registra los hechos del negocio (pagos, envios,
         // conversiones, aceptaciones del cliente) y no se enseñaban en ninguna
@@ -252,7 +292,7 @@ class DashboardController extends Controller
 
         return view('comercial.dashboard', array_merge(
             compact('canales', 'ventasMesTotal', 'porCobrar', 'meta', 'metaPct'),
-            compact('vencido', 'docsVencidos', 'stockCritico', 'sunatRiesgo', 'actividad', 'series', 'enProceso'),
+            compact('vencido', 'docsVencidos', 'stockCritico', 'sunatRiesgo', 'arranque', 'actividad', 'series', 'enProceso'),
             compact('porConvertir'),
             compact('pedidosAtencion', 'pedidosAtencionTotal', 'conversion'),
             [] ) + compact(
@@ -272,6 +312,14 @@ class DashboardController extends Controller
      * vista pinte un estado vacio honesto en vez de una linea plana en cero
      * que parece un grafico roto.
      */
+    public function ocultarArranque()
+    {
+        $project = Project::findOrFail(session('comercial_project_id'));
+        $project->settings()->updateOrCreate(['key' => 'arranque_oculto'], ['value' => '1']);
+
+        return back();
+    }
+
     private function serieVentas(Project $project, \Illuminate\Support\Carbon $desde, \Illuminate\Support\Carbon $hasta, int $dias): array
     {
         $porDia = fn ($d, $h) => $project->orders()

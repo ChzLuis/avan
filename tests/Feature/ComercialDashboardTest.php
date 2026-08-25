@@ -326,4 +326,69 @@ class ComercialDashboardTest extends TestCase
             ->assertOk()
             ->assertDontSee('sin aceptar por SUNAT');
     }
+
+    /** El proyecto recien creado abre con la guia de dia uno: pasos que salen
+     *  de consultas reales, no de casillas que alguien marca a mano. */
+    public function test_el_proyecto_nuevo_ve_el_checklist_de_arranque(): void
+    {
+        $this->entrar();
+
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertSee('Pon tu negocio en marcha')
+            ->assertSee('Pon el logo de tu negocio')
+            ->assertSee('Registra tu primera venta')
+            // Sin modulo de catalogo ni facturacion, esos pasos no se piden.
+            ->assertDontSee('Sube tu primer producto')
+            ->assertDontSee('Activa tu facturación electrónica');
+    }
+
+    /** Cuando los datos dicen que todo esta hecho, la guia desaparece sola. */
+    public function test_con_todos_los_pasos_hechos_el_checklist_desaparece(): void
+    {
+        $this->project->settings()->create(['key' => 'logo_url', 'value' => '/storage/logo.png']);
+        Order::create(['project_id' => $this->project->id, 'client_name' => 'A', 'status' => 'done', 'total' => 10]);
+        $this->entrar();
+
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertDontSee('Pon tu negocio en marcha');
+    }
+
+    /** "No volver a mostrar" es una decision del negocio y se respeta. Como
+     *  escribe un ajuste del proyecto, exige permiso de ajustes: un vendedor
+     *  con solo lectura no puede apagar la guia para todo el equipo. */
+    public function test_ocultar_el_checklist_lo_apaga_para_siempre(): void
+    {
+        Permission::findOrCreate('settings.negocio', 'web');
+        Role::findOrCreate('com_admin_qa', 'web')->syncPermissions(['orders.ver', 'settings.negocio']);
+        $u = User::factory()->create(['is_superadmin' => 0]);
+        ProjectMember::create(['project_id' => $this->project->id, 'user_id' => $u->id, 'role' => 'viewer']);
+        Employee::create(['project_id' => $this->project->id, 'user_id' => $u->id,
+            'name' => 'Admin', 'spatie_role' => 'com_admin_qa', 'is_active' => 1]);
+        $u->syncRoles(['com_admin_qa']);
+        $this->actingAs($u)->withSession([
+            'comercial_project_id' => $this->project->id,
+            'active_project_id'    => $this->project->id,
+        ]);
+
+        $this->post('/bixosales/arranque/ocultar')->assertRedirect();
+
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertDontSee('Pon tu negocio en marcha');
+    }
+
+    public function test_un_lector_no_puede_ocultar_el_checklist_del_negocio(): void
+    {
+        $this->entrar();
+
+        $this->post('/bixosales/arranque/ocultar')->assertStatus(403);
+
+        // Y el boton ni se le ofrece.
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertSee('Pon tu negocio en marcha')
+            ->assertDontSee('No volver a mostrar');
+    }
 }

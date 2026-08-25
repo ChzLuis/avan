@@ -202,7 +202,10 @@ class BixoSalesAuthorizationTest extends TestCase
         // corregir un comprobante que SUNAT ya acepto. Ambas van con
         // `invoices.anular`: quien no puede anular tampoco puede emitir una
         // nota de credito, que es una anulacion con otro nombre.
-        $this->assertSame(63, $mutadoras, 'El portal deberia tener 63 rutas con verbo mutador');
+        // +1 Centro de Avisos: arranque/ocultar apaga la guia de dia uno para
+        // todo el proyecto. Escribe un ajuste del negocio, asi que va con
+        // `settings.negocio|manage-settings`, igual que cuentas/condiciones.
+        $this->assertSame(64, $mutadoras, 'El portal deberia tener 64 rutas con verbo mutador');
         $this->assertSame([], $abiertas, 'Rutas mutadoras sin permiso: ' . implode(', ', $abiertas));
     }
 

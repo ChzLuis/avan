@@ -90,6 +90,8 @@ $scoreColor = $hayScore
          viene la venta. `items-start` es deliberado: cada tarjeta termina
          donde termina su contenido y no se estira para igualar a su vecina,
          que es lo que dejaba media pantalla en blanco. --}}
+    @include('comercial.panel.arranque')
+
     @include('comercial.panel.kpis')
 
     <div class="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
