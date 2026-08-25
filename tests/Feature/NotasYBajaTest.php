@@ -429,4 +429,25 @@ class NotasYBajaTest extends TestCase
         $this->assertSame('6', $payload['client']['tipoDoc'], 'RUC es 6');
         $this->assertSame('20600819110', $payload['client']['numDoc']);
     }
+
+    /** El listado con comprobantes debe abrir. Regresion: el filtro del banner
+     *  "por vencer" leia ->sunat_status sobre las filas ya aplanadas a array
+     *  para la vista, y la pantalla entera devolvia 500 en cuanto existia un
+     *  solo comprobante. Ningun test abria el listado, asi que vivio oculto. */
+    public function test_el_listado_abre_con_comprobantes_y_avisa_los_por_vencer(): void
+    {
+        $this->facturaAceptada();
+        $this->facturaAceptada(['correlativo' => 8, 'numero' => Invoice::buildNumero('F001', 8),
+            'sunat_status' => 'error', 'issue_date' => now()->subDay()->toDateString()]);
+
+        $this->get('/invoices')
+            ->assertOk()
+            ->assertSee('F001-00000007')
+            ->assertSee('sin aceptar');
+    }
+
+    public function test_el_listado_vacio_tambien_abre(): void
+    {
+        $this->get('/invoices')->assertOk();
+    }
 }

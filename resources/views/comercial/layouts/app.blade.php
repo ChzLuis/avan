@@ -896,7 +896,10 @@ $_nav = match(true) {
          sin librerías.
          Al abrir, el foco entra al cajón; al cerrar, vuelve al botón que lo
          abrió (se guarda en `panelTrigger`). --}}
-    <div id="panel-right" :class="panelOpen ? '' : 'hidden-panel'"
+    {{-- x-cloak: la clase que lo esconde la pone Alpine DESPUES de iniciar;
+         sin esto, cada carga pinta el cajon abierto un instante (y en un
+         equipo lento, varios segundos) tapando el contenido. --}}
+    <div id="panel-right" x-cloak :class="panelOpen ? '' : 'hidden-panel'"
          x-effect="panelOpen ? ($el.removeAttribute('inert'), $nextTick(()=>$el.querySelector('.panel-tab')?.focus()))
                              : ($el.setAttribute('inert',''), panelTrigger?.focus())"
          @keydown.escape.window="panelOpen && (panelOpen=false)"

@@ -16,9 +16,10 @@
 
     {{-- Header lista --}}
     <div class="px-4 py-3 flex items-center gap-2 border-b" style="border-color:#e5e7eb;">
-</div>
-<input x-model="search" type="text" placeholder="Buscar..."
-               class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        {{-- min-w-0: sin el, el input se niega a encoger y el boton "+" se
+             sale cortado del panel de 340px (trampa clasica de flexbox). --}}
+        <input x-model="search" type="text" placeholder="Buscar..."
+               class="flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300">
 
         <select x-model="filterType" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none">
             <option value="">Todos</option>
@@ -92,9 +93,18 @@
                           }"
                           x-text="inv.type_label"></span>
                     <span class="text-xs text-gray-400" x-text="inv.issue_date || ''"></span>
+                    {{-- El estado ante SUNAT con su color y en cristiano: un
+                         "error" pintado de verde decia justo lo contrario de
+                         la verdad, y "accepted" es jerga del proveedor. --}}
                     <template x-if="inv.sunat_status">
-                        <span class="text-[10px] px-1 py-0.5 rounded bg-green-50 text-green-600 border border-green-200"
-                              x-text="'SUNAT: '+inv.sunat_status"></span>
+                        <span class="text-[10px] px-1 py-0.5 rounded border"
+                              :class="{
+                                'bg-green-50 text-green-600 border-green-200': inv.sunat_status==='accepted',
+                                'bg-amber-50 text-amber-700 border-amber-200': inv.sunat_status==='pending',
+                                'bg-red-50 text-red-600 border-red-200': ['error','rejected'].includes(inv.sunat_status),
+                                'bg-gray-50 text-gray-500 border-gray-200': !['accepted','pending','error','rejected'].includes(inv.sunat_status)
+                              }"
+                              x-text="({accepted:'Aceptada SUNAT', pending:'En SUNAT', error:'Error de envío', rejected:'Rechazada SUNAT'})[inv.sunat_status] || inv.sunat_status"></span>
                     </template>
                 </div>
             </div>

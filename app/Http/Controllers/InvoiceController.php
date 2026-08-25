@@ -17,30 +17,34 @@ class InvoiceController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $invoices = $project->invoices()
+        $modelos = $project->invoices()
             ->with('client')
             ->latest()
-            ->get()
-            ->map(fn($inv) => [
-                'id'          => $inv->id,
-                'numero'      => $inv->numero,
-                'type'        => $inv->type,
-                'type_label'  => $inv->getTypeLabel(),
-                'client_name' => $inv->client_name,
-                'total'       => (float) $inv->total,
-                'status'      => $inv->status,
-                'status_label'=> $inv->getStatusLabel(),
-                'issue_date'  => $inv->issue_date?->format('Y-m-d'),
-                'sunat_status'=> $inv->sunat_status,
-            ]);
+            ->get();
+
+        $invoices = $modelos->map(fn($inv) => [
+            'id'          => $inv->id,
+            'numero'      => $inv->numero,
+            'type'        => $inv->type,
+            'type_label'  => $inv->getTypeLabel(),
+            'client_name' => $inv->client_name,
+            'total'       => (float) $inv->total,
+            'status'      => $inv->status,
+            'status_label'=> $inv->getStatusLabel(),
+            'issue_date'  => $inv->issue_date?->format('Y-m-d'),
+            'sunat_status'=> $inv->sunat_status,
+        ]);
 
         $portalLayout = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
         $serieFactura = $project->setting('serie_factura') ?? 'F001';
         $serieBoleta  = $project->setting('serie_boleta')  ?? 'B001';
 
         /* Los que corren peligro: en error o clavados en pending, con el plazo
-           de 3 dias de SUNAT corriendo. El mas urgente marca la cuenta atras. */
-        $enRiesgo = $invoices->filter(fn ($i) =>
+           de 3 dias de SUNAT corriendo. El mas urgente marca la cuenta atras.
+           Se filtra sobre los MODELOS (con Carbon), no sobre las filas ya
+           aplanadas para la vista: leer ->sunat_status en un array tumbaba la
+           pantalla entera en cuanto existia un solo comprobante. */
+        $enRiesgo = $modelos->filter(fn ($i) =>
             in_array($i->sunat_status, ['error', 'pending'], true)
             && $i->issue_date
             && $i->issue_date->gte(now()->subDays(3)->startOfDay())
