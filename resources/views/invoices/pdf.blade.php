@@ -40,12 +40,18 @@
 
     $enLetras = \App\Support\Sunat\MontoEnLetras::de((float) $invoice->total, $invoice->currency);
 
-    // Solo se muestran los datos complementarios que existen.
+    // Solo se muestran los datos complementarios que existen. La forma de
+    // pago es obligatoria en facturas (RS 193-2020) y refleja lo que declara
+    // el XML: hoy el sistema emite al contado.
     $complementarios = array_filter([
+        'Forma de pago'  => $invoice->type === 'factura' ? 'Contado' : null,
         'Moneda'         => $invoice->currency !== 'PEN' ? $invoice->currency : null,
         'Método de pago' => $invoice->payment_method,
         'Vencimiento'    => $invoice->due_date?->format('d/m/Y'),
     ]);
+
+    // La columna de descuento solo existe si alguna linea lo tiene.
+    $hayDescuento = $invoice->items->contains(fn ($i) => (float) ($i->discount ?? 0) > 0);
 @endphp
 <x-doc.hoja :project="$project" :anulado="$anulado"
             :titulo="$invoice->numero.' — '.$project->name">
@@ -106,10 +112,11 @@
   <table class="items">
     <thead>
       <tr>
-        <th style="width:44%">Descripción</th>
-        <th style="width:10%">Unid.</th>
-        <th style="width:9%">Cant.</th>
+        <th style="width:{{ $hayDescuento ? '38%' : '44%' }}">Descripción</th>
+        <th style="width:9%">Unid.</th>
+        <th style="width:8%">Cant.</th>
         <th style="width:13%">P. Unit.</th>
+        @if($hayDescuento)<th style="width:8%">Dscto.</th>@endif
         <th style="width:11%">IGV</th>
         <th style="width:13%">Total</th>
       </tr>
@@ -121,6 +128,7 @@
         <td>{{ $item->unit }}</td>
         <td>{{ rtrim(rtrim(number_format($item->quantity, 3), '0'), '.') }}</td>
         <td>{{ number_format($item->unit_price, 2) }}</td>
+        @if($hayDescuento)<td>{{ (float) ($item->discount ?? 0) > 0 ? rtrim(rtrim(number_format($item->discount, 2), '0'), '.').'%' : '—' }}</td>@endif
         <td>{{ number_format($item->igv_amount, 2) }}</td>
         <td class="total-linea">{{ number_format($item->total, 2) }}</td>
       </tr>

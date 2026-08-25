@@ -57,6 +57,10 @@
   {{-- El traslado en una sola línea de datos --}}
   <div class="datos">
     <div>
+      <div class="dato-etq">Fecha de emisión</div>
+      <div class="dato-val">{{ ($guia->created_at ?? now())->format('d/m/Y') }}</div>
+    </div>
+    <div>
       <div class="dato-etq">Motivo</div>
       <div class="dato-val">{{ $guia->motivoLegible() }}</div>
     </div>
