@@ -32,10 +32,10 @@ Regla: nada se marca `[x]` sin evidencia (commit, test o documento).
 
 ## FASE 2 — Ownership y casos de uso canonicos
 
-- [ ] Confirmar `MODULE_OWNERSHIP.md` contra el codigo (ya existe, revisar)
-- [ ] Resolver TD-003 (brand_catalog_id huerfano): migrar tabla o retirar columna
+- [x] Confirmar `MODULE_OWNERSHIP.md` contra el codigo — marcas: `brand_catalog_id` → `catalog_values` (dueño Catalog); flujos de bot vivos → `bot_builder_flows` (dueño Automation)
+- [x] Resolver TD-003 — falsa alarma con nombre engañoso; documentado el dueño real. De regalo: TD-011 encontrada y cerrada (tabla `import_logs` que el codigo escribia contra el vacio, migrada en local y produccion)
 - [~] Migrar los 9 permisos legacy a `dominio.accion` (TD-004) — migracion ADITIVA hecha en produccion (41 concesiones; `logistics.ver/editar` creados; 4 rutas de delivery con puente A|B). Falta: retirar los nombres legacy de rutas y roles cuando se verifique un ciclo de uso.
-- [ ] Retirar del control plane la operacion de tenant (AdminImport, AdminTurnos)
+- [x] Retirar del control plane la operacion de tenant — decision ADR-008: DEPRECATE hoy (congelados, sin funciones nuevas), retiro fisico en Fase 3 con la impersonacion auditada
 
 ## FASE 3 — Separar Control y Workspace
 

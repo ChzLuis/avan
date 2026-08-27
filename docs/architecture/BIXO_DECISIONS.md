@@ -117,3 +117,22 @@ Decision: cada fase deja la anterior funcionando; las URLs retiradas
 redirigen; nada se borra hasta verificar consumidores. `/f/{slug}` sera el
 primer retiro (38 rutas, 13 vistas) porque su logica ya vive en controladores
 compartidos.
+
+---
+
+### ADR-008 — AdminImport y AdminTurnos quedan DEPRECATE en el control plane
+
+Estado: ACEPTADA · 2026-08-27
+
+Contexto: la auditoria previa detecto que el plano de control (`/bixoadmin`)
+opera datos de tenant en dos sitios: importaciones (AdminImportController,
+181 lineas) y turnos (AdminTurnosController, 111 lineas). El Workspace ya
+tiene importacion propia (`products.import`, permiso `catalog.importar`).
+
+Decision: ambos quedan DEPRECATE, no se borran hoy. Son herramientas de
+soporte superadmin-only, de bajo riesgo y en uso potencial para onboarding.
+Se retiran en Fase 3 cuando exista la impersonacion auditada que los
+sustituye (ADR-002).
+
+Consecuencias: prohibido añadirles funciones nuevas; toda importacion nueva
+va al Workspace.

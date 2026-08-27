@@ -29,7 +29,9 @@ Ninguna. Fase 0 cerrada a la espera de decision sobre el orden de la Fase 1.
 
 ## Siguiente tarea
 
-Fase 1 COMPLETA. Sigue Fase 2: TD-003 (brand_catalog_id huerfano),
+Fase 2 COMPLETA en sus tareas ejecutables (queda el retiro final de
+nombres legacy tras un ciclo de uso). Sigue Fase 3: sesion unica de
+proyecto (TD-005) e impersonacion auditada. Antes: Fase 1 COMPLETA. Sigue Fase 2: TD-003 (brand_catalog_id huerfano),
 retiro final de nombres legacy de TD-004 tras un ciclo de uso, TD-010
 (dos generaciones de flujos de bot), y sacar del control plane la
 operacion de tenant (AdminImport/AdminTurnos). Antes era: decidir TD-001 — unica tarea de la
