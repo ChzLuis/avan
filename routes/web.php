@@ -1093,10 +1093,10 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
 
         // Delivery — unica capacidad que solo existe en el universo legacy.
         // Migracion a dominio.accion documentada en rbac-produccion-arin.md
-        Route::get('/delivery',                     [DeliveryController::class, 'index'])->name('delivery')->middleware('can:view-logistics');
-        Route::get('/delivery/data',                [DeliveryController::class, 'data'])->name('delivery.data')->middleware('can:view-logistics');
-        Route::post('/delivery',                    [DeliveryController::class, 'store'])->name('delivery.store')->middleware('can:manage-logistics');
-        Route::put('/delivery/{order}/status',      [DeliveryController::class, 'updateStatus'])->name('delivery.status')->middleware('can:manage-logistics');
+        Route::get('/delivery',                     [DeliveryController::class, 'index'])->name('delivery')->middleware('project.can:logistics.ver|view-logistics');
+        Route::get('/delivery/data',                [DeliveryController::class, 'data'])->name('delivery.data')->middleware('project.can:logistics.ver|view-logistics');
+        Route::post('/delivery',                    [DeliveryController::class, 'store'])->name('delivery.store')->middleware('project.can:logistics.editar|manage-logistics');
+        Route::put('/delivery/{order}/status',      [DeliveryController::class, 'updateStatus'])->name('delivery.status')->middleware('project.can:logistics.editar|manage-logistics');
 
         // Caja / Tesorería — operaciones monetarias, permiso explicito por accion
         Route::get('/caja',                         [CajaController::class, 'index'])->name('caja')->middleware('can:caja.ver');

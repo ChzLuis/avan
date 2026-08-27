@@ -27,7 +27,8 @@ class DarDeBajaEnSunat implements ShouldQueue
 
     public function handle(): void
     {
-        $invoice = Invoice::with('project')->find($this->invoiceId);
+        // Job de sistema: busqueda explicita fuera del scope de sesion.
+        $invoice = Invoice::allProjects()->with('project')->find($this->invoiceId);
 
         if (! $invoice || $invoice->baja_estado === 'accepted') {
             return;

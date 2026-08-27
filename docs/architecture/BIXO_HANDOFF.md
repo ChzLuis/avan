@@ -29,7 +29,10 @@ Ninguna. Fase 0 cerrada a la espera de decision sobre el orden de la Fase 1.
 
 ## Siguiente tarea
 
-Decidir la politica fail-closed del scope (TD-001) — unica tarea de la
+Fase 1 COMPLETA. Sigue Fase 2: TD-003 (brand_catalog_id huerfano),
+retiro final de nombres legacy de TD-004 tras un ciclo de uso, TD-010
+(dos generaciones de flujos de bot), y sacar del control plane la
+operacion de tenant (AdminImport/AdminTurnos). Antes era: decidir TD-001 — unica tarea de la
 Fase 1 que queda, y es decision de diseño, no mecanica. Con eso la Fase 1
 cierra y sigue la Fase 2 (ownership: TD-003 brand_catalog_id, TD-004 permisos
 legacy, TD-010 dos generaciones de flujos de bot). Antes era: **RISK-001** — RifaVenta sin comprobacion de tenant (5 metodos). Es el unico

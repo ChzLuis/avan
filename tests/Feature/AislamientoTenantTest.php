@@ -145,17 +145,39 @@ class AislamientoTenantTest extends TestCase
         }
     }
 
-    /** TD-001, documentado a propósito: sin sesión el scope hoy NO filtra
-     *  (fail-open). Cuando se decida la política fail-closed, este contrato
-     *  se cambia deliberadamente — no por accidente. */
-    public function test_sin_sesion_el_scope_hoy_no_filtra_fail_open_documentado(): void
+    /** TD-001 CERRADA: la política ante ausencia de proyecto ya es fail-closed
+     *  para usuarios autenticados. Un gerente sin proyecto en sesión no ve
+     *  NADA, en vez de verlo todo (que era el fail-open anterior). */
+    public function test_autenticado_sin_proyecto_en_sesion_no_ve_nada(): void
     {
+        $this->ventaDe($this->mio);
+        $this->ventaDe($this->ajeno);
+
+        $u = User::factory()->create(['is_superadmin' => 0]);
+        $this->actingAs($u);
         session()->forget(['active_project_id', 'comercial_project_id']);
 
-        $sql = \App\Models\Invoice::query()->toSql();
+        $this->assertSame(0, RifaVenta::count(),
+            'Autenticado sin proyecto: cerrado, no abierto');
+        $this->assertSame(2, RifaVenta::allProjects()->count(),
+            'El escape explícito sigue disponible para el sistema');
+    }
 
-        $this->assertStringNotContainsString('project_id', $sql,
-            'Si esto falla, la política fail-open cambió: actualizar TD-001 y este contrato');
+    /** El superadmin opera globalmente (bixoadmin) y los visitantes sin
+     *  usuario (webhooks del bot, páginas públicas) mantienen el contrato
+     *  neutro del que dependen los bots. */
+    public function test_superadmin_y_anonimos_mantienen_acceso_neutro(): void
+    {
+        $this->ventaDe($this->mio);
+        session()->forget(['active_project_id', 'comercial_project_id']);
+
+        // Anónimo (así llegan los webhooks): neutro.
+        auth()->logout();
+        $this->assertSame(1, RifaVenta::count(), 'Sin usuario el scope es neutro');
+
+        // Superadmin sin proyecto: global.
+        $this->actingAs(User::factory()->create(['is_superadmin' => 1]));
+        $this->assertSame(1, RifaVenta::count(), 'El superadmin no queda cerrado');
     }
 
     /** El candado nuevo de catálogos: el catálogo propio no puede usarse de

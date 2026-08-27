@@ -19,7 +19,9 @@ class SendInvoiceToSunat implements ShouldQueue
 
     public function handle(): void
     {
-        $invoice = Invoice::with('items', 'project')->find($this->invoiceId);
+        // Un job no tiene sesion web y no debe depender de ella: busca
+        // explicito en todos los proyectos, como todo codigo de sistema.
+        $invoice = Invoice::allProjects()->with('items', 'project')->find($this->invoiceId);
 
         if (!$invoice || $invoice->sunat_status === 'accepted') {
             return;

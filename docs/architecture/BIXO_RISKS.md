@@ -5,12 +5,12 @@ Ultima actualizacion: 2026-08-27
 | ID | Riesgo | Prob. | Impacto | Estado |
 |---|---|---|---|---|
 | RISK-001 | Acceso cross-tenant en `RifaVenta` (5 metodos sin comprobacion) | Alta | Alto | **CERRADO 2026-08-27** (scope + 4 tests) |
-| RISK-002 | Scope global *fail-open*: sin sesion no filtra (jobs, consola, `/f/{slug}`) | Media | Alto | ABIERTO |
+| RISK-002 | Scope global *fail-open*: sin sesion no filtra | Media | Alto | **CERRADO 2026-08-27** (politica fail-closed para autenticados; jobs con filtro explicito) |
 | RISK-003 | Dos generaciones de permisos (64 `dominio.accion` + 9 legacy) | Media | Medio | ABIERTO |
 | RISK-004 | Tres sesiones de proyecto distintas; una pantalla puede leer la equivocada | Media | Medio | ABIERTO |
 | RISK-005 | 59 archivos sin commitear de sesiones mezcladas; un commit a ciegas arrastra trabajo ajeno | Alta | Medio | ABIERTO |
 | RISK-006 | Deriva codigo local vs produccion (deploy quirurgico historico) | Media | Alto | MITIGADO (puerta de deriva en deploy.py) |
-| RISK-007 | SSL de arindg.com vencido; renovacion automatica fallo silenciosamente | Ocurrio | Alto | **ACTIVO 2026-08-27** |
+| RISK-007 | SSL de arindg.com vencido; renovacion automatica fallo silenciosamente | Ocurrio | Alto | **RESUELTO 2026-08-27** (vhost apuntado al wildcard valido hasta 2026-11-04; backup .bak-ssl-20260827; TD-009 sigue abierta: investigar por que certbot no renovo ese cert) |
 
 ## RISK-001 — detalle
 

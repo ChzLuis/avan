@@ -4,7 +4,7 @@ Ultima actualizacion: 2026-08-27
 
 | ID | Sev. | Dominio | Descripcion | Fase objetivo | Estado |
 |---|---|---|---|---|---|
-| TD-001 | HIGH | Tenancy | `HasProjectScope` es fail-open (sin sesion no filtra) | 1 | ABIERTA |
+| TD-001 | HIGH | Tenancy | `HasProjectScope` es fail-open (sin sesion no filtra) | 1 | **CERRADA 2026-08-27** |
 | TD-002 | HIGH | Tenancy | Cero tests de aislamiento por entidad | 1 | ABIERTA |
 | TD-003 | MEDIUM | Catalog | `products.brand_catalog_id` existe como columna, la tabla `brand_catalogs` no (deriva de esquema sin migracion) | 2 | ABIERTA |
 | TD-004 | MEDIUM | Identity | 9 permisos legacy verbo-recurso conviven con `dominio.accion`; `project.can` acepta `A\|B` como puente | 2 | ABIERTA |

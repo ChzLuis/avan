@@ -25,7 +25,7 @@ Regla: nada se marca `[x]` sin evidencia (commit, test o documento).
 
 - [x] RISK-001: `HasProjectScope` en `RifaVenta` + test de aislamiento — 2026-08-27, `tests/Feature/AislamientoTenantTest.php` (4 tests: 404 ajeno, propio funciona, scope en listados, bot sin sesion intacto). Lecturas multi-proyecto legitimas (panel de rifas cruza al proyecto del bot) pasadas a `allProjects()` explicito; `generateOrderNumber` verifica unicidad global.
 - [x] Plantilla de test de aislamiento por entidad (TD-002, parcial) — `AislamientoTenantTest` es la plantilla; faltan las demas entidades
-- [ ] Decidir y aplicar politica fail-closed del scope (TD-001) — [?] requiere decision de diseño
+- [x] Decidir y aplicar politica fail-closed del scope (TD-001) — 2026-08-27: autenticado sin proyecto = CERRADO; superadmin y anonimos (webhooks) = neutro; consola/colas = neutro con filtro explicito. Destapo que los 3 jobs fiscales dependian de la sesion → ahora `allProjects()` explicito. Contratos en `AislamientoTenantTest`.
 - [x] Tests de aislamiento para las 14 entidades con scope — contrato "toda entidad nuclear filtra por proyecto" en `AislamientoTenantTest` (delata si alguien quita el trait) + contrato que documenta el fail-open de TD-001
 - [x] Revisar los 6 metodos restantes sin proteccion no-admin — 2 huecos reales cerrados con test: `CatalogValue` (el catalogo propio servia de fachada para editar/borrar valores ajenos) y `BotTransition::transitionDestroy` (borraba transiciones de bots ajenos). El resto eran admin legitimo o ya protegidos por helpers.
 - [x] Auditar jobs y comandos que usan `allProjects()` — 3 usos, todos legitimos: `ReintentarComprobantes` (sistema), `ApisPeruService::correlativoDeBaja` (filtra por proyecto explicito), `ProjectContext` (trabajo de otra sesion, no tocado)
@@ -34,7 +34,7 @@ Regla: nada se marca `[x]` sin evidencia (commit, test o documento).
 
 - [ ] Confirmar `MODULE_OWNERSHIP.md` contra el codigo (ya existe, revisar)
 - [ ] Resolver TD-003 (brand_catalog_id huerfano): migrar tabla o retirar columna
-- [ ] Migrar los 9 permisos legacy a `dominio.accion` (TD-004)
+- [~] Migrar los 9 permisos legacy a `dominio.accion` (TD-004) — migracion ADITIVA hecha en produccion (41 concesiones; `logistics.ver/editar` creados; 4 rutas de delivery con puente A|B). Falta: retirar los nombres legacy de rutas y roles cuando se verifique un ciclo de uso.
 - [ ] Retirar del control plane la operacion de tenant (AdminImport, AdminTurnos)
 
 ## FASE 3 — Separar Control y Workspace

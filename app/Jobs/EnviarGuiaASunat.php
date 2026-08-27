@@ -25,7 +25,8 @@ class EnviarGuiaASunat implements ShouldQueue
 
     public function handle(): void
     {
-        $guia = GuiaRemision::with('items', 'project', 'invoice')->find($this->guiaId);
+        // Job de sistema: busqueda explicita fuera del scope de sesion.
+        $guia = GuiaRemision::allProjects()->with('items', 'project', 'invoice')->find($this->guiaId);
 
         if (! $guia || $guia->sunat_status === 'accepted') {
             return;
@@ -38,7 +39,7 @@ class EnviarGuiaASunat implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        GuiaRemision::where('id', $this->guiaId)->update([
+        GuiaRemision::allProjects()->where('id', $this->guiaId)->update([
             'sunat_status' => 'error',
             'sunat_error'  => 'No se pudo enviar la guía: '.$e->getMessage(),
         ]);
