@@ -404,6 +404,9 @@ class BotStatusController extends Controller
     public function transitionDestroy(BotTransition $transition)
     {
         $flow = $transition->fromState->flow;
+        // La transicion llega por su ID: sin este candado, cualquier usuario
+        // autenticado podia borrar transiciones de los bots de OTRO negocio.
+        abort_unless($flow && $flow->project_id === app('active_project')->id, 404);
         $transition->delete();
         $this->exportFlow($flow);
 

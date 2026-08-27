@@ -120,4 +120,92 @@ class AislamientoTenantTest extends TestCase
 
         $this->assertNotNull($encontrada, 'Sin sesión de proyecto el scope es neutro (comportamiento actual del bot)');
     }
+
+    /** Las 14 entidades tenant-owned llevan el scope cableado: si alguien le
+     *  quita el trait a una, este contrato lo delata. Se comprueba que el SQL
+     *  que genera cada modelo filtra por project_id cuando hay sesión. */
+    public function test_toda_entidad_nuclear_filtra_por_proyecto_cuando_hay_sesion(): void
+    {
+        session(['active_project_id' => $this->mio->id]);
+
+        $modelos = [
+            \App\Models\Caja::class, \App\Models\CatalogIntegration::class,
+            \App\Models\Client::class, \App\Models\Combo::class,
+            \App\Models\GuiaRemision::class, \App\Models\InventoryMovement::class,
+            \App\Models\Invoice::class, \App\Models\Order::class,
+            \App\Models\Payment::class, \App\Models\Product::class,
+            \App\Models\Promotion::class, \App\Models\Proveedor::class,
+            \App\Models\Quote::class, \App\Models\RifaVenta::class,
+        ];
+
+        foreach ($modelos as $modelo) {
+            $sql = $modelo::query()->toSql();
+            $this->assertStringContainsString('project_id', $sql,
+                "{$modelo} perdió el scope de proyecto: sus consultas ya no filtran por tenant");
+        }
+    }
+
+    /** TD-001, documentado a propósito: sin sesión el scope hoy NO filtra
+     *  (fail-open). Cuando se decida la política fail-closed, este contrato
+     *  se cambia deliberadamente — no por accidente. */
+    public function test_sin_sesion_el_scope_hoy_no_filtra_fail_open_documentado(): void
+    {
+        session()->forget(['active_project_id', 'comercial_project_id']);
+
+        $sql = \App\Models\Invoice::query()->toSql();
+
+        $this->assertStringNotContainsString('project_id', $sql,
+            'Si esto falla, la política fail-open cambió: actualizar TD-001 y este contrato');
+    }
+
+    /** El candado nuevo de catálogos: el catálogo propio no puede usarse de
+     *  fachada para editar valores de un catálogo ajeno. */
+    public function test_un_valor_de_catalogo_ajeno_no_se_edita_con_fachada_propia(): void
+    {
+        Permission::findOrCreate('settings.catalogos', 'web');
+        $catalogoMio   = \App\Models\CatalogList::create(['project_id' => $this->mio->id, 'name' => 'Mío', 'type' => 'custom']);
+        $catalogoAjeno = \App\Models\CatalogList::create(['project_id' => $this->ajeno->id, 'name' => 'Ajeno', 'type' => 'custom']);
+        $valorAjeno    = $catalogoAjeno->values()->create(['label' => 'Secreto ajeno']);
+
+        $this->entrarComo($this->mio);
+        auth()->user()->givePermissionTo('settings.catalogos');
+        $this->actingAs(auth()->user()->fresh())->withSession([
+            'comercial_project_id' => $this->mio->id,
+            'active_project_id'    => $this->mio->id,
+        ]);
+
+        $this->put("/catalogs/{$catalogoMio->id}/values/{$valorAjeno->id}", ['label' => 'Hackeado'])
+            ->assertNotFound();
+
+        $this->assertSame('Secreto ajeno', $valorAjeno->fresh()->label);
+    }
+
+    /** El candado nuevo de bots: una transición de un flujo ajeno no se borra. */
+    public function test_una_transicion_de_bot_ajena_no_se_borra(): void
+    {
+        Permission::findOrCreate('settings.negocio', 'web');
+        // Conviven dos generaciones de flujos (TD-010): la FK de bot_states
+        // apunta a la tabla vieja `bot_flows`, pero BotState::flow() lee la
+        // nueva `bot_builder_flows`. En BD limpia ambos autoincrementos
+        // arrancan en 1, así que se crean alineados como en producción.
+        $flujoAjeno = \App\Models\BotFlow::create(['project_id' => $this->ajeno->id, 'nombre' => 'Flujo ajeno']);
+        \Illuminate\Support\Facades\DB::table('bot_flows')->insert([
+            'id' => $flujoAjeno->id, 'project_id' => $this->ajeno->id, 'name' => 'Flujo ajeno',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $estado     = \App\Models\BotState::create(['flow_id' => $flujoAjeno->id, 'key' => 'inicio', 'label' => 'Inicio', 'message' => 'Hola']);
+        $transicion = \App\Models\BotTransition::create(['from_state_id' => $estado->id, 'to_state_id' => $estado->id]);
+
+        $this->entrarComo($this->mio);
+        auth()->user()->givePermissionTo('settings.negocio');
+        $this->actingAs(auth()->user()->fresh())->withSession([
+            'comercial_project_id' => $this->mio->id,
+            'active_project_id'    => $this->mio->id,
+        ]);
+
+        $this->delete('/bots/transitions/'.$transicion->id)->assertNotFound();
+
+        $this->assertNotNull(\App\Models\BotTransition::find($transicion->id),
+            'La transición ajena debe seguir existiendo');
+    }
 }

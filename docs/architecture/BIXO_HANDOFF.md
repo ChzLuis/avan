@@ -13,7 +13,10 @@ documentos de memoria persistente quedan creados.
 
 ## Ultima tarea terminada
 
-**RISK-001 cerrado**: `HasProjectScope` en `RifaVenta`, lecturas
+Fase 1 casi completa: contrato de scope para las 14 entidades nucleares,
+2 huecos mas cerrados (CatalogValue con fachada, BotTransition ajena),
+auditoria de allProjects() en jobs limpia, y TD-010 descubierta y registrada
+(dos generaciones de flujos de bot). Antes: **RISK-001 cerrado**: `HasProjectScope` en `RifaVenta`, lecturas
 multi-proyecto con `allProjects()` explicito, unicidad global de
 `order_number`, y `tests/Feature/AislamientoTenantTest.php` como plantilla
 de TD-002. Antes de eso: auditoria medida del repositorio: rutas por portal, aislamiento multiempresa
@@ -26,8 +29,10 @@ Ninguna. Fase 0 cerrada a la espera de decision sobre el orden de la Fase 1.
 
 ## Siguiente tarea
 
-Extender `AislamientoTenantTest` al resto de entidades con scope
-(TD-002) y decidir la politica fail-closed (TD-001). Antes era: **RISK-001** — RifaVenta sin comprobacion de tenant (5 metodos). Es el unico
+Decidir la politica fail-closed del scope (TD-001) — unica tarea de la
+Fase 1 que queda, y es decision de diseño, no mecanica. Con eso la Fase 1
+cierra y sigue la Fase 2 (ownership: TD-003 brand_catalog_id, TD-004 permisos
+legacy, TD-010 dos generaciones de flujos de bot). Antes era: **RISK-001** — RifaVenta sin comprobacion de tenant (5 metodos). Es el unico
 hallazgo de acceso cruzado confirmado y no depende de ninguna reestructuracion:
 se corrige solo, con test de aislamiento. Ver `docs/security/BIXO_TENANT_ISOLATION.md`.
 

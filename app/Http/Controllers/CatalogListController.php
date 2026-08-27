@@ -71,6 +71,10 @@ class CatalogListController extends Controller
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
+        // El catalogo ya es del proyecto, pero el VALOR llega por su propio ID:
+        // sin este candado se podia editar el valor de un catalogo ajeno
+        // pasando un catalogo propio como fachada.
+        abort_unless($value->catalog_list_id === $catalog->id, 404);
         $data = $request->validate($this->valueRules());
         $data['is_active'] = $request->boolean('is_active');
         $value->update($data);
@@ -82,6 +86,7 @@ class CatalogListController extends Controller
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         $this->authorizeForProject($catalog, $project);
+        abort_unless($value->catalog_list_id === $catalog->id, 404);
         $value->delete();
         return response()->json(['ok' => true]);
     }
