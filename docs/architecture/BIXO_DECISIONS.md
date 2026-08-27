@@ -136,3 +136,37 @@ sustituye (ADR-002).
 
 Consecuencias: prohibido añadirles funciones nuevas; toda importacion nueva
 va al Workspace.
+
+---
+
+### ADR-009 — /f/{slug} se retira por las puertas, no por demolicion
+
+Estado: ACEPTADA · 2026-08-27
+
+Contexto: el portal de facturacion duplica pantallas de /bixosales con los
+MISMOS controladores (Fase 0). El log de nginx no permite medir su uso real.
+
+Decision: sus dos entradas (login y tablero) redirigen a /bixosales; las
+rutas internas siguen registradas (renombradas *.legado) para no romper
+referencias `route()` durante el ciclo de compatibilidad. Las 13 vistas se
+borran en un ciclo posterior, tras verificar que nadie llega a ellas.
+
+Consecuencias: el portal queda inaccesible para personas pero integro para
+el codigo. Rollback = revertir dos rutas.
+
+---
+
+### ADR-010 — Fases 9 y 11 son producto, no reestructura; 10/12/13 esperan volumen
+
+Estado: ACEPTADA · 2026-08-27
+
+Contexto: al ejecutar el roadmap de corrido, Commerce-checkout (F9) y el
+Portal del Cliente (F11) resultaron ser construcciones de producto nuevas,
+no consolidacion de lo existente; y ADR-005 ya bloquea 10/12/13 por volumen.
+
+Decision: la reestructura arquitectonica se declara ejecutada hasta F8.
+F9 y F11 pasan al backlog de producto con su diseño ya conversado
+(checkout tipo carrito; enlace con token por cliente). El unico trabajo
+arquitectonico restante es la limpieza diferida: borrar vistas de f-slug,
+retirar nombres legacy de permisos, y apagar el panel raiz cuando el menu
+unico cubra todo.

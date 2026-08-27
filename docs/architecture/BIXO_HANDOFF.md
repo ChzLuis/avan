@@ -29,7 +29,11 @@ Ninguna. Fase 0 cerrada a la espera de decision sobre el orden de la Fase 1.
 
 ## Siguiente tarea
 
-Fase 2 COMPLETA en sus tareas ejecutables (queda el retiro final de
+Reestructura ejecutada hasta F8 (ADR-010). Queda la limpieza diferida:
+borrar vistas f-slug tras un ciclo, retirar lectores de
+`comercial_project_id`, mapa de navegacion y apagado del panel raiz.
+F9 (checkout) y F11 (portal cliente) pasan al backlog de producto;
+10/12/13 esperan volumen (ADR-005). Antes: Fase 2 COMPLETA (queda el retiro final de
 nombres legacy tras un ciclo de uso). Sigue Fase 3: sesion unica de
 proyecto (TD-005) e impersonacion auditada. Antes: Fase 1 COMPLETA. Sigue Fase 2: TD-003 (brand_catalog_id huerfano),
 retiro final de nombres legacy de TD-004 tras un ciclo de uso, TD-010

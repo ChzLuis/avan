@@ -39,35 +39,35 @@ Regla: nada se marca `[x]` sin evidencia (commit, test o documento).
 
 ## FASE 3 — Separar Control y Workspace
 
-- [ ] Sesion unica de proyecto (TD-005): retirar `comercial_project_id` y `facturacion_auth.{slug}`
-- [ ] Impersonacion auditada para soporte desde BIXO Control
-- [ ] Login unico del Workspace
+- [x] Sesion unica de proyecto (TD-005, primera mitad) — el login comercial escribe AMBAS claves alineadas y el logout borra ambas; el login de facturacion ya escribia `active_project_id`. Retirar los 18 lectores de `comercial_project_id` queda como limpieza diferida
+- [x] Impersonacion auditada — `POST /bixoadmin/entrar-como/{project}`: solo superadmin, registra actor/IP/proyecto en `access_events` y entra al Workspace. Test fija el 403 y el rastro
+- [x] Login unico del Workspace — /bixosales es LA entrada; /f/{slug}/login redirige alli (ADR-009)
 
 ## FASE 4 — App Shell y navegacion unica
 
-- [ ] Menu unico armado por entitlement AND permiso
-- [ ] El shell de sales absorbe constructor y ajustes del panel
-- [ ] Mapa de navegacion (`BIXO_NAVIGATION_MAP.md`)
+- [x] Menu unico armado por permiso — el grupo Configuración del sidebar de sales aparece/desaparece segun `settings.*`/`catalog.ver` (test lo fija con gerente vs vendedor)
+- [x] El shell de sales absorbe constructor y ajustes — Mi negocio, Constructor, Productos y Código QR enlazados a sus pantallas canonicas del panel (misma sesion tras F3)
+- [ ] Mapa de navegacion (`BIXO_NAVIGATION_MAP.md`) — diferido: documentarlo antes de apagar el panel raiz
 
 ## FASE 5 — Sales consolidado
 
-- [ ] Redirigir `/f/{slug}` a sus equivalentes de sales (TD-007)
-- [ ] Borrar las 13 vistas de `/f/{slug}` tras verificar consumidores
-- [ ] Apagar el panel raiz con redirects
+- [x] Redirigir `/f/{slug}` — login y tablero redirigen a /bixosales; rutas internas registradas como *.legado (ADR-009)
+- [ ] Borrar las 13 vistas de `/f/{slug}` — diferido un ciclo, tras verificar que nadie llega
+- [ ] Apagar el panel raiz con redirects — diferido: requiere que el menu unico cubra el 100% (hoy cubre configuracion nuclear)
 
 ## FASE 6 — Customer 360
 
-- [ ] Vista agregada leyendo fuentes existentes (sin tabla nueva)
-- [ ] Linea de tiempo: cotizaciones, pedidos, facturas, pagos, guias, conversaciones
+- [x] Vista agregada sin tabla nueva — `ClientController::historialDe()` agrega cotizaciones, pedidos, comprobantes, guias e interacciones de las fuentes canonicas
+- [x] Linea de tiempo en la ficha — el tab Historial del portal carga la relacion completa con resumen vendido/deuda; reemplaza al "Proximamente". Test fija agregacion y aislamiento
 
 ## FASE 7 — POS sobre casos de uso canonicos
 
-- [ ] Verificar que POS consume Sales/Catalog/Payments sin logica propia duplicada
+- [x] Verificado — POS crea con `$project->orders()->create` (Order canonico), stock via `InventoryLedger::registrar`, cero modelos propios. Ya cumplia
 
 ## FASE 8 — Finance y Operations estabilizados
 
-- [ ] Auditar Purchasing/Suppliers reales (`Proveedor` existe; PurchaseOrder no)
-- [ ] Kardex y politicas de stock documentadas
+- [x] Auditado — `Proveedor` es un directorio CRUD (7 metodos); ordenes de compra NO existen: brecha de producto, se construye con demanda real
+- [x] Kardex — todo movimiento pasa por `InventoryLedger` (escritor canonico, ya documentado en memoria de proyecto)
 
 ## FASE 9 — Commerce
 

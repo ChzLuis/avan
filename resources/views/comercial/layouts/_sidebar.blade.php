@@ -97,6 +97,18 @@
     ], fn ($i) => $i && $_puede($i[3]));
     if ($_analisis) $_grupos[] = ['titulo' => 'Análisis', 'items' => array_values($_analisis)];
 
+    // Fase 4 (App Shell): el portal comercial absorbe la configuracion que
+    // vivia solo en el panel raiz. Son las MISMAS pantallas (mismo dominio y
+    // sesion, ya unificada en Fase 3); aqui solo ganan una puerta. Cada
+    // entrada respeta el permiso que su ruta exige.
+    $_config = array_filter([
+        ['Mi negocio',  'settings',          'etiqueta',   ['settings.negocio']],
+        ['Constructor', 'settings.builder',  'reportes',   ['settings.diseno']],
+        ['Productos',   'products.index',    'inventario', ['catalog.ver']],
+        ['Código QR',   'settings.qr',       'etiqueta',   ['settings.negocio']],
+    ], fn ($i) => $i && $_puede($i[3]));
+    if ($_config) $_grupos[] = ['titulo' => 'Configuración', 'items' => array_values($_config)];
+
     // Encargos a medida: dependen del PROYECTO que los pidio, no de quien mira.
     $_medida = array_filter([
         ($_u?->is_superadmin && (int) ($project->setting('modulo_tickets_wp', 0)) === 1)

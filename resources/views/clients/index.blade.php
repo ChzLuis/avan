@@ -65,6 +65,8 @@
         selected: null,
         creating: false,
         tab: 'info',
+        ficha: null,          // Customer 360: detalle agregado del cliente
+        fichaCargando: false,
         saving: false,
         deleting: false,
         form: {},
@@ -141,6 +143,19 @@
                 bxAviso('Error de red', 'error');
             }
             this.saving = false;
+        },
+
+        async cargarFicha() {
+            if (!this.selected || this.fichaCargando) return;
+            if (this.ficha && this.ficha.cliente && this.ficha.cliente.id === this.selected.id) return;
+            this.fichaCargando = true; this.ficha = null;
+            try {
+                const res = await fetch(this.baseUrl + '/' + this.selected.id, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (res.ok) this.ficha = await res.json();
+            } catch (e) {}
+            this.fichaCargando = false;
         },
 
         async del() {
@@ -338,7 +353,7 @@
                         class="px-4 py-3 text-sm transition whitespace-nowrap">
                     Información
                 </button>
-                <button @click="tab='history'" x-show="selected"
+                <button @click="tab='history'; cargarFicha()" x-show="selected"
                         :class="tab==='history' ? 'border-b-2 border-sky-600 text-sky-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                         class="px-4 py-3 text-sm transition whitespace-nowrap">
                     Historial
@@ -423,14 +438,49 @@
                         </div>
                     </template>
 
-                    <div class="border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
-                        <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <p class="text-sm font-medium text-gray-400">Próximamente: historial completo del cliente</p>
-                        <p class="text-xs text-gray-500 mt-1">Pedidos, citas, cotizaciones y actividad</p>
-                    </div>
+                    {{-- Customer 360 (Fase 6): la relación completa en una sola
+                         línea de tiempo — cotizaciones, pedidos, comprobantes,
+                         guías e interacciones, de las fuentes canónicas. --}}
+                    <template x-if="fichaCargando">
+                        <p class="text-sm text-gray-400 text-center py-6">Cargando historial...</p>
+                    </template>
+                    <template x-if="!fichaCargando && ficha && ficha.resumen">
+                        <div class="grid grid-cols-2 gap-3 mb-2">
+                            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                                <p class="text-xl font-bold text-emerald-600" x-text="'S/ ' + (ficha.resumen.vendido ?? '0.00')"></p>
+                                <p class="text-xs text-emerald-600 mt-0.5">Ventas acumuladas</p>
+                            </div>
+                            <div class="bg-red-50 border border-red-100 rounded-xl p-4 text-center">
+                                <p class="text-xl font-bold text-red-600" x-text="'S/ ' + (ficha.resumen.deuda ?? '0.00')"></p>
+                                <p class="text-xs text-red-500 mt-0.5">Por cobrar</p>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="!fichaCargando && ficha && ficha.historial && ficha.historial.length">
+                        <div class="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
+                            <template x-for="(e, i) in ficha.historial" :key="i">
+                                <div class="flex items-center gap-3 px-4 py-2.5 bg-white">
+                                    <span class="h-8 w-1 flex-shrink-0 rounded-full"
+                                          :class="{
+                                            'bg-indigo-400': e.tipo==='cotizacion',
+                                            'bg-sky-400': e.tipo==='pedido',
+                                            'bg-emerald-400': e.tipo==='comprobante',
+                                            'bg-amber-400': e.tipo==='guia',
+                                            'bg-gray-300': e.tipo==='interaccion'
+                                          }"></span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium text-gray-800 truncate" x-text="e.etiqueta"></p>
+                                        <p class="text-xs text-gray-500 truncate" x-text="e.detalle + ' · ' + e.fecha"></p>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-700 flex-shrink-0"
+                                          x-show="e.monto !== null" x-text="'S/ ' + Number(e.monto).toFixed(2)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="!fichaCargando && (!ficha || !ficha.historial || !ficha.historial.length)">
+                        <p class="text-sm text-gray-400 text-center py-6">Sin movimientos con este cliente todavía.</p>
+                    </template>
 
                 </div>
 

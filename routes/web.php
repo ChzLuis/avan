@@ -674,6 +674,27 @@ require __DIR__.'/auth.php';
 // ─── Catálogo público ─────────────────────────────────────────────────────────
 // `admin` faltaba en la lista: `routes/admin.php` se carga despues de este
 // archivo, asi que el comodin tapaba /admin (el panel del superadmin).
+// ── Fase 3: impersonación auditada — soporte de Eskala entra al Workspace del
+// cliente con su usuario superadmin, dejando rastro en access_events. Es el
+// sustituto de operar tenants desde el plano de control (ADR-002 / ADR-008).
+Route::post('/bixoadmin/entrar-como/{project}', function (\App\Models\Project $project) {
+    abort_unless(auth()->user()?->is_superadmin, 403);
+    \App\Models\AccessEvent::create([
+        'project_id' => $project->id,
+        'actor_id'   => auth()->id(),
+        'action'     => 'impersonate',
+        'role_name'  => 'superadmin',
+        'meta'       => json_encode(['desde' => 'bixoadmin']),
+        'ip'         => request()->ip(),
+        'created_at' => now(),
+    ]);
+    session([
+        'active_project_id'    => $project->id,
+        'comercial_project_id' => $project->id,
+    ]);
+    return redirect('/bixosales');
+})->middleware('auth')->name('bixoadmin.entrar-como');
+
 $reserved = 'admin|login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|bixofact|wa|cert';
 Route::get('/storefront-preview/{project}', function (\App\Models\Project $project) {
     abort_unless($project->is_active, 404);
@@ -876,12 +897,18 @@ Route::get('/bixofact',        [FacAuthController::class, 'showLoginGeneral'])->
 Route::post('/bixofact/login', [FacAuthController::class, 'loginGeneral'])->middleware('throttle:10,1')->name('bixofact.login.post');
 
 Route::prefix('f/{slug}')->name('facturacion.')->group(function () {
-    Route::get('/login',  [FacAuthController::class, 'showLogin'])->name('login');
+    // Fase 5: el portal de facturacion se retira — sus pantallas viven en
+    // /bixosales con los MISMOS controladores. Las entradas redirigen; las
+    // rutas internas siguen registradas para no romper referencias mientras
+    // dura el ciclo de compatibilidad (ADR-007).
+    Route::get('/login', fn (string $slug) => redirect()->route('bixosales.login'))->name('login');
+    Route::get('/__login_legado',  [FacAuthController::class, 'showLogin'])->name('login.legado');
     Route::post('/login', [FacAuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
     Route::post('/logout',[FacAuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth', 'facturacion.auth'])->group(function () {
-        Route::get('/', [FacDashController::class, 'index'])->name('dashboard');
+        Route::get('/', fn (string $slug) => redirect('/bixosales'))->name('dashboard');
+        Route::get('/__dashboard_legado', [FacDashController::class, 'index'])->name('dashboard.legado');
 
         Route::get('/pos',  [PosController::class, 'indexPortal'])->name('pos');
         Route::post('/pos', [PosController::class, 'storePortal'])->name('pos.store');

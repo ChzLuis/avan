@@ -97,7 +97,12 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'No tienes acceso a ese proyecto.'])->withInput();
         }
 
-        session(['comercial_project_id' => $project->id]);
+        // Sesion unica (Fase 3): las dos claves siempre alineadas. La clave
+        // vieja se mantiene por compatibilidad hasta retirar sus lectores.
+        session([
+            'comercial_project_id' => $project->id,
+            'active_project_id'    => $project->id,
+        ]);
         session(['active_project_id'    => $project->id]);
 
         return redirect()->route('bixosales.dashboard');
@@ -105,7 +110,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        session()->forget('comercial_project_id');
+        session()->forget(['comercial_project_id', 'active_project_id']);
         if ($request->input('_inactivity')) {
             return redirect()->route('bixosales.login')->with('inactivity', true);
         }

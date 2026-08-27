@@ -54,7 +54,50 @@ class ClientController extends Controller
                 ->get(['id', 'total', 'status', 'payment_status', 'created_at']),
             'cotizaciones' => $client->quotes()->latest()->limit(20)
                 ->get(['id', 'total', 'status', 'payment_status', 'created_at']),
+            'historial' => $this->historialDe($project, $client),
         ]);
+    }
+
+    /**
+     * Customer 360 (Fase 6): TODA la relación con el cliente en una sola
+     * línea de tiempo — cotizó, pidió, se le facturó, pagó, se le despachó y
+     * conversó. Es una AGREGACIÓN de las fuentes canónicas existentes: aquí
+     * no nace ninguna tabla ni ninguna copia (ADR-003).
+     */
+    private function historialDe(\App\Models\Project $project, Client $client): array
+    {
+        $eventos = collect();
+
+        foreach ($client->quotes()->latest()->limit(30)->get() as $q) {
+            $eventos->push(['tipo' => 'cotizacion', 'etiqueta' => 'Cotización '.$q->etiqueta,
+                'detalle' => \App\Support\QuoteStatus::clientePresentacion($q->status)['label'],
+                'monto' => (float) $q->total, 'fecha' => $q->created_at]);
+        }
+        foreach ($client->orders()->latest()->limit(30)->get() as $o) {
+            $eventos->push(['tipo' => 'pedido', 'etiqueta' => 'Pedido #'.$o->id,
+                'detalle' => ($o->payment_status === 'paid' ? 'Pagado' : 'Pago pendiente'),
+                'monto' => (float) $o->total, 'fecha' => $o->created_at]);
+        }
+        foreach (\App\Models\Invoice::where('client_id', $client->id)->latest()->limit(30)->get() as $i) {
+            $eventos->push(['tipo' => 'comprobante', 'etiqueta' => $i->getTypeLabel().' '.$i->numero,
+                'detalle' => $i->sunat_status === 'accepted' ? 'Aceptada SUNAT' : ($i->sunat_status ?: 'Emitida'),
+                'monto' => (float) $i->total, 'fecha' => $i->created_at]);
+        }
+        foreach (\App\Models\GuiaRemision::where('client_id', $client->id)->latest()->limit(15)->get() as $g) {
+            $eventos->push(['tipo' => 'guia', 'etiqueta' => 'Guía '.$g->numero,
+                'detalle' => $g->motivoLegible(), 'monto' => null, 'fecha' => $g->created_at]);
+        }
+        foreach (\App\Models\SalesInteraction::where('client_id', $client->id)->latest()->limit(15)->get() as $s) {
+            $eventos->push(['tipo' => 'interaccion', 'etiqueta' => 'Interacción · '.($s->canal ?: 'nota'),
+                'detalle' => \Illuminate\Support\Str::limit((string) ($s->texto ?? ''), 70),
+                'monto' => null, 'fecha' => $s->created_at]);
+        }
+
+        return $eventos->sortByDesc('fecha')->take(50)->values()
+            ->map(function ($e) {
+                $e['fecha'] = optional($e['fecha'])->format('d/m/Y H:i');
+                return $e;
+            })->all();
     }
 
     /**
