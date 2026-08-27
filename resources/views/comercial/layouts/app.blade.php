@@ -545,6 +545,19 @@ $_nav = match(true) {
             #topbar { padding-left: calc(var(--sidebar-w) + 8px); padding-right: 8px; }
             .search-box { max-width: none; }
         }
+        /* En un celular de 390 px la barra no cerraba: el chip con el nombre
+           del negocio (hasta 140 px) empujaba los botones de alertas y
+           pendientes fuera de la pantalla —medido: llegaban a 474 px— y con
+           ellos el acceso al panel lateral. El nombre del negocio ya está en
+           el menú y en la ficha; aquí basta su inicial. */
+        @media (max-width: 767px) {
+            /* Fuera del todo: el nombre del negocio ya lo dice el menu
+               lateral, y aqui solo le robaba sitio a los botones. */
+            .empresa-chip { display: none; }
+            .vdiv { display: none; }
+            .top-btn { width: 38px; height: 38px; }
+            #topbar { gap: 4px; padding-right: 4px; }
+        }
         /* ══ MENU LATERAL ══════════════════════════════════════════════
            Dos estados reales. Contraido: solo iconos con tooltip y
            aria-label. Expandido: icono + nombre del modulo. Un rail de

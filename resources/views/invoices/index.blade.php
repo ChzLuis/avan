@@ -4,18 +4,87 @@
         : route('invoices.index');
 @endphp
 <x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Facturas / Boletas">
-<div class="mod-tactil flex flex-1 overflow-hidden"
+
+{{-- ══ El comprobante desde el celular ═══════════════════════════════════
+     Quien factura en GABDE está de pie en el mostrador con el teléfono en
+     una mano. Esta pantalla nació de escritorio —dos paneles fijos de
+     340 px— y en un celular de 390 px dejaba una franja muerta al costado,
+     el botón de emitir al final de un scroll largo y campos que hacían
+     zoom al tocarlos. Aquí no se cambia ninguna lógica: solo se le da al
+     móvil el ancho completo, el pulgar alcanza lo importante y el teclado
+     deja de pelear con el formulario. --}}
+<style>
+@media (max-width: 767px) {
+    /* El panel de lista ya no vale 340 px: vale la pantalla entera. */
+    #inv-lista { width: 100% !important; border-right: 0 !important; }
+
+    /* iOS hace zoom en cualquier campo por debajo de 16 px y deja la página
+       descuadrada; el vendedor termina pellizcando para volver. */
+    #inv-app input, #inv-app select, #inv-app textarea { font-size: 16px !important; }
+
+    /* Dedo, no cursor: 44 px es el mínimo que se acierta sin mirar. */
+    #inv-app .input, #inv-app select.input { min-height: 46px; }
+    #inv-app button { min-height: 44px; }
+
+    /* Emitir es la acción de la pantalla: se queda fija abajo, sobre el
+       pulgar, en vez de esperar al final del scroll. */
+    #inv-form-pie {
+        position: sticky; bottom: 0; z-index: 20;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        box-shadow: 0 -6px 16px rgba(15,23,42,.10);
+    }
+    #inv-form-pie .btn-primary { flex: 1; font-size: 15px; font-weight: 700; }
+
+    /* Al ganar el ancho completo, la cabecera pasó a apretar buscador,
+       filtro y "+" en una sola línea y los dos últimos se salían. En móvil
+       el "+" sobra —lo reemplaza el botón flotante— y el filtro baja a su
+       propia línea con el buscador arriba, cada uno con su espacio. */
+    #inv-cab { flex-wrap: wrap; }
+    #inv-cab input { flex: 1 1 100%; }
+    #inv-cab select { flex: 1 1 auto; }
+    #inv-cab .inv-nuevo-desktop { display: none !important; }
+    /* La tira del Registro de Ventas también se apila en vez de cortarse. */
+    #inv-registro { flex-wrap: wrap; }
+    #inv-registro input { flex: 1 1 100%; }
+
+    /* Botón de nuevo comprobante al alcance del pulgar. En escritorio no
+       existe: allí manda el "+" de la cabecera. */
+    #inv-fab {
+        position: fixed; right: 18px; z-index: 40;
+        bottom: calc(20px + env(safe-area-inset-bottom));
+        height: 56px; padding: 0 22px; border-radius: 28px;
+        box-shadow: 0 10px 28px rgba(79,70,229,.42);
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+}
+@media (min-width: 768px) { #inv-fab { display: none; } }
+</style>
+
+<div id="inv-app" class="mod-tactil flex flex-1 overflow-hidden"
      x-data="invoicesApp()"
      x-init="init()"
      @resize.window="isMobile = window.innerWidth < 768">
 
+{{-- Emitir, al alcance del pulgar. Solo aparece en el celular y solo cuando
+     se está mirando la lista: dentro del formulario estorbaría al botón de
+     emitir, que ya está fijo abajo. --}}
+<button id="inv-fab" type="button" @click="openNew()"
+        x-show="isMobile && panel==='list' && !creating" x-cloak
+        class="bg-indigo-600 text-white font-semibold text-sm active:bg-indigo-700"
+        aria-label="Nuevo comprobante">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+    </svg>
+    Nuevo
+</button>
+
 {{-- PANEL 2: LISTA --}}
-<div class="flex flex-col border-r overflow-hidden flex-shrink-0"
+<div id="inv-lista" class="flex flex-col border-r overflow-hidden flex-shrink-0"
      style="background:#fff; border-color:#e5e7eb; --list-width:340px; width:var(--list-width,340px);"
      :class="panel==='list'||!isMobile ? 'flex' : 'hidden'">
 
     {{-- Header lista --}}
-    <div class="px-4 py-3 flex items-center gap-2 border-b" style="border-color:#e5e7eb;">
+    <div id="inv-cab" class="px-4 py-3 flex items-center gap-2 border-b" style="border-color:#e5e7eb;">
         {{-- min-w-0: sin el, el input se niega a encoger y el boton "+" se
              sale cortado del panel de 340px (trampa clasica de flexbox). --}}
         <input x-model="search" type="text" placeholder="Buscar..."
@@ -29,7 +98,7 @@
             <option value="nota_debito">N. Débito</option>
         </select>
         <button @click="openNew()"
-                class="flex-shrink-0 w-11 h-11 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors">
+                class="inv-nuevo-desktop flex-shrink-0 w-11 h-11 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -49,7 +118,7 @@
     @endif
 
     {{-- El Registro de Ventas del mes, listo para el contador. --}}
-    <div class="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
+    <div id="inv-registro" class="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
         <input type="month" x-model="mesRegistro" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 flex-1 focus:outline-none"
                max="{{ now()->format('Y-m') }}">
         <a :href="`{{ route('invoices.registro') }}?mes=${mesRegistro}`"
@@ -336,7 +405,7 @@
                 </template>
             </div>
 
-            <div class="px-5 py-3 border-t bg-gray-50 flex justify-end gap-2" style="border-color:#e5e7eb;">
+            <div id="inv-form-pie" class="px-5 py-3 border-t bg-gray-50 flex justify-end gap-2" style="border-color:#e5e7eb;">
                 <button @click="creating=false" class="btn-secondary text-sm">Cancelar</button>
                 <button @click="save()" :disabled="saving"
                         class="btn-primary text-sm" x-text="saving ? 'Guardando...' : 'Emitir comprobante'"></button>
@@ -670,6 +739,7 @@
             </button>
         </div>
     </div>
+
 </div>
 
 
