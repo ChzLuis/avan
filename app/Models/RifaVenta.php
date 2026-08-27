@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasProjectScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class RifaVenta extends Model
 {
+    /* RISK-001: los metodos del panel y del portal reciben la venta por la
+       URL sin comprobar a que negocio pertenece — cambiar el ID bastaba para
+       cancelar ventas ajenas. Con el scope, la venta de otro proyecto ni se
+       encuentra (404). Los endpoints del bot no llevan sesion de proyecto,
+       asi que el scope no les aplica y el bot sigue funcionando igual. */
+    use HasProjectScope;
+
     protected $table = 'rifa_ventas';
 
     protected $fillable = [
@@ -25,7 +33,10 @@ class RifaVenta extends Model
     {
         do {
             $num = 'R' . strtoupper(Str::random(6));
-        } while (self::where('order_number', $num)->exists());
+            // La unicidad del numero de orden es GLOBAL: con el scope de
+            // proyecto activo, mirar solo lo propio podria repetir un numero
+            // que ya existe en otro negocio.
+        } while (self::allProjects()->where('order_number', $num)->exists());
         return $num;
     }
 

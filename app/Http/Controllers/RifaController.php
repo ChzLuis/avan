@@ -15,7 +15,7 @@ class RifaController extends Controller
     public function index()
     {
         $project = app('active_project');
-        $ventas  = RifaVenta::with('rifa')
+        $ventas  = RifaVenta::allProjects()->with('rifa')
                     ->where('project_id', $project->id)
                     ->orderByDesc('created_at')->get();
         $rifas   = Rifa::where('project_id', $project->id)
@@ -272,7 +272,7 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
         $hasta = $request->get('hasta');
         $buscar = trim($request->get('buscar', ''));
 
-        $query = RifaVenta::with('rifa')->whereIn('project_id', $projectIds);
+        $query = RifaVenta::allProjects()->with('rifa')->whereIn('project_id', $projectIds);
 
         if ($desde) {
             $query->where('created_at', '>=', \Carbon\Carbon::createFromFormat('Y-m-d', $desde, $tz)->startOfDay()->utc());
@@ -421,7 +421,7 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
         $hasta  = $request->get('hasta');
         $estado = $request->get('estado', 'completados'); // por defecto completados
 
-        $query = RifaVenta::with('rifa')->whereIn('project_id', $projectIds);
+        $query = RifaVenta::allProjects()->with('rifa')->whereIn('project_id', $projectIds);
 
         // Filtro de estado: "completados" = enviado/pagado (los que tienen ticket)
         if ($estado === 'completados') {
@@ -555,7 +555,7 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     public function ventasJson()
     {
         $project = app('active_project');
-        $ventas  = RifaVenta::with('rifa')
+        $ventas  = RifaVenta::allProjects()->with('rifa')
                     ->where('project_id', $project->id)
                     ->orderByDesc('created_at')
                     ->limit(100)

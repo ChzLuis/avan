@@ -29,7 +29,7 @@ class ReporteController extends Controller
         $desde = $request->get('desde', now()->startOfMonth()->format('Y-m-d'));
         $hasta = $request->get('hasta', now()->format('Y-m-d'));
 
-        $totales = RifaVenta::whereIn('project_id', $ids)
+        $totales = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
             ->selectRaw("COUNT(*) as total, SUM(monto) as ingresos,
                 COUNT(CASE WHEN status='pendiente' THEN 1 END) as pendientes,
@@ -37,7 +37,7 @@ class ReporteController extends Controller
                 COUNT(CASE WHEN status='enviado' THEN 1 END) as enviados,
                 COUNT(CASE WHEN status='cancelado' THEN 1 END) as cancelados")->first();
 
-        $porPlan = RifaVenta::whereIn('project_id', $ids)
+        $porPlan = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
             ->selectRaw("plan_nombre, COUNT(*) as total, SUM(monto) as ingresos,
                 COUNT(CASE WHEN status='pendiente' THEN 1 END) as pendientes,
@@ -45,7 +45,7 @@ class ReporteController extends Controller
                 COUNT(CASE WHEN status='enviado' THEN 1 END) as enviados")
             ->groupBy('plan_nombre')->orderByDesc('ingresos')->get();
 
-        $porDia = RifaVenta::whereIn('project_id', $ids)
+        $porDia = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
             ->selectRaw("DATE(created_at) as fecha, COUNT(*) as total, SUM(monto) as ingresos")
             ->groupBy('fecha')->orderBy('fecha')->get();
@@ -62,7 +62,7 @@ class ReporteController extends Controller
         $status = $request->get('status', '');
         $buscar = $request->get('buscar', '');
 
-        $query = RifaVenta::whereIn('project_id', $ids)
+        $query = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
             ->orderByDesc('created_at');
 
@@ -75,7 +75,7 @@ class ReporteController extends Controller
 
         $ventas = $query->get();
 
-        $tiempoPromedio = RifaVenta::whereIn('project_id', $ids)
+        $tiempoPromedio = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereIn('status', ['pagado','enviado'])
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
             ->selectRaw("AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as horas")
