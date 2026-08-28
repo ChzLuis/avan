@@ -14,7 +14,7 @@ daba por pendiente estaba desactualizada.
 - [ ] Prueba de compra end-to-end en una tienda con pagos configurados
 - [ ] Decidir si GABDE opera en modo cotización (B2B) o carrito
 
-## 2. F11 — Portal del Cliente (construcción real) ← EN EJECUCIÓN
+## 2. F11 — Portal del Cliente ✔ COMPLETADA (2026-08-27, commit 7add45a, en ARIN)
 
 Diseño acordado: enlace con token por cliente (patrón de las cotizaciones),
 sin contraseñas. El cliente ve sus últimos pedidos y **repite pedido** en un
