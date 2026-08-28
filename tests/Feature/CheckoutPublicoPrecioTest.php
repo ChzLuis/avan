@@ -153,4 +153,17 @@ class CheckoutPublicoPrecioTest extends TestCase
 
         $this->assertSame(8, (int) $this->producto->fresh()->stock);
     }
+
+    /** El envío entra al total guardado: no se cobra menos de lo mostrado. */
+    public function test_el_envio_se_suma_al_total_del_pedido(): void
+    {
+        $this->pedir([[
+            'product_id' => $this->producto->id, 'name' => 'Laptop Lenovo',
+            'price' => 2799.00, 'quantity' => 1,
+        ]], ['shipping_cost' => 15.00])->assertSuccessful();
+
+        $order = Order::latest('id')->first();
+        $this->assertSame('2814.00', (string) $order->total,
+            'el total guardado debe incluir el envío que vio el cliente');
+    }
 }

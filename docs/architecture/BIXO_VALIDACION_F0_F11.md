@@ -27,6 +27,26 @@ PASS · PASS WITH DEBT · PARTIAL · FAIL · NOT VERIFIED
 | **F10 Attribution + Smart QR** | Bloqueada por volumen (ADR-005) | No iniciada, por diseño | — | — | Correctamente diferida | **NOT VERIFIED** (no aplica) |
 | **F11 Portal del Cliente** | Seguro, en producción | Sin vía de acceso indebido ni escalada: token CSPRNG 48, índice único, lookup exacto, `findOrFail` colgado del cliente, escrituras del servidor, CSRF activo, default seguro | `PortalClienteController`, `PortalClienteTest` (6) | 6 verdes | Sin revocación a null ni expiración; sin auditoría de generación; **GET sin throttle**; sin idempotencia (doble submit); `abort_unless(is_active)` sin test; endurecimientos menores (etiqueta vs id, `$project->products()`) | **PASS WITH DEBT** |
 
+## CIERRE DE HALLAZGOS (2026-08-27, mismo día) — "listo para clientes"
+
+Tras la validación se ejecutaron los cierres para poder salir con clientes
+reales. Todos con test y suite en verde:
+
+| # | Hallazgo | Cierre | Evidencia |
+|---|---|---|---|
+| A1 | `APP_DEBUG=true` en producción | `APP_DEBUG=false` en ARIN + backup `.env.bak-debug-*` + config:clear | verificado en `.env` de ARIN |
+| A2 | `DELETE/PUT /projects` solo por pertenencia | destroy = dueño/superadmin; update = `authorizeGestionNegocio` (dueño/superadmin/settings.negocio) | `ProjectController.php`, `Controller.php`, `ProjectDestroyGuardTest` (3) |
+| A3 | `/f/{slug}` sin RBAC (34 rutas) | mismo `can:`/`project.can:` que las gemelas de bixosales + middleware `proyecto.slug` que fija el proyecto para el RBAC dual | `routes/web.php`, `SetActiveProjectFromSlug.php`, `PortalFacturacionRbacTest` (3) |
+| C1 | Fuga de lectura cross-tenant en reportes de rifa | `BotInstance` filtrado por proyecto en los 4 puntos (`ReporteController`, `RifaController`) | grep 6 filtros aplicados |
+| F9 | Checkout no suma envío al total | `shipping_cost` enviado en el body de computienda (el backend ya lo procesaba) | `computienda.blade.php`, `CheckoutPublicoPrecioTest::test_el_envio_se_suma_al_total` |
+| F9b | Checkout no enlaza cliente | **PENDIENTE**: el fix (client_id) vive en `PublicController.php`, que hoy tiene una feature de variantes de producto en progreso de OTRA sesión (38 líneas sin commitear). No se despliega para no arrastrar trabajo ajeno inacabado a producción. Se retoma cuando esa feature aterrice | — |
+
+**Quedan como deuda registrada (no bloquean salir, pero anotados):**
+`DarDeBajaEnSunat:61` sin `allProjects()` (latente, cola=database); impersonación
+sin ruta de salida; 3 de 5 fuentes del Customer 360 sin escritor; 7 de 9
+creadores de Order no descuentan stock; F11 sin revocación/throttle;
+`botList` con token compartido (sirve productos, sin bot de rifa hoy).
+
 ## A. Hallazgos críticos
 
 1. **`APP_DEBUG=true` con `APP_ENV=production` en ARIN.** Cualquier 500 (incl. los `abort`/`firstOrFail` de la puerta pública `/c/{token}`) sirve stack trace a un anónimo. Verificado leyendo `.env` de ARIN. **No se toca `.env` sin tu orden.**

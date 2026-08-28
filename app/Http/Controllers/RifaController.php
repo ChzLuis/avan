@@ -262,7 +262,11 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
 
         // Buscar ventas del proyecto, o del bot rifa si el project_id del seeder difiere
         $projectIds = collect([$project->id]);
-        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        // El bot de rifa debe ser de ESTE negocio. Sin el filtro por proyecto
+        // se colaba el project_id del primer bot de rifa de toda la plataforma
+        // (fuga de lectura cross-tenant en los reportes).
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id');
         if ($botProject && !$projectIds->contains($botProject)) {
             $projectIds->push($botProject);
         }
@@ -326,7 +330,11 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
         $project = \App\Models\Project::findOrFail(session('comercial_project_id'));
 
         $projectIds = collect([$project->id]);
-        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        // El bot de rifa debe ser de ESTE negocio. Sin el filtro por proyecto
+        // se colaba el project_id del primer bot de rifa de toda la plataforma
+        // (fuga de lectura cross-tenant en los reportes).
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id');
         if ($botProject && !$projectIds->contains($botProject)) {
             $projectIds->push($botProject);
         }
@@ -411,7 +419,11 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
         $project = \App\Models\Project::findOrFail(session('comercial_project_id'));
 
         $projectIds = collect([$project->id]);
-        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        // El bot de rifa debe ser de ESTE negocio. Sin el filtro por proyecto
+        // se colaba el project_id del primer bot de rifa de toda la plataforma
+        // (fuga de lectura cross-tenant en los reportes).
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id');
         if ($botProject && !$projectIds->contains($botProject)) {
             $projectIds->push($botProject);
         }

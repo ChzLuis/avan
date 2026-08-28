@@ -5,6 +5,7 @@ use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Catalog\ProductController;
+use App\Http\Controllers\Catalog\ProductVariantController;
 use App\Http\Controllers\Catalog\ServiceController;
 use App\Http\Controllers\Catalog\CategoryController;
 use App\Http\Controllers\OrderController;
@@ -120,6 +121,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/export/rappi',   [ProductController::class, 'exportRappi'])->name('products.export.rappi');
                 Route::get('/export/shopee',  [ProductController::class, 'exportShopee'])->name('products.export.shopee');
                 Route::get('/reviews',        [ProductController::class, 'reviews'])->name('reviews.index');
+                Route::get('/{product}/variants', [ProductVariantController::class, 'show'])->name('products.variants.show');
             });
             // Alta
             Route::middleware('can:catalog.crear')->group(function () {
@@ -131,6 +133,7 @@ Route::middleware(['auth'])->group(function () {
             // Edicion
             Route::middleware('can:catalog.editar')->group(function () {
                 Route::match(['put', 'patch'], '/{product}',    [ProductController::class, 'update'])->name('products.update');
+                Route::put('/{product}/variants',               [ProductVariantController::class, 'update'])->name('products.variants.update');
                 Route::post('/reorder',                        [ProductController::class, 'reorder'])->name('products.reorder');
                 // bulkAction incluye 'delete': el propio metodo exige catalog.eliminar
                 // para esa accion concreta, porque el permiso depende del payload.
@@ -913,50 +916,54 @@ Route::prefix('f/{slug}')->name('facturacion.')->group(function () {
     Route::post('/login', [FacAuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
     Route::post('/logout',[FacAuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['auth', 'facturacion.auth'])->group(function () {
+    // F5-cierre: el portal legado exige los MISMOS permisos por verbo que su
+    // gemelo en /bixosales. Antes solo pedia estar logueado (`facturacion.auth`),
+    // asi que era un bypass del RBAC. `proyecto.slug` fija el proyecto activo
+    // desde la URL para que `project.can` (dual: canonico|legacy) funcione.
+    Route::middleware(['auth', 'facturacion.auth', 'proyecto.slug'])->group(function () {
         Route::get('/', fn (string $slug) => redirect('/bixosales'))->name('dashboard');
         Route::get('/__dashboard_legado', [FacDashController::class, 'index'])->name('dashboard.legado');
 
-        Route::get('/pos',  [PosController::class, 'indexPortal'])->name('pos');
-        Route::post('/pos', [PosController::class, 'storePortal'])->name('pos.store');
+        Route::get('/pos',  [PosController::class, 'indexPortal'])->name('pos')->middleware('can:pos.usar');
+        Route::post('/pos', [PosController::class, 'storePortal'])->name('pos.store')->middleware('can:pos.usar');
 
-        Route::get('/pedidos',            [OrderController::class, 'indexPortal'])->name('pedidos');
-        Route::post('/pedidos',           [OrderController::class, 'storePortal'])->name('pedidos.store');
-        Route::get('/pedidos/{order}',    [OrderController::class, 'showPortal'])->name('pedidos.show');
-        Route::put('/pedidos/{order}',    [OrderController::class, 'updatePortal'])->name('pedidos.update');
-        Route::delete('/pedidos/{order}', [OrderController::class, 'destroy'])->name('pedidos.destroy');
+        Route::get('/pedidos',            [OrderController::class, 'indexPortal'])->name('pedidos')->middleware('project.can:orders.ver|view-orders');
+        Route::post('/pedidos',           [OrderController::class, 'storePortal'])->name('pedidos.store')->middleware('project.can:orders.crear|manage-orders');
+        Route::get('/pedidos/{order}',    [OrderController::class, 'showPortal'])->name('pedidos.show')->middleware('project.can:orders.ver|view-orders');
+        Route::put('/pedidos/{order}',    [OrderController::class, 'updatePortal'])->name('pedidos.update')->middleware('project.can:orders.editar|manage-orders');
+        Route::delete('/pedidos/{order}', [OrderController::class, 'destroy'])->name('pedidos.destroy')->middleware('project.can:orders.eliminar|manage-orders');
 
-        Route::get('/cotizaciones',                       [QuoteController::class, 'indexPortal'])->name('cotizaciones');
-        Route::get('/cotizaciones/create',                [QuoteController::class, 'createPortal'])->name('cotizaciones.create');
-        Route::post('/cotizaciones',                      [QuoteController::class, 'storePortal'])->name('cotizaciones.store');
-        Route::get('/cotizaciones/{id}',                  [QuoteController::class, 'showPortal'])->name('cotizaciones.show');
-        Route::get('/cotizaciones/{id}/edit',             [QuoteController::class, 'editPortal'])->name('cotizaciones.edit');
-        Route::put('/cotizaciones/{id}',                  [QuoteController::class, 'updatePortal'])->name('cotizaciones.update');
-        Route::put('/cotizaciones/{id}/full',             [QuoteController::class, 'updateFullPortal'])->name('cotizaciones.update_full');
-        Route::delete('/cotizaciones/{id}',               [QuoteController::class, 'destroyPortal'])->name('cotizaciones.destroy');
-        Route::post('/cotizaciones/{id}/convertir',       [QuoteController::class, 'convertirPortal'])->name('cotizaciones.convertir');
+        Route::get('/cotizaciones',                       [QuoteController::class, 'indexPortal'])->name('cotizaciones')->middleware('project.can:quotes.ver|view-quotes');
+        Route::get('/cotizaciones/create',                [QuoteController::class, 'createPortal'])->name('cotizaciones.create')->middleware('project.can:quotes.crear|manage-quotes');
+        Route::post('/cotizaciones',                      [QuoteController::class, 'storePortal'])->name('cotizaciones.store')->middleware('project.can:quotes.crear|manage-quotes');
+        Route::get('/cotizaciones/{id}',                  [QuoteController::class, 'showPortal'])->name('cotizaciones.show')->middleware('project.can:quotes.ver|view-quotes');
+        Route::get('/cotizaciones/{id}/edit',             [QuoteController::class, 'editPortal'])->name('cotizaciones.edit')->middleware('project.can:quotes.editar|manage-quotes');
+        Route::put('/cotizaciones/{id}',                  [QuoteController::class, 'updatePortal'])->name('cotizaciones.update')->middleware('project.can:quotes.editar|manage-quotes');
+        Route::put('/cotizaciones/{id}/full',             [QuoteController::class, 'updateFullPortal'])->name('cotizaciones.update_full')->middleware('project.can:quotes.editar|manage-quotes');
+        Route::delete('/cotizaciones/{id}',               [QuoteController::class, 'destroyPortal'])->name('cotizaciones.destroy')->middleware('project.can:quotes.eliminar|manage-quotes');
+        Route::post('/cotizaciones/{id}/convertir',       [QuoteController::class, 'convertirPortal'])->name('cotizaciones.convertir')->middleware('project.can:quotes.editar|manage-quotes');
 
-        Route::get('/ruc',                      [InvoiceController::class, 'lookupRuc'])->name('ruc.lookup');
-        Route::get('/boletas',                  [InvoiceController::class, 'indexBoletasPortal'])->name('boletas');
-        Route::get('/boletas/create',           [InvoiceController::class, 'createBoletaPortal'])->name('boletas.create');
-        Route::get('/facturas',                 [InvoiceController::class, 'indexFacturasPortal'])->name('facturas');
-        Route::get('/facturas/create',          [InvoiceController::class, 'createFacturaPortal'])->name('facturas.create');
-        Route::post('/comprobantes',            [InvoiceController::class, 'storePortal'])->name('facturas.store');
-        Route::get('/facturas/{invoice}',     [InvoiceController::class, 'showPortal'])->name('facturas.show');
-        Route::put('/facturas/{invoice}',     [InvoiceController::class, 'updatePortal'])->name('facturas.update');
-        Route::delete('/facturas/{invoice}',  [InvoiceController::class, 'destroyPortal'])->name('facturas.destroy');
-        Route::get('/facturas/{invoice}/pdf',   [InvoiceController::class, 'pdfPortal'])->name('facturas.pdf');
-        Route::post('/facturas/{invoice}/sunat',[InvoiceController::class, 'sendSunatPortal'])->name('facturas.sunat');
+        Route::get('/ruc',                      [InvoiceController::class, 'lookupRuc'])->name('ruc.lookup')->middleware('can:invoices.ver');
+        Route::get('/boletas',                  [InvoiceController::class, 'indexBoletasPortal'])->name('boletas')->middleware('can:invoices.ver');
+        Route::get('/boletas/create',           [InvoiceController::class, 'createBoletaPortal'])->name('boletas.create')->middleware('can:invoices.crear');
+        Route::get('/facturas',                 [InvoiceController::class, 'indexFacturasPortal'])->name('facturas')->middleware('can:invoices.ver');
+        Route::get('/facturas/create',          [InvoiceController::class, 'createFacturaPortal'])->name('facturas.create')->middleware('can:invoices.crear');
+        Route::post('/comprobantes',            [InvoiceController::class, 'storePortal'])->name('facturas.store')->middleware('can:invoices.crear');
+        Route::get('/facturas/{invoice}',     [InvoiceController::class, 'showPortal'])->name('facturas.show')->middleware('can:invoices.ver');
+        Route::put('/facturas/{invoice}',     [InvoiceController::class, 'updatePortal'])->name('facturas.update')->middleware('can:invoices.editar');
+        Route::delete('/facturas/{invoice}',  [InvoiceController::class, 'destroyPortal'])->name('facturas.destroy')->middleware('can:invoices.anular');
+        Route::get('/facturas/{invoice}/pdf',   [InvoiceController::class, 'pdfPortal'])->name('facturas.pdf')->middleware('can:invoices.ver');
+        Route::post('/facturas/{invoice}/sunat',[InvoiceController::class, 'sendSunatPortal'])->name('facturas.sunat')->middleware('can:invoices.crear');
 
         // Las mismas dos vias legales para corregir, tambien en el portal.
-        Route::get('/facturas/{invoice}/nota',  [NotaController::class, 'opcionesPortal'])->name('facturas.nota.opciones');
-        Route::post('/facturas/{invoice}/nota', [NotaController::class, 'storePortal'])->name('facturas.nota');
-        Route::post('/facturas/{invoice}/baja', [NotaController::class, 'darDeBajaPortal'])->name('facturas.baja');
+        Route::get('/facturas/{invoice}/nota',  [NotaController::class, 'opcionesPortal'])->name('facturas.nota.opciones')->middleware('can:invoices.ver');
+        Route::post('/facturas/{invoice}/nota', [NotaController::class, 'storePortal'])->name('facturas.nota')->middleware('can:invoices.anular');
+        Route::post('/facturas/{invoice}/baja', [NotaController::class, 'darDeBajaPortal'])->name('facturas.baja')->middleware('can:invoices.anular');
 
-        Route::get('/clientes',            [ClientController::class, 'indexPortal'])->name('clientes');
-        Route::post('/clientes',           [ClientController::class, 'storePortal'])->name('clientes.store');
-        Route::put('/clientes/{client}',   [ClientController::class, 'updatePortal'])->name('clientes.update');
-        Route::delete('/clientes/{client}',[ClientController::class, 'destroyPortal'])->name('clientes.destroy');
+        Route::get('/clientes',            [ClientController::class, 'indexPortal'])->name('clientes')->middleware('project.can:clients.ver|view-clients');
+        Route::post('/clientes',           [ClientController::class, 'storePortal'])->name('clientes.store')->middleware('project.can:clients.crear|manage-clients');
+        Route::put('/clientes/{client}',   [ClientController::class, 'updatePortal'])->name('clientes.update')->middleware('project.can:clients.editar|manage-clients');
+        Route::delete('/clientes/{client}',[ClientController::class, 'destroyPortal'])->name('clientes.destroy')->middleware('project.can:clients.eliminar|manage-clients');
     });
 });
 

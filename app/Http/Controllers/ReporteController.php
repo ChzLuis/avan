@@ -18,7 +18,10 @@ class ReporteController extends Controller
     private function getProjectIds(): array
     {
         $project = Project::findOrFail(session('comercial_project_id'));
-        $botProject = BotInstance::where('bot_type', 'rifa')->value('project_id');
+        // El bot de rifa debe pertenecer a ESTE negocio; sin el filtro se
+        // colaba el project_id del primer bot de rifa global (fuga de lectura).
+        $botProject = BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id');
         return array_unique(array_filter([$project->id, $botProject]));
     }
 

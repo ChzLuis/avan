@@ -246,7 +246,10 @@ class ProjectController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $this->authorizeProject($project);
+        // Editar los datos del negocio (incluye is_active) es una escritura de
+        // ajustes: no basta con ser miembro. Dueño, superadmin o quien tenga
+        // el permiso de negocio.
+        $this->authorizeGestionNegocio($project);
 
         $data = $request->validate([
             'name'        => 'required|string|max:100',
@@ -279,7 +282,12 @@ class ProjectController extends Controller
 
     public function destroy(Request $request, Project $project)
     {
-        $this->authorizeProject($project);
+        // Borrar un negocio entero es irreversible: SOLO el dueño o un
+        // superadmin. Ser miembro (aunque sea de solo lectura) no alcanza.
+        abort_unless(
+            auth()->user()?->is_superadmin || $project->owner_id === auth()->id(),
+            403
+        );
         $project->delete();
 
         if ($request->wantsJson()) {

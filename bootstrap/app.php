@@ -41,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'project.can'      => \App\Http\Middleware\CheckPermission::class,
             'work.schedule'    => \App\Http\Middleware\CheckWorkSchedule::class,
             'facturacion.auth' => \App\Http\Middleware\FacturacionAuth::class,
+            'proyecto.slug'    => \App\Http\Middleware\SetActiveProjectFromSlug::class,
             'comercial.auth'      => \App\Http\Middleware\ComercialAuth::class,
             'comunicaciones.auth' => \App\Http\Middleware\ComunicacionesAuth::class,
         ]);
