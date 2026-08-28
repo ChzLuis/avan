@@ -1,16 +1,26 @@
 # Estado actual de la reestructuracion BIXO
 
-Ultima actualizacion: 2026-08-27 · commit `2a64c15`
+Ultima actualizacion: 2026-08-27 · commit `bbf12e9` (+ validación F0–F11)
 
 ## En que fase estamos
 
-**FASE 0 — Auditoria AS-IS**, completada en su parte medible.
-No se ha modificado arquitectura ni codigo de aplicacion.
+**CHECKPOINT F0–F11 VALIDADO** (2026-08-27). F0–F8 ejecutadas, F9 verificada,
+F11 construida y en ARIN. Auditoría independiente hecha: veredictos y evidencia
+en `BIXO_VALIDACION_F0_F11.md`. Recomendación **NO-GO para F10** hasta cerrar
+4 puntos (APP_DEBUG en prod, DELETE /projects con permiso, RBAC en /f/{slug},
+client_id+envío/cupón en checkout).
 
 ## Que se termino
 
-Auditoria cuantitativa del repositorio y de produccion. Todas las cifras de
-abajo son conteos reales, no estimaciones.
+- **F0–F8**: reestructura (seguridad multiempresa fail-closed, sesión única,
+  impersonación auditada, menú por permisos, Sales consolidado, Customer 360,
+  POS/Finance canónicos). Commits `15ecf80`…`ab3a36a`.
+- **F11 Portal del Cliente**: enlace `/c/{token}` para repetir pedidos, en
+  producción (commit `7add45a`). Seguro; deuda en revocación/throttle.
+- **Validación F0–F11**: 896 tests verdes (0 skipped), ARIN sano, y una lista
+  de deuda/hallazgos real (ver documento de validación).
+
+Todas las cifras de abajo son conteos reales, no estimaciones.
 
 ### Superficie de la plataforma
 

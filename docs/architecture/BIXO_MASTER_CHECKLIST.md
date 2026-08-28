@@ -7,6 +7,31 @@ Regla: nada se marca `[x]` sin evidencia (commit, test o documento).
 
 ---
 
+## VALIDACIÓN F0–F11 (2026-08-27) — el `[x]` no significa "sin deuda"
+
+Auditoría independiente contra el código real (no contra estos checkboxes).
+Detalle y evidencia en `BIXO_VALIDACION_F0_F11.md`.
+
+| Fase | Veredicto |
+|---|---|
+| F0 Auditoría | PASS |
+| F1 Seguridad multiempresa | PASS WITH DEBT (fuga de lectura en reportes de rifa; `DarDeBajaEnSunat:61` latente) |
+| F2 Ownership + permisos | PARTIAL (`DELETE /projects` solo pertenencia; GET de panel sin `can:`) |
+| F3 Control/Workspace + impersonación | PARTIAL (impersonación sin salida/límite) |
+| F4 Menú único | PARTIAL (3 ajustes protegidos solo por ocultar el menú en lectura) |
+| F5 Sales + retiro f-slug | PARTIAL (retiro cosmético: 34 rutas vivas sin RBAC granular) |
+| F6 Customer 360 | PARTIAL (3 de 5 fuentes nunca se llenan) |
+| F7 POS | PASS WITH DEBT (otros creadores de Order no descuentan stock) |
+| F8 Finance | PASS WITH DEBT (dos cálculos de deuda divergentes) |
+| F9 Commerce | PARTIAL (checkout sin envío/cupón/cliente + datos GABDE) |
+| F11 Portal Cliente | PASS WITH DEBT (sin revocación/throttle/idempotencia) |
+
+**GO/NO-GO F10: NO-GO** hasta cerrar (1) `APP_DEBUG=true` en ARIN,
+(2) `DELETE/PUT /projects` con permiso, (3) RBAC en `/f/{slug}`,
+(4) `client_id` + envío/cupón en checkout. Suite: 896 verdes, 0 skipped.
+
+---
+
 ## FASE 0 — Auditoria AS-IS
 
 - [x] Inventariar rutas por portal — 675 rutas, 7 puertas (2026-08-27, `BIXO_CURRENT_STATE.md`)

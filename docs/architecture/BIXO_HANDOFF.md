@@ -8,11 +8,19 @@ Ultimo commit revisado: `2a64c15`
 
 ## Fase actual
 
-FASE 0 — Auditoria AS-IS. **Completada** en lo que respecta a medicion; los
-documentos de memoria persistente quedan creados.
+CHECKPOINT F0–F11 validado. Antes de F10 hay una lista de cierre de 4 puntos
+(ver `BIXO_VALIDACION_F0_F11.md`, sección G). No iniciar F10 sin cerrarlos.
 
 ## Ultima tarea terminada
 
+**VALIDACIÓN FINAL F0–F11 (2026-08-27)** — auditoría independiente contra el
+código real, commits, suite y ARIN. Resultado en
+`BIXO_VALIDACION_F0_F11.md`. Resumen: F0/F1/F7/F8/F11 = PASS o PASS WITH DEBT;
+F2/F3/F4/F5/F6/F9 = PARTIAL. **Recomendación NO-GO para F10** hasta cerrar 4
+puntos: (1) `APP_DEBUG=true` en producción [CRÍTICO], (2) `DELETE /projects`
+solo exige pertenencia, (3) `/f/{slug}` conserva 34 rutas sin RBAC granular
+(retiro cosmético), (4) checkout no enlaza cliente ni propaga envío/cupón.
+Suite verificada: 896 verdes, 0 skipped. Antes:
 **F11 Portal del Cliente construida (2026-08-27)**: enlace personal
 `GET /c/{token}` (registrado ANTES del comodin /{slug}), repetir pedido con
 interruptor `portal_precios` (fijos → Order pendiente canal portal a precio
