@@ -8,6 +8,23 @@ Ultimo commit revisado: `2a64c15`
 
 ## Fase actual
 
+**CIERRE DEL CHECKPOINT F1–F9 EN CURSO (2026-08-28)** — plan en
+`BIXO_CHECKPOINT_F1_F9_CLOSURE.md`. Cerrados, testeados y en ARIN:
+- **P0 seguridad/aislamiento**: H1 WaBot (secreto por tenant + ownership),
+  H2 Rifa (toda la capacidad), H3 Entitlements (`comercial.module`).
+- **P1 integridad**: H4 deuda (todo pago por Ledger; CxC y 360 convergen),
+  H5 numeración fiscal (`Invoice::emitir` atómico).
+Suite: cierres verdes (WaBot 7/7, Rifa 6/6, Entitlement 4/4, Coherencia 3/3,
+Numeración 4/4). RISK-008/009/010/012/013 mitigados.
+
+**P2–P4 BLOQUEADOS por coordinación** (H6 stock variantes, H7 order→inventory,
+H8 client_id, H9 customer360, H10 pricing): tocan `PublicController` y una
+feature de **variantes de producto en vuelo de OTRA sesión** (ProductVariant/
+ProductVariantMatrixService sin commitear; tabla `product_variants` NI EXISTE
+en producción → RISK-011 no es riesgo activo). No se construye sobre código
+ajeno inacabado. Requieren que esa feature aterrice o coordinación con su dueño.
+Además hay 4 tests AJENOS rojos (CatalogTemplatesManifest/Admin*Layout) por esa
+misma feature de plantillas en el árbol. Antes:
 **VALIDACIÓN ARQUITECTÓNICA INTEGRAL (2026-08-28)** — auditoría de arquitectura
 contra código real (5 auditores). Informe: `BIXO_VALIDACION_ARQUITECTONICA.md`.
 Veredicto: la FORMA general quedó como se acordó (Control≠Workspace,

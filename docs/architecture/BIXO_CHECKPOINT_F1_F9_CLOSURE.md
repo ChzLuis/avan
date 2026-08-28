@@ -40,11 +40,11 @@ funcional de Operations, otro roadmap); snapshots de cliente en documentos
 | H3 Entitlements | **PASS (local)** — pendiente deploy | Middleware `comercial.module` en el grupo /bixosales (1 línea cubre todas las rutas): ACCESS = entitlement AND permiso. Gatea los 5 módulos que TODOS los tenants tienen (orders/clients/invoices/quotes/catalog); logistics queda para backfill (tecsist/demo no lo tienen). `ComercialEntitlementTest` 4/4 |
 | H4 Finance/Ledger | **PASS (local)** — pendiente deploy | PaymentController (manual/Culqi/MP) registra por `Ledger::registrar` (idempotente) en vez de escribir `payment_status` directo; Cobranza y 360 derivan del libro. `CoherenciaDeudaTest` 3/3 (S/100→0/30/70/reversión coherente). Históricos divergentes en prod: SOLO pedidos 20/21/22 (vetados, documentados) |
 | H5 Correlativos | **PASS (local)** — pendiente deploy | `Invoice::emitir()` reserva correlativo + crea el comprobante en la MISMA transacción; InvoiceController y QuoteController migrados; ninguna llamada cruda a nextCorrelativo (barrido estático). `InvoiceNumberingTest` 4/4 |
-| H6 Stock variantes | pendiente | — |
-| H7 Order→Inventory | pendiente | — |
-| H8 client_id | pendiente | — |
-| H9 Customer 360 | pendiente | — |
-| H10 Pricing | pendiente | — |
+| H6 Stock variantes | **BLOQUEADO** | AS-IS medido: `product_variants` NO existe en producción (ERROR 1146) → RISK-011 NO es riesgo activo. `ProductVariant.php`/`ProductVariantMatrixService.php` sin commitear (feature en vuelo de otra sesión). La decisión de esquema A/B/C debe coordinarse con su dueño; no se construye sobre código ajeno inacabado |
+| H7 Order→Inventory | **PARCIAL/coordinación** | Requiere decidir el EVENTO de negocio que afecta inventario (creación vs confirmación vs pago). POS/checkout descuentan en creación; bot/portal entran 'pending' para aprobación (descontar en creación sería prematuro). Toca PublicController y BotWebhookController (código ajeno en vuelo). Necesita decisión de negocio + coordinación, no solo código |
+| H8 client_id | **coordinación** | El fix toca PublicController::storeOrder (feature de variantes en vuelo) y BotWebhookController (ajeno M) |
+| H9 Customer 360 | **depende de H8** | ClientController es estable, pero poblar las fuentes depende de H8 (client_id en checkout/bot) |
+| H10 Pricing | **coordinación** | PriceResolver tocaría PublicController (ajeno en vuelo), PosController y ProjectContext |
 
 ## H1 — WaBotController mutable cross-tenant (P0, PRIORIDAD ABSOLUTA)
 

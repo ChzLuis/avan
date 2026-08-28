@@ -48,6 +48,27 @@ Los tres arreglos del 2026-08-27 (APP_DEBUG, /projects, RBAC f-slug) SÍ se
 verificaron vigentes en ARIN (md5 idéntico). **GO/NO-GO F10: sigue NO-GO.**
 Suite: 903 verdes, 0 skipped.
 
+## CIERRE DEL CHECKPOINT F1–F9 (2026-08-28) — progreso
+
+Plan y evidencia: `BIXO_CHECKPOINT_F1_F9_CLOSURE.md`.
+
+| Bloque | Veredicto | Evidencia |
+|---|---|---|
+| H1 WaBot isolation | **PASS** (código) · residuo: rotar token legacy | WaBotIsolationTest 7/7, en ARIN |
+| H2 Rifa isolation | **PASS** | RifaIsolationTest 6/6, en ARIN |
+| H3 Entitlements | **PASS** (5 módulos universales) | ComercialEntitlementTest 4/4, en ARIN |
+| H4 Finance/Ledger | **PASS** | CoherenciaDeudaTest 3/3, en ARIN |
+| H5 Invoice numbering | **PASS** | InvoiceNumberingTest 4/4, en ARIN |
+| H6 Stock ownership | **BLOQUEADO** | sin variantes en prod (no es riesgo activo); feature ajena en vuelo |
+| H7 Order→Inventory | **PARTIAL/coordinación** | requiere decisión de evento + toca código ajeno |
+| H8 Customer linkage | **coordinación** | toca PublicController/BotWebhook (ajeno en vuelo) |
+| H9 Customer 360 | **depende de H8** | — |
+| H10 Pricing | **coordinación** (no bloquea F10) | toca PublicController (ajeno) |
+
+**GO/NO-GO F10: sigue NO-GO.** Falta H6–H9 en PASS. Están bloqueados por una
+feature de variantes de otra sesión (código sin commitear; tabla inexistente en
+prod). Coordinar antes de continuar.
+
 ---
 
 ## FASE 0 — Auditoria AS-IS
