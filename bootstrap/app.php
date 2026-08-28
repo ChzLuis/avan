@@ -43,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'facturacion.auth' => \App\Http\Middleware\FacturacionAuth::class,
             'proyecto.slug'    => \App\Http\Middleware\SetActiveProjectFromSlug::class,
             'comercial.auth'      => \App\Http\Middleware\ComercialAuth::class,
+            'comercial.module'    => \App\Http\Middleware\EnsureComercialModule::class,
             'comunicaciones.auth' => \App\Http\Middleware\ComunicacionesAuth::class,
         ]);
     })

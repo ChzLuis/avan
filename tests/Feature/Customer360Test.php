@@ -34,6 +34,11 @@ class Customer360Test extends TestCase
             'owner_id' => User::factory()->create()->id,
             'name' => 'C360 QA', 'slug' => 'c360-qa', 'category' => 'retail', 'is_active' => true,
         ]);
+        // Entitlement: el negocio contrató el módulo clients (gate comercial.module).
+        foreach (['clients', 'orders'] as $key) {
+            $m = \App\Models\Module::firstOrCreate(['key' => $key], ['name' => $key, 'is_active' => true]);
+            $this->project->modules()->syncWithoutDetaching([$m->id => ['is_active' => true]]);
+        }
         Role::findOrCreate('c360_qa', 'web')->syncPermissions(['clients.ver', 'orders.ver']);
         $u = User::factory()->create(['is_superadmin' => 0]);
         ProjectMember::create(['project_id' => $this->project->id, 'user_id' => $u->id, 'role' => 'viewer']);

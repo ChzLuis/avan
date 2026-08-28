@@ -122,6 +122,9 @@ class PortalClienteTest extends TestCase
         foreach (['clients.editar', 'manage-clients'] as $p) {
             Permission::findOrCreate($p, 'web');
         }
+        // Entitlement: el negocio contrató el módulo clients (gate comercial.module).
+        $m = \App\Models\Module::firstOrCreate(['key' => 'clients'], ['name' => 'clients', 'is_active' => true]);
+        $this->project->modules()->syncWithoutDetaching([$m->id => ['is_active' => true]]);
         Role::findOrCreate('portal_qa', 'web')->syncPermissions(['clients.editar']);
         $u = User::factory()->create(['is_superadmin' => 0]);
         ProjectMember::create(['project_id' => $this->project->id, 'user_id' => $u->id, 'role' => 'editor']);
