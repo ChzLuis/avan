@@ -8,8 +8,14 @@ Ultimo commit revisado: `2a64c15`
 
 ## Fase actual
 
-CHECKPOINT F0–F11 validado. Antes de F10 hay una lista de cierre de 4 puntos
-(ver `BIXO_VALIDACION_F0_F11.md`, sección G). No iniciar F10 sin cerrarlos.
+CHECKPOINT F0–F11 validado y **críticos cerrados** (2026-08-27), sistema listo
+para salir con clientes. Cerrado y desplegado a ARIN: APP_DEBUG=false,
+DELETE/PUT /projects con permiso, RBAC en las 34 rutas de /f/{slug} (middleware
+`proyecto.slug`), fuga de lectura de rifa, y el envío entra al total del
+checkout. Suite 903 verde. Pendiente NO bloqueante: enlace de cliente en el
+checkout (client_id) — su fix vive en PublicController, hoy con una feature de
+variantes de otra sesion sin terminar; se retoma cuando aterrice. Detalle:
+`BIXO_VALIDACION_F0_F11.md` (sección "CIERRE DE HALLAZGOS").
 
 ## Ultima tarea terminada
 
