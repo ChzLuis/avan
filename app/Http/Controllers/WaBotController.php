@@ -12,14 +12,55 @@ use Illuminate\Support\Facades\Http;
 
 class WaBotController extends Controller
 {
-    private const BOT_URL  = 'http://127.0.0.1:3001';
-    private const BOT_TOKEN = 'wa-bot-secret-2024'; // igual en el bot
+    private function botUrl(): string   { return config('services.wabot.url'); }
+    private function botToken(): string  { return config('services.wabot.token'); }
+
+    /**
+     * Autentica un request del conector: acepta el `wa_bot_token` de CUALQUIER
+     * proyecto (secreto por tenant) o, como puente de compatibilidad mientras
+     * el bot migra, el token global (ya fuera del repo, en `.env`). Aborta 401
+     * si el token no es válido. Cierre de RISK-008.
+     */
+    private function autenticarWa(Request $request): void
+    {
+        $token = (string) $request->input('token');
+        $ok = $token !== '' && (
+            hash_equals($this->botToken(), $token) ||
+            Project::where('wa_bot_token', $token)->exists()
+        );
+        abort_unless($ok, 401, 'Unauthorized');
+    }
+
+    /** El tenant derivado del secreto por proyecto, o null si vino el global legacy. */
+    private function tenantWa(Request $request): ?Project
+    {
+        $token = (string) $request->input('token');
+        return $token !== '' ? Project::where('wa_bot_token', $token)->first() : null;
+    }
+
+    /**
+     * Ownership: para operar sobre un pedido, el token presentado debe ser el
+     * `wa_bot_token` del DUEÑO del pedido (o el global legacy). Así el conector
+     * de la Empresa A no puede tocar pedidos de la Empresa B.
+     */
+    private function autorizarOrden(Order $order, Request $request): void
+    {
+        $token = (string) $request->input('token');
+        $dueno = $order->project;
+        abort_unless(
+            $dueno && (
+                hash_equals((string) $dueno->wa_bot_token, $token) ||
+                hash_equals($this->botToken(), $token)
+            ),
+            403
+        );
+    }
 
     // ── Bot → Laravel: obtener config del proyecto por número de teléfono ──────
     public function getConfig(Request $request)
     {
         $data = $request->validate(['token' => 'required|string', 'phone' => 'required|string']);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
 
         $phone    = preg_replace('/\D/', '', $data['phone']);
         $phoneLast = substr($phone, -9); // últimos 9 dígitos para buscar con/sin código de país
@@ -44,7 +85,7 @@ class WaBotController extends Controller
     public function getFlowConfig(Request $request)
     {
         $data = $request->validate(['token' => 'required|string', 'bot' => 'required|string']);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
 
         $botType  = $data['bot'];
         $cacheKey = "bot.flow.{$botType}";
@@ -113,7 +154,7 @@ class WaBotController extends Controller
     public function getSession(Request $request)
     {
         $data = $request->validate(['token' => 'required|string', 'flow_id' => 'required|integer', 'wa_number' => 'required|string']);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
 
         $existed = BotSession::where('flow_id', $data['flow_id'])->where('wa_number', $data['wa_number'])->exists();
         $session = BotSession::forNumber($data['flow_id'], $data['wa_number']);
@@ -136,7 +177,7 @@ class WaBotController extends Controller
             'state'     => 'required|string',
             'data'      => 'nullable|array',
         ]);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
 
         $session = BotSession::forNumber($data['flow_id'], $data['wa_number']);
         $update  = ['current_state' => $data['state'], 'last_activity_at' => now()];
@@ -179,11 +220,12 @@ class WaBotController extends Controller
             'notes'        => 'nullable|string',
         ]);
 
-        if ($data['token'] !== self::BOT_TOKEN) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        $this->autenticarWa($request);
 
-        $project = Project::where('slug', $data['project_slug'])->first();
+        // Preferir el tenant derivado del secreto por proyecto; el slug es un
+        // dato controlable por el cliente y solo se usa como puente legacy.
+        $project = $this->tenantWa($request)
+            ?? Project::where('slug', $data['project_slug'])->first();
         if (!$project) {
             return response()->json(['error' => 'Project not found'], 404);
         }
@@ -214,7 +256,8 @@ class WaBotController extends Controller
     public function paymentReceived(Request $request, Order $order)
     {
         $data = $request->validate(['token' => 'required|string']);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
+        $this->autorizarOrden($order, $request);
 
         $order->update(['wa_status' => 'pago_recibido']);
         return response()->json(['ok' => true]);
@@ -224,7 +267,8 @@ class WaBotController extends Controller
     public function clientConfirmed(Request $request, Order $order)
     {
         $data = $request->validate(['token' => 'required|string', 'confirmed' => 'required|boolean']);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
+        $this->autorizarOrden($order, $request);
 
         $order->update([
             'wa_status' => $data['confirmed'] ? 'entregado' : 'problema',
@@ -255,8 +299,8 @@ class WaBotController extends Controller
 
         // Llama al mini-servidor del bot para que envíe el mensaje
         try {
-            Http::timeout(4)->post(self::BOT_URL . '/action', [
-                'token'     => self::BOT_TOKEN,
+            Http::timeout(4)->post($this->botUrl() . '/action', [
+                'token'     => $this->botToken(),
                 'wa_number' => $order->wa_number,
                 'action'    => $data['action'],
                 'order_id'  => $order->id,
@@ -302,8 +346,8 @@ class WaBotController extends Controller
                 $negocio = $project?->name ?? $project->name;
                 $mensaje = \App\Support\OrderFlow::notifyMessage($project, $newStatus, $order, $negocio);
                 try {
-                    $res = Http::timeout(4)->post(self::BOT_URL . '/action', [
-                        'token'     => self::BOT_TOKEN,
+                    $res = Http::timeout(4)->post($this->botUrl() . '/action', [
+                        'token'     => $this->botToken(),
                         'wa_number' => $phone,
                         'action'    => 'custom_text',
                         'message'   => $mensaje,
@@ -330,10 +374,16 @@ class WaBotController extends Controller
     public function findOrder(Request $request)
     {
         $data = $request->validate(['token' => 'required|string', 'wa_number' => 'required|string']);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
 
         $phone = preg_replace('/\D/', '', $data['wa_number']);
-        $order = Order::allProjects()
+        // Acotar al tenant del token; el bot legacy (token global) aún no lo
+        // trae, y sólo devuelve un order_id (mutar exige autorizarOrden).
+        $tenant = $this->tenantWa($request);
+        $base   = $tenant
+            ? Order::where('project_id', $tenant->id)
+            : Order::allProjects();
+        $order = $base
             ->where('wa_number', $phone)
             ->whereNotIn('wa_status', ['entregado', 'problema'])
             ->latest()
@@ -351,7 +401,8 @@ class WaBotController extends Controller
             'image_base64'  => 'required|string',
             'mimetype'      => 'required|string',
         ]);
-        if ($data['token'] !== self::BOT_TOKEN) return response()->json(['error' => 'Unauthorized'], 401);
+        $this->autenticarWa($request);
+        $this->autorizarOrden($order, $request);
 
         $ext      = str_contains($data['mimetype'], 'png') ? 'png' : 'jpg';
         $filename = 'payment_proof_' . $order->id . '_' . time() . '.' . $ext;
@@ -371,9 +422,11 @@ class WaBotController extends Controller
     // ── Portal → Bot: actualizar delivery + costo (tras recibir ubicación) ────
     public function updateDelivery(Request $request, Order $order)
     {
-        // Ruta pública (/wa/...): autenticar con token. Ruta admin: verificar sesión.
+        // Ruta pública (/wa/...): autenticar con token + ownership por dueño del
+        // pedido. Ruta admin: verificar sesión.
         if ($request->routeIs('wa.order.delivery')) {
-            abort_unless($request->input('token') === self::BOT_TOKEN, 403);
+            $this->autenticarWa($request);
+            $this->autorizarOrden($order, $request);
         } else {
             $projectId = $request->routeIs('bixosales.*')
                 ? session('comercial_project_id')

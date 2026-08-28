@@ -31,6 +31,21 @@ funcional de Operations, otro roadmap); snapshots de cliente en documentos
 
 ---
 
+## Progreso de ejecución
+
+| Bloque | Estado | Evidencia |
+|---|---|---|
+| H1 WaBot isolation | **CERRADO (local)** — pendiente deploy | `wa_bot_token` por proyecto + ownership por dueño del pedido + token global fuera del repo; `WaBotIsolationTest` 7/7 |
+| H2 Rifa | pendiente | — |
+| H3 Entitlements | pendiente | — |
+| H4 Finance/Ledger | pendiente | — |
+| H5 Correlativos | pendiente | — |
+| H6 Stock variantes | pendiente | — |
+| H7 Order→Inventory | pendiente | — |
+| H8 client_id | pendiente | — |
+| H9 Customer 360 | pendiente | — |
+| H10 Pricing | pendiente | — |
+
 ## H1 — WaBotController mutable cross-tenant (P0, PRIORIDAD ABSOLUTA)
 
 - **Gravedad:** ALTA. Explotable hoy. RISK-008/TD-012.

@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // Conector de WhatsApp (Baileys). El token global es SOLO puente de
+    // compatibilidad mientras cada proyecto migra a su `wa_bot_token`. Fuera
+    // del repo: se lee de .env y se rota en el VPS (RISK-008).
+    'wabot' => [
+        'url'   => env('WABOT_URL', 'http://127.0.0.1:3001'),
+        'token' => env('WABOT_TOKEN', 'wa-bot-secret-2024'),
+    ],
+
 ];
