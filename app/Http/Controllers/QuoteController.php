@@ -833,38 +833,42 @@ class QuoteController extends Controller
         $subtotal = \App\Support\LineMath::format($subtotalCents);
         $igvTotal = \App\Support\LineMath::format($igvTotalCents);
 
-        $correlativo = Invoice::nextCorrelativo($project->id, $docType, $defaultSerie);
-        $numero      = Invoice::buildNumero($defaultSerie, $correlativo);
+        // Reserva del correlativo + creación atómicas (RISK-012): mismo camino
+        // seguro que InvoiceController::store.
+        $invoice = Invoice::emitir($project->id, $docType, $defaultSerie, null,
+            function (int $correlativo, string $numero) use ($project, $quote, $docType, $defaultSerie, $subtotal, $igvTotal, $subtotalCents, $igvTotalCents, $items) {
+                $invoice = $project->invoices()->create([
+                    'quote_id'            => $quote->id,
+                    'type'                => $docType,
+                    'serie'               => $defaultSerie,
+                    'correlativo'         => $correlativo,
+                    'numero'              => $numero,
+                    'issue_date'          => now()->toDateString(),
+                    'emisor_razon_social' => $project->setting('razon_social') ?? $project->name,
+                    'emisor_ruc'          => $project->setting('ruc'),
+                    'emisor_direccion'    => $project->address,
+                    'client_name'         => $quote->client_name,
+                    'client_phone'        => $quote->client_phone,
+                    'client_email'        => $quote->client_email,
+                    'client_doc_type'     => $quote->client_doc_type,
+                    'client_doc_number'   => $quote->client_doc_number,
+                    'client_address'      => $quote->client_address,
+                    'subtotal'            => $subtotal,
+                    'igv'                 => $igvTotal,
+                    'total'               => \App\Support\LineMath::format($subtotalCents + $igvTotalCents),
+                    'currency'            => $project->setting('currency') ?? 'PEN',
+                    'igv_included'        => true,
+                    'payment_method'      => $quote->payment_method,
+                    'status'              => 'issued',
+                    'notes'               => $quote->notes,
+                ]);
 
-        $invoice = $project->invoices()->create([
-            'quote_id'            => $quote->id,
-            'type'                => $docType,
-            'serie'               => $defaultSerie,
-            'correlativo'         => $correlativo,
-            'numero'              => $numero,
-            'issue_date'          => now()->toDateString(),
-            'emisor_razon_social' => $project->setting('razon_social') ?? $project->name,
-            'emisor_ruc'          => $project->setting('ruc'),
-            'emisor_direccion'    => $project->address,
-            'client_name'         => $quote->client_name,
-            'client_phone'        => $quote->client_phone,
-            'client_email'        => $quote->client_email,
-            'client_doc_type'     => $quote->client_doc_type,
-            'client_doc_number'   => $quote->client_doc_number,
-            'client_address'      => $quote->client_address,
-            'subtotal'            => $subtotal,
-            'igv'                 => $igvTotal,
-            'total'               => \App\Support\LineMath::format($subtotalCents + $igvTotalCents),
-            'currency'            => $project->setting('currency') ?? 'PEN',
-            'igv_included'        => true,
-            'payment_method'      => $quote->payment_method,
-            'status'              => 'issued',
-            'notes'               => $quote->notes,
-        ]);
+                foreach ($items as $item) {
+                    $invoice->items()->create($item);
+                }
 
-        foreach ($items as $item) {
-            $invoice->items()->create($item);
-        }
+                return $invoice;
+            });
 
         $quote->update(['status' => 'accepted']);
 

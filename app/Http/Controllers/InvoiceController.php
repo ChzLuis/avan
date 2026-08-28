@@ -211,41 +211,44 @@ class InvoiceController extends Controller
         $igvTotal = LineMath::format($igvTotalCents);
         $totalDoc = LineMath::format($subtotalCents + $igvTotalCents);
 
-        $correlativo = $request->filled('correlativo')
-            ? (int) $request->input('correlativo')
-            : Invoice::nextCorrelativo($project->id, $type, $serie);
-        $numero = Invoice::buildNumero($serie, $correlativo);
+        // Reserva del correlativo + creación en la MISMA transacción (RISK-012):
+        // dos emisiones simultáneas ya no pueden tomar el mismo número.
+        $correlativoManual = $request->filled('correlativo') ? (int) $request->input('correlativo') : null;
+        $invoice = Invoice::emitir($project->id, $type, $serie, $correlativoManual,
+            function (int $correlativo, string $numero) use ($project, $type, $serie, $data, $subtotal, $igvTotal, $totalDoc, $igvIncluded, $itemsData) {
+                $invoice = $project->invoices()->create([
+                    'type'                => $type,
+                    'serie'               => $serie,
+                    'correlativo'         => $correlativo,
+                    'numero'              => $numero,
+                    'issue_date'          => $data['issue_date'] ?? now()->toDateString(),
+                    'due_date'            => $data['due_date'] ?? null,
+                    'emisor_razon_social' => $project->setting('razon_social') ?? $project->name,
+                    'emisor_ruc'          => $project->setting('ruc'),
+                    'emisor_direccion'    => $project->address,
+                    'client_name'        => $data['client_name'],
+                    'client_phone'       => $data['client_phone'] ?? null,
+                    'client_email'       => $data['client_email'] ?? null,
+                    'client_doc_type'    => $data['client_doc_type'] ?? null,
+                    'client_doc_number'  => $data['client_doc_number'] ?? null,
+                    'client_address'     => $data['client_address'] ?? null,
+                    'subtotal'            => $subtotal,
+                    'igv'                 => $igvTotal,
+                    'total'               => $totalDoc,
+                    'currency'            => $data['currency'] ?? ($project->setting('currency') ?? 'PEN'),
+                    'igv_included'        => $igvIncluded,
+                    'payment_method'      => $data['payment_method'] ?? null,
+                    'status'              => 'issued',
+                    'notes'               => $data['notes'] ?? null,
+                    'quote_id'            => $data['quote_id'] ?? null,
+                ]);
 
-        $invoice = $project->invoices()->create([
-            'type'                => $type,
-            'serie'               => $serie,
-            'correlativo'         => $correlativo,
-            'numero'              => $numero,
-            'issue_date'          => $data['issue_date'] ?? now()->toDateString(),
-            'due_date'            => $data['due_date'] ?? null,
-            'emisor_razon_social' => $project->setting('razon_social') ?? $project->name,
-            'emisor_ruc'          => $project->setting('ruc'),
-            'emisor_direccion'    => $project->address,
-            'client_name'        => $data['client_name'],
-            'client_phone'       => $data['client_phone'] ?? null,
-            'client_email'       => $data['client_email'] ?? null,
-            'client_doc_type'    => $data['client_doc_type'] ?? null,
-            'client_doc_number'  => $data['client_doc_number'] ?? null,
-            'client_address'     => $data['client_address'] ?? null,
-            'subtotal'            => $subtotal,
-            'igv'                 => $igvTotal,
-            'total'               => $totalDoc,
-            'currency'            => $data['currency'] ?? ($project->setting('currency') ?? 'PEN'),
-            'igv_included'        => $igvIncluded,
-            'payment_method'      => $data['payment_method'] ?? null,
-            'status'              => 'issued',
-            'notes'               => $data['notes'] ?? null,
-            'quote_id'            => $data['quote_id'] ?? null,
-        ]);
+                foreach ($itemsData as $item) {
+                    $invoice->items()->create($item);
+                }
 
-        foreach ($itemsData as $item) {
-            $invoice->items()->create($item);
-        }
+                return $invoice;
+            });
 
         return response()->json(['invoice' => $invoice->load('items')]);
     }

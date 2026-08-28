@@ -103,6 +103,25 @@ class Invoice extends Model
         });
     }
 
+    /**
+     * Camino ÚNICO y seguro de emisión: reserva el correlativo Y crea el
+     * comprobante en la MISMA transacción, de modo que el `lockForUpdate` de
+     * `nextCorrelativo` se sostiene hasta que el nuevo comprobante existe. Sin
+     * esto, dos emisiones simultáneas calculan el mismo MAX+1 y colisionan
+     * contra el índice único (RISK-012).
+     *
+     * @param  \Closure(int $correlativo, string $numero): \App\Models\Invoice $crear
+     */
+    public static function emitir(int $projectId, string $type, string $serie, ?int $correlativoManual, \Closure $crear): self
+    {
+        return DB::transaction(function () use ($projectId, $type, $serie, $correlativoManual, $crear) {
+            $correlativo = $correlativoManual ?? self::nextCorrelativo($projectId, $type, $serie);
+            $numero      = self::buildNumero($serie, $correlativo);
+
+            return $crear($correlativo, $numero);
+        });
+    }
+
     /** El código del catálogo 01 que viaja en el XML. */
     public function codigoSunat(): string
     {
