@@ -211,12 +211,25 @@ class InvoiceController extends Controller
         $igvTotal = LineMath::format($igvTotalCents);
         $totalDoc = LineMath::format($subtotalCents + $igvTotalCents);
 
+        // Enlazar el comprobante al cliente canónico si ya existe en el negocio
+        // (por teléfono o correo), para que aparezca en su Customer 360. No se
+        // crea un cliente nuevo: un comprobante puede emitirse a quien no está
+        // en el CRM (TD-018, parte estable).
+        $clientId = null;
+        if (! empty($data['client_phone'])) {
+            $clientId = $project->clients()->where('phone', $data['client_phone'])->value('id');
+        }
+        if (! $clientId && ! empty($data['client_email'])) {
+            $clientId = $project->clients()->where('email', $data['client_email'])->value('id');
+        }
+
         // Reserva del correlativo + creación en la MISMA transacción (RISK-012):
         // dos emisiones simultáneas ya no pueden tomar el mismo número.
         $correlativoManual = $request->filled('correlativo') ? (int) $request->input('correlativo') : null;
         $invoice = Invoice::emitir($project->id, $type, $serie, $correlativoManual,
-            function (int $correlativo, string $numero) use ($project, $type, $serie, $data, $subtotal, $igvTotal, $totalDoc, $igvIncluded, $itemsData) {
+            function (int $correlativo, string $numero) use ($project, $type, $serie, $data, $subtotal, $igvTotal, $totalDoc, $igvIncluded, $itemsData, $clientId) {
                 $invoice = $project->invoices()->create([
+                    'client_id'           => $clientId,
                     'type'                => $type,
                     'serie'               => $serie,
                     'correlativo'         => $correlativo,
