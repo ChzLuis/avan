@@ -30,6 +30,24 @@ Detalle y evidencia en `BIXO_VALIDACION_F0_F11.md`.
 (2) `DELETE/PUT /projects` con permiso, (3) RBAC en `/f/{slug}`,
 (4) `client_id` + envío/cupón en checkout. Suite: 896 verdes, 0 skipped.
 
+## VALIDACIÓN ARQUITECTÓNICA 2026-08-28 — 5 FALLAS reabren el checkpoint
+
+Auditoría de arquitectura (`BIXO_VALIDACION_ARQUITECTONICA.md`). La forma
+general se respetó, pero hay fallas que impiden cerrar F0–F11 y bloquean F10:
+
+- **FALLA cross-tenant WaBotController** (RISK-008/TD-012) — explotable hoy.
+- **Fix de rifa incompleto** (RISK-009/TD-013) — el cierre del 2026-08-27 solo
+  cubrió los 3 reportes; nuevoManual/eliminar/editar/recordar siguen sin filtrar.
+- **Deuda con 3 fuentes divergentes** (RISK-010/TD-014).
+- **Stock de variante fuera del Kardex** (RISK-011/TD-015).
+- **Numeración fiscal fuera de transacción** (RISK-012/TD-016).
+- Entitlement no exigido en /bixosales (TD-017); client_id no enlazado + 360 con
+  3/5 fuentes vacías (TD-018); 7/9 creadores de Order sin descontar stock (TD-019).
+
+Los tres arreglos del 2026-08-27 (APP_DEBUG, /projects, RBAC f-slug) SÍ se
+verificaron vigentes en ARIN (md5 idéntico). **GO/NO-GO F10: sigue NO-GO.**
+Suite: 903 verdes, 0 skipped.
+
 ---
 
 ## FASE 0 — Auditoria AS-IS

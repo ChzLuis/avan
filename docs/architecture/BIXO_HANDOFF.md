@@ -8,8 +8,23 @@ Ultimo commit revisado: `2a64c15`
 
 ## Fase actual
 
-CHECKPOINT F0–F11 validado y **críticos cerrados** (2026-08-27), sistema listo
-para salir con clientes. Cerrado y desplegado a ARIN: APP_DEBUG=false,
+**VALIDACIÓN ARQUITECTÓNICA INTEGRAL (2026-08-28)** — auditoría de arquitectura
+contra código real (5 auditores). Informe: `BIXO_VALIDACION_ARQUITECTONICA.md`.
+Veredicto: la FORMA general quedó como se acordó (Control≠Workspace,
+Administrador=rol, no ERP paralelo, experiencias reutilizan canónicos, Growth
+no existe, facturación única, estados desacoplados). Pero hay **5 FALLAS que
+obligan NO-GO para F10**:
+1. WaBotController mutable cross-tenant (RISK-008, explotable hoy).
+2. Fix de rifa incompleto: 4 métodos sin filtrar (RISK-009) — mi cierre del
+   2026-08-27 solo cubrió los reportes.
+3. Deuda con 3 fuentes divergentes (RISK-010): PaymentController escribe sin Ledger.
+4. Stock de variante fuera del Kardex (RISK-011).
+5. Numeración de comprobante fuera de transacción (RISK-012).
+Más: /bixosales sin `module:` (entitlement no exigido), client_id no enlazado
+en 2 canales, Customer 360 con 3/5 fuentes vacías. Suite 903 verde. NADA se
+modificó en esta auditoría (regla del usuario). NO iniciar F10.
+Antes: checkpoint F0–F11 validado y **críticos cerrados** (2026-08-27), sistema
+listo para salir con clientes. Cerrado y desplegado a ARIN: APP_DEBUG=false,
 DELETE/PUT /projects con permiso, RBAC en las 34 rutas de /f/{slug} (middleware
 `proyecto.slug`), fuga de lectura de rifa, y el envío entra al total del
 checkout. Suite 903 verde. Pendiente NO bloqueante: enlace de cliente en el

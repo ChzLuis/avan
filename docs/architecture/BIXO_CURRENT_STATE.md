@@ -1,6 +1,19 @@
 # Estado actual de la reestructuracion BIXO
 
-Ultima actualizacion: 2026-08-27 · commit `bbf12e9` (+ validación F0–F11)
+Ultima actualizacion: 2026-08-28 · commit `b8a0195` (+ validación arquitectónica integral)
+
+## Validación arquitectónica 2026-08-28 (resumen)
+
+La forma general de la plataforma quedó como se acordó, pero la auditoría de
+arquitectura (5 auditores, `BIXO_VALIDACION_ARQUITECTONICA.md`) encontró 5
+FALLAS: WaBotController cross-tenant (RISK-008), fix de rifa incompleto
+(RISK-009), deuda con 3 fuentes (RISK-010), stock de variante sin Kardex
+(RISK-011), numeración fiscal fuera de transacción (RISK-012). Más entitlement
+no exigido en /bixosales y Customer 360 con 3/5 fuentes vacías.
+**GO/NO-GO F10: NO-GO** hasta cerrar esas fallas. Suite 903 verde.
+
+---
+
 
 ## En que fase estamos
 
