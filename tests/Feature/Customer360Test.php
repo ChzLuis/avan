@@ -53,14 +53,19 @@ class Customer360Test extends TestCase
 
     public function test_la_ficha_agrega_toda_la_relacion_en_una_linea_de_tiempo(): void
     {
-        $cliente = Client::create(['project_id' => $this->project->id, 'name' => 'Constructora Andina SAC']);
+        // El `client_id` del comprobante NO es un atajo del test: producción lo
+        // asigna al emitir cuando el cliente ya existe (por teléfono/correo) —
+        // ver InvoiceClientLinkTest. Aquí el cliente tiene teléfono y el
+        // comprobante nace con su FK, igual que en el panel real.
+        $cliente = Client::create(['project_id' => $this->project->id, 'name' => 'Constructora Andina SAC', 'phone' => '987111222']);
         $cliente->orders()->create(['project_id' => $this->project->id, 'client_name' => $cliente->name,
             'status' => 'done', 'total' => 350, 'payment_status' => 'paid']);
         $cliente->quotes()->create(['project_id' => $this->project->id, 'client_name' => $cliente->name,
             'status' => 'sent', 'total' => 890, 'token' => str()->random(48)]);
         Invoice::create(['project_id' => $this->project->id, 'client_id' => $cliente->id,
             'type' => 'factura', 'serie' => 'F001', 'correlativo' => 1, 'numero' => 'F001-00000001',
-            'client_name' => $cliente->name, 'subtotal' => '296.61', 'igv' => '53.39', 'total' => '350.00',
+            'client_name' => $cliente->name, 'client_phone' => $cliente->phone,
+            'subtotal' => '296.61', 'igv' => '53.39', 'total' => '350.00',
             'currency' => 'PEN', 'issue_date' => now()->toDateString(), 'status' => 'issued',
             'sunat_status' => 'accepted']);
 
