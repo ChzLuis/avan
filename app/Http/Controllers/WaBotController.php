@@ -12,48 +12,15 @@ use Illuminate\Support\Facades\Http;
 
 class WaBotController extends Controller
 {
+    use \App\Http\Controllers\Concerns\AutenticaConectorWa;
+
     private function botUrl(): string   { return config('services.wabot.url'); }
-    private function botToken(): string  { return config('services.wabot.token'); }
+    private function botToken(): string  { return $this->botTokenWa(); }
 
-    /**
-     * Autentica un request del conector: acepta el `wa_bot_token` de CUALQUIER
-     * proyecto (secreto por tenant) o, como puente de compatibilidad mientras
-     * el bot migra, el token global (ya fuera del repo, en `.env`). Aborta 401
-     * si el token no es válido. Cierre de RISK-008.
-     */
-    private function autenticarWa(Request $request): void
-    {
-        $token = (string) $request->input('token');
-        $ok = $token !== '' && (
-            hash_equals($this->botToken(), $token) ||
-            Project::where('wa_bot_token', $token)->exists()
-        );
-        abort_unless($ok, 401, 'Unauthorized');
-    }
-
-    /** El tenant derivado del secreto por proyecto, o null si vino el global legacy. */
-    private function tenantWa(Request $request): ?Project
-    {
-        $token = (string) $request->input('token');
-        return $token !== '' ? Project::where('wa_bot_token', $token)->first() : null;
-    }
-
-    /**
-     * Ownership: para operar sobre un pedido, el token presentado debe ser el
-     * `wa_bot_token` del DUEÑO del pedido (o el global legacy). Así el conector
-     * de la Empresa A no puede tocar pedidos de la Empresa B.
-     */
+    /** Ownership del pedido, delegando en el trait compartido del conector. */
     private function autorizarOrden(Order $order, Request $request): void
     {
-        $token = (string) $request->input('token');
-        $dueno = $order->project;
-        abort_unless(
-            $dueno && (
-                hash_equals((string) $dueno->wa_bot_token, $token) ||
-                hash_equals($this->botToken(), $token)
-            ),
-            403
-        );
+        $this->autorizarDelTenant($order, $request);
     }
 
     // ── Bot → Laravel: obtener config del proyecto por número de teléfono ──────

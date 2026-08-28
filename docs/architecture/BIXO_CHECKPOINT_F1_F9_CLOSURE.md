@@ -35,9 +35,9 @@ funcional de Operations, otro roadmap); snapshots de cliente en documentos
 
 | Bloque | Estado | Evidencia |
 |---|---|---|
-| H1 WaBot isolation | **CERRADO (local)** — pendiente deploy | `wa_bot_token` por proyecto + ownership por dueño del pedido + token global fuera del repo; `WaBotIsolationTest` 7/7 |
-| H2 Rifa | pendiente | — |
-| H3 Entitlements | pendiente | — |
+| H1 WaBot isolation | **PASS (código+deploy)** · residuo operativo | `wa_bot_token` por proyecto + ownership por dueño + token global a config; `WaBotIsolationTest` 7/7; en ARIN (migración + smoke). RESIDUO: el puente legacy acepta aún el token global conocido — cierre pleno requiere rotar `WABOT_TOKEN` en .env + migrar el conector a wa_bot_token (paso operativo, no rompe hasta coordinarlo) |
+| H2 Rifa isolation | **PASS (local)** — pendiente deploy | Auditada toda la capacidad: 4 métodos de panel (filtro BotInstance por proyecto) + 5 rutas públicas /wa/rifa* (trait `AutenticaConectorWa`: secreto por tenant + ownership; `botPaymentProof`/`botUpdateData` NO tenían token check); `RifaIsolationTest` 6/6 |
+| H3 Entitlements | **EN EJECUCIÓN** | — |
 | H4 Finance/Ledger | pendiente | — |
 | H5 Correlativos | pendiente | — |
 | H6 Stock variantes | pendiente | — |

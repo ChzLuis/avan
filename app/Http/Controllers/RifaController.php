@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class RifaController extends Controller
 {
+    use \App\Http\Controllers\Concerns\AutenticaConectorWa;
+
     // ── Panel admin — Ventas ─────────────────────────────────
     public function index()
     {
@@ -685,14 +687,17 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     /** GET /wa/rifas — lista de productos activos para el bot */
     public function botList(Request $request)
     {
-        $token = $request->get('token');
-        if ($token !== 'wa-bot-secret-2024') return response()->json(['ok'=>false], 401);
+        $this->autenticarWa($request);
 
+        // El catálogo es el del tenant del token; el bot global (legacy) cae a
+        // su BotInstance sólo como puente de compatibilidad.
         $botType = $request->get('bot', 'rifa');
-        $bot     = BotInstance::where('bot_type', $botType)->first();
-        if (!$bot) return response()->json(['ok' => false, 'error' => 'Bot no encontrado'], 404);
+        $tenant  = $this->tenantWa($request);
+        $projectId = $tenant?->id
+            ?? BotInstance::where('bot_type', $botType)->value('project_id');
+        if (!$projectId) return response()->json(['ok' => false, 'error' => 'Bot no encontrado'], 404);
 
-        $products = \App\Models\Product::allProjects()->where('project_id', $bot->project_id)
+        $products = \App\Models\Product::allProjects()->where('project_id', $projectId)
                      ->where('is_available', true)
                      ->with('mainImage')
                      ->orderBy('price')
@@ -726,8 +731,9 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     /** POST /wa/rifa-order — crear pedido desde el bot */
     public function botCreateOrder(Request $request)
     {
-        $token = $request->get('token') ?? $request->input('token');
-        if ($token !== 'wa-bot-secret-2024') return response()->json(['ok'=>false], 401);
+        $this->autenticarWa($request);
+        // El tenant lo fija el secreto del token, no el rifa_id (controlable).
+        $tenant = $this->tenantWa($request);
 
         $itemId   = $request->input('rifa_id');   // puede ser product_id
         $tickets  = (int) $request->input('tickets', 1);
@@ -738,7 +744,8 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
         // Pedido sin plan definido — el responsable pone tickets/monto al validar
         if ($request->boolean('sin_definir')) {
             $rifaRef = Rifa::find($itemId);
-            $projectId = $rifaRef?->project_id
+            $projectId = $tenant?->id
+                ?? $rifaRef?->project_id
                 ?? \App\Models\BotInstance::where('bot_type','rifa')->value('project_id');
             $venta = RifaVenta::create([
                 'project_id'  => $projectId,
@@ -761,8 +768,11 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
             ]);
         }
 
-        // Buscar primero en Product, fallback a Rifa
-        $product = \App\Models\Product::find($itemId);
+        // Buscar primero en Product, fallback a Rifa. Con tenant del token, la
+        // búsqueda se acota a ese negocio: un itemId ajeno no crea venta cruzada.
+        $product = ($tenant
+            ? \App\Models\Product::allProjects()->where('project_id', $tenant->id)
+            : \App\Models\Product::query())->find($itemId);
 
         if ($product) {
             // Usar monto enviado por el bot; fallback al precio del producto
@@ -792,7 +802,7 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
             ]);
         }
 
-        $rifa = Rifa::find($itemId);
+        $rifa = ($tenant ? Rifa::where('project_id', $tenant->id) : Rifa::query())->find($itemId);
         if (!$rifa) return response()->json(['ok' => false, 'error' => 'Producto no encontrado'], 404);
 
         $monto = $rifa->precio_ticket * $tickets;
@@ -823,6 +833,9 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
 
     public function botPaymentProof(Request $request, RifaVenta $venta)
     {
+        $this->autenticarWa($request);
+        $this->autorizarDelTenant($venta, $request);
+
         if ($request->has('image_base64')) {
             $dir = public_path('uploads/rifas');
             if (!is_dir($dir)) mkdir($dir, 0755, true);
@@ -840,6 +853,9 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
 
     public function botUpdateData(Request $request, RifaVenta $venta)
     {
+        $this->autenticarWa($request);
+        $this->autorizarDelTenant($venta, $request);
+
         $venta->update($request->only(['nombre', 'dni', 'ciudad', 'email', 'telefono', 'direccion']));
         return response()->json(['ok' => true]);
     }
@@ -871,7 +887,8 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     public function nuevoManual(Request $request)
     {
         $project    = \App\Models\Project::findOrFail(session('comercial_project_id'));
-        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id'); // solo el bot del propio negocio (RISK-009)
         $projectId  = $botProject ?? $project->id;
 
         $data = $request->validate([
@@ -933,7 +950,8 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     public function eliminarComercial(RifaVenta $venta)
     {
         $project = \App\Models\Project::findOrFail(session('comercial_project_id'));
-        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id'); // solo el bot del propio negocio (RISK-009)
         $allowed = array_filter([$project->id, $botProject]);
         abort_unless(in_array($venta->project_id, $allowed), 403);
 
@@ -957,7 +975,8 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     {
         $project = \App\Models\Project::findOrFail(session('comercial_project_id'));
 
-        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id'); // solo el bot del propio negocio (RISK-009)
         $allowed = [$project->id];
         if ($botProject) $allowed[] = $botProject;
         abort_unless(in_array($venta->project_id, $allowed), 403);
@@ -1010,7 +1029,8 @@ public function enviarConMembresia(Request $request, RifaVenta $venta)
     public function recordar(RifaVenta $venta)
     {
         $project    = \App\Models\Project::findOrFail(session('comercial_project_id'));
-        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')->value('project_id');
+        $botProject = \App\Models\BotInstance::where('bot_type', 'rifa')
+            ->where('project_id', $project->id)->value('project_id'); // solo el bot del propio negocio (RISK-009)
         $allowed    = array_filter([$project->id, $botProject]);
 
         if (!in_array($venta->project_id, $allowed))   return response()->json(['ok'=>false,'message'=>'Sin permiso'], 403);
