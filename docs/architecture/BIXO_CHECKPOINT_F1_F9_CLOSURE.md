@@ -38,8 +38,8 @@ funcional de Operations, otro roadmap); snapshots de cliente en documentos
 | H1 WaBot isolation | **PASS (código+deploy)** · residuo operativo | `wa_bot_token` por proyecto + ownership por dueño + token global a config; `WaBotIsolationTest` 7/7; en ARIN (migración + smoke). RESIDUO: el puente legacy acepta aún el token global conocido — cierre pleno requiere rotar `WABOT_TOKEN` en .env + migrar el conector a wa_bot_token (paso operativo, no rompe hasta coordinarlo) |
 | H2 Rifa isolation | **PASS (local)** — pendiente deploy | Auditada toda la capacidad: 4 métodos de panel (filtro BotInstance por proyecto) + 5 rutas públicas /wa/rifa* (trait `AutenticaConectorWa`: secreto por tenant + ownership; `botPaymentProof`/`botUpdateData` NO tenían token check); `RifaIsolationTest` 6/6 |
 | H3 Entitlements | **PASS (local)** — pendiente deploy | Middleware `comercial.module` en el grupo /bixosales (1 línea cubre todas las rutas): ACCESS = entitlement AND permiso. Gatea los 5 módulos que TODOS los tenants tienen (orders/clients/invoices/quotes/catalog); logistics queda para backfill (tecsist/demo no lo tienen). `ComercialEntitlementTest` 4/4 |
-| H4 Finance/Ledger | **EN EJECUCIÓN** | — |
-| H5 Correlativos | pendiente | — |
+| H4 Finance/Ledger | **PASS (local)** — pendiente deploy | PaymentController (manual/Culqi/MP) registra por `Ledger::registrar` (idempotente) en vez de escribir `payment_status` directo; Cobranza y 360 derivan del libro. `CoherenciaDeudaTest` 3/3 (S/100→0/30/70/reversión coherente). Históricos divergentes en prod: SOLO pedidos 20/21/22 (vetados, documentados) |
+| H5 Correlativos | **EN EJECUCIÓN** | — |
 | H6 Stock variantes | pendiente | — |
 | H7 Order→Inventory | pendiente | — |
 | H8 client_id | pendiente | — |

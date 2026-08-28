@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Project;
+use App\Support\Ledger;
 use Illuminate\Http\Request;
 
 /**
@@ -29,13 +30,28 @@ class PaymentController extends Controller
         ]);
 
         $order->update([
-            'payment_status'    => 'paid',
             'payment_reference' => $data['reference'],
             'payment_gateway'   => 'manual',
             'status'            => 'pending', // queda en pending para que el negocio confirme
         ]);
+        // El cobro entra al LIBRO (fuente única). Ledger proyecta payment_status
+        // y advance_amount, así Cuentas por Cobrar y Customer 360 coinciden.
+        $this->registrarCobro($project, $order, 'manual', $data['reference']);
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Registra el cobro por el caso de uso canónico. Idempotente: si el pedido
+     * ya está saldado (webhook repetido, doble submit) no lanza ni duplica.
+     */
+    private function registrarCobro(Project $project, Order $order, string $metodo, ?string $referencia): void
+    {
+        try {
+            Ledger::registrar($project, $order, null, $metodo, $referencia, 'checkout');
+        } catch (\Throwable $e) {
+            // Ya cobrado por completo: el asiento previo manda, no se duplica.
+        }
     }
 
     // ─── Culqi: recibir token del SDK JS y hacer el cargo ───────────────────────
@@ -78,11 +94,11 @@ class PaymentController extends Controller
 
         if ($httpCode === 201 && isset($result['id'])) {
             $order->update([
-                'payment_status'    => 'paid',
                 'payment_reference' => $result['id'],
                 'payment_gateway'   => 'culqi',
                 'status'            => 'pending',
             ]);
+            $this->registrarCobro($project, $order, 'culqi', $result['id']);
             return response()->json(['ok' => true, 'charge_id' => $result['id']]);
         }
 
@@ -182,11 +198,15 @@ class PaymentController extends Controller
                               ->where('project_id', $project->id)
                               ->first();
                 if ($order) {
+                    $aprobado = $payment['status'] === 'approved';
                     $order->update([
-                        'payment_status'    => $payment['status'] === 'approved' ? 'paid' : $payment['status'],
                         'payment_reference' => (string) $paymentId,
-                        'status'            => $payment['status'] === 'approved' ? 'pending' : $order->status,
-                    ]);
+                        'status'            => $aprobado ? 'pending' : $order->status,
+                    ] + ($aprobado ? [] : ['payment_status' => $payment['status']]));
+                    // Sólo un pago aprobado es dinero real: entra al libro.
+                    if ($aprobado) {
+                        $this->registrarCobro($project, $order, 'mercadopago', (string) $paymentId);
+                    }
                 }
             }
         }
