@@ -5,7 +5,7 @@ use App\Models\Traits\HasProjectScope;
 class Client extends Model {
     use HasProjectScope;
     protected $fillable = [
-        'project_id', 'name', 'phone', 'email', 'notes',
+        'project_id', 'name', 'phone', 'email', 'notes', 'portal_token',
         // Campos del Copilot / CRM de ventas
         'lead_temp', 'lead_score', 'lead_source', 'etapa', 'empresa',
         'producto_interes', 'monto_estimado', 'intencion', 'objeciones',

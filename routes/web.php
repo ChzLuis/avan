@@ -215,6 +215,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/clients/{client}/edit',   [ClientController::class, 'edit'])->name('clients.edit')->middleware(['module:clients', 'can:clients.editar']);
         Route::match(['put', 'patch'], '/clients/{client}', [ClientController::class, 'update'])->name('clients.update')->middleware(['module:clients', 'can:clients.editar']);
         Route::delete('/clients/{client}',     [ClientController::class, 'destroy'])->name('clients.destroy')->middleware(['module:clients', 'can:clients.eliminar']);
+        // Portal del Cliente (F11): generar/regenerar el enlace es una escritura.
+        Route::post('/clients/{client}/portal', [\App\Http\Controllers\PortalClienteController::class, 'generarEnlace'])->name('clients.portal')->middleware(['module:clients', 'can:clients.editar']);
 
         // CRM: pipeline de ventas (leads del Copilot)
         Route::get('/clients-pipeline', [ClientController::class, 'pipeline'])
@@ -674,6 +676,11 @@ require __DIR__.'/auth.php';
 // ─── Catálogo público ─────────────────────────────────────────────────────────
 // `admin` faltaba en la lista: `routes/admin.php` se carga despues de este
 // archivo, asi que el comodin tapaba /admin (el panel del superadmin).
+// ── Fase 11: Portal del Cliente — enlace personal con token, sin contraseña.
+// Registrado ANTES del comodín /{slug} (que se traga toda ruta posterior).
+Route::get('/c/{token}',                    [\App\Http\Controllers\PortalClienteController::class, 'ver'])->name('portal.cliente');
+Route::post('/c/{token}/repetir/{orderId}', [\App\Http\Controllers\PortalClienteController::class, 'repetir'])->middleware('throttle:15,1')->name('portal.cliente.repetir');
+
 // ── Fase 3: impersonación auditada — soporte de Eskala entra al Workspace del
 // cliente con su usuario superadmin, dejando rastro en access_events. Es el
 // sustituto de operar tenants desde el plano de control (ADR-002 / ADR-008).
@@ -1180,6 +1187,8 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         // La ficha 360 (`show`) estaba escrita —calcula lo vendido y la deuda
         // desde el libro de cobros— pero no tenia ruta: nadie podia llamarla.
         Route::get('/clientes/{client}',      [ClientController::class, 'show'])->name('clientes.show')->middleware('project.can:clients.ver|view-clients');
+        // Portal del Cliente (F11): generar/regenerar el enlace es una escritura.
+        Route::post('/clientes/{client}/portal', [\App\Http\Controllers\PortalClienteController::class, 'generarEnlace'])->name('clientes.portal')->middleware('project.can:clients.editar|manage-clients');
         Route::post('/clientes',              [ClientController::class, 'store'])->name('clientes.store')->middleware('project.can:clients.crear|manage-clients');
         Route::put('/clientes/{client}',      [ClientController::class, 'update'])->name('clientes.update')->middleware('project.can:clients.editar|manage-clients');
         Route::delete('/clientes/{client}',   [ClientController::class, 'destroy'])->name('clientes.destroy')->middleware('project.can:clients.eliminar|manage-clients');

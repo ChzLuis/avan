@@ -205,7 +205,11 @@ class BixoSalesAuthorizationTest extends TestCase
         // +1 Centro de Avisos: arranque/ocultar apaga la guia de dia uno para
         // todo el proyecto. Escribe un ajuste del negocio, asi que va con
         // `settings.negocio|manage-settings`, igual que cuentas/condiciones.
-        $this->assertSame(64, $mutadoras, 'El portal deberia tener 64 rutas con verbo mutador');
+        // +1 en F11: clientes/{client}/portal genera (o regenera, invalidando
+        // el anterior) el enlace personal del Portal del Cliente. Regenerar
+        // corta el acceso del cliente al enlace viejo: es una escritura sobre
+        // el cliente y va con `clients.editar|manage-clients`.
+        $this->assertSame(65, $mutadoras, 'El portal deberia tener 65 rutas con verbo mutador');
         $this->assertSame([], $abiertas, 'Rutas mutadoras sin permiso: ' . implode(', ', $abiertas));
     }
 

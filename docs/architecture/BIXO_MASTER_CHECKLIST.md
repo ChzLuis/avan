@@ -78,7 +78,12 @@ Regla: nada se marca `[x]` sin evidencia (commit, test o documento).
 
 ## FASE 11 — Portal del cliente
 
-- [ ] Enlace con token por cliente (diseño ya conversado: repetir pedido, precios fijos vs a confirmar)
+- [x] Enlace con token por cliente — construido 2026-08-27: `GET /c/{token}` +
+      repetir pedido (modo `portal_precios` fijos → Order pendiente a precio
+      vigente; confirmar → Quote draft sin precios), botón en la ficha del
+      cliente (panel y bixosales), `PortalClienteTest` 6/6.
+      Evidencia: `PortalClienteController`, `portal-cliente/inicio.blade.php`,
+      migración `2026_08_27_210000_add_portal_token_to_clients`.
 
 ## FASE 12 — Pulse determinista  `[!]` bloqueado por volumen (ADR-005)
 

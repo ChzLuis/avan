@@ -13,7 +13,14 @@ documentos de memoria persistente quedan creados.
 
 ## Ultima tarea terminada
 
-Fase 1 casi completa: contrato de scope para las 14 entidades nucleares,
+**F11 Portal del Cliente construida (2026-08-27)**: enlace personal
+`GET /c/{token}` (registrado ANTES del comodin /{slug}), repetir pedido con
+interruptor `portal_precios` (fijos → Order pendiente canal portal a precio
+de catalogo vigente; confirmar → Quote draft con lineas a 0), boton
+generar/copiar/regenerar en la ficha del cliente (panel `clients.portal` y
+bixosales `bixosales.clientes.portal`, permiso clients.editar),
+migracion `clients.portal_token` corrida en local, `PortalClienteTest` 6/6.
+Plan vivo en `BIXO_PLAN_TRABAJO.md`. Antes: Fase 1 casi completa: contrato de scope para las 14 entidades nucleares,
 2 huecos mas cerrados (CatalogValue con fachada, BotTransition ajena),
 auditoria de allProjects() en jobs limpia, y TD-010 descubierta y registrada
 (dos generaciones de flujos de bot). Antes: **RISK-001 cerrado**: `HasProjectScope` en `RifaVenta`, lecturas

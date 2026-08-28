@@ -67,6 +67,8 @@
         tab: 'info',
         ficha: null,          // Customer 360: detalle agregado del cliente
         fichaCargando: false,
+        portalUrl: null,      // F11: enlace del portal recién generado
+        portalCargando: false,
         saving: false,
         deleting: false,
         form: {},
@@ -97,6 +99,28 @@
             this.creating  = false;
             this.tab       = 'info';
             this.form      = { ...c };
+            this.portalUrl = null;
+        },
+
+        // F11: genera (o regenera) el enlace personal del portal y lo copia.
+        async generarPortal() {
+            if (!this.selected || this.portalCargando) return;
+            this.portalCargando = true;
+            try {
+                const res = await fetch(this.baseUrl + '/' + this.selected.id + '/portal', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf },
+                });
+                const json = await res.json();
+                if (res.ok && json.url) {
+                    this.portalUrl = json.url;
+                    try { await navigator.clipboard.writeText(json.url); bxAviso('Enlace copiado al portapapeles'); }
+                    catch (e) { bxAviso('Enlace generado; cópialo del recuadro'); }
+                } else {
+                    bxAviso(json.message || 'No se pudo generar el enlace', 'error');
+                }
+            } catch (e) { bxAviso('Error de red', 'error'); }
+            this.portalCargando = false;
         },
 
         async save() {
@@ -420,6 +444,33 @@
                         </div>
 
                     </div>
+
+                    {{-- Portal del Cliente (F11): enlace personal para repetir pedidos --}}
+                    <template x-if="selected">
+                        <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                            <div class="flex items-center justify-between gap-3 flex-wrap">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-gray-800">Enlace del portal</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">Su página personal para repetir pedidos. Regenerarlo invalida el anterior.</p>
+                                </div>
+                                <button type="button" @click="generarPortal()"
+                                        :disabled="portalCargando"
+                                        class="px-3 py-2 rounded-lg text-sm font-semibold bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 flex-shrink-0">
+                                    <span x-text="portalCargando ? 'Generando…' : (portalUrl ? 'Regenerar' : 'Generar y copiar')"></span>
+                                </button>
+                            </div>
+                            <template x-if="portalUrl">
+                                <div class="mt-3 flex items-center gap-2">
+                                    <input type="text" readonly :value="portalUrl" @click="$el.select()"
+                                           class="input flex-1 text-xs bg-white">
+                                    <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-300 bg-white hover:bg-gray-100 flex-shrink-0"
+                                            @click="navigator.clipboard.writeText(portalUrl).then(() => bxAviso('Enlace copiado'))">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
 
                 {{-- ═══ TAB: HISTORIAL ═══ --}}
