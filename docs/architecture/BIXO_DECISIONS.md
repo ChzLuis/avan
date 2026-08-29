@@ -26,18 +26,44 @@ Consecuencias: la fusion de menus (Fase 4-5) se diseña por permisos.
 
 ### ADR-002 — BIXO Control separado del Workspace
 
-Estado: ACEPTADA · 2026-08-27
+Estado: ACEPTADA · 2026-08-27 · **PRECISADA 2026-08-28**
 
-Contexto: `/bixoadmin` (277 rutas) es el plano de control de Eskala: licencias,
-tenants, soporte. Su audiencia, ritmo y riesgo son distintos de los del cliente.
+Son DOS plataformas, no tres:
 
-Decision: se mantiene como producto separado. No implementa CRUDs paralelos de
-entidades del tenant; el soporte accede por impersonacion auditada (pendiente
-de construir, Fase 3).
+```
+BIXO PLATFORM
+├── 1. BIXO CONTROL   → /admin        (solo Eskala/superadmin)
+│         licencias, tenants, usuarios globales, imports, demos, health
+└── 2. BIXO WORKSPACE → el tenant (App Shell del negocio); Administrador = ROL
+          dos CARAS de la MISMA plataforma durante la transición:
+          ├── /bixoadmin  → Configuración: Mi negocio, Constructor, Catálogo
+          │                 maestro (Productos), QR, SEO, APIs, usuarios/permisos,
+          │                 configuración fiscal
+          └── /bixosales  → Operación: Inicio, Sales, POS, Pedidos, Clientes,
+                            Facturas, Cobranza, Reports
+```
 
-Consecuencias: dos productos, no siete. `AdminImportController` y
-`AdminTurnosController` (operacion de tenant dentro del control plane,
-detectados por la auditoria previa) deberan migrar al Workspace.
+Corrección respecto a la redacción original: **el plano de control de Eskala es
+`/admin`, NO `/bixoadmin`**. `/bixoadmin` y `/bixosales` son las dos caras del
+mismo BIXO Workspace del tenant (Configuración y Operación), no dos productos ni
+dos plataformas que compiten.
+
+Decision:
+- `/admin` (Control) se mantiene separado; no implementa CRUDs paralelos de
+  entidades del tenant; el soporte entra por impersonacion auditada (ADR-003).
+- `/bixoadmin` y `/bixosales` pueden coexistir como rutas/layouts durante la
+  transición, PERO **ambos consumen los mismos dominios canónicos** — nunca
+  `BixoAdminProductService ≠ BixoSalesProductService`. Una capacidad, un
+  propietario; varias interfaces (ADR-003). Ejemplo verificado: la ficha maestra
+  de producto (`/bixoadmin`, `Catalog\ProductController`) y la vista comercial
+  (`/bixosales`, `PosController`) usan el MISMO `App\Models\Product`.
+- Objetivo visual: que el usuario sienta UN solo Workspace — al entrar a
+  "Configuración" se cargan rutas que hoy viven bajo `/bixoadmin`, sin sensación
+  de "salir de Sales y entrar a Admin". Unificación = limpieza diferida.
+
+Consecuencias: dos PLATAFORMAS (Control + Workspace), no siete portales ni tres
+capas. `AdminImportController` y `AdminTurnosController` (operación de tenant
+dentro del control plane) deben migrar al Workspace (ADR-008).
 
 ---
 
