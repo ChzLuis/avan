@@ -10,6 +10,36 @@
 > comprobante deben producir la MISMA verdad nazcan desde Sales, POS,
 > Storefront, WhatsApp, Portal, API o ARIN.
 
+## CIERRE FORMAL DEL CHECKPOINT (2026-08-28)
+
+Los 6 bloques de **seguridad, dinero, fiscal y entitlements** quedan cerrados y
+en producción. Los 4 restantes se agendan como **un bloque único de inventario/
+checkout** para cuando la feature de variantes de producto (en vuelo de otra
+sesión) aterrice — no se fragmentan ni se construyen sobre código ajeno.
+
+| Área | ANTES | CORRECCIÓN | EVIDENCIA | TESTS | DESPUÉS |
+|---|---|---|---|---|---|
+| **WaBot isolation** | token global; se mutaban pedidos de cualquier empresa | secreto `wa_bot_token` por proyecto + ownership por dueño; token global a config | WaBotController, trait AutenticaConectorWa, migración; en ARIN | 7/7 | **PASS** (residuo: rotar token legacy + migrar conector) |
+| **Rifa isolation** | 4 métodos + 2 rutas sin token check tocaban ventas ajenas | filtro BotInstance por proyecto + trait en /wa/rifa* | RifaController; en ARIN | 6/6 | **PASS** |
+| **Entitlements** | /bixosales no exigía módulo contratado | middleware `comercial.module` (6 módulos, incl. logistics con backfill) | EnsureComercialModule; en ARIN | 5/5 | **PASS** |
+| **Finance/Ledger** | venta pagada: saldada en CxC, deuda en 360 | todo pago por Ledger::registrar; ambas vistas del libro | PaymentController; en ARIN | 3/3 | **PASS** |
+| **Invoice numbering** | 2 emisores reservaban correlativo fuera de transacción | `Invoice::emitir()` atómico | Invoice/Invoice/Quote controllers; en ARIN | 4/4 | **PASS** |
+| **Pricing** | selección de precio divergente por canal | AS-IS→TARGET documentado (regla comercial válida, sin valores incorrectos) | doc de cierre §H10 | — | **PASS WITH DEBT** (TD-020) |
+| **Customer linkage** | checkout/bot/comprobantes sin client_id | panel ya enlazaba; comprobantes ahora por teléfono/correo | InvoiceController; en ARIN | 2/2 | **PARTIAL** (checkout/bot ajeno; guías sin doc en Client) |
+| **Customer 360** | 3/5 fuentes vacías; test falso positivo | falso positivo corregido; comprobantes ya aparecen | Customer360Test | 4/4 | **PARTIAL** (guías/interacciones pendientes) |
+| **Stock ownership** | product_variants.stock fuera del Kardex | — | AS-IS: tabla inexistente en prod (no es riesgo activo) | — | **BLOQUEADO** (feature ajena en vuelo) |
+| **Order→Inventory** | 7/9 creadores no descuentan stock | AS-IS→TARGET documentado; recomendación: descontar al confirmar | doc de cierre §H7 | — | **PARTIAL** (decisión de negocio + toca checkout ajeno) |
+
+**Veredicto GO/NO-GO F10: NO-GO.** Los 6 críticos (seguridad/dinero) en PASS;
+los 4 restantes bloqueados por la feature de variantes ajena + una decisión de
+negocio (evento de inventario). No es deuda de seguridad. **Para salir con
+clientes el sistema está listo** — lo crítico está cerrado y desplegado.
+
+**Bloque pendiente agendado:** "Inventario y checkout" = H6 (stock variantes) +
+H7 (order→inventory, opción recomendada: descontar al confirmar) + H8-checkout/
+bot + H10 (PriceResolver). Ejecutar como una sola unidad cuando la feature de
+variantes de producto aterrice, coordinado con su dueño.
+
 ## Matriz de hallazgos
 
 | ID | Hallazgo | P | Bloquea F10 | Solución propuesta | Riesgo | Tests | Estimación |

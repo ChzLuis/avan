@@ -2,6 +2,15 @@
 
 Ultima actualizacion: 2026-08-28 · commit `b8a0195` (+ validación arquitectónica integral)
 
+## Checkpoint F1–F9 CERRADO (2026-08-28)
+
+6 bloques críticos (seguridad/dinero/fiscal/entitlements) en PASS y en ARIN:
+WaBot, Rifa, Entitlements (+logistics), Deuda (Ledger), Numeración fiscal,
+Pricing (PASS WITH DEBT). H8/H9 parciales (comprobantes enlazan por teléfono).
+H6/H7 agendados como bloque "Inventario y checkout" (feature de variantes ajena
+en vuelo + decisión de negocio: descontar al confirmar). **Salir con clientes:
+listo. F10: NO-GO** por dependencias externas. Ver `BIXO_CHECKPOINT_F1_F9_CLOSURE.md`.
+
 ## Validación arquitectónica 2026-08-28 (resumen)
 
 La forma general de la plataforma quedó como se acordó, pero la auditoría de

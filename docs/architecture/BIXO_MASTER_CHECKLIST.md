@@ -65,9 +65,15 @@ Plan y evidencia: `BIXO_CHECKPOINT_F1_F9_CLOSURE.md`.
 | H9 Customer 360 | **depende de H8** | — |
 | H10 Pricing | **coordinación** (no bloquea F10) | toca PublicController (ajeno) |
 
-**GO/NO-GO F10: sigue NO-GO.** Falta H6–H9 en PASS. Están bloqueados por una
-feature de variantes de otra sesión (código sin commitear; tabla inexistente en
-prod). Coordinar antes de continuar.
+**CHECKPOINT CERRADO FORMALMENTE 2026-08-28.** 6 bloques críticos en PASS:
+H1 WaBot 7/7, H2 Rifa 6/6, H3 Entitlements 5/5, H4 Deuda 3/3, H5 Numeración 4/4,
+H10 Pricing PASS WITH DEBT. H8/H9 PARCIAL (comprobantes enlazan; checkout/bot
+ajeno). H6/H7 en el bloque agendado "Inventario y checkout" (feature de
+variantes ajena + decisión de negocio: descontar al confirmar).
+
+**GO/NO-GO F10: NO-GO** por dependencias externas (no deuda de seguridad).
+**Para salir con clientes: LISTO** — lo crítico cerrado y en ARIN. Detalle:
+`BIXO_CHECKPOINT_F1_F9_CLOSURE.md`.
 
 ---
 
