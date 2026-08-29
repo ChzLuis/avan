@@ -25,11 +25,11 @@ class EnsureComercialModule
     /**
      * prefijo del nombre de ruta (sin `bixosales.`) → clave de módulo.
      *
-     * Sólo se gatean los módulos que TODOS los tenants activos ya tienen en
-     * `project_modules` (medido 2026-08-28), para que activar el entitlement no
-     * corte a nadie que hoy opera. `logistics` queda FUERA a propósito: tecsist
-     * y ferreteria-demo no lo tienen contratado; entra al gate tras el backfill
-     * de project_modules (TD-017).
+     * Sólo se gatean módulos que los tenants que la usan ya tienen en
+     * `project_modules`, para que activar el entitlement no corte a nadie que
+     * hoy opera. `logistics` entró tras el backfill del 2026-08-28: tecsist
+     * usaba delivery sin el módulo y se le añadió; ferreteria-demo no lo usa y
+     * queda bloqueado (correcto).
      */
     private const MAPA = [
         'pedidos'      => 'orders',
@@ -40,6 +40,7 @@ class EnsureComercialModule
         'comprobantes' => 'invoices',
         'cotizaciones' => 'quotes',
         'productos'    => 'catalog',
+        'delivery'     => 'logistics',
     ];
 
     public function handle(Request $request, Closure $next): Response

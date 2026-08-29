@@ -86,4 +86,16 @@ class ComercialEntitlementTest extends TestCase
 
         $this->get('/bixosales/pedidos')->assertOk();
     }
+
+    public function test_delivery_exige_el_modulo_logistics(): void
+    {
+        // Sin logistics → bloqueado; con logistics + permiso → entra.
+        $sin = $this->proyectoConModulos(['orders']);
+        $this->usuarioCon($sin, ['logistics.ver', 'view-logistics', 'orders.ver']);
+        $this->get('/bixosales/delivery')->assertForbidden();
+
+        $con = $this->proyectoConModulos(['orders', 'logistics']);
+        $this->usuarioCon($con, ['logistics.ver', 'view-logistics']);
+        $this->get('/bixosales/delivery')->assertOk();
+    }
 }

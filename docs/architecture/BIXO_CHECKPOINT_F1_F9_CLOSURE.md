@@ -46,6 +46,53 @@ funcional de Operations, otro roadmap); snapshots de cliente en documentos
 | H9 Customer 360 | **PARCIAL** (falso positivo corregido) | El `client_id` del test ya no es un atajo: producción lo asigna al emitir; comentario y datos alineados con el camino real. Comprobantes a clientes con teléfono registrado ya aparecen en el 360. Guías: no enlazables sin doc en Client (TD-018) |
 | H10 Pricing | **coordinación** | PriceResolver tocaría PublicController (ajeno en vuelo), PosController y ProjectContext |
 
+## H7 — Order→Inventory: AS-IS → TARGET (requiere decisión de negocio)
+
+**AS-IS medido (¿cada creador de Order descuenta stock al crear?):**
+
+| Creador | Canal | ¿Descuenta al crear? | Naturaleza |
+|---|---|---|---|
+| PosController:169 | pos | **Sí** (InventoryLedger:232) | venta directa en mostrador |
+| PublicController:817 | web | **Sí** (checkout pagado) | compra confirmada online (código ajeno en vuelo) |
+| OrderController:111 | panel | No (el ledger:269 es DEVOLUCIÓN por anulación) | pedido a gestionar |
+| QuoteController:565 | convert | No | cotización→pedido |
+| DeliveryController:122 | delivery | No | reparto |
+| WaBotController:200 | whatsapp | No (legacy) | pedido de bot |
+| BotWebhookController | whatsapp | No | pedido de bot (nace pending/under_review) |
+| PortalClienteController:67 | portal | No | repetición de pedido |
+
+**Patrón real:** el stock se compromete cuando la venta es DIRECTA y CONFIRMADA
+(POS mostrador, checkout pagado). Los pedidos que nacen `pending` (panel, bot,
+portal, delivery, cotización) NO comprometen stock al crearse — esperan la
+confirmación del negocio.
+
+**TARGET recomendado (a validar):** evento canónico = **confirmación del
+pedido**. POS/checkout son "confirmación inmediata al crear" (ya implementado).
+Los demás canales comprometen stock cuando el pedido pasa de `pending` a un
+estado confirmado/en-proceso, vía un único caso de uso `StockVenta::comprometer
+(Order)` idempotente (reference_type='order', que ya da idempotencia).
+
+**Por qué NO se implementa a ciegas:** cambiar cuándo se descuenta afecta el
+inventario de CLIENTES REALES en producción. Si un negocio hoy ajusta su stock
+a mano para los pedidos de panel/bot, activar el descuento automático se lo
+descuadraría. Requiere confirmación explícita de la regla antes de tocarlo.
+Veredicto: **PARTIAL — decisión de negocio pendiente.**
+
+## H10 — Pricing: AS-IS → TARGET (PASS WITH DEBT documentado)
+
+**AS-IS por canal:** aritmética única en `LineMath` (PASS). La SELECCIÓN de
+precio diverge por canal, cada una una regla comercial VÁLIDA:
+- POS (`PosController:138`): ResellerPrice → price_suggested → price, con piso price_min.
+- Web/checkout (`PublicController:786`): variant.price ?? product.price (precio retail).
+- Bot/IA (`ProjectContext:284`): expone wholesale_price/mayorista.
+
+**TARGET:** un `PriceResolver::para($producto,$variante,$cliente,$canal,$cantidad)`
+único que encapsule las 5+ columnas (price/price_suggested/price_min/price_max/
+wholesale_price/reseller/variant). **No bloquea F10:** la divergencia NO produce
+valores incorrectos (cada canal aplica su regla comercial correcta); es deuda de
+consolidación. Veredicto: **PASS WITH DEBT** (TD-020). Implementar el resolver
+tocaría PublicController (ajeno en vuelo); se hace cuando esa feature aterrice.
+
 ## H1 — WaBotController mutable cross-tenant (P0, PRIORIDAD ABSOLUTA)
 
 - **Gravedad:** ALTA. Explotable hoy. RISK-008/TD-012.
