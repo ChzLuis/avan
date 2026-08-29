@@ -6,6 +6,28 @@ Ultima actualizacion: 2026-08-27
 Branch: `refactor/store-builder-canonical-context`
 Ultimo commit revisado: `2a64c15`
 
+## Incidente 2026-08-29 — tiendas caídas por deploy parcial de variantes (RESUELTO)
+
+La feature de variantes se desplegó a ARIN de madrugada SIN sus modelos ni
+tablas: `PublicController` (versión ARIN, más nueva que la del árbol local)
+hacía eager-load de `activeVariants` y TODAS las tiendas públicas devolvían
+500 (megahogar.org incluida). Rescate ejecutado:
+1. Subidos los modelos que faltaban: ProductVariant, ProductAttribute,
+   ProductAttributeValue, Product/Project (relaciones), MatrixService,
+   CatalogQueryService (faltaba `facets()`), ProductVariantController
+   (las rutas de ARIN lo referenciaban sin existir).
+2. Migración `2026_08_27_000000_create_product_attributes_and_variants`
+   corregida: DOS identificadores autogenerados superaban el límite de 64
+   chars de MySQL (índice 73c → `pav_project_attr_active_idx`; FK 66c →
+   `papv_pivot_value_fk`, distinto del de product_variant_values porque los
+   nombres de FK son únicos por BD, error 1826). Registrada en ARIN [46].
+3. Verificado: las 7 tiendas + megahogar.org + /tienda en 200; 0 errores
+   nuevos en el log.
+REGLA para la sesión de variantes: el deploy de esa feature debe ir COMPLETO
+(controller+modelos+migraciones+servicios juntos). El `PublicController` y las
+vistas de ARIN son MÁS NUEVOS que los del árbol local — comparar md5/mtime
+antes de volver a desplegar cualquiera de esas piezas.
+
 ## Fase actual
 
 **CHECKPOINT F1–F9 CERRADO FORMALMENTE (2026-08-28)** — informe:
