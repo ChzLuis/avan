@@ -31,6 +31,17 @@ class ControlNavegacionTest extends TestCase
         $this->actingAs($comun)->get('/admin/auditoria')->assertRedirect(route('admin.login'));
     }
 
+    /** Cada plataforma manda a SU login: la raíz del Control no puede
+     *  empujar al login del Workspace (mezcla de plataformas). */
+    public function test_el_invitado_del_control_va_al_login_del_control(): void
+    {
+        $this->get('/admin')->assertRedirect(route('admin.login'));
+        $this->get('/admin/auditoria')->assertRedirect(route('admin.login'));
+
+        // Y el Workspace mantiene el suyo.
+        $this->get('/bixoadmin/settings')->assertRedirect(route('bixoadmin.login'));
+    }
+
     public function test_la_auditoria_muestra_el_menu_agrupado_y_los_eventos(): void
     {
         $admin = User::factory()->create(['is_superadmin' => 1]);

@@ -25,8 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\DetectCustomDomain::class,
             \App\Http\Middleware\SetActiveProject::class,
         ]);
-        // Sesion expirada: cada zona vuelve a SU login, no al generico /login.
-        $middleware->redirectGuestsTo(fn ($request) => $request->is('admin/*')
+        // Sesion expirada: cada PLATAFORMA vuelve a SU login, no al generico
+        // /login. 'admin/*' por si solo NO casa con la raiz '/admin', asi que
+        // la portada del Control mandaba al login del Workspace — justo la
+        // mezcla de plataformas que el modelo prohibe (hallazgo 2026-08-30).
+        $middleware->redirectGuestsTo(fn ($request) => $request->is('admin', 'admin/*')
             ? route('admin.login')
             : route('bixoadmin.login'));
         $middleware->alias([
