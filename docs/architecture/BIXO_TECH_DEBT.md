@@ -14,7 +14,7 @@ Ultima actualizacion: 2026-08-27
 | TD-008 | LOW | Repo | 30+ archivos de trabajo ajeno sin commitear (procesamiento de imagenes); ya desplegado quirurgicamente | otra sesion | ABIERTA |
 | TD-010 | LOW | Automation | Dos generaciones de flujos de bot — MEDIDO 2026-08-27: la vieja (`bot_flows`/`bot_states`/`bot_transitions`) esta VACIA en produccion; los 12 flujos vivos son `bot_builder_flows`. La generacion vieja y su editor en BotStatusController quedan DEPRECATE: retirar en Fase 5 tras verificar consumidores | 5 | DEGRADADA (deprecar, no refactorizar) |
 | TD-011 | MEDIUM | Catalog | `ImportLog::create` corria contra una tabla inexistente y un `catch {}` vacio se lo tragaba: la auditoria de importaciones se perdia en silencio desde siempre | 2 | **CERRADA 2026-08-27** (migracion `2026_08_27_200000` en local y produccion) |
-| TD-009 | LOW | Infra | Renovacion de certbot no cubrio el cert `arindg.com` (multi-cert, orden no determinista) | inmediata | ABIERTA |
+| TD-009 | LOW | Infra | Renovacion de certbot no cubria `arindg.com`: el vhost de n8n proxyaba el desafio ACME al puerto 5678. Bloque 80 con excepcion .well-known + cert HTTP-01 propio; dry-run OK 2026-08-30 | inmediata | CERRADA 2026-08-30 |
 | TD-012 | HIGH | Tenancy | **WaBotController cross-tenant** (RISK-008): rutas publicas `/wa/*` con token compartido + `Order::allProjects()` sin filtro; mutable IDOR | inmediata | ABIERTA |
 | TD-013 | HIGH | Tenancy | **Fix de rifa incompleto** (RISK-009): nuevoManual/eliminar/editar/recordar sin filtro project_id en BotInstance | inmediata | ABIERTA |
 | TD-014 | HIGH | Finance | **Deuda con 3 fuentes** (RISK-010): PaymentController escribe payment_status sin asiento en el Ledger; Cobranza y 360 divergen. Unificar en Ledger | inmediata | ABIERTA |

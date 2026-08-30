@@ -2,9 +2,50 @@
 
 > Este archivo es el punto de entrada de cada sesion. Leelo antes de tocar codigo.
 
-Ultima actualizacion: 2026-08-27
+Ultima actualizacion: 2026-08-30
 Branch: `refactor/store-builder-canonical-context`
-Ultimo commit revisado: `2a64c15`
+Ultimo commit revisado: `a476929`
+
+## Sesion 2026-08-30 (tarde) — SSL de raiz + 2 caras del Workspace + lote de cierre
+
+Todo commiteado en `a476929` y DESPLEGADO a ARIN (backup 20260830_181447):
+
+1. **SSL resuelto de raiz (TD-009 CERRADA).** `arindg.com` tiene cert propio
+   HTTP-01 renovable (vence 2026-11-28). La causa de que certbot nunca
+   renovara: el vhost de `n8n.arindg.com` proxyaba TODO (incluido
+   `/.well-known/acme-challenge`) al puerto 5678. Se agrego bloque 80 con la
+   excepcion ACME (backup `/root/arindg.com.conf.bak-n8n-acme`); dry-run:
+   `all simulated renewals succeeded`. Siguen en wildcard (vence 2026-11-04):
+   babytoncito.com e importmusuhuaysac.arindg.com (este espera DNS del usuario).
+2. **2 caras del Workspace visibles (decision del usuario 2026-08-30):** el
+   usuario vio "Mi negocio" en el shell unificado y sintio que "lo mandaba al
+   panel de sales". Eligio: shell y login unicos, pero cara distinguible.
+   Implementado: chip morado "Configuración" en el breadcrumb para
+   `/bixoadmin/*` (`comercial/layouts/app.blade.php`), grupo Configuración
+   acentuado en el sidebar, y el login aterriza en Inicio (`/bixosales`) en
+   vez de la lista de negocios (routes/web.php, ruta `dashboard`).
+3. **Salida de impersonacion auditada:** `POST /bixoadmin/salir-de-impersonacion`
+   (registra `impersonate_end`, limpia sesion); fix del meta doble-encodeado
+   en la entrada. `FusionPortalesTest` 5/5.
+4. **Fix latente SUNAT:** `DarDeBajaEnSunat::failed()` con `allProjects()` —
+   en cola sync el fallo no marcaba el comprobante (quedaba "pendiente" mudo).
+5. **ModulosPortal unificado con entitlements:** el menu ya no ofrece
+   facturas/reservas/reparto sin modulo contratado (misma regla que el gate
+   `comercial.module`). Fixtures de MenuLateralComercialTest contratan modulos.
+6. **Rutas legado /f/ medidas: 0 hits** en todos los logs de nginx → retirarlas
+   es seguro cuando se decida.
+
+Suite: 1011 pass; los 2 rojos son de la feature de variantes en vuelo
+(plantillas 3→2 motores en `supported-template-selector`), ajenos.
+
+**PENDIENTE QUE DECIDE EL USUARIO — token del bot (RISK-008 residuo):** rotar
+`WABOT_TOKEN` exige tocar `.env` de ARIN y el conector Baileys (engine.js,
+constante BOT_TOKEN) a la vez, con reinicio coordinado del bot (sin afectar al
+otro bot). Procedimiento: (1) generar secreto nuevo, (2) actualizar .env +
+`config:cache`, (3) actualizar conector y reiniciar SOLO ese PM2, (4) probar
+un mensaje. Los defaults hardcodeados `wa-bot-secret-2024` en
+CheckLaundryOverdue/SendAbandonedCartReminder/PublicController deben pasar a
+config en ese mismo cambio.
 
 ## Incidente 2026-08-29 — tiendas caídas por deploy parcial de variantes (RESUELTO)
 
