@@ -30,6 +30,23 @@ antes de volver a desplegar cualquiera de esas piezas.
 
 ## Fase actual
 
+**UNIFICACIÓN VISUAL DEL WORKSPACE — FASE 1 EN ARIN (2026-08-30)**, según la
+spec del usuario y el ADR-002 precisado (2 plataformas; /bixoadmin y /bixosales
+= dos caras del mismo Workspace):
+- Sidebar maestro (`comercial/layouts/_sidebar.blade.php`): la configuración
+  COMPLETA vive en el menú unificado (SEO, Pagos, Módulos, Roles, Catálogos
+  maestros, Canales WhatsApp; Guías de remisión en Finanzas).
+- "Mi negocio" y "Código QR" renderizan DENTRO del shell comercial unificado
+  (`x-portal-layout comercial`); URLs /bixoadmin/* sin cambios.
+- Header del panel con identidad común (BIXO + empresa activa).
+- Deriva reconciliada: qr.blade.php de ARIN adoptada + 3 partials qr-*
+  (1.344 líneas) que solo existían en ARIN entran al repo.
+- `WorkspaceShellUnificadoTest` 4/4; suite 1006 verde (2 rojos ajenos designer).
+
+**Deuda de la fase (TD-023):** Productos y Constructor siguen en el shell del
+panel (feature de variantes ajena en vuelo — se re-parentan cuando aterrice);
+después, retirar el shell del panel y paridad de breadcrumbs/notificaciones.
+Antes:
 **CHECKPOINT F1–F9 CERRADO FORMALMENTE (2026-08-28)** — informe:
 `BIXO_CHECKPOINT_F1_F9_CLOSURE.md` (sección "CIERRE FORMAL"). Los 6 bloques de
 seguridad/dinero/fiscal/entitlements en **PASS** y en ARIN:

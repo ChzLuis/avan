@@ -75,6 +75,15 @@ variantes ajena + decisión de negocio: descontar al confirmar).
 **Para salir con clientes: LISTO** — lo crítico cerrado y en ARIN. Detalle:
 `BIXO_CHECKPOINT_F1_F9_CLOSURE.md`.
 
+## UNIFICACIÓN VISUAL DEL WORKSPACE (2026-08-30)
+
+- [x] ADR-002 precisado: 2 plataformas; /bixoadmin y /bixosales = 2 caras del Workspace
+- [x] Sidebar maestro con la configuración completa (SEO, Pagos, Módulos, Roles, Catálogos, Canales WA; Guías en Finanzas) — `_sidebar.blade.php`
+- [x] Mi negocio y Código QR dentro del shell comercial unificado (URLs intactas) — `WorkspaceShellUnificadoTest` 4/4
+- [x] Header del panel con identidad común (BIXO + empresa activa)
+- [x] Deriva QR reconciliada (vista ARIN + 3 partials al repo)
+- [ ] Fase 2 (TD-023): Productos y Constructor al shell unificado (tras feature de variantes ajena) → retirar shell del panel
+
 ---
 
 ## FASE 0 — Auditoria AS-IS

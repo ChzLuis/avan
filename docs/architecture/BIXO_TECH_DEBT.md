@@ -26,6 +26,7 @@ Ultima actualizacion: 2026-08-27
 | TD-020 | LOW | Pricing | Seleccion de precio divergente por canal (POS reseller/sugerido; web ignora wholesale; bot expone wholesale). Falta un PriceResolver unico | segun demanda | ABIERTA |
 | TD-021 | LOW | Operations | Purchasing no modelado: la compra es solo motivo `'compra'` en el Kardex, sin cabecera/lineas/vinculo a Proveedor | segun demanda | ABIERTA |
 | TD-022 | LOW | Plataforma | No existe entidad Plan/suscripcion de tenant; "licencia" = asiento por usuario. Impersonacion vive en /bixoadmin (deberia /admin); tenant puede auto-editar sus modulos (web.php:98) | segun demanda | ABIERTA |
+| TD-023 | MEDIUM | Workspace | **Unificacion visual fase 2**: Productos y Constructor siguen en el shell del panel (bloqueados por la feature de variantes ajena en vuelo); re-parentarlos al shell comercial cuando aterrice, luego retirar el shell del panel (layouts/app.blade.php) y dar paridad de breadcrumbs/notificaciones/selector. Fase 1 (2026-08-30): sidebar maestro completo + Mi negocio y QR unificados | tras variantes | ABIERTA |
 
 Regla: la deuda se registra aqui, no en comentarios sueltos. Al cerrarla,
 anotar commit y test que la cubre.
