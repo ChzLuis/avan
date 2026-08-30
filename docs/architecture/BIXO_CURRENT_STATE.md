@@ -1,5 +1,39 @@
 # Estado actual de la reestructuracion BIXO
 
+Ultima actualizacion: 2026-08-30 (noche) · commit `c7e1b0b`
+
+## REESTRUCTURACION FINAL EJECUTADA (2026-08-30)
+
+La plataforma queda con la forma acordada y **ejecutada**, no solo documentada:
+
+```
+BIXO PLATFORM
+├── 1. BIXO CONTROL   /admin        solo Eskala/superadmin · login propio
+│      Inicio · Empresas (+Demos) · Licencias · Usuarios · Auditoria (NUEVA,
+│      solo lectura) · Imports · Configuracion global
+│      Sin CRUDs paralelos del tenant: soporte por impersonacion AUDITADA
+└── 2. BIXO WORKSPACE  (el tenant) · dos caras, un shell, una sesion
+       ├── /bixoadmin  CONFIGURACION · login "BIXO · Configuracion"
+       │     Mi negocio · Catalogo maestro · Canales · Marketing · Pagos e
+       │     integraciones · Fiscal · Equipo · Sistema · → Ir a Ventas
+       └── /bixosales  OPERACION · login "BIXO · Ventas y operacion"
+             Inicio · Comercial · Catalogos · Finanzas · Analisis
+             · → Ir a Configuracion
+```
+
+**Control de acceso en tres capas** (nuevo): ENTITLEMENT + PERMISSION +
+FEATURE FLAG (`App\Support\Capacidades` + middleware `capacidad`). Las
+herramientas internas ya NO se abren con un permiso a secas: gestion de
+plantillas de diseño es ESKALA_ONLY (su export iba sin middleware) y el
+diseño legacy quedo endurecido y fuera de menu. Clasificacion completa
+funcion por funcion en `BIXO_CAPACIDADES_MATRIZ.md`; entrega en
+`BIXO_REESTRUCTURACION_ENTREGA.md`.
+
+Cifras medidas: 230 rutas de /bixoadmin auditadas · 0 hits historicos a las
+rutas legado `/f/` (nginx, retirables) · suite 1020 verde con 2 rojos AJENOS
+(feature de variantes en vuelo).
+
+Antes:
 Ultima actualizacion: 2026-08-28 · commit `b8a0195` (+ validación arquitectónica integral)
 
 ## Checkpoint F1–F9 CERRADO (2026-08-28)

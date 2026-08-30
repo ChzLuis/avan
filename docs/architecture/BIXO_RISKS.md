@@ -17,7 +17,8 @@ Ultima actualizacion: 2026-08-27
 | RISK-011 | **Stock de variante fuera del Kardex**: checkout web con variantes usa `decrement('stock')` directo; InventoryLedger nunca ve esas salidas → descuadre | Media | Medio | **BLOQUEADO** (el codigo de variantes —PublicController, ProductVariantMatrixService, migracion product_attribute_values— es una feature EN VUELO de otra sesion; la decision de esquema A/B/C debe coordinarse con su dueño, no construirse sobre codigo inacabado) |
 | RISK-012 | **Numeracion de comprobante fuera de transaccion** → colision de correlativo bajo concurrencia | Baja | Alto | **MITIGADO 2026-08-28** (`Invoice::emitir` atomico; barrido estatico sin llamadas crudas; `InvoiceNumberingTest` 4/4; en ARIN) |
 | RISK-013 | **Entitlement no exigido en /bixosales**: cero middleware `module:` en el App Shell nuevo → acceso por URL a modulo no contratado | Media | Medio | **MITIGADO 2026-08-28** (middleware `comercial.module`; ACCESS = entitlement AND permiso; `ComercialEntitlementTest` 4/4; en ARIN. Gatea 5 modulos universales; logistics pendiente de backfill — TD-017) |
-
+| RISK-014 | **Herramientas internas expuestas al cliente**: gestion de plantillas de diseño abierta con solo `settings.diseno` y su **export SIN middleware**; diseño legacy accesible sin permiso | Media | Medio | **MITIGADO 2026-08-30** (capacidad `plantillas` = ESKALA_ONLY via `Capacidades` + middleware `capacidad`; export dentro del grupo; `settings.design`/`designer` con `project.can:settings.diseno` y fuera de menu; `CapacidadesRestringidasTest` 5/5; en ARIN) |
+| RISK-015 | **Mezcla de plataformas en la puerta**: la raiz `/admin` redirigia al login del Workspace (`is('admin/*')` no casa con `/admin`) | Baja | Bajo | **MITIGADO 2026-08-30** (`is('admin','admin/*')`; test propio; validado en produccion) |
 ## RISK-001 — detalle
 
 Ver `docs/security/BIXO_TENANT_ISOLATION.md`. Correccion: `HasProjectScope`

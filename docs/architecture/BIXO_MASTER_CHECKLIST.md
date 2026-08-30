@@ -167,3 +167,42 @@ variantes ajena + decisión de negocio: descontar al confirmar).
 ## FASE 12 — Pulse determinista  `[!]` bloqueado por volumen (ADR-005)
 
 ## FASE 13 — Automation + IA contextual  `[!]` depende de 12
+
+## REESTRUCTURACION FINAL — Control / Configuracion / Operacion (2026-08-30)
+
+Plan de 17 pasos del usuario. Entrega: `BIXO_REESTRUCTURACION_ENTREGA.md`.
+
+- [x] 1-3. **BIXO Control ordenado primero** — menu agrupado (Empresas /
+      Licencias / Usuarios / Soporte y auditoria / Imports / Configuracion)
+      SOLO con lo que existe; `/admin/auditoria` nueva (solo lectura de
+      AccessEvent); boton "Entrar como" auditado en Empresas; retirada la
+      copia muerta `layouts/admin.blade.php`. Sin CRUDs paralelos del tenant.
+      `ControlNavegacionTest` 4/4. Commit `8034c9b`.
+- [x] 4-6. **Auditoria y clasificacion de /bixoadmin** — 230 rutas revisadas
+      contra `route:list`; matriz `BIXO_CAPACIDADES_MATRIZ.md` con
+      PUBLIC_TENANT / RESTRICTED_TENANT / ESKALA_ONLY, con especial detalle
+      del Constructor (funcion, ruta, permiso, entitlement, riesgo, decision).
+- [x] 7. **Menu de Configuracion ordenado** segun el arbol del plan (Mi
+      negocio / Catalogo maestro / Canales / Marketing / Pagos e
+      integraciones / Fiscal / Equipo / Sistema).
+- [x] 8. **Proteccion entitlement + permission + feature flag** —
+      `App\Support\Capacidades` + middleware `capacidad:<clave>`; flags
+      `cap_plantillas`, `cap_builder_avanzado`, `cap_seo_avanzado` que solo
+      enciende Eskala (el dueño del negocio NO se los salta). Gestion de
+      plantillas pasa a ESKALA_ONLY — su **export iba SIN middleware**;
+      diseño legacy endurecido y fuera de menu.
+      `CapacidadesRestringidasTest` 5/5. Commit `55cef3a`.
+- [x] 9-10. **/bixosales ordenado** (solo Operacion) y navegacion cruzada
+      "→ Ir a Configuracion" / "→ Ir a Ventas" en ambas caras.
+- [x] 11. **Login/landing por cara** — "BIXO · Configuracion" y "BIXO ·
+      Ventas y operacion"; admin aterriza en Mi negocio, sales en Inicio.
+      Login de ventas reconciliado con la version de ARIN. Commits `5211f7e`,
+      `c7e1b0b`.
+- [x] 12-16. **Validacion** — suite completa; acceso directo por URL en
+      produccion; cada plataforma a SU login (bug corregido: la raiz `/admin`
+      empujaba al login del Workspace); tiendas con DNS en 200.
+- [x] 17. **Documentacion** — ENTREGA, CAPACIDADES_MATRIZ, HANDOFF,
+      TECH_DEBT (TD-024, TD-025), RISKS, este checklist.
+
+Pendiente (deuda, no bloquea): TD-024 bloques del Control sin backend;
+TD-025 aplicacion fina de `cap_builder_avanzado` y `cap_seo_avanzado`.
