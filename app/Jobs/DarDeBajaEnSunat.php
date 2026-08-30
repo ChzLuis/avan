@@ -58,7 +58,12 @@ class DarDeBajaEnSunat implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        Invoice::where('id', $this->invoiceId)->update([
+        // allProjects(): un job no depende de la sesión. Con cola sync (local)
+        // este update corría DENTRO de la petición web y el scope fail-closed
+        // lo dejaba en silencio sin escribir: el comprobante quedaba
+        // "anulando…" para siempre (TD del checkpoint, línea gemela de
+        // EnviarGuiaASunat::failed que ya estaba bien).
+        Invoice::allProjects()->where('id', $this->invoiceId)->update([
             'baja_estado' => 'rejected',
             'baja_error'  => 'No se pudo comunicar la baja: '.$e->getMessage(),
             'status'      => 'issued',

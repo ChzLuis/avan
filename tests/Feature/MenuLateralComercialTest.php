@@ -42,6 +42,13 @@ class MenuLateralComercialTest extends TestCase
             'owner_id' => User::factory()->create()->id,
             'name' => 'Menú QA', 'slug' => 'menu-qa', 'category' => 'retail', 'is_active' => true,
         ]);
+        // El menú ahora exige, además del uso/ajuste, el módulo CONTRATADO
+        // (ModulosPortal unificado con entitlements): se contratan aquí para
+        // que los tests sigan midiendo solo la regla de uso/ajuste.
+        foreach (['invoices', 'agenda', 'logistics'] as $key) {
+            $m = \App\Models\Module::firstOrCreate(['key' => $key], ['name' => $key, 'is_active' => true]);
+            $this->project->modules()->syncWithoutDetaching([$m->id => ['is_active' => true]]);
+        }
     }
 
     private function entrar(string $rol, array $permisos): User

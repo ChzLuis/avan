@@ -732,12 +732,25 @@ $_nav = match(true) {
         </svg>
     </button>
 
-    {{-- Breadcrumb rubro --}}
+    {{-- Breadcrumb rubro. Las DOS CARAS del Workspace (ADR-002) se distinguen
+         aqui: en las pantallas de configuracion (/bixoadmin) el chip dice
+         "Configuración" con su propio tono; en la operacion, el rubro. --}}
+    @php
+        $_caraConfig = request()->routeIs('settings*', 'products.*', 'roles.*', 'catalogs.*', 'bots.*', 'projects.*');
+    @endphp
+    @if($_caraConfig)
+    <span style="font-size:12px; font-weight:600; color:#7c3aed;
+                 background:#f3efff; padding:3px 10px;
+                 border-radius:99px; flex-shrink:0; white-space:nowrap;">
+        Configuración
+    </span>
+    @else
     <span style="font-size:12px; font-weight:600; color:var(--blue);
                  background:var(--blue-light); padding:3px 10px;
                  border-radius:99px; flex-shrink:0; white-space:nowrap;">
         {{ $_nav['label'] }}
     </span>
+    @endif
 
     @if(isset($pageTitle))
     <svg style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"

@@ -91,6 +91,28 @@ class FusionPortalesTest extends TestCase
         $this->assertSame($this->project->id, $evento->project_id);
     }
 
+    /** La salida deja el mismo rastro que la entrada: la auditoría sabe cuánto duró. */
+    public function test_salir_de_la_impersonacion_limpia_sesion_y_deja_rastro(): void
+    {
+        $admin = User::factory()->create(['is_superadmin' => 1]);
+        $this->actingAs($admin)->post('/bixoadmin/entrar-como/'.$this->project->id);
+
+        $this->post('/bixoadmin/salir-de-impersonacion')
+            ->assertRedirect(route('workspace'));
+
+        $this->assertNull(session('active_project_id'));
+        $this->assertNull(session('comercial_project_id'));
+        $fin = AccessEvent::where('action', 'impersonate_end')->first();
+        $this->assertNotNull($fin, 'La salida sin rastro deja la auditoría a medias');
+        $this->assertSame($admin->id, $fin->actor_id);
+        $this->assertSame($this->project->id, $fin->project_id);
+
+        // Y un gerente común no puede invocarla.
+        $this->actingAs($this->gerente)
+            ->post('/bixoadmin/salir-de-impersonacion')
+            ->assertForbidden();
+    }
+
     /** F4: el menú del portal muestra Configuración a quien tiene permisos
      *  de ajustes, y se la esconde a quien no los tiene. */
     public function test_el_menu_unico_respeta_los_permisos(): void

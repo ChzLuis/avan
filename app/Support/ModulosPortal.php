@@ -46,9 +46,27 @@ final class ModulosPortal
             && \App\Models\ResellerPrice::where('project_id', $project->id)
                 ->where('user_id', $userId)->exists();
 
+        // Unificación con el entitlement canónico (TD-017/auditoría): donde la
+        // clave del portal tiene un módulo contratable equivalente, el menú NO
+        // ofrece lo que el negocio no contrató, aunque haya dato o ajuste. Es
+        // la misma regla que ya exige el servidor (comercial.module), así el
+        // menú y el gate no pueden discrepar. Medido antes de activar: los 7
+        // tenants tienen invoices; nadie usa reservas sin agenda; reparto ya
+        // exigía logistics en la ruta. caja/bot/revendedor no tienen módulo
+        // canónico equivalente todavía — quedan solo por uso/ajuste.
+        $entitlement = [
+            'facturas' => 'invoices',
+            'reservas' => 'agenda',
+            'reparto'  => 'logistics',
+        ];
+
         $salida = [];
         foreach ($uso as $clave => $usa) {
-            $salida[$clave] = $usa || (int) $project->setting('modulo_' . $clave, 0) === 1;
+            $ofrecido = $usa || (int) $project->setting('modulo_' . $clave, 0) === 1;
+            if ($ofrecido && isset($entitlement[$clave])) {
+                $ofrecido = $project->hasModule($entitlement[$clave]);
+            }
+            $salida[$clave] = $ofrecido;
         }
 
         return $salida;

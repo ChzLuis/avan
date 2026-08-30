@@ -146,7 +146,14 @@
         @foreach($_grupos as $g)
             @if(count($g['items']))
                 @if($g['titulo'])
-                <p class="nav-grupo nav-label">{{ $g['titulo'] }}</p>
+                @php
+                    // Cara Configuración (ADR-002): cuando se navega /bixoadmin,
+                    // su grupo se acentúa para que el Workspace muestre en qué
+                    // cara está el usuario sin cambiar de shell.
+                    $_caraCfg = $g['titulo'] === 'Configuración'
+                        && request()->routeIs('settings*', 'products.*', 'roles.*', 'catalogs.*', 'bots.*', 'projects.*');
+                @endphp
+                <p class="nav-grupo nav-label" @if($_caraCfg) style="color:#7c3aed;font-weight:700;" @endif>{{ $g['titulo'] }}</p>
                 <div class="nav-sep" aria-hidden="true"></div>
                 @endif
                 @foreach($g['items'] as [$etiqueta, $ruta, $icono, $permisos])

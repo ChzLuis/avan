@@ -100,9 +100,23 @@ Route::middleware(['auth'])->group(function () {
     // Panel del negocio — todas las rutas bajo /panel
     Route::prefix('bixoadmin')->middleware(['project.member'])->group(function () {
 
-        // Inicio → redirige a configuración del negocio
-        Route::get('/', fn() => redirect()->route('settings'))->name('dashboard');
-        Route::get('/dashboard', fn() => redirect()->route('settings'))->name('dashboard.alt');
+        // Inicio → un Inicio NEUTRO del Workspace (el panel de bixosales),
+        // no la lista de negocios: entrar al Workspace no debe sentirse como
+        // caer en "el panel de sales" ni en un selector (decisión 2026-08-30).
+        // Quien no puede ver la operación aterriza en su configuración.
+        $aterrizaje = function () {
+            $u = auth()->user();
+            $p = \App\Models\Project::find(session('active_project_id'));
+            $puedeOperar = $u && ($u->is_superadmin
+                || ($p && $p->owner_id === $u->id)
+                || $u->can('orders.ver') || $u->can('view-orders'));
+
+            return $puedeOperar
+                ? redirect()->route('bixosales.dashboard')
+                : redirect()->route('settings');
+        };
+        Route::get('/', $aterrizaje)->name('dashboard');
+        Route::get('/dashboard', $aterrizaje)->name('dashboard.alt');
 
         // Productos — /bixoadmin/products
         // Un permiso por verbo. Antes iba un unico can:catalog.ver sobre todo el
@@ -244,6 +258,7 @@ Route::middleware(['auth'])->group(function () {
         // Constructor visual de bots
         Route::get('/bots-flow',            [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
         Route::get('/bots-flow/nuevo',      [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
+        Route::get('/bots-flow/wa-status',  [\App\Http\Controllers\BotFlowController::class, 'waStatus'])->name('bot-flows.wa-status');
         Route::post('/bots-flow/plantilla-tienda', [\App\Http\Controllers\BotFlowController::class, 'desdePlantilla'])->name('bot-flows.plantilla')->middleware('can:settings.negocio');
         Route::post('/bots-flow/plantilla-comercial', [\App\Http\Controllers\BotFlowController::class, 'desdePlantillaComercial'])->name('bot-flows.plantilla-comercial');
         Route::post('/bots-flow/ia', [\App\Http\Controllers\BotFlowController::class, 'toggleIa'])->name('bot-flows.ia');
@@ -694,7 +709,9 @@ Route::post('/bixoadmin/entrar-como/{project}', function (\App\Models\Project $p
         'actor_id'   => auth()->id(),
         'action'     => 'impersonate',
         'role_name'  => 'superadmin',
-        'meta'       => json_encode(['desde' => 'bixoadmin']),
+        // El cast 'meta' => 'array' ya serializa; pasarle json_encode guardaba
+        // un JSON de un string JSON (hallazgo de la auditoría).
+        'meta'       => ['desde' => 'bixoadmin'],
         'ip'         => request()->ip(),
         'created_at' => now(),
     ]);
@@ -704,6 +721,26 @@ Route::post('/bixoadmin/entrar-como/{project}', function (\App\Models\Project $p
     ]);
     return redirect('/bixosales');
 })->middleware('auth')->name('bixoadmin.entrar-como');
+
+// La salida deja el mismo rastro que la entrada: sin esto la auditoría sabía
+// cuándo entró soporte pero no cuánto duró ni cuándo terminó.
+Route::post('/bixoadmin/salir-de-impersonacion', function () {
+    abort_unless(auth()->user()?->is_superadmin, 403);
+    $pid = session('active_project_id') ?? session('comercial_project_id');
+    if ($pid) {
+        \App\Models\AccessEvent::create([
+            'project_id' => $pid,
+            'actor_id'   => auth()->id(),
+            'action'     => 'impersonate_end',
+            'role_name'  => 'superadmin',
+            'meta'       => ['hacia' => 'workspace'],
+            'ip'         => request()->ip(),
+            'created_at' => now(),
+        ]);
+    }
+    session()->forget(['active_project_id', 'comercial_project_id']);
+    return redirect()->route('workspace');
+})->middleware('auth')->name('bixoadmin.salir-impersonacion');
 
 $reserved = 'admin|login|register|logout|workspace|bixoadmin|profile|projects|dashboard|b|f|up|pos|invoices|quotes|orders|bixosales|bixocrm|bixofact|wa|cert';
 Route::get('/storefront-preview/{project}', function (\App\Models\Project $project) {
@@ -733,6 +770,12 @@ Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::c
 // El prefijo `c/` es deliberado: sin él chocaría con /tienda/{profile}, que ya
 // existe para los perfiles (nino, nina...). La categoría se resuelve por slug y
 // se inyecta como si viniera en la query, así el catálogo no cambia en nada.
+// Catalogo PDF por categoria (enlace FIRMADO que emite el bot).
+Route::get('/{slug}/catalogo-pdf/{categoria}', [PublicController::class, 'catalogoPdf'])
+    ->name('publico.catalogo.pdf')
+    ->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')
+    ->where('categoria', '[a-z0-9-]+');
+
 Route::get('/{slug}/tienda/c/{categoria}', function (string $slug, string $categoria, \Illuminate\Http\Request $request) {
     return app(PublicController::class)->shopPorCategoria($request, $slug, $categoria);
 })->name('public.shop.category')
@@ -1026,7 +1069,7 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
     Route::post('/get-projects', [ComAuthController::class, 'getProjects'])->middleware('throttle:10,1')->name('get.projects');
     Route::post('/logout',       [ComAuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['comercial.auth'])->group(function () {
+    Route::middleware(['comercial.auth', 'comercial.module'])->group(function () {
         // Autorizacion por ruta. Antes TODO el portal colgaba solo de
         // comercial.auth (sesion + proyecto), sin comprobar un solo permiso:
         // cualquier usuario del proyecto podia crear, editar y borrar.
