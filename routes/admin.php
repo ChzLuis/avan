@@ -66,6 +66,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/settings',                        [AdminSettingsController::class, 'index'])->name('settings');
         Route::post('/settings',                       [AdminSettingsController::class, 'update'])->name('settings.update');
 
+        // Auditoría (SOLO LECTURA): accesos, impersonaciones y cambios de
+        // perfiles. El Control observa, no edita datos del tenant (ADR-002).
+        Route::get('/auditoria', function () {
+            $eventos = \App\Models\AccessEvent::with(['actor', 'afectado'])
+                ->when(request('accion'), fn ($q, $a) => $q->where('action', $a))
+                ->orderByDesc('created_at')
+                ->paginate(50)
+                ->withQueryString();
+
+            return view('admin.audit.index', ['eventos' => $eventos]);
+        })->name('audit');
+
         // Demos
         Route::get('/demos',                           [DemoController::class, 'adminIndex'])->name('demos.index');
         Route::post('/demos/{demo}/cancel',            [DemoController::class, 'adminCancel'])->name('demos.cancel');

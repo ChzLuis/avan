@@ -86,6 +86,14 @@
                         {{ $project->is_active ? 'Suspender' : 'Activar' }}
                     </button>
                 </form>
+                {{-- Soporte entra al Workspace del tenant SIEMPRE por la vía
+                     auditada (ADR-003): deja rastro impersonate en AccessEvent. --}}
+                <form method="POST" action="{{ url('/bixoadmin/entrar-como/'.$project->id) }}" class="action-form">
+                    @csrf
+                    <button type="submit" class="action-btn action-secondary" title="Entrar al Workspace de esta empresa dejando rastro de auditoría">
+                        Entrar como
+                    </button>
+                </form>
             </div>
         </div>
         @empty
