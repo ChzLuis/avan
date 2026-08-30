@@ -61,7 +61,7 @@ class BixoSalesAuthorizationTest extends TestCase
         ]);
         // Entitlement de tenant real: el negocio contrató los módulos que el
         // App Shell gatea (comercial.module). Sin esto el gate responde 403.
-        foreach (['orders', 'clients', 'invoices', 'quotes', 'catalog'] as $key) {
+        foreach (['orders', 'clients', 'invoices', 'quotes', 'catalog', 'logistics'] as $key) {
             $m = \App\Models\Module::firstOrCreate(['key' => $key], ['name' => $key, 'is_active' => true]);
             $this->project->modules()->syncWithoutDetaching([$m->id => ['is_active' => true]]);
         }

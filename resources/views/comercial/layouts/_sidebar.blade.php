@@ -88,6 +88,8 @@
     $_finanzas = array_filter([
         ['Cobranza', 'bixosales.cuentas', 'cobranza', ['reports.ver']],
         $_mod['facturas'] ? ['Facturas', 'bixosales.facturas', 'factura', ['invoices.ver']] : null,
+        // La guia acompaña a la factura: se emiten una detras de otra.
+        $_mod['facturas'] ? ['Guías de remisión', 'guias.index', 'delivery', ['invoices.ver']] : null,
         $_mod['caja'] ? ['Caja', 'bixosales.caja', 'caja', ['caja.ver']] : null,
     ], fn ($i) => $i && $_puede($i[3]));
     if ($_finanzas) $_grupos[] = ['titulo' => 'Finanzas', 'items' => array_values($_finanzas)];
@@ -101,11 +103,20 @@
     // vivia solo en el panel raiz. Son las MISMAS pantallas (mismo dominio y
     // sesion, ya unificada en Fase 3); aqui solo ganan una puerta. Cada
     // entrada respeta el permiso que su ruta exige.
+    // Unificación del Workspace: TODA la configuración real del negocio entra
+    // aquí (antes la mitad solo se alcanzaba desde el menú del panel). El menú
+    // solo ofrece; el permiso real lo exige cada ruta en el servidor.
     $_config = array_filter([
         ['Mi negocio',  'settings',          'etiqueta',   ['settings.negocio']],
         ['Constructor', 'settings.builder',  'reportes',   ['settings.diseno']],
         ['Productos',   'products.index',    'inventario', ['catalog.ver']],
         ['Código QR',   'settings.qr',       'etiqueta',   ['settings.negocio']],
+        ['SEO',         'settings.seo',      'reportes',   ['settings.negocio']],
+        ['Pagos',       'settings.payments', 'cobranza',   ['settings.pagos', 'manage-settings']],
+        ['Módulos',     'settings.modules',  'etiqueta',   ['settings.negocio']],
+        ['Roles y permisos', 'roles.index',  'clientes',   ['settings.negocio']],
+        ['Catálogos maestros', 'catalogs.index', 'inventario', ['settings.catalogos', 'manage-settings']],
+        ['Canales WhatsApp', 'bots.index',   'bot',        ['settings.negocio']],
     ], fn ($i) => $i && $_puede($i[3]));
     if ($_config) $_grupos[] = ['titulo' => 'Configuración', 'items' => array_values($_config)];
 

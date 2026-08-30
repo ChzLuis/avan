@@ -1,4 +1,6 @@
-<x-app-layout>
+{{-- Unificación del Workspace: el QR vive en el MISMO shell que la operación.
+     Base adoptada de ARIN (deriva reconciliada 2026-08-29). --}}
+<x-portal-layout layout="comercial" :project="$project" pageTitle="Código QR">
 <x-slot name="slot">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -68,6 +70,11 @@
                exactamente el archivo que se baja, no una maqueta parecida. --}}
           <canvas id="qrx-canvas" x-ref="lienzo"></canvas>
           <div x-show="cargando" class="qrx-cargando" x-cloak><span></span></div>
+          {{-- Un fallo de red dejaba el lienzo en blanco sin explicar nada --}}
+          <div x-show="fallo" class="qrx-fallo" x-cloak>
+            <p x-text="fallo"></p>
+            <button type="button" @click="reintentar()">Reintentar</button>
+          </div>
         </div>
 
         @if(!$isPublicUrl)
@@ -171,7 +178,7 @@
         <div class="qrx-checks">
           <label class="qrx-check"><input type="checkbox" x-model="form.showName"><span>Nombre del negocio</span></label>
           <label class="qrx-check"><input type="checkbox" x-model="form.showUrl"><span>Dirección web</span></label>
-          <label class="qrx-check"><input type="checkbox" x-model="form.showBixo"><span>Firma de BIXO</span></label>
+          <label class="qrx-check"><input type="checkbox" x-model="form.showBixo"><span>Firma de Eskala Group</span></label>
         </div>
       </div>
 
@@ -233,6 +240,14 @@
           <label class="qrx-check"><input type="checkbox" x-model="form.showBrackets"><span>Escuadras en las esquinas del código</span></label>
         </div>
         <label class="qrx-check"><input type="checkbox" x-model="form.showBenefits"><span>Mostrar beneficios</span></label>
+        <div class="qrx-campo">
+          <span class="qrx-lab">Marcas que vendes</span>
+          <input type="text" maxlength="160" placeholder="Bosch, Truper, Stanley"
+                 :value="form.brands.join(', ')"
+                 @input="form.brands = $event.target.value.split(',').map(m => m.trim()).filter(Boolean).slice(0,8)">
+          <small class="qrx-ayuda">Separadas por comas. Salen como sellos en el volante; hasta 8.</small>
+        </div>
+        <label class="qrx-check"><input type="checkbox" x-model="form.showBrands"><span>Mostrar las marcas</span></label>
         <div x-show="form.showBenefits" class="qrx-sub" x-cloak>
           <template x-for="(b,i) in form.benefits" :key="i">
             <div class="qrx-benef-fila">
@@ -354,4 +369,4 @@
 ])
 
 </x-slot>
-</x-app-layout>
+</x-portal-layout>

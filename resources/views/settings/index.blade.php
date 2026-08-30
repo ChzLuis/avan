@@ -1,4 +1,6 @@
-<x-app-layout>
+{{-- Unificación del Workspace: Mi negocio vive en el MISMO shell que la
+     operación (bixosales). La URL /bixoadmin/settings no cambia. --}}
+<x-portal-layout layout="comercial" :project="$project" pageTitle="Mi negocio">
 <x-slot name="slot">
 
 @php
@@ -1429,4 +1431,4 @@
 @endif{{-- /$s !== 'flujo' --}}
 
 </x-slot>
-</x-app-layout>
+</x-portal-layout>

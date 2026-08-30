@@ -603,10 +603,16 @@
             </svg>
         </button>
 
-        {{-- LOGO BIXO --}}
+        {{-- LOGO BIXO + empresa activa: misma identidad que el shell comercial,
+             para que el salto entre superficies no se sienta como otra app. --}}
         <div class="bx-hdr-logo">
             <div class="bx-hdr-logo-mark">B</div>
             <span class="bx-hdr-logo-txt">BIXO</span>
+            @isset($activeProject)
+            <span style="font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">
+                {{ \Illuminate\Support\Str::limit($activeProject->name, 22) }}
+            </span>
+            @endisset
         </div>
 
         <div class="bx-hdr-sep"></div>

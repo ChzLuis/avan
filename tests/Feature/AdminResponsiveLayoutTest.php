@@ -105,16 +105,23 @@ class AdminResponsiveLayoutTest extends TestCase
 
     public function test_regular_settings_screen_uses_the_same_single_shell(): void
     {
+        // Unificación del Workspace (2026-08-29): "Mi negocio" ya no renderiza
+        // en el shell del panel sino en el shell comercial UNIFICADO — el mismo
+        // que la operación (bixosales). El contrato pasa a ser: un solo shell
+        // para el tenant, con el sidebar maestro (nav-marca) y sin el aside del
+        // panel viejo. Ver WorkspaceShellUnificadoTest.
         [$owner, $project] = $this->adminContext();
 
         $response = $this->actingAs($owner)
-            ->withSession(['active_project_id' => $project->id])
+            ->withSession([
+                'active_project_id'    => $project->id,
+                'comercial_project_id' => $project->id,
+            ])
             ->get(route('settings', ['p' => $project->id]))
             ->assertOk()
-            ->assertSee('data-admin-shell', false)
-            ->assertSee('data-admin-main', false)
-            ->assertSee('data-mobile-sidebar-trigger', false);
+            ->assertSee('nav-marca-texto', false);
 
-        $this->assertSame(1, substr_count($response->getContent(), 'id="admin-sidebar"'));
+        $this->assertSame(0, substr_count($response->getContent(), 'id="admin-sidebar"'),
+            'settings ya no debe montar el sidebar del panel viejo');
     }
 }
