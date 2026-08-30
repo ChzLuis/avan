@@ -1680,7 +1680,11 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
               <div class="card-cat" x-text="p.cat"></div>
               <div class="card-name" x-text="p.name"></div>
               <div class="card-price-row">
-                <span class="price-now" x-text="fmt(p.price)"></span>
+                {{-- Con variantes el precio puede variar: se avisa, como en Directo --}}
+                <template x-if="Array.isArray(p.realVariants) && p.realVariants.length">
+                  <span class="card-cat" style="letter-spacing:0;text-transform:none">Desde</span>
+                </template>
+                <span class="price-now" x-text="fmt((Array.isArray(p.realVariants) && p.realVariants.length) ? Math.min(...p.realVariants.map(v=>Number(v.price))) : p.price)"></span>
                 <template x-if="p.cp && p.cp>p.price">
                   <span class="price-was" x-text="fmt(p.cp)"></span>
                 </template>
@@ -1692,7 +1696,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
             <div class="card-add" x-show="p.stock!==0">
               @if($showCartButton)
               <button class="btn" @click.stop="{{ $isQuoteOnly ? 'openQuotePopup(p.id)' : 'addToCart(p.id)' }}">
-                @if(!$isQuoteOnly)🛒 {{ $settings['btn_cart_text'] ?? 'Agregar al carrito' }}@else{{ $settings['btn_quote_text'] ?? 'Cotizar' }}@endif
+                @if(!$isQuoteOnly)<span x-text="(Array.isArray(p.realVariants) && p.realVariants.length) ? 'Elegir opciones' : '🛒 ' + @js($settings['btn_cart_text'] ?? 'Agregar al carrito')"></span>@else{{ $settings['btn_quote_text'] ?? 'Cotizar' }}@endif
               </button>
               @endif
               @if($showInquiryButton)
