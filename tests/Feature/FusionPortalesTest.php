@@ -113,22 +113,29 @@ class FusionPortalesTest extends TestCase
             ->assertForbidden();
     }
 
-    /** F4: el menú del portal muestra Configuración a quien tiene permisos
-     *  de ajustes, y se la esconde a quien no los tiene. */
+    /** F4 (dos caras, plan 2026-08-30): la Operación ofrece la PUERTA a
+     *  Configuración a quien tiene permisos de ajustes — no mezcla sus
+     *  entradas — y a quien no los tiene ni le enseña la puerta. */
     public function test_el_menu_unico_respeta_los_permisos(): void
     {
-        // Gerente con permisos de ajustes: ve el grupo y sus entradas.
+        // Gerente con permisos de ajustes: en Operación ve la puerta, y en
+        // Configuración ve el árbol completo de su cara.
         $this->actingAs($this->gerente)->withSession([
             'comercial_project_id' => $this->project->id,
             'active_project_id'    => $this->project->id,
         ]);
         $this->get('/bixosales')
             ->assertOk()
-            ->assertSee('Configuración')
-            ->assertSee('Constructor')
-            ->assertSee('Mi negocio');
+            ->assertSee('Ir a Configuración')
+            ->assertDontSee('Constructor (tienda)');
 
-        // Vendedor sin permisos de ajustes: el grupo ni aparece.
+        $this->get('/bixoadmin/settings')
+            ->assertOk()
+            ->assertSee('Datos del negocio')
+            ->assertSee('Constructor (tienda)')
+            ->assertSee('Ir a Ventas');
+
+        // Vendedor sin permisos de ajustes: ni la puerta aparece.
         Role::findOrCreate('fusion_vendedor', 'web')->syncPermissions(['orders.ver']);
         $vendedor = User::factory()->create(['is_superadmin' => 0]);
         ProjectMember::create(['project_id' => $this->project->id, 'user_id' => $vendedor->id, 'role' => 'viewer']);
@@ -142,7 +149,7 @@ class FusionPortalesTest extends TestCase
         ]);
         $this->get('/bixosales')
             ->assertOk()
-            ->assertDontSee('>Configuración<', false)
-            ->assertDontSee('Constructor');
+            ->assertDontSee('Ir a Configuración')
+            ->assertDontSee('Constructor (tienda)');
     }
 }

@@ -35,6 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // "Target class [superadmin] does not exist" y el panel de
             // superadmin era inalcanzable.
             'superadmin'       => \App\Http\Middleware\IsSuperAdmin::class,
+            // Capacidades restringidas: entitlement + permiso + feature flag
+            // (BIXO_CAPACIDADES_MATRIZ.md). Un permiso solo NO abre esto.
+            'capacidad'        => \App\Http\Middleware\VerificaCapacidad::class,
             'module'           => \App\Http\Middleware\CheckModuleActive::class,
             'project.member'   => \App\Http\Middleware\CheckProjectMember::class,
             'project.scope'    => \App\Http\Middleware\EnsureProjectScope::class,

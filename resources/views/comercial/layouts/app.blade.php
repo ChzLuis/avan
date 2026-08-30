@@ -736,7 +736,12 @@ $_nav = match(true) {
          aqui: en las pantallas de configuracion (/bixoadmin) el chip dice
          "Configuración" con su propio tono; en la operacion, el rubro. --}}
     @php
-        $_caraConfig = request()->routeIs('settings*', 'products.*', 'roles.*', 'catalogs.*', 'bots.*', 'projects.*');
+        // Debe coincidir con la lista del sidebar (_sidebar.blade.php).
+        $_caraConfig = request()->routeIs(
+            'settings*', 'products.*', 'categories.*', 'roles.*', 'catalogs.*',
+            'bots.*', 'bots-flow.*', 'projects.*', 'certificados.*', 'sedes.*',
+            'proveedores.*', 'groups.*', 'design-templates.*', 'catalog-integrations.*'
+        );
     @endphp
     @if($_caraConfig)
     <span style="font-size:12px; font-weight:600; color:#7c3aed;

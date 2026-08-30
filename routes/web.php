@@ -100,23 +100,13 @@ Route::middleware(['auth'])->group(function () {
     // Panel del negocio — todas las rutas bajo /panel
     Route::prefix('bixoadmin')->middleware(['project.member'])->group(function () {
 
-        // Inicio → un Inicio NEUTRO del Workspace (el panel de bixosales),
-        // no la lista de negocios: entrar al Workspace no debe sentirse como
-        // caer en "el panel de sales" ni en un selector (decisión 2026-08-30).
-        // Quien no puede ver la operación aterriza en su configuración.
-        $aterrizaje = function () {
-            $u = auth()->user();
-            $p = \App\Models\Project::find(session('active_project_id'));
-            $puedeOperar = $u && ($u->is_superadmin
-                || ($p && $p->owner_id === $u->id)
-                || $u->can('orders.ver') || $u->can('view-orders'));
-
-            return $puedeOperar
-                ? redirect()->route('bixosales.dashboard')
-                : redirect()->route('settings');
-        };
-        Route::get('/', $aterrizaje)->name('dashboard');
-        Route::get('/dashboard', $aterrizaje)->name('dashboard.alt');
+        // Inicio de la plataforma ADMIN: quien entra por /bixoadmin (o su
+        // login propio) se queda en la plataforma admin — configuración del
+        // negocio. Son 2 plataformas: entrar por admin NUNCA aterriza en
+        // sales (decisión del usuario 2026-08-30; corrige el aterrizaje
+        // "Inicio neutro" que duró unas horas y mandaba a /bixosales).
+        Route::get('/', fn() => redirect()->route('settings'))->name('dashboard');
+        Route::get('/dashboard', fn() => redirect()->route('settings'))->name('dashboard.alt');
 
         // Productos — /bixoadmin/products
         // Un permiso por verbo. Antes iba un unico can:catalog.ver sobre todo el
@@ -413,8 +403,10 @@ Route::middleware(['auth'])->group(function () {
         // Configuración
         Route::get('/settings',          [SettingsController::class, 'index'])->name('settings');
         Route::post('/settings',         [SettingsController::class, 'update'])->name('settings.update')->middleware('can:settings.negocio');
-        Route::get('/settings/design',   [SettingsController::class, 'design'])->name('settings.design');
-        Route::get('/settings/designer', [SettingsController::class, 'designer'])->name('settings.designer'); // nuevo Diseñador visual (Fase A)
+        // DEPRECATED_CANDIDATE (matriz de capacidades): fuera del menú; se
+        // endurecen con permiso de diseño (project.can respeta dueño/superadmin).
+        Route::get('/settings/design',   [SettingsController::class, 'design'])->name('settings.design')->middleware('project.can:settings.diseno');
+        Route::get('/settings/designer', [SettingsController::class, 'designer'])->name('settings.designer')->middleware('project.can:settings.diseno'); // nuevo Diseñador visual (Fase A)
 
         // Constructor guiado (B0): entrada + lectura + contrato borrador/publicación.
         Route::get('/settings/builder', [\App\Http\Controllers\StoreBuilderController::class, 'index'])->name('settings.builder');
@@ -424,16 +416,22 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/builder/draft/settings', [\App\Http\Controllers\StoreBuilderController::class, 'saveDraftSettings'])->name('settings.builder.draft.settings')->middleware('can:settings.diseno');
         Route::post('/settings/builder/design-preset', [\App\Http\Controllers\StoreBuilderController::class, 'applyDesignPreset'])->name('settings.builder.design-preset')->middleware('can:settings.diseno');
         // Diseños guardados ("Mis plantillas")
-        Route::get('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'index'])->name('design-templates.index');
-        Route::post('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'store'])->name('design-templates.store')->middleware('can:settings.diseno');
-        Route::post('/settings/design-templates/import', [\App\Http\Controllers\DesignTemplateController::class, 'import'])->name('design-templates.import')->middleware('can:settings.diseno');
-        Route::post('/settings/design-templates/{id}/apply', [\App\Http\Controllers\DesignTemplateController::class, 'apply'])->name('design-templates.apply')->middleware('can:settings.diseno');
-        Route::post('/settings/design-templates/{id}/version', [\App\Http\Controllers\DesignTemplateController::class, 'newVersion'])->name('design-templates.version')->middleware('can:settings.diseno');
-        Route::post('/settings/design-templates/{id}/restore/{versionNumber}', [\App\Http\Controllers\DesignTemplateController::class, 'restore'])->name('design-templates.restore')->middleware('can:settings.diseno');
-        Route::post('/settings/design-templates/{id}/duplicate', [\App\Http\Controllers\DesignTemplateController::class, 'duplicate'])->name('design-templates.duplicate')->middleware('can:settings.diseno');
-        Route::post('/settings/design-templates/{id}/toggle', [\App\Http\Controllers\DesignTemplateController::class, 'toggle'])->name('design-templates.toggle')->middleware('can:settings.diseno');
-        Route::put('/settings/design-templates/{id}', [\App\Http\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update')->middleware('can:settings.diseno');
-        Route::get('/settings/design-templates/{id}/export', [\App\Http\Controllers\DesignTemplateController::class, 'export'])->name('design-templates.export');
+        // Gestión de plantillas de diseño = ESKALA_ONLY por defecto (matriz de
+        // capacidades): capacidad 'plantillas' — solo superadmin, o tenant con
+        // el flag cap_plantillas que Eskala enciende a mano. El export iba SIN
+        // middleware (hallazgo de la auditoría 2026-08-30).
+        Route::middleware('capacidad:plantillas')->group(function () {
+            Route::get('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'index'])->name('design-templates.index');
+            Route::post('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'store'])->name('design-templates.store');
+            Route::post('/settings/design-templates/import', [\App\Http\Controllers\DesignTemplateController::class, 'import'])->name('design-templates.import');
+            Route::post('/settings/design-templates/{id}/apply', [\App\Http\Controllers\DesignTemplateController::class, 'apply'])->name('design-templates.apply');
+            Route::post('/settings/design-templates/{id}/version', [\App\Http\Controllers\DesignTemplateController::class, 'newVersion'])->name('design-templates.version');
+            Route::post('/settings/design-templates/{id}/restore/{versionNumber}', [\App\Http\Controllers\DesignTemplateController::class, 'restore'])->name('design-templates.restore');
+            Route::post('/settings/design-templates/{id}/duplicate', [\App\Http\Controllers\DesignTemplateController::class, 'duplicate'])->name('design-templates.duplicate');
+            Route::post('/settings/design-templates/{id}/toggle', [\App\Http\Controllers\DesignTemplateController::class, 'toggle'])->name('design-templates.toggle');
+            Route::put('/settings/design-templates/{id}', [\App\Http\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update');
+            Route::get('/settings/design-templates/{id}/export', [\App\Http\Controllers\DesignTemplateController::class, 'export'])->name('design-templates.export');
+        });
         Route::post('/settings/builder/publish', [\App\Http\Controllers\StoreBuilderController::class, 'publish'])->name('settings.builder.publish')->middleware('can:settings.diseno');
         // Descartar el borrador y volver a lo publicado. Hasta ahora la única
         // salida de un borrador con cambios no deseados era publicarlos.

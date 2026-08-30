@@ -75,17 +75,25 @@ class WorkspaceShellUnificadoTest extends TestCase
 
     public function test_el_sidebar_maestro_ofrece_toda_la_configuracion(): void
     {
-        // Desde la operación (bixosales), el dueño ve la configuración completa
-        // en el mismo menú: ya no hay capacidades solo alcanzables "en el panel".
-        $res = $this->get('/bixosales');
+        // Dos caras (plan 2026-08-30): el árbol COMPLETO de configuración se ve
+        // en la cara Configuración; la Operación ofrece solo la puerta.
+        $res = $this->get('/bixoadmin/settings');
 
         $res->assertOk()
-            ->assertSee('Mi negocio')
+            ->assertSee('Datos del negocio')
             ->assertSee('SEO')
             ->assertSee('Pagos')
             ->assertSee('Módulos')
             ->assertSee('Roles y permisos')
-            ->assertSee('Guías de remisión');
+            ->assertSee('Constructor (tienda)')
+            ->assertSee('Ir a Ventas');
+
+        // Y la operación mantiene lo suyo (sin mezclar configuración).
+        $this->get('/bixosales')
+            ->assertOk()
+            ->assertSee('Guías de remisión')
+            ->assertSee('Ir a Configuración')
+            ->assertDontSee('Constructor (tienda)');
     }
 
     public function test_las_urls_del_panel_no_cambian(): void

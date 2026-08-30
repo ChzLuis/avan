@@ -45,12 +45,62 @@
         'etiqueta'    => 'M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z',
     ];
 
-    // Cada grupo: titulo + entradas [etiqueta, ruta, icono, permisos]
-    // Los grupos siguen la referencia: Comercial / Catalogos / Finanzas /
-    // Analisis / Configuracion. Solo entran rutas que EXISTEN en el portal:
-    // "Productos" y "Configuracion" no tienen pantalla propia aqui (viven en
-    // el panel principal), asi que no se inventan enlaces muertos.
+    // ── DOS CARAS DEL WORKSPACE (plan de reestructuración 2026-08-30) ────
+    // /bixoadmin (Configuración) y /bixosales (Operación) comparten shell,
+    // sesión, identidad y permisos, pero cada cara muestra SU menú y un
+    // acceso visible a la otra. No se mezcla operación con configuración.
+    $_caraConfig = request()->routeIs(
+        'settings*', 'products.*', 'categories.*', 'roles.*', 'catalogs.*',
+        'bots.*', 'bots-flow.*', 'projects.*', 'certificados.*', 'sedes.*',
+        'proveedores.*', 'groups.*', 'design-templates.*', 'catalog-integrations.*'
+    );
+
     $_grupos = [];
+
+    if ($_caraConfig) {
+        // CARA CONFIGURACIÓN — árbol del plan §3, solo con rutas que existen.
+        $_g = function (string $titulo, array $items) use (&$_grupos, $_puede) {
+            $items = array_values(array_filter($items, fn ($i) => $i && $_puede($i[3])));
+            if ($items) $_grupos[] = ['titulo' => $titulo, 'items' => $items];
+        };
+        $_g('Mi negocio', [
+            ['Datos del negocio',  'settings',           'etiqueta',   ['settings.negocio']],
+            ['Sedes',              'sedes.index',        'inicio',     ['settings.negocio']],
+        ]);
+        $_g('Catálogo maestro', [
+            ['Productos',          'products.index',     'inventario', ['catalog.ver']],
+            ['Catálogos maestros', 'catalogs.index',     'inventario', ['settings.catalogos', 'manage-settings']],
+            ['Proveedores',        'proveedores.index',  'delivery',   ['settings.negocio']],
+        ]);
+        $_g('Canales', [
+            ['Constructor (tienda)', 'settings.builder', 'reportes',   ['settings.diseno']],
+            ['Canales WhatsApp',     'bots.index',       'bot',        ['settings.negocio']],
+            ['Código QR',            'settings.qr',      'etiqueta',   ['settings.negocio']],
+        ]);
+        $_g('Marketing y visibilidad', [
+            ['SEO',                'settings.seo',       'reportes',   ['settings.negocio']],
+        ]);
+        $_g('Pagos e integraciones', [
+            ['Pagos',                  'settings.payments',           'cobranza',   ['settings.pagos', 'manage-settings']],
+            ['Conectores de catálogo', 'catalog-integrations.index',  'inventario', ['settings.negocio']],
+        ]);
+        $_g('Configuración fiscal', [
+            ['Certificados SUNAT', 'certificados.index', 'factura',    ['settings.negocio']],
+        ]);
+        $_g('Equipo', [
+            ['Roles y permisos',   'roles.index',        'clientes',   ['settings.negocio']],
+            ['Grupos',             'groups.index',       'clientes',   ['settings.negocio']],
+        ]);
+        $_g('Sistema', [
+            ['Módulos',            'settings.modules',   'etiqueta',   ['settings.negocio']],
+        ]);
+        // Acceso visible a la otra cara (plan §3).
+        if ($_puede(['orders.ver', 'view-orders'])) {
+            $_grupos[] = ['titulo' => null, 'items' => [
+                ['→ Ir a Ventas / Operación', 'bixosales.dashboard', 'rayo', ['orders.ver', 'view-orders']],
+            ]];
+        }
+    } else {
 
     $_grupos[] = ['titulo' => null, 'items' => array_values(array_filter([
         ['Inicio', 'bixosales.dashboard', 'inicio', ['orders.ver', 'view-orders']],
@@ -99,27 +149,6 @@
     ], fn ($i) => $i && $_puede($i[3]));
     if ($_analisis) $_grupos[] = ['titulo' => 'Análisis', 'items' => array_values($_analisis)];
 
-    // Fase 4 (App Shell): el portal comercial absorbe la configuracion que
-    // vivia solo en el panel raiz. Son las MISMAS pantallas (mismo dominio y
-    // sesion, ya unificada en Fase 3); aqui solo ganan una puerta. Cada
-    // entrada respeta el permiso que su ruta exige.
-    // Unificación del Workspace: TODA la configuración real del negocio entra
-    // aquí (antes la mitad solo se alcanzaba desde el menú del panel). El menú
-    // solo ofrece; el permiso real lo exige cada ruta en el servidor.
-    $_config = array_filter([
-        ['Mi negocio',  'settings',          'etiqueta',   ['settings.negocio']],
-        ['Constructor', 'settings.builder',  'reportes',   ['settings.diseno']],
-        ['Productos',   'products.index',    'inventario', ['catalog.ver']],
-        ['Código QR',   'settings.qr',       'etiqueta',   ['settings.negocio']],
-        ['SEO',         'settings.seo',      'reportes',   ['settings.negocio']],
-        ['Pagos',       'settings.payments', 'cobranza',   ['settings.pagos', 'manage-settings']],
-        ['Módulos',     'settings.modules',  'etiqueta',   ['settings.negocio']],
-        ['Roles y permisos', 'roles.index',  'clientes',   ['settings.negocio']],
-        ['Catálogos maestros', 'catalogs.index', 'inventario', ['settings.catalogos', 'manage-settings']],
-        ['Canales WhatsApp', 'bots.index',   'bot',        ['settings.negocio']],
-    ], fn ($i) => $i && $_puede($i[3]));
-    if ($_config) $_grupos[] = ['titulo' => 'Configuración', 'items' => array_values($_config)];
-
     // Encargos a medida: dependen del PROYECTO que los pidio, no de quien mira.
     $_medida = array_filter([
         ($_u?->is_superadmin && (int) ($project->setting('modulo_tickets_wp', 0)) === 1)
@@ -130,6 +159,16 @@
             ? ['Conversaciones', 'bixosales.conversaciones', 'bot', ['tickets.ver']] : null,
     ], fn ($i) => $i !== null);
     if ($_medida) $_grupos[] = ['titulo' => 'A medida', 'items' => array_values($_medida)];
+
+    // Acceso visible a la otra cara (plan §9): la configuración ya no se
+    // mezcla en el menú de operación — se llega a ella por esta puerta.
+    if ($_puede(['settings.negocio', 'settings.diseno', 'manage-settings'])) {
+        $_grupos[] = ['titulo' => null, 'items' => [
+            ['→ Ir a Configuración', 'settings', 'etiqueta', ['settings.negocio', 'settings.diseno', 'manage-settings']],
+        ]];
+    }
+
+    } // fin cara Operación
 @endphp
 
 <nav id="sidebar" :class="navMovil ? 'nav-movil-abierto' : ''" aria-label="Navegación principal">
@@ -146,14 +185,7 @@
         @foreach($_grupos as $g)
             @if(count($g['items']))
                 @if($g['titulo'])
-                @php
-                    // Cara Configuración (ADR-002): cuando se navega /bixoadmin,
-                    // su grupo se acentúa para que el Workspace muestre en qué
-                    // cara está el usuario sin cambiar de shell.
-                    $_caraCfg = $g['titulo'] === 'Configuración'
-                        && request()->routeIs('settings*', 'products.*', 'roles.*', 'catalogs.*', 'bots.*', 'projects.*');
-                @endphp
-                <p class="nav-grupo nav-label" @if($_caraCfg) style="color:#7c3aed;font-weight:700;" @endif>{{ $g['titulo'] }}</p>
+                <p class="nav-grupo nav-label">{{ $g['titulo'] }}</p>
                 <div class="nav-sep" aria-hidden="true"></div>
                 @endif
                 @foreach($g['items'] as [$etiqueta, $ruta, $icono, $permisos])

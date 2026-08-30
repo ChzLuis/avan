@@ -99,6 +99,19 @@ class SettingsAuthorizationTest extends TestCase
         );
     }
 
+    public function test_el_asistente_puede_guardar_preset_y_estilo_de_tarjeta_del_motor_ecommerce(): void
+    {
+        $this->usuarioConRol('gerente_preset_ecommerce_test', self::GRANULARES);
+
+        $this->post(route('settings.design.update'), [
+            'theme_preset' => 'tech-dark',
+            'product_card_style' => 'tech',
+        ])->assertRedirect();
+
+        $this->assertSame('tech-dark', $this->project->fresh()->setting('theme_preset'));
+        $this->assertSame('tech', $this->project->setting('product_card_style'));
+    }
+
     /** Una acción por cada permiso granular y por cada subárea de configuración. */
     public static function accionesDeConfiguracion(): array
     {
@@ -117,7 +130,10 @@ class SettingsAuthorizationTest extends TestCase
             'menú de la tienda'   => ['POST',   '/bixoadmin/settings/storefront/menu/items'],
             'reordenar menú'      => ['POST',   '/bixoadmin/settings/storefront/menu/reorder'],
             'secciones de inicio' => ['POST',   '/bixoadmin/settings/experience/home/reorder'],
-            'plantillas diseño'   => ['POST',   '/bixoadmin/settings/design-templates'],
+            // 'plantillas diseño' salió de esta lista (2026-08-30): la gestión
+            // de plantillas ya no se abre solo con settings.diseno — es una
+            // capacidad restringida (flag cap_plantillas de Eskala). Su
+            // contrato vive en CapacidadesRestringidasTest.
             // settings.catalogos
             'perfiles catálogo'   => ['POST',   '/bixoadmin/settings/catalog-profiles'],
             'canales WhatsApp'    => ['POST',   '/bixoadmin/settings/canales'],

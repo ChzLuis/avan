@@ -1,0 +1,99 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Employee;
+use App\Models\Project;
+use App\Models\ProjectMember;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+/**
+ * Reestructuración 2026-08-30 — paso 8: capacidades restringidas.
+ *
+ * Un cliente común NO accede a herramientas internas aunque tenga el permiso
+ * de diseño: la puerta es ENTITLEMENT + PERMISSION + FEATURE FLAG. El flag
+ * (`cap_<clave>` = 1) solo lo enciende Eskala.
+ */
+class CapacidadesRestringidasTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Project $project;
+    private User $disenador;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Permission::findOrCreate('settings.diseno', 'web');
+        Permission::findOrCreate('orders.ver', 'web');
+        $this->project = Project::create([
+            'owner_id' => User::factory()->create()->id,
+            'name' => 'Caps QA', 'slug' => 'caps-qa', 'category' => 'retail', 'is_active' => true,
+        ]);
+        Role::findOrCreate('caps_disenador', 'web')->syncPermissions(['settings.diseno']);
+        $this->disenador = User::factory()->create(['is_superadmin' => 0]);
+        ProjectMember::create(['project_id' => $this->project->id, 'user_id' => $this->disenador->id, 'role' => 'viewer']);
+        Employee::create(['project_id' => $this->project->id, 'user_id' => $this->disenador->id,
+            'name' => 'Diseñador QA', 'spatie_role' => 'caps_disenador', 'is_active' => 1]);
+        $this->disenador->syncRoles(['caps_disenador']);
+    }
+
+    private function como(User $u)
+    {
+        return $this->actingAs($u)->withSession([
+            'active_project_id'    => $this->project->id,
+            'comercial_project_id' => $this->project->id,
+        ]);
+    }
+
+    public function test_las_plantillas_no_se_abren_con_solo_el_permiso_de_diseno(): void
+    {
+        // Tiene settings.diseno, pero la capacidad exige el flag de Eskala.
+        $this->como($this->disenador)->get('/bixoadmin/settings/design-templates')->assertForbidden();
+        $this->como($this->disenador)->post('/bixoadmin/settings/design-templates', [])->assertForbidden();
+        $this->como($this->disenador)->get('/bixoadmin/settings/design-templates/1/export')->assertForbidden();
+    }
+
+    public function test_el_dueno_tampoco_se_salta_el_flag(): void
+    {
+        $dueno = $this->project->owner;
+        $this->como($dueno)->get('/bixoadmin/settings/design-templates')->assertForbidden();
+    }
+
+    public function test_el_flag_de_eskala_abre_la_capacidad_al_tenant(): void
+    {
+        $this->project->settings()->create(['key' => 'cap_plantillas', 'value' => '1']);
+
+        $res = $this->como($this->disenador)->get('/bixoadmin/settings/design-templates');
+        $this->assertNotSame(403, $res->status(), 'Con flag + permiso la capacidad debe abrirse');
+    }
+
+    public function test_el_superadmin_siempre_pasa(): void
+    {
+        $admin = User::factory()->create(['is_superadmin' => 1]);
+
+        $res = $this->como($admin)->get('/bixoadmin/settings/design-templates');
+        $this->assertNotSame(403, $res->status());
+    }
+
+    public function test_el_diseno_legacy_exige_permiso_de_diseno(): void
+    {
+        // Un empleado SIN settings.diseno ya no puede abrir el diseñador.
+        Role::findOrCreate('caps_vendedor', 'web')->syncPermissions(['orders.ver']);
+        $vendedor = User::factory()->create(['is_superadmin' => 0]);
+        ProjectMember::create(['project_id' => $this->project->id, 'user_id' => $vendedor->id, 'role' => 'viewer']);
+        Employee::create(['project_id' => $this->project->id, 'user_id' => $vendedor->id,
+            'name' => 'Vendedor QA', 'spatie_role' => 'caps_vendedor', 'is_active' => 1]);
+        $vendedor->syncRoles(['caps_vendedor']);
+
+        $this->como($vendedor)->get('/bixoadmin/settings/designer')->assertForbidden();
+        $this->como($vendedor)->get('/bixoadmin/settings/design')->assertForbidden();
+
+        // Quien SÍ tiene el permiso de diseño conserva el acceso.
+        $this->como($this->disenador)->get('/bixoadmin/settings/designer')->assertOk();
+    }
+}
