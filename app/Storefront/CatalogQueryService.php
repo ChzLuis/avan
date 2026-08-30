@@ -4,6 +4,7 @@ namespace App\Storefront;
 
 use App\Models\Project;
 use App\Models\StoreCatalogProfile;
+use App\Models\ProductAttribute;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
@@ -30,7 +31,11 @@ final class CatalogQueryService
         $query = $project->products()
             ->where('is_available', true)
             ->where('price', '>', 0)
-            ->with(['mainImage', 'category']);
+            ->with([
+                'mainImage', 'category',
+                'variants' => fn ($builder) => $builder->where('is_active', true)
+                    ->with(['values.attribute', 'image']),
+            ]);
 
         // Perfil de catálogo: se aplica ANTES de cualquier otro filtro para acotar
         // el alcance. Un perfil restringe a: sus productos asignados + los productos
@@ -42,6 +47,15 @@ final class CatalogQueryService
 
         // Búsqueda (escapada, columnas acotadas)
         $search = trim((string) $request->query('q', ''));
+
+        // Agrupación por modelo: en la rejilla se enseña un color por modelo y
+        // el resto viajan como opciones dentro de la tarjeta. No se agrupa
+        // cuando hay búsqueda: quien escribe "rosado" quiere ver el rosado, no
+        // el modelo representado por otro color.
+        if ($search === '' && AgrupadorModelos::activoEn($project)) {
+            $query->whereIn('id', app(AgrupadorModelos::class)->representantes($project));
+        }
+
         if ($search !== '') {
             $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
             $query->where(function ($b) use ($like) {
@@ -97,11 +111,53 @@ final class CatalogQueryService
             }
         }
 
+        // "En stock": el cliente Ecommerce lo mostraba como filtro y volvia a
+        // pedir el catalogo, pero nunca lo enviaba y el servidor no lo conocia:
+        // el interruptor no filtraba nada. Sin control de inventario (stock
+        // nulo) el producto se considera disponible.
+        if ($request->boolean('in_stock')) {
+            $query->where(function ($builder) {
+                $builder->whereNull('stock')->orWhere('stock', '>', 0)
+                    ->orWhereHas('variants', fn ($variants) => $variants->where('is_active', true)
+                        ->where(fn ($v) => $v->whereNull('stock')->orWhere('stock', '>', 0)));
+            });
+        }
+
         if (is_numeric($request->query('min_price'))) {
             $query->where('price', '>=', max(0, (float) $request->query('min_price')));
         }
         if (is_numeric($request->query('max_price'))) {
             $query->where('price', '<=', max(0, (float) $request->query('max_price')));
+        }
+
+        // Atributos dinámicos: AND entre atributos y OR entre los valores del
+        // mismo atributo. Los IDs se validan siempre dentro del proyecto para
+        // impedir que un filtro de otra tienda altere esta consulta.
+        $requestedAttributes = $request->query('attribute', []);
+        if (is_array($requestedAttributes)) {
+            foreach (array_slice($requestedAttributes, 0, 10, true) as $attributeId => $requestedValues) {
+                $attribute = ProductAttribute::allProjects()
+                    ->where('project_id', $project->id)
+                    ->where('is_active', true)
+                    ->where('is_filterable', true)
+                    ->find((int) $attributeId);
+                if (! $attribute) continue;
+
+                $valueIds = $attribute->values()->where('is_active', true)
+                    ->whereIn('id', collect(\Illuminate\Support\Arr::wrap($requestedValues))->map(fn ($id) => (int) $id)->filter()->unique()->all())
+                    ->pluck('id')->all();
+                if (! $valueIds) continue;
+
+                $query->where(function ($builder) use ($attribute, $valueIds) {
+                    $builder->whereHas('attributeValues', fn ($values) => $values
+                        ->where('product_attribute_values.product_attribute_id', $attribute->id)
+                        ->whereIn('product_attribute_values.id', $valueIds))
+                        ->orWhereHas('variants', fn ($variants) => $variants->where('is_active', true)
+                            ->whereHas('values', fn ($values) => $values
+                                ->where('product_attribute_values.product_attribute_id', $attribute->id)
+                                ->whereIn('product_attribute_values.id', $valueIds)));
+                });
+            }
         }
 
         // Los productos sin foto se iban delante y el cliente veia una rejilla de
@@ -190,10 +246,17 @@ final class CatalogQueryService
         // se sirve esa, que es ~90% mas ligera.
         $img = $p->mainImage ? \App\Support\ImageVariants::webp($p->main_image_url) : null;
         $cp = $p->compare_price ? (float) $p->compare_price : null;
+
+        // Con la agrupación activa la tarjeta habla del modelo, no del color:
+        // el nombre pierde la coletilla y los colores pasan a ser opciones.
+        $project = $p->project ?? \App\Models\Project::where('slug', $slug)->first();
+        $agrupa = $project && AgrupadorModelos::activoEn($project);
+        $variantes = $agrupa ? app(AgrupadorModelos::class)->variantesDe($project, $p->id, $slug) : [];
+        $nombre = $variantes ? AgrupadorModelos::claveModelo($p) : $p->name;
         // Shape unificado: claves canónicas (computienda) + alias (ecommerce).
         return [
             'id' => $p->id,
-            'name' => $p->name,
+            'name' => $nombre,
             'price' => (float) $p->price,
             'comparePrice' => $cp, 'cp' => $cp,
             'hasTax' => (bool) $p->has_tax,
@@ -204,17 +267,47 @@ final class CatalogQueryService
             'parentId' => $p->category?->parent_id ? (string) $p->category->parent_id : null,
             'sku' => $p->sku,
             'stock' => $p->stock,
+            // Directo ordena "mas nuevos" en el cliente con este sello.
+            'ts' => $p->created_at?->timestamp ?? 0,
             // Resumen para la vista rapida: sin el, la tarjeta solo decia nombre
             // y precio y el comprador tenia que abrir la ficha para saber que
             // estaba comprando. Se limpia el HTML y se corta a 180 caracteres.
             'resumen' => \Illuminate\Support\Str::limit(
                 trim(preg_replace('/\s+/', ' ', strip_tags((string) $p->description))), 180
             ),
-            'url' => \App\Support\ImageVariants::productUrl($p->project ?? \App\Models\Project::where('slug', $slug)->first(), $p->id, $p->name),
+            'url' => \App\Support\ImageVariants::productUrl($project, $p->id, $p->name),
             'wholesalePrice' => filled($p->wholesale_price) ? (float) $p->wholesale_price : null,
             'wholesaleMinQty' => (int) ($p->wholesale_min_qty ?? 1),
             'wholesaleUnit' => (filled($p->wholesale_unit) && !is_numeric($p->wholesale_unit)) ? $p->wholesale_unit : 'unidades',
             'sizes' => $p->sizes,
+            // Vacío salvo que el modelo tenga de verdad más de un color.
+            'variantes' => $variantes,
+            'color' => $variantes ? AgrupadorModelos::colorActivo($variantes, $img) : null,
+            // Una sola serializacion para los dos motores y la ficha publica.
+            'realVariants' => \App\Storefront\VariantPresenter::forProduct($p, $img, $cp),
         ];
+    }
+
+    public function facets(Project $project): \Illuminate\Support\Collection
+    {
+        return ProductAttribute::allProjects()
+            ->where('project_id', $project->id)
+            ->where('is_active', true)
+            ->where('is_filterable', true)
+            ->whereHas('values', fn ($query) => $query->where('is_active', true)
+                ->where(function ($values) use ($project) {
+                    $values->whereHas('products', fn ($products) => $products
+                        ->where('products.project_id', $project->id)->where('products.is_available', true))
+                        ->orWhereHas('variants', fn ($variants) => $variants
+                            ->where('product_variants.project_id', $project->id)->where('product_variants.is_active', true));
+                }))
+            ->with(['values' => fn ($query) => $query->where('is_active', true)
+                ->where(function ($values) use ($project) {
+                    $values->whereHas('products', fn ($products) => $products
+                        ->where('products.project_id', $project->id)->where('products.is_available', true))
+                        ->orWhereHas('variants', fn ($variants) => $variants
+                            ->where('product_variants.project_id', $project->id)->where('product_variants.is_active', true));
+                })])
+            ->orderBy('sort_order')->orderBy('name')->get();
     }
 }

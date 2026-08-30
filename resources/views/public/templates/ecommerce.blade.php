@@ -18,7 +18,9 @@ $canonicalUrl  = ($settings['seo_canonical'] ?? null)
 $logoUrl       = $settings['logo_url'] ?? $project->logo_url ?? '';
 $ogImage       = $logoUrl ? asset('storage/'.$logoUrl) : asset('img/og-default.png');
 $seoRobots     = ($settings['seo_robots'] ?? 'index, follow');
-$faviconUrl    = !empty($settings['favicon_url']) ? asset('storage/'.$settings['favicon_url']) : '';
+// Por el generador, no el archivo crudo: un logo de 1080x400 metido en la
+// pestana del navegador es una franja ilegible de 16 px.
+$faviconUrl    = !empty($settings['favicon_url']) ? \App\Support\ImageVariants::favicon(asset('storage/'.$settings['favicon_url'])) : '';
 $announcementText = $settings['announcement_text'] ?? '';
 $footerTagline    = $settings['footer_tagline']  ?? '';
 $footerCopyright  = trim($settings['footer_copyright'] ?? '') !== '' ? $settings['footer_copyright'] : ('© ' . date('Y') . ' ' . $project->name);
@@ -29,6 +31,11 @@ $ecFontTitle   = trim($settings['font_title'] ?? $settings['font'] ?? '') ?: 'Sp
 $ecFontBody    = trim($settings['font_body']  ?? $settings['font'] ?? '') ?: 'DM Sans';
 $ecGoogleFonts = collect([$ecFontTitle, $ecFontBody])->unique()->filter()
                    ->map(fn($f)=>str_replace(' ','+',$f).':wght@300;400;500;600;700')->implode('&family=');
+$themePresetDef = \App\Support\StorefrontThemePresets::get($settings['theme_preset'] ?? null);
+$themeBodyClass = $themePresetDef['body_class'] ?? '';
+$themeTokens = $themePresetDef['tokens'] ?? [];
+$productCardStyle = in_array(($settings['product_card_style'] ?? 'classic'), ['classic','tech','soft','elegant','contrast'], true)
+    ? ($settings['product_card_style'] ?? 'classic') : 'classic';
 $isQuoteOnly   = in_array($settings['store_mode'] ?? 'direct', ['quote_only', 'quote'], true); // acepta ambas claves históricas
 $culqiEnabled  = ($settings['culqi_enabled'] ?? '0') === '1';
 $culqiPublicKey= $settings['culqi_public_key'] ?? '';
@@ -142,9 +149,15 @@ if (!empty($project->whatsapp)) $schema['contactPoint'] = ['@type'=>'ContactPoin
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family={{ $ecGoogleFonts }}&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ $ecGoogleFonts }}&display=swap"></noscript>
+{{-- Reglas de variantes compartidas con Directo y la ficha; antes que Alpine --}}
+@include('public.partials.variant-engine')
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
 :root {
+  /* Aire alrededor de la foto de un producto. Vale 0: el margen ya lo deja el
+     procesador de imagenes y es proporcional. Misma variable que en la
+     plantilla computienda, para que las tiendas no diverjan. */
+  --foto-aire: 4%;
   --primary: {{ $primaryColor }};
   --primary-ink: #ffffff;
   --primary-hover: color-mix(in srgb, {{ $primaryColor }} 80%, #000);
@@ -184,6 +197,52 @@ if (!empty($project->whatsapp)) $schema['contactPoint'] = ['@type'=>'ContactPoin
   --t-slow: 360ms;
   --radius-xs:4px; --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:24px; --radius-full:9999px;
 }
+@if($themePresetDef)
+/* Preset visual compartido: CompuTienda vive como tech-dark dentro de Ecommerce. */
+:root {
+  --bg-body: {{ $themeTokens['--surface'] ?? '#f7f7f5' }};
+  --bg-surface: {{ $themeTokens['--surface-soft'] ?? ($themeTokens['--surface'] ?? '#ffffff') }};
+  --bg-elev: {{ $themeTokens['--surface-soft'] ?? '#fafaf8' }};
+  --bg-inset: color-mix(in srgb, {{ $themeTokens['--surface-soft'] ?? '#fafaf8' }} 82%, {{ $themeTokens['--border'] ?? '#e5e7eb' }});
+  --text-primary: {{ $themeTokens['--text-strong'] ?? '#0e0e10' }};
+  --text-secondary: {{ $themeTokens['--text'] ?? '#5a5a63' }};
+  --text-muted: {{ $themeTokens['--muted'] ?? '#8a8a92' }};
+  --border: {{ $themeTokens['--border'] ?? 'rgba(14,14,16,.08)' }};
+  --border-strong: color-mix(in srgb, {{ $themeTokens['--border'] ?? '#e5e7eb' }} 72%, var(--text-primary));
+  --shadow-sm: {{ $themeTokens['--shadow-sm'] ?? '0 1px 2px rgba(14,14,16,.04)' }};
+  --shadow-md: {{ $themeTokens['--shadow-md'] ?? '0 4px 12px rgba(14,14,16,.06)' }};
+  --shadow-lg: {{ $themeTokens['--shadow-lg'] ?? '0 20px 40px rgba(14,14,16,.10)' }};
+  --radius-sm: {{ $themeTokens['--radius-sm'] ?? '8px' }};
+  --radius-md: {{ $themeTokens['--radius-md'] ?? '12px' }};
+  --radius-lg: {{ $themeTokens['--radius-lg'] ?? '16px' }};
+}
+@endif
+@if($themeBodyClass === 'theme-tech-dark')
+.theme-tech-dark {
+  background-color: var(--bg-body);
+  background-image: linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px), linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);
+  background-size: 44px 44px;
+}
+.theme-tech-dark .header,.theme-tech-dark .nav,.theme-tech-dark .card,.theme-tech-dark .filter-panel,.theme-tech-dark .drawer { border-color:var(--border); }
+.theme-tech-dark .section-title h2 { letter-spacing:-.03em; }
+.theme-tech-dark .section-title h2::before { content:"";display:inline-block;width:4px;height:.8em;margin-right:12px;border-radius:4px;background:var(--primary);box-shadow:0 0 16px color-mix(in srgb,var(--primary) 75%,transparent); }
+.theme-tech-dark .btn-primary:hover { box-shadow:0 0 22px color-mix(in srgb,var(--primary) 55%,transparent); }
+.theme-tech-dark .card:hover { border-color:color-mix(in srgb,var(--primary) 60%,var(--border)); }
+.theme-tech-dark ::selection { background:color-mix(in srgb,var(--primary) 60%,transparent);color:#fff; }
+/* Patrones traidos de la vista historica CompuTienda (solo lo que aporta):
+   titulos del pie con subrayado de marca, fichas de categoria con presencia
+   sobre fondo oscuro y el icono con halo. Sin copiar su codigo ni su layout. */
+.theme-tech-dark .footer-col h6 { position:relative;padding-bottom:10px;color:var(--text-primary); }
+.theme-tech-dark .footer-col h6::after { content:"";position:absolute;left:0;bottom:0;width:36px;height:2px;border-radius:2px;background:var(--primary); }
+.theme-tech-dark .cat-card { border-color:color-mix(in srgb,var(--primary) 35%,var(--border));background:linear-gradient(180deg,color-mix(in srgb,var(--primary) 8%,var(--bg-surface)),var(--bg-surface)); }
+.theme-tech-dark .cat-card-icon { background:color-mix(in srgb,var(--primary) 22%,transparent);box-shadow:0 0 18px color-mix(in srgb,var(--primary) 35%,transparent); }
+.theme-tech-dark .cat-card:hover { box-shadow:0 12px 32px color-mix(in srgb,var(--primary) 28%,transparent); }
+@endif
+.card-style-tech .card { border-top:3px solid color-mix(in srgb,var(--primary) 78%,var(--border)); }
+.card-style-tech .card:hover { box-shadow:0 16px 36px color-mix(in srgb,var(--primary) 16%,transparent); }
+.card-style-soft .card { border-radius:24px;box-shadow:0 14px 32px color-mix(in srgb,var(--primary) 10%,transparent); }
+.card-style-elegant .card { border-width:0 0 1px;border-radius:0;box-shadow:none; }
+.card-style-contrast .card { border:2px solid var(--text-primary);box-shadow:5px 5px 0 var(--text-primary); }
 /* DARK MODE */
 [data-theme="dark"] {
   --bg-body: #0e0e10;
@@ -362,8 +421,8 @@ input,select,textarea{font:inherit;color:inherit;}
 .btn:disabled{opacity:.6;cursor:progress}
 @media(prefers-reduced-motion:reduce){.card{transition:none}}
 .card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(14,14,16,.10),0 4px 8px rgba(14,14,16,.06);border-color:transparent;}
-.card-media{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--bg-inset);}
-.card-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform 400ms var(--ease);}
+.card-media{position:relative;aspect-ratio:1/1;overflow:hidden;background:#fff;}
+.card-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:var(--foto-aire);object-position:center;transition:transform 400ms var(--ease);}
 .card:hover .card-media img{transform:scale(1.07);}
 .card-media-placeholder{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(145deg,var(--bg-inset) 0%,var(--bg-elev) 100%);color:var(--text-muted);font-size:44px;}
 .card-badges{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;z-index:2;}
@@ -601,7 +660,7 @@ details.fg[open] .fg-arrow{transform:rotate(180deg);}
 .pdp-actions-desktop{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
 .pdp-actions-mobile{display:none;}
 .pdp-img-wrap{aspect-ratio:1/1;border-radius:var(--radius-xl);overflow:hidden;background:var(--bg-inset);position:relative;cursor:zoom-in;}
-.pdp-img-main{width:100%;height:100%;object-fit:cover;transition:transform .3s;}
+.pdp-img-main{width:100%;height:100%;object-fit:contain;transition:transform .3s;}
 .pdp-img-wrap:hover .pdp-img-main{transform:scale(1.04);}
 .pdp-zoom-btn{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.5);color:#fff;border-radius:50%;width:36px;height:36px;display:grid;place-items:center;pointer-events:none;transition:opacity .2s;opacity:.8;}
 .pdp-img-wrap:hover .pdp-zoom-btn{opacity:1;}
@@ -880,14 +939,16 @@ section{padding-block:var(--rd-space)}
 h1{letter-spacing:-.02em}
 h2{font-size:clamp(26px,3vw,36px);font-weight:800;letter-spacing:-.02em}
 .hero,.hero-section{min-height:clamp(440px,52vh,580px)}
-.card{border-radius:var(--rd-radius)!important;border:1px solid #ececec!important;box-shadow:var(--rd-shadow)!important;transition:transform .24s cubic-bezier(.2,.7,.3,1),box-shadow .24s ease}
+/* Colores por token: con valores fijos el preset tech-dark dejaba nombre y precio
+   oscuros sobre tarjeta oscura (ilegibles). */
+.card{border-radius:var(--rd-radius)!important;border:1px solid var(--border)!important;box-shadow:var(--rd-shadow)!important;transition:transform .24s cubic-bezier(.2,.7,.3,1),box-shadow .24s ease}
 .card:hover{transform:translateY(-6px);box-shadow:var(--rd-shadow-hover)!important}
-.card-media{aspect-ratio:1/1;background:#fff;overflow:hidden}
-.card-media img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
+.card-media{aspect-ratio:1/1;background:var(--bg-surface);overflow:hidden}
+.card-media img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire);transition:transform .4s ease}
 .card:hover .card-media img{transform:scale(1.05)}
-.card-name{font-weight:600;color:#1f2937;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;padding-left:2px;margin-left:-2px}
-.price-now{font-size:18px;font-weight:800;color:#111827}
-.price-was{color:#9ca3af;text-decoration:line-through;font-size:12px}
+.card-name{font-weight:600;color:var(--text-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;padding-left:2px;margin-left:-2px}
+.price-now{font-size:18px;font-weight:800;color:var(--text-primary)}
+.price-was{color:var(--text-muted);text-decoration:line-through;font-size:12px}
 .badge-sale,.badge{border-radius:999px;font-weight:700;letter-spacing:.02em}
 .badge-sale{background:var(--primary)!important;color:#fff}
 .btn,.btn-primary{border-radius:12px!important;font-weight:600;letter-spacing:.01em}
@@ -905,7 +966,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
-<body x-data="ecStore()" x-init="init()" @scroll.window="onScroll">
+<body class="{{ trim($themeBodyClass.' card-style-'.$productCardStyle) }}" x-data="ecStore()" x-init="init()" @scroll.window="onScroll">
 
 {{-- TOPBAR --}}
 @if($announcementText)
@@ -926,7 +987,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
     <button class="icon-btn hamburger" @click="mobileMenuOpen=true" aria-label="Menú">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <a href="#" @click.prevent="page='home';filterCat=null;filterQ=''" class="logo" style="cursor:pointer" x-data>
+    <a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}" class="logo" style="cursor:pointer">
       @if($logoUrl)
         <img src="{{ asset('storage/'.$logoUrl) }}" alt="{{ $project->name }}">
       @else
@@ -947,7 +1008,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
         </template>
         <template x-if="!searchQ">
           <template x-for="cat in allCats.slice(0,5)" :key="cat.id">
-            <div class="sd-item" @mousedown="filterCat=cat.id;page='catalog';searchFocused=false">
+            <div class="sd-item" @mousedown="location.assign(EC_SHOP_ENDPOINT+'?category='+encodeURIComponent(cat.id))">
               <span class="sd-name" x-text="cat.name"></span>
             </div>
           </template>
@@ -1031,23 +1092,26 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
       @endforeach
       <span style="width:1px;height:20px;background:var(--border);margin:0 6px;align-self:center"></span>
     @endif
-    <div class="nav-item" :class="{active:page==='home'}" @click="page='home';filterCat=null">Inicio</div>
+    <a class="nav-item {{ ($storeView ?? 'home') !== 'tienda' ? 'active' : '' }}" href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}"
+       style="text-decoration:none" @if(($storeView ?? 'home') !== 'tienda') aria-current="page" @endif>Inicio</a>
+    <a class="nav-item {{ ($storeView ?? 'home') === 'tienda' ? 'active' : '' }}" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}"
+       style="text-decoration:none" @if(($storeView ?? 'home') === 'tienda') aria-current="page" @endif>Tienda</a>
 
     {{-- Primeras 6 categorías --}}
     @foreach($navCats as $cat)
     <div class="nav-item" :class="{active:page==='catalog'&&filterCat==='{{ $cat->id }}'}"
-      @click="page='catalog';filterCat='{{ $cat->id }}';filterSubCat=null"
       @mouseenter="navOpen='{{ $cat->id }}'"
       @mouseleave="navOpen=null"
       style="position:relative">
-      {{ $cat->name }}
+      <a href="{{ $cat->exists ? \App\Support\StorefrontNavigation::categoryUrl($project, $cat) : \App\Support\StorefrontNavigation::shopUrl($project) }}"
+         style="color:inherit;text-decoration:none">{{ $cat->name }}</a>
       @if($cat->children->count())
       <div class="nav-flyout" x-show="navOpen==='{{ $cat->id }}'" x-cloak @mouseenter="navOpen='{{ $cat->id }}'" @mouseleave="navOpen=null">
-        <a href="#" @click.prevent.stop="filterCat='{{ $cat->id }}';filterSubCat=null;page='catalog';navOpen=null" style="font-weight:700;color:var(--primary)">
+        <a href="{{ \App\Support\StorefrontNavigation::categoryUrl($project, $cat) }}" style="font-weight:700;color:var(--primary)">
           Ver todo en {{ $cat->name }}
         </a>
         @foreach($cat->children as $sub)
-        <a href="#" @click.prevent.stop="filterCat='{{ $cat->id }}';filterSubCat='{{ $sub->id }}';page='catalog';navOpen=null">
+        <a href="{{ \App\Support\StorefrontNavigation::categoryUrl($project, $sub) }}">
           {{ $sub->name }}
           <span style="float:right;font-size:11px;color:var(--text-muted)">{{ $sub->products->count() }}</span>
         </a>
@@ -1059,27 +1123,26 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
 
     {{-- Botón "Todas las categorías" — siempre visible --}}
     <div style="position:relative;height:100%;margin-left:auto" @mouseenter="navAllOpen=true" @mouseleave="navAllOpen=false">
-      <button class="nav-all-btn" :class="{active:page==='categories',open:navAllOpen}"
-        @click="page='categories';navAllOpen=false" aria-expanded="navAllOpen" aria-haspopup="true">
+      <a class="nav-all-btn" :class="{open:navAllOpen}"
+        href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}" aria-expanded="navAllOpen" aria-haspopup="true">
         Todas las categorías
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
+      </a>
       {{-- Megamenú con TODAS las categorías --}}
       <div class="nav-all-flyout" x-show="navAllOpen" x-cloak
         @mouseenter="navAllOpen=true" @mouseleave="navAllOpen=false" style="right:0">
         @foreach($categories as $cat)
         @php $catTotal = $cat->products->count() + $cat->children->sum(fn($s)=>$s->products->count()); @endphp
-        <div class="naf-item"
-          @click="filterCat='{{ $cat->id }}';filterSubCat=null;page='catalog';navAllOpen=false">
+        <a class="naf-item" href="{{ $cat->exists ? \App\Support\StorefrontNavigation::categoryUrl($project, $cat) : \App\Support\StorefrontNavigation::shopUrl($project) }}">
           <div class="naf-name">{{ $cat->name }}</div>
           <div class="naf-count">{{ $catTotal }} productos</div>
-        </div>
+        </a>
         @endforeach
         <div class="naf-divider"></div>
         <div class="naf-footer">
-          <button class="btn btn-primary btn-sm" @click="page='categories';navAllOpen=false">
+          <a class="btn btn-primary btn-sm" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">
             Ver página de categorías →
-          </button>
+          </a>
         </div>
       </div>
     </div>
@@ -1519,6 +1582,25 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
         </div>
       </details>
 
+      @foreach(collect($catalogFacets ?? []) as $attribute)
+      <details class="fg" open>
+        <summary class="fg-summary">
+          {{ $attribute->name }}
+          <template x-if="(filterAttributes['{{ $attribute->id }}']||[]).length"><span class="fg-badge" x-text="filterAttributes['{{ $attribute->id }}'].length"></span></template>
+          <svg class="fg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="fg-body">
+          @foreach($attribute->values as $value)
+          <label class="filter-check">
+            <input class="fck" type="checkbox" value="{{ $value->id }}" x-model="filterAttributes['{{ $attribute->id }}']">
+            @if($attribute->type === 'color' && $value->color_hex)<span aria-hidden="true" style="width:16px;height:16px;border:1px solid #cbd5e1;border-radius:50%;background:{{ $value->color_hex }};flex:0 0 auto"></span>@endif
+            <span class="filter-label">{{ $value->label }}</span>
+          </label>
+          @endforeach
+        </div>
+      </details>
+      @endforeach
+
     </aside>
 
     {{-- ── PRODUCT GRID AREA ── --}}
@@ -1729,6 +1811,23 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
           <label class="filter-check"><input class="fck" type="checkbox" x-model="filterOnSale"><span class="filter-label">Solo en oferta</span></label>
         </div>
       </details>
+      @foreach(collect($catalogFacets ?? []) as $attribute)
+      <details class="fg">
+        <summary class="fg-summary">{{ $attribute->name }}
+          <template x-if="(filterAttributes['{{ $attribute->id }}']||[]).length"><span class="fg-badge" x-text="filterAttributes['{{ $attribute->id }}'].length"></span></template>
+          <svg class="fg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="fg-body">
+          @foreach($attribute->values as $value)
+          <label class="filter-check">
+            <input class="fck" type="checkbox" value="{{ $value->id }}" x-model="filterAttributes['{{ $attribute->id }}']">
+            @if($attribute->type === 'color' && $value->color_hex)<span aria-hidden="true" style="width:16px;height:16px;border:1px solid #cbd5e1;border-radius:50%;background:{{ $value->color_hex }};flex:0 0 auto"></span>@endif
+            <span class="filter-label">{{ $value->label }}</span>
+          </label>
+          @endforeach
+        </div>
+      </details>
+      @endforeach
     </div>
 
     <div class="filter-drawer-foot">
@@ -1921,8 +2020,8 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
             <template x-if="!pdp.img">
               <div style="width:100%;height:100%;display:grid;place-items:center;font-size:96px;background:linear-gradient(145deg,var(--bg-inset),var(--bg-elev))">📦</div>
             </template>
-            <template x-if="pdp.cp && pdp.cp>pdp.price">
-              <span class="badge badge-sale" style="position:absolute;top:12px;left:12px;font-size:12px;padding:5px 10px" x-text="'-'+Math.round((1-pdp.price/pdp.cp)*100)+'%'"></span>
+            <template x-if="pdpCurrentCompare && pdpCurrentCompare>pdpCurrentPrice">
+              <span class="badge badge-sale" style="position:absolute;top:12px;left:12px;font-size:12px;padding:5px 10px" x-text="'-'+Math.round((1-pdpCurrentPrice/pdpCurrentCompare)*100)+'%'"></span>
             </template>
             <span class="pdp-zoom-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
@@ -1950,38 +2049,58 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
 
           {{-- Precio --}}
           <div style="display:flex;align-items:baseline;gap:12px;margin:12px 0 4px;flex-wrap:wrap">
-            <span class="pdp-price" x-text="fmt(pdp.price)"></span>
-            <template x-if="pdp.cp && pdp.cp>pdp.price">
-              <span style="font-size:16px;color:var(--text-muted);text-decoration:line-through" x-text="fmt(pdp.cp)"></span>
+            <span class="pdp-price" x-text="fmt(pdpCurrentPrice)"></span>
+            <template x-if="pdpCurrentCompare && pdpCurrentCompare>pdpCurrentPrice">
+              <span style="font-size:16px;color:var(--text-muted);text-decoration:line-through" x-text="fmt(pdpCurrentCompare)"></span>
             </template>
           </div>
-          <template x-if="pdp.cp && pdp.cp>pdp.price">
-            <p style="font-size:13px;color:var(--accent);font-weight:600;margin:0 0 12px">Ahorras <span x-text="fmt(pdp.cp-pdp.price)"></span></p>
+          <template x-if="pdpCurrentCompare && pdpCurrentCompare>pdpCurrentPrice">
+            <p style="font-size:13px;color:var(--accent);font-weight:600;margin:0 0 12px">Ahorras <span x-text="fmt(pdpCurrentCompare-pdpCurrentPrice)"></span></p>
           </template>
 
           {{-- Stock badge --}}
-          <template x-if="pdp.stock===0">
+          <template x-if="pdpCurrentStock===0">
             <div style="padding:10px 14px;background:color-mix(in srgb,var(--danger) 8%,transparent);border:1px solid color-mix(in srgb,var(--danger) 20%,transparent);border-radius:var(--radius-md);color:var(--danger);font-weight:600;margin-bottom:14px;font-size:13px">⚠️ Producto agotado temporalmente</div>
           </template>
-          <template x-if="pdp.stock!==null && pdp.stock!==undefined && pdp.stock>0 && pdp.stock<=10">
-            <div style="padding:8px 14px;background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 25%,transparent);border-radius:var(--radius-md);color:#92400e;font-size:12.5px;margin-bottom:12px">⚡ ¡Solo quedan <strong x-text="pdp.stock"></strong> unidades!</div>
+          <template x-if="pdpCurrentStock!==null && pdpCurrentStock!==undefined && pdpCurrentStock>0 && pdpCurrentStock<=10">
+            <div style="padding:8px 14px;background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 25%,transparent);border-radius:var(--radius-md);color:#92400e;font-size:12.5px;margin-bottom:12px">⚡ ¡Solo quedan <strong x-text="pdpCurrentStock"></strong> unidades!</div>
           </template>
 
+          {{-- Matriz real de variantes. Se deriva de los mismos atributos que usa
+               el administrador; nunca se elige una combinación automáticamente. --}}
+          <div x-show="pdpVariantAttributes.length" x-cloak style="display:grid;gap:14px;margin:18px 0">
+            <template x-for="attribute in pdpVariantAttributes" :key="attribute.id">
+              <fieldset style="border:0;padding:0;margin:0">
+                <legend style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text-primary)"><span x-text="attribute.name"></span>: <span x-text="pdpVariantSelectedLabel(attribute.id)" style="color:var(--text-muted);font-weight:500"></span></legend>
+                <div style="display:flex;flex-wrap:wrap;gap:8px">
+                  <template x-for="value in attribute.values" :key="value.id">
+                    <button type="button" class="btn btn-sm"
+                            :class="pdpVariantSelections[attribute.id]===value.id?'btn-primary':'btn-outline'"
+                            :disabled="!pdpVariantOptionAvailable(attribute.id,value.id)"
+                            :style="attribute.type==='color'&&value.color ? {'box-shadow':'inset 0 -4px 0 '+value.color} : {}"
+                            @click="choosePdpVariant(attribute.id,value.id)" x-text="value.label"></button>
+                  </template>
+                </div>
+              </fieldset>
+            </template>
+            <p x-show="pdpVariantError" x-cloak style="margin:0;color:var(--danger);font-size:12px;font-weight:600">Selecciona todas las opciones para continuar.</p>
+          </div>
+
           {{-- Selector de cantidad --}}
-          <div x-show="pdp.stock!==0" style="margin-bottom:14px">
+          <div x-show="pdpCurrentStock!==0" style="margin-bottom:14px">
             <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:500">Cantidad</div>
             <div style="display:inline-flex;align-items:center;border:1.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
               <button @click="pdpQty=Math.max(1,pdpQty-1)" style="width:40px;height:40px;border:none;background:var(--bg-inset);cursor:pointer;font-size:18px;display:grid;place-items:center" :disabled="pdpQty<=1">−</button>
               <span x-text="pdpQty" style="min-width:44px;text-align:center;font-weight:600;font-size:15px"></span>
-              <button @click="pdpQty=Math.min(pdp.stock||99,pdpQty+1)" style="width:40px;height:40px;border:none;background:var(--bg-inset);cursor:pointer;font-size:18px;display:grid;place-items:center">+</button>
+              <button @click="pdpQty=Math.min(pdpCurrentStock||99,pdpQty+1)" style="width:40px;height:40px;border:none;background:var(--bg-inset);cursor:pointer;font-size:18px;display:grid;place-items:center">+</button>
             </div>
-            <template x-if="pdp.stock!==null && pdp.stock!==undefined && pdp.stock>0">
-              <span style="font-size:12px;color:var(--text-muted);margin-left:10px" x-text="'Stock: '+pdp.stock+' disponibles'"></span>
+            <template x-if="pdpCurrentStock!==null && pdpCurrentStock!==undefined && pdpCurrentStock>0">
+              <span style="font-size:12px;color:var(--text-muted);margin-left:10px" x-text="'Stock: '+pdpCurrentStock+' disponibles'"></span>
             </template>
           </div>
 
           {{-- Botones desktop --}}
-          <div class="pdp-actions-desktop" x-show="pdp.stock!==0">
+          <div class="pdp-actions-desktop" x-show="pdpCurrentStock!==0">
             @if($showCartButton)
             <button class="btn btn-primary btn-lg btn-block" style="margin-bottom:10px" @click="addToCartQty(pdp.id, pdpQty)">
               @if(!$isQuoteOnly)
@@ -1998,7 +2117,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
             @endif
             @endif
             @if($quoteWa)
-            <a class="btn btn-outline btn-lg btn-block" :href="'https://wa.me/{{ $quoteWa }}?text='+encodeURIComponent('Hola, quiero '+pdpQty+'x '+pdp.name+' ('+fmt(pdp.price*pdpQty)+')')" target="_blank" rel="noopener">
+            <a class="btn btn-outline btn-lg btn-block" :href="'https://wa.me/{{ $quoteWa }}?text='+encodeURIComponent('Hola, quiero '+pdpQty+'x '+pdp.name+(pdpSelectedVariant?' · '+pdpSelectedVariant.label:'')+' ('+fmt(pdpCurrentPrice*pdpQty)+')')" target="_blank" rel="noopener">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:#25d366"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm5.6 14.2c-.2.6-1.2 1.1-1.7 1.2-.4 0-1 .1-1.6-.1-.4-.1-.9-.3-1.6-.6-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.4-1.1-2.6 0-1.3.6-1.9.9-2.1.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.8 1.8c.1.2.1.4 0 .6l-.3.4-.3.4c-.1.1-.2.3-.1.5.1.2.6 1 1.3 1.6.9.8 1.7 1 1.9 1.1.2.1.3.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.2.1.3.2.4.3 0 .1 0 .8-.2 1.4z"/></svg>
               Consultar por WhatsApp
             </a>
@@ -2048,10 +2167,10 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
   </div>
 
   {{-- Botones de acción FIJOS en bottom para MÓVIL --}}
-  <template x-if="pdp && pdp.stock!==0">
+  <template x-if="pdp && pdpCurrentStock!==0">
     <div class="pdp-actions-mobile">
       @if($quoteWa)
-      <a class="btn btn-outline" style="flex:1;gap:6px" :href="'https://wa.me/{{ $quoteWa }}?text='+encodeURIComponent('Hola, me interesa: '+pdp.name+' ('+fmt(pdp.price)+')')" target="_blank" rel="noopener">
+      <a class="btn btn-outline" style="flex:1;gap:6px" :href="'https://wa.me/{{ $quoteWa }}?text='+encodeURIComponent('Hola, me interesa: '+pdp.name+(pdpSelectedVariant?' · '+pdpSelectedVariant.label:'')+' ('+fmt(pdpCurrentPrice)+')')" target="_blank" rel="noopener">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:#25d366;flex-shrink:0"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm5.6 14.2c-.2.6-1.2 1.1-1.7 1.2-.4 0-1 .1-1.6-.1-.4-.1-.9-.3-1.6-.6-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.4-1.1-2.6 0-1.3.6-1.9.9-2.1.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.8 1.8c.1.2.1.4 0 .6l-.3.4-.3.4c-.1.1-.2.3-.1.5.1.2.6 1 1.3 1.6.9.8 1.7 1 1.9 1.1.2.1.3.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.2.1.3.2.4.3 0 .1 0 .8-.2 1.4z"/></svg>
         WhatsApp
       </a>
@@ -2412,11 +2531,11 @@ document.addEventListener('qv-open-product', function(e) {
               <div class="cart-line-name" x-text="item.name"></div>
               <div class="cart-line-actions">
                 <div class="qty-stepper">
-                  <button @click="updateQty(item.id,-1)">−</button>
+                  <button @click="updateQty(item.lineKey||item.id,-1)">−</button>
                   <span x-text="item.qty"></span>
-                  <button @click="updateQty(item.id,1)">+</button>
+                  <button @click="updateQty(item.lineKey||item.id,1)">+</button>
                 </div>
-                <a href="#" @click.prevent="removeFromCart(item.id)" style="font-size:12px;color:var(--text-secondary);cursor:pointer">Eliminar</a>
+                <a href="#" @click.prevent="removeFromCart(item.lineKey||item.id)" style="font-size:12px;color:var(--text-secondary);cursor:pointer">Eliminar</a>
               </div>
             </div>
             <div class="cart-line-price" x-text="fmt(item.price*item.qty)"></div>
@@ -2616,9 +2735,9 @@ document.addEventListener('qv-open-product', function(e) {
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:500" x-text="item.name"></div>
               <div x-show="!orderSuccess" style="display:flex;align-items:center;gap:8px;margin-top:4px">
-                <button style="width:24px;height:24px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;font-size:14px" @click="updateQty(item.id,-1)">−</button>
+                <button style="width:24px;height:24px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;font-size:14px" @click="updateQty(item.lineKey||item.id,-1)">−</button>
                 <span style="font-size:13px;min-width:16px;text-align:center" x-text="item.qty"></span>
-                <button style="width:24px;height:24px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;font-size:14px" @click="updateQty(item.id,1)">+</button>
+                <button style="width:24px;height:24px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;font-size:14px" @click="updateQty(item.lineKey||item.id,1)">+</button>
               </div>
               <div x-show="orderSuccess" style="font-size:12px;color:var(--text-muted);margin-top:2px" x-text="'x'+item.qty"></div>
             </div>
@@ -3047,9 +3166,9 @@ document.addEventListener('qv-open-product', function(e) {
   <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
     <div style="position:relative">
       <input type="text" placeholder="Buscar productos…" x-model="searchQ"
-        @keydown.enter="page='catalog';searchFocused=false;mobileMenuOpen=false"
+        @keydown.enter="if(searchQ){location.assign(EC_SHOP_ENDPOINT+'?q='+encodeURIComponent(searchQ))}"
         style="width:100%;height:44px;border:1.5px solid var(--border-strong);border-radius:var(--radius-full);padding:0 44px 0 16px;font-size:14px;background:var(--bg-inset)">
-      <button @click="if(searchQ){page='catalog';mobileMenuOpen=false;}" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;background:var(--primary);border:none;border-radius:999px;display:grid;place-items:center;cursor:pointer">
+      <button @click="if(searchQ){location.assign(EC_SHOP_ENDPOINT+'?q='+encodeURIComponent(searchQ))}" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;background:var(--primary);border:none;border-radius:999px;display:grid;place-items:center;cursor:pointer">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
     </div>
@@ -3058,11 +3177,11 @@ document.addEventListener('qv-open-product', function(e) {
   {{-- Navegación --}}
   <nav style="padding:8px">
     {{-- Inicio --}}
-    <button @click="page='home';mobileMenuOpen=false"
+    <a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}"
       style="display:flex;align-items:center;width:100%;min-height:48px;padding:0 14px;border-radius:10px;border:0;background:transparent;font-size:15px;font-weight:600;cursor:pointer;color:var(--text-primary);gap:10px;text-align:left">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Inicio
-    </button>
+    </a>
 
     {{-- Categorías con subcategorías colapsables --}}
     @foreach($categories as $cat)
@@ -3079,26 +3198,26 @@ document.addEventListener('qv-open-product', function(e) {
         <svg class="mob-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;transition:transform var(--t-fast)"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
       <div style="padding:4px 0 8px 14px;border-left:2px solid var(--border);margin:0 14px 4px 28px">
-        <button @click="page='catalog';filterCat='{{ $cat->id }}';filterSubCat=null;mobileMenuOpen=false"
+        <a href="{{ \App\Support\StorefrontNavigation::categoryUrl($project, $cat) }}"
           style="display:flex;align-items:center;width:100%;min-height:40px;padding:0 10px;border-radius:8px;border:0;background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--primary);gap:6px;text-align:left">
           Ver todos en {{ $cat->name }}
-        </button>
+        </a>
         @foreach($cat->children as $sub)
-        <button @click="filterCat='{{ $cat->id }}';filterSubCat='{{ $sub->id }}';page='catalog';mobileMenuOpen=false"
+        <a href="{{ \App\Support\StorefrontNavigation::categoryUrl($project, $sub) }}"
           style="display:flex;align-items:center;width:100%;min-height:40px;padding:0 10px;border-radius:8px;border:0;background:transparent;font-size:13.5px;cursor:pointer;color:var(--text-primary);gap:6px;text-align:left">
           {{ $sub->name }}
           <span style="font-size:11px;color:var(--text-muted);margin-left:auto">{{ $sub->products->count() }}</span>
-        </button>
+        </a>
         @endforeach
       </div>
     </details>
     @else
-    <button @click="page='catalog';filterCat='{{ $cat->id }}';mobileMenuOpen=false"
+    <a href="{{ $cat->exists ? \App\Support\StorefrontNavigation::categoryUrl($project, $cat) : \App\Support\StorefrontNavigation::shopUrl($project) }}"
       style="display:flex;align-items:center;width:100%;min-height:48px;padding:0 14px;border-radius:10px;border:0;background:transparent;font-size:14px;font-weight:500;cursor:pointer;color:var(--text-primary);gap:10px;text-align:left">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       {{ $cat->name }}
       <span style="font-size:11px;color:var(--text-muted);background:var(--bg-inset);padding:1px 7px;border-radius:999px;margin-left:auto">{{ $cat->products->count() }}</span>
-    </button>
+    </a>
     @endif
     @endforeach
 
@@ -3106,19 +3225,19 @@ document.addEventListener('qv-open-product', function(e) {
     <div style="height:1px;background:var(--border);margin:8px 14px"></div>
 
     {{-- Todas las categorías → página dedicada --}}
-    <button @click="page='categories';mobileMenuOpen=false"
+    <a href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}"
       style="display:flex;align-items:center;width:100%;min-height:48px;padding:0 14px;border-radius:10px;border:0;background:color-mix(in srgb,var(--primary) 8%,transparent);font-size:14px;font-weight:600;cursor:pointer;color:var(--primary);gap:10px;text-align:left;margin-top:4px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Todas las categorías
       <span style="font-size:11px;font-weight:500;margin-left:auto;background:var(--primary);color:var(--primary-ink);padding:2px 8px;border-radius:999px">{{ $categories->count() }}</span>
-    </button>
+    </a>
 
     {{-- Ver todo el catálogo --}}
-    <button @click="page='catalog';filterCat=null;mobileMenuOpen=false"
+    <a href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}"
       style="display:flex;align-items:center;width:100%;min-height:48px;padding:0 14px;border-radius:10px;border:0;background:transparent;font-size:14px;font-weight:500;cursor:pointer;color:var(--text-secondary);gap:10px;text-align:left;margin-top:4px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       Ver todo el catálogo →
-    </button>
+    </a>
   </nav>
 
   {{-- Footer del menú: WhatsApp --}}
@@ -3163,14 +3282,14 @@ document.addEventListener('qv-open-product', function(e) {
           <div style="font-size:13.5px;font-weight:600;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical" x-text="item.name"></div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
             <div class="qty-stepper">
-              <button @click="updateQty(item.id,-1)">−</button>
+              <button @click="updateQty(item.lineKey||item.id,-1)">−</button>
               <span style="min-width:28px;text-align:center;font-size:13px;font-weight:600" x-text="item.qty"></span>
-              <button @click="updateQty(item.id,1)">+</button>
+              <button @click="updateQty(item.lineKey||item.id,1)">+</button>
             </div>
             <span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--primary)" x-text="fmt(item.price*item.qty)"></span>
           </div>
         </div>
-        <button @click="removeFromCart(item.id)" style="color:var(--text-muted);background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0" aria-label="Eliminar">
+        <button @click="removeFromCart(item.lineKey||item.id)" style="color:var(--text-muted);background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0" aria-label="Eliminar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </div>
@@ -3297,7 +3416,7 @@ body.tw-open #tweaks-fab{left:320px;}
 .tw-reset:hover{color:#f4f4f5;border-color:#52525b;}
 .tw-divider{height:1px;background:#27272a;margin:2px 0;}
 .tw-logo-preview{width:100%;height:64px;background:#27272a;border:1px dashed #3f3f46;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:6px;}
-.tw-logo-preview img{max-width:100%;max-height:100%;object-fit:contain;padding:4px;}
+.tw-logo-preview img{max-width:100%;max-height:100%;object-fit:contain;padding:var(--foto-aire);}
 .tw-upload-btn{display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:7px;border:1px solid #3f3f46;background:#27272a;color:#a1a1aa;font-size:11.5px;cursor:pointer;transition:all .15s;width:100%;}
 .tw-upload-btn:hover{border-color:#6c63ff;color:#c4b5fd;}
 .tw-badge-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
@@ -4414,6 +4533,7 @@ function twLum(hex) {
 <script>
 // Fase 2A: solo la primera página; el resto se pide vía AJAX (server-side).
 const EC_PRODUCTS = @json(($storeView ?? 'home') === 'tienda' ? ($catalogCards ?? []) : []);
+const EC_INITIAL_PAGE = @json(($storeView ?? 'home') === 'tienda' ? 'catalog' : 'home');
 const EC_SHOP_ENDPOINT = @json(route('public.shop', $project->slug));
 const EC_MAX_PRICE = @json($catalogMaxPrice ?? 0);
 const EC_TOTAL = @json(isset($catalogPage) ? $catalogPage->total() : 0);
@@ -4439,7 +4559,9 @@ const CULQI_KEY  = @json($culqiPublicKey);
 
 function ecStore() {
   return {
-    page: 'home',
+    // Inicio y Tienda son rutas independientes; un estado antiguo del SPA no
+    // puede convertir /tienda en portada ni hacer que / muestre el catalogo.
+    page: EC_INITIAL_PAGE,
     // Nav
     navOpen: null,
     navAllOpen: false,
@@ -4463,6 +4585,7 @@ function ecStore() {
     filterSubCat: null,
     filterInStock: false,
     filterOnSale: false,
+    filterAttributes: @json(collect($catalogFacets ?? [])->mapWithKeys(fn ($attribute) => [(string) $attribute->id => []])->all()),
     sortBy: 'default',
     priceMin: 0,
     priceMax: 0,
@@ -4504,6 +4627,8 @@ function ecStore() {
     orderTotal_snapshot: 0,
     // PDP
     pdp: null,
+    pdpVariantSelections: {},
+    pdpVariantError: false,
     prevPage: 'catalog',
     // UI
     toasts: [],
@@ -4534,7 +4659,7 @@ function ecStore() {
     },
 
     get hasActiveFilters() {
-      return !!(this.filterCat || this.filterSubCat || this.filterInStock || this.filterOnSale || this.priceMin > 0 || this.priceMax < this.maxPrice);
+      return !!(this.filterCat || this.filterSubCat || this.filterInStock || this.filterOnSale || Object.values(this.filterAttributes).some(values=>values.length) || this.priceMin > 0 || this.priceMax < this.maxPrice);
     },
 
     get activeFilterCount() {
@@ -4543,6 +4668,7 @@ function ecStore() {
       if (this.filterSubCat) n++;
       if (this.filterInStock) n++;
       if (this.filterOnSale) n++;
+      n += Object.values(this.filterAttributes).filter(values=>values.length).length;
       if (this.priceMin > 0 || this.priceMax < this.maxPrice) n++;
       return n;
     },
@@ -4567,6 +4693,12 @@ function ecStore() {
       if (this.filterSubCat) u.set('category', this.filterSubCat);
       else if (this.filterCat) u.set('category', this.filterCat);
       if (this.filterOnSale) u.set('sale','1');
+      // Antes se volvia a pedir el catalogo al tocar "En stock" pero el
+      // parametro nunca viajaba: el interruptor no filtraba nada.
+      if (this.filterInStock) u.set('in_stock','1');
+      Object.entries(this.filterAttributes).forEach(([attributeId,values])=>{
+        (values||[]).forEach(valueId=>u.append(`attribute[${attributeId}][]`,valueId));
+      });
       if (this.priceMin>0) u.set('min_price', this.priceMin);
       if (this.priceMax>0 && this.priceMax<this.maxPrice) u.set('max_price', this.priceMax);
       u.set('sort', this._catSort()); u.set('page', page); u.set('format','json');
@@ -4617,21 +4749,27 @@ function ecStore() {
       ['searchQ','filterCat','filterSubCat','filterOnSale','filterInStock','priceMin','priceMax','sortBy'].forEach(f=>{
         this.$watch(f, ()=>{ if(this.page==='catalog') this.catApply(); });
       });
+      this.$watch('filterAttributes',()=>{ if(this.page==='catalog') this.catApply(); },{deep:true});
+      try {
+        const params=new URLSearchParams(location.search);
+        Object.keys(this.filterAttributes).forEach(attributeId=>{
+          this.filterAttributes[attributeId]=params.getAll(`attribute[${attributeId}][]`);
+        });
+        // catSyncUrl() escribe estos filtros en la URL pero al recargar o
+        // compartir el enlace solo se restauraban los atributos: oferta,
+        // stock, precio y orden se perdian en silencio.
+        if (params.get('sale')==='1') this.filterOnSale = true;
+        if (params.get('in_stock')==='1') this.filterInStock = true;
+        if (params.get('min_price')!==null && !isNaN(params.get('min_price'))) this.priceMin = Number(params.get('min_price'));
+        if (params.get('max_price')!==null && !isNaN(params.get('max_price'))) this.priceMax = Number(params.get('max_price'));
+        const ordenUrl = ({price_asc:'price-asc',price_desc:'price-desc',name:'name',newest:'newest'})[params.get('sort')];
+        if (ordenUrl) this.sortBy = ordenUrl;
+      } catch(e) {}
 
       // Restaurar página al recargar (producto, carrito, etc.)
-      try {
-        const saved = JSON.parse(localStorage.getItem('ec_state_'+EC_SLUG) || 'null');
-        if (saved && saved.page === 'product' && saved.productId) {
-          const p = this.findLoadedProduct(saved.productId);
-          if (p) {
-            this.pdp = p;
-            this.page = 'product';
-            this.relatedProducts = EC_PRODUCTS.filter(x => x.catId === p.catId && x.id != p.id).slice(0, 4);
-          }
-        } else if (saved && saved.page) {
-          this.page = saved.page;
-        }
-      } catch(e) {}
+      // La ruta manda sobre cualquier estado de una visita anterior. El
+      // carrito conserva su propio almacenamiento y no se pierde.
+      this.page = EC_INITIAL_PAGE;
 
       // Bloquear scroll body cuando checkout está abierto
       this.$watch('checkoutOpen', (val) => {
@@ -4677,6 +4815,8 @@ function ecStore() {
       this.filterSubCat  = null;
       this.filterInStock = false;
       this.filterOnSale  = false;
+      Object.keys(this.filterAttributes).forEach(attributeId=>this.filterAttributes[attributeId]=[]);
+      this.filterAttributes={...this.filterAttributes};
       this.priceMin      = 0;
       this.priceMax      = this.maxPrice;
       this.sortBy        = 'default';
@@ -4705,45 +4845,70 @@ function ecStore() {
 
     fmt(v) { return EC_CURRENCY + ' ' + Number(v).toFixed(2); },
 
+    // Las reglas viven en public/partials/variant-engine.blade.php
+    get pdpVariantes() { return Array.isArray(this.pdp?.realVariants) ? this.pdp.realVariants : []; },
+    get pdpVariantAttributes() { return BixoVariantes.atributos(this.pdpVariantes); },
+    get pdpSelectedVariant() { return BixoVariantes.seleccionada(this.pdpVariantes, this.pdpVariantSelections); },
+    get pdpCurrentPrice() { return BixoVariantes.efectivo(this.pdp, this.pdpSelectedVariant).price; },
+    get pdpCurrentCompare() { return BixoVariantes.efectivo(this.pdp, this.pdpSelectedVariant).comparePrice || 0; },
+    get pdpCurrentStock() { return BixoVariantes.efectivo(this.pdp, this.pdpSelectedVariant).stock; },
+    choosePdpVariant(attributeId,valueId) {
+      this.pdpVariantSelections = BixoVariantes.elegir(this.pdpVariantSelections, attributeId, valueId);
+      this.pdpVariantError=false;
+      // Ecommerce cambia la foto grande; la ficha mueve el carrusel.
+      if(this.pdpSelectedVariant?.image) this.pdp.img=this.pdpSelectedVariant.image;
+    },
+    pdpVariantSelectedLabel(attributeId) { return BixoVariantes.etiqueta(this.pdpVariantes, this.pdpVariantSelections, attributeId); },
+    pdpVariantOptionAvailable(attributeId,valueId) { return BixoVariantes.disponible(this.pdpVariantes, this.pdpVariantSelections, attributeId, valueId); },
+
     doSearch() {
-      if (this.searchQ) { this.page = 'catalog'; this.searchFocused = false; }
+      if (this.searchQ) {
+        window.location.assign(EC_SHOP_ENDPOINT + '?q=' + encodeURIComponent(this.searchQ));
+      }
     },
 
-    addToCart(productId) {
+    // Resuelve la variante de un producto antes de meterlo al carrito.
+    // Devuelve { p, variant } o null si hay que abrir la ficha / falta elegir.
+    resolverParaCarrito(productId) {
       const p = this.findLoadedProduct(productId);
-      if (!p) return;
-      const existing = this.cart.find(i => i.id == productId);
-      if (existing) { existing.qty++; }
-      else { this.cart.push({ id: p.id, name: p.name, price: p.price, img: p.img, cat: p.cat, qty: 1 }); }
-      this.saveCart();
-      this.flyToCart(productId);
-      this.addedPopup = { name: p.name, img: p.img, qty: 1 };
+      if (!p) return null;
+      const variantes = Array.isArray(p.realVariants) ? p.realVariants : [];
+      if (variantes.length && (!this.pdp || this.pdp.id != productId)) { this.openProduct(productId); return null; }
+      const variant = variantes.length ? this.pdpSelectedVariant : null;
+      if (BixoVariantes.faltaElegir(variantes, this.pdpVariantSelections)) { this.pdpVariantError = true; return null; }
+      return { p, variant };
     },
 
+    addToCart(productId) { this.addToCartQty(productId, 1, false); },
+
+    // Una sola ruta de entrada al carrito: la linea la arma el motor compartido,
+    // asi dos variantes del mismo producto son dos lineas y el precio pintado es
+    // el de la variante. El servidor lo revalida todo en el checkout.
     addToCartQty(productId, qty, silent) {
       const q = parseInt(qty) || 1;
-      const p = this.findLoadedProduct(productId);
-      if (!p) return;
-      const existing = this.cart.find(i => i.id == productId);
-      if (existing) { existing.qty += q; }
-      else { this.cart.push({ id: p.id, name: p.name, price: p.price, img: p.img, cat: p.cat, qty: q }); }
+      const r = this.resolverParaCarrito(productId);
+      if (!r) return;
+      const nueva = BixoVariantes.linea(r.p, r.variant, q);
+      const existing = this.cart.find(i => String(i.lineKey || i.id) === nueva.lineKey);
+      if (existing) { existing.qty += q; } else { this.cart.push(nueva); }
       this.saveCart();
       this.flyToCart(productId);
-      if (silent) { this.showToast('✓ ' + q + 'x ' + p.name + ' agregado'); }
-      else { this.addedPopup = { name: p.name, img: p.img, qty: q }; }
+      if (silent) { this.showToast('✓ ' + q + 'x ' + r.p.name + ' agregado'); }
+      else { this.addedPopup = { name: r.p.name, img: r.p.img, qty: q }; }
     },
 
-    removeFromCart(id) { this.cart = this.cart.filter(i => i.id != id); this.saveCart(); },
-    updateQty(id, delta) {
-      const item = this.cart.find(i => i.id == id);
+    removeFromCart(key) { this.cart = this.cart.filter(i => String(i.lineKey||i.id)!==String(key)); this.saveCart(); },
+    updateQty(key, delta) {
+      const item = this.cart.find(i => String(i.lineKey||i.id)===String(key));
       if (!item) return;
       item.qty = item.qty + delta;
-      if (item.qty <= 0) { this.removeFromCart(id); return; }
+      if (item.qty <= 0) { this.removeFromCart(key); return; }
       this.saveCart();
     },
 
     saveCart() { try { localStorage.setItem('ec_cart_'+EC_SLUG, JSON.stringify(this.cart)); } catch(e){} },
-    loadCart() { try { const d = localStorage.getItem('ec_cart_'+EC_SLUG); if(d) this.cart = JSON.parse(d); } catch(e){} },
+    // Las lineas antiguas sin lineKey se normalizan al cargar (motor compartido).
+    loadCart() { try { const d = localStorage.getItem('ec_cart_'+EC_SLUG); if(d) this.cart = BixoVariantes.normalizarLineas(JSON.parse(d)); } catch(e){} },
     loadSavedForm() { try { const d = localStorage.getItem('ec_form_'+EC_SLUG); if(d) this.form = {...this.form, ...JSON.parse(d)}; } catch(e){} },
     saveForm() { try { localStorage.setItem('ec_form_'+EC_SLUG, JSON.stringify(this.form)); } catch(e){} },
 
@@ -4763,7 +4928,7 @@ function ecStore() {
         .filter(f => f.enabled !== false && this.form['custom_'+f.key])
         .map(f => f.label+': '+this.form['custom_'+f.key]);
       const notes = [this.form.notes, this.form.dni ? 'DNI/RUC: '+this.form.dni : '', ...customParts].filter(Boolean).join(' | ');
-      const items = this.cart.map(i => ({ product_id: i.id, name: i.name, price: i.price, quantity: i.qty }));
+      const items = this.cart.map(i => ({ product_id:i.id,product_variant_id:i.variantId||null,name:i.name,price:i.price,quantity:i.qty }));
       fetch(EC_ORDER_ROUTE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': EC_CSRF, 'Accept': 'application/json' },
@@ -4851,6 +5016,9 @@ function ecStore() {
       if (!p) { window.location.href = EC_SLUG ? ('/'+EC_SLUG+'/p/'+id) : ('/p/'+id); return; }
       this.prevPage = this.page;
       this.pdp = p;
+      this.pdpVariantSelections={}; this.pdpVariantError=false;
+      this.pdpVariantAttributes.forEach(attribute=>{ if(attribute.values.length===1) this.pdpVariantSelections[attribute.id]=attribute.values[0].id; });
+      this.pdpVariantSelections={...this.pdpVariantSelections};
       this.page = 'product';
       // Relacionados: de lo ya cargado, misma categoría, máx 4.
       const all = (Array.isArray(this.catalogItems) && this.catalogItems.length) ? this.catalogItems : EC_PRODUCTS;
@@ -4949,7 +5117,7 @@ function ecStore() {
 
       const addr = [this.form.address, this.form.address2, this.form.district, this.form.department].filter(Boolean).join(', ');
       const notes = [this.form.notes, this.form.dni ? 'DNI/RUC: '+this.form.dni : ''].filter(Boolean).join(' | ');
-      const items = this.cart.map(i => ({ product_id: i.id, name: i.name, price: i.price, quantity: i.qty }));
+      const items = this.cart.map(i => ({ product_id:i.id,product_variant_id:i.variantId||null,name:i.name,price:i.price,quantity:i.qty }));
 
       try {
         const res = await fetch(EC_ORDER_ROUTE, {

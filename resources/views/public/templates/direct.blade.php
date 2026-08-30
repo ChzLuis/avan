@@ -41,6 +41,8 @@ $footerLogoH      = max(24, (int)($settings['footer_logo_height'] ?? 60));
 $seoTitle         = ($settings['seo_title'] ?? null) ?: ($project->name . ' — Catálogo Online');
 $seoDesc          = ($settings['seo_description'] ?? null) ?: ($project->description ?? '');
 $currency         = $settings['currency_symbol'] ?? $settings['currency'] ?? 'S/';
+// La tarjeta compartida recibe el mismo dato que Ecommerce: toCard().
+$catalogo         = app(\App\Storefront\CatalogQueryService::class);
 $secondaryColor   = $settings['secondary_color'] ?? '#818cf8';
 $fontTitle        = trim($settings['font_title'] ?? $settings['font'] ?? 'Inter') ?: 'Inter';
 $fontBody         = trim($settings['font_body']  ?? $settings['font'] ?? 'Inter') ?: 'Inter';
@@ -78,6 +80,8 @@ $cartEmpty    = $settings['cart_empty_msg'] ?? 'Tu carrito está vacío.';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family={{ $dGoogleFonts }}&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+{{-- Reglas de variantes compartidas con Ecommerce y la ficha; antes que Alpine --}}
+@include('public.partials.variant-engine')
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @if($culqiEnabled && $culqiPublicKey)
 <script src="https://checkout.culqi.com/js/v4"></script>
@@ -600,203 +604,14 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       </h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 mb-8" data-products-grid>
         @foreach($cat->products as $idx => $p)
-        @php
-        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->main_image_url??'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
-        @endphp
-        <article
-          x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}, '{{ $cat->id }}', null)"
-          class="d-card group"
-          data-price="{{ $p->price }}"
-          data-name="{{ strtolower($p->name) }}"
-          data-ts="{{ $p->created_at?->timestamp ?? 0 }}"
-          data-idx="{{ $idx }}"
-          data-qv='@json($qvData)'>
-          <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block card-img relative">
-            @if($p->mainImage)
-            <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
-                 class="w-full h-full object-cover" loading="lazy">
-            @else
-            <div class="w-full h-full flex items-center justify-center text-gray-300">
-              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            @endif
-            @if($p->compare_price && $p->compare_price > $p->price)
-            <span class="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">Oferta</span>
-            @endif
-            <button @click.prevent="const d=$el.closest('[data-qv]');if(d){qv=JSON.parse(d.dataset.qv);qvOpen=true}"
-                    class="absolute inset-0 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
-              <span class="bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm">Vista rápida</span>
-            </button>
-          </a>
-          <div class="p-3">
-            <a href="{{ route('public.product', [$project->slug, $p->id]) }}"
-               class="text-gray-800 text-xs font-semibold line-clamp-2 hover:underline block mb-1.5">{{ $p->name }}</a>
-            @php $hasWholesale = $wholesaleEnabled && $p->wholesale_price && $p->wholesale_min_qty; @endphp
-            @if($hasWholesale)
-            {{-- Bloque minorista --}}
-            <div x-data="{ qty:1 }" class="rounded-lg border border-gray-200 bg-white overflow-hidden mb-1.5">
-              <div class="flex items-center justify-between px-2 py-1 bg-gray-50 border-b border-gray-100">
-                <span class="text-[10px] font-bold text-gray-500 uppercase">Minorista</span>
-                <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
-              </div>
-              <div class="flex items-center gap-1 p-1.5">
-                <div class="flex items-center border border-gray-200 rounded overflow-hidden">
-                  <button @click="qty>1?qty--:null" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">−</button>
-                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
-                  <button @click="qty++" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">+</button>
-                </div>
-                <button class="flex-1 py-1.5 text-[11px] font-semibold btn-gc"
-                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
-                  + Agregar
-                </button>
-              </div>
-            </div>
-            {{-- Bloque mayorista --}}
-            <div x-data="{ qty:{{ (int)$p->wholesale_min_qty }} }" class="rounded-lg border border-amber-400 overflow-hidden">
-              <div class="px-2 pt-1.5 pb-1 bg-amber-50 border-b border-amber-100">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-amber-700 uppercase">Mayorista</span>
-                  <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
-                </div>
-                <p class="text-[9px] text-amber-500 mt-0.5">Mín. {{ (int)$p->wholesale_min_qty }} unid.{{ $p->wholesale_unit ? ' · '.$p->wholesale_unit : '' }}</p>
-              </div>
-              <div class="flex items-center gap-1 p-1.5">
-                <div class="flex items-center border border-amber-300 rounded overflow-hidden">
-                  <button @click="qty>({{ (int)$p->wholesale_min_qty }})?qty--:null" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">−</button>
-                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
-                  <button @click="qty++" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">+</button>
-                </div>
-                <button class="flex-1 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded"
-                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
-                  + Agregar
-                </button>
-              </div>
-            </div>
-            @elseif(!$isQuoteOnly || $quotePriceDisp==='show')
-            <div class="flex items-baseline gap-1.5 mb-2">
-              <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
-              @if($p->compare_price && $p->compare_price > $p->price)
-              <span class="text-gray-300 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
-              @endif
-            </div>
-            @if(!$isQuoteOnly)
-            <button class="w-full py-2 text-[11px] font-semibold btn-gc"
-                    @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
-              + Agregar
-            </button>
-            @else
-            <a class="block w-full py-2 text-[11px] font-semibold btn-outline-gc text-center"
-               href="https://wa.me/{{ $quoteWa }}?text={{ urlencode('Hola, me interesa: '.$p->name) }}" target="_blank">
-              Cotizar
-            </a>
-            @endif
-            @else
-            <p class="text-gray-400 text-xs mb-2 italic">Consultar precio</p>
-            @endif
-          </div>
-        </article>
+        {{-- Tarjeta compartida con Ecommerce: mismo dato (toCard) y mismas reglas --}}
+        @include('public.partials.storefront-card', ['item' => $catalogo->toCard($p, $project->slug), 'catId' => $cat->id, 'parentId' => null, 'idx' => $idx])
         @endforeach
 
         {{-- Productos de subcategorías --}}
         @foreach($cat->children as $sub)
         @foreach($sub->products as $idx => $p)
-        @php
-        $qvData = ['id'=>$p->id,'name'=>$p->name,'img'=>$p->main_image_url??'','price'=>(float)$p->price,'cp'=>$p->compare_price?(float)$p->compare_price:null,'desc'=>\Str::limit(strip_tags($p->description??''),120),'url'=>route('public.product',[$project->slug,$p->id]),'stock'=>$p->stock];
-        @endphp
-        <article
-          x-show="matchProduct('{{ strtolower(addslashes($p->name)) }}', {{ $p->price }}, {{ $p->compare_price ?? 'null' }}, '{{ $sub->id }}', '{{ $cat->id }}')"
-          class="d-card group"
-          data-price="{{ $p->price }}"
-          data-name="{{ strtolower($p->name) }}"
-          data-ts="{{ $p->created_at?->timestamp ?? 0 }}"
-          data-idx="{{ $idx }}"
-          data-qv='@json($qvData)'>
-          <a href="{{ route('public.product', [$project->slug, $p->id]) }}" class="block card-img relative">
-            @if($p->mainImage)
-            <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}"
-                 class="w-full h-full object-cover" loading="lazy">
-            @else
-            <div class="w-full h-full flex items-center justify-center text-gray-300">
-              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            @endif
-            @if($p->compare_price && $p->compare_price > $p->price)
-            <span class="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">Oferta</span>
-            @endif
-            <button @click.prevent="const d=$el.closest('[data-qv]');if(d){qv=JSON.parse(d.dataset.qv);qvOpen=true}"
-                    class="absolute inset-0 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
-              <span class="bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm">Vista rápida</span>
-            </button>
-          </a>
-          <div class="p-3">
-            <a href="{{ route('public.product', [$project->slug, $p->id]) }}"
-               class="text-gray-800 text-xs font-semibold line-clamp-2 hover:underline block mb-1.5">{{ $p->name }}</a>
-            @php $hasWholesale = $wholesaleEnabled && $p->wholesale_price && $p->wholesale_min_qty; @endphp
-            @if($hasWholesale)
-            <div x-data="{ qty:1 }" class="rounded-lg border border-gray-200 bg-white overflow-hidden mb-1.5">
-              <div class="flex items-center justify-between px-2 py-1 bg-gray-50 border-b border-gray-100">
-                <span class="text-[10px] font-bold text-gray-500 uppercase">Minorista</span>
-                <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
-              </div>
-              <div class="flex items-center gap-1 p-1.5">
-                <div class="flex items-center border border-gray-200 rounded overflow-hidden">
-                  <button @click="qty>1?qty--:null" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">−</button>
-                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
-                  <button @click="qty++" class="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100">+</button>
-                </div>
-                <button class="flex-1 py-1.5 text-[11px] font-semibold btn-gc"
-                        @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},qty:qty,img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
-                  + Agregar
-                </button>
-              </div>
-            </div>
-            <div x-data="{ qty:{{ (int)$p->wholesale_min_qty }} }" class="rounded-lg border border-amber-400 overflow-hidden">
-              <div class="px-2 pt-1.5 pb-1 bg-amber-50 border-b border-amber-100">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-amber-700 uppercase">Mayorista</span>
-                  <span class="font-bold text-sm text-amber-700">{{ $currency }} {{ number_format($p->wholesale_price,2) }}</span>
-                </div>
-                <p class="text-[9px] text-amber-500 mt-0.5">Mín. {{ (int)$p->wholesale_min_qty }} unid.{{ $p->wholesale_unit ? ' · '.$p->wholesale_unit : '' }}</p>
-              </div>
-              <div class="flex items-center gap-1 p-1.5">
-                <div class="flex items-center border border-amber-300 rounded overflow-hidden">
-                  <button @click="qty>({{ (int)$p->wholesale_min_qty }})?qty--:null" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">−</button>
-                  <span class="px-2 text-xs font-semibold" x-text="qty"></span>
-                  <button @click="qty++" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100">+</button>
-                </div>
-                <button class="flex-1 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded"
-                        @click="qty=Math.max({{ (int)$p->wholesale_min_qty }},qty); addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }} (mayor)',price:{{ $p->wholesale_price }},qty:qty,min_qty:{{ (int)$p->wholesale_min_qty }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
-                  + Agregar
-                </button>
-              </div>
-            </div>
-            @elseif(!$isQuoteOnly || $quotePriceDisp==='show')
-            <div class="flex items-baseline gap-1.5 mb-2">
-              <span class="font-bold text-sm" style="color:var(--c)">{{ $currency }} {{ number_format($p->price,2) }}</span>
-              @if($p->compare_price && $p->compare_price > $p->price)
-              <span class="text-gray-300 text-xs line-through">{{ $currency }} {{ number_format($p->compare_price,2) }}</span>
-              @endif
-            </div>
-            @if(!$isQuoteOnly)
-            <button class="w-full py-2 text-[11px] font-semibold btn-gc"
-                    @click="addToCart({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $p->price }},img:'{{ $p->mainImage ? $p->main_image_url : '' }}'})">
-              + Agregar
-            </button>
-            @else
-            <a class="block w-full py-2 text-[11px] font-semibold btn-outline-gc text-center"
-               href="https://wa.me/{{ $quoteWa }}?text={{ urlencode('Hola, me interesa: '.$p->name) }}" target="_blank">
-              Cotizar
-            </a>
-            @endif
-            @else
-            <p class="text-gray-400 text-xs mb-2 italic">Consultar precio</p>
-            @endif
-          </div>
-        </article>
+        @include('public.partials.storefront-card', ['item' => $catalogo->toCard($p, $project->slug), 'catId' => $sub->id, 'parentId' => $cat->id, 'idx' => $idx])
         @endforeach
         @endforeach
       </div>
@@ -871,7 +686,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
         <p x-show="qv&&qv.desc" class="text-sm text-gray-500 leading-relaxed mb-4 flex-1" x-text="qv&&qv.desc"></p>
         <p x-show="qv&&qv.stock===0" class="text-xs font-bold text-red-500 mb-3">Agotado</p>
         <div class="flex flex-col gap-2 mt-auto">
-          <button @click="addToCart({id:qv.id,name:qv.name,price:qv.price,img:qv.img});qvOpen=false"
+          <button @click="addToCart({id:qv.id,name:qv.name,price:qv.price,img:qv.img,hasVariants:qv.hasVariants,url:qv.url});if(!qv.hasVariants)qvOpen=false"
                   x-show="qv&&qv.stock!==0"
                   class="w-full btn-gc py-2.5 text-sm font-black flex items-center justify-center gap-2">
             + Agregar al carrito
@@ -986,7 +801,8 @@ function store() {
   let _savedCart = [];
   let _savedForm = { name:'', phone:'', email:'', notes:'', address:'' };
   try {
-    const c = localStorage.getItem(_cartKey); if(c) _savedCart = JSON.parse(c);
+    // Las lineas antiguas sin lineKey se normalizan al cargar (motor compartido).
+    const c = localStorage.getItem(_cartKey); if(c) _savedCart = BixoVariantes.normalizarLineas(JSON.parse(c));
     const f = localStorage.getItem(_formKey); if(f) _savedForm = {..._savedForm, ...JSON.parse(f)};
   } catch(e) {}
 
@@ -1131,11 +947,16 @@ function store() {
     },
 
     addToCart(product) {
+      // Con variantes se elige en la ficha: alli esta el selector compartido.
+      if(product.hasVariants){ window.location.href=product.url; return; }
       const qty    = product.qty || 1;
       const minQty = product.min_qty || 1;
-      const existing = this.cart.find(i=>i.id===product.id && i.name===product.name);
+      // Misma clave de linea que Ecommerce (producto:variante|base). El sufijo
+      // por nombre conserva separadas las lineas "al por mayor" del mismo id.
+      const lineKey = BixoVariantes.claveLinea(product.id, product.variantId) + (product.min_qty ? ':mayor' : '');
+      const existing = this.cart.find(i => (i.lineKey || (i.id + ':' + i.name)) === (lineKey || (product.id + ':' + product.name)));
       if(existing){ existing.qty += qty; }
-      else{ this.cart.push({...product, qty: Math.max(qty, minQty), min_qty: minQty}); }
+      else{ this.cart.push({...product, variantId: product.variantId || null, lineKey, qty: Math.max(qty, minQty), min_qty: minQty}); }
       this.toastMsg = '✓ '+product.name+' agregado';
       this.toastShow = true;
       clearTimeout(this.toastTimer);
@@ -1180,7 +1001,7 @@ function store() {
         this.orderError='Por favor ingresa tu nombre y teléfono.'; return;
       }
       this.orderLoading=true; this.orderError='';
-      const items = this.cart.map(i=>({product_id:i.id,name:i.name,price:i.price,quantity:i.qty}));
+      const items = this.cart.map(i=>({product_id:i.id,product_variant_id:i.variantId||null,name:i.name,price:i.price,quantity:i.qty}));
       try {
         const res = await fetch('/{{ $project->slug }}/order',{
           method:'POST',

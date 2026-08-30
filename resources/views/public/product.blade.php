@@ -50,6 +50,14 @@
       'catId' => (string)$cat->id,
       'url'   => url('/'.$project->slug.'/p/'.$p->id),
   ]))->values();
+  $imageIndexes = $product->images->values()->mapWithKeys(fn($image, $index) => [$image->id => $index]);
+  // Misma serializacion que consume el catalogo: ver App\Storefront\VariantPresenter.
+  $realVariants = \App\Storefront\VariantPresenter::forProduct(
+      $product,
+      $imgUrl($mainImg),
+      $product->compare_price ? (float) $product->compare_price : null,
+      $imageIndexes,
+  );
 @endphp
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -95,6 +103,8 @@
 </script>
 
 <script src="https://cdn.tailwindcss.com"></script>
+{{-- Antes que Alpine: los componentes lo llaman en cuanto arrancan --}}
+@include('public.partials.variant-engine')
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -180,39 +190,55 @@
 
       @if(!$isQuoteOnly || $quotePriceDisp === 'show')
       <div class="flex items-baseline gap-3 mb-5 flex-wrap">
-        <span class="text-3xl font-black text-p">{{ $currency }} {{ number_format($product->price, 2) }}</span>
-        @if($product->compare_price && $product->compare_price > $product->price)
-        <span class="text-lg text-gray-400 line-through">{{ $currency }} {{ number_format($product->compare_price, 2) }}</span>
-        <span class="text-sm font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-lg">Ahorras {{ $currency }} {{ number_format($product->compare_price - $product->price, 2) }}</span>
-        @endif
+        <span class="text-3xl font-black text-p" x-text="money(currentPrice)"></span>
+        <span x-show="currentCompare && currentCompare>currentPrice" x-cloak class="text-lg text-gray-400 line-through" x-text="money(currentCompare)"></span>
+        <span x-show="currentCompare && currentCompare>currentPrice" x-cloak class="text-sm font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-lg">Ahorras <span x-text="money(currentCompare-currentPrice)"></span></span>
       </div>
       @else
       <p class="text-gray-500 italic mb-5">Precio a consultar</p>
       @endif
 
-      @if($product->stock !== null && $product->stock === 0)
+      <template x-if="currentStock===0">
       <p class="text-sm font-bold text-red-600 mb-3 flex items-center gap-1.5">
         <span class="inline-block w-2 h-2 rounded-full bg-red-600"></span>Agotado — no disponible actualmente
       </p>
-      @elseif($product->stock !== null && $product->stock > 0 && $product->stock <= 5)
+      </template>
+      <template x-if="currentStock!==null && currentStock>0 && currentStock<=5">
       <p class="text-sm font-bold text-amber-600 mb-3 flex items-center gap-1.5">
-        <span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>Últimas {{ $product->stock }} unidades disponibles
+        <span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>Últimas <span x-text="currentStock"></span> unidades disponibles
       </p>
-      @endif
+      </template>
 
-      @if($product->sku)
-      <p class="text-xs text-gray-400 mb-4">SKU: <span class="font-mono text-gray-600">{{ $product->sku }}</span></p>
-      @endif
+      <p x-show="currentSku" x-cloak class="text-xs text-gray-400 mb-4">SKU: <span class="font-mono text-gray-600" x-text="currentSku"></span></p>
 
       @if($product->description)
       <div class="text-sm text-gray-600 mb-6 leading-relaxed">{!! \App\Support\RichText::render($product->description) !!}</div>
       @endif
 
+      <div x-show="variantAttributes.length" x-cloak class="space-y-4 mb-6">
+        <template x-for="attribute in variantAttributes" :key="attribute.id">
+          <fieldset class="border-0 p-0 m-0">
+            <legend class="text-xs font-bold text-gray-700 mb-2"><span x-text="attribute.name"></span>: <span class="font-medium text-gray-400" x-text="selectedLabel(attribute.id)"></span></legend>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="value in attribute.values" :key="value.id">
+                <button type="button"
+                        class="min-h-10 px-4 rounded-lg border text-sm font-bold transition disabled:opacity-35 disabled:cursor-not-allowed"
+                        :class="variantSelections[attribute.id]===value.id?'btn-p border-transparent':'bg-white border-gray-300 text-gray-700 hover:border-gray-500'"
+                        :style="attribute.type==='color'&&value.color ? {'box-shadow':'inset 0 -4px 0 '+value.color} : {}"
+                        :disabled="!optionAvailable(attribute.id,value.id)"
+                        @click="chooseVariant(attribute.id,value.id)" x-text="value.label"></button>
+              </template>
+            </div>
+          </fieldset>
+        </template>
+        <p x-show="variantError" x-cloak class="text-xs font-bold text-red-600" role="alert">Selecciona todas las opciones para continuar.</p>
+      </div>
+
       {{-- CTA --}}
       <div class="flex flex-col gap-3 mt-auto">
         @if(!$isQuoteOnly)
         <button @click="addToCart()"
-                {{ $product->stock !== null && $product->stock === 0 ? 'disabled' : '' }}
+                :disabled="currentStock===0"
                 class="btn-p w-full py-3.5 rounded-xl font-black text-base flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-9H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -492,7 +518,7 @@ function productStore() {
   let _savedCart = [];
   try {
     const c = localStorage.getItem(_cartKey);
-    if (c) _savedCart = JSON.parse(c);
+    if (c) _savedCart = BixoVariantes.normalizarLineas(JSON.parse(c));
   } catch(e) {}
 
   return {
@@ -502,6 +528,9 @@ function productStore() {
     copied: false,
     drawerOpen: false,
     cart: _savedCart,
+    variants: @json($realVariants),
+    variantSelections: {},
+    variantError: false,
     // Búsqueda predictiva
     search: '',
     searchCat: '',
@@ -537,7 +566,28 @@ function productStore() {
       return this.cart.reduce((s, i) => s + i.qty, 0);
     },
 
+    // Las reglas viven en public/partials/variant-engine.blade.php
+    get variantAttributes() { return BixoVariantes.atributos(this.variants); },
+    get selectedVariant() { return BixoVariantes.seleccionada(this.variants, this.variantSelections); },
+    get currentPrice() { return this.selectedVariant ? Number(this.selectedVariant.price) : {{ (float) $product->price }}; },
+    get currentCompare() { return this.selectedVariant ? Number(this.selectedVariant.comparePrice||0) : {{ $product->compare_price ? (float) $product->compare_price : 'null' }}; },
+    get currentStock() { return this.selectedVariant ? this.selectedVariant.stock : {{ is_null($product->stock) ? 'null' : (int) $product->stock }}; },
+    get currentSku() { return this.selectedVariant ? (this.selectedVariant.sku||'') : @json($product->sku ?? ''); },
+    money(value) { return @json($currency)+' '+Number(value||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); },
+    selectedLabel(attributeId) { return BixoVariantes.etiqueta(this.variants, this.variantSelections, attributeId); },
+    chooseVariant(attributeId,valueId) {
+      this.variantSelections = BixoVariantes.elegir(this.variantSelections, attributeId, valueId);
+      this.variantError=false;
+      // La ficha sincroniza ademas el carrusel con la imagen de la variante.
+      if(this.selectedVariant && this.selectedVariant.imageIndex!==null) this.activeImg=Number(this.selectedVariant.imageIndex);
+    },
+    optionAvailable(attributeId,valueId) { return BixoVariantes.disponible(this.variants, this.variantSelections, attributeId, valueId); },
+
     init() {
+      this.variantAttributes.forEach(attribute=>{
+        if(attribute.values.length===1) this.variantSelections[attribute.id]=attribute.values[0].id;
+      });
+      this.variantSelections={...this.variantSelections};
       this.$watch('cart', v => {
         try { localStorage.setItem(this._cartKey, JSON.stringify(v)); } catch(e) {}
       });
@@ -562,14 +612,13 @@ function productStore() {
     },
 
     addToCart() {
-      const product = {
-        id:    {{ $product->id }},
-        name:  '{{ addslashes($product->name) }}',
-        price: {{ $product->price }},
-        img:   '{{ $mainImg ? asset("storage/".$mainImg->url) : "" }}',
-        qty:   1,
-      };
-      const idx = this.cart.findIndex(i => i.id === product.id);
+      // La linea la arma el motor compartido: misma clave y mismo precio que
+      // en Directo y Ecommerce. El servidor lo revalida en el checkout.
+      if(BixoVariantes.faltaElegir(this.variants, this.variantSelections)){ this.variantError=true; return; }
+      const base = { id: {{ $product->id }}, name: @js($product->name), price: {{ (float) $product->price }},
+                     img: @js($mainImg ? $imgUrl($mainImg) : ''), cat: null };
+      const product = BixoVariantes.linea(base, this.selectedVariant, 1);
+      const idx = this.cart.findIndex(i => String(i.lineKey||i.id)===product.lineKey);
       if (idx >= 0) {
         this.cart = this.cart.map((it, i) => i === idx ? { ...it, qty: it.qty + 1 } : it);
       } else {
