@@ -2,9 +2,34 @@
 
 > Este archivo es el punto de entrada de cada sesion. Leelo antes de tocar codigo.
 
-Ultima actualizacion: 2026-08-30
+Ultima actualizacion: 2026-08-30 (noche)
 Branch: `refactor/store-builder-canonical-context`
-Ultimo commit revisado: `a476929`
+Ultimo commit revisado: `5211f7e`
+
+## Sesion 2026-08-30 (noche) — REESTRUCTURACION FINAL (plan de 17 pasos)
+
+Entrega completa: `docs/architecture/BIXO_REESTRUCTURACION_ENTREGA.md`
+(arboles reales de /admin, /bixoadmin y /bixosales; matrices; clasificacion).
+Matriz de capacidades: `docs/architecture/BIXO_CAPACIDADES_MATRIZ.md`.
+
+1. `8034c9b` **Control ordenado**: menu de /admin agrupado (solo lo que
+   existe), /admin/auditoria NUEVA (solo lectura AccessEvent), boton
+   "Entrar como" auditado en Empresas, retirada copia muerta del shell.
+2. `55cef3a` **Capacidades + menu por cara**: middleware `capacidad` =
+   entitlement + permiso + flag `cap_*` (solo Eskala lo enciende; el dueño
+   NO se salta el flag). Plantillas de diseño = ESKALA_ONLY (su export iba
+   SIN middleware); diseño legacy endurecido y fuera de menu. Sidebar:
+   /bixoadmin muestra SOLO el arbol de Configuracion (plan §3), /bixosales
+   SOLO Operacion (§9), acceso cruzado "→ Ir a..." en ambas caras.
+3. `5211f7e` **Logins**: "BIXO · Configuración" y "BIXO · Ventas y
+   operación"; aterrizajes admin→Mi negocio, sales→Inicio.
+
+Suite: 1020 pass / 2 failed AJENOS (variantes, plantillas 3→2).
+Tests nuevos: ControlNavegacionTest (3), CapacidadesRestringidasTest (5);
+contratos de FusionPortales/WorkspaceShellUnificado/SettingsAuthorization
+actualizados al modelo de dos caras.
+Deuda nueva: TD-024 (bloques del Control sin backend), TD-025 (aplicacion
+fina de cap_builder_avanzado / cap_seo_avanzado).
 
 ## Sesion 2026-08-30 (tarde) — SSL de raiz + 2 caras del Workspace + lote de cierre
 

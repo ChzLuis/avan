@@ -27,6 +27,8 @@ Ultima actualizacion: 2026-08-27
 | TD-021 | LOW | Operations | Purchasing no modelado: la compra es solo motivo `'compra'` en el Kardex, sin cabecera/lineas/vinculo a Proveedor | segun demanda | ABIERTA |
 | TD-022 | LOW | Plataforma | No existe entidad Plan/suscripcion de tenant; "licencia" = asiento por usuario. Impersonacion vive en /bixoadmin (deberia /admin); tenant puede auto-editar sus modulos (web.php:98) | segun demanda | ABIERTA |
 | TD-023 | MEDIUM | Workspace | **Unificacion visual fase 2**: Productos y Constructor siguen en el shell del panel (bloqueados por la feature de variantes ajena en vuelo); re-parentarlos al shell comercial cuando aterrice, luego retirar el shell del panel (layouts/app.blade.php) y dar paridad de breadcrumbs/notificaciones/selector. Fase 1 (2026-08-30): sidebar maestro completo + Mi negocio y QR unificados | tras variantes | ABIERTA |
+| TD-024 | LOW | Control | Bloques del sidebar objetivo del Control SIN backend (Productos y planes, Add-ons, Feature flags como sistema, Plataforma/health, Webhooks, Integraciones globales, Historial de soporte): no se inventaron CRUDs en la reestructuracion 2026-08-30; se construyen cuando exista el dominio real | segun demanda | ABIERTA |
+| TD-025 | MEDIUM | Workspace | Aplicacion fina de capacidades: bloquear el cambio de motor DENTRO de la etapa Apariencia con `cap_builder_avanzado` y separar la pantalla SEO en basico/avanzado con `cap_seo_avanzado`. El gate (`Capacidades` + middleware `capacidad`) ya existe y protege plantillas/diseño legacy | proxima sesion | ABIERTA |
 
 Regla: la deuda se registra aqui, no en comentarios sueltos. Al cerrarla,
 anotar commit y test que la cubre.
