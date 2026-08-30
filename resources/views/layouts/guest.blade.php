@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Iniciar sesión — BIXO</title>
+    <title>Configuración · Iniciar sesión — BIXO</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -67,7 +67,11 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                 </div>
-                <span class="text-2xl font-bold tracking-wide">{{ strtoupper($appName) }}</span>
+                <span class="flex flex-col leading-tight">
+                    <span class="text-2xl font-bold tracking-wide">{{ strtoupper($appName) }}</span>
+                    {{-- Cara del Workspace (plan §12): misma plataforma, no "otro sistema" --}}
+                    <span class="text-xs font-semibold uppercase tracking-widest text-white/60">Configuración</span>
+                </span>
             </div>
 
             <h1 class="text-4xl xl:text-5xl font-bold leading-tight mb-4">

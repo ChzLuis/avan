@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Portal Comercial — Acceso</title>
+    <title>Ventas y operación · Iniciar sesión — BIXO</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -39,8 +39,9 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-xs text-white/60 font-medium uppercase tracking-wider">Portal</p>
-                    <p class="text-xl font-bold">Comercial</p>
+                    {{-- Cara del Workspace (plan §12): misma plataforma BIXO --}}
+                    <p class="text-xl font-bold">BIXO</p>
+                    <p class="text-xs text-white/60 font-semibold uppercase tracking-widest">Ventas y operación</p>
                 </div>
             </div>
 
