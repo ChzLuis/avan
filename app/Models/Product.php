@@ -20,6 +20,14 @@ class Product extends Model {
     public function movimientos() { return $this->hasMany(InventoryMovement::class)->latest('id'); }
     public function mainImage() { return $this->hasOne(ProductImage::class)->where('is_main', true); }
     public function reviews()   { return $this->hasMany(Review::class); }
+    public function variants()  { return $this->hasMany(ProductVariant::class)->orderBy('sort_order')->orderBy('id'); }
+    public function activeVariants() { return $this->variants()->where('is_active', true); }
+    public function attributeValues()
+    {
+        return $this->belongsToMany(ProductAttributeValue::class, 'product_attribute_product_value')
+            ->withPivot(['project_id', 'product_attribute_id'])
+            ->withTimestamps();
+    }
     public function catalogProfiles() { return $this->belongsToMany(StoreCatalogProfile::class, 'store_catalog_profile_product'); }
     /** Integración de catálogo que creó/administra este producto (null = producto manual). */
     public function catalogIntegration() { return $this->belongsTo(CatalogIntegration::class, 'catalog_integration_id'); }
@@ -33,12 +41,39 @@ class Product extends Model {
 
     public function getMainImageUrlAttribute(): ?string
     {
-        $url = $this->mainImage?->url;
+        $img = $this->mainImage;
+        $url = $img?->url;
         if (!$url) return null;
-        if (str_starts_with($url, 'http')) return $url;
-        return asset('storage/' . $url);
+        if (!str_starts_with($url, 'http')) $url = asset('storage/' . $url);
+
+        // Plantilla automatica de imagenes: si el negocio la tiene activa y
+        // esta foto ya tiene su version compuesta, se sirve esa. Si no, la
+        // original. La decision vive en el resolutor, no repartida por las
+        // vistas. Apagar la plantilla devuelve el catalogo al original sin
+        // borrar ningun archivo.
+        $generada = \App\Support\Imagen\ResolutorImagenProducto::url(
+            $url, $img?->generated_url, $this->project_id
+        );
+        if ($generada !== $url) {
+            // Ya viene compuesta al tamano de la plantilla: no se le aplica el
+            // encuadre del perfil, que la recortaria por segunda vez.
+            return $generada;
+        }
+
+        // Punto único de salida de la foto del producto: aquí cuelgan la ficha,
+        // las tarjetas y el JSON que pinta la rejilla del catálogo. Devolver la
+        // variante ya encuadrada es lo que hace que todos los productos ocupen
+        // lo mismo dentro de su cuadro; si no hay variante, sale la de siempre.
+        return \App\Support\Imagen\Img::mejor($url, 'producto');
     }
     public function approvedReviews() { return $this->hasMany(Review::class)->where('is_approved', true)->latest(); }
+
+    public function hasRealVariants(): bool
+    {
+        return $this->relationLoaded('variants')
+            ? $this->variants->contains('is_active', true)
+            : $this->activeVariants()->exists();
+    }
 
     protected static function booted(): void
     {

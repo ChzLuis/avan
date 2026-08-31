@@ -75,6 +75,15 @@ class ProductController extends Controller
         $prices  = in_array($request->query('prices'), ['retail', 'wholesale', 'none'], true)
             ? $request->query('prices') : 'retail';
 
+        // Contenido: main (solo la foto principal por modelo) o full (cada
+        // color desplegado como producto propio, con su tarjeta y su foto en
+        // grande). Los colores salen de options.color_images, asi que basta la
+        // foto principal: ninguna consulta extra. 'variants' se acepta como
+        // alias de full por compatibilidad con enlaces guardados. En tiendas
+        // sin colores ambos modos producen el PDF de siempre.
+        $content = in_array($request->query('content'), ['main', 'variants', 'full'], true)
+            ? $request->query('content') : 'full';
+
         $query = $project->products()->where('is_available', true)
             ->with(['images' => fn ($q) => $q->where('is_main', true), 'category.parent']);
 
@@ -136,7 +145,7 @@ class ProductController extends Controller
 
         return view('catalog.products.catalog-pdf', compact(
             'project', 'groups', 'prices', 'profile', 'category', 'settings',
-            'layout', 'cover', 'storeUrl'
+            'layout', 'cover', 'storeUrl', 'content'
         ));
     }
 
@@ -1045,20 +1054,23 @@ class ProductController extends Controller
     {
         $project = app('active_project');
         abort_unless($product->project_id === $project->id, 403);
-        $request->validate(['image' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:4096']);
+        // Se acepta cualquier foto razonable: la del móvil, la de WhatsApp o
+        // la que mandó el proveedor. Encajarla en la ficha es trabajo nuestro,
+        // no del usuario, así que aquí solo se comprueba que sea una imagen.
+        $request->validate(['image' => 'required|file|mimes:jpg,jpeg,png,webp,gif,bmp,avif|max:20480']);
 
-        $file = $request->file('image');
-        $dir = public_path('uploads/products/' . $product->id);
-        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        try {
+            $resultado = app(\App\Support\Imagen\ProcesadorImagenes::class)->procesar(
+                $request->file('image'),
+                'products/'.$product->id,
+                'producto',
+                disco: 'uploads',
+            );
+        } catch (\App\Support\Imagen\ImagenNoProcesable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
 
-        $filename = time() . '_' . uniqid() . '.jpg';
-        $destPath = $dir . '/' . $filename;
-
-        // Normalización central: cualquier formato → JPG cuadrado 800x800 con
-        // fondo blanco (contain, sin recortar). Así todas las cards cuadran.
-        abort_unless(\App\Support\SquareImage::toFile($file->getRealPath(), $destPath, 800), 422, 'No se pudo procesar la imagen.');
-
-        $url = asset('uploads/products/' . $product->id . '/' . $filename);
+        $url = $resultado->urlPrincipal();
 
         $isFirst = $product->images()->count() === 0;
         $image   = $product->images()->create([
@@ -1067,7 +1079,42 @@ class ProductController extends Controller
             'sort_order' => $product->images()->max('sort_order') + 1,
         ]);
 
+        // Plantilla automatica de imagenes: si el negocio la tiene activa, la
+        // foto recien subida entra por el mismo pipeline sin que nadie tenga
+        // que abrir el generador. Se encola: componer no debe alargar la
+        // subida ni tumbarla si algo falla.
+        $this->encolarPlantilla($product, $image);
+
         return response()->json(['ok' => true, 'image' => ['id' => $image->id, 'url' => $image->url, 'is_main' => $image->is_main]]);
+    }
+
+    /**
+     * Encola la composicion de una imagen recien creada si el negocio tiene
+     * plantilla activa. Silencioso por diseno: que falle el generador no puede
+     * impedir que el comerciante suba una foto.
+     */
+    private function encolarPlantilla(Product $product, ProductImage $image): void
+    {
+        try {
+            $plantilla = \App\Models\ProductImageTemplate::allProjects()
+                ->where('project_id', $product->project_id)
+                ->where('is_active', true)->where('enabled', true)->first();
+
+            if (! $plantilla) {
+                return;
+            }
+            // Respeta la eleccion de galeria de la plantilla.
+            if (! $image->is_main && ! ($plantilla->configCompleta()['apply_to_gallery'] ?? false)) {
+                return;
+            }
+
+            $image->forceFill(['generation_status' => 'pendiente'])->save();
+            \App\Jobs\GenerarImagenesProducto::dispatch($plantilla->id, [$image->id], false);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('No se pudo encolar la plantilla de imagen', [
+                'producto' => $product->id, 'imagen' => $image->id, 'motivo' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function deleteImage(Request $request, Product $product, ProductImage $image)

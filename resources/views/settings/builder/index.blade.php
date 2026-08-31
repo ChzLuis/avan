@@ -69,13 +69,19 @@
                 @include('settings.builder.stages.business')
             </template>
 
-            <template x-if="stage==='appearance'">
-                @include('settings.builder.stages.appearance')
-            </template>
-
-            {{-- x-show (no x-if): el menú embebido enlaza listeners en DOMContentLoaded. --}}
-            <div x-show="stage==='header'" x-cloak>
-                @include('settings.builder.stages.header')
+            {{-- Apariencia concentra plantilla, marca, cabecera y navegación.
+                 x-show conserva los formularios de menú que enlazan listeners al cargar. --}}
+            <div x-show="stage==='appearance'" x-cloak x-data="{ appearanceArea: 'brand' }">
+                <nav class="bxb-local-nav" aria-label="Secciones de Apariencia">
+                    <button type="button" :class="appearanceArea==='brand'&&'is-active'" @click="appearanceArea='brand'">Plantilla y marca</button>
+                    <button type="button" :class="appearanceArea==='header'&&'is-active'" @click="appearanceArea='header'">Encabezado y navegación</button>
+                </nav>
+                <div x-show="appearanceArea==='brand'">
+                    @include('settings.builder.stages.appearance')
+                </div>
+                <div x-show="appearanceArea==='header'" x-cloak>
+                    @include('settings.builder.stages.header')
+                </div>
             </div>
 
             <template x-if="stage==='home'">
@@ -94,6 +100,10 @@
             <template x-if="stage==='sales'">
                 @include('settings.builder.stages.sales')
             </template>
+
+            <div x-show="stage==='legal'" x-cloak>
+                @include('settings.builder.stages.legal')
+            </div>
 
             <template x-if="stage==='advanced'">
                 @include('settings.builder.advanced')
@@ -204,4 +214,5 @@
 </div>
 
 @include('settings.builder.script')
+@include('settings.builder.partials.image-template-script')
 </x-app-layout>

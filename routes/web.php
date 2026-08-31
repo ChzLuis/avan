@@ -415,6 +415,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/builder/catalog/metrics', [\App\Http\Controllers\StoreBuilderController::class, 'catalogMetrics'])->name('settings.builder.metrics');
         Route::post('/settings/builder/draft/settings', [\App\Http\Controllers\StoreBuilderController::class, 'saveDraftSettings'])->name('settings.builder.draft.settings')->middleware('can:settings.diseno');
         Route::post('/settings/builder/design-preset', [\App\Http\Controllers\StoreBuilderController::class, 'applyDesignPreset'])->name('settings.builder.design-preset')->middleware('can:settings.diseno');
+
+        // Plantilla automatica de imagenes de producto (constructor -> Catalogo).
+        // Lectura con catalog.ver; escribir y regenerar exige settings.diseno,
+        // que es el permiso con el que ya se toca el resto del constructor.
+        Route::get('/settings/builder/image-template', [\App\Http\Controllers\ProductImageTemplateController::class, 'show'])->name('builder.image-template.show')->middleware('can:catalog.ver');
+        Route::get('/settings/builder/image-template/status', [\App\Http\Controllers\ProductImageTemplateController::class, 'status'])->name('builder.image-template.status')->middleware('can:catalog.ver');
+        Route::post('/settings/builder/image-template', [\App\Http\Controllers\ProductImageTemplateController::class, 'save'])->name('builder.image-template.save')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/toggle', [\App\Http\Controllers\ProductImageTemplateController::class, 'toggle'])->name('builder.image-template.toggle')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/reset', [\App\Http\Controllers\ProductImageTemplateController::class, 'reset'])->name('builder.image-template.reset')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/upload', [\App\Http\Controllers\ProductImageTemplateController::class, 'upload'])->name('builder.image-template.upload')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/preview', [\App\Http\Controllers\ProductImageTemplateController::class, 'preview'])->name('builder.image-template.preview')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/apply', [\App\Http\Controllers\ProductImageTemplateController::class, 'apply'])->name('builder.image-template.apply')->middleware('can:settings.diseno');
         // Diseños guardados ("Mis plantillas")
         // Gestión de plantillas de diseño = ESKALA_ONLY por defecto (matriz de
         // capacidades): capacidad 'plantillas' — solo superadmin, o tenant con

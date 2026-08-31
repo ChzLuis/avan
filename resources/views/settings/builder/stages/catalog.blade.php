@@ -21,6 +21,59 @@
         <a class="bxb-btn" href="{{ route('products.index') }}#importar" target="_blank" rel="noopener">⇧ Importar Excel</a>
     </div>
 
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Diseño y filtros del catálogo</strong>
+        <p class="bxb-note">Estos controles afectan la página Tienda o Catálogo; no insertan el catálogo completo en Inicio.</p>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Columnas en escritorio
+                <select :value="settings.catalog_cols_desktop||'3'" @change="setSetting('catalog_cols_desktop',$event.target.value)">
+                    <option value="2">2 columnas</option><option value="3">3 columnas</option><option value="4">4 columnas</option>
+                </select>
+            </label>
+            <label class="bxb-field">Columnas en celular
+                <select :value="settings.catalog_cols_mobile||'2'" @change="setSetting('catalog_cols_mobile',$event.target.value)">
+                    <option value="1">1 columna</option><option value="2">2 columnas</option>
+                </select>
+            </label>
+            <label class="bxb-field">Vista de productos
+                <select :value="settings.catalog_products_view||'cards'" @change="setSetting('catalog_products_view',$event.target.value)">
+                    <option value="cards">Tarjetas</option><option value="compact">Lista compacta</option>
+                </select>
+            </label>
+            <label class="bxb-field">Estilo de las tarjetas
+                <select :value="settings.product_card_style||'classic'" @change="setSetting('product_card_style',$event.target.value)">
+                    <option value="classic">Clásico</option><option value="tech">Tecnológico</option><option value="soft">Suave</option><option value="elegant">Elegante</option><option value="contrast">Alto contraste</option>
+                </select>
+            </label>
+            <label class="bxb-field">Título del catálogo
+                <input type="text" maxlength="80" placeholder="Nuestros productos" :value="settings.catalog_section_title||''" @input.debounce.600ms="setSetting('catalog_section_title',$event.target.value)">
+            </label>
+            <label class="bxb-field">Proporción de la foto
+                <select :value="settings.card_image_ratio||'1/1'" @change="setSetting('card_image_ratio',$event.target.value)">
+                    <option value="1/1">Cuadrada</option><option value="4/3">Horizontal</option><option value="3/4">Vertical</option>
+                </select>
+            </label>
+            <label class="bxb-field">Fondo de la foto
+                <x-bxb-color clave="card_image_bg" defecto="#fafaf9" etiqueta="Fondo de la foto" />
+            </label>
+            <label class="bxb-field">Categorías visibles en celular
+                <input type="number" min="0" max="24" step="1" placeholder="0 = todas" :value="settings.cats_mobile_limit||''" @input.debounce.600ms="setSetting('cats_mobile_limit',$event.target.value)">
+            </label>
+            <label class="bxb-field">Etiqueta “Nuevo” durante (días)
+                <input type="number" min="0" max="365" placeholder="30" :value="settings.new_badge_days||''" @input.debounce.600ms="setSetting('new_badge_days',$event.target.value)">
+            </label>
+        </div>
+        <div class="bxb-check-inline">
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_filter_search??'1')!=='0'" @change="setSetting('catalog_filter_search',$event.target.checked?'1':'0')"> Búsqueda</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_filter_cats??'1')!=='0'" @change="setSetting('catalog_filter_cats',$event.target.checked?'1':'0')"> Categorías</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_filter_price??'1')!=='0'" @change="setSetting('catalog_filter_price',$event.target.checked?'1':'0')"> Precio</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_filter_sale??'1')!=='0'" @change="setSetting('catalog_filter_sale',$event.target.checked?'1':'0')"> En oferta</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_group_models||'')==='1'" @change="setSetting('catalog_group_models',$event.target.checked?'1':'0')"> Agrupar colores del mismo modelo</label>
+        </div>
+    </div>
+
+    @include('settings.builder.partials.image-template')
+
     {{-- Lista para corregir --}}
     <div class="bxb-card" x-show="fixFilter" x-cloak>
         <div class="bxb-fix-head">
@@ -102,7 +155,32 @@
     {{-- ── Tarjeta de producto: modo comercial + opciones visuales combinables.
          El modo define la interaccion; el resto se combina libremente. Las
          opciones sin sentido para el modo activo se ocultan (revelado progresivo). --}}
+        {{-- Etiquetas de la tarjeta. Vivian SOLO en el Designer legacy: 5 tiendas
+         las tienen configuradas y su dueño no podia cambiarlas desde aqui.
+         Los textos se conservan tal cual; vacio = etiqueta por defecto. --}}
     <div class="bxb-card">
+        <strong class="bxb-card-title">Etiquetas de la tarjeta</strong>
+        <p class="bxb-note">Los distintivos que se pintan sobre la foto del producto, en el catálogo y en la portada. Déjalo vacío para usar el texto por defecto.</p>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Producto nuevo
+                <input type="text" maxlength="20" placeholder="NUEVO" :value="settings.catalog_badge_new||''" @input.debounce.600ms="setSetting('catalog_badge_new',$event.target.value)">
+                <small class="bxb-note">Se muestra durante los días que fijaste en “Etiqueta Nuevo”.</small>
+            </label>
+            <label class="bxb-field">Producto en oferta
+                <input type="text" maxlength="20" placeholder="OFERTA" :value="settings.catalog_badge_sale||''" @input.debounce.600ms="setSetting('catalog_badge_sale',$event.target.value)">
+                <small class="bxb-note">Aparece cuando el producto tiene precio anterior.</small>
+            </label>
+            <label class="bxb-field">Producto destacado
+                <input type="text" maxlength="20" placeholder="DESTACADO" :value="settings.catalog_badge_featured||''" @input.debounce.600ms="setSetting('catalog_badge_featured',$event.target.value)">
+            </label>
+            <label class="bxb-field">Producto agotado
+                <input type="text" maxlength="20" placeholder="AGOTADO" :value="settings.catalog_badge_sold_out||''" @input.debounce.600ms="setSetting('catalog_badge_sold_out',$event.target.value)">
+            </label>
+        </div>
+    </div>
+
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Tarjeta de producto — compra y precios</strong>
         <strong class="bxb-card-title">Tarjeta de producto — compra y precios</strong>
         <label class="bxb-field">Modo de compra
             <select :value="settings.purchase_mode||'separate'" @change="setSetting('purchase_mode',$event.target.value)">
@@ -152,6 +230,13 @@
                 </select>
             </label>
         </div>
+        <div class="bxb-check-inline">
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_quick_view??'1')!=='0'" @change="setSetting('catalog_quick_view',$event.target.checked?'1':'0')"> Vista rápida</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_show_sku??'0')!=='0'" @change="setSetting('catalog_show_sku',$event.target.checked?'1':'0')"> Mostrar SKU</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_show_stock??'1')!=='0'" @change="setSetting('catalog_show_stock',$event.target.checked?'1':'0')"> Mostrar stock</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_show_ratings??'0')!=='0'" @change="setSetting('catalog_show_ratings',$event.target.checked?'1':'0')"> Mostrar valoraciones</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.wholesale_card_collapse||'')==='1'" @change="setSetting('wholesale_card_collapse',$event.target.checked?'1':'0')"> Plegar precio mayorista</label>
+        </div>
     </div>
 
     {{-- ═══ Textos de la tienda ═══
@@ -198,6 +283,18 @@
                        :value="settings.related_title||''"
                        @input.debounce.600ms="setSetting('related_title',$event.target.value)">
             </label>
+            @foreach([
+                ['btn_cart_text', 'Botón agregar al carrito', 'Agregar'],
+                ['txt_search_placeholder', 'Texto del buscador', 'Buscar productos...'],
+                ['txt_no_results', 'Mensaje sin resultados', 'No se encontraron productos'],
+                ['txt_view_more', 'Botón ver más', 'Ver todos los productos'],
+                ['txt_all_cats', 'Todas las categorías', 'Todas las categorías'],
+                ['featured_categories_all_text', 'Ver todas las categorías', 'Ver todas'],
+            ] as [$key, $label, $placeholder])
+            <label class="bxb-field">{{ $label }}
+                <input type="text" maxlength="80" placeholder="{{ $placeholder }}" :value="settings.{{ $key }}||''" @input.debounce.600ms="setSetting('{{ $key }}',$event.target.value)">
+            </label>
+            @endforeach
         </div>
     </div>
 </section>
