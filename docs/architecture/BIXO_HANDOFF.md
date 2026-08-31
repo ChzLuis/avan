@@ -6,6 +6,30 @@ Ultima actualizacion: 2026-08-30 (noche)
 Branch: `refactor/store-builder-canonical-context`
 Ultimo commit revisado: `5211f7e`
 
+## Cierre 2026-08-30 (noche) — UN SOLO MENU POR CARA (commit `72f9086`, en ARIN)
+
+El usuario reporto que al navegar por /bixoadmin EL MENU CAMBIABA. Causa: la
+unificacion habia migrado solo una parte de las pantallas, asi que convivian
+dos shells dentro de la misma cara. Corregido reusando lo existente:
+
+- `AppLayout` delega en el shell comercial cuando hay negocio activo → las
+  20+ vistas con `<x-app-layout>` heredan el menu unico SIN tocarlas (ni
+  siquiera Productos/Constructor, de la feature de variantes en vuelo).
+  Esto CIERRA TD-023 sin esperar a variantes.
+- **Regresion evitada**: el modal `window.__confirm` vivia DENTRO del shell
+  del panel; las pantallas migradas se quedaban sin el y eliminar producto,
+  eliminar imagen, categorias, servicios y descartar borrador habrian
+  reventado en silencio. Extraido a `partials/confirm-global`, incluido por
+  los dos shells. Lo cazaron los tests antes del deploy.
+- Rescatadas 6 entradas huerfanas (Usuarios, Categorias, Servicios, Combos,
+  Promociones, Flujos del bot) y el menu filtra por MODULO ACTIVO.
+- `ShellUnicoWorkspaceTest` 10/10.
+
+**Fallos de suite que NO son de esta rama:** `ProcesadorImagenesTest` (14)
+falla tambien con este trabajo stasheado — es `app/Support/ImageVariants.php`
+modificado y SIN COMMITEAR por otra sesion; y los 2 de plantillas 3→2 de la
+feature de variantes. No se tocan.
+
 ## Sesion 2026-08-30 (noche) — REESTRUCTURACION FINAL (plan de 17 pasos)
 
 Entrega completa: `docs/architecture/BIXO_REESTRUCTURACION_ENTREGA.md`
