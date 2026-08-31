@@ -24,6 +24,17 @@
         return false;
     };
 
+    // El menú solo ofrece MÓDULOS ACTIVOS del negocio (plan §13): sin esto,
+    // una entrada cuyo módulo no está contratado es un enlace que acaba en
+    // 403. Acepta 'a|b' = basta con uno (misma semántica que `module:`).
+    $_moduloActivo = function (?string $claves) use ($project) {
+        if (!$claves) return true;
+        foreach (explode('|', $claves) as $k) {
+            if ($project->hasModule(trim($k))) return true;
+        }
+        return false;
+    };
+
     // Icono (trazo Heroicons, la misma familia que ya usa el portal).
     $_ico = [
         'inicio'      => 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75',
@@ -59,8 +70,12 @@
 
     if ($_caraConfig) {
         // CARA CONFIGURACIÓN — árbol del plan §3, solo con rutas que existen.
-        $_g = function (string $titulo, array $items) use (&$_grupos, $_puede) {
-            $items = array_values(array_filter($items, fn ($i) => $i && $_puede($i[3])));
+        // [etiqueta, ruta, icono, permisos, modulo requerido (opcional)]
+        $_g = function (string $titulo, array $items) use (&$_grupos, $_puede, $_moduloActivo) {
+            $items = array_values(array_filter(
+                $items,
+                fn ($i) => $i && $_puede($i[3]) && $_moduloActivo($i[4] ?? null)
+            ));
             if ($items) $_grupos[] = ['titulo' => $titulo, 'items' => $items];
         };
         $_g('Mi negocio', [
@@ -68,13 +83,18 @@
             ['Sedes',              'sedes.index',        'inicio',     ['settings.negocio']],
         ]);
         $_g('Catálogo maestro', [
-            ['Productos',          'products.index',     'inventario', ['catalog.ver']],
+            ['Productos',          'products.index',     'inventario', ['catalog.ver'], 'catalog'],
+            ['Categorías',         'categories.index',   'etiqueta',   ['catalog.ver'], 'catalog'],
+            ['Servicios',          'services.index',     'etiqueta',   ['catalog.ver'], 'catalog'],
+            ['Combos',             'combos.index',       'inventario', ['inventory.ver', 'catalog.ver'], 'inventory|catalog'],
+            ['Promociones',        'promotions.index',   'rayo',       ['inventory.ver', 'catalog.ver'], 'inventory|catalog'],
             ['Catálogos maestros', 'catalogs.index',     'inventario', ['settings.catalogos', 'manage-settings']],
             ['Proveedores',        'proveedores.index',  'delivery',   ['settings.negocio']],
         ]);
         $_g('Canales', [
             ['Constructor (tienda)', 'settings.builder', 'reportes',   ['settings.diseno']],
-            ['Canales WhatsApp',     'bots.index',       'bot',        ['settings.negocio']],
+            ['Canales WhatsApp',     'bots.index',       'bot',        ['settings.negocio'], 'bots'],
+            ['Flujos del bot',       'bot-flows.index',  'bot',        ['clients.editar'],   'clients'],
             ['Código QR',            'settings.qr',      'etiqueta',   ['settings.negocio']],
         ]);
         $_g('Marketing y visibilidad', [
@@ -88,8 +108,9 @@
             ['Certificados SUNAT', 'certificados.index', 'factura',    ['settings.negocio']],
         ]);
         $_g('Equipo', [
+            ['Usuarios',           'hr.employees.index', 'clientes',   ['hr.ver']],
             ['Roles y permisos',   'roles.index',        'clientes',   ['settings.negocio']],
-            ['Grupos',             'groups.index',       'clientes',   ['settings.negocio']],
+            ['Áreas y grupos',     'groups.index',       'clientes',   ['settings.negocio']],
         ]);
         $_g('Sistema', [
             ['Módulos',            'settings.modules',   'etiqueta',   ['settings.negocio']],

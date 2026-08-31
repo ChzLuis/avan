@@ -41,32 +41,29 @@ class AdminResponsiveLayoutTest extends TestCase
             ->get(route('settings.design', ['s' => $section, 'classic' => 1]));
     }
 
+    /**
+     * SHELL ÚNICO (2026-08-30): todo el Workspace con negocio activo se sirve
+     * con el MISMO shell. Antes convivían dos —el del panel (`#admin-sidebar`)
+     * y el comercial— y el usuario saltaba de menú al navegar dentro de la
+     * misma cara. El drawer accesible que se exige aquí es el del shell único.
+     */
     public function test_admin_shell_exposes_one_accessible_mobile_drawer(): void
     {
         $response = $this->designer()->assertOk();
         $html = $response->getContent();
 
         $response
-            ->assertSee('data-mobile-sidebar-trigger', false)
+            ->assertSee('aria-controls="sidebar"', false)
             ->assertSee('type="button"', false)
-            ->assertSee('aria-controls="admin-sidebar"', false)
-            ->assertSee(':aria-expanded="sidebarOpen.toString()"', false)
-            ->assertSee('id="admin-sidebar"', false)
-            ->assertSee('aria-label="Navegación principal"', false)
-            ->assertSee('data-mobile-sidebar-close', false)
-            ->assertSee('aria-label="Cerrar navegación principal"', false)
-            ->assertSee('data-mobile-sidebar-overlay', false)
-            ->assertSee('@keydown.escape.window="closeSidebar()"', false);
+            ->assertSee('aria-label="Abrir menú"', false)
+            ->assertSee('id="sidebar"', false)
+            ->assertSee('aria-label="Navegación principal"', false);
 
-        $this->assertSame(1, substr_count($html, 'id="admin-sidebar"'));
-        $this->assertSame(1, preg_match_all('/<[^>]+\sdata-admin-shell(?:\s|>)/', $html));
-        $this->assertStringContainsString("document.body.classList.toggle('admin-sidebar-open'", $html);
-        $this->assertStringContainsString('this.$refs.sidebarClose?.focus()', $html);
-        $this->assertStringContainsString('this.sidebarTrigger || this.$refs.sidebarTrigger', $html);
-        $this->assertStringContainsString('@media (prefers-reduced-motion:reduce)', $html);
-        $this->assertStringContainsString('.sb-bixo.is-mobile-open', $html);
-        $this->assertStringContainsString('width:min(20rem, calc(100vw - 3rem))', $html);
-        $this->assertStringNotContainsString('|| mob', $html);
+        // Un solo menú en la página: ni rastro del shell que se retiró.
+        $this->assertSame(1, substr_count($html, 'aria-label="Navegación principal"'));
+        $this->assertSame(0, substr_count($html, 'id="admin-sidebar"'),
+            'Dos shells en la misma pantalla = el usuario salta de menú al navegar');
+        $this->assertStringContainsString('nav-movil-abierto', $html);
     }
 
     public function test_designer_keeps_two_tabs_and_exactly_three_supported_templates(): void

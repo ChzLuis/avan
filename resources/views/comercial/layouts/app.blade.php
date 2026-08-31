@@ -1480,6 +1480,11 @@ function sessionWatcher() {
     };
 }
 </script>
+{{-- El shell único sirve también las pantallas que llaman `window.__confirm`
+     (eliminar producto/imagen/categoría/servicio, descartar borrador): sin
+     este modal esos botones fallaban en silencio. Mismo partial que el otro
+     shell — un solo modal, sin duplicar Blade. --}}
+@include('partials.confirm-global')
 @include('partials.avisos')
 </body>
 </html>

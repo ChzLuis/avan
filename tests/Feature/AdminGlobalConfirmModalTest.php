@@ -12,18 +12,23 @@ class AdminGlobalConfirmModalTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * El modal vive desde 2026-08-30 en su propio partial, compartido por los
+     * DOS shells del Workspace: estaba dentro del shell del panel y las
+     * pantallas servidas por el shell comercial se quedaban sin él (eliminar
+     * producto/imagen/categoría y descartar borrador llaman `window.__confirm`
+     * sin comprobar que exista). El contrato que se verifica no cambia.
+     */
     private function modalSource(): string
     {
-        $source = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $source = file_get_contents(resource_path('views/partials/confirm-global.blade.php'));
         $marker = strpos($source, 'data-global-confirm-modal');
         $start = strrpos(substr($source, 0, $marker), '<div x-data="{');
-        $end = strpos($source, '{{-- Flash messages', $marker);
 
-        $this->assertNotFalse($marker);
+        $this->assertNotFalse($marker, 'El partial del modal global perdió su marcador.');
         $this->assertNotFalse($start);
-        $this->assertNotFalse($end);
 
-        return substr($source, $start, $end - $start);
+        return substr($source, $start);
     }
 
     private function designer(string $section = 'plantilla')
@@ -138,7 +143,11 @@ class AdminGlobalConfirmModalTest extends TestCase
             ->assertSee('this.markInteracted();', false)
             ->assertSee('this.cancelPendingFocus();', false)
             ->assertSee('this.$nextTick(() => previousFocus.focus());', false)
-            ->assertSee('data-admin-shell', false);
+            // Shell único del Workspace (2026-08-30): el marcador ya no es
+            // `data-admin-shell` del shell del panel; lo que debe seguir
+            // cumpliéndose es que el modal viaje CON el shell que sirve la
+            // pantalla, sea cual sea.
+            ->assertSee('nav-marca-texto', false);
 
         $this->assertSame(2, substr_count($html, 'data-primary-designer-tab='));
         $this->assertSame(3, substr_count($html, 'data-supported-template-card='));
