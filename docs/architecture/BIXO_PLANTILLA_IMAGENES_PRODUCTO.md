@@ -110,3 +110,39 @@ Las pruebas escriben PNG reales en disco y los limpian al terminar.
 - **Plantillas guardadas con nombre**: la tabla ya soporta varias por tenant con una activa; el selector visual para cambiar entre ellas no se ha expuesto en el panel (queda la principal).
 - **Importación por Excel**: hoy no crea imágenes, así que no había nada que enganchar. El método `encolarPlantilla()` está aislado y listo para llamarse desde ahí si algún día importa fotos.
 - **Despliegue**: nada subido al VPS. Requiere la migración y `view:cache`.
+
+---
+
+# Anexo — Texto de ejemplo en páginas de contenido (2026-08-30)
+
+## El problema
+
+`Nosotros`, `Términos` y `Privacidad` se pintan campo a campo (`body`, `history`, `mission`, `vision`, `values`, `team`) y **cada bloque se oculta si su campo está vacío**. Una página recién creada salía con el título y nada más: una tarjeta en blanco en la tienda del cliente.
+
+## La decisión: relleno sí, "Lorem ipsum" no
+
+Estas páginas **las ve el cliente final**. Se descartó el latín de imprenta por dos motivos concretos:
+
+1. **"Lorem ipsum dolor sit amet" se lee como un error**, no como un marcador de posición. Deja peor al negocio que la página vacía que veníamos a arreglar.
+2. Un relleno "creíble" sería peor todavía: escribir *"20 años de experiencia"* o *"tres sedes"* sería **afirmar datos falsos** sobre un negocio real ante sus propios clientes.
+
+El relleno es español corriente, **genérico y cierto para cualquier negocio** ("nos dedicamos a ofrecer productos de calidad y una atención cercana"), con el nombre real insertado. Sirve tal cual si el comerciante nunca lo cambia, y una prueba impide que se cuele un año, una cifra de clientes o de sedes.
+
+## Cómo funciona
+
+`App\Support\ContenidoEjemplo` — un único sitio con los textos por página y campo.
+
+- **Solo rellena huecos**: lo que el negocio escribió no se toca jamás.
+- **Solo en memoria**: no se escribe en la base, así que el día que el comerciante escriba lo suyo no hay relleno guardado que limpiar.
+- **Se puede apagar**: interruptor en Constructor → Páginas (`pages_placeholder`), encendido por defecto.
+- Cubre las tres entradas que pintan una página (`page()`, `about()` y `productionPageView()`), que es la que usan las plantillas reales.
+
+## Bug preexistente encontrado y corregido
+
+`StorePageController::productionPageView()` pasaba un `StorefrontContext` al 4.º argumento de `prepararCatalogo()`, que espera un **array de overlay de settings**. `TypeError` → **`/nosotros` y `/contacto` devolvían 500 en toda plantilla de producción**.
+
+Está en el commit `433dddd` (refactor de contexto canónico) y **no se ha desplegado**: producción no tiene esa llamada y `/nosotros` responde 200 allí. Se corrigió pasando el overlay vacío, que es lo que corresponde al camino público.
+
+## Pruebas
+
+`tests/Feature/ContenidoEjemploPaginasTest.php` — **8 pruebas, 39 aserciones**: rellena con el nombre real, no es lorem ni inventa datos, no pisa lo escrito, se puede apagar, la página sale con diseño, el texto del negocio manda, no se guarda en base, y términos/privacidad tienen su propio ejemplo.

@@ -24,8 +24,36 @@ class StorePageController extends Controller
 
     private function project(string $slug): Project { return Project::where('slug', $slug)->where('is_active', true)->firstOrFail(); }
 
+    /**
+     * Rellena los huecos de la pagina con texto de ejemplo antes de pintarla.
+     *
+     * Una pagina institucional a medio configurar salia con el titulo y nada
+     * mas: el cliente veia una tarjeta vacia. Con esto sale el diseno completo
+     * y el comerciante ve donde tiene que escribir. Lo que el negocio ya
+     * escribio NUNCA se sustituye, y el relleno se puede apagar por ajuste.
+     */
+    private function conEjemplo(?\App\Models\StorePage $page, \App\Models\Project $project): ?\App\Models\StorePage
+    {
+        if (! $page) {
+            return $page;
+        }
+
+        [$contenido] = \App\Support\ContenidoEjemplo::completar(
+            is_array($page->content) ? $page->content : [],
+            (string) $page->key,
+            $project,
+            \App\Support\ContenidoEjemplo::activoEn($project),
+        );
+
+        // Solo en memoria: no se escribe nada en la base, asi que el dia que el
+        // negocio escriba su texto no hay que limpiar ningun relleno guardado.
+        $page->setAttribute('content', $contenido);
+
+        return $page;
+    }
+
     public function page(string $slug, string $key) {
-        $project=$this->project($slug); $context=$this->context($project); $page=$context->page($key); abort_unless($page?->is_enabled,404);
+        $project=$this->project($slug); $context=$this->context($project); $page=$context->page($key); abort_unless($page?->is_enabled,404); $page=$this->conEjemplo($page,$project);
         if ($context->setting('storefront_structure_v2', '0') !== '1') return view('public.page', $context->toViewData()+compact('page'));
         return view('public.storefront.page', $context->toViewData() + compact('page'));
     }
@@ -33,7 +61,7 @@ class StorePageController extends Controller
         $project=$this->project($slug);
         $context=$this->context($project, 'nosotros');
         if ($view = $this->productionPageView($project, 'nosotros', $context)) return $view;
-        $page=$context->page('nosotros'); abort_unless($page?->is_enabled,404);
+        $page=$context->page('nosotros'); abort_unless($page?->is_enabled,404); $page=$this->conEjemplo($page,$project);
         if ($context->setting('storefront_structure_v2', '0') !== '1') return view('public.page', $context->toViewData()+compact('page'));
         return view('public.storefront.page', $context->toViewData()+compact('page'));
     }
@@ -54,8 +82,13 @@ class StorePageController extends Controller
         $view = \App\Http\Controllers\PublicController::PRODUCTION_TEMPLATE_VIEWS[$template] ?? null;
         if (!$view || !view()->exists($view)) return null;
         $storeView = $key === 'nosotros' ? 'nosotros' : 'contacto';
-        [$tplView, $data] = $this->publicController->prepararCatalogo($project, false, $storeView, $context);
-        $storePage = $context->page($key);
+        // El 4o argumento es un OVERLAY de settings (lo usa el preview del
+        // borrador), no el contexto: pasarle el objeto lanzaba un TypeError y
+        // /nosotros y /contacto devolvian 500 en toda plantilla de produccion.
+        // El camino publico no lleva overlay.
+        [$tplView, $data] = $this->publicController->prepararCatalogo($project, false, $storeView);
+        // Misma regla que en las vistas sueltas: los huecos salen con ejemplo.
+        $storePage = $this->conEjemplo($context->page($key), $project);
         return view($tplView, $data + compact('storePage'));
     }
     public function sendContact(Request $request, string $slug) {
