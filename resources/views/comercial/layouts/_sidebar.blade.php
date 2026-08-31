@@ -24,16 +24,8 @@
         return false;
     };
 
-    // El menú solo ofrece MÓDULOS ACTIVOS del negocio (plan §13): sin esto,
-    // una entrada cuyo módulo no está contratado es un enlace que acaba en
-    // 403. Acepta 'a|b' = basta con uno (misma semántica que `module:`).
-    $_moduloActivo = function (?string $claves) use ($project) {
-        if (!$claves) return true;
-        foreach (explode('|', $claves) as $k) {
-            if ($project->hasModule(trim($k))) return true;
-        }
-        return false;
-    };
+    // En esta cara, qué módulos se ofrecen lo decide `ModulosPortal`
+    // (uso o ajuste del negocio, ya cruzado con el entitlement contratado).
 
     // Icono (trazo Heroicons, la misma familia que ya usa el portal).
     $_ico = [
@@ -56,72 +48,12 @@
         'etiqueta'    => 'M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z',
     ];
 
-    // ── DOS CARAS DEL WORKSPACE (plan de reestructuración 2026-08-30) ────
-    // /bixoadmin (Configuración) y /bixosales (Operación) comparten shell,
-    // sesión, identidad y permisos, pero cada cara muestra SU menú y un
-    // acceso visible a la otra. No se mezcla operación con configuración.
-    $_caraConfig = request()->routeIs(
-        'settings*', 'products.*', 'categories.*', 'roles.*', 'catalogs.*',
-        'bots.*', 'bots-flow.*', 'projects.*', 'certificados.*', 'sedes.*',
-        'proveedores.*', 'groups.*', 'design-templates.*', 'catalog-integrations.*'
-    );
-
+    // ── MENÚ DE LA CARA OPERACIÓN (/bixosales) ──────────────────────────
+    // La configuración NO se pinta aquí: vive en el shell del panel, con su
+    // propio menú y su propio diseño (decisión del usuario 2026-08-30 — cada
+    // cara conserva el suyo). Desde aquí solo se ofrece la PUERTA a
+    // configuración, al final del menú.
     $_grupos = [];
-
-    if ($_caraConfig) {
-        // CARA CONFIGURACIÓN — árbol del plan §3, solo con rutas que existen.
-        // [etiqueta, ruta, icono, permisos, modulo requerido (opcional)]
-        $_g = function (string $titulo, array $items) use (&$_grupos, $_puede, $_moduloActivo) {
-            $items = array_values(array_filter(
-                $items,
-                fn ($i) => $i && $_puede($i[3]) && $_moduloActivo($i[4] ?? null)
-            ));
-            if ($items) $_grupos[] = ['titulo' => $titulo, 'items' => $items];
-        };
-        $_g('Mi negocio', [
-            ['Datos del negocio',  'settings',           'etiqueta',   ['settings.negocio']],
-            ['Sedes',              'sedes.index',        'inicio',     ['settings.negocio']],
-        ]);
-        $_g('Catálogo maestro', [
-            ['Productos',          'products.index',     'inventario', ['catalog.ver'], 'catalog'],
-            ['Categorías',         'categories.index',   'etiqueta',   ['catalog.ver'], 'catalog'],
-            ['Servicios',          'services.index',     'etiqueta',   ['catalog.ver'], 'catalog'],
-            ['Combos',             'combos.index',       'inventario', ['inventory.ver', 'catalog.ver'], 'inventory|catalog'],
-            ['Promociones',        'promotions.index',   'rayo',       ['inventory.ver', 'catalog.ver'], 'inventory|catalog'],
-            ['Catálogos maestros', 'catalogs.index',     'inventario', ['settings.catalogos', 'manage-settings']],
-            ['Proveedores',        'proveedores.index',  'delivery',   ['settings.negocio']],
-        ]);
-        $_g('Canales', [
-            ['Constructor (tienda)', 'settings.builder', 'reportes',   ['settings.diseno']],
-            ['Canales WhatsApp',     'bots.index',       'bot',        ['settings.negocio'], 'bots'],
-            ['Flujos del bot',       'bot-flows.index',  'bot',        ['clients.editar'],   'clients'],
-            ['Código QR',            'settings.qr',      'etiqueta',   ['settings.negocio']],
-        ]);
-        $_g('Marketing y visibilidad', [
-            ['SEO',                'settings.seo',       'reportes',   ['settings.negocio']],
-        ]);
-        $_g('Pagos e integraciones', [
-            ['Pagos',                  'settings.payments',           'cobranza',   ['settings.pagos', 'manage-settings']],
-            ['Conectores de catálogo', 'catalog-integrations.index',  'inventario', ['settings.negocio']],
-        ]);
-        $_g('Configuración fiscal', [
-            ['Certificados SUNAT', 'certificados.index', 'factura',    ['settings.negocio']],
-        ]);
-        $_g('Equipo', [
-            ['Usuarios',           'hr.employees.index', 'clientes',   ['hr.ver']],
-            ['Roles y permisos',   'roles.index',        'clientes',   ['settings.negocio']],
-            ['Áreas y grupos',     'groups.index',       'clientes',   ['settings.negocio']],
-        ]);
-        $_g('Sistema', [
-            ['Módulos',            'settings.modules',   'etiqueta',   ['settings.negocio']],
-        ]);
-        // Acceso visible a la otra cara (plan §3).
-        if ($_puede(['orders.ver', 'view-orders'])) {
-            $_grupos[] = ['titulo' => null, 'items' => [
-                ['→ Ir a Ventas / Operación', 'bixosales.dashboard', 'rayo', ['orders.ver', 'view-orders']],
-            ]];
-        }
-    } else {
 
     $_grupos[] = ['titulo' => null, 'items' => array_values(array_filter([
         ['Inicio', 'bixosales.dashboard', 'inicio', ['orders.ver', 'view-orders']],
@@ -189,7 +121,6 @@
         ]];
     }
 
-    } // fin cara Operación
 @endphp
 
 <nav id="sidebar" :class="navMovil ? 'nav-movil-abierto' : ''" aria-label="Navegación principal">

@@ -127,13 +127,15 @@ class FusionPortalesTest extends TestCase
         $this->get('/bixosales')
             ->assertOk()
             ->assertSee('Ir a Configuración')
-            ->assertDontSee('Constructor (tienda)');
+            // La operación no mezcla entradas de configuración: solo la puerta.
+            ->assertDontSee('Certificados SUNAT');
 
+        // Y la configuración se sirve con SU shell (el del panel), no con el
+        // de ventas: cada cara conserva su diseño.
         $this->get('/bixoadmin/settings')
             ->assertOk()
-            ->assertSee('Datos del negocio')
-            ->assertSee('Constructor (tienda)')
-            ->assertSee('Ir a Ventas');
+            ->assertSee('id="admin-sidebar"', false)
+            ->assertSee('Certificados SUNAT');
 
         // Vendedor sin permisos de ajustes: ni la puerta aparece.
         Role::findOrCreate('fusion_vendedor', 'web')->syncPermissions(['orders.ver']);
