@@ -33,16 +33,19 @@ impersonación auditada (`/bixoadmin/entrar-como/{id}` → AccessEvent
 ## 2. Árbol real final de `/bixoadmin` (Configuración)
 
 ```
-/bixoadmin (login propio: "BIXO · Configuración" → aterriza en Mi negocio)
-├── MI NEGOCIO            Datos del negocio (settings) · Sedes
-├── CATÁLOGO MAESTRO      Productos · Catálogos maestros · Proveedores
-├── CANALES               Constructor (tienda) · Canales WhatsApp · Código QR
-├── MARKETING             SEO
-├── PAGOS E INTEGRACIONES Pagos · Conectores de catálogo
-├── CONFIGURACIÓN FISCAL  Certificados SUNAT (series/documentos en settings)
-├── EQUIPO                Roles y permisos · Grupos
-├── SISTEMA               Módulos
-└── → Ir a Ventas / Operación
+/bixoadmin (login propio "BIXO · Configuración"; shell del panel, con su
+            encabezado y su SELECTOR DE NEGOCIO; aterriza en Mi negocio)
+├── CONFIGURACIÓN   ordenada por afinidad (`$cfgItems` en layouts/app.blade.php)
+│     Negocio · Constructor · QR · SEO · Canales WA · Pagos ·
+│     Certificados SUNAT · Catálogos · Roles · Módulos
+│     (Certificados SUNAT no estaba en NINGÚN menú: solo por URL)
+├── MI TIENDA       Clientes/Segmentos · Agenda · Usuarios · Áreas ·
+│                   Sucursales · Aliados
+├── CATÁLOGO        Productos · Inventario · Servicios · Categorías ·
+│                   Combos · Promociones · Conectar catálogo (API)
+├── CRM             Conversaciones · Clientes/Leads · Pipeline · Bots
+├── COMERCIAL       (accesos del panel)
+└── LOGÍSTICA       (accesos del panel)
 ```
 
 ## 3. Árbol real final de `/bixosales` (Operación)
@@ -59,9 +62,14 @@ impersonación auditada (`/bixoadmin/entrar-como/{id}` → AccessEvent
 └── → Ir a Configuración
 ```
 
-Ambas caras comparten shell, sesión, identidad, permisos y entitlements
-(§11): el breadcrumb marca la cara (chip morado "Configuración" / chip azul
-del rubro).
+Ambas caras comparten sesión, identidad, permisos y entitlements (§11),
+pero **cada una conserva su propio diseño**: /bixoadmin el shell del panel
+(con su encabezado y su selector de negocio) y /bixosales el comercial.
+Un intento de servir la configuración con el shell comercial fue **revertido
+por decisión del usuario** el mismo día: llevaba al panel el encabezado y las
+alertas de ventas y le quitaba el selector de negocio. Lo que elimina el salto
+de menú es que TODAS las pantallas de una cara usen el shell de esa cara —
+verificado por `ShellUnicoWorkspaceTest`.
 
 ## 4-6. Matrices
 
@@ -123,15 +131,18 @@ legacy) — fuera de todo menú, endurecidos con `project.can:settings.diseno`.
 ## 13-16. Tests y validaciones
 
 - Nuevos: `ControlNavegacionTest` (3), `CapacidadesRestringidasTest` (5).
-- Actualizados al contrato de dos caras: `FusionPortalesTest`,
-  `WorkspaceShellUnificadoTest`, `SettingsAuthorizationTest` (plantillas ya
-  no se abre con solo el permiso).
+- `ShellUnicoWorkspaceTest` (11): cada cara con su shell, un solo menú por
+  pantalla, selector de negocio presente y Certificados SUNAT en el menú.
+- Actualizados: `FusionPortalesTest`, `SettingsAuthorizationTest` (plantillas
+  ya no se abre con solo el permiso), `AdminResponsiveLayoutTest`.
+- Retirado `WorkspaceShellUnificadoTest`: verificaba el shell compartido que
+  el usuario rechazó.
 - Acceso directo por URL: cubierto (capacidades 403, entitlements 403,
   Control redirige a su login sin filtrar contenido).
 - Cross-tenant: `copyStore` exige dueño de la fuente o superadmin;
   `HasProjectScope`/`ComercialEntitlementTest`/`WaBotIsolationTest` vigentes.
-- Suite completa: **1020 pass, 2 failed (3956 aserciones, 293s)** — los 2
-  rojos son de la feature de variantes en vuelo (plantillas 3→2 motores en
+- Suite completa: **1076 pass, 2 failed (4108 aserciones)** — los 2 rojos son
+  de la feature de variantes en vuelo (plantillas 3→2 motores en
   `supported-template-selector`), ajenos a esta reestructuración.
 
 ## 18. Deuda pendiente
@@ -142,7 +153,8 @@ legacy) — fuera de todo menú, endurecidos con `project.can:settings.diseno`.
 - **TD-025**: aplicación fina de `cap_builder_avanzado` (bloquear el cambio
   de motor DENTRO de la etapa Apariencia) y `cap_seo_avanzado` (separar la
   pantalla SEO en básico/avanzado). Las capacidades y el gate ya existen.
-- **TD-023** (previa): re-parentar Productos/Constructor al shell unificado
-  cuando aterrice la feature de variantes.
+- **TD-023 CERRADA** por otra vía: no hacía falta esperar a variantes ni
+  re-parentar nada — el salto de menú se resolvió sirviendo TODA la
+  configuración con el shell del panel (`AppLayout` sin delegación).
 - Imports/Turnos siguen en el Control (ADR-008: migrar al Workspace).
-- Validación visual en ARIN pendiente de deploy.
+- Desplegado y verificado en ARIN (backups 20260830_204810 y _210024).

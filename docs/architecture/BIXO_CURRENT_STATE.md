@@ -12,7 +12,8 @@ BIXO PLATFORM
 │      Inicio · Empresas (+Demos) · Licencias · Usuarios · Auditoria (NUEVA,
 │      solo lectura) · Imports · Configuracion global
 │      Sin CRUDs paralelos del tenant: soporte por impersonacion AUDITADA
-└── 2. BIXO WORKSPACE  (el tenant) · dos caras, un shell, una sesion
+└── 2. BIXO WORKSPACE  (el tenant) · dos caras, CADA UNA CON SU DISENO,
+       una sesion y unos mismos permisos
        ├── /bixoadmin  CONFIGURACION · login "BIXO · Configuracion"
        │     Mi negocio · Catalogo maestro · Canales · Marketing · Pagos e
        │     integraciones · Fiscal · Equipo · Sistema · → Ir a Ventas

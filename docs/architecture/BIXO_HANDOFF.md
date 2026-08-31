@@ -12,10 +12,16 @@ El usuario reporto que al navegar por /bixoadmin EL MENU CAMBIABA. Causa: la
 unificacion habia migrado solo una parte de las pantallas, asi que convivian
 dos shells dentro de la misma cara. Corregido reusando lo existente:
 
-- `AppLayout` delega en el shell comercial cuando hay negocio activo → las
-  20+ vistas con `<x-app-layout>` heredan el menu unico SIN tocarlas (ni
-  siquiera Productos/Constructor, de la feature de variantes en vuelo).
-  Esto CIERRA TD-023 sin esperar a variantes.
+- **CORREGIDO la misma noche**: primero hice que `AppLayout` delegara en el
+  shell comercial. El usuario lo RECHAZO — eso le llevaba al panel el
+  encabezado y las alertas de ventas y le quitaba el SELECTOR DE NEGOCIO:
+  *"admin tiene un diseno y sales otro, en ningun momento te pedi eso"*.
+  Solucion definitiva: cada cara con SU shell, y el salto de menu se elimina
+  porque TODAS las pantallas de /bixoadmin usan el del panel. Ademas se
+  ordeno su menu de Configuracion por afinidad y se descubrio que
+  **Certificados SUNAT no estaba en ningun menu**. Esto CIERRA TD-023 sin
+  esperar a variantes. `ShellUnicoWorkspaceTest` 11/11; commits `72f9086`,
+  `f809924`, `7d72e09`.
 - **Regresion evitada**: el modal `window.__confirm` vivia DENTRO del shell
   del panel; las pantallas migradas se quedaban sin el y eliminar producto,
   eliminar imagen, categorias, servicios y descartar borrador habrian
@@ -23,7 +29,7 @@ dos shells dentro de la misma cara. Corregido reusando lo existente:
   los dos shells. Lo cazaron los tests antes del deploy.
 - Rescatadas 6 entradas huerfanas (Usuarios, Categorias, Servicios, Combos,
   Promociones, Flujos del bot) y el menu filtra por MODULO ACTIVO.
-- `ShellUnicoWorkspaceTest` 10/10.
+
 
 **Fallos de suite que NO son de esta rama:** `ProcesadorImagenesTest` (14)
 falla tambien con este trabajo stasheado — es `app/Support/ImageVariants.php`
