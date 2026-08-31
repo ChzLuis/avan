@@ -96,7 +96,9 @@ Ninguna regla vive en el controlador ni en la vista.
 
 ## 4. Pruebas
 
-`tests/Feature/ProductImageTemplateTest.php` — **16 pruebas, 48 aserciones, todas en verde**. Cubren las letras del encargo:
+`tests/Feature/ProductImageTemplateTest.php` — **19 pruebas, 62 aserciones, todas en verde**. Cubren las letras del encargo:
+
+**Ámbitos de aplicación** (§17): al de prueba, **a una categoría** (con su selector), y a todo el catálogo — los tres con confirmación previa salvo el de una sola foto.
 
 A OFF usa original · B ON usa generada · C sin generada cae al original · D no sobrescribe el original (compara bytes) · E/M configuración persistida · F/G aislamiento de plantilla y logo · H el masivo respeta el tenant · I rechaza rutas fuera de carpeta y archivos ilegibles · J producto nuevo · K un fallo no rompe el catálogo · L regenerar parte del original · N solo esa categoría · O solo los seleccionados · P galería opcional · Q apagar no borra archivos. Más una de rendimiento (no regenerar sin cambios).
 
@@ -107,7 +109,7 @@ Las pruebas escriben PNG reales en disco y los limpian al terminar.
 ## 5. Pendientes reales
 
 - **Quitar fondo automáticamente**: no implementado a propósito (requiere dependencia externa). La arquitectura lo admite sin refactor.
-- **Plantillas guardadas con nombre**: la tabla ya soporta varias por tenant con una activa; el selector visual para cambiar entre ellas no se ha expuesto en el panel (queda la principal).
+- ~~Plantillas guardadas con nombre~~ — **hecho**: "Guardar como plantilla nueva" congela la configuración actual con nombre propio y la deja activa; el selector de la cabecera cambia entre ellas. Cambiar de plantilla **no** regenera ni borra nada: solo cambia la que manda, y el catálogo se regenera cuando el comerciante lo pide. Un id de otra tienda devuelve 404.
 - **Importación por Excel**: hoy no crea imágenes, así que no había nada que enganchar. El método `encolarPlantilla()` está aislado y listo para llamarse desde ahí si algún día importa fotos.
 - **Despliegue**: nada subido al VPS. Requiere la migración y `view:cache`.
 

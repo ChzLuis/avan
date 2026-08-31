@@ -66,6 +66,13 @@ class ProductImageTemplateController extends Controller
                 ->get(['id', 'name', 'is_active', 'enabled'])->all(),
             'stats' => $this->cifras($plantilla),
             'samples' => $this->muestras($project->id),
+            // Para "Aplicar a una categoria": solo las que tienen productos.
+            'categories' => \App\Models\Category::where('project_id', $project->id)
+                ->where('is_active', true)->withCount('products')
+                ->orderBy('sort_order')->orderBy('name')->get(['id', 'name'])
+                ->filter(fn ($c) => $c->products_count > 0)
+                ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'products' => (int) $c->products_count])
+                ->values()->all(),
             'business_logo' => $this->logoDelNegocio($project),
             'logo_changed' => $this->logoCambio($plantilla),
             'defaults' => ProductImageTemplate::DEFAULTS,
@@ -263,6 +270,52 @@ class ProductImageTemplateController extends Controller
             'count' => $imagenes->count(),
             'stats' => $this->cifras($plantilla),
         ]);
+    }
+
+    /**
+     * Guarda la configuracion actual como una plantilla NUEVA y la deja activa.
+     * Sirve para tener "Blanco profesional" y "Campana Navidad" y alternar sin
+     * volver a ajustar los controles.
+     */
+    public function saveAs(Request $request)
+    {
+        $project = $this->proyecto();
+        $data = $request->validate(['name' => 'required|string|max:80']);
+
+        $actual = $this->plantilla();
+
+        // Solo una activa por negocio.
+        ProductImageTemplate::where('project_id', $project->id)->update(['is_active' => false]);
+
+        $nueva = ProductImageTemplate::create([
+            'project_id' => $project->id,
+            'name' => $data['name'],
+            'is_active' => true,
+            'enabled' => $actual->enabled,
+            'config' => $actual->configCompleta(),
+            'updated_by' => auth()->id(),
+        ]);
+        $nueva->forceFill(['hash' => $nueva->calcularHash()])->save();
+        \App\Support\Imagen\ResolutorImagenProducto::olvidar();
+
+        return response()->json(['ok' => true, 'template' => $this->serializar($nueva), 'stats' => $this->cifras($nueva)]);
+    }
+
+    /** Cambia cual es la plantilla activa. No regenera nada por si sola. */
+    public function activate(Request $request)
+    {
+        $project = $this->proyecto();
+        $data = $request->validate(['id' => 'required|integer']);
+
+        // El filtro por proyecto es la barrera: un id ajeno no se encuentra.
+        $destino = ProductImageTemplate::where('project_id', $project->id)
+            ->where('id', $data['id'])->firstOrFail();
+
+        ProductImageTemplate::where('project_id', $project->id)->update(['is_active' => false]);
+        $destino->forceFill(['is_active' => true])->save();
+        \App\Support\Imagen\ResolutorImagenProducto::olvidar();
+
+        return response()->json(['ok' => true, 'template' => $this->serializar($destino), 'stats' => $this->cifras($destino)]);
     }
 
     /** Progreso para la barra del panel. */

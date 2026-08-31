@@ -107,6 +107,12 @@
 .bxb-it-rejilla{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-width:132px}
 .bxb-it-rejilla button{aspect-ratio:1;border:1px solid var(--dz-line);border-radius:6px;background:#fff;cursor:pointer}
 .bxb-it-rejilla button.on{border-color:#4f46e5;background:#eef2ff;box-shadow:inset 0 0 0 2px #c7d2fe}
+.bxb-it-cabecera-acciones{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex-shrink:0}
+.bxb-it-selector{margin:0}
+.bxb-it-selector select{min-width:170px}
+.bxb-it-ambito{display:inline-flex;align-items:center;gap:6px}
+.bxb-it-ambito select{max-width:220px}
+@media (max-width:520px){ .bxb-it-ambito{width:100%} .bxb-it-ambito select{flex:1;max-width:none} }
 .bxb-it-acciones{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--dz-line)}
 .bxb-it-acciones small{color:var(--dz-muted,#64748b);font-size:12px}
 .bxb-it-confirm{margin-top:12px;padding:12px;border:1px solid #fcd34d;background:#fffbeb;border-radius:10px;font-size:13px}

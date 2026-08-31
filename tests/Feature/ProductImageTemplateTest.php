@@ -342,6 +342,67 @@ class ProductImageTemplateTest extends TestCase
         $this->assertSame($generada, $this->image->fresh()->generated_url);
     }
 
+    // ── Plantillas guardadas ─────────────────────────────────────────────
+
+    public function test_guardar_como_crea_una_plantilla_nueva_y_la_deja_activa(): void
+    {
+        $user = User::factory()->create(['is_superadmin' => true]);
+        $this->project->update(['owner_id' => $user->id]);
+        $primera = $this->plantillaPara($this->project, ['product_scale' => 70]);
+
+        $this->actingAs($user)->withSession(['active_project_id' => $this->project->id])
+            ->postJson(route('builder.image-template.save-as'), ['name' => 'Campaña Navidad'])
+            ->assertOk()->assertJsonPath('template.name', 'Campaña Navidad');
+
+        $todas = ProductImageTemplate::allProjects()->where('project_id', $this->project->id)->get();
+        $this->assertCount(2, $todas, 'La anterior debe conservarse.');
+        $this->assertSame(1, $todas->where('is_active', true)->count(), 'Solo puede haber una activa.');
+        // Hereda la configuración actual: sirve para partir de lo ya ajustado.
+        $this->assertSame(70, (int) $todas->firstWhere('name', 'Campaña Navidad')->configCompleta()['product_scale']);
+        $this->assertFalse($primera->fresh()->is_active);
+    }
+
+    public function test_activar_otra_plantilla_no_regenera_ni_borra_imagenes(): void
+    {
+        $user = User::factory()->create(['is_superadmin' => true]);
+        $this->project->update(['owner_id' => $user->id]);
+
+        $navidad = $this->plantillaPara($this->project, ['product_scale' => 70]);
+        app(GeneradorImagenProducto::class)->generar($this->image->fresh(), $navidad);
+        $generada = $this->image->fresh()->generated_url;
+
+        $otra = ProductImageTemplate::create([
+            'project_id' => $this->project->id, 'name' => 'Blanco', 'is_active' => false,
+            'enabled' => true, 'config' => ProductImageTemplate::DEFAULTS,
+        ]);
+
+        $this->actingAs($user)->withSession(['active_project_id' => $this->project->id])
+            ->postJson(route('builder.image-template.activate'), ['id' => $otra->id])
+            ->assertOk()->assertJsonPath('template.name', 'Blanco');
+
+        $this->assertTrue($otra->fresh()->is_active);
+        $this->assertFalse($navidad->fresh()->is_active);
+        // Cambiar de plantilla es una decisión, no una regeneración masiva.
+        $this->assertSame($generada, $this->image->fresh()->generated_url);
+        $this->assertNotNull(app(CompositorProducto::class)->rutaLocal($generada));
+    }
+
+    public function test_no_se_puede_activar_la_plantilla_de_otra_tienda(): void
+    {
+        $user = User::factory()->create(['is_superadmin' => true]);
+        $this->project->update(['owner_id' => $user->id]);
+        $this->plantillaPara($this->project);
+
+        $otraTienda = $this->crearTienda('Tienda B', 'tienda-b');
+        $ajena = $this->plantillaPara($otraTienda);
+
+        $this->actingAs($user)->withSession(['active_project_id' => $this->project->id])
+            ->postJson(route('builder.image-template.activate'), ['id' => $ajena->id])
+            ->assertNotFound();
+
+        $this->assertTrue($ajena->fresh()->is_active, 'La plantilla ajena no debe alterarse.');
+    }
+
     // ── Rendimiento: no rehacer lo que no cambió ──────────────────────────
 
     public function test_no_regenera_cuando_la_plantilla_no_cambio(): void

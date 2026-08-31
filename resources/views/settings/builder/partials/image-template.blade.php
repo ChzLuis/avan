@@ -15,10 +15,20 @@
             <strong class="bxb-card-title">Plantilla de imágenes de producto</strong>
             <p class="bxb-note">Da un acabado uniforme a todo el catálogo: fondo, encuadre, logo y marca de agua. La foto original nunca se modifica.</p>
         </div>
-        <label class="bxb-switch bxb-it-switch">
-            <input type="checkbox" :checked="tpl.enabled" @change="alternar($event.target.checked)">
-            <span x-text="tpl.enabled ? 'Activa' : 'Desactivada'"></span>
-        </label>
+        <div class="bxb-it-cabecera-acciones">
+            {{-- Plantillas guardadas: "Blanco profesional", "Campaña Navidad"… --}}
+            <label class="bxb-field bxb-it-selector" x-show="guardadas.length > 1" x-cloak>
+                <select :value="tpl.id" @change="activar($event.target.value)">
+                    <template x-for="g in guardadas" :key="g.id">
+                        <option :value="g.id" x-text="g.name"></option>
+                    </template>
+                </select>
+            </label>
+            <label class="bxb-switch bxb-it-switch">
+                <input type="checkbox" :checked="tpl.enabled" @change="alternar($event.target.checked)">
+                <span x-text="tpl.enabled ? 'Activa' : 'Desactivada'"></span>
+            </label>
+        </div>
     </div>
 
     <template x-if="cargando">
@@ -198,7 +208,20 @@
         <div class="bxb-it-acciones">
             <button type="button" class="bxb-btn" @click="guardar()" :disabled="guardando">Guardar configuración</button>
             <button type="button" class="bxb-btn" @click="aplicar('product')" :disabled="ocupado">Aplicar al de prueba</button>
+
+            {{-- Por categoría: el selector elige el ámbito y el botón lo aplica --}}
+            <span class="bxb-it-ambito" x-show="categorias.length" x-cloak>
+                <select :value="categoriaId" @change="categoriaId=$event.target.value">
+                    <option value="">Elige una categoría…</option>
+                    <template x-for="c in categorias" :key="c.id">
+                        <option :value="c.id" x-text="c.name + ' (' + c.products + ')'"></option>
+                    </template>
+                </select>
+                <button type="button" class="bxb-btn" @click="aplicar('category')" :disabled="ocupado || !categoriaId">Aplicar a la categoría</button>
+            </span>
+
             <button type="button" class="bxb-btn" @click="aplicar('all')" :disabled="ocupado">Aplicar a todo el catálogo</button>
+            <button type="button" class="bxb-link" @click="guardarComo()">Guardar como plantilla nueva</button>
             <button type="button" class="bxb-link" @click="restablecer()">Restablecer</button>
             <small x-text="estado" role="status"></small>
         </div>

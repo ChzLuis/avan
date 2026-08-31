@@ -427,6 +427,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/builder/image-template/upload', [\App\Http\Controllers\ProductImageTemplateController::class, 'upload'])->name('builder.image-template.upload')->middleware('can:settings.diseno');
         Route::post('/settings/builder/image-template/preview', [\App\Http\Controllers\ProductImageTemplateController::class, 'preview'])->name('builder.image-template.preview')->middleware('can:settings.diseno');
         Route::post('/settings/builder/image-template/apply', [\App\Http\Controllers\ProductImageTemplateController::class, 'apply'])->name('builder.image-template.apply')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/save-as', [\App\Http\Controllers\ProductImageTemplateController::class, 'saveAs'])->name('builder.image-template.save-as')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/activate', [\App\Http\Controllers\ProductImageTemplateController::class, 'activate'])->name('builder.image-template.activate')->middleware('can:settings.diseno');
         // Diseños guardados ("Mis plantillas")
         // Gestión de plantillas de diseño = ESKALA_ONLY por defecto (matriz de
         // capacidades): capacidad 'plantillas' — solo superadmin, o tenant con

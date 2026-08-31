@@ -20,6 +20,8 @@ function plantillaImagenes() {
     preview: @json(route('builder.image-template.preview')),
     apply:   @json(route('builder.image-template.apply')),
     status:  @json(route('builder.image-template.status')),
+    saveAs:   @json(route('builder.image-template.save-as')),
+    activate: @json(route('builder.image-template.activate')),
   };
   const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
@@ -28,6 +30,7 @@ function plantillaImagenes() {
     tpl: { enabled: false, config: {} },
     cfg: {},
     stats: {}, muestras: [], muestraId: null, logoNegocio: null,
+    guardadas: [], categorias: [], categoriaId: '',
     previewUrl: '', mensaje: '', estado: '', confirmar: null, logoCambio: false,
     _t: null, _tomado: null, _sondeo: null,
 
@@ -43,6 +46,7 @@ function plantillaImagenes() {
         const d = await this.pedir(RUTAS.show, null, 'GET');
         this.tpl = d.template; this.cfg = { ...d.template.config };
         this.stats = d.stats; this.muestras = d.samples; this.logoNegocio = d.business_logo;
+        this.guardadas = d.templates || []; this.categorias = d.categories || [];
         this.logoCambio = !!d.logo_changed;
         this.muestraId = d.samples[0]?.id ?? null;
         this.cargando = false;
@@ -148,7 +152,9 @@ function plantillaImagenes() {
           await this.regenerarMuestra();
           return;
         }
-        const d = await this.pedir(RUTAS.apply, { scope, dry_run: 1 });
+        const cuerpo = { scope, dry_run: 1 };
+        if (scope === 'category') cuerpo.category_id = this.categoriaId;
+        const d = await this.pedir(RUTAS.apply, cuerpo);
         this.confirmar = { scope, count: d.count };
       } catch (e) { this.estado = 'No se pudo preparar la regeneración.'; }
       finally { this.ocupado = false; }
@@ -170,7 +176,9 @@ function plantillaImagenes() {
       const scope = this.confirmar?.scope; this.confirmar = null;
       this.ocupado = true; this.estado = 'Regenerando imágenes…';
       try {
-        const d = await this.pedir(RUTAS.apply, { scope, force: 1 });
+        const cuerpo = { scope, force: 1 };
+        if (scope === 'category') cuerpo.category_id = this.categoriaId;
+        const d = await this.pedir(RUTAS.apply, cuerpo);
         this.stats = d.stats || this.stats;
         this.estado = `${d.count} imágenes en cola.`;
         this.sondear();
@@ -194,6 +202,38 @@ function plantillaImagenes() {
           }
         } catch (e) { clearInterval(this._sondeo); }
       }, 2500);
+    },
+
+    /** Congela la configuración actual como plantilla aparte y la deja activa. */
+    async guardarComo() {
+      const nombre = (prompt('Nombre de la plantilla', 'Campaña ' + new Date().getFullYear()) || '').trim();
+      if (!nombre) return;
+      this.estado = 'Guardando la plantilla…';
+      try {
+        const d = await this.pedir(RUTAS.saveAs, { name: nombre });
+        this.tpl = d.template; this.cfg = { ...d.template.config }; this.stats = d.stats;
+        await this.recargarGuardadas();
+        this.estado = 'Plantilla «' + nombre + '» creada y activa.';
+      } catch (e) { this.estado = 'No se pudo guardar la plantilla.'; }
+    },
+
+    /** Cambiar de plantilla NO regenera nada: solo cambia la que manda. */
+    async activar(id) {
+      this.estado = 'Cambiando de plantilla…';
+      try {
+        const d = await this.pedir(RUTAS.activate, { id: +id });
+        this.tpl = d.template; this.cfg = { ...d.template.config }; this.stats = d.stats;
+        await this.recargarGuardadas();
+        this.refrescar();
+        this.estado = 'Plantilla activa: ' + d.template.name + '. Regenera para aplicarla al catálogo.';
+      } catch (e) { this.estado = 'No se pudo cambiar de plantilla.'; }
+    },
+
+    async recargarGuardadas() {
+      try {
+        const d = await this.pedir(RUTAS.show, null, 'GET');
+        this.guardadas = d.templates || [];
+      } catch (e) { /* la lista se queda como estaba */ }
     },
 
     async restablecer() {
