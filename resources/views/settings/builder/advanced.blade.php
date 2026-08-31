@@ -1,14 +1,80 @@
-{{-- Ajustes avanzados (B7): opciones poco frecuentes, fuera del flujo principal. --}}
+{{-- Etapa 8: configuración técnica en una única ubicación. --}}
+@php
+    // Analítica, píxeles y verificaciones = capacidad restringida
+    // `cap_seo_avanzado` (matriz de capacidades): inyectan scripts de terceros
+    // en la tienda y tocan cómo la indexa Google. El servidor lo exige en
+    // `StoreBuilderController::saveDraftSettings`; aquí solo se evita ofrecer
+    // un control que no se va a guardar.
+    $capSeoAvanzado = \App\Support\Capacidades::permite($project, auth()->user(), 'seo_avanzado');
+@endphp
 <section class="bxb-stage" x-init="loadCopySources()">
-    <h2>Ajustes avanzados</h2>
-    <p class="bxb-stage-sub">Opciones técnicas y herramientas para usuarios avanzados. Nada de esto es necesario para publicar.</p>
+    <h2>Configuración</h2>
+    <p class="bxb-stage-sub">SEO, dominio, integraciones y herramientas técnicas. Las opciones de uso frecuente permanecen en las etapas anteriores.</p>
 
     <div class="bxb-card">
         <strong class="bxb-card-title">SEO básico</strong>
         <label class="bxb-field">Descripción para buscadores (meta description)
             <input type="text" maxlength="200" placeholder="Compra {{ '{' }}productos{{ '}' }} con envío a todo el país…" :value="settings.seo_description||''" @input.debounce.600ms="setSetting('seo_description',$event.target.value)">
         </label>
+        <label class="bxb-field">Palabras clave (separadas por comas)
+            <input type="text" maxlength="300" placeholder="laptops huacho, tienda tecnología, computadoras" :value="settings.seo_keywords||''" @input.debounce.600ms="setSetting('seo_keywords',$event.target.value)">
+        </label>
         <p class="bxb-note">El título SEO es tu Nombre comercial (Etapa 1). Sitemap y robots se generan solos.</p>
+    </div>
+
+    {{-- Analitica e integraciones. Vivian SOLO en settings/seo, que es un
+         elemento de menu aparte, y ADEMAS no se emitian: el comerciante podia
+         guardar su ID de Google Analytics y no se medía nada. El emisor unico
+         es <x-analytics-tags>. --}}
+    @if($capSeoAvanzado)
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Analítica y píxeles</strong>
+        <p class="bxb-note">Pega el identificador que te da cada plataforma. Si el formato no es válido, la etiqueta no se emite.</p>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Google Analytics 4
+                <input type="text" maxlength="40" placeholder="G-XXXXXXXXXX" :value="settings.ga_id||''" @input.debounce.600ms="setSetting('ga_id',$event.target.value)">
+            </label>
+            <label class="bxb-field">Google Tag Manager
+                <input type="text" maxlength="20" placeholder="GTM-XXXXXXX" :value="settings.gtm_id||''" @input.debounce.600ms="setSetting('gtm_id',$event.target.value)">
+            </label>
+            <label class="bxb-field">Meta Pixel (Facebook / Instagram)
+                <input type="text" inputmode="numeric" maxlength="20" placeholder="123456789012345" :value="settings.fb_pixel_id||''" @input.debounce.600ms="setSetting('fb_pixel_id',$event.target.value)">
+            </label>
+            <label class="bxb-field">TikTok Pixel
+                <input type="text" maxlength="30" placeholder="CXXXXXXXXXXXXXXXXXXX" :value="settings.tiktok_pixel_id||''" @input.debounce.600ms="setSetting('tiktok_pixel_id',$event.target.value)">
+            </label>
+        </div>
+    </div>
+
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Verificación de buscadores</strong>
+        <p class="bxb-note">El código que te pide Google o Bing para demostrar que la tienda es tuya.</p>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Google Search Console
+                <input type="text" maxlength="100" :value="settings.google_site_verification||''" @input.debounce.600ms="setSetting('google_site_verification',$event.target.value)">
+            </label>
+            <label class="bxb-field">Bing Webmaster
+                <input type="text" maxlength="100" :value="settings.bing_site_verification||''" @input.debounce.600ms="setSetting('bing_site_verification',$event.target.value)">
+            </label>
+        </div>
+    </div>
+    @endif
+
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Cómo se ve al compartir (Open Graph)</strong>
+        <p class="bxb-note">Lo que aparece cuando alguien pega el enlace de tu tienda en WhatsApp o redes.</p>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Título al compartir
+                <input type="text" maxlength="120" :placeholder="settings.business_name||'Tu tienda'" :value="settings.og_title||''" @input.debounce.600ms="setSetting('og_title',$event.target.value)">
+            </label>
+            <label class="bxb-field">Descripción al compartir
+                <input type="text" maxlength="200" :value="settings.og_description||''" @input.debounce.600ms="setSetting('og_description',$event.target.value)">
+            </label>
+        </div>
+        <label class="bxb-field">Enlace canónico (opcional)
+            <input type="url" maxlength="300" placeholder="https://tutienda.com" :value="settings.seo_canonical||''" @input.debounce.600ms="setSetting('seo_canonical',$event.target.value)">
+            <small class="bxb-note">Solo si tu tienda es alcanzable por varias direcciones y quieres que los buscadores prefieran una.</small>
+        </label>
     </div>
 
     <div class="bxb-card">

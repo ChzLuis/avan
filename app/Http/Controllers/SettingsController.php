@@ -82,9 +82,10 @@ class SettingsController extends Controller
             'slug'          => 'nullable|string|max:120|regex:/^[a-z0-9\-]+$/|unique:projects,slug,'.$project->id,
             'description'   => 'nullable|string|max:500',
             'category'      => 'nullable|string|max:80',
-            'phone'         => 'nullable|string|max:30',
-            'whatsapp'      => 'nullable|string|max:30',
-            'address'       => 'nullable|string|max:200',
+            // Telefono, WhatsApp y direccion YA NO se aceptan por esta puerta:
+            // se editan en el Constructor (etapa Datos del negocio) y publican
+            // a las columnas canonicas. Dos formularios para el mismo dato era
+            // la fuente de la divergencia (revision 01).
             'custom_domain' => $customDomainRule,
         ]);
 
@@ -121,12 +122,18 @@ class SettingsController extends Controller
             'ruc', 'razon_social', 'email', 'country', 'currency', 'sunat_url', 'sunat_url_prod',
             'nubefact_url', 'nubefact_token', 'serie_factura', 'serie_boleta', 'apiperu_token',
             'billing_provider', 'apisperu_token', 'apisperu_ubigeo',
-            // Redes sociales
-            'facebook_url', 'instagram_url', 'tiktok_url', 'youtube_url', 'twitter_url', 'linkedin_url',
-            // SEO
-            'seo_title', 'seo_description', 'seo_keywords',
-            // Envío
-            'shipping_enabled', 'shipping_cost', 'shipping_free_from', 'require_address',
+            // Series de nota y guia: SUNAT las autoriza por negocio.
+            'serie_nota_credito', 'serie_nota_debito', 'serie_guia', 'cuentas_bancarias',
+            // Redes sociales, SEO y envio YA NO se aceptan por esta puerta: son
+            // configuracion de Mi Tienda y se editan en el Constructor
+            // (01 Datos, 08 Configuracion y 05 Venta). Tener dos formularios
+            // para el mismo dato era la fuente de la divergencia. Los valores
+            // existentes no se tocan; solo deja de haber una segunda escritura.
+            //   facebook_url, instagram_url, tiktok_url, youtube_url,
+            //   twitter_url, linkedin_url  -> 01
+            //   seo_title, seo_description, seo_keywords -> 08
+            //   shipping_enabled, shipping_cost, shipping_free_from,
+            //   require_address -> 05
             // Modalidades de venta. Apagadas, el catálogo esconde los campos que
             // no aplican: una tienda que solo vende al detalle cargaba con precio
             // mayorista, cantidad mínima y unidad en cada producto.
@@ -144,6 +151,14 @@ class SettingsController extends Controller
 
     public function seo(Request $request)
     {
+        // Superficie legacy retirada: el Constructor es el unico editor oficial
+        // de Mi Tienda. Sus capacidades ya viven en las etapas correspondientes
+        // (auditadas con `bixo:auditar-constructor`). Se conserva ?classic=1
+        // para el superadmin como salida de emergencia, igual que Diseno clasico.
+        if (!($request->boolean('classic') && auth()->user()?->is_superadmin)) {
+            return redirect()->route('settings.builder');
+        }
+
         $userId = auth()->id();
         $isSuperadmin = auth()->user()->is_superadmin ?? false;
         $projects = $isSuperadmin
@@ -162,6 +177,10 @@ class SettingsController extends Controller
     public function updateSeo(Request $request)
     {
         $userId = auth()->id();
+        // `$isSuperadmin` se usaba sin estar definida en este método: con
+        // `project_id` en la petición, un superadmin caía en la rama de dueño
+        // y recibía 404 sobre un negocio ajeno.
+        $isSuperadmin = auth()->user()->is_superadmin ?? false;
         if ($request->input('project_id')) {
             $project = $isSuperadmin
                 ? Project::findOrFail($request->input('project_id'))
@@ -170,14 +189,24 @@ class SettingsController extends Controller
             $project = app('active_project');
             $this->authorizeProject($project);
         }
+        // SEO básico: disponible con el permiso de siempre.
         $seoKeys = [
             'seo_title', 'seo_description', 'seo_keywords', 'seo_canonical',
             'og_title', 'og_description', 'og_image',
-            'ga_id', 'gtm_id', 'fb_pixel_id', 'tiktok_pixel_id',
-            'robots', 'sitemap_enabled',
-            'schema_type', 'schema_price_range', 'schema_opening_hours',
-            'google_site_verification', 'bing_site_verification',
         ];
+        // SEO técnico (analítica, píxeles de terceros, robots, schema y
+        // verificaciones): inyecta scripts ajenos en la tienda y toca cómo la
+        // indexa Google. Capacidad restringida `cap_seo_avanzado` — el menú ya
+        // no lo ofrece sin ella y aquí tampoco se guarda (matriz de
+        // capacidades). No basta con ocultar la pestaña.
+        if (\App\Support\Capacidades::permite($project, auth()->user(), 'seo_avanzado')) {
+            $seoKeys = array_merge($seoKeys, [
+                'ga_id', 'gtm_id', 'fb_pixel_id', 'tiktok_pixel_id',
+                'robots', 'sitemap_enabled',
+                'schema_type', 'schema_price_range', 'schema_opening_hours',
+                'google_site_verification', 'bing_site_verification',
+            ]);
+        }
         foreach ($seoKeys as $key) {
             if ($request->has($key)) {
                 $project->settings()->updateOrCreate(['key' => $key], ['value' => $request->input($key) ?? '']);
@@ -277,6 +306,14 @@ class SettingsController extends Controller
      */
     public function designer()
     {
+        // Superficie legacy retirada: el Constructor es el unico editor oficial
+        // de Mi Tienda. Sus capacidades ya viven en las etapas correspondientes
+        // (auditadas con `bixo:auditar-constructor`). Se conserva ?classic=1
+        // para el superadmin como salida de emergencia, igual que Diseno clasico.
+        if (!(request()->boolean('classic') && auth()->user()?->is_superadmin)) {
+            return redirect()->route('settings.builder');
+        }
+
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         StorefrontSections::ensure($project);
@@ -313,12 +350,47 @@ class SettingsController extends Controller
         // nginx permite 20M así que la petición sí llega hasta aquí.
         $request->validate(['file' => $isVideo
             ? 'required|file|mimetypes:video/mp4,video/webm|max:51200'
-            : 'required|file|mimes:jpg,jpeg,png,gif,bmp,webp,avif,svg|max:10240']);
-        $path = $request->file('file')->store($isVideo ? "store-sections/{$project->id}" : "logos/{$project->id}", 'public');
+            : 'required|file|mimes:jpg,jpeg,png,gif,bmp,webp,avif,svg|max:20480']);
+
+        $file    = $request->file('file');
+        $carpeta = $isVideo ? "store-sections/{$project->id}" : "logos/{$project->id}";
+
+        // Vídeos y SVG no pasan por el procesador: el primero no es una imagen
+        // de mapa de bits y el segundo ya escala solo sin perder calidad.
+        $esSvg = strtolower((string) $file->getClientOriginalExtension()) === 'svg';
+        if ($isVideo || $esSvg) {
+            $path = $file->store($carpeta, 'public');
+
+            return response()->json(['path' => $path, 'url' => asset('storage/'.$path)]);
+        }
+
+        try {
+            $resultado = app(\App\Support\Imagen\ProcesadorImagenes::class)
+                ->procesar($file, $carpeta, self::perfilDeTipo($type));
+        } catch (\App\Support\Imagen\ImagenNoProcesable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
         return response()->json([
-            'path' => $path,
-            'url'  => asset('storage/' . $path),
+            'path' => $resultado->principal,
+            'url'  => $resultado->urlPrincipal(),
         ]);
+    }
+
+    /**
+     * Qué encuadre necesita cada hueco del diseñador. El nombre del tipo lo
+     * pone el propio constructor al subir, así que basta con traducirlo.
+     */
+    private static function perfilDeTipo(string $type): string
+    {
+        return match (true) {
+            in_array($type, ['logo', 'logo_url', 'favicon', 'yape_qr'], true) => 'logo',
+            $type === 'category_visual'                                       => 'categoria',
+            str_ends_with($type, '_mobile')                                   => 'banner_movil',
+            in_array($type, ['hero', 'promo', 'banner'], true)                => 'banner',
+            str_starts_with($type, 'section_')                                => 'seccion',
+            default                                                           => 'generico',
+        };
     }
 
     public function importLogs()
@@ -353,6 +425,7 @@ class SettingsController extends Controller
             'primary_color','secondary_color','whatsapp_msg',
             'logo_url','logo_height','favicon_url',
             'font_title','font_body','border_radius','currency_symbol',
+            'theme_preset','product_card_style',
             'header_bg_color','header_text_color','header_height','menu_align','header_sticky_mode',
             'footer_bg_color','footer_text_color','footer_logo_height',
             'facebook_url','instagram_url','tiktok_url','youtube_url','twitter_url','linkedin_url',
@@ -576,7 +649,11 @@ class SettingsController extends Controller
         $baseUrl = $this->publicCatalogUrl($project);
         $isPublicUrl = $baseUrl !== '';
 
-        return view('settings.qr', compact('project', 'baseUrl', 'isPublicUrl'));
+        // La vista lee los ajustes de la tienda a traves del contexto; sin el
+        // la pantalla entera reventaba con "Undefined variable $storefrontContext".
+        $storefrontContext = $this->storefrontContexts->forProject($project);
+
+        return view('settings.qr', compact('project', 'baseUrl', 'isPublicUrl', 'storefrontContext'));
     }
 
     private function publicCatalogUrl(Project $project): string
@@ -678,6 +755,14 @@ class SettingsController extends Controller
 
     public function payments()
     {
+        // Superficie legacy retirada: el Constructor es el unico editor oficial
+        // de Mi Tienda. Sus capacidades ya viven en las etapas correspondientes
+        // (auditadas con `bixo:auditar-constructor`). Se conserva ?classic=1
+        // para el superadmin como salida de emergencia, igual que Diseno clasico.
+        if (!(request()->boolean('classic') && auth()->user()?->is_superadmin)) {
+            return redirect()->route('settings.builder');
+        }
+
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         return view('settings.payments', compact('project'));
@@ -694,9 +779,13 @@ class SettingsController extends Controller
             'payment_bank_details','payment_manual_instructions',
             'payment_bank_bcp','payment_bank_interbank','payment_bank_bbva','payment_bank_nacion','payment_bank_scotiabank',
             'culqi_public_key','culqi_mode',
-            'store_mode','quote_price_display',
-            'quote_whatsapp','quote_whatsapp_country','quote_wa_msg',
+            'store_mode','quote_price_display','quote_wa_msg',
         ];
+        // El WhatsApp NO se configura aqui: su fuente canonica es
+        // `projects.whatsapp` (01 Datos del negocio). Esta pantalla lo escribia
+        // y creaba una segunda fuente maestra desde un formulario de pagos.
+        // Se deja de aceptar `quote_whatsapp` y `quote_whatsapp_country`; los
+        // valores existentes no se tocan.
         foreach ($request->only($keys) as $key => $value) {
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
@@ -746,7 +835,7 @@ class SettingsController extends Controller
         //
         // Y estar en el catalogo NO basta: hay que estar SOPORTADA.
         // `CatalogTemplates::isSupported()` ya existia para esto —las
-        // soportadas son ecommerce, direct y computienda— pero aqui no se
+        // soportadas son ecommerce y direct— pero aqui no se
         // usaba, asi que se podia aplicar cualquier clave del catalogo. Entre
         // ellas `editorial`, `luxe` y `bistro`, que ni siquiera tienen Blade
         // (3 de 18): al elegirlas la tienda caia a la plantilla por defecto

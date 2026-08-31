@@ -25,6 +25,11 @@ $storeUrl = $project->custom_domain
 <div class="w-14 border-r border-gray-200 bg-gray-50 hidden md:flex flex-col items-center py-3 gap-2 flex-shrink-0">
 
     @php
+    // SEO tecnico = capacidad restringida `cap_seo_avanzado` (matriz de
+    // capacidades): analitica y pixeles inyectan scripts de terceros en la
+    // tienda, y robots/schema/verificaciones deciden como la indexa Google.
+    // El servidor tambien lo exige en `updateSeo`: ocultar no es proteger.
+    $seoAvanzado = \App\Support\Capacidades::permite($project, auth()->user(), 'seo_avanzado');
     $railSections = [
         ['key'=>'basico',     'icon'=>'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',                                                                                                                         'tip'=>'Básico'],
         ['key'=>'social',     'icon'=>'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z', 'tip'=>'Social'],
@@ -32,6 +37,8 @@ $storeUrl = $project->custom_domain
         ['key'=>'indexacion', 'icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',                                             'tip'=>'Indexación'],
         ['key'=>'schema',     'icon'=>'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',                                                                                                                               'tip'=>'Schema'],
     ];
+    $railSections = array_values(array_filter($railSections, fn ($r) =>
+        $seoAvanzado || ! in_array($r['key'], ['analytics', 'indexacion', 'schema'], true)));
     @endphp
 
     @foreach($railSections as $r)
@@ -66,6 +73,8 @@ $storeUrl = $project->custom_domain
             ['key'=>'indexacion', 'label'=>'Indexación',   'desc'=>'Robots, sitemap, verificación',     'icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
             ['key'=>'schema',     'label'=>'Schema',       'desc'=>'Datos estructurados y rich results','icon'=>'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4'],
         ];
+        $sections = array_values(array_filter($sections, fn ($sec) =>
+            $seoAvanzado || ! in_array($sec['key'], ['analytics', 'indexacion', 'schema'], true)));
         @endphp
 
         @foreach($sections as $sec)

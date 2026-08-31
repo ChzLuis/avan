@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Storefront\BuilderAccess;
+use App\Support\Capacidades;
 use App\Storefront\BuilderDraftService;
 use App\Storefront\BuilderProgress;
 use App\Storefront\BuilderRuleRegistry;
@@ -48,6 +49,8 @@ class StoreBuilderController extends Controller
         // SOLO si esta está vacía. Nunca se sobrescribe información existente;
         // el usuario los ve precargados y decide publicarlos.
         $masterMap = [
+            'business_name' => $project->name,
+            'business_category' => $project->category,
             'logo_url' => $project->logo_url,
             'quote_whatsapp' => $project->whatsapp ?: $project->wa_phone,
             'contact_phone' => $project->phone,
@@ -65,8 +68,7 @@ class StoreBuilderController extends Controller
             $context = BuilderRuleRegistry::context($project); // re-evaluar con lo sembrado
         }
 
-        $supported = collect(\App\Support\CatalogTemplates::all())
-            ->only(['ecommerce', 'direct', 'computienda'])
+        $supported = collect(\App\Support\CatalogTemplates::supported())
             ->map(fn ($t, $key) => [
                 'key' => $key,
                 'name' => $t['label'],
@@ -77,6 +79,11 @@ class StoreBuilderController extends Controller
 
         return view('settings.builder.index', [
             'project' => $project,
+            // Sucursales dentro de la etapa 01: antes era un enlace que sacaba
+            // del Constructor y el usuario perdia el hilo del borrador.
+            'sedes' => \App\Models\Sede::where('project_id', $project->id)
+                ->orderByDesc('is_active')->orderBy('name')
+                ->get(['id', 'name', 'address', 'phone', 'is_active']),
             'progress' => BuilderProgress::for($project, $context),
             'checklist' => PublishChecklist::for($project, $context),
             'settingsDraft' => $this->drafts->effectiveSettings($project),
@@ -151,9 +158,36 @@ class StoreBuilderController extends Controller
             'settings.*' => ['nullable', 'string', 'max:4000'],
         ]);
 
+        // CAPACIDADES RESTRINGIDAS (matriz de capacidades): hay ajustes que no
+        // son "diseño de la tienda" y no basta el permiso para escribirlos.
+        //  · SEO técnico: analítica y píxeles inyectan scripts de terceros en
+        //    la tienda; robots/schema/verificaciones deciden cómo la indexa
+        //    Google.  → `cap_seo_avanzado`
+        //  · Motor de la tienda: cambiarlo reescribe la tienda entera.
+        //    → `cap_builder_avanzado`
+        // Ocultar el control en la vista no protege nada: esta ruta acepta
+        // cualquier clave, así que la puerta tiene que estar AQUÍ.
+        $restringidas = [
+            'seo_avanzado' => [
+                'ga_id', 'gtm_id', 'fb_pixel_id', 'tiktok_pixel_id',
+                'robots', 'sitemap_enabled',
+                'schema_type', 'schema_price_range', 'schema_opening_hours',
+                'google_site_verification', 'bing_site_verification',
+            ],
+            'builder_avanzado' => ['catalog_template'],
+        ];
+        $vetadas = [];
+        foreach ($restringidas as $capacidad => $claves) {
+            if (! Capacidades::permite($project, auth()->user(), $capacidad)) {
+                $vetadas = array_merge($vetadas, $claves);
+            }
+        }
+
         $saved = 0;
+        $omitidas = [];
         foreach ($data['settings'] as $key => $value) {
             if (!is_string($key) || !preg_match('/^[a-z0-9_]{1,80}$/', $key)) continue;
+            if (in_array($key, $vetadas, true)) { $omitidas[] = $key; continue; }
             $this->drafts->putSetting($project, $key, $value, auth()->id());
             $saved++;
         }
@@ -161,6 +195,9 @@ class StoreBuilderController extends Controller
         return response()->json([
             'ok' => true,
             'saved' => $saved,
+            // El cliente sabe que algo no se guardó y por qué, en vez de creer
+            // que sí y descubrirlo al publicar.
+            'omitidas' => $omitidas,
             'progress' => BuilderProgress::for($project),
         ]);
     }
@@ -429,14 +466,18 @@ JS;
         }
 
         abort_unless($request->hasFile('image'), 422);
-        // Misma normalización cuadrada que las fotos de producto.
-        $bytes = \App\Support\SquareImage::jpegBytes($request->file('image')->getRealPath(), 800);
-        abort_unless($bytes !== null, 422);
-        $path = "categories/{$project->id}/" . uniqid('cat_') . '.jpg';
-        \Illuminate\Support\Facades\Storage::disk('public')->put($path, $bytes);
-        $category->update(['image_url' => $path]);
 
-        return response()->json(['ok' => true, 'category_id' => $category->id, 'image_url' => \Illuminate\Support\Facades\Storage::url($path)]);
+        // Misma normalización cuadrada que las fotos de producto.
+        try {
+            $resultado = app(\App\Support\Imagen\ProcesadorImagenes::class)
+                ->procesar($request->file('image'), "categories/{$project->id}", 'categoria');
+        } catch (\App\Support\Imagen\ImagenNoProcesable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        $category->update(['image_url' => $resultado->principal]);
+
+        return response()->json(['ok' => true, 'category_id' => $category->id, 'image_url' => $resultado->urlPrincipal()]);
     }
 
     /** Sanitizado estricto del SVG (solo formas; sin scripts/eventos/enlaces). */
