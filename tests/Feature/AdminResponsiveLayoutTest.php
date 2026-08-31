@@ -41,29 +41,32 @@ class AdminResponsiveLayoutTest extends TestCase
             ->get(route('settings.design', ['s' => $section, 'classic' => 1]));
     }
 
-    /**
-     * SHELL ÚNICO (2026-08-30): todo el Workspace con negocio activo se sirve
-     * con el MISMO shell. Antes convivían dos —el del panel (`#admin-sidebar`)
-     * y el comercial— y el usuario saltaba de menú al navegar dentro de la
-     * misma cara. El drawer accesible que se exige aquí es el del shell único.
-     */
     public function test_admin_shell_exposes_one_accessible_mobile_drawer(): void
     {
         $response = $this->designer()->assertOk();
         $html = $response->getContent();
 
         $response
-            ->assertSee('aria-controls="sidebar"', false)
+            ->assertSee('data-mobile-sidebar-trigger', false)
             ->assertSee('type="button"', false)
-            ->assertSee('aria-label="Abrir menú"', false)
-            ->assertSee('id="sidebar"', false)
-            ->assertSee('aria-label="Navegación principal"', false);
+            ->assertSee('aria-controls="admin-sidebar"', false)
+            ->assertSee(':aria-expanded="sidebarOpen.toString()"', false)
+            ->assertSee('id="admin-sidebar"', false)
+            ->assertSee('aria-label="Navegación principal"', false)
+            ->assertSee('data-mobile-sidebar-close', false)
+            ->assertSee('aria-label="Cerrar navegación principal"', false)
+            ->assertSee('data-mobile-sidebar-overlay', false)
+            ->assertSee('@keydown.escape.window="closeSidebar()"', false);
 
-        // Un solo menú en la página: ni rastro del shell que se retiró.
-        $this->assertSame(1, substr_count($html, 'aria-label="Navegación principal"'));
-        $this->assertSame(0, substr_count($html, 'id="admin-sidebar"'),
-            'Dos shells en la misma pantalla = el usuario salta de menú al navegar');
-        $this->assertStringContainsString('nav-movil-abierto', $html);
+        $this->assertSame(1, substr_count($html, 'id="admin-sidebar"'));
+        $this->assertSame(1, preg_match_all('/<[^>]+\sdata-admin-shell(?:\s|>)/', $html));
+        $this->assertStringContainsString("document.body.classList.toggle('admin-sidebar-open'", $html);
+        $this->assertStringContainsString('this.$refs.sidebarClose?.focus()', $html);
+        $this->assertStringContainsString('this.sidebarTrigger || this.$refs.sidebarTrigger', $html);
+        $this->assertStringContainsString('@media (prefers-reduced-motion:reduce)', $html);
+        $this->assertStringContainsString('.sb-bixo.is-mobile-open', $html);
+        $this->assertStringContainsString('width:min(20rem, calc(100vw - 3rem))', $html);
+        $this->assertStringNotContainsString('|| mob', $html);
     }
 
     public function test_designer_keeps_two_tabs_and_exactly_three_supported_templates(): void
@@ -100,13 +103,17 @@ class AdminResponsiveLayoutTest extends TestCase
         $this->assertSame('/bixoadmin/settings/design', route('settings.design.update', [], false));
     }
 
+    /**
+     * CADA CARA CON SU DISEÑO (decisión del usuario, 2026-08-30).
+     *
+     * Un intento previo sirvió la configuración con el shell comercial y eso
+     * le llevó al panel el encabezado y las alertas de ventas, además de
+     * quitarle el selector de negocio. Revertido: /bixoadmin conserva SU
+     * shell —el del panel— en todas sus pantallas (por eso no hay saltos de
+     * menú), y /bixosales conserva el suyo.
+     */
     public function test_regular_settings_screen_uses_the_same_single_shell(): void
     {
-        // Unificación del Workspace (2026-08-29): "Mi negocio" ya no renderiza
-        // en el shell del panel sino en el shell comercial UNIFICADO — el mismo
-        // que la operación (bixosales). El contrato pasa a ser: un solo shell
-        // para el tenant, con el sidebar maestro (nav-marca) y sin el aside del
-        // panel viejo. Ver WorkspaceShellUnificadoTest.
         [$owner, $project] = $this->adminContext();
 
         $response = $this->actingAs($owner)
@@ -116,9 +123,12 @@ class AdminResponsiveLayoutTest extends TestCase
             ])
             ->get(route('settings', ['p' => $project->id]))
             ->assertOk()
-            ->assertSee('nav-marca-texto', false);
+            ->assertSee('id="admin-sidebar"', false);
 
-        $this->assertSame(0, substr_count($response->getContent(), 'id="admin-sidebar"'),
-            'settings ya no debe montar el sidebar del panel viejo');
+        $html = $response->getContent();
+        // Un solo menú en la pantalla: ni rastro del shell de la otra cara.
+        $this->assertSame(1, substr_count($html, 'id="admin-sidebar"'));
+        $this->assertSame(0, substr_count($html, 'nav-marca-texto'),
+            'La configuración no debe montar el shell de ventas');
     }
 }

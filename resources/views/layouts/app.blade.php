@@ -980,17 +980,21 @@
         {{-- ══ BLOQUE: CONFIGURACIÓN ══ --}}
         @php
         // Constructor guiado: entrada única cuando el flag del proyecto lo permite.
+        // Orden por afinidad (2026-08-30), sin cambiar el diseño del panel:
+        // identidad del negocio → tienda y canales → visibilidad → cobros y
+        // fiscal → datos maestros → permisos → sistema. Antes era una lista
+        // sin criterio y Certificados SUNAT no estaba en NINGUN menú.
         $cfgItems = [
             ['l'=>'Negocio',   'h'=>$pid?route('settings'):'#',           'r'=>'settings_only',    'i'=>'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', 'perm'=>'settings.negocio'],
-            ['l'=>'SEO',       'h'=>$pid?route('settings.seo'):'#',       'r'=>'settings.seo',     'i'=>'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', 'perm'=>null],
-            // Constructor: única pantalla de diseño (la antigua "Diseño" redirige aquí).
             ['l'=>'Constructor', 'h'=>$pid?route('settings.builder'):'#', 'r'=>'settings.builder', 'i'=>'M11 4a1 1 0 011-1h0a1 1 0 011 1v1.07A7.002 7.002 0 0119 12v1h1a1 1 0 011 1v2a1 1 0 01-1 1h-1.07A7.002 7.002 0 0113 20.93V22a1 1 0 01-1 1h0a1 1 0 01-1-1v-1.07A7.002 7.002 0 015 17H4a1 1 0 01-1-1v-2a1 1 0 011-1h1v-1a7.002 7.002 0 016-6.93V4z', 'perm'=>'settings.diseno'],
-            ['l'=>'Pagos',     'h'=>$pid?route('settings.payments'):'#',  'r'=>'settings.payments','i'=>'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', 'perm'=>'settings.pagos'],
-            ['l'=>'Módulos',   'h'=>$pid?route('settings.modules'):'#',   'r'=>'settings.modules', 'i'=>'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', 'perm'=>null],
             ['l'=>'QR',        'h'=>$pid?route('settings.qr'):'#',        'r'=>'settings.qr',      'i'=>'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z', 'perm'=>null],
-            ['l'=>'Roles',     'h'=>$pid?route('roles.index'):'#',        'r'=>'roles.index',      'i'=>'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', 'perm'=>null],
-            ['l'=>'Catálogos', 'h'=>$pid?route('catalogs.index'):'#',     'r'=>'catalogs.index',   'i'=>'M4 6h16M4 10h16M4 14h16M4 18h16', 'perm'=>'settings.catalogos'],
+            ['l'=>'SEO',       'h'=>$pid?route('settings.seo'):'#',       'r'=>'settings.seo',     'i'=>'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', 'perm'=>null],
             ['l'=>'Canales WA','h'=>$pid?route('bots.index'):'#',         'r'=>'bots.index',       'i'=>'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 11.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', 'perm'=>null],
+            ['l'=>'Pagos',     'h'=>$pid?route('settings.payments'):'#',  'r'=>'settings.payments','i'=>'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', 'perm'=>'settings.pagos'],
+            ['l'=>'Certificados SUNAT', 'h'=>$pid?route('certificados.index'):'#', 'r'=>'certificados.index', 'i'=>'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', 'perm'=>'settings.negocio'],
+            ['l'=>'Catálogos', 'h'=>$pid?route('catalogs.index'):'#',     'r'=>'catalogs.index',   'i'=>'M4 6h16M4 10h16M4 14h16M4 18h16', 'perm'=>'settings.catalogos'],
+            ['l'=>'Roles',     'h'=>$pid?route('roles.index'):'#',        'r'=>'roles.index',      'i'=>'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', 'perm'=>null],
+            ['l'=>'Módulos',   'h'=>$pid?route('settings.modules'):'#',   'r'=>'settings.modules', 'i'=>'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', 'perm'=>null],
         ];
         // Flujo de estados: para rubros que lo soportan (lavandería, restaurante, taller, etc.)
         $activeProj = app()->bound('active_project') ? app('active_project') : null;

@@ -1,6 +1,6 @@
-{{-- Unificación del Workspace: Mi negocio vive en el MISMO shell que la
-     operación (bixosales). La URL /bixoadmin/settings no cambia. --}}
-<x-portal-layout layout="comercial" :project="$project" pageTitle="Mi negocio">
+{{-- Cara CONFIGURACIÓN (/bixoadmin): conserva el shell del panel, con su
+     encabezado y su selector de negocio. La operación tiene el suyo. --}}
+<x-app-layout>
 <x-slot name="slot">
 
 @php
@@ -662,15 +662,16 @@
                 <div class="bx-sec">
                     <div class="bx-sec-h"><h3>Contacto</h3><p>Los datos con los que el cliente te escribe o te ubica.</p></div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {{-- Solo lectura (revision 01): telefono, WhatsApp y direccion se
+                         editan en el Constructor y publican a las columnas canonicas.
+                         Dos formularios para el mismo dato = divergencia asegurada. --}}
                     <div>
                         <label class="label">Teléfono</label>
-                        <input type="text" name="phone" class="input mt-1" placeholder="+51 999 999 999"
-                               value="{{ old('phone', $selP->phone) }}">
+                        <input type="text" class="input mt-1 bg-slate-50 text-slate-500" readonly value="{{ $selP->phone }}" placeholder="—">
                     </div>
                     <div>
                         <label class="label">WhatsApp</label>
-                        <input type="text" name="whatsapp" class="input mt-1" placeholder="51999999999"
-                               value="{{ old('whatsapp', $selP->whatsapp) }}">
+                        <input type="text" class="input mt-1 bg-slate-50 text-slate-500" readonly value="{{ $selP->whatsapp }}" placeholder="—">
                     </div>
                     <div>
                         <label class="label">Email de contacto</label>
@@ -679,10 +680,12 @@
                     </div>
                     <div>
                         <label class="label">Dirección</label>
-                        <input type="text" name="address" class="input mt-1" placeholder="Av. Principal 123, Lima"
-                               value="{{ old('address', $selP->address) }}">
+                        <input type="text" class="input mt-1 bg-slate-50 text-slate-500" readonly value="{{ $selP->address }}" placeholder="—">
                     </div>
                     </div>
+                    <p class="text-xs text-slate-500 mt-2">Estos datos se editan en
+                        <a href="{{ route('settings.builder') }}" class="text-indigo-600 font-semibold hover:underline">Mi Tienda → Datos del negocio</a>
+                        y se publican con el borrador. Aquí solo se consultan.</p>
                 </div>
 
                 <div class="bx-sec">
@@ -1431,4 +1434,4 @@
 @endif{{-- /$s !== 'flujo' --}}
 
 </x-slot>
-</x-portal-layout>
+</x-app-layout>

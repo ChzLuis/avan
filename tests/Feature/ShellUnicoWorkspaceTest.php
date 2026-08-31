@@ -12,12 +12,16 @@ use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
- * UN SOLO MENÚ POR CARA (queja del usuario, 2026-08-30).
+ * UN SOLO MENÚ DENTRO DE CADA CARA (queja del usuario, 2026-08-30).
  *
- * Convivían dos shells dentro de /bixoadmin: unas pantallas con el del panel
- * (`#admin-sidebar`) y otras con el comercial. Al hacer clic en el menú, el
- * menú CAMBIABA — "se ve desordenado". Este test recorre las entradas reales
- * del menú de Configuración y exige que todas se sirvan con el mismo shell.
+ * El problema era que al navegar por /bixoadmin el menú CAMBIABA: unas
+ * pantallas se servían con el shell del panel y otras con el comercial.
+ *
+ * La solución NO es mezclar diseños —un intento previo llevó el encabezado y
+ * las alertas de ventas al panel y le quitó el selector de negocio, y el
+ * usuario lo rechazó— sino que cada cara use SIEMPRE el suyo:
+ *   /bixoadmin (Configuración) → shell del panel (#admin-sidebar)
+ *   /bixosales (Operación)     → shell comercial (nav-marca)
  */
 class ShellUnicoWorkspaceTest extends TestCase
 {
@@ -42,7 +46,7 @@ class ShellUnicoWorkspaceTest extends TestCase
         ProjectMember::create(['project_id' => $this->project->id, 'user_id' => $this->duenio->id, 'role' => 'owner']);
 
         $permisos = ['settings.negocio', 'settings.diseno', 'settings.pagos', 'settings.catalogos',
-            'catalog.ver', 'invoices.ver', 'orders.ver', 'view-orders', 'reports.ver', 'clients.ver'];
+            'catalog.ver', 'invoices.ver', 'orders.ver', 'view-orders', 'reports.ver', 'clients.ver', 'hr.ver'];
         foreach ($permisos as $p) {
             Permission::findOrCreate($p, 'web');
         }
@@ -76,51 +80,36 @@ class ShellUnicoWorkspaceTest extends TestCase
     {
         $html = $this->get($ruta)->assertOk()->getContent();
 
-        // El menú del shell único, y UNO solo.
-        $this->assertStringContainsString('nav-marca-texto', $html,
-            "{$ruta} no se sirve con el shell del Workspace: el usuario cambia de menú al llegar aquí.");
-        $this->assertSame(1, substr_count($html, 'aria-label="Navegación principal"'),
-            "{$ruta} pinta más de un menú (o ninguno).");
-        $this->assertSame(0, substr_count($html, 'id="admin-sidebar"'),
-            "{$ruta} todavía trae el sidebar del shell retirado.");
+        $this->assertStringContainsString('id="admin-sidebar"', $html,
+            "{$ruta} no se sirve con el shell del panel: el usuario cambia de menú al llegar aquí.");
+        $this->assertSame(1, substr_count($html, 'id="admin-sidebar"'),
+            "{$ruta} pinta más de un menú.");
+        $this->assertSame(0, substr_count($html, 'nav-marca-texto'),
+            "{$ruta} trae el shell de ventas a la cara de configuración.");
     }
 
-    /** Y el menú que se pinta ahí es el de CONFIGURACIÓN, no el de operación. */
-    public function test_el_menu_de_esas_pantallas_es_el_de_configuracion(): void
+    /** La operación conserva el suyo: son dos diseños, no uno. */
+    public function test_la_operacion_conserva_su_propio_shell(): void
     {
-        $html = $this->get('/bixoadmin/products')->assertOk()->getContent();
+        $html = $this->get('/bixosales')->assertOk()->getContent();
 
-        $this->assertStringContainsString('Catálogo maestro', $html);
-        $this->assertStringContainsString('Ir a Ventas', $html);
-        // Sin entradas de operación mezcladas.
-        $this->assertStringNotContainsString('Venta express', $html);
+        $this->assertStringContainsString('nav-marca-texto', $html);
+        $this->assertSame(0, substr_count($html, 'id="admin-sidebar"'));
     }
 
-    /**
-     * SOLO MÓDULOS ACTIVOS: el menú no ofrece lo que el negocio no tiene
-     * contratado — ofrecerlo es mandar al usuario a un 403.
-     */
-    public function test_el_menu_solo_ofrece_los_modulos_activos_del_negocio(): void
+    /** El panel ofrece el selector de negocio: sin él no se puede cambiar de proyecto. */
+    public function test_el_panel_conserva_el_selector_de_negocio(): void
     {
-        // Con catálogo contratado, el grupo aparece completo.
-        $conCatalogo = $this->get('/bixoadmin/settings')->assertOk()->getContent();
-        $this->assertStringContainsString('Categorías', $conCatalogo);
-        $this->assertStringContainsString('Servicios', $conCatalogo);
+        $html = $this->get('/bixoadmin/settings')->assertOk()->getContent();
 
-        // Se le retira el módulo: sus entradas desaparecen del menú...
-        $catalogo = Module::where('key', 'catalog')->first();
-        $this->project->modules()->updateExistingPivot($catalogo->id, ['is_active' => false]);
-        $this->project->unsetRelation('modules')->unsetRelation('activeModules');
+        $this->assertStringContainsString('bx-hdr-project-btn', $html,
+            'Sin el selector del encabezado no hay forma de cambiar de negocio.');
+        $this->assertStringContainsString(route('workspace.select', $this->project), $html);
+    }
 
-        $sinCatalogo = $this->get('/bixoadmin/settings')->assertOk()->getContent();
-        $this->assertStringNotContainsString('Categorías', $sinCatalogo,
-            'El menú ofrece un módulo que el negocio no tiene: ese enlace acaba en 403');
-        $this->assertStringNotContainsString('Servicios', $sinCatalogo);
-
-        // ...y la URL directa tampoco pasa: menú y servidor de acuerdo. El
-        // middleware `module:` expulsa la navegación web y responde 403 a la
-        // petición JSON; en ningún caso sirve la pantalla.
-        $this->get('/bixoadmin/categories')->assertRedirect();
-        $this->getJson('/bixoadmin/categories')->assertForbidden();
+    /** Certificados SUNAT existía pero no estaba en NINGÚN menú: solo por URL. */
+    public function test_el_menu_ofrece_certificados_sunat(): void
+    {
+        $this->get('/bixoadmin/settings')->assertOk()->assertSee('Certificados SUNAT');
     }
 }

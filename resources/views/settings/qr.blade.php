@@ -1,6 +1,6 @@
-{{-- Unificación del Workspace: el QR vive en el MISMO shell que la operación.
+{{-- Cara CONFIGURACIÓN (/bixoadmin): shell del panel.
      Base adoptada de ARIN (deriva reconciliada 2026-08-29). --}}
-<x-portal-layout layout="comercial" :project="$project" pageTitle="Código QR">
+<x-app-layout>
 <x-slot name="slot">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -369,4 +369,4 @@
 ])
 
 </x-slot>
-</x-portal-layout>
+</x-app-layout>
