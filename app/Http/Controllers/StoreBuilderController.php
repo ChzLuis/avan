@@ -49,8 +49,6 @@ class StoreBuilderController extends Controller
         // SOLO si esta está vacía. Nunca se sobrescribe información existente;
         // el usuario los ve precargados y decide publicarlos.
         $masterMap = [
-            'business_name' => $project->name,
-            'business_category' => $project->category,
             'logo_url' => $project->logo_url,
             'quote_whatsapp' => $project->whatsapp ?: $project->wa_phone,
             'contact_phone' => $project->phone,
@@ -68,7 +66,8 @@ class StoreBuilderController extends Controller
             $context = BuilderRuleRegistry::context($project); // re-evaluar con lo sembrado
         }
 
-        $supported = collect(\App\Support\CatalogTemplates::supported())
+        $supported = collect(\App\Support\CatalogTemplates::all())
+            ->only(['ecommerce', 'direct', 'computienda'])
             ->map(fn ($t, $key) => [
                 'key' => $key,
                 'name' => $t['label'],
@@ -79,11 +78,6 @@ class StoreBuilderController extends Controller
 
         return view('settings.builder.index', [
             'project' => $project,
-            // Sucursales dentro de la etapa 01: antes era un enlace que sacaba
-            // del Constructor y el usuario perdia el hilo del borrador.
-            'sedes' => \App\Models\Sede::where('project_id', $project->id)
-                ->orderByDesc('is_active')->orderBy('name')
-                ->get(['id', 'name', 'address', 'phone', 'is_active']),
             'progress' => BuilderProgress::for($project, $context),
             'checklist' => PublishChecklist::for($project, $context),
             'settingsDraft' => $this->drafts->effectiveSettings($project),
@@ -160,13 +154,13 @@ class StoreBuilderController extends Controller
 
         // CAPACIDADES RESTRINGIDAS (matriz de capacidades): hay ajustes que no
         // son "diseño de la tienda" y no basta el permiso para escribirlos.
-        //  · SEO técnico: analítica y píxeles inyectan scripts de terceros en
-        //    la tienda; robots/schema/verificaciones deciden cómo la indexa
+        //  · SEO tecnico: analitica y pixeles inyectan scripts de terceros en
+        //    la tienda; robots/schema/verificaciones deciden como la indexa
         //    Google.  → `cap_seo_avanzado`
         //  · Motor de la tienda: cambiarlo reescribe la tienda entera.
         //    → `cap_builder_avanzado`
         // Ocultar el control en la vista no protege nada: esta ruta acepta
-        // cualquier clave, así que la puerta tiene que estar AQUÍ.
+        // cualquier clave, asi que la puerta tiene que estar AQUI.
         $restringidas = [
             'seo_avanzado' => [
                 'ga_id', 'gtm_id', 'fb_pixel_id', 'tiktok_pixel_id',
@@ -195,8 +189,8 @@ class StoreBuilderController extends Controller
         return response()->json([
             'ok' => true,
             'saved' => $saved,
-            // El cliente sabe que algo no se guardó y por qué, en vez de creer
-            // que sí y descubrirlo al publicar.
+            // El cliente sabe que algo no se guardo y por que, en vez de creer
+            // que si y descubrirlo al publicar.
             'omitidas' => $omitidas,
             'progress' => BuilderProgress::for($project),
         ]);
