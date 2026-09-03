@@ -59,6 +59,18 @@
     .ce-accion:hover{background:#e0e7ff}
     .ce-accion svg{width:15px;height:15px}
     .ce-vacio{padding:44px 20px;text-align:center;color:#9ca3af;font-size:14px}
+    .ce-accion-ghost{color:#4b5563;background:#f3f4f6;border:0;cursor:pointer;font-family:inherit}
+    .ce-accion-ghost:hover{background:#e5e7eb}
+    .ce-acciones{display:flex;gap:6px;justify-content:flex-end}
+    /* Visor: se mira el comprobante sin perder la búsqueda de detrás. */
+    .ce-visor{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
+    .ce-visor-fondo{position:absolute;inset:0;background:rgba(15,23,42,.55)}
+    .ce-visor-caja{position:relative;display:flex;flex-direction:column;width:min(940px,100%);height:min(88vh,100%);background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(15,23,42,.3)}
+    .ce-visor-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid #e5e7eb;font-size:14px;color:#111827}
+    .ce-visor-acc{display:flex;align-items:center;gap:8px}
+    .ce-visor-x{width:34px;height:34px;font-size:22px;line-height:1;color:#6b7280;background:transparent;border:0;border-radius:8px;cursor:pointer}
+    .ce-visor-x:hover{background:#f3f4f6;color:#111827}
+    .ce-visor iframe{flex:1;width:100%;border:0;background:#f8fafc}
     .ce-pag{margin-top:14px}
 
     /* ── MÓVIL ────────────────────────────────────────────────────────────
@@ -90,7 +102,10 @@
         .ce-tabla td::before{content:attr(data-col);flex:0 0 auto;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em}
         .ce-tabla td.ce-num{padding-bottom:8px;margin-bottom:4px;border-bottom:1px solid #f3f4f6;font-size:15px}
         .ce-tabla td.ce-monto{text-align:right;font-size:15px;font-weight:700;color:#111827}
-        .ce-tabla td.ce-acciones{margin-top:10px;padding-top:10px;border-top:1px solid #f3f4f6}
+        .ce-visor{padding:0}
+        .ce-visor-caja{width:100%;height:100%;border-radius:0}
+        .ce-tabla td.ce-acciones{margin-top:10px;padding-top:10px;border-top:1px solid #f3f4f6;display:flex;gap:8px}
+        .ce-accion{flex:1}
         .ce-tabla td.ce-acciones::before{content:''}
         .ce-accion{width:100%;justify-content:center;min-height:44px;font-size:14px}
         .ce-tabla td.ce-vacio{display:block;text-align:center}
@@ -98,7 +113,7 @@
     }
 </style>
 
-<div class="ce-wrap">
+<div class="ce-wrap" x-data="{ verUrl: '', verNum: '' }">
 
     <div class="ce-head">
         <h1>Comprobantes emitidos</h1>
@@ -163,6 +178,18 @@
                     <td data-col="SUNAT"><span class="ce-chip" style="color:{{ $eColor }};background:{{ $eFondo }}">{{ $eTexto }}</span></td>
                     <td class="ce-monto" data-col="Total">{{ $c->currency ?? 'S/' }} {{ number_format((float) $c->total, 2) }}</td>
                     <td class="ce-acciones" data-col="">
+                        {{-- Ver sin salir de la búsqueda: abrir cada comprobante
+                             en otra pestaña obliga a volver atrás y perder el
+                             filtro que costó escribir. --}}
+                        <button type="button" class="ce-accion ce-accion-ghost"
+                                @click="verUrl = '{{ route('bixosales.facturas.pdf', $c->id) }}'; verNum = '{{ $c->numero }}'"
+                                title="Vista previa de {{ $c->numero }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <span>Ver</span>
+                        </button>
                         <a class="ce-accion" href="{{ route('bixosales.facturas.pdf', $c->id) }}" target="_blank" rel="noopener"
                            title="Ver o descargar el PDF de {{ $c->numero }}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
@@ -187,6 +214,26 @@
     </div>
 
     <div class="ce-pag">{{ $comprobantes->links() }}</div>
+
+    {{-- Visor --}}
+    <div x-show="verUrl" x-cloak class="ce-visor" @keydown.escape.window="verUrl = ''">
+        <div class="ce-visor-fondo" @click="verUrl = ''"></div>
+        <div class="ce-visor-caja">
+            <div class="ce-visor-cab">
+                <strong x-text="verNum"></strong>
+                <span class="ce-visor-acc">
+                    <a :href="verUrl" target="_blank" rel="noopener" class="ce-accion">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                        </svg>
+                        <span>PDF</span>
+                    </a>
+                    <button type="button" class="ce-visor-x" @click="verUrl = ''" aria-label="Cerrar vista previa">&times;</button>
+                </span>
+            </div>
+            <iframe :src="verUrl" title="Vista previa del comprobante"></iframe>
+        </div>
+    </div>
 </div>
 
 </x-slot>

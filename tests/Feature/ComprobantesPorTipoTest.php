@@ -147,14 +147,17 @@ class ComprobantesPorTipoTest extends TestCase
         $this->assertStringNotContainsString('ÚLTIMOS EMITIDOS', mb_strtoupper($html));
     }
 
-    /** Buscar un comprobante sirve para algo: se puede abrir su PDF. */
-    public function test_la_consulta_ofrece_descargar_el_pdf(): void
+    /** Buscar un comprobante sirve para algo: se puede ver y descargar. */
+    public function test_la_consulta_ofrece_vista_previa_y_pdf(): void
     {
         $factura = Invoice::where('project_id', $this->project->id)->where('type', 'factura')->first();
 
-        $this->get('/bixosales/comprobantes-emitidos')
-            ->assertOk()
-            ->assertSee(route('bixosales.facturas.pdf', $factura->id), false);
+        $html = $this->get('/bixosales/comprobantes-emitidos')->assertOk()->getContent();
+
+        $this->assertStringContainsString(route('bixosales.facturas.pdf', $factura->id), $html);
+        // Vista previa: se mira sin salir de la búsqueda.
+        $this->assertStringContainsString('ce-visor', $html);
+        $this->assertStringContainsString('>Ver<', $html);
     }
 
     /** Sin sección, se siguen viendo todos: la lista general no se pierde. */
