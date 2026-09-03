@@ -3,7 +3,8 @@
         ? route('bixosales.facturas')
         : route('invoices.index');
 @endphp
-<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Facturas / Boletas">
+@php $_tituloSeccion = ['factura' => 'Facturas', 'boleta' => 'Boletas', 'nota' => 'Notas de crédito y débito'][$seccion ?? ''] ?? 'Comprobantes'; @endphp
+<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" :pageTitle="$_tituloSeccion">
 
 {{-- ══ El comprobante desde el celular ═══════════════════════════════════
      Quien factura en GABDE está de pie en el mostrador con el teléfono en
@@ -78,54 +79,34 @@
     Nuevo
 </button>
 
+{{-- La lista lateral solo tiene sentido en la vista general de todos los
+     comprobantes. Al entrar a EMITIR (Facturas / Boletas / Notas) sobra: el
+     formulario es el trabajo y la busqueda vive en "Comprobantes emitidos"
+     (separacion 2026-09-02). --}}
+@if(empty($seccion ?? ''))
 {{-- PANEL 2: LISTA --}}
 <div id="inv-lista" class="flex flex-col border-r overflow-hidden flex-shrink-0"
      style="background:#fff; border-color:#e5e7eb; --list-width:340px; width:var(--list-width,340px);"
      :class="panel==='list'||!isMobile ? 'flex' : 'hidden'">
 
-    {{-- Header lista --}}
-    <div id="inv-cab" class="px-4 py-3 flex items-center gap-2 border-b" style="border-color:#e5e7eb;">
-        {{-- min-w-0: sin el, el input se niega a encoger y el boton "+" se
-             sale cortado del panel de 340px (trampa clasica de flexbox). --}}
-        <input x-model="search" type="text" placeholder="Buscar..."
-               class="flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300">
-
-        <select x-model="filterType" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none">
-            <option value="">Todos</option>
-            <option value="boleta">Boleta</option>
-            <option value="factura">Factura</option>
-            <option value="nota_credito">N. Crédito</option>
-            <option value="nota_debito">N. Débito</option>
-        </select>
-        <button @click="openNew()"
-                class="inv-nuevo-desktop flex-shrink-0 w-11 h-11 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors">
+    {{-- Cabecera de la lista lateral. Aquí NO hay buscador ni descarga del
+         registro: esta pantalla es para EMITIR. Buscar un comprobante pasado
+         o sacar el registro del mes vive en "Comprobantes emitidos"
+         (separación 2026-09-02). La lista queda como contexto: lo último
+         emitido, para confirmar de un vistazo que salió. --}}
+    <div id="inv-cab" class="px-4 py-3 border-b flex items-center gap-2" style="border-color:#e5e7eb;">
+        <span class="flex-1 min-w-0 text-xs font-semibold uppercase tracking-wide text-gray-500">Últimos emitidos</span>
+        <a href="{{ route('bixosales.facturas.consulta') }}"
+           class="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap">
+            Ver todos
+        </a>
+        <button @click="openNew(@js($seccion === 'nota' ? 'nota_credito' : ($seccion ?: null)))"
+                class="inv-nuevo-desktop flex-shrink-0 w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors"
+                aria-label="Nuevo comprobante">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
         </button>
-    </div>
-
-    @if(($porVencer['cuantos'] ?? 0) > 0)
-    {{-- La cuenta atras del plazo de SUNAT: un sistema que avisa, no uno que
-         deja morir comprobantes en silencio. --}}
-    <div class="px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-xs text-amber-800 leading-snug">
-        <strong>{{ $porVencer['cuantos'] }} comprobante(s) sin aceptar por SUNAT</strong>
-        @if(($porVencer['dias'] ?? null) !== null)
-            — al más urgente le {{ $porVencer['dias'] == 1 ? 'queda 1 día' : 'quedan '.$porVencer['dias'].' días' }}@if($porVencer['dias'] === 0) <strong> (vence HOY)</strong>@endif.
-        @endif
-        Se reintentan solos cada hora; pasado el plazo ya no se pueden enviar.
-    </div>
-    @endif
-
-    {{-- El Registro de Ventas del mes, listo para el contador. --}}
-    <div id="inv-registro" class="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
-        <input type="month" x-model="mesRegistro" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 flex-1 focus:outline-none"
-               max="{{ now()->format('Y-m') }}">
-        <a :href="`{{ route('invoices.registro') }}?mes=${mesRegistro}`"
-           class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
-           title="CSV del periodo para el contador">
-            Registro de Ventas
-        </a>
     </div>
 
     {{-- Lista --}}
@@ -183,9 +164,24 @@
     </div>
 </div>
 
+@endif
+
 {{-- PANEL 3: DETALLE --}}
 <div class="flex flex-col flex-1 overflow-hidden bg-white"
      :class="panel==='detail'||!isMobile ? 'flex' : 'hidden'">
+
+    @if(($porVencer['cuantos'] ?? 0) > 0)
+    {{-- El plazo de SUNAT avisa SIEMPRE, se este emitiendo o consultando:
+         vivia dentro del panel de lista y al ocultarlo se perdia el aviso. --}}
+    <div class="px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-xs text-amber-800 leading-snug flex-shrink-0">
+        <strong>{{ $porVencer['cuantos'] }} comprobante(s) sin aceptar por SUNAT</strong>
+        @if(($porVencer['dias'] ?? null) !== null)
+            — al más urgente le {{ $porVencer['dias'] == 1 ? 'queda 1 día' : 'quedan '.$porVencer['dias'].' días' }}@if($porVencer['dias'] === 0) <strong> (vence HOY)</strong>@endif.
+        @endif
+        Se reintentan solos cada hora; pasado el plazo ya no se pueden enviar.
+        <a href="{{ route('bixosales.facturas.consulta') }}?estado=error" class="font-semibold underline">Ver cuáles</a>
+    </div>
+    @endif
 
     {{-- Back mobile --}}
     <div class="px-4 py-2 border-b md:hidden" style="border-color:#e5e7eb;">
@@ -761,7 +757,6 @@ function invoicesApp() {
         notaAbierta: false, notaTipo: 'nota_credito', notaMotivo: '01',
         notaDetalle: '', notaEnCurso: false, bajaEnCurso: false,
         buscandoRuc: false,
-        mesRegistro: '{{ now()->format('Y-m') }}',
         editStatus: '',
         saving: false,
         saveError: '',
@@ -778,6 +773,15 @@ function invoicesApp() {
             // set today as default
             const today = new Date().toISOString().slice(0,10);
             this.form.issue_date = today;
+
+            // Al entrar por una seccion concreta del menu, el formulario de
+            // ESE documento sale directo y la lista queda filtrada: es lo que
+            // se viene a hacer. Sin seccion (?tipo= vacio) manda la lista.
+            const seccion = @js($seccion ?? '');
+            if (seccion) {
+                this.filterType = seccion === 'nota' ? '' : seccion;
+                this.openNew(seccion === 'nota' ? 'nota_credito' : seccion);
+            }
         },
 
         get filtered() {
@@ -802,13 +806,19 @@ function invoicesApp() {
             this.editStatus = data.status;
         },
 
-        openNew() {
+        openNew(tipo) {
             this.selected = null;
             this.creating = true;
             this.panel = 'detail';
             const today = new Date().toISOString().slice(0,10);
+            // Cada seccion del menu (Facturas / Boletas / Notas) abre SU
+            // formulario: llegar a "Boletas" y encontrar el tipo en factura
+            // obligaba a corregirlo a mano en cada emision.
+            const t = tipo || 'boleta';
+            const serie = t === 'factura' ? '{{ $serieFactura }}'
+                        : (t === 'boleta' ? '{{ $serieBoleta }}' : '');
             this.form = {
-                type: 'boleta', serie: '{{ $serieBoleta }}', correlativo: '', issue_date: today, due_date: '',
+                type: t, serie: serie, correlativo: '', issue_date: today, due_date: '',
                 client_name: '', client_phone: '', client_email: '',
                 client_doc_type: '', client_doc_number: '', client_address: '',
                 payment_method: '', currency: 'PEN', notes: '',

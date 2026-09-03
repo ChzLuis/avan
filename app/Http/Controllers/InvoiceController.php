@@ -13,12 +13,37 @@ use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
+    /**
+     * Representacion impresa a usar. `moderno` es la de siempre; `clasico`
+     * reproduce el formato encuadrado tradicional. Se elige por negocio con el
+     * ajuste `invoice_template` — lo fiscal es identico en ambas.
+     */
+    private function plantillaImpresa(\App\Models\Project $project): string
+    {
+        return (string) $project->setting('invoice_template') === 'clasico'
+            ? 'invoices.pdf-clasico'
+            : 'invoices.pdf';
+    }
+
     public function index()
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
+
+        // Cada comprobante es su propio trámite ante SUNAT, con su serie y su
+        // numeración: el menú los ofrece por separado (Facturas / Boletas /
+        // Notas) y la lista se filtra con `?tipo=`. Sin valor, se ven todos.
+        $tiposPorSeccion = [
+            'factura' => ['factura'],
+            'boleta'  => ['boleta'],
+            'nota'    => ['nota_credito', 'nota_debito'],
+        ];
+        $seccion = (string) request()->query('tipo', '');
+        $tipos   = $tiposPorSeccion[$seccion] ?? null;
+
         $modelos = $project->invoices()
             ->with('client')
+            ->when($tipos, fn ($q) => $q->whereIn('type', $tipos))
             ->latest()
             ->get();
 
@@ -55,7 +80,51 @@ class InvoiceController extends Controller
             'dias'    => $enRiesgo->min(fn ($i) => max(0, 3 - (int) $i->issue_date->diffInDays(now()->startOfDay()))),
         ];
 
-        return view('invoices.index', compact('project', 'invoices', 'portalLayout', 'serieFactura', 'serieBoleta', 'porVencer'));
+        return view('invoices.index', compact('project', 'invoices', 'portalLayout', 'serieFactura', 'serieBoleta', 'porVencer', 'seccion'));
+    }
+
+    /**
+     * CONSULTA de comprobantes ya emitidos.
+     *
+     * Vive aparte de la emisión a propósito: emitir es el trabajo diario del
+     * cajero y buscar un comprobante pasado (o cuadrar el mes) es del
+     * contador. Tenerlos en la misma pantalla obligaba a que el formulario y
+     * el buscador se disputaran el sitio.
+     */
+    public function consulta(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+
+        $q      = trim((string) $request->query('q', ''));
+        $tipo   = (string) $request->query('tipo', '');
+        $estado = (string) $request->query('estado', '');
+        $desde  = (string) $request->query('desde', '');
+        $hasta  = (string) $request->query('hasta', '');
+
+        $tiposValidos = ['factura', 'boleta', 'nota_credito', 'nota_debito'];
+
+        $comprobantes = $project->invoices()
+            ->with('client')
+            ->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
+                ->where('numero', 'like', "%{$q}%")
+                ->orWhere('client_name', 'like', "%{$q}%")
+                ->orWhere('client_doc_number', 'like', "%{$q}%")))
+            ->when(in_array($tipo, $tiposValidos, true), fn ($b) => $b->where('type', $tipo))
+            ->when($estado !== '', fn ($b) => $b->where('sunat_status', $estado))
+            ->when($desde !== '', fn ($b) => $b->whereDate('issue_date', '>=', $desde))
+            ->when($hasta !== '', fn ($b) => $b->whereDate('issue_date', '<=', $hasta))
+            ->latest('issue_date')
+            ->latest('id')
+            ->paginate(30)
+            ->withQueryString();
+
+        return view('invoices.consulta', [
+            'project'      => $project,
+            'comprobantes' => $comprobantes,
+            'filtros'      => compact('q', 'tipo', 'estado', 'desde', 'hasta'),
+            'portalLayout' => request()->routeIs('bixosales.*') ? 'comercial' : 'panel',
+        ]);
     }
 
     public function show(Invoice $invoice)
@@ -403,7 +472,7 @@ class InvoiceController extends Controller
         $project = app('active_project');
         abort_unless($invoice->project_id === $project->id, 403);
         $invoice->load('items.product');
-        return view('invoices.pdf', compact('project', 'invoice'));
+        return view($this->plantillaImpresa($project), compact('project', 'invoice'));
     }
 
     // ── Portal Facturación ────────────────────────────────────────────────────
@@ -494,7 +563,9 @@ class InvoiceController extends Controller
     private function invoiceCreatePortal(string $slug, string $docType)
     {
         $project      = $this->projectBySlug($slug);
-        $clients      = $project->clients()->orderBy('name')->get(['id','name','email','phone']);
+        // `direccion` viaja tambien: al elegir un cliente el formulario rellenaba
+        // solo el nombre y habia que teclear la direccion fiscal a mano.
+        $clients      = $project->clients()->orderBy('name')->get(['id','name','email','phone','direccion']);
         $productos    = $project->products()->orderBy('name')
                             ->get(['id','name','description','price'])->map(fn($p) => [
                                 'id'    => $p->id,
@@ -546,9 +617,39 @@ class InvoiceController extends Controller
             }
         }
 
+        // Comprobantes recientes para la lupa "traer de uno anterior". La tabla
+        // `clients` no guarda RUC ni DNI, asi que el unico sitio donde vive el
+        // documento fiscal de un receptor es un comprobante ya emitido: de ahi
+        // se recuperan tanto el receptor como las lineas para repetir una venta.
+        $recientes = $project->invoices()
+            ->whereIn('type', ['boleta', 'factura'])
+            ->with('items')
+            ->latest()->limit(40)->get()
+            ->map(fn ($inv) => [
+                'id'         => $inv->id,
+                'numero'     => $inv->numero,
+                'tipo'       => $inv->getTypeLabel(),
+                'fecha'      => $inv->issue_date?->format('d/m/Y'),
+                'total'      => (float) $inv->total,
+                'cliente'    => [
+                    'client_name'       => $inv->client_name,
+                    'client_doc_type'   => $inv->client_doc_type ?? '',
+                    'client_doc_number' => $inv->client_doc_number ?? '',
+                    'client_address'    => $inv->client_address ?? '',
+                ],
+                'lineas'     => $inv->items->map(fn ($i) => [
+                    'desc'  => $i->description,
+                    'unit'  => $i->unit ?? 'NIU',
+                    'qty'   => (float) $i->quantity,
+                    // El formulario trabaja con el precio unitario CON IGV, que
+                    // es lo que guarda unit_price; no hay que recalcular nada.
+                    'price' => (float) $i->unit_price,
+                ])->values()->all(),
+            ])->values();
+
         return view('facturacion.facturas.create', compact(
             'project','clients','catalogo','serieFactura','serieBoleta','docType',
-            'emisorRuc','emisorRazon','emisorDir','fromQuote'
+            'emisorRuc','emisorRazon','emisorDir','fromQuote','recientes'
         ));
     }
 
@@ -616,7 +717,7 @@ class InvoiceController extends Controller
         $project = $this->projectBySlug($slug);
         abort_unless($invoice->project_id === $project->id, 403);
         $invoice->load('items.product');
-        return view('invoices.pdf', compact('project', 'invoice'));
+        return view($this->plantillaImpresa($project), compact('project', 'invoice'));
     }
 
     private function invoiceData(Invoice $invoice): array

@@ -1234,6 +1234,10 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
 
         // Solo se añade middleware: NO se toca logica fiscal ni SUNAT.
         Route::get('/facturas',               [InvoiceController::class, 'index'])->name('facturas')->middleware('can:invoices.ver');
+        // EMITIR y CONSULTAR son trabajos distintos, de personas distintas:
+        // el cajero emite todos los días; buscar un comprobante pasado o sacar
+        // el registro del mes es del contador. Estaban en la misma pantalla.
+        Route::get('/comprobantes-emitidos', [InvoiceController::class, 'consulta'])->name('facturas.consulta')->middleware('can:invoices.ver');
         Route::post('/facturas',              [InvoiceController::class, 'store'])->name('facturas.store')->middleware('can:invoices.crear');
         Route::get('/facturas/{invoice}',     [InvoiceController::class, 'show'])->name('facturas.show')->middleware('can:invoices.ver');
         Route::put('/facturas/{invoice}',     [InvoiceController::class, 'update'])->name('facturas.update')->middleware('can:invoices.editar');
@@ -1244,6 +1248,18 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/facturas/{invoice}/nota',  [NotaController::class, 'opciones'])->name('facturas.nota.opciones')->middleware('can:invoices.ver');
         Route::post('/facturas/{invoice}/nota', [NotaController::class, 'store'])->name('facturas.nota')->middleware('can:invoices.anular');
         Route::post('/facturas/{invoice}/baja', [NotaController::class, 'darDeBaja'])->name('facturas.baja')->middleware('can:invoices.anular');
+
+        // Guias de remision tambien en Ventas. Antes solo existian en el panel,
+        // asi que el enlace del menu de Ventas sacaba al operador a la cara de
+        // Configuracion en mitad de su trabajo. Mismo controlador: la guia es
+        // una sola capacidad, lo unico que cambia es la puerta por la que entra.
+        Route::get('/guias',                [GuiaRemisionController::class, 'index'])->name('guias.index')->middleware('can:invoices.ver');
+        Route::get('/guias/opciones',       [GuiaRemisionController::class, 'opciones'])->name('guias.opciones')->middleware('can:invoices.ver');
+        Route::post('/guias',               [GuiaRemisionController::class, 'store'])->name('guias.store')->middleware('can:invoices.crear');
+        Route::get('/guias/{guia}',         [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
+        Route::get('/guias/{guia}/pdf',     [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');
+        Route::post('/guias/{guia}/enviar', [GuiaRemisionController::class, 'enviar'])->name('guias.enviar')->middleware('can:invoices.crear');
+        Route::delete('/guias/{guia}',      [GuiaRemisionController::class, 'destroy'])->name('guias.destroy')->middleware('can:invoices.anular');
 
         Route::get('/clientes',               [ClientController::class, 'index'])->name('clientes')->middleware('project.can:clients.ver|view-clients');
         // La ficha 360 (`show`) estaba escrita —calcula lo vendido y la deuda

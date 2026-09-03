@@ -59,7 +59,12 @@
         ['Inicio', 'bixosales.dashboard', 'inicio', ['orders.ver', 'view-orders']],
     ], fn ($i) => $_puede($i[3]))) ];
 
-    $_comercial = array_filter([
+    // ── Menú de OPERACIÓN, por áreas separadas (plan §9) ─────────────────
+    // Antes Facturación y Cobranza compartían un cajón "Finanzas" y los
+    // pedidos del bot colgaban de Comercial: son áreas distintas, con dueños
+    // distintos en el negocio, y mezclarlas obliga a leer todo el grupo.
+
+    $_ventas = array_filter([
         [$_nav['pos'] ?: 'Ventas', 'bixosales.pos', 'pos', ['pos.usar']],
         ['Venta express', 'bixosales.ventas.express', 'rayo', ['pos.usar']],
         // El mapa por rubro llamaba "Propuestas" a las cotizaciones en el caso
@@ -75,32 +80,64 @@
          'bixosales.pedidos', 'pedidos', ['orders.ver', 'view-orders']],
         $_nav['hasKitchen'] ? ['Mesas', 'bixosales.mesas', 'mesas', ['orders.ver', 'view-orders']] : null,
         $_nav['hasKitchen'] ? ['Cocina', 'bixosales.cocina', 'cocina', ['orders.ver', 'view-orders']] : null,
-        $_mod['bot'] ? ['Pedidos del bot', 'bixosales.rifas', 'bot', ['rifas.ver']] : null,
-        $_mod['reservas'] ? ['Reservas', 'bixosales.reservas', 'agenda', ['agenda.ver']] : null,
-        $_mod['reparto'] ? ['Reparto', 'bixosales.delivery', 'delivery', ['view-logistics', 'manage-logistics']] : null,
     ], fn ($i) => $i && $_puede($i[3]));
-    if ($_comercial) $_grupos[] = ['titulo' => 'Comercial', 'items' => array_values($_comercial)];
+    if ($_ventas) $_grupos[] = ['titulo' => 'Ventas', 'items' => array_values($_ventas)];
 
-    $_catalogos = array_filter([
+    $_clientes = array_filter([
         ['Clientes', 'bixosales.clientes', 'clientes', ['clients.ver', 'view-clients']],
-        ['Inventario', 'bixosales.reportes.inventario', 'inventario', ['reports.ver']],
         $_mod['revendedor'] ? ['Mis precios', 'bixosales.reseller.precios', 'etiqueta', ['pos.usar']] : null,
     ], fn ($i) => $i && $_puede($i[3]));
-    if ($_catalogos) $_grupos[] = ['titulo' => 'Catálogos', 'items' => array_values($_catalogos)];
+    if ($_clientes) $_grupos[] = ['titulo' => 'Clientes', 'items' => array_values($_clientes)];
 
-    $_finanzas = array_filter([
-        ['Cobranza', 'bixosales.cuentas', 'cobranza', ['reports.ver']],
-        $_mod['facturas'] ? ['Facturas', 'bixosales.facturas', 'factura', ['invoices.ver']] : null,
-        // La guia acompaña a la factura: se emiten una detras de otra.
-        $_mod['facturas'] ? ['Guías de remisión', 'guias.index', 'delivery', ['invoices.ver']] : null,
+    // FACTURACIÓN: lo que se emite ante SUNAT. Separado de la cobranza.
+    // Cada comprobante es un tramite distinto ante SUNAT, con su propia serie
+    // y numeracion: van como entradas INDEPENDIENTES, no bajo un solo enlace.
+    // El listado se filtra con `?tipo=` (InvoiceController::index).
+    $_facturacion = array_filter([
+        $_mod['facturas'] ? ['Facturas', 'bixosales.facturas', 'factura', ['invoices.ver'], null, ['tipo' => 'factura']] : null,
+        $_mod['facturas'] ? ['Boletas', 'bixosales.facturas', 'factura', ['invoices.ver'], null, ['tipo' => 'boleta']] : null,
+        $_mod['facturas'] ? ['Notas de crédito y débito', 'bixosales.facturas', 'cotizacion', ['invoices.ver'], null, ['tipo' => 'nota']] : null,
+        // La guia acompaña a la factura: se emiten una detras de otra. Apunta a
+        // la ruta de Ventas, no a la del panel: era la unica entrada del menu
+        // que sacaba al operador a la cara de Configuracion.
+        $_mod['facturas'] ? ['Guías de remisión', 'bixosales.guias.index', 'delivery', ['invoices.ver']] : null,
+    ], fn ($i) => $i && $_puede($i[3]));
+    if ($_facturacion) $_grupos[] = ['titulo' => 'Facturación', 'items' => array_values($_facturacion)];
+
+    // COBRANZA: el dinero que entra. No es lo mismo que emitir el comprobante.
+    $_cobranza = array_filter([
+        ['Cuentas por cobrar', 'bixosales.cuentas', 'cobranza', ['reports.ver']],
         $_mod['caja'] ? ['Caja', 'bixosales.caja', 'caja', ['caja.ver']] : null,
     ], fn ($i) => $i && $_puede($i[3]));
-    if ($_finanzas) $_grupos[] = ['titulo' => 'Finanzas', 'items' => array_values($_finanzas)];
+    if ($_cobranza) $_grupos[] = ['titulo' => 'Cobranza', 'items' => array_values($_cobranza)];
 
+    $_inventario = array_filter([
+        ['Inventario', 'bixosales.reportes.inventario', 'inventario', ['reports.ver']],
+    ], fn ($i) => $i && $_puede($i[3]));
+    if ($_inventario) $_grupos[] = ['titulo' => 'Inventario', 'items' => array_values($_inventario)];
+
+    // CANALES: lo que llega por el bot o por agenda, con su propia bandeja.
+    $_canales = array_filter([
+        $_mod['bot'] ? ['Pedidos del bot', 'bixosales.rifas', 'bot', ['rifas.ver']] : null,
+        $_mod['reservas'] ? ['Reservas', 'bixosales.reservas', 'agenda', ['agenda.ver']] : null,
+    ], fn ($i) => $i && $_puede($i[3]));
+    if ($_canales) $_grupos[] = ['titulo' => 'Canales', 'items' => array_values($_canales)];
+
+    $_logistica = array_filter([
+        $_mod['reparto'] ? ['Reparto', 'bixosales.delivery', 'delivery', ['view-logistics', 'manage-logistics']] : null,
+    ], fn ($i) => $i && $_puede($i[3]));
+    if ($_logistica) $_grupos[] = ['titulo' => 'Logística', 'items' => array_values($_logistica)];
+
+    // REPORTES: consultar y cuadrar. Emitir es otro trabajo y vive arriba.
     $_analisis = array_filter([
         ['Reportes', 'bixosales.reportes.ventas.general', 'reportes', ['reports.ver']],
+        // Buscar un comprobante ya emitido no es emitir: su buscador estaba
+        // dentro de la pantalla de emisión, disputándole el sitio al formulario.
+        $_mod['facturas'] ? ['Comprobantes emitidos', 'bixosales.facturas.consulta', 'factura', ['invoices.ver']] : null,
+        // El Registro de Ventas es el cierre mensual para el contador.
+        $_mod['facturas'] ? ['Registro de ventas', 'invoices.registro', 'cobranza', ['invoices.ver']] : null,
     ], fn ($i) => $i && $_puede($i[3]));
-    if ($_analisis) $_grupos[] = ['titulo' => 'Análisis', 'items' => array_values($_analisis)];
+    if ($_analisis) $_grupos[] = ['titulo' => 'Reportes', 'items' => array_values($_analisis)];
 
     // Encargos a medida: dependen del PROYECTO que los pidio, no de quien mira.
     $_medida = array_filter([
@@ -140,10 +177,22 @@
                 <p class="nav-grupo nav-label">{{ $g['titulo'] }}</p>
                 <div class="nav-sep" aria-hidden="true"></div>
                 @endif
-                @foreach($g['items'] as [$etiqueta, $ruta, $icono, $permisos])
+                @foreach($g['items'] as $_it)
+                    @php
+                        [$etiqueta, $ruta, $icono, $permisos] = [$_it[0], $_it[1], $_it[2], $_it[3]];
+                        // Varias entradas pueden compartir ruta y distinguirse por
+                        // su filtro (Facturas / Boletas / Notas). La activa es la
+                        // que coincide TAMBIÉN en el parámetro; si no, se marcarían
+                        // las tres a la vez.
+                        $_params = $_it[5] ?? [];
+                        $_enRuta = request()->routeIs($ruta) || request()->routeIs($ruta.'.*');
+                        $_tipoUrl = (string) request()->query('tipo', '');
+                        $activo = $_enRuta && ($_params
+                            ? ($_tipoUrl === ($_params['tipo'] ?? ''))
+                            : $_tipoUrl === '');
+                    @endphp
                     @if(\Illuminate\Support\Facades\Route::has($ruta))
-                    @php $activo = request()->routeIs($ruta) || request()->routeIs($ruta.'.*'); @endphp
-                    <a href="{{ route($ruta) }}"
+                    <a href="{{ route($ruta, $_params) }}"
                        class="nav-item {{ $activo ? 'active' : '' }}"
                        @if($activo) aria-current="page" @endif
                        data-tip="{{ $etiqueta }}" aria-label="{{ $etiqueta }}" title="{{ $etiqueta }}">

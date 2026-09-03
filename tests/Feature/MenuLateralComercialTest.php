@@ -156,6 +156,26 @@ class MenuLateralComercialTest extends TestCase
         $this->get('/bixosales')->assertOk()->assertSee(route('bixosales.facturas'), false);
     }
 
+    /**
+     * Cada comprobante es un trámite distinto ante SUNAT (serie y numeración
+     * propias): el menú los ofrece por SEPARADO, no bajo un único enlace.
+     */
+    public function test_facturas_boletas_y_notas_son_entradas_independientes(): void
+    {
+        $this->project->settings()->create(['key' => 'modulo_facturas', 'value' => '1']);
+        $this->entrar('menu_fiscal', ['orders.ver', 'invoices.ver']);
+
+        $html = $this->get('/bixosales')->assertOk()->getContent();
+
+        foreach (['Facturas', 'Boletas', 'Notas de crédito y débito', 'Guías de remisión'] as $entrada) {
+            $this->assertStringContainsString($entrada, $html, "Falta la sección {$entrada}");
+        }
+        // Y cada una lleva a su propia lista filtrada.
+        foreach (['tipo=factura', 'tipo=boleta', 'tipo=nota'] as $filtro) {
+            $this->assertStringContainsString($filtro, $html);
+        }
+    }
+
     public function test_el_panel_derecho_no_arranca_abierto(): void
     {
         $this->entrar('menu_lector2', ['orders.ver']);
