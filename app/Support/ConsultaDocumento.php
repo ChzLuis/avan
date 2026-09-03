@@ -151,20 +151,26 @@ final class ConsultaDocumento
             return $this->fallo('No encontramos datos para ese RUC.', 'vacio', 'ruc');
         }
 
+        // El proveedor rellena con "-" lo que no publica (el domicilio de un
+        // RUC 10 es dato personal y SUNAT no lo expone). Ese guion no es una
+        // dirección: se trata como vacío para que nadie lo imprima en un
+        // comprobante ni lo tome por un dato real.
+        $limpio = static fn ($v) => in_array(trim((string) $v), ['-', '', 'NULL'], true) ? '' : trim((string) $v);
+
         return [
             'ok'    => true,
             'tipo'  => 'ruc',
             'datos' => [
                 'numero'          => $ruc,
                 'razon_social'    => trim((string) $d['nombre']),
-                'nombre_comercial'=> trim((string) ($d['nombreComercial'] ?? '')),
-                'direccion'       => trim((string) ($d['direccion'] ?? '')),
-                'ubigeo'          => (string) ($d['ubigeo'] ?? ''),
-                'departamento'    => trim((string) ($d['departamento'] ?? '')),
-                'provincia'       => trim((string) ($d['provincia'] ?? '')),
-                'distrito'        => trim((string) ($d['distrito'] ?? '')),
-                'estado'          => trim((string) ($d['estado'] ?? '')),
-                'condicion'       => trim((string) ($d['condicion'] ?? '')),
+                'nombre_comercial'=> $limpio($d['nombreComercial'] ?? ''),
+                'direccion'       => $limpio($d['direccion'] ?? ''),
+                'ubigeo'          => $limpio($d['ubigeo'] ?? ''),
+                'departamento'    => $limpio($d['departamento'] ?? ''),
+                'provincia'       => $limpio($d['provincia'] ?? ''),
+                'distrito'        => $limpio($d['distrito'] ?? ''),
+                'estado'          => $limpio($d['estado'] ?? ''),
+                'condicion'       => $limpio($d['condicion'] ?? ''),
             ],
             'mensaje' => 'Datos encontrados',
             'motivo'  => 'ok',

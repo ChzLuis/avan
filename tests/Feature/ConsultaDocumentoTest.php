@@ -117,6 +117,28 @@ class ConsultaDocumentoTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    /**
+     * SUNAT publica el domicilio de las empresas (RUC 20) pero NO el de una
+     * persona natural con negocio (RUC 10): el proveedor rellena esos campos
+     * con un guion. Ese guion no puede acabar impreso en un comprobante.
+     */
+    public function test_el_guion_del_proveedor_no_se_toma_por_una_direccion(): void
+    {
+        Http::fake(['api.apis.net.pe/*' => Http::response([
+            'nombre' => 'ZAPATA OSORIO ZAIDA', 'estado' => 'ACTIVO', 'condicion' => 'HABIDO',
+            'direccion' => '-', 'ubigeo' => '-', 'distrito' => '', 'provincia' => '', 'departamento' => '',
+        ], 200)]);
+
+        $r = $this->servicio->consultar($this->project, '10476818953');
+
+        $this->assertTrue($r['ok'], 'El contribuyente existe: la consulta es un acierto');
+        $this->assertSame('ZAPATA OSORIO ZAIDA', $r['datos']['razon_social']);
+        $this->assertSame('', $r['datos']['direccion'], 'El guion debe quedar como vacío, no como dirección');
+        $this->assertSame('', $r['datos']['ubigeo']);
+        // Lo que sí publica, se conserva.
+        $this->assertSame('ACTIVO', $r['datos']['estado']);
+    }
+
     // ── Errores: cada uno con su mensaje, ninguno técnico ─────────────────
 
     public static function erroresDelServicio(): array
