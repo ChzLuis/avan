@@ -6,6 +6,38 @@ Ultima actualizacion: 2026-08-30 (noche)
 Branch: `refactor/store-builder-canonical-context`
 Ultimo commit revisado: `5211f7e`
 
+## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
+
+El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia
+TRES trabajos a la vez —emitir, buscar el historico y descargar el Registro
+de Ventas— de tres personas distintas, peleandose el mismo espacio.
+
+- **Emitir** (grupo Facturacion): Facturas / Boletas / Notas C-D son entradas
+  independientes; cada una abre SU formulario con su serie (antes el
+  formulario nacia siempre en 'boleta'). Sin buscador, sin registro y sin
+  panel de lista: el formulario ocupa la pantalla. Filtro por `?tipo=` en
+  `InvoiceController::index`.
+- **Consultar** (grupo Reportes): pantalla nueva `invoices/consulta.blade.php`
+  (`bixosales.facturas.consulta`) con busqueda por numero/cliente/RUC y
+  filtros de tipo, estado SUNAT y fechas. "Registro de ventas" se movio aqui.
+- El aviso del plazo de SUNAT vivia DENTRO del panel de lista: se movio al
+  panel del formulario para no perder un aviso de riesgo fiscal al ocultarlo.
+- Movil: la tabla de consulta pasa a tarjetas con datos etiquetados; campos a
+  16px (iOS hace zoom por debajo). BUG corregido: cerrar el formulario con la
+  X en una seccion dejaba la pantalla EN BLANCO.
+
+Menu de OPERACION reorganizado por areas (antes Facturacion y Cobranza
+compartian cajon "Finanzas" y los pedidos del bot colgaban de Comercial):
+Ventas / Clientes / Facturacion / Cobranza / Inventario / Canales /
+Logistica / Reportes.
+
+**Ojo (dato, no codigo):** un modulo solo se publica en el menu si el negocio
+lo USA o tiene su ajuste `modulo_<clave>`=1. MUSUHUAY tenia el entitlement
+`invoices` contratado pero 0 comprobantes, asi que el grupo Facturacion no
+aparecia y parecia que los cambios "no se veian". Se activo su ajuste.
+
+Commits: `b2bdc82`, `a2815bd`. Suite 1143 pass (2 rojos ajenos de variantes).
+
 ## Cierre 2026-08-30 (noche) — UN SOLO MENU POR CARA (commit `72f9086`, en ARIN)
 
 El usuario reporto que al navegar por /bixoadmin EL MENU CAMBIABA. Causa: la
