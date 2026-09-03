@@ -54,6 +54,10 @@
     .ce-num{font-weight:600;color:#111827;white-space:nowrap}
     .ce-monto{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
     .ce-chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+    .ce-acciones{text-align:right;white-space:nowrap}
+    .ce-accion{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;color:#4f46e5;background:#eef2ff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none}
+    .ce-accion:hover{background:#e0e7ff}
+    .ce-accion svg{width:15px;height:15px}
     .ce-vacio{padding:44px 20px;text-align:center;color:#9ca3af;font-size:14px}
     .ce-pag{margin-top:14px}
 
@@ -86,6 +90,9 @@
         .ce-tabla td::before{content:attr(data-col);flex:0 0 auto;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em}
         .ce-tabla td.ce-num{padding-bottom:8px;margin-bottom:4px;border-bottom:1px solid #f3f4f6;font-size:15px}
         .ce-tabla td.ce-monto{text-align:right;font-size:15px;font-weight:700;color:#111827}
+        .ce-tabla td.ce-acciones{margin-top:10px;padding-top:10px;border-top:1px solid #f3f4f6}
+        .ce-tabla td.ce-acciones::before{content:''}
+        .ce-accion{width:100%;justify-content:center;min-height:44px;font-size:14px}
         .ce-tabla td.ce-vacio{display:block;text-align:center}
         .ce-tabla td.ce-vacio::before{content:''}
     }
@@ -142,6 +149,7 @@
                     <th>Cliente</th>
                     <th>SUNAT</th>
                     <th style="text-align:right">Total</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -154,9 +162,18 @@
                     <td data-col="Cliente">{{ $c->client_name }}</td>
                     <td data-col="SUNAT"><span class="ce-chip" style="color:{{ $eColor }};background:{{ $eFondo }}">{{ $eTexto }}</span></td>
                     <td class="ce-monto" data-col="Total">{{ $c->currency ?? 'S/' }} {{ number_format((float) $c->total, 2) }}</td>
+                    <td class="ce-acciones" data-col="">
+                        <a class="ce-accion" href="{{ route('bixosales.facturas.pdf', $c->id) }}" target="_blank" rel="noopener"
+                           title="Ver o descargar el PDF de {{ $c->numero }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                            </svg>
+                            <span>PDF</span>
+                        </a>
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="ce-vacio">
+                <tr><td colspan="7" class="ce-vacio">
                     @if(array_filter($filtros))
                         Ningún comprobante coincide con esa búsqueda.
                     @else
