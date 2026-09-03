@@ -494,44 +494,32 @@ class InvoiceController extends Controller
     }
 
     /** El nucleo de la consulta: un solo sitio para las dos puertas. */
+    /**
+     * El núcleo de la consulta. Delega en `ConsultaDocumento`, que es el
+     * punto único (antes esto era curl crudo contra otro proveedor, pidiendo
+     * un token `apiperu_token` que ningún proyecto tenía configurado: la
+     * consulta fallaba siempre). La forma de la respuesta se mantiene para
+     * no romper a quien ya la consume.
+     */
     private function consultarRuc(Project $project, string $rucCrudo)
     {
-        $ruc = preg_replace('/\D/', '', $rucCrudo);
+        $r = app(\App\Support\ConsultaDocumento::class)->consultar($project, $rucCrudo);
 
-        if (strlen($ruc) !== 11) {
-            return response()->json(['ok' => false, 'message' => 'RUC debe tener 11 dígitos.']);
-        }
-
-        $token = $project->setting('apiperu_token');
-        if (!$token) {
-            return response()->json(['ok' => false, 'message' => 'Configura el token de APIPERU en Ajustes → Facturación.']);
-        }
-
-        $url = "https://dniruc.apisperu.com/api/v1/ruc/{$ruc}?token={$token}";
-        $ch  = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 10,
-            CURLOPT_SSL_VERIFYPEER => true,
-        ]);
-        $body = curl_exec($ch);
-        $err  = curl_error($ch);
-        curl_close($ch);
-
-        if ($err) {
-            return response()->json(['ok' => false, 'message' => 'Error de conexión: ' . $err]);
-        }
-
-        $data = json_decode($body, true);
-
-        if (!($data['success'] ?? false)) {
-            return response()->json(['ok' => false, 'message' => $data['message'] ?? 'RUC no encontrado.']);
+        if (! $r['ok']) {
+            return response()->json(['ok' => false, 'message' => $r['mensaje']]);
         }
 
         return response()->json([
-            'ok'          => true,
-            'razon_social'=> $data['razonSocial'] ?? '',
-            'direccion'   => $data['direccion']   ?? '',
+            'ok'           => true,
+            'razon_social' => $r['datos']['razon_social'] ?? '',
+            'direccion'    => $r['datos']['direccion'] ?? '',
+            // Datos que antes se descartaban aunque la API los devolviera.
+            'estado'       => $r['datos']['estado'] ?? '',
+            'condicion'    => $r['datos']['condicion'] ?? '',
+            'ubigeo'       => $r['datos']['ubigeo'] ?? '',
+            'distrito'     => $r['datos']['distrito'] ?? '',
+            'provincia'    => $r['datos']['provincia'] ?? '',
+            'departamento' => $r['datos']['departamento'] ?? '',
         ]);
     }
 

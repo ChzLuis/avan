@@ -43,4 +43,11 @@ return [
         'token' => env('WABOT_TOKEN', 'wa-bot-secret-2024'),
     ],
 
+    // Consulta de DNI/RUC (App\Support\ConsultaDocumento). El RUC responde
+    // SIN token; el DNI lo exige desde que el proveedor migró de endpoint.
+    // Respaldo global para negocios que no tengan el suyo en `apiperu_token`.
+    'apisperu' => [
+        'doc_token' => env('APISPERU_DOC_TOKEN'),
+    ],
+
 ];
