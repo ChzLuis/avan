@@ -56,6 +56,39 @@
     .ce-chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
     .ce-vacio{padding:44px 20px;text-align:center;color:#9ca3af;font-size:14px}
     .ce-pag{margin-top:14px}
+
+    /* ── MÓVIL ────────────────────────────────────────────────────────────
+       Una tabla de 6 columnas en 390 px no se lee ni con scroll lateral: se
+       pierde la referencia de qué columna es cada dato. Cada comprobante
+       pasa a ser una tarjeta con sus datos etiquetados, que es como se
+       consulta de pie en el mostrador. */
+    @media (max-width: 720px) {
+        .ce-wrap{padding:14px}
+        .ce-head h1{font-size:18px}
+
+        /* Filtros: cada uno a su ancho, sin apretarse en una línea. */
+        .ce-filtros{gap:8px}
+        .ce-filtros select{flex:1 1 100%}
+        .ce-filtros input[type=date]{flex:1 1 calc(50% - 16px)}
+        .ce-filtros .ce-sep{display:none}
+        .ce-filtros .ce-btn,.ce-filtros .ce-btn-ghost{flex:1 1 auto;text-align:center;min-height:44px;line-height:26px}
+
+        /* Campos a 16px: por debajo, iOS hace zoom al tocarlos y descuadra. */
+        .ce-buscar input,.ce-filtros select,.ce-filtros input[type=date]{font-size:16px;min-height:46px}
+
+        .ce-tabla{border:0;background:transparent;border-radius:0}
+        .ce-scroll{overflow:visible}
+        .ce-tabla thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+        .ce-tabla tr{display:block;margin-bottom:10px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px}
+        .ce-tabla td{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:4px 0;border:0}
+        .ce-tabla tr:hover td{background:transparent}
+        /* La etiqueta la pone el CSS: sin cabecera, el dato solo no dice nada. */
+        .ce-tabla td::before{content:attr(data-col);flex:0 0 auto;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em}
+        .ce-tabla td.ce-num{padding-bottom:8px;margin-bottom:4px;border-bottom:1px solid #f3f4f6;font-size:15px}
+        .ce-tabla td.ce-monto{text-align:right;font-size:15px;font-weight:700;color:#111827}
+        .ce-tabla td.ce-vacio{display:block;text-align:center}
+        .ce-tabla td.ce-vacio::before{content:''}
+    }
 </style>
 
 <div class="ce-wrap">
@@ -115,12 +148,12 @@
                 @forelse($comprobantes as $c)
                 @php [$eTexto, $eColor, $eFondo] = $ce_badge[$c->sunat_status] ?? ['Sin enviar', '#4b5563', '#f3f4f6']; @endphp
                 <tr>
-                    <td class="ce-num">{{ $c->numero }}</td>
-                    <td>{{ $c->getTypeLabel() }}</td>
-                    <td>{{ $c->issue_date?->format('d/m/Y') ?? '—' }}</td>
-                    <td>{{ $c->client_name }}</td>
-                    <td><span class="ce-chip" style="color:{{ $eColor }};background:{{ $eFondo }}">{{ $eTexto }}</span></td>
-                    <td class="ce-monto">{{ $c->currency ?? 'S/' }} {{ number_format((float) $c->total, 2) }}</td>
+                    <td class="ce-num" data-col="Número">{{ $c->numero }}</td>
+                    <td data-col="Tipo">{{ $c->getTypeLabel() }}</td>
+                    <td data-col="Fecha">{{ $c->issue_date?->format('d/m/Y') ?? '—' }}</td>
+                    <td data-col="Cliente">{{ $c->client_name }}</td>
+                    <td data-col="SUNAT"><span class="ce-chip" style="color:{{ $eColor }};background:{{ $eFondo }}">{{ $eTexto }}</span></td>
+                    <td class="ce-monto" data-col="Total">{{ $c->currency ?? 'S/' }} {{ number_format((float) $c->total, 2) }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="6" class="ce-vacio">

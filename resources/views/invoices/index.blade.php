@@ -36,17 +36,11 @@
     }
     #inv-form-pie .btn-primary { flex: 1; font-size: 15px; font-weight: 700; }
 
-    /* Al ganar el ancho completo, la cabecera pasó a apretar buscador,
-       filtro y "+" en una sola línea y los dos últimos se salían. En móvil
-       el "+" sobra —lo reemplaza el botón flotante— y el filtro baja a su
-       propia línea con el buscador arriba, cada uno con su espacio. */
+    /* En móvil el "+" de la cabecera sobra: lo reemplaza el botón flotante,
+       que cae bajo el pulgar. (El buscador y la tira del registro ya no
+       viven aquí: se fueron a "Comprobantes emitidos".) */
     #inv-cab { flex-wrap: wrap; }
-    #inv-cab input { flex: 1 1 100%; }
-    #inv-cab select { flex: 1 1 auto; }
     #inv-cab .inv-nuevo-desktop { display: none !important; }
-    /* La tira del Registro de Ventas también se apila en vez de cortarse. */
-    #inv-registro { flex-wrap: wrap; }
-    #inv-registro input { flex: 1 1 100%; }
 
     /* Botón de nuevo comprobante al alcance del pulgar. En escritorio no
        existe: allí manda el "+" de la cabecera. */
@@ -212,7 +206,7 @@
         <div class="flex flex-col flex-1 overflow-hidden">
             <div class="px-5 py-3 border-b flex items-center justify-between" style="border-color:#e5e7eb;">
                 <h2 class="text-sm font-semibold text-gray-800">Nuevo Comprobante</h2>
-                <button @click="creating=false; selected=null" class="text-gray-400 hover:text-gray-600">
+                <button @click="cerrarFormulario()" class="text-gray-400 hover:text-gray-600" aria-label="Cerrar">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -402,7 +396,7 @@
             </div>
 
             <div id="inv-form-pie" class="px-5 py-3 border-t bg-gray-50 flex justify-end gap-2" style="border-color:#e5e7eb;">
-                <button @click="creating=false" class="btn-secondary text-sm">Cancelar</button>
+                <button @click="cerrarFormulario()" class="btn-secondary text-sm">Cancelar</button>
                 <button @click="save()" :disabled="saving"
                         class="btn-primary text-sm" x-text="saving ? 'Guardando...' : 'Emitir comprobante'"></button>
             </div>
@@ -804,6 +798,19 @@ function invoicesApp() {
             const data = await res.json();
             this.selected = data;
             this.editStatus = data.status;
+        },
+
+        cerrarFormulario() {
+            const seccion = @js($seccion ?? '');
+            this.selected = null;
+            if (seccion) {
+                // Sin lista detras, cerrar dejaba la pantalla en blanco:
+                // se empieza un comprobante nuevo del mismo tipo.
+                this.openNew(seccion === 'nota' ? 'nota_credito' : seccion);
+                return;
+            }
+            this.creating = false;
+            this.panel = 'list';
         },
 
         openNew(tipo) {
