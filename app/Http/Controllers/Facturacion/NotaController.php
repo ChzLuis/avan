@@ -262,14 +262,34 @@ class NotaController extends Controller
     {
         $ajuste = $tipo === 'nota_debito' ? 'serie_nota_debito' : 'serie_nota_credito';
         $serie  = trim((string) $project->setting($ajuste));
+        $letra  = strtoupper(substr((string) $invoice->serie, 0, 1)) ?: 'F';
 
-        if ($serie === '') {
-            return $invoice->serie;
+        // Una serie configurada solo vale si empieza por la letra del documento
+        // afectado; si no, SUNAT rechazaría la nota entera.
+        if ($serie !== '' && strtoupper($serie[0]) === $letra) {
+            return strtoupper($serie);
         }
 
-        // Si la serie configurada no casa con el documento afectado, manda el
-        // afectado: es preferible a que SUNAT rechace toda la nota.
-        return strtoupper($serie[0]) === strtoupper($invoice->serie[0]) ? strtoupper($serie) : $invoice->serie;
+        return self::serieDerivada($letra, $tipo);
+    }
+
+    /**
+     * Serie propia para la nota cuando el negocio no configuró ninguna.
+     *
+     * Antes se reutilizaba la serie del comprobante afectado, y eso hacía que
+     * una factura y su nota de crédito se imprimieran con EL MISMO número:
+     * `F001-00000001` era a la vez una factura de S/ 2 078 y una nota de
+     * S/ 1 650. SUNAT lo admite porque distingue por tipo de documento (01 y
+     * 07), pero para el negocio son dos papeles con el mismo número, y buscar
+     * ese número devuelve dos cosas distintas.
+     *
+     * Se conserva la regla de SUNAT —la nota empieza por la letra del
+     * documento afectado— y se le añade la inicial de su clase: FC01 y BC01
+     * para crédito, FD01 y BD01 para débito.
+     */
+    private static function serieDerivada(string $letra, string $tipo): string
+    {
+        return $letra.($tipo === 'nota_debito' ? 'D' : 'C').'01';
     }
 
     private function porQueNoAdmiteNota(Invoice $invoice): string

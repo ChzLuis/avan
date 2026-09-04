@@ -124,10 +124,14 @@ class NotasYBajaTest extends TestCase
     }
 
     /**
-     * La serie de la nota empieza por la misma letra que el documento afectado:
-     * una nota "B" sobre una factura "F" la rechaza SUNAT.
+     * La serie de la nota empieza por la misma letra que el documento afectado
+     * —una nota "B" sobre una factura "F" la rechaza SUNAT— pero es SUYA.
+     *
+     * Compartir serie con el comprobante hacía que los dos se imprimieran con
+     * el mismo número. Ahora la nota lleva su propia serie: BC01 sobre boleta,
+     * FC01 sobre factura.
      */
-    public function test_la_serie_de_la_nota_sigue_a_la_del_documento_afectado(): void
+    public function test_la_nota_lleva_serie_propia_con_la_letra_del_afectado(): void
     {
         $boleta = $this->facturaAceptada(['type' => 'boleta', 'serie' => 'B001', 'correlativo' => 3,
             'numero' => Invoice::buildNumero('B001', 3)]);
@@ -138,8 +142,79 @@ class NotasYBajaTest extends TestCase
 
         $nota = Invoice::where('type', 'nota_credito')->latest('id')->first();
 
-        $this->assertSame('B001', $nota->serie);
+        $this->assertSame('B', substr($nota->serie, 0, 1), 'SUNAT exige la letra del afectado.');
+        $this->assertSame('BC01', $nota->serie, 'La nota tiene serie propia, no la de la boleta.');
         $this->assertSame('03', $nota->afecta_tipo, 'el afectado es una boleta: código 03');
+    }
+
+    /**
+     * Una factura y su nota no pueden salir con el mismo número impreso.
+     *
+     * Pasaba en producción: `F001-00000001` era a la vez una factura de
+     * S/ 2 078 y una nota de crédito de S/ 1 650. SUNAT lo admite porque
+     * distingue por tipo, pero buscar ese número devolvía dos documentos.
+     */
+    public function test_la_nota_no_repite_el_numero_de_la_factura(): void
+    {
+        $factura = $this->facturaAceptada(['type' => 'factura', 'serie' => 'F001', 'correlativo' => 1,
+            'numero' => Invoice::buildNumero('F001', 1)]);
+
+        $this->postJson('/invoices/'.$factura->id.'/nota', [
+            'type' => 'nota_credito', 'motivo_codigo' => '01',
+        ])->assertSuccessful();
+
+        $nota = Invoice::where('type', 'nota_credito')->latest('id')->first();
+
+        $this->assertSame('FC01', $nota->serie);
+        $this->assertNotSame($factura->numero, $nota->numero,
+            'Dos documentos distintos con el mismo número impreso.');
+    }
+
+    /** La de débito se distingue de la de crédito, no solo del comprobante. */
+    public function test_la_nota_de_debito_tiene_su_propia_serie(): void
+    {
+        $factura = $this->facturaAceptada(['type' => 'factura', 'serie' => 'F001', 'correlativo' => 4,
+            'numero' => Invoice::buildNumero('F001', 4)]);
+
+        $this->postJson('/invoices/'.$factura->id.'/nota', [
+            'type' => 'nota_debito', 'motivo_codigo' => '01',
+        ])->assertSuccessful();
+
+        $nota = Invoice::where('type', 'nota_debito')->latest('id')->first();
+
+        $this->assertSame('FD01', $nota->serie);
+    }
+
+    /** Si el negocio configuró su serie, manda la suya. */
+    public function test_la_serie_configurada_por_el_negocio_manda(): void
+    {
+        $this->project->settings()->create(['key' => 'serie_nota_credito', 'value' => 'F900']);
+
+        $factura = $this->facturaAceptada(['type' => 'factura', 'serie' => 'F001', 'correlativo' => 5,
+            'numero' => Invoice::buildNumero('F001', 5)]);
+
+        $this->postJson('/invoices/'.$factura->id.'/nota', [
+            'type' => 'nota_credito', 'motivo_codigo' => '01',
+        ])->assertSuccessful();
+
+        $this->assertSame('F900', Invoice::where('type', 'nota_credito')->latest('id')->first()->serie);
+    }
+
+    /** Una serie configurada con la letra equivocada NO se usa: SUNAT la rechaza. */
+    public function test_una_serie_configurada_con_letra_equivocada_no_se_usa(): void
+    {
+        $this->project->settings()->create(['key' => 'serie_nota_credito', 'value' => 'B900']);
+
+        $factura = $this->facturaAceptada(['type' => 'factura', 'serie' => 'F001', 'correlativo' => 6,
+            'numero' => Invoice::buildNumero('F001', 6)]);
+
+        $this->postJson('/invoices/'.$factura->id.'/nota', [
+            'type' => 'nota_credito', 'motivo_codigo' => '01',
+        ])->assertSuccessful();
+
+        $nota = Invoice::where('type', 'nota_credito')->latest('id')->first();
+
+        $this->assertSame('FC01', $nota->serie, 'Con letra equivocada se cae a la serie derivada.');
     }
 
     /** Sobre lo que SUNAT no ha aceptado no hay nada que corregir. */
