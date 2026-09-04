@@ -351,7 +351,10 @@ function builderApp(cfg) {
             // Deep-link a la etapa y, en catálogo, abrir la lista exacta.
             const target = itm.target || '';
             const stage = target.split('.')[0];
-            const map = { business: 'business', appearance: 'appearance', home: 'home', catalog: 'catalog', sales: 'sales' };
+            const map = {
+                business: 'business', appearance: 'appearance', home: 'home', catalog: 'catalog',
+                sales: 'sales', pages: 'pages', legal: 'legal', advanced: 'advanced', publish: 'publish'
+            };
             if (map[stage]) this.stage = map[stage];
             const fixMap = { 'catalog.fix-price': 'no_price', 'catalog.fix-image': 'no_image', 'catalog.fix-sku': 'sku_dup', 'catalog.start': 'all' };
             if (fixMap[target]) this.$nextTick(() => this.loadFixList(fixMap[target]));
@@ -701,7 +704,7 @@ function builderApp(cfg) {
         previewWidth: parseInt(localStorage.getItem('bxb_pw') || '430', 10),
         previewScale: 1,
         get previewScaleStyle() {
-            const base = this.device === 'desktop' ? 1280 : 390;
+            const base = this.device === 'desktop' ? 1280 : (this.device === 'tablet' ? 768 : 390);
             const f = this.previewScale;
             return `width:${base}px;transform:scale(${f});transform-origin:top left;height:calc((100%)/${f});`;
         },
@@ -709,7 +712,7 @@ function builderApp(cfg) {
             this.$nextTick(() => {
                 const wrap = this.$refs.previewWrap;
                 if (!wrap) return;
-                const base = this.device === 'desktop' ? 1280 : 390;
+                const base = this.device === 'desktop' ? 1280 : (this.device === 'tablet' ? 768 : 390);
                 const avail = wrap.clientWidth - 24;
                 this.previewScale = Math.min(1, Math.max(0.2, avail / base));
             });

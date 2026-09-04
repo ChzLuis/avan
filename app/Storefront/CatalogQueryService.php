@@ -21,6 +21,44 @@ final class CatalogQueryService
     public const SORTS = ['recommended', 'newest', 'price_asc', 'price_desc', 'name'];
 
     /**
+     * ¿Este negocio exige precio para enseñar un producto?
+     *
+     * Regla general: sí. Un producto a S/ 0.00 con botón de carrito genera
+     * pedidos sin importe, así que se oculta hasta que traiga precio.
+     *
+     * La excepción es la tienda que trabaja POR COTIZACIÓN: ahí no hay precios
+     * por definición, el catálogo es un muestrario y el visitante pide
+     * presupuesto. Exigir precio en ese modo dejaba la tienda vacía y hacía
+     * inalcanzable la tarjeta "Precio a solicitud" que la plantilla ya traía.
+     *
+     * Vive aquí porque este servicio es el que manda en qué se ve del catálogo;
+     * el resto de sitios preguntan, no vuelven a decidir.
+     */
+    public static function exigePrecio(Project $project, ?array $settings = null): bool
+    {
+        // Quien ya tiene los ajustes cargados los pasa y aquí no se toca la
+        // base: el contexto de la tienda se arma con UNA sola lectura de
+        // `project_settings` y `StorefrontQueryBudgetTest` lo vigila.
+        $modo = $settings !== null
+            ? (string) ($settings['store_mode'] ?? 'direct')
+            : (string) $project->setting('store_mode', 'direct');
+
+        return ($modo ?: 'direct') !== 'quote';
+    }
+
+    /** Filtro de "producto mostrable", con la excepción de cotización aplicada. */
+    public static function mostrable($query, Project $project, ?array $settings = null)
+    {
+        $query->where('is_available', true);
+
+        if (self::exigePrecio($project, $settings)) {
+            $query->where('price', '>', 0);
+        }
+
+        return $query;
+    }
+
+    /**
      * Devuelve productos activos del proyecto, filtrados/ordenados/paginados en DB.
      */
     public function paginate(Project $project, Request $request, ?StoreCatalogProfile $profile = null): LengthAwarePaginator
@@ -28,9 +66,7 @@ final class CatalogQueryService
         // Un producto sin precio no se puede comprar: mostrarlo con "S/ 0.00" y
         // botón de carrito activo genera pedidos sin importe. Se excluye del
         // catálogo hasta que la fuente traiga su precio.
-        $query = $project->products()
-            ->where('is_available', true)
-            ->where('price', '>', 0)
+        $query = self::mostrable($project->products(), $project)
             ->with([
                 'mainImage', 'category',
                 'variants' => fn ($builder) => $builder->where('is_active', true)

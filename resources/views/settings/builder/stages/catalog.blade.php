@@ -117,6 +117,25 @@
     </div>
 
     {{-- Perfiles de catálogo (datos vivos: se aplican de inmediato) --}}
+    {{-- Textos del catalogo que vivian solo en Diseño clasico. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Textos del catálogo</strong>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Texto del buscador
+                <input type="text" maxlength="80" placeholder="Buscar productos…" :value="settings.txt_search_placeholder||''" @input.debounce.600ms="setSetting('txt_search_placeholder',$event.target.value)">
+            </label>
+            <label class="bxb-field">Mensaje sin resultados
+                <input type="text" maxlength="120" placeholder="No se encontraron productos" :value="settings.txt_no_results||''" @input.debounce.600ms="setSetting('txt_no_results',$event.target.value)">
+            </label>
+            <label class="bxb-field">Texto “Ver más”
+                <input type="text" maxlength="40" placeholder="Ver todos" :value="settings.txt_view_more||''" @input.debounce.600ms="setSetting('txt_view_more',$event.target.value)">
+            </label>
+            <label class="bxb-field">Texto “Todas las categorías”
+                <input type="text" maxlength="40" placeholder="Todas" :value="settings.txt_all_cats||''" @input.debounce.600ms="setSetting('txt_all_cats',$event.target.value)">
+            </label>
+        </div>
+    </div>
+
     <div class="bxb-card">
         <strong class="bxb-card-title">Perfiles de catálogo</strong>
         <p class="bxb-note">Divide tu tienda en vistas con identidad propia (ej. Hombre / Mujer, Minorista / Mayorista). Aparecen como pestañas en el menú de la tienda. Estos cambios se aplican de inmediato.</p>
@@ -179,57 +198,10 @@
         </div>
     </div>
 
+    {{-- Presentacion de la tarjeta: que DATOS se ven. La accion comercial
+         (comprar, consultar, precio mayorista) se configura en 05 Venta. --}}
     <div class="bxb-card">
-        <strong class="bxb-card-title">Tarjeta de producto — compra y precios</strong>
-        <strong class="bxb-card-title">Tarjeta de producto — compra y precios</strong>
-        <label class="bxb-field">Modo de compra
-            <select :value="settings.purchase_mode||'separate'" @change="setSetting('purchase_mode',$event.target.value)">
-                <option value="separate">Separado Minorista / Mayorista</option>
-                <option value="auto">Precio automático por cantidad</option>
-            </select>
-        </label>
-        <p class="bxb-note" x-show="(settings.purchase_mode||'separate')==='separate'">Cada precio en su bloque, con su propio selector y botón. Es el comportamiento actual.</p>
-        <p class="bxb-note" x-show="settings.purchase_mode==='auto'">Un solo precio que cambia solo al llegar a la cantidad mayorista. Más simple para el comprador.</p>
-
-        <div class="bxb-field bxb-full"><span>Precio</span>
-            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_wholesale_price??'1')!=='0'" @change="setSetting('card_show_wholesale_price',$event.target.checked?'1':'0')"> Mostrar precio mayorista</label>
-            <label class="bxb-switch" x-show="(settings.purchase_mode||'separate')==='separate'"><input type="checkbox" :checked="(settings.card_show_wholesale_condition??'1')!=='0'" @change="setSetting('card_show_wholesale_condition',$event.target.checked?'1':'0')"> Mostrar condición (desde N unidades)</label>
-            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_savings??'0')!=='0'" @change="setSetting('card_show_savings',$event.target.checked?'1':'0')"> Mostrar ahorro por comprar al por mayor</label>
-        </div>
-
-        <div class="bxb-field bxb-full"><span>Cantidad</span>
-            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_quantity??'1')!=='0'" @change="setSetting('card_show_quantity',$event.target.checked?'1':'0')"> Mostrar selector de cantidad</label>
-            <label class="bxb-field" x-show="(settings.card_show_quantity??'1')!=='0'" x-cloak>Estilo del selector
-                <select :value="settings.card_qty_style||'horizontal'" @change="setSetting('card_qty_style',$event.target.value)">
-                    <option value="horizontal">Horizontal</option>
-                    <option value="compact">Compacto</option>
-                </select>
-            </label>
-            <label class="bxb-switch" x-show="settings.purchase_mode==='auto'" x-cloak><input type="checkbox" :checked="(settings.card_show_subtotal??'0')!=='0'" @change="setSetting('card_show_subtotal',$event.target.checked?'1':'0')"> Mostrar subtotal de la línea</label>
-        </div>
-
-        <div class="bxb-field bxb-full"><span>Botón de carrito</span>
-            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_cart??'1')!=='0'" @change="setSetting('card_show_cart',$event.target.checked?'1':'0')"> Mostrar botón agregar</label>
-            <label class="bxb-field" x-show="(settings.card_show_cart??'1')!=='0'" x-cloak>Estilo del botón
-                <select :value="settings.card_cart_style||'full'" @change="setSetting('card_cart_style',$event.target.value)">
-                    <option value="full">Ancho completo</option>
-                    <option value="compact">Compacto</option>
-                    <option value="inline">Junto al selector</option>
-                </select>
-            </label>
-        </div>
-
-        <div class="bxb-field bxb-full"><span>WhatsApp</span>
-            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_whatsapp??'1')!=='0'" @change="setSetting('card_show_whatsapp',$event.target.checked?'1':'0')"> Mostrar "Consultar"</label>
-            <label class="bxb-field" x-show="(settings.card_show_whatsapp??'1')!=='0'" x-cloak>Estilo
-                <select :value="settings.card_whatsapp_style||'outline'" @change="setSetting('card_whatsapp_style',$event.target.value)">
-                    <option value="outline">Botón contorno</option>
-                    <option value="solid">Botón completo</option>
-                    <option value="link">Enlace simple</option>
-                    <option value="icon">Solo icono</option>
-                </select>
-            </label>
-        </div>
+        <strong class="bxb-card-title">Qué se muestra en la tarjeta</strong>
         <div class="bxb-check-inline">
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_quick_view??'1')!=='0'" @change="setSetting('catalog_quick_view',$event.target.checked?'1':'0')"> Vista rápida</label>
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_show_sku??'0')!=='0'" @change="setSetting('catalog_show_sku',$event.target.checked?'1':'0')"> Mostrar SKU</label>

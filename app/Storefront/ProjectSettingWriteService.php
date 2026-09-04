@@ -52,7 +52,7 @@ final class ProjectSettingWriteService
             'float_cart_show', 'float_cart_pos', 'float_wa_show', 'float_wa_tooltip', 'float_wa_pos',
         ],
         'sistema' => [
-            'store_mode', 'quote_price_display', 'quote_whatsapp', 'quote_whatsapp_country', 'quote_wa_msg',
+            'store_mode', 'quote_price_display', 'quote_whatsapp_country', 'quote_wa_msg', // quote_whatsapp: solo Constructor
             'product_button_mode', 'btn_inquiry_text',
             'featured_categories_band_bg', 'featured_categories_band_text', 'flash_sale_style', 'flash_sale_accent',
             'shipping_enabled', 'shipping_cost', 'shipping_free_from', 'require_address',
@@ -61,7 +61,8 @@ final class ProjectSettingWriteService
             'payment_bank_bcp', 'payment_bank_interbank', 'payment_bank_bbva', 'payment_bank_nacion', 'payment_bank_scotiabank',
             'culqi_public_key', 'culqi_mode',
             'footer_tagline', 'footer_copyright', 'footer_dev_text',
-            'contact_email', 'contact_phone', 'business_hours',
+            // contact_email / contact_phone / business_hours salieron de esta
+            // whitelist: se editan solo en el Constructor (revision 01).
             'footer_benefit_1_icon', 'footer_benefit_1_text',
             'footer_benefit_2_icon', 'footer_benefit_2_text',
             'footer_benefit_3_icon', 'footer_benefit_3_text',

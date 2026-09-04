@@ -31,10 +31,10 @@ class StagePresets
         ];
 
         return [
-            'tecnologia' => $p('Tecnología', 'computienda', '#2563eb', '#0f172a', 'Inter', 'direct',
+            'tecnologia' => $p('Tecnología', 'ecommerce', '#2563eb', '#0f172a', 'Inter', 'direct',
                 ['Tecnología para cada necesidad', 'Equipos con garantía y soporte real.', 'ENVÍOS A TODO EL PAÍS'],
                 ['Laptops', 'Computadoras', 'Accesorios', 'Impresoras']),
-            'ferreteria' => $p('Ferretería', 'computienda', '#ea580c', '#1c1917', 'Inter', 'direct',
+            'ferreteria' => $p('Ferretería', 'ecommerce', '#ea580c', '#1c1917', 'Inter', 'direct',
                 ['Todo para tu obra y tu hogar', 'Herramientas y materiales con stock real.', 'RECOJO EN TIENDA EL MISMO DÍA'],
                 ['Herramientas', 'Eléctricos', 'Gasfitería', 'Pinturas']),
             'muebles' => $p('Muebles', 'ecommerce', '#b45309', '#292524', 'Poppins', 'quote',
@@ -58,10 +58,10 @@ class StagePresets
             'servicios' => $p('Servicios', 'direct', '#7c3aed', '#1e1b4b', 'Inter', 'quote',
                 ['Soluciones profesionales', 'Cuéntanos qué necesitas y te cotizamos.', 'ATENCIÓN DE LUNES A SÁBADO'],
                 ['Servicios principales', 'Mantenimiento', 'Proyectos', 'Emergencias']),
-            'mayorista' => $p('Mayorista', 'computienda', '#0891b2', '#0f172a', 'Inter', 'direct',
+            'mayorista' => $p('Mayorista', 'ecommerce', '#0891b2', '#0f172a', 'Inter', 'direct',
                 ['Precios de mayorista, trato directo', 'Compra por volumen con precios escalonados.', 'DESCUENTOS POR CANTIDAD'],
                 ['Abarrotes', 'Limpieza', 'Bebidas', 'Descartables']),
-            'electricidad' => $p('Electricidad e iluminación', 'computienda', '#f59e0b', '#111827', 'Inter', 'direct',
+            'electricidad' => $p('Electricidad e iluminación', 'ecommerce', '#f59e0b', '#111827', 'Inter', 'direct',
                 ['Ilumina y protege tus espacios', 'Reflectores y material eléctrico con garantía.', 'ASESORÍA TÉCNICA POR WHATSAPP'],
                 ['Reflectores', 'Iluminación LED', 'Cables', 'Accesorios eléctricos']),
         ];

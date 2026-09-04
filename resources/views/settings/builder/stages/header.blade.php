@@ -2,7 +2,7 @@
      colores/barra superior y administración del menú. TODO lo del header vive aquí. --}}
 <section class="bxb-stage">
     <h2>Encabezado y navegación</h2>
-    <p class="bxb-stage-sub">Elige el modelo de encabezado, personalízalo y administra el menú. Los datos (categorías, perfiles, WhatsApp) vienen del catálogo y de Mi negocio: aquí solo decides cómo se muestran.</p>
+    <p class="bxb-stage-sub">Elige el modelo de encabezado, personalízalo y administra el menú. Los datos (categorías, perfiles y WhatsApp) vienen del Catálogo y de Datos del negocio: aquí solo decides cómo se muestran.</p>
 
     {{-- Encabezado y navegación: 8 presets modulares (HeaderPresets) --}}
     <div class="bxb-card" x-data='hpPresetPicker(@json(\App\Support\HeaderPresets::forBuilder()))'>

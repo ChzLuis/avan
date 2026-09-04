@@ -6,7 +6,10 @@
     <div class="bxb-card">
         <div class="bxb-grid2">
             <label class="bxb-field">Nombre comercial
-                <input type="text" maxlength="120" placeholder="Mi Negocio" :value="settings.seo_title||''" @input.debounce.600ms="setSetting('seo_title',$event.target.value)">
+                {{-- Clave propia: antes vivia en seo_title y el nombre del negocio
+                     quedaba atado al titulo de buscadores. Al publicar se escribe
+                     en projects.name (la fuente que leen facturas, PDF y el bot). --}}
+                <input type="text" maxlength="100" placeholder="Mi Negocio" :value="settings.business_name||''" @input.debounce.600ms="setSetting('business_name',$event.target.value)">
             </label>
             <label class="bxb-field">Rubro
                 <select :value="settings.business_category||''" @change="applyRubro($event.target.value)">
@@ -42,6 +45,25 @@
     </div>
 
     <div class="bxb-card">
+        <strong class="bxb-card-title">Redes sociales</strong>
+        <p class="bxb-note">Se reutilizan en el encabezado, Contacto y pie de página. Escríbelas una sola vez.</p>
+        <div class="bxb-grid2">
+            @foreach([
+                ['facebook_url', 'Facebook', 'https://facebook.com/tu-tienda'],
+                ['instagram_url', 'Instagram', 'https://instagram.com/tu-tienda'],
+                ['tiktok_url', 'TikTok', 'https://tiktok.com/@tu-tienda'],
+                ['youtube_url', 'YouTube', 'https://youtube.com/@tu-tienda'],
+                ['linkedin_url', 'LinkedIn', 'https://linkedin.com/company/tu-tienda'],
+                ['twitter_url', 'X / Twitter', 'https://x.com/tu-tienda'],
+            ] as [$key, $label, $placeholder])
+            <label class="bxb-field">{{ $label }}
+                <input type="url" maxlength="500" placeholder="{{ $placeholder }}" :value="settings.{{ $key }}||''" @input.debounce.600ms="setSetting('{{ $key }}',$event.target.value)">
+            </label>
+            @endforeach
+        </div>
+    </div>
+
+    <div class="bxb-card">
         <div class="bxb-grid2">
             <label class="bxb-field">WhatsApp de ventas *
                 <input type="text" inputmode="tel" maxlength="15" placeholder="987654321" :value="settings.quote_whatsapp||''" @input.debounce.600ms="setSetting('quote_whatsapp',$event.target.value)">
@@ -52,14 +74,7 @@
             <label class="bxb-field">Teléfono fijo o alternativo
                 <input type="text" inputmode="tel" maxlength="20" placeholder="(01) 234 5678" :value="settings.contact_phone||''" @input.debounce.600ms="setSetting('contact_phone',$event.target.value)">
             </label>
-            <label class="bxb-field">Moneda
-                <select :value="settings.currency_symbol||'S/'" @change="setSetting('currency_symbol',$event.target.value)">
-                    <option value="S/">S/ — Sol peruano</option>
-                    <option value="$">$ — Dólar</option>
-                    <option value="€">€ — Euro</option>
-                </select>
-            </label>
-            <p class="bxb-note" style="align-self:end">La forma de vender (compra / cotización) se decide en <button type="button" class="bxb-link" @click="stage='sales'">Ventas y operación</button>.</p>
+            <p class="bxb-note" style="align-self:end">La moneda y la forma de vender (compra / cotización) se configuran en <button type="button" class="bxb-link" @click="stage='sales'">Venta</button>.</p>
         </div>
     </div>
 
@@ -80,6 +95,25 @@
                 <input type="text" maxlength="160" placeholder="Lunes a sábado, 9am – 6pm" :value="settings.business_hours||''" @input.debounce.600ms="setSetting('business_hours',$event.target.value)">
             </label>
         </div>
+        <div x-show="settings.has_physical_store==='1'" x-cloak>
+            @if(($sedes ?? collect())->isNotEmpty())
+            {{-- Las sucursales se VEN aqui (revision 01): antes solo habia un
+                 enlace que sacaba del Constructor. La edicion sigue en su modulo. --}}
+            <div class="bxb-sedes">
+                @foreach($sedes as $sede)
+                <div class="bxb-sede {{ $sede->is_active ? '' : 'bxb-sede-off' }}">
+                    <strong>{{ $sede->name }}</strong>
+                    <span>{{ $sede->address ?: 'Sin dirección' }}{{ $sede->phone ? ' · '.$sede->phone : '' }}</span>
+                    @unless($sede->is_active)<em>inactiva</em>@endunless
+                </div>
+                @endforeach
+            </div>
+            @endif
+            <div class="bxb-actions-row">
+                <a class="bxb-btn" href="{{ route('sedes.index') }}" target="_blank" rel="noopener">{{ ($sedes ?? collect())->isEmpty() ? 'Agregar sucursales ↗' : 'Administrar sucursales ↗' }}</a>
+                <small>La dirección principal permanece aquí; usa Sucursales cuando tienes más de un local.</small>
+            </div>
+        </div>
     </div>
 
     {{-- Datos fiscales: MISMAS claves que facturación y Libro de Reclamaciones (ruc / razon_social).
@@ -89,7 +123,7 @@
         <div class="bxb-card">
             <div class="bxb-grid2">
                 <label class="bxb-field">Razón social
-                    <input type="text" maxlength="200" :placeholder="settings.seo_title||'Mi Negocio S.A.C.'" :value="settings.razon_social||''" @input.debounce.600ms="setSetting('razon_social',$event.target.value)">
+                    <input type="text" maxlength="200" :placeholder="settings.business_name||'Mi Negocio S.A.C.'" :value="settings.razon_social||''" @input.debounce.600ms="setSetting('razon_social',$event.target.value)">
                 </label>
                 <label class="bxb-field">RUC
                     <input type="text" inputmode="numeric" maxlength="11" placeholder="20123456789" :value="settings.ruc||''" @input.debounce.600ms="setSetting('ruc',$event.target.value)">
@@ -99,16 +133,4 @@
         </div>
     </details>
 
-    {{-- SEO para buscadores (colapsado: opcional) --}}
-    <details class="bxb-advanced">
-        <summary>Cómo aparecerá mi tienda en Google (SEO)</summary>
-    <div class="bxb-card">
-        <label class="bxb-field">Descripción para buscadores
-            <textarea rows="2" maxlength="300" placeholder="Tienda online de tecnología en Huacho: laptops, PCs y accesorios con envío a todo el Perú." @input.debounce.600ms="setSetting('seo_description',$event.target.value)" x-text="settings.seo_description||''"></textarea>
-        </label>
-        <label class="bxb-field">Palabras clave (separadas por comas)
-            <input type="text" maxlength="300" placeholder="laptops huacho, tienda tecnología, computadoras" :value="settings.seo_keywords||''" @input.debounce.600ms="setSetting('seo_keywords',$event.target.value)">
-        </label>
-    </div>
-    </details>
 </section>

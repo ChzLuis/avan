@@ -68,6 +68,19 @@ body.storefront-theme-ecommerce .sf-button-secondary{border-color:var(--theme-bo
 body.storefront-theme-ecommerce .sf-hero-nav{right:22px;bottom:20px}
 body.storefront-theme-ecommerce .sf-hero-nav button{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.94)}
 body.storefront-theme-ecommerce .sf-benefits{padding-block:26px;border-block:1px solid var(--theme-border);background:var(--theme-surface)}
+.sf-loc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.sf-loc{display:flex;flex-direction:column;overflow:hidden}
+.sf-loc-map iframe{width:100%;height:190px;border:0;display:block;background:#e2e8f0}
+.sf-loc-body{padding:16px 18px}
+.sf-loc-body h3{margin:0;font-size:16px}
+.sf-loc-body p{margin:6px 0 0;font-size:13.5px;line-height:1.55}
+.sf-loc-dato{opacity:.75}
+.sf-loc-link{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:700;text-decoration:none}
+.sf-loc-grid.is-side{grid-template-columns:1fr}
+.sf-loc-grid.is-side .sf-loc{flex-direction:row}
+.sf-loc-grid.is-side .sf-loc-map{flex:0 0 46%}
+.sf-loc-grid.is-side .sf-loc-map iframe{height:100%;min-height:220px}
+@media(max-width:760px){.sf-loc-grid.is-side .sf-loc{flex-direction:column}.sf-loc-grid.is-side .sf-loc-map iframe{height:180px}}
 body.storefront-theme-ecommerce .sf-benefit-grid{gap:0}
 body.storefront-theme-ecommerce .sf-benefit{padding:14px 24px;border:0;border-right:1px solid var(--theme-border);border-radius:0;box-shadow:none}
 body.storefront-theme-ecommerce .sf-benefit:last-child{border-right:0}

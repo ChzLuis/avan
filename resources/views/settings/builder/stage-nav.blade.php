@@ -1,11 +1,15 @@
 {{-- Navegación lateral por etapas (única navegación principal) --}}
 <nav class="bxb-stages" aria-label="Etapas del constructor">
+    <div class="bxb-stages-head">
+        <strong>MI TIENDA</strong>
+        <small>Configura y publica paso a paso</small>
+    </div>
     <ol>
         <template x-for="(s, i) in stageList" :key="s.key">
             <li>
                 <button type="button" class="bxb-stage-item" :class="[stage===s.key&&'is-active']" :data-state="s.state"
                         @click="stage=s.key; highlightForStage()" :aria-current="stage===s.key ? 'step' : false">
-                    <span class="bxb-stage-n" x-text="s.state==='complete' ? '✓' : (i+1)"></span>
+                    <span class="bxb-stage-n" x-text="String(i+1).padStart(2,'0')"></span>
                     <span class="bxb-stage-copy">
                         <strong x-text="s.label"></strong>
                         <small>
@@ -20,10 +24,4 @@
             </li>
         </template>
     </ol>
-    <div class="bxb-stages-foot">
-        <button type="button" class="bxb-stage-item" :class="stage==='advanced'&&'is-active'" @click="stage='advanced'">
-            <span class="bxb-stage-n">⚙</span>
-            <span class="bxb-stage-copy"><strong>Ajustes avanzados</strong><small>SEO, copiar tienda, técnico</small></span>
-        </button>
-    </div>
 </nav>

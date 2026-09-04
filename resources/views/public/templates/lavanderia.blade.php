@@ -247,6 +247,8 @@ function store() {
   };
 }
 </script>
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 
 <body class="bg-white text-gray-800" x-data="store()" x-cloak>
@@ -428,6 +430,7 @@ window._allProducts = @json($_allProducts);
             class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition mt-2">{{ $cat->name }}</button>
     @endforeach
   </div>
+    <x-store-menu :menu="$storeMenu ?? null" :project="$project" :store-view="$storeView ?? 'home'" />
 </header>
 
 {{-- ══════════════════════════════════════ --}}

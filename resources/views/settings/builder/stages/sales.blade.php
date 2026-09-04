@@ -3,6 +3,20 @@
     <h2>Venta y operación</h2>
     <p class="bxb-stage-sub">Cómo vendes, cómo cobras, cómo entregas y qué confianza das. Solo verás lo que aplica a tus elecciones.</p>
 
+    {{-- Moneda: vivia en Datos del negocio, pero es configuracion de VENTA
+         (revision 01). Misma clave: nada que migrar. --}}
+    <div class="bxb-card">
+        <div class="bxb-grid2">
+            <label class="bxb-field">Moneda
+                <select :value="settings.currency_symbol||'S/'" @change="setSetting('currency_symbol',$event.target.value)">
+                    <option value="S/">S/ — Sol peruano</option>
+                    <option value="$">$ — Dólar</option>
+                    <option value="€">€ — Euro</option>
+                </select>
+            </label>
+        </div>
+    </div>
+
     {{-- 1. ¿Cómo quieres vender? — UNA sola decisión gobierna toda la experiencia
          (unifica el antiguo "Modo de venta" + "Botones del producto"). --}}
     <div class="bxb-card" x-data="{
@@ -147,6 +161,92 @@
         <p class="bxb-note" x-show="settings.payment_manual_enabled!=='1'">Sin pagos manuales, los pedidos se coordinan por WhatsApp (contra entrega).</p>
     </div>
 
+    {{-- Pasarelas e instrucciones: vivian SOLO en settings/payments, que es un
+         elemento de menu aparte. Culqi y Mercado Pago los usan 4 tiendas cada
+         uno y desde el Constructor eran invisibles. El WhatsApp NO se pide
+         aqui: su fuente canonica es 01 Datos del negocio. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">2b · Pasarelas de pago</strong>
+        <p class="bxb-note">Cobro con tarjeta. Necesitas una cuenta en la pasarela; las llaves te las da su panel.</p>
+
+        <label class="bxb-switch"><input type="checkbox" :checked="settings.culqi_enabled==='1'" @change="setSetting('culqi_enabled',$event.target.checked?'1':'0')"> Cobrar con <strong>Culqi</strong></label>
+        <div x-show="settings.culqi_enabled==='1'" x-cloak class="bxb-grid2">
+            <label class="bxb-field">Llave pública de Culqi
+                <input type="text" maxlength="120" placeholder="pk_test_..." :value="settings.culqi_public_key||''" @input.debounce.600ms="setSetting('culqi_public_key',$event.target.value)">
+                <small class="bxb-note">Solo la llave <b>pública</b>. La privada nunca se guarda aquí.</small>
+            </label>
+            <label class="bxb-field">Modo
+                <select :value="settings.culqi_mode||'test'" @change="setSetting('culqi_mode',$event.target.value)">
+                    <option value="test">Pruebas — no se cobra de verdad</option>
+                    <option value="live">Producción — cobros reales</option>
+                </select>
+            </label>
+        </div>
+
+        <label class="bxb-switch"><input type="checkbox" :checked="settings.mp_enabled==='1'" @change="setSetting('mp_enabled',$event.target.checked?'1':'0')"> Cobrar con <strong>Mercado Pago</strong></label>
+
+        <label class="bxb-field">Instrucciones para el pago manual
+            <textarea rows="3" maxlength="600" placeholder="Envíanos la captura de tu transferencia por WhatsApp y confirmamos tu pedido." @input.debounce.600ms="setSetting('payment_manual_instructions',$event.target.value)" x-text="settings.payment_manual_instructions||''"></textarea>
+            <small class="bxb-note">Se muestra en el checkout junto a Yape, Plin y las cuentas bancarias.</small>
+        </label>
+    </div>
+
+    {{-- Accion comercial de la tarjeta. Estaba en 04 Catalogo, pero 04 solo
+         controla PRESENTACION: que exista el boton de comprar, el de consultar
+         o el precio mayorista es decision de Venta. Los estilos viajan con su
+         control para no partir la tarjeta entre dos etapas. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">2c · Botones y precios en la tarjeta</strong>
+        <label class="bxb-field">Modo de compra
+            <select :value="settings.purchase_mode||'separate'" @change="setSetting('purchase_mode',$event.target.value)">
+                <option value="separate">Separado Minorista / Mayorista</option>
+                <option value="auto">Precio automático por cantidad</option>
+            </select>
+        </label>
+        <p class="bxb-note" x-show="(settings.purchase_mode||'separate')==='separate'">Cada precio en su bloque, con su propio selector y botón. Es el comportamiento actual.</p>
+        <p class="bxb-note" x-show="settings.purchase_mode==='auto'">Un solo precio que cambia solo al llegar a la cantidad mayorista. Más simple para el comprador.</p>
+
+        <div class="bxb-field bxb-full"><span>Precio</span>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_wholesale_price??'1')!=='0'" @change="setSetting('card_show_wholesale_price',$event.target.checked?'1':'0')"> Mostrar precio mayorista</label>
+            <label class="bxb-switch" x-show="(settings.purchase_mode||'separate')==='separate'"><input type="checkbox" :checked="(settings.card_show_wholesale_condition??'1')!=='0'" @change="setSetting('card_show_wholesale_condition',$event.target.checked?'1':'0')"> Mostrar condición (desde N unidades)</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_savings??'0')!=='0'" @change="setSetting('card_show_savings',$event.target.checked?'1':'0')"> Mostrar ahorro por comprar al por mayor</label>
+        </div>
+
+        <div class="bxb-field bxb-full"><span>Cantidad</span>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_quantity??'1')!=='0'" @change="setSetting('card_show_quantity',$event.target.checked?'1':'0')"> Mostrar selector de cantidad</label>
+            <label class="bxb-field" x-show="(settings.card_show_quantity??'1')!=='0'" x-cloak>Estilo del selector
+                <select :value="settings.card_qty_style||'horizontal'" @change="setSetting('card_qty_style',$event.target.value)">
+                    <option value="horizontal">Horizontal</option>
+                    <option value="compact">Compacto</option>
+                </select>
+            </label>
+            <label class="bxb-switch" x-show="settings.purchase_mode==='auto'" x-cloak><input type="checkbox" :checked="(settings.card_show_subtotal??'0')!=='0'" @change="setSetting('card_show_subtotal',$event.target.checked?'1':'0')"> Mostrar subtotal de la línea</label>
+        </div>
+
+        <div class="bxb-field bxb-full"><span>Botón de carrito</span>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_cart??'1')!=='0'" @change="setSetting('card_show_cart',$event.target.checked?'1':'0')"> Mostrar botón agregar</label>
+            <label class="bxb-field" x-show="(settings.card_show_cart??'1')!=='0'" x-cloak>Estilo del botón
+                <select :value="settings.card_cart_style||'full'" @change="setSetting('card_cart_style',$event.target.value)">
+                    <option value="full">Ancho completo</option>
+                    <option value="compact">Compacto</option>
+                    <option value="inline">Junto al selector</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="bxb-field bxb-full"><span>WhatsApp</span>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.card_show_whatsapp??'1')!=='0'" @change="setSetting('card_show_whatsapp',$event.target.checked?'1':'0')"> Mostrar "Consultar"</label>
+            <label class="bxb-field" x-show="(settings.card_show_whatsapp??'1')!=='0'" x-cloak>Estilo
+                <select :value="settings.card_whatsapp_style||'outline'" @change="setSetting('card_whatsapp_style',$event.target.value)">
+                    <option value="outline">Botón contorno</option>
+                    <option value="solid">Botón completo</option>
+                    <option value="link">Enlace simple</option>
+                    <option value="icon">Solo icono</option>
+                </select>
+            </label>
+        </div>
+    </div>
+
     {{-- 3. Cómo entregar --}}
     <div class="bxb-card">
         <strong class="bxb-card-title">3 · Cómo entregar</strong>
@@ -170,60 +270,25 @@
         <label class="bxb-switch" x-show="settings.shipping_enabled==='1'"><input type="checkbox" :checked="settings.require_address==='1'" @change="setSetting('require_address',$event.target.checked?'1':'0')"> Pedir dirección en el checkout</label>
         <label class="bxb-switch"><input type="checkbox" :checked="settings.pickup_enabled==='1'" @change="setSetting('pickup_enabled',$event.target.checked?'1':'0')"> Recojo en tienda</label>
         <div x-show="settings.pickup_enabled==='1'" x-cloak>
-            <p class="bxb-note">Dirección y horario salen de <button type="button" class="bxb-link" @click="stage='business'">Mi negocio</button> — no se escriben dos veces.</p>
+            <p class="bxb-note">Dirección y horario salen de <button type="button" class="bxb-link" @click="stage='business'">Datos del negocio</button> — no se escriben dos veces.</p>
             <label class="bxb-field">Indicaciones para el recojo (opcional)
                 <input type="text" maxlength="200" placeholder="Recoger en mostrador con tu número de pedido" :value="settings.pickup_instructions||''" @input.debounce.600ms="setSetting('pickup_instructions',$event.target.value)">
             </label>
         </div>
-        <p class="bxb-note" x-show="settings.shipping_enabled!=='1' && settings.pickup_enabled!=='1'">Sin envío ni recojo configurados, los pedidos se coordinan por tu WhatsApp de Mi negocio.</p>
+        <p class="bxb-note" x-show="settings.shipping_enabled!=='1' && settings.pickup_enabled!=='1'">Sin envío ni recojo configurados, los pedidos se coordinan por el WhatsApp de Datos del negocio.</p>
     </div>
 
-    {{-- Vista del catálogo --}}
+    {{-- Textos exclusivos del proceso de compra --}}
     <div class="bxb-card">
-        <strong class="bxb-card-title">Vista del catálogo</strong>
-        <div class="bxb-grid2">
-            <label class="bxb-field">Columnas en escritorio
-                <select :value="settings.catalog_cols_desktop||'3'" @change="setSetting('catalog_cols_desktop',$event.target.value)">
-                    <option value="2">2 columnas</option>
-                    <option value="3">3 columnas</option>
-                    <option value="4">4 columnas</option>
-                </select>
-            </label>
-            <label class="bxb-field">Columnas en móvil
-                <select :value="settings.catalog_cols_mobile||'2'" @change="setSetting('catalog_cols_mobile',$event.target.value)">
-                    <option value="1">1 columna</option>
-                    <option value="2">2 columnas</option>
-                </select>
-            </label>
-            <label class="bxb-field">Vista de los productos
-                <select :value="settings.catalog_products_view||'cards'" @change="setSetting('catalog_products_view',$event.target.value)">
-                    <option value="cards">Tarjetas</option>
-                    <option value="compact">Lista compacta</option>
-                </select>
-            </label>
-            <label class="bxb-field">Título de la sección catálogo
-                <input type="text" maxlength="80" placeholder="Nuestros productos" :value="settings.catalog_section_title||''" @input.debounce.600ms="setSetting('catalog_section_title',$event.target.value)">
-            </label>
-        </div>
-    </div>
-
-    {{-- Textos de la tienda --}}
-    <div class="bxb-card">
-        <strong class="bxb-card-title">Textos de la tienda</strong>
-        <p class="bxb-note">Mensajes y botones que ven tus clientes. Vacío = usa el texto estándar.</p>
+        <strong class="bxb-card-title">Textos de compra</strong>
+        <p class="bxb-note">Los textos de productos y búsqueda se editan en Catálogo. Aquí solo aparecen carrito y checkout.</p>
         <div class="bxb-grid2">
             @foreach([
-                ['key' => 'btn_cart_text',          'label' => 'Botón agregar al carrito',   'ph' => 'Agregar'],
                 ['key' => 'btn_checkout_text',      'label' => 'Botón finalizar compra',     'ph' => 'Finalizar compra'],
                 ['key' => 'btn_send_quote_text',    'label' => 'Botón enviar cotización',    'ph' => 'Enviar cotización por WhatsApp'],
                 ['key' => 'cart_title',             'label' => 'Título del carrito',         'ph' => 'Tu carrito'],
                 ['key' => 'cart_empty_msg',         'label' => 'Mensaje de carrito vacío',   'ph' => 'Tu carrito está vacío'],
                 ['key' => 'cart_shipping_zero_label', 'label' => 'Envío sin costo: cómo se muestra', 'ph' => 'Gratis (o "Por coordinar")'],
-                ['key' => 'txt_search_placeholder', 'label' => 'Texto del buscador',         'ph' => 'Buscar productos...'],
-                ['key' => 'txt_no_results',         'label' => 'Mensaje sin resultados',     'ph' => 'No se encontraron productos'],
-                ['key' => 'txt_view_more',          'label' => 'Texto "Ver más"',            'ph' => 'Ver todos los productos'],
-                ['key' => 'txt_all_cats',           'label' => 'Texto "Todas las categorías"', 'ph' => 'Todas las categorías'],
-                ['key' => 'featured_categories_all_text', 'label' => 'Botón "Ver todas" de categorías', 'ph' => 'Ver todas'],
             ] as $tx)
             <label class="bxb-field">{{ $tx['label'] }}
                 <input type="text" maxlength="80" placeholder="{{ $tx['ph'] }}" :value="settings.{{ $tx['key'] }}||''" @input.debounce.600ms="setSetting('{{ $tx['key'] }}',$event.target.value)">
@@ -232,6 +297,13 @@
         </div>
         {{-- Carrito: opciones visuales. Defaults ya activos; se pueden apagar. --}}
         <div class="bxb-field bxb-full"><span>Carrito</span>
+            <label class="bxb-field">Diseño del carrito
+                <select :value="settings.cart_layout||'classic'" @change="setSetting('cart_layout',$event.target.value)">
+                    @foreach(\App\Support\StorefrontLayoutPacks::options('carts') as $key => $label)
+                    <option value="{{ $key }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.cart_show_thumbs??'1')!=='0'" @change="setSetting('cart_show_thumbs',$event.target.checked?'1':'0')"> Mostrar miniatura de cada producto</label>
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.cart_line_total??'1')!=='0'" @change="setSetting('cart_line_total',$event.target.checked?'1':'0')"> Mostrar subtotal por línea (precio × cantidad)</label>
             <label class="bxb-field">Texto del botón "seguir comprando"
@@ -251,7 +323,7 @@
         <strong class="bxb-card-title">4 · Información y confianza</strong>
         <ul class="bxb-trustlist" role="list">
             <li><span>Nosotros y Contacto</span><button type="button" class="bxb-btn" @click="stage='pages'">Editar</button></li>
-            <li><span>Términos y Privacidad</span><small>Con texto legal base automático</small><button type="button" class="bxb-btn" @click="stage='pages'">Personalizar</button></li>
+            <li><span>Términos y Privacidad</span><small>Con texto legal base automático</small><button type="button" class="bxb-btn" @click="stage='legal'">Personalizar</button></li>
             <li><span>Libro de Reclamaciones</span><small>Activo por ley (código + correos automáticos)</small><a class="bxb-btn" :href="urls.public+'/reclamaciones'" target="_blank" rel="noopener">Ver ↗</a></li>
         </ul>
     </div>

@@ -74,7 +74,7 @@
             <div x-show="stage==='appearance'" x-cloak x-data="{ appearanceArea: 'brand' }">
                 <nav class="bxb-local-nav" aria-label="Secciones de Apariencia">
                     <button type="button" :class="appearanceArea==='brand'&&'is-active'" @click="appearanceArea='brand'">Plantilla y marca</button>
-                    <button type="button" :class="appearanceArea==='header'&&'is-active'" @click="appearanceArea='header'">Encabezado y navegación</button>
+                    <button type="button" :class="appearanceArea==='header'&&'is-active'" @click="appearanceArea='header'">Encabezado y menú</button>
                 </nav>
                 <div x-show="appearanceArea==='brand'">
                     @include('settings.builder.stages.appearance')
@@ -112,7 +112,21 @@
             <template x-if="stage==='publish'">
                 <section class="bxb-stage" x-init="loadChecklist()">
                     <h2>Revisar y publicar</h2>
-                    <p class="bxb-stage-sub">Control de calidad automático. Nada de esto te impide publicar: son avisos para mejorar tu tienda.</p>
+                    <p class="bxb-stage-sub">Control de calidad automático. Casi todo son recomendaciones; solo unos pocos errores impiden publicar.</p>
+
+                    {{-- Lo que bloquea. Antes esta pantalla decia "nada de esto te
+                         impide publicar" y era cierto porque ninguna regla bloqueaba;
+                         ahora unas pocas si, y hay que decir cuales. --}}
+                    <div class="bxb-card bxb-check" data-sev="critical" x-show="!checklist.can_publish && (checklist.blocking||[]).length" x-cloak>
+                        <strong class="bxb-card-title bxb-danger">No se puede publicar todavía</strong>
+                        <p class="bxb-note">Tu tienda quedaría inservible para un comprador. Resuelve esto y podrás publicar:</p>
+                        <ul class="bxb-checklist" role="list">
+                            <template x-for="itm in checklist.blocking" :key="itm.code">
+                                <li><span x-text="itm.message + (itm.count?(' ('+itm.count+')'):'')"></span>
+                                    <button type="button" class="bxb-btn" @click="goFix(itm)">Corregir</button></li>
+                            </template>
+                        </ul>
+                    </div>
 
                     <div class="bxb-card bxb-check" data-sev="critical" x-show="(checklist.attention||[]).length" x-cloak>
                         <strong class="bxb-card-title bxb-danger">⚠ Atención importante</strong>

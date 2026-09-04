@@ -184,6 +184,8 @@
   @keyframes bump { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
   .bump { animation: bump .2s ease; }
 </style>
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 
 <body x-data="store()" x-cloak class="bg-gray-50 font-sans antialiased">
@@ -281,6 +283,7 @@
             class="absolute -top-0.5 -right-0.5 badge text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center leading-none"></span>
     </button>
   </div>
+    <x-store-menu :menu="$storeMenu ?? null" :project="$project" :store-view="$storeView ?? 'home'" />
 </header>
 
 {{-- ═══ BARRA DE CATEGORÍAS STICKY ═══ --}}

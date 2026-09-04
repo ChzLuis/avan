@@ -6,6 +6,61 @@
             <h2>Página de inicio</h2>
             <p class="bxb-stage-sub">Activa, ordena y edita los bloques de tu portada. Los cambios quedan en borrador y se ven a la derecha.</p>
 
+            <details class="bxb-advanced">
+                <summary>Diseño general de la página de inicio</summary>
+                <div class="bxb-card">
+                    <div class="bxb-grid2">
+                        <label class="bxb-field">Estilo general
+                            <select :value="settings.section_style_preset||'modern'" @change="setSetting('section_style_preset',$event.target.value)">
+                                <option value="modern">Moderno</option><option value="minimal">Minimal</option><option value="commerce">Comercial</option>
+                            </select>
+                        </label>
+                        <label class="bxb-field">Espaciado entre secciones
+                            <select :value="settings.section_spacing||'comfortable'" @change="setSetting('section_spacing',$event.target.value)">
+                                <option value="comfortable">Amplio</option><option value="compact">Compacto</option><option value="dense">Ecommerce denso</option>
+                            </select>
+                        </label>
+                        <label class="bxb-field">Alineación de títulos
+                            <select :value="settings.section_heading_align||'left'" @change="setSetting('section_heading_align',$event.target.value)">
+                                <option value="left">Izquierda</option><option value="center">Centrados</option>
+                            </select>
+                        </label>
+                        <label class="bxb-field">Fondos de las secciones
+                            <select :value="settings.section_background_mode||'alternate'" @change="setSetting('section_background_mode',$event.target.value)">
+                                <option value="alternate">Alternados</option><option value="white">Todo blanco</option><option value="soft">Todo suave</option><option value="pastel">Bandas pastel</option>
+                            </select>
+                        </label>
+                        {{-- Las 3 bandas solo pintan en el modo pastel; sin editor
+                             quedaron configuradas y sin forma de cambiarlas. --}}
+                        <template x-if="(settings.section_background_mode||'alternate')==='pastel'">
+                            <label class="bxb-field">Banda pastel 1
+                                <x-bxb-color clave="pastel_band_1" defecto="#FDF6EF" etiqueta="Banda pastel 1" />
+                            </label>
+                        </template>
+                        <template x-if="(settings.section_background_mode||'alternate')==='pastel'">
+                            <label class="bxb-field">Banda pastel 2
+                                <x-bxb-color clave="pastel_band_2" defecto="#FDF0F2" etiqueta="Banda pastel 2" />
+                            </label>
+                        </template>
+                        <template x-if="(settings.section_background_mode||'alternate')==='pastel'">
+                            <label class="bxb-field">Banda pastel 3
+                                <x-bxb-color clave="pastel_band_3" defecto="#EEF6F9" etiqueta="Banda pastel 3" />
+                            </label>
+                        </template>
+                        <label class="bxb-field">Alto del banner en escritorio (px)
+                            <input type="number" min="0" max="900" step="10" placeholder="0 = automático" :value="settings.hero_px_desktop||''" @input.debounce.600ms="setSetting('hero_px_desktop',$event.target.value)">
+                        </label>
+                        <label class="bxb-field">Alto del banner en celular (px)
+                            <input type="number" min="0" max="900" step="10" placeholder="0 = automático" :value="settings.hero_px_mobile||''" @input.debounce.600ms="setSetting('hero_px_mobile',$event.target.value)">
+                        </label>
+                    </div>
+                    <div class="bxb-check-inline">
+                        <label class="bxb-switch"><input type="checkbox" :checked="(settings.section_card_shadow??'1')!=='0'" @change="setSetting('section_card_shadow',$event.target.checked?'1':'0')"> Sombras en tarjetas</label>
+                        <label class="bxb-switch"><input type="checkbox" :checked="(settings.section_show_dividers??'1')!=='0'" @change="setSetting('section_show_dividers',$event.target.checked?'1':'0')"> Separadores entre secciones</label>
+                    </div>
+                </div>
+            </details>
+
             {{-- Bloques fijos: un solo lugar de edición (Apariencia) --}}
             <div class="bxb-block bxb-block--fixed">
                 <span class="bxb-block-ico">▤</span>
@@ -43,7 +98,7 @@
             <div class="bxb-block bxb-block--fixed">
                 <span class="bxb-block-ico">▦</span>
                 <span class="bxb-block-copy"><strong>Pie de página</strong><small>Derechos, enlaces legales y métodos de pago.</small></span>
-                <button type="button" class="bxb-btn" @click="stage='appearance'">Editar en Apariencia</button>
+                <button type="button" class="bxb-btn" @click="stage='legal'">Editar en Footer y legales</button>
             </div>
 
             <div class="bxb-actions-row">
@@ -86,6 +141,45 @@
                 </div>
                 <p class="bxb-note" style="margin:6px 0 0">Elegante y rápido por diseño. Se desactiva solo para visitantes con "reducir movimiento" activado.</p>
             </div>
+            {{-- Forma divisoria al pie del bloque (aplica a TODOS los bloques) --}}
+            <div class="bxb-card">
+                <strong class="bxb-card-title">Forma divisoria</strong>
+                <p class="bxb-note" style="margin:0 0 8px">El corte con el que termina el bloque. En vez de una línea recta, una onda o una curva.</p>
+                <div class="bxb-grid2">
+                    <label class="bxb-field">Forma
+                        <select :value="settings['shape_'+editingBlock.component+'_style']||''" @change="setSetting('shape_'+editingBlock.component+'_style',$event.target.value)">
+                            <option value="">Corte recto (ninguna)</option>
+                            <option value="waves">Onda</option>
+                            <option value="curve">Curva</option>
+                            <option value="tilt">Inclinada</option>
+                            <option value="triangle">Triángulo</option>
+                            <option value="wave-brush">Pincelada</option>
+                        </select>
+                    </label>
+                    <label class="bxb-field" x-show="(settings['shape_'+editingBlock.component+'_style']||'')!==''" x-cloak>Altura (px)
+                        <input type="number" step="5" min="20" max="160" :value="settings['shape_'+editingBlock.component+'_height']||60" @change="setSetting('shape_'+editingBlock.component+'_height',$event.target.value)">
+                    </label>
+                </div>
+                <label class="bxb-check" style="margin-top:8px" x-show="(settings['shape_'+editingBlock.component+'_style']||'')!==''" x-cloak>
+                    <input type="checkbox" :checked="settings['shape_'+editingBlock.component+'_flip']==='1'" @change="setSetting('shape_'+editingBlock.component+'_flip',$event.target.checked?'1':'0')">
+                    <span>Voltear la forma</span>
+                </label>
+            </div>
+            {{-- Velo sobre el fondo del bloque --}}
+            <div class="bxb-card">
+                <strong class="bxb-card-title">Velo sobre el fondo</strong>
+                <p class="bxb-note" style="margin:0 0 8px">Si el bloque lleva foto de fondo, un velo hace que el texto se lea. Deja la intensidad en 0 para quitarlo.</p>
+                <div class="bxb-grid2">
+                    <label class="bxb-field">Color
+                        <span class="bxb-color-row"><input type="color" :value="settings['overlay_'+editingBlock.component+'_color']||'#0f172a'" @input.debounce.400ms="setSetting('overlay_'+editingBlock.component+'_color',$event.target.value)"></span>
+                    </label>
+                    <label class="bxb-field">Intensidad (%)
+                        <input type="number" step="5" min="0" max="90" :value="settings['overlay_'+editingBlock.component+'_opacity']||0" @change="setSetting('overlay_'+editingBlock.component+'_opacity',Math.max(0,Math.min(90,parseInt($event.target.value)||0)))">
+                    </label>
+                </div>
+            </div>
+
+
 
             {{-- Encabezado opcional ANTES del bloque (texto o imagen, 4 estilos) --}}
             <div class="bxb-card" x-show="['promotions','categories','benefits','flash_sale','discount_products','featured_products'].includes(editingBlock.native)">
@@ -942,4 +1036,56 @@
             </template>
         </div>
     </template>
+    {{-- Estilo de secciones concretas del Home. Vivian SOLO en Diseño clasico:
+         una seccion del Home no puede configurarse fuera de esta etapa. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Categorías destacadas — presentación</strong>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Fondo de la sección
+                <x-bxb-color clave="featured_categories_section_bg" defecto="#ffffff" etiqueta="Fondo de la sección" />
+            </label>
+            <label class="bxb-field">Fondo de cada tarjeta
+                <x-bxb-color clave="featured_categories_card_bg" defecto="#f8fafc" etiqueta="Fondo de la tarjeta" />
+            </label>
+            <label class="bxb-field">Color de acento
+                <x-bxb-color clave="featured_categories_accent" defecto="#2563eb" etiqueta="Acento" />
+            </label>
+            <label class="bxb-field">Color del texto
+                <x-bxb-color clave="featured_categories_text_color" defecto="#0f172a" etiqueta="Texto" />
+            </label>
+        </div>
+        <div class="bxb-check-inline">
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.featured_categories_show_count??'0')!=='0'" @change="setSetting('featured_categories_show_count',$event.target.checked?'1':'0')"> Mostrar cuántos productos tiene cada categoría</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.featured_categories_show_all??'1')!=='0'" @change="setSetting('featured_categories_show_all',$event.target.checked?'1':'0')"> Mostrar el botón “Ver todas”</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.featured_categories_hide_empty??'1')!=='0'" @change="setSetting('featured_categories_hide_empty',$event.target.checked?'1':'0')"> Ocultar categorías sin productos</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.featured_categories_mobile_carousel??'1')!=='0'" @change="setSetting('featured_categories_mobile_carousel',$event.target.checked?'1':'0')"> En móvil, deslizar en carrusel</label>
+        </div>
+    </div>
+
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Barra de confianza — presentación</strong>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Fondo de la sección
+                <x-bxb-color clave="trust_section_bg" defecto="#ffffff" etiqueta="Fondo de la sección" />
+            </label>
+            <label class="bxb-field">Fondo de cada tarjeta
+                <x-bxb-color clave="trust_card_bg" defecto="#f8fafc" etiqueta="Fondo de la tarjeta" />
+            </label>
+            <label class="bxb-field">Color del texto
+                <x-bxb-color clave="trust_text_color" defecto="#0f172a" etiqueta="Texto" />
+            </label>
+        </div>
+        <div class="bxb-check-inline">
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.trust_show_descriptions??'1')!=='0'" @change="setSetting('trust_show_descriptions',$event.target.checked?'1':'0')"> Mostrar la descripción de cada ítem</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.trust_mobile_carousel??'1')!=='0'" @change="setSetting('trust_mobile_carousel',$event.target.checked?'1':'0')"> En móvil, deslizar en carrusel</label>
+        </div>
+    </div>
+
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Anuncios — comportamiento</strong>
+        <div class="bxb-check-inline">
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.promo_autoplay??'1')!=='0'" @change="setSetting('promo_autoplay',$event.target.checked?'1':'0')"> Pasar solos</label>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.promo_show_dots??'1')!=='0'" @change="setSetting('promo_show_dots',$event.target.checked?'1':'0')"> Mostrar los puntos de navegación</label>
+        </div>
+    </div>
 </section>

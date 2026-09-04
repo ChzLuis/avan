@@ -60,7 +60,18 @@ final class StorefrontContextBuilder
         );
 
         $sections = $this->sections($project, $settings, $preview, $includeDisabled);
-        $pages = $project->storePages()->orderBy('key')->get()->keyBy('key');
+        // En la VISTA PREVIA la pagina muestra su borrador; en la tienda publica,
+        // siempre lo publicado. Sin esto el comerciante editaria a ciegas: las
+        // paginas dejaron de publicarse al guardarse (ciclo draft de 06).
+        $pages = $project->storePages()->orderBy('key')->get()
+            ->each(function ($pagina) use ($preview) {
+                if ($preview && ($pagina->has_draft ?? false)) {
+                    $pagina->setAttribute('title', $pagina->tituloEfectivo());
+                    $pagina->setAttribute('content', $pagina->contenidoEfectivo());
+                    $pagina->setAttribute('is_enabled', $pagina->visibleEfectivo());
+                }
+            })
+            ->keyBy('key');
         $menus = $this->menus($project, $includeDisabled, $pages, $legacyFallbacks);
         $popup = $this->popup($project, $preview, $includeDisabled);
 
@@ -69,7 +80,7 @@ final class StorefrontContextBuilder
         $categories = collect();
         $products = collect();
         if ($includeCatalog) {
-            [$categories, $products, $catalog] = $this->catalog($project, $catalog);
+            [$categories, $products, $catalog] = $this->catalog($project, $catalog, $rawSettings);
         }
 
         // Distingue "tienda sin configurar" (sin filas de secciones → mostrar defaults)
@@ -232,7 +243,7 @@ final class StorefrontContextBuilder
         return $query->latest()->first();
     }
 
-    private function catalog(Project $project, array $catalog): array
+    private function catalog(Project $project, array $catalog, array $settings = []): array
     {
         $allCategories = $project->categories()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
         $categoryMap = $allCategories->keyBy('id');
@@ -241,7 +252,7 @@ final class StorefrontContextBuilder
         // contadores del filtro lateral, "Novedades" y "Destacados" contaban
         // productos que la rejilla nunca mostraba: la tienda decia "26 productos"
         // junto a un filtro que decia "57".
-        $products = $project->products()->where('is_available', true)->where('price', '>', 0)
+        $products = CatalogQueryService::mostrable($project->products(), $project, $settings)
             ->with('mainImage')->orderBy('sort_order')->orderBy('id')->get();
         $services = $project->services()->where('is_available', true)->orderBy('sort_order')->orderBy('id')->get();
 

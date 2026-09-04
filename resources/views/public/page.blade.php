@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <title>{{ $page->title }} · {{ $project->name }}</title>
+    <x-analytics-tags :project="$project" />
+    <x-storefront-motion :project="$project" />
 </head>
 <body class="bg-slate-50 text-slate-800">
 <main class="mx-auto max-w-4xl px-5 py-14">

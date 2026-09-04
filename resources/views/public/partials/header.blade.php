@@ -72,4 +72,5 @@
     @endif
 
   </div>
+    <x-store-menu :menu="$storeMenu ?? null" :project="$project" :store-view="$storeView ?? 'home'" />
 </header>

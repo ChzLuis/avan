@@ -58,13 +58,27 @@ final class StorePageWriteService
                 'gallery' => $gallery->values()->all(),
             ]);
 
+            // Se guarda en BORRADOR, igual que las secciones de Inicio. Antes las
+            // paginas se publicaban en cuanto se guardaban, mientras el Home
+            // trabajaba con draft: la etapa 09 prometia "publicar tienda" cuando
+            // parte del contenido ya habia salido sin pasar por ahi.
+            // Una pagina que aun no existe se crea publicada (no hay nada que
+            // pisar) y ademas en borrador, para que el preview la muestre.
+            $esNueva = $existing === null;
+
             return StorePage::updateOrCreate(
                 ['project_id' => $project->id, 'key' => $key],
                 [
+                    'draft_title' => $data['title'],
+                    'draft_content' => $content,
+                    'draft_is_enabled' => (bool) ($data['is_enabled'] ?? false),
+                    'has_draft' => true,
+                ] + ($esNueva ? [
                     'title' => $data['title'],
                     'content' => $content,
                     'is_enabled' => (bool) ($data['is_enabled'] ?? false),
-                ]
+                    'published_at' => now(),
+                ] : [])
             );
         });
     }

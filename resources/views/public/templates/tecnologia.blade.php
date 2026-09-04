@@ -37,6 +37,8 @@
     .skew-band { transform: skewX(-12deg); }
     .skew-band > * { transform: skewX(12deg); }
 </style>
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 <body class="bg-gray-50" x-data="tienda()">
 
@@ -91,6 +93,7 @@
             </button>
         </div>
     </div>
+    <x-store-menu :menu="$storeMenu ?? null" :project="$project" :store-view="$storeView ?? 'home'" />
 </header>
 
 {{-- ═══ NAV: MENÚ LATERAL CATEGORÍAS + NAV HORIZONTAL ═══ --}}

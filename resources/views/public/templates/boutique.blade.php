@@ -149,6 +149,8 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     return $rows->concat($subRows);
 })->values();
 @endphp
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 
 <body x-data="store()" x-cloak>
@@ -683,6 +685,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
       @endforeach
     </nav>
   </div>
+    <x-store-menu :menu="$storeMenu ?? null" :project="$project" :store-view="$storeView ?? 'home'" />
 </header>
 
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

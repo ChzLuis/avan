@@ -6,6 +6,13 @@
     $selectedCategory = request()->integer('category') ?: null;
     $logoPath = $headerSettings['header_logo_url'] ?: ($settings['logo_url'] ?? $project->logo_url ?? '');
     $logoUrl = $logoPath ? (str_starts_with($logoPath,'http') ? $logoPath : asset('storage/'.$logoPath)) : null;
+    // Contacto: misma cadena de resolucion que usan las plantillas de produccion
+    // (computienda). Sin esto, la estructura V2 nacia leyendo solo las columnas
+    // del proyecto e ignoraba lo que el comerciante escribe en el Constructor.
+    // La columna sera la fuente canonica tras la migracion; hasta entonces el
+    // ajuste manda para no revertir lo ya editado.
+    $storePhone = trim((string) ($settings['contact_phone'] ?? '')) ?: trim((string) ($project->phone ?? ''));
+    $storeWhatsapp = trim((string) ($settings['quote_whatsapp'] ?? '')) ?: trim((string) ($project->whatsapp ?? ''));
     $fontClass = str_replace(' ', '+', $headerSettings['header_font']);
 @endphp
 <style>
@@ -34,7 +41,7 @@
             </ul>
         </nav>
         <div class="store-header-actions">
-            @if($headerSettings['header_show_contact']==='1' && ($project->phone || $project->whatsapp))<a class="store-contact" href="tel:{{ preg_replace('/[^0-9+]/','',$project->phone ?: $project->whatsapp) }}"><small>Atención comercial</small><strong>{{ $project->phone ?: $project->whatsapp }}</strong></a>@endif
+            @if($headerSettings['header_show_contact']==='1' && ($storePhone || $storeWhatsapp))<a class="store-contact" href="tel:{{ preg_replace('/[^0-9+]/','',$storePhone ?: $storeWhatsapp) }}"><small>Atención comercial</small><strong>{{ $storePhone ?: $storeWhatsapp }}</strong></a>@endif
             @if($headerSettings['header_show_search']==='1')<a class="store-header-action store-search-action" href="{{ route('public.shop',$project->slug) }}#buscar" aria-label="Buscar productos"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="7" stroke-width="1.8"/><path d="m20 20-4-4" stroke-width="1.8" stroke-linecap="round"/></svg></a>@endif
             @if($headerSettings['header_show_cart']==='1')<a class="store-header-action store-cart-action" href="{{ route('public.shop',$project->slug) }}#catalogo" aria-label="Ver productos"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 4h2l2 11h10l3-8H6" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></a>@endif
             <button class="store-header-action store-mobile-toggle" type="button" data-store-menu-open aria-label="Abrir menú" aria-expanded="false"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 7h16M4 12h16M4 17h16" stroke-width="1.8" stroke-linecap="round"/></svg></button>

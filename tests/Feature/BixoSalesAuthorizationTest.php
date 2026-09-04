@@ -215,7 +215,11 @@ class BixoSalesAuthorizationTest extends TestCase
         // el anterior) el enlace personal del Portal del Cliente. Regenerar
         // corta el acceso del cliente al enlace viejo: es una escritura sobre
         // el cliente y va con `clients.editar|manage-clients`.
-        $this->assertSame(65, $mutadoras, 'El portal deberia tener 65 rutas con verbo mutador');
+        // +3 con las guias de remision: crear (`invoices.crear`), enviar a
+        // SUNAT (`invoices.crear`) y anular (`invoices.anular`). El conteo es
+        // el aviso de que alguien anadio rutas; la comprobacion que de verdad
+        // importa es la de abajo, que exige permiso en TODAS.
+        $this->assertSame(68, $mutadoras, 'El portal deberia tener 68 rutas con verbo mutador');
         $this->assertSame([], $abiertas, 'Rutas mutadoras sin permiso: ' . implode(', ', $abiertas));
     }
 

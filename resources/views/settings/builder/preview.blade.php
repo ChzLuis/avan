@@ -7,6 +7,7 @@
         <span class="bxb-preview-title">Así se ve tu tienda <em>(borrador)</em></span>
         <span class="bxb-device" role="group" aria-label="Dispositivo">
             <button type="button" :class="device==='desktop'&&'on'" @click="setDevice('desktop')" aria-label="Escritorio">PC</button>
+            <button type="button" :class="device==='tablet'&&'on'" @click="setDevice('tablet')" aria-label="Tablet">Tablet</button>
             <button type="button" :class="device==='mobile'&&'on'" @click="setDevice('mobile')" aria-label="Móvil">Móvil</button>
         </span>
         <a class="bxb-link" :href="urls.preview+'?view=home'" target="_blank" rel="noopener" aria-label="Abrir vista previa en pestaña nueva">⛶</a>

@@ -42,6 +42,88 @@
     @media(prefers-reduced-motion:reduce){.sf-button{transition:none}.sf-carousel{scroll-behavior:auto!important}}
 </style>
 <style>.sf-offer-copy:only-child{grid-column:1/-1}</style>
+<style>
+    /* Bloques que hasta ahora solo pintaba `computienda`. Se apoyan en las
+       mismas piezas que el resto del Inicio (.sf-card, .sf-button) para que
+       hereden el tema del negocio en vez de traer su propia paleta. */
+    .sf-eyebrow{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:8px}
+    .sf-about-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(24px,4vw,52px);align-items:center}
+    .sf-about-grid.is-solo{grid-template-columns:1fr}
+    .sf-about-copy h2{margin:0 0 10px}.sf-about-copy p{margin:0 0 16px;line-height:1.65;opacity:.85}
+    .sf-about-cifras{display:flex;flex-wrap:wrap;gap:26px;margin:18px 0 20px}
+    .sf-about-cifras strong{display:block;font-size:26px;line-height:1.1}
+    .sf-about-cifras span{font-size:12.5px;opacity:.7}
+    .sf-about-foto img{width:100%;height:100%;max-height:420px;object-fit:cover;border-radius:14px;display:block}
+
+    .sf-brand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:18px;align-items:center}
+    .sf-brand{display:flex;align-items:center;justify-content:center;padding:10px}
+    .sf-brand img{max-width:100%;max-height:58px;object-fit:contain;display:block}
+    .sf-brand-grid.is-gris img{filter:grayscale(1);opacity:.75;transition:filter .2s ease,opacity .2s ease}
+    .sf-brand-grid.is-gris a:hover img{filter:none;opacity:1}
+
+    .sf-coll-grid{display:grid;grid-template-columns:repeat(var(--sf-coll-cols,3),minmax(0,1fr));gap:18px}
+    .sf-coll{position:relative;overflow:hidden;min-height:230px;display:block;text-decoration:none;color:#fff}
+    .sf-coll img{width:100%;height:100%;position:absolute;inset:0;object-fit:cover}
+    .sf-coll-copy{position:relative;z-index:1;display:block;padding:20px;background:linear-gradient(to top,rgba(0,0,0,.72),transparent 62%);min-height:230px;display:flex;flex-direction:column;justify-content:flex-end}
+    .sf-coll-copy strong{font-size:18px}.sf-coll-copy small{opacity:.85;font-size:12.5px}
+
+    .sf-cta{color:#fff}
+    .sf-cta-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+    .sf-cta h2{margin:0 0 6px}.sf-cta p{margin:0;opacity:.9}
+    .sf-cta-btn{background:#fff;color:#111}
+
+    .sf-faq-list{display:grid;gap:10px}
+    .sf-faq-list.is-2col{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .sf-faq-item{padding:0}
+    .sf-faq-item summary{cursor:pointer;padding:15px 18px;font-weight:700;list-style:none}
+    .sf-faq-item summary::-webkit-details-marker{display:none}
+    .sf-faq-item summary::after{content:'+';float:right;font-weight:400;opacity:.6}
+    .sf-faq-item[open] summary::after{content:'−'}
+    .sf-faq-item>div{padding:0 18px 16px;line-height:1.65;opacity:.85}
+
+    .sf-gal-grid{display:grid;grid-template-columns:repeat(var(--sf-gal-cols,3),minmax(0,1fr));gap:14px}
+    .sf-gal{margin:0;overflow:hidden}
+    .sf-gal img,.sf-gal iframe{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border:0}
+    .sf-gal figcaption{padding:10px 14px;font-size:12.5px;opacity:.75}
+
+    .sf-strip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+    .sf-strip-item{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit}
+    .sf-strip-item img{width:40px;height:40px;object-fit:contain;flex:0 0 40px}
+    .sf-strip-item strong{display:block;font-size:14.5px}
+    .sf-strip-item small{opacity:.72;font-size:12.5px}
+
+    .sf-media-wrap{position:relative;min-height:var(--sf-media-h,380px);display:flex;align-items:center;overflow:hidden}
+    .sf-media-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0}
+    .sf-media-velo{position:absolute;inset:0;pointer-events:none}
+    .sf-media-copy{position:relative;z-index:1;width:min(1180px,100%);margin:0 auto;padding:32px 20px;color:#fff}
+    .sf-media-copy h2{margin:0 0 8px}.sf-media-copy p{margin:0 0 16px;opacity:.92}
+
+    .sf-testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+    .sf-testi-card{margin:0;padding:20px}
+    .sf-testi-estrellas{color:#f59e0b;letter-spacing:2px;margin-bottom:8px}
+    .sf-testi-card blockquote{margin:0 0 14px;line-height:1.65;font-style:italic;opacity:.9}
+    .sf-testi-card figcaption{display:flex;gap:10px;align-items:center}
+    .sf-testi-card figcaption img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+    .sf-testi-card figcaption strong{display:block;font-size:14px}
+    .sf-testi-card figcaption small{opacity:.7;font-size:12px}
+
+    .sf-wa-inner{display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap}
+    .sf-wa h2{margin:0 0 6px}.sf-wa p{margin:0;opacity:.85}
+    .sf-wa-btn{background:#25d366;color:#08301b;border-color:#25d366}
+    .sf-wa.is-card .sf-wa-inner{border-radius:16px;padding:26px;background:#f8fafc}
+
+    @media(max-width:900px){
+        .sf-about-grid{grid-template-columns:1fr}
+        .sf-faq-list.is-2col{grid-template-columns:1fr}
+        .sf-coll-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .sf-gal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:560px){
+        .sf-coll-grid,.sf-gal-grid{grid-template-columns:1fr}
+        .sf-cta-inner,.sf-wa-inner{flex-direction:column;align-items:flex-start}
+    }
+</style>
+
 
 @foreach($sections as $section)
     @php
@@ -123,6 +205,244 @@
         @if($articles->isNotEmpty())<section class="sf-home-section {{ $deviceClass }}" data-store-home-section="blog" data-store-placement="after-catalog"><div class="sf-home-container"><div class="sf-home-heading"><h2>{{ $content['title'] ?? 'Consejos y novedades' }}</h2>@if(filled($content['all_text']??null))<a class="sf-home-link" href="{{ blank($content['all_url']??null)||$content['all_url']==='#' ? route('public.blog',$project->slug) : $content['all_url'] }}">{{ $content['all_text'] }}</a>@endif</div><div class="sf-blog-grid">
             @foreach($articles as $article)<a class="sf-card sf-article" href="{{ filled($article['url']??null) ? $article['url'] : route('public.blog.show',[$project->slug,$article['key']]) }}">@if($assetUrl($article['image']??null))<img loading="lazy" src="{{ $assetUrl($article['image']) }}" alt="{{ $article['title'] }}">@endif<div class="sf-article-copy">@if(filled($article['tag']??null))<span class="sf-article-tag">{{ $article['tag'] }}</span>@endif<h3>{{ $article['title'] }}</h3>@if(filled($article['summary']??null))<p>{{ $article['summary'] }}</p>@endif @if(filled($article['date']??null))<time>{{ \Illuminate\Support\Carbon::parse($article['date'])->translatedFormat('d M Y') }}</time>@endif</div></a>@endforeach
         </div></div></section>@endif
+    @elseif($section->component === 'locations')
+        {{-- Sedes con mapa. El editor ya existía en el Constructor y solo lo
+             pintaba `computienda`: en las demás plantillas el negocio cargaba
+             su dirección y no salía nada. El mapa va por el incrustado público
+             de Google, que no pide clave de API ni cuenta. --}}
+        @php
+            $items = collect($content['items'] ?? [])
+                ->filter(fn ($i) => ($i['enabled'] ?? true) && (filled($i['name'] ?? null) || filled($i['address'] ?? null)))
+                ->sortBy('sort_order')->take(8);
+            $ladoMapa = ($content['variant'] ?? 'cards') === 'map-side';
+        @endphp
+        @if($items->isNotEmpty())
+        <section class="sf-home-section sf-locations {{ $deviceClass }}" data-store-home-section="locations" data-store-placement="after-catalog"><div class="sf-home-container">
+            <div class="sf-home-heading"><div><h2>{{ $content['title'] ?? 'Visítanos' }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div></div>
+            <div class="sf-loc-grid {{ $ladoMapa ? 'is-side' : '' }}">
+                @foreach($items as $loc)
+                <article class="sf-card sf-loc">
+                    @if(($loc['show_map'] ?? true) && filled($loc['address'] ?? null))
+                    <div class="sf-loc-map">
+                        <iframe src="https://www.google.com/maps?q={{ urlencode($loc['address']) }}&output=embed&hl=es"
+                                title="Mapa de {{ $loc['name'] ?? $loc['address'] }}" loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                    @endif
+                    <div class="sf-loc-body">
+                        @if(filled($loc['name'] ?? null))<h3>{{ $loc['name'] }}</h3>@endif
+                        @if(filled($loc['address'] ?? null))<p>{{ $loc['address'] }}</p>@endif
+                        @if(filled($loc['phone'] ?? null))<p class="sf-loc-dato">Tel. {{ $loc['phone'] }}</p>@endif
+                        @if(filled($loc['hours'] ?? null))<p class="sf-loc-dato">{{ $loc['hours'] }}</p>@endif
+                        @if(filled($loc['address'] ?? null))
+                        <a class="sf-loc-link" target="_blank" rel="noopener"
+                           href="https://www.google.com/maps/search/?api=1&query={{ urlencode($loc['address']) }}">Cómo llegar</a>
+                        @endif
+                    </div>
+                </article>
+                @endforeach
+            </div>
+        </div></section>
+        @endif
+    @elseif($section->component === 'about_preview')
+        {{-- Presentación del negocio: texto, foto y cifras. --}}
+        @php
+            $cifras = collect($content['items'] ?? [])->filter(fn ($i) => ($i['enabled'] ?? true) && filled($i['value'] ?? null))->sortBy('sort_order')->take(4);
+            $foto = $assetUrl($content['image'] ?? null);
+        @endphp
+        @if(filled($content['title'] ?? null) || filled($content['body'] ?? null))
+        <section class="sf-home-section sf-about {{ $deviceClass }}" data-store-home-section="about_preview" data-store-placement="before-catalog"><div class="sf-home-container">
+            <div class="sf-about-grid {{ $foto ? '' : 'is-solo' }}">
+                <div class="sf-about-copy">
+                    @if(filled($content['label'] ?? null))<span class="sf-eyebrow">{{ $content['label'] }}</span>@endif
+                    @if(filled($content['title'] ?? null))<h2>{{ $content['title'] }}</h2>@endif
+                    @if(filled($content['body'] ?? null))<p>{{ $content['body'] }}</p>@endif
+                    @if($cifras->isNotEmpty())
+                    <div class="sf-about-cifras">@foreach($cifras as $c)<div><strong>{{ $c['value'] }}</strong><span>{{ $c['title'] ?? '' }}</span></div>@endforeach</div>
+                    @endif
+                    @if(filled($content['button_text'] ?? null))<a class="sf-button" href="{{ $content['button_url'] ?? '#' }}">{{ $content['button_text'] }}</a>@endif
+                </div>
+                @if($foto)<div class="sf-about-foto"><img loading="lazy" src="{{ $foto }}" alt="{{ $content['title'] ?? $project->name }}"></div>@endif
+            </div>
+        </div></section>
+        @endif
+
+    @elseif($section->component === 'brands')
+        {{-- Marcas con las que trabaja el negocio. --}}
+        @php $items = collect($content['items'] ?? [])->filter(fn ($i) => ($i['enabled'] ?? true) && filled($i['image'] ?? null))->sortBy('sort_order')->take(24); @endphp
+        @if($items->isNotEmpty())
+        <section class="sf-home-section sf-brands {{ $deviceClass }}" data-store-home-section="brands" data-store-placement="before-catalog"><div class="sf-home-container">
+            @if(filled($content['title'] ?? null))<div class="sf-home-heading"><div><h2>{{ $content['title'] }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div></div>@endif
+            <div class="sf-brand-grid {{ ($content['grayscale'] ?? false) ? 'is-gris' : '' }}">
+                @foreach($items as $m)
+                @if(filled($m['url'] ?? null))<a href="{{ $m['url'] }}" target="_blank" rel="noopener" class="sf-brand">@else<span class="sf-brand">@endif
+                    <img loading="lazy" src="{{ $assetUrl($m['image']) }}" alt="{{ $m['name'] ?? '' }}">
+                @if(filled($m['url'] ?? null))</a>@else</span>@endif
+                @endforeach
+            </div>
+        </div></section>
+        @endif
+
+    @elseif($section->component === 'collection_showcase')
+        {{-- Colecciones destacadas: imagen grande que lleva a una categoría. --}}
+        @php
+            $items = collect($content['items'] ?? [])->filter(fn ($i) => ($i['enabled'] ?? true) && (filled($i['title'] ?? null) || filled($i['image'] ?? null)))->sortBy('sort_order')->take(8);
+            $cols = max(2, min(4, (int) ($content['columns'] ?? 3)));
+        @endphp
+        @if($items->isNotEmpty())
+        <section class="sf-home-section sf-collections {{ $deviceClass }}" data-store-home-section="collection_showcase" data-store-placement="before-catalog"><div class="sf-home-container">
+            @if(filled($content['title'] ?? null))<div class="sf-home-heading"><div><h2>{{ $content['title'] }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div></div>@endif
+            <div class="sf-coll-grid" style="--sf-coll-cols:{{ $cols }}">
+                @foreach($items as $c)
+                @php $destino = filled($c['url'] ?? null) ? $c['url'] : (filled($c['category_id'] ?? null) ? route('public.shop', [$project->slug, 'category' => $c['category_id']]) : route('public.shop', $project->slug)); @endphp
+                <a class="sf-card sf-coll" href="{{ $destino }}">
+                    @if($img = $assetUrl($c['image'] ?? null))<img loading="lazy" src="{{ $img }}" alt="{{ $c['title'] ?? '' }}">@endif
+                    <span class="sf-coll-copy"><strong>{{ $c['title'] ?? '' }}</strong>@if(filled($c['subtitle'] ?? null))<small>{{ $c['subtitle'] }}</small>@endif</span>
+                </a>
+                @endforeach
+            </div>
+        </div></section>
+        @endif
+
+    @elseif($section->component === 'cta_banner')
+        {{-- Llamada a la acción a todo el ancho. --}}
+        @php $fondo = $safeColor($content['background_color'] ?? null, '#0f172a'); $img = $assetUrl($content['image'] ?? null); @endphp
+        @if(filled($content['title'] ?? null))
+        <section class="sf-home-section sf-cta {{ $deviceClass }}" data-store-home-section="cta_banner" data-store-placement="after-catalog"
+                 style="background:{{ $fondo }};@if($img)background-image:linear-gradient(to right,{{ $fondo }}ee,{{ $fondo }}99),url('{{ $img }}');background-size:cover;background-position:center;@endif">
+            <div class="sf-home-container sf-cta-inner">
+                <div><h2>{{ $content['title'] }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div>
+                @if(filled($content['button_text'] ?? null))<a class="sf-button sf-cta-btn" href="{{ $content['button_url'] ?? '#' }}">{{ $content['button_text'] }}</a>@endif
+            </div>
+        </section>
+        @endif
+
+    @elseif($section->component === 'faq')
+        {{-- Preguntas frecuentes. Se usa `details`, que abre y cierra sin
+             JavaScript y es accesible con teclado por defecto. --}}
+        @php $items = collect($content['items'] ?? [])->filter(fn ($i) => ($i['enabled'] ?? true) && filled($i['question'] ?? null))->sortBy('sort_order')->take(12); @endphp
+        @if($items->isNotEmpty())
+        <section class="sf-home-section sf-faq {{ $deviceClass }}" data-store-home-section="faq" data-store-placement="after-catalog"><div class="sf-home-container">
+            <div class="sf-home-heading"><div><h2>{{ $content['title'] ?? 'Preguntas frecuentes' }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div></div>
+            <div class="sf-faq-list {{ ($content['variant'] ?? 'accordion') === 'two-columns' ? 'is-2col' : '' }}">
+                @foreach($items as $f)
+                <details class="sf-card sf-faq-item"><summary>{{ $f['question'] }}</summary><div>{{ $f['answer'] ?? '' }}</div></details>
+                @endforeach
+            </div>
+        </div></section>
+        @endif
+
+    @elseif($section->component === 'gallery')
+        {{-- Galería de fotos y vídeos. --}}
+        @php
+            $items = collect($content['items'] ?? [])->filter(fn ($i) => ($i['enabled'] ?? true) && (filled($i['image'] ?? null) || filled($i['video_url'] ?? null)))->sortBy('sort_order')->take(12);
+            $cols = max(2, min(4, (int) ($content['columns'] ?? 3)));
+        @endphp
+        @if($items->isNotEmpty())
+        <section class="sf-home-section sf-gallery {{ $deviceClass }}" data-store-home-section="gallery" data-store-placement="after-catalog"><div class="sf-home-container">
+            @if(filled($content['title'] ?? null))<div class="sf-home-heading"><div><h2>{{ $content['title'] }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div></div>@endif
+            <div class="sf-gal-grid" style="--sf-gal-cols:{{ $cols }}">
+                @foreach($items as $g)
+                <figure class="sf-card sf-gal">
+                    @if(($g['type'] ?? 'image') === 'video' && filled($g['video_url'] ?? null))
+                    <iframe src="{{ $g['video_url'] }}" title="{{ $g['caption'] ?? 'Vídeo' }}" loading="lazy" allowfullscreen></iframe>
+                    @elseif($img = $assetUrl($g['image'] ?? null))
+                    <img loading="lazy" src="{{ $img }}" alt="{{ $g['caption'] ?? '' }}">
+                    @endif
+                    @if(filled($g['caption'] ?? null))<figcaption>{{ $g['caption'] }}</figcaption>@endif
+                </figure>
+                @endforeach
+            </div>
+        </div></section>
+        @endif
+
+    @elseif($section->component === 'info_strip')
+        {{-- Banda de datos sueltos: envíos, garantía, pago… --}}
+        @php $items = collect($content['items'] ?? [])->filter(fn ($i) => ($i['enabled'] ?? true) && filled($i['title'] ?? null))->sortBy('sort_order')->take(6); @endphp
+        @if($items->isNotEmpty())
+        <section class="sf-home-section sf-strip {{ $deviceClass }}" data-store-home-section="info_strip" data-store-placement="before-catalog"><div class="sf-home-container">
+            @if(filled($content['title'] ?? null))<div class="sf-home-heading"><div><h2>{{ $content['title'] }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div></div>@endif
+            <div class="sf-strip-grid">
+                @foreach($items as $i)
+                @if(filled($i['url'] ?? null))<a href="{{ $i['url'] }}" class="sf-strip-item">@else<div class="sf-strip-item">@endif
+                    @if($img = $assetUrl($i['image'] ?? null))<img loading="lazy" src="{{ $img }}" alt="">@endif
+                    <span><strong>{{ $i['title'] }}</strong>@if(filled($i['description'] ?? null))<small>{{ $i['description'] }}</small>@endif</span>
+                @if(filled($i['url'] ?? null))</a>@else</div>@endif
+                @endforeach
+            </div>
+        </div></section>
+        @endif
+
+    @elseif($section->component === 'media_banner')
+        {{-- Banda de imagen o vídeo a todo el ancho, con velo para que el
+             texto encima se lea. --}}
+        @php
+            $img = $assetUrl($content['desktop_image'] ?? null) ?: $assetUrl($content['fallback_image'] ?? null);
+            $movil = $assetUrl($content['mobile_image'] ?? null);
+            $velo = $safeColor($content['overlay_color'] ?? null, '#0f172a');
+            $op = max(0, min(90, (int) ($content['overlay_opacity'] ?? 40))) / 100;
+            $alto = max(180, min(720, (int) ($content['height'] ?? 380)));
+            $alineado = $content['align'] ?? 'center';
+            $alineado = in_array($alineado, ['left', 'center', 'right'], true) ? $alineado : 'center';
+        @endphp
+        @if($img || filled($content['video_url'] ?? null) || filled($content['title'] ?? null))
+        <section class="sf-home-section sf-media {{ $deviceClass }}" data-store-home-section="media_banner" data-store-placement="before-catalog"
+                 style="--sf-media-h:{{ $alto }}px;padding:0">
+            <div class="sf-media-wrap">
+                @if(($content['media_type'] ?? 'image') === 'video' && filled($content['video_url'] ?? null))
+                <iframe class="sf-media-bg" src="{{ $content['video_url'] }}" title="{{ $content['title'] ?? 'Vídeo' }}" loading="lazy" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                @elseif($img)
+                <img class="sf-media-bg" loading="lazy" src="{{ $movil ?: $img }}" srcset="{{ $movil ? $movil.' 800w, '.$img.' 1600w' : $img }}" alt="{{ $content['title'] ?? '' }}">
+                @endif
+                <span class="sf-media-velo" style="background:{{ $velo }};opacity:{{ $op }}"></span>
+                <div class="sf-media-copy" style="text-align:{{ $alineado }}">
+                    @if(filled($content['title'] ?? null))<h2>{{ $content['title'] }}</h2>@endif
+                    @if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif
+                    @if(filled($content['button_text'] ?? null))<a class="sf-button" href="{{ $content['button_url'] ?? '#' }}">{{ $content['button_text'] }}</a>@endif
+                </div>
+            </div>
+        </section>
+        @endif
+
+    @elseif($section->component === 'testimonials')
+        {{-- Lo que dicen los clientes. --}}
+        @php $items = collect($content['items'] ?? [])->filter(fn ($i) => ($i['enabled'] ?? true) && filled($i['text'] ?? null))->sortBy('sort_order')->take(max(1, min(12, (int) ($content['limit'] ?? 6)))); @endphp
+        @if($items->isNotEmpty())
+        <section class="sf-home-section sf-testi {{ $deviceClass }}" data-store-home-section="testimonials" data-store-placement="after-catalog"><div class="sf-home-container">
+            <div class="sf-home-heading"><div><h2>{{ $content['title'] ?? 'Lo que dicen nuestros clientes' }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div></div>
+            <div class="sf-testi-grid">
+                @foreach($items as $t)
+                <figure class="sf-card sf-testi-card">
+                    @if(($estrellas = (int) ($t['rating'] ?? 0)) > 0)<div class="sf-testi-estrellas" aria-label="{{ $estrellas }} de 5">{{ str_repeat('★', min(5, $estrellas)) }}</div>@endif
+                    <blockquote>{{ $t['text'] }}</blockquote>
+                    <figcaption>
+                        @if($img = $assetUrl($t['image'] ?? null))<img loading="lazy" src="{{ $img }}" alt="{{ $t['name'] ?? '' }}">@endif
+                        <span><strong>{{ $t['name'] ?? '' }}</strong>@if(filled($t['role'] ?? null))<small>{{ $t['role'] }}</small>@endif</span>
+                    </figcaption>
+                </figure>
+                @endforeach
+            </div>
+        </div></section>
+        @endif
+
+    @elseif($section->component === 'wa_advisory')
+        {{-- Asesoría por WhatsApp. Si el bloque no trae teléfono se usa el del
+             negocio: la fuente del WhatsApp es la etapa 01, no este bloque. --}}
+        @php
+            $tel = preg_replace('/\D+/', '', (string) ($content['phone'] ?? '')) ?: preg_replace('/\D+/', '', (string) ($settings['quote_whatsapp'] ?? $project->phone ?? ''));
+            $texto = $content['message'] ?? 'Hola, quisiera una asesoría.';
+        @endphp
+        @if(filled($tel))
+        <section class="sf-home-section sf-wa {{ $deviceClass }} {{ ($content['variant'] ?? 'band') === 'card' ? 'is-card' : '' }}" data-store-home-section="wa_advisory" data-store-placement="after-catalog"><div class="sf-home-container sf-wa-inner">
+            <div>
+                <h2>{{ $content['title'] ?? '¿Necesitas asesoría?' }}</h2>
+                @if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif
+            </div>
+            <a class="sf-button sf-wa-btn" target="_blank" rel="noopener"
+               href="https://wa.me/{{ str_starts_with($tel, '51') ? $tel : '51'.$tel }}?text={{ urlencode($texto) }}">{{ $content['button_text'] ?? 'Escríbenos por WhatsApp' }}</a>
+        </div></section>
+        @endif
+
     @endif
 @endforeach
 

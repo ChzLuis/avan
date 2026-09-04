@@ -26,6 +26,9 @@ class PublishChecklist
 
         return [
             'can_publish' => $technicalBlocks === [],
+            // Lo que IMPIDE publicar, separado de los avisos: la etapa 09 tiene
+            // que poder decir exactamente que falta, no solo que no se puede.
+            'blocking' => self::items($technicalBlocks),
             'requires_confirmation' => $technicalBlocks === [] && ($attention !== [] || $group('recommendation') !== []),
             'attention' => self::items($attention),
             'recommendation' => self::items($group('recommendation')),

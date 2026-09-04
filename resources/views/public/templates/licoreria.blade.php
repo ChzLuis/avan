@@ -387,6 +387,8 @@ label.checked .check-box { border-color:var(--gold); background:var(--gold); col
   .footer-grid { grid-template-columns:1fr; }
 }
 </style>
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 <body x-data="licStore()" x-init="init()" :class="darkMode?'dark':''">
 
@@ -607,6 +609,7 @@ label.checked .check-box { border-color:var(--gold); background:var(--gold); col
     drop.addEventListener('mouseleave', hideDrop);
   })();
   </script>
+    <x-store-menu :menu="$storeMenu ?? null" :project="$project" :store-view="$storeView ?? 'home'" />
 </header>
 
 {{-- HERO --}}

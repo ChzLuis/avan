@@ -194,6 +194,9 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     return $rows->concat($subRows);
 })->values();
 @endphp
+{{-- Analitica e integraciones: emisor UNICO (revision 08). --}}
+<x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 
 <body x-data="store()" x-cloak>

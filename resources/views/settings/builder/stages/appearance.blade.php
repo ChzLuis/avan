@@ -21,51 +21,6 @@
         <p class="bxb-note">Cambiar de plantilla conserva tus productos, textos y colores.</p>
     </div>
 
-    {{-- Estructura: variantes de cabecera, footer y carrito (F1) --}}
-    <style>
-        .bxb-mini{margin-top:8px;height:56px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;position:relative;overflow:hidden}
-        .bxb-mini i{position:absolute;display:block;background:#cbd5e1;border-radius:2px}
-        .bxb-mini .mk{background:#6366f1}
-        /* headers */
-        .mini-headers-classic i:nth-child(1){top:6px;left:6px;width:26px;height:10px}.mini-headers-classic i:nth-child(2){top:6px;left:38%;right:26%;height:10px}.mini-headers-classic i:nth-child(3){top:6px;right:6px;width:18px;height:10px}.mini-headers-classic i:nth-child(4){bottom:8px;left:6px;right:6px;height:12px;background:#94a3b8}
-        .mini-headers-compact i:nth-child(1){top:20px;left:6px;width:22px;height:9px}.mini-headers-compact i:nth-child(2){top:20px;left:34%;width:38%;height:9px}.mini-headers-compact i:nth-child(3){top:20px;right:6px;width:16px;height:9px}
-        .mini-headers-centered i:nth-child(1){top:6px;left:44%;width:12%;height:12px}.mini-headers-centered i:nth-child(2){top:8px;left:8px;width:12px;height:8px}.mini-headers-centered i:nth-child(3){top:8px;right:8px;width:12px;height:8px}.mini-headers-centered i:nth-child(4){bottom:8px;left:26%;right:26%;height:8px}
-        .mini-headers-triple i:nth-child(1){top:4px;left:6px;right:6px;height:6px;background:#64748b}.mini-headers-triple i:nth-child(2){top:15px;left:6px;width:18px;height:11px}.mini-headers-triple i:nth-child(3){top:15px;left:26%;right:22%;height:11px}.mini-headers-triple i:nth-child(4){top:15px;right:6px;width:12px;height:11px}.mini-headers-triple i:nth-child(5){bottom:5px;left:6px;right:6px;height:11px;background:#334155}
-        /* footers */
-        .mini-footers-classic i:nth-child(1){top:8px;left:6px;width:22%;height:26px}.mini-footers-classic i:nth-child(2){top:8px;left:32%;width:18%;height:34px}.mini-footers-classic i:nth-child(3){top:8px;left:54%;width:18%;height:34px}.mini-footers-classic i:nth-child(4){top:8px;right:6px;width:20%;height:34px}
-        .mini-footers-simple i:nth-child(1){top:24px;left:6px;width:20px;height:8px}.mini-footers-simple i:nth-child(2){top:24px;left:35%;width:30%;height:8px}.mini-footers-simple i:nth-child(3){top:24px;right:6px;width:16%;height:8px}
-        .mini-footers-minimal i:nth-child(1){top:6px;left:45%;width:10%;height:9px}.mini-footers-minimal i:nth-child(2){top:21px;left:30%;width:40%;height:7px}.mini-footers-minimal i:nth-child(3){top:34px;left:38%;width:24%;height:7px}
-        .mini-footers-institutional i:nth-child(1){top:8px;left:6px;width:34%;height:34px}.mini-footers-institutional i:nth-child(2){top:8px;left:48%;width:20%;height:34px}.mini-footers-institutional i:nth-child(3){top:8px;right:6px;width:22%;height:34px}
-        .mini-footers-commercial i:nth-child(1){top:4px;left:6px;right:6px;height:10px}.mini-footers-commercial i:nth-child(2){top:20px;left:6px;width:22%;height:26px}.mini-footers-commercial i:nth-child(3){top:20px;left:33%;width:18%;height:26px}.mini-footers-commercial i:nth-child(4){top:20px;left:56%;width:18%;height:26px}.mini-footers-commercial i:nth-child(5){top:20px;right:6px;width:16%;height:26px}
-        .mini-footers-complete i:nth-child(1){top:4px;left:6px;right:6px;height:8px;background:#94a3b8}.mini-footers-complete i:nth-child(2){top:17px;left:6px;width:24%;height:24px}.mini-footers-complete i:nth-child(3){top:17px;left:36%;width:16%;height:24px}.mini-footers-complete i:nth-child(4){top:17px;left:57%;width:16%;height:24px}.mini-footers-complete i:nth-child(5){top:17px;right:6px;width:18%;height:24px}.mini-footers-complete i:nth-child(6){bottom:3px;left:6px;right:6px;height:6px;background:#94a3b8}
-        /* carts */
-        .mini-carts-classic i:nth-child(1){top:6px;right:4px;bottom:6px;width:34%}.mini-carts-classic i:nth-child(2){top:12px;right:8%;width:24%;height:7px;background:#94a3b8}
-        .mini-carts-side i:nth-child(1){top:6px;right:4px;bottom:6px;width:36%;border-radius:6px 0 0 6px}.mini-carts-side i:nth-child(2){top:10px;right:7%;width:28%;height:9px}
-        .mini-carts-floating i:nth-child(1){bottom:8px;right:8px;width:34px;height:14px;border-radius:8px}
-        .mini-carts-page i:nth-child(1){top:6px;left:6px;right:6px;bottom:6px}.mini-carts-page i:nth-child(2){top:12px;left:12%;width:40%;height:8px;background:#94a3b8}.mini-carts-page i:nth-child(3){top:12px;right:12%;width:22%;height:20px;background:#94a3b8}
-    </style>
-    <div class="bxb-card">
-        <strong class="bxb-card-title">Pie de página y carrito</strong>
-        <div class="bxb-grid2">
-            @foreach([['footers', 'footer_layout', 'Diseño del pie de página', 6], ['carts', 'cart_layout', 'Diseño del carrito', 3]] as [$slot, $key, $label, $bars])
-            <div class="bxb-field"><span>{{ $label }}</span>
-                <select :value="settings.{{ $key }}||'classic'" @change="setSetting('{{ $key }}',$event.target.value)">
-                    @foreach(\App\Support\StorefrontLayoutPacks::options($slot) as $vKey => $vLabel)
-                    @php $isExp = in_array($vKey, \App\Support\StorefrontLayoutPacks::EXPERIMENTAL[$slot] ?? [], true)
-                        && !view()->exists("storefront.partials.{$slot}.{$vKey}"); @endphp
-                    <option value="{{ $vKey }}" @if($isExp) disabled @endif>{{ $vLabel }}@if($isExp) — próximamente @endif</option>
-                    @endforeach
-                </select>
-                {{-- Miniatura del esquema elegido (se actualiza en vivo) --}}
-                <div class="bxb-mini" :class="'mini-{{ $slot }}-'+(settings.{{ $key }}||'classic')" aria-hidden="true">
-                    @for($i = 0; $i < 6; $i++)<i></i>@endfor
-                </div>
-            </div>
-            @endforeach
-        </div>
-        <p class="bxb-note">Cada variante cambia la composición real (no solo colores). Se aplica en borrador: revísala en la vista previa antes de publicar. "Clásica" mantiene el diseño actual.</p>
-    </div>
-
     {{-- Tema visual: tokens que cambian la personalidad completa --}}
     <div class="bxb-card">
         <strong class="bxb-card-title">Tema visual</strong>
@@ -77,43 +32,12 @@
                     @endforeach
                 </select>
             </label>
-            <label class="bxb-field">Estilo de las tarjetas de producto
-                <select :value="settings.product_card_style||'classic'" @change="setSetting('product_card_style',$event.target.value)">
-                    <option value="classic">Clásico</option>
-                    <option value="tech">Tecnológico (línea de acento)</option>
-                    <option value="soft">Suave y redondeado</option>
-                    <option value="elegant">Elegante minimalista</option>
-                    <option value="contrast">Alto contraste</option>
-                </select>
-            </label>
-        </div>
-        <p class="bxb-note">El tema cambia fondos, sombras, bordes y jerarquía de toda la tienda; tus colores de marca se respetan. Ideal para que dos tiendas con la misma plantilla se vean totalmente distintas.</p>
-    </div>
-
-    {{-- Diseño global de secciones (antes en el Diseñador clásico) --}}
+    {{-- Estilo global de los titulos de seccion: sistema visual de toda la
+         tienda, luego pertenece a Apariencia. Estaba dentro de un @if(false)
+         y dejo sin editor a 3 tiendas que ya lo tienen configurado. --}}
     <div class="bxb-card">
-        <strong class="bxb-card-title">Diseño de las secciones</strong>
+        <strong class="bxb-card-title">Títulos de sección</strong>
         <div class="bxb-grid2">
-            <label class="bxb-field">Estilo general
-                <select :value="settings.section_style_preset||'modern'" @change="setSetting('section_style_preset',$event.target.value)">
-                    <option value="modern">Moderno (actual)</option>
-                    <option value="minimal">Minimal</option>
-                    <option value="commerce">Comercial (ecommerce, denso)</option>
-                </select>
-            </label>
-            <label class="bxb-field">Espaciado entre secciones
-                <select :value="settings.section_spacing||'comfortable'" @change="setSetting('section_spacing',$event.target.value)">
-                    <option value="comfortable">Amplio (mucho aire)</option>
-                    <option value="compact">Compacto</option>
-                    <option value="dense">Ecommerce (denso, sin huecos)</option>
-                </select>
-            </label>
-            <label class="bxb-field">Alineación de los títulos
-                <select :value="settings.section_heading_align||'left'" @change="setSetting('section_heading_align',$event.target.value)">
-                    <option value="left">A la izquierda</option>
-                    <option value="center">Centrados</option>
-                </select>
-            </label>
             <label class="bxb-field">Estilo de los títulos de sección
                 <select :value="settings.section_head_style||'normal'" @change="setSetting('section_head_style',$event.target.value)">
                     <option value="normal">Suelto sobre el fondo</option>
@@ -136,6 +60,49 @@
             <label class="bxb-field" x-show="(settings.section_head_style||'normal')==='barra'" x-cloak>Letra del botón de la barra
                 <x-bxb-color clave="section_head_btn_color" defecto="#2563eb" etiqueta="Letra del botón de la barra" />
                 <small class="bxb-note">Vacío = el color principal de la tienda.</small>
+            </label>
+        </div>
+    </div>
+
+            @if(false)
+            <label class="bxb-field">Estilo de las tarjetas de producto
+                <select :value="settings.product_card_style||'classic'" @change="setSetting('product_card_style',$event.target.value)">
+                    <option value="classic">Clásico</option>
+                    <option value="tech">Tecnológico (línea de acento)</option>
+                    <option value="soft">Suave y redondeado</option>
+                    <option value="elegant">Elegante minimalista</option>
+                    <option value="contrast">Alto contraste</option>
+                </select>
+            </label>
+            @endif
+        </div>
+        <p class="bxb-note">El tema cambia fondos, sombras, bordes y jerarquía de toda la tienda; tus colores de marca se respetan. Ideal para que dos tiendas con la misma plantilla se vean totalmente distintas.</p>
+    </div>
+
+    {{-- Diseño global de secciones (antes en el Diseñador clásico) --}}
+    @if(false)
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Diseño de las secciones</strong>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Estilo general
+                <select :value="settings.section_style_preset||'modern'" @change="setSetting('section_style_preset',$event.target.value)">
+                    <option value="modern">Moderno (actual)</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="commerce">Comercial (ecommerce, denso)</option>
+                </select>
+            </label>
+            <label class="bxb-field">Espaciado entre secciones
+                <select :value="settings.section_spacing||'comfortable'" @change="setSetting('section_spacing',$event.target.value)">
+                    <option value="comfortable">Amplio (mucho aire)</option>
+                    <option value="compact">Compacto</option>
+                    <option value="dense">Ecommerce (denso, sin huecos)</option>
+                </select>
+            </label>
+            <label class="bxb-field">Alineación de los títulos
+                <select :value="settings.section_heading_align||'left'" @change="setSetting('section_heading_align',$event.target.value)">
+                    <option value="left">A la izquierda</option>
+                    <option value="center">Centrados</option>
+                </select>
             </label>
             {{-- Depende del archivo de logo, no del gusto: uno claro sobre un pie
                  oscuro se lee solo; uno oscuro sin placa desaparece. --}}
@@ -173,6 +140,7 @@
         </div>
         <p class="bxb-note">Estos ajustes aplican a toda la portada. El Tema visual define la personalidad base; aquí la afinas.</p>
     </div>
+    @endif
 
     {{-- Marca: logo + favicon + colores --}}
     <div class="bxb-card">
@@ -329,8 +297,9 @@
         <label class="bxb-switch"><input type="checkbox" :checked="(settings.btn_show_icon??'1')!=='0'" @change="setSetting('btn_show_icon',$event.target.checked?'1':'0')"> Mostrar ícono de carrito dentro del botón de compra</label>
     </div>
 
-    {{-- Footer --}}
-    <div class="bxb-card">
+    {{-- Compatibilidad: los controles del footer se muestran únicamente en Footer y legales. --}}
+    @if(false)
+    <div class="bxb-card" x-show="false" x-cloak aria-hidden="true">
         <strong class="bxb-card-title">Pie de página</strong>
         <label class="bxb-field">Diseño del pie de página
             <select :value="settings.footer_style||'classic'" @change="setSetting('footer_style',$event.target.value)">
@@ -380,6 +349,12 @@
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.footer_show_payments??'1')!=='0'" @change="setSetting('footer_show_payments',$event.target.checked?'1':'0')"> Mostrar métodos de pago</label>
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.footer_show_secure??'1')!=='0'" @change="setSetting('footer_show_secure',$event.target.checked?'1':'0')"> Mostrar sello de compra segura</label>
         </div>
+    </div>
+    @endif
+
+    @if(false)
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Ajustes visuales por sección</strong>
         {{-- Tarjeta de producto: proporcion y fondo de la foto. --}}
         <div class="bxb-grid2">
             <label class="bxb-field">Proporción de la foto de producto
@@ -414,6 +389,14 @@
                 <small>Con el selector de cantidad siempre visible la tarjeta crece y descuadra la fila.</small>
             </div>
         </div>
+        {{-- Un color por tarjeta: en ropa cada color es un producto distinto en
+             el inventario, pero en el escaparate son el mismo modelo. --}}
+        <div class="bxb-grid2">
+            <div class="bxb-field"><span>Agrupar los colores de un mismo modelo</span>
+                <label class="bxb-switch"><input type="checkbox" :checked="(settings.catalog_group_models||'')==='1'" @change="setSetting('catalog_group_models',$event.target.checked?'1':'')"> Una tarjeta por modelo</label>
+                <small>Los demás colores salen como opciones dentro de la tarjeta. Cada color sigue siendo su producto, con su stock y su ficha. Al buscar no se agrupa: quien escribe un color quiere ver ese color.</small>
+            </div>
+        </div>
         {{-- Distintivo "Nuevo" en las tarjetas: se calcula por antigüedad. --}}
         <div class="bxb-grid2">
             <label class="bxb-field">Marcar como "Nuevo" los productos de los últimos… (días)
@@ -421,7 +404,13 @@
                 <small>0 desactiva el distintivo. Si el producto está en oferta, manda el descuento.</small>
             </label>
         </div>
-        {{-- Franja animada sobre el pie: no tenia controles y se configuraba a mano. --}}
+    </div>
+    @endif
+
+    {{-- Barra superior: pertenece a Apariencia (revision 02). Estaba dentro
+         de un @if(false) y dejo sin editor a 2 tiendas que ya la usan. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Franja animada</strong>
         <div class="bxb-grid2">
             <label class="bxb-field">Franja animada sobre el pie (vacío = oculta)
                 <input type="text" maxlength="120" placeholder="AHORRA TIEMPO · COMPRA EN TU TIENDA" :value="settings.ticker_text||''" @input.debounce.600ms="setSetting('ticker_text',$event.target.value)">
@@ -447,6 +436,10 @@
         <div class="bxb-check-inline" x-show="(settings.ticker_text||'')!==''">
             <label class="bxb-switch"><input type="checkbox" :checked="(settings.ticker_force_motion||'0')!=='0'" @change="setSetting('ticker_force_motion',$event.target.checked?'1':'0')"> Mover la franja aunque el equipo tenga las animaciones reducidas</label>
         </div>
+    </div>
+
+    @if(false)
+    <div class="bxb-card" x-show="false" x-cloak aria-hidden="true">
         {{-- Sello de confianza: se dibuja en SVG, no depende de una imagen subida. --}}
         <div class="bxb-grid2" x-show="(settings.footer_show_secure??'1')!=='0'">
             <label class="bxb-field">Sello de confianza
@@ -503,6 +496,7 @@
         </div>
         </template>
     </div>
+    @endif
 
     <details class="bxb-advanced">
     <summary>Elementos flotantes y acceso de clientes (avanzado)</summary>
@@ -533,10 +527,13 @@
         </div>
     </div>
 
-    {{-- Pantalla de acceso de clientes --}}
+    {{-- Pantalla de acceso a la plataforma. NO es de la tienda: `login_*` lo
+         consume `layouts/guest.blade.php`, que sirve las pantallas de login,
+         registro y recuperacion de BIXO. Sigue aqui porque la estructura
+         objetivo no le asigna etapa; su destino esta pendiente de decidir. --}}
     <div class="bxb-card">
-        <strong class="bxb-card-title">Pantalla de acceso de clientes</strong>
-        <p class="bxb-note">Fondo y mensaje de la página donde tus clientes inician sesión.</p>
+        <strong class="bxb-card-title">Pantalla de acceso</strong>
+        <p class="bxb-note">Fondo y mensaje de la pantalla donde se inicia sesión en el panel. No afecta a tu tienda.</p>
         <div class="bxb-grid2">
             <label class="bxb-field">Título de bienvenida
                 <input type="text" maxlength="120" placeholder="Bienvenido de vuelta" :value="settings.login_heading||''" @input.debounce.600ms="setSetting('login_heading',$event.target.value)">
@@ -590,6 +587,36 @@
                     <button type="button" :class="(settings.announcement_align||'center')==='right'&&'on'" @click="setSetting('announcement_align','right')">Derecha</button>
                 </div>
             </div>
+        
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Movimiento de las tarjetas</strong>
+        <p class="bxb-note" style="margin:0 0 8px">Cómo reaccionan los productos y las categorías. Se apaga solo para quien tenga activado «reducir movimiento».</p>
+        <div class="bxb-grid2">
+            <label class="bxb-field">Al pasar el ratón
+                <select :value="settings.hover_card_effect||''" @change="setSetting('hover_card_effect',$event.target.value)">
+                    <option value="">Sin efecto</option>
+                    <option value="float">Flotar (se eleva)</option>
+                    <option value="grow">Crecer</option>
+                    <option value="shrink">Encoger</option>
+                    <option value="pop">Saltar</option>
+                    <option value="bob">Balancearse</option>
+                </select>
+            </label>
+            <label class="bxb-field">Entrada escalonada
+                <select :value="settings.anim_stagger_ms||'0'" @change="setSetting('anim_stagger_ms',$event.target.value)">
+                    <option value="0">Todas a la vez</option>
+                    <option value="60">Rápida (60 ms)</option>
+                    <option value="100">Normal (100 ms)</option>
+                    <option value="160">Pausada (160 ms)</option>
+                </select>
+            </label>
         </div>
+        <label class="bxb-check" style="margin-top:8px">
+            <input type="checkbox" :checked="settings.hover_image_zoom==='1'" @change="setSetting('hover_image_zoom',$event.target.checked?'1':'0')">
+            <span>Acercar la foto al pasar el ratón</span>
+        </label>
+    </div>
+
+</div>
     </details>
 </section>

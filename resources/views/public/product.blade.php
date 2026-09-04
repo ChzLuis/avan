@@ -120,6 +120,8 @@
 .scrollbar-hide::-webkit-scrollbar { display:none; }
 .scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
 </style>
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 <body class="bg-gray-50 min-h-screen" x-data="productStore()">
 

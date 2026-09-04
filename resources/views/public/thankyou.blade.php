@@ -19,6 +19,8 @@
         .btn-accent { background: {{ $primaryColor }}; color: #fff; }
         .btn-accent:hover { opacity: .9; }
     </style>
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 <body class="min-h-screen bg-gray-50 flex items-start justify-center px-4 py-12">
 

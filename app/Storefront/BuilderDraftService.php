@@ -20,6 +20,21 @@ use Illuminate\Support\Facades\DB;
 class BuilderDraftService
 {
     /** Borradores de settings como [key => value]. */
+    /**
+     * Ajuste del Constructor -> columna canonica de `projects` (revision 01).
+     * publish() la usa para promover y rollback() para restaurar: si solo la
+     * conociera publish(), deshacer dejaria el dato nuevo en la columna y el
+     * viejo en el ajuste, que es justo la divergencia que esto quiere evitar.
+     */
+    private const COLUMNAS_MAESTRAS = [
+        'business_name' => 'name',
+        'contact_phone' => 'phone',
+        'quote_whatsapp' => 'whatsapp',
+        'contact_address' => 'address',
+        'logo_url' => 'logo_url',
+        'business_category' => 'category',
+    ];
+
     public function settingsDrafts(Project $project): array
     {
         return DB::table('builder_drafts')
@@ -60,7 +75,11 @@ class BuilderDraftService
     {
         if (DB::table('builder_drafts')->where('project_id', $project->id)->exists()) return true;
 
-        return $project->storeSections()->where('page', 'home')->where('has_draft', true)->exists();
+        if ($project->storeSections()->where('page', 'home')->where('has_draft', true)->exists()) {
+            return true;
+        }
+
+        return \App\Models\StorePage::where('project_id', $project->id)->where('has_draft', true)->exists();
     }
 
     /**
@@ -79,6 +98,13 @@ class BuilderDraftService
             // 1) Snapshot del estado público previo (solo lo que cambia).
             $prevSettings = $draftKeys === [] ? [] : $project->settings()
                 ->whereIn('key', $draftKeys)->pluck('value', 'key')->all();
+
+            // Columnas maestras tal y como estan AHORA: sin esto el rollback no
+            // puede devolverlas y quedan con el valor nuevo para siempre.
+            $prevProject = [];
+            foreach (self::COLUMNAS_MAESTRAS as $columna) {
+                $prevProject[$columna] = $project->getOriginal($columna);
+            }
 
             $sectionRows = $project->storeSections()->where('page', 'home')->lockForUpdate()->get();
             $prevSections = [];
@@ -115,11 +141,45 @@ class BuilderDraftService
                 ])->save();
             }
 
+            // 3b) Sincronizar las COLUMNAS canónicas de projects (revisión 01).
+            // El resto del sistema (facturación, PDF, POS, portal, el bot de
+            // WhatsApp) lee projects.name/phone/whatsapp/address/logo_url: si el
+            // comerciante corrige el dato en el Constructor y solo se escribe el
+            // setting, el bot sigue dictando la dirección vieja. Publicar es el
+            // único punto de escritura; solo se tocan columnas cuyo setting
+            // cambió en ESTA publicación.
+            $cambiosProyecto = [];
+            foreach (self::COLUMNAS_MAESTRAS as $settingKey => $columna) {
+                if (! array_key_exists($settingKey, $drafts) || $drafts[$settingKey] === null) continue;
+                $valor = trim((string) $drafts[$settingKey]);
+                if ($settingKey === 'quote_whatsapp') {
+                    $valor = preg_replace('/\D/', '', $valor);
+                }
+                if ($valor === '') continue; // vaciar el setting no borra el dato maestro
+                $cambiosProyecto[$columna] = $valor;
+            }
+            if ($cambiosProyecto !== []) {
+                $project->forceFill($cambiosProyecto)->save();
+            }
+
+            // 3c) Promover las PAGINAS con borrador. Hasta ahora se publicaban al
+            // guardarse y la etapa 09 prometia "publicar tienda" cuando parte del
+            // contenido ya habia salido sin pasar por ahi.
+            $prevPages = [];
+            foreach (\App\Models\StorePage::where('project_id', $project->id)->where('has_draft', true)->get() as $pagina) {
+                $prevPages[$pagina->key] = [
+                    'title' => $pagina->title,
+                    'content' => $pagina->content,
+                    'is_enabled' => $pagina->is_enabled,
+                ];
+                $pagina->publicarBorrador();
+            }
+
             // 4) Registrar versión publicada.
             $version = (int) DB::table('store_publications')->where('project_id', $project->id)->max('version') + 1;
             DB::table('store_publications')->insert([
                 'project_id' => $project->id, 'version' => $version,
-                'snapshot' => json_encode(['settings' => $prevSettings, 'sections' => $prevSections]),
+                'snapshot' => json_encode(['settings' => $prevSettings, 'sections' => $prevSections, 'project' => $prevProject, 'pages' => $prevPages]),
                 'checklist' => $checklist ? json_encode($checklist) : null,
                 'published_by' => $userId, 'created_at' => now(), 'updated_at' => now(),
             ]);
@@ -142,9 +202,30 @@ class BuilderDraftService
         $snapshot = json_decode($row->snapshot, true) ?: [];
 
         DB::transaction(function () use ($project, $snapshot) {
+            // Las columnas maestras se restauran TAL CUAL estaban, NULL incluido:
+            // no se reconstruyen desde los alias, que pueden haber divergido.
+            if (array_key_exists('project', $snapshot) && is_array($snapshot['project'])) {
+                $columnas = array_intersect_key(
+                    $snapshot['project'],
+                    array_flip(array_values(self::COLUMNAS_MAESTRAS))
+                );
+                if ($columnas !== []) {
+                    $project->forceFill($columnas)->save();
+                }
+            }
+
             foreach (($snapshot['settings'] ?? []) as $key => $value) {
                 $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
             }
+            foreach (($snapshot['pages'] ?? []) as $key => $state) {
+                \App\Models\StorePage::where('project_id', $project->id)->where('key', $key)
+                    ->update([
+                        'title' => $state['title'],
+                        'content' => is_array($state['content']) ? json_encode($state['content']) : $state['content'],
+                        'is_enabled' => $state['is_enabled'],
+                    ]);
+            }
+
             foreach (($snapshot['sections'] ?? []) as $component => $state) {
                 $project->storeSections()->where('page', 'home')
                     ->where('component', $component)->update([

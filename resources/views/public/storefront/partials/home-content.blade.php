@@ -7,5 +7,6 @@
         </div>
     </section>
 @else
+    <x-storefront-shapes :settings="$settings" />
     @include('components.storefront-home-sections', ['project' => $project, 'settings' => $settings, 'sections' => $sections])
 @endif

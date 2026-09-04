@@ -140,9 +140,16 @@ $schema = [
     'url'         => $canonicalUrl,
     'image'       => $ogImage,
 ];
-if (!empty($project->phone))    $schema['telephone'] = $project->phone;
-if (!empty($project->address))  $schema['address'] = ['@type'=>'PostalAddress','streetAddress'=>$project->address,'addressCountry'=>'PE'];
-if (!empty($project->whatsapp)) $schema['contactPoint'] = ['@type'=>'ContactPoint','telephone'=>$project->whatsapp,'contactType'=>'customer service'];
+// El schema entregaba a Google el telefono y la direccion de las columnas del
+// proyecto, ignorando lo que el comerciante corrige en el Constructor: los
+// buscadores recibian datos obsoletos. Misma cadena de resolucion que el resto
+// de la plantilla (el ajuste manda, la columna es respaldo).
+$schemaPhone    = trim((string) ($settings['contact_phone'] ?? '')) ?: trim((string) ($project->phone ?? ''));
+$schemaAddress  = trim((string) ($settings['contact_address'] ?? '')) ?: trim((string) ($project->address ?? ''));
+$schemaWhatsapp = trim((string) ($settings['quote_whatsapp'] ?? '')) ?: trim((string) ($project->whatsapp ?? ''));
+if ($schemaPhone !== '')    $schema['telephone'] = $schemaPhone;
+if ($schemaAddress !== '')  $schema['address'] = ['@type'=>'PostalAddress','streetAddress'=>$schemaAddress,'addressCountry'=>'PE'];
+if ($schemaWhatsapp !== '') $schema['contactPoint'] = ['@type'=>'ContactPoint','telephone'=>$schemaWhatsapp,'contactType'=>'customer service'];
 @endphp
 <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -965,6 +972,9 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
 @media(max-width:640px){section{padding-block:clamp(36px,8vw,52px)}.hero,.hero-section{min-height:clamp(360px,58vh,480px)}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+{{-- Analitica e integraciones: emisor UNICO (revision 08). --}}
+<x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
 </head>
 <body class="{{ trim($themeBodyClass.' card-style-'.$productCardStyle) }}" x-data="ecStore()" x-init="init()" @scroll.window="onScroll">
 
@@ -1074,6 +1084,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{ou
       </div>
     </div>
   </div>
+    <x-store-menu :menu="$storeMenu ?? null" :project="$project" :store-view="$storeView ?? 'home'" />
 </header>
 
 {{-- NAV --}}

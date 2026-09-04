@@ -18,13 +18,14 @@ use Illuminate\Support\Facades\DB;
 class BuilderRuleRegistry
 {
     public const STAGES = [
-        'business'   => ['label' => 'Mi negocio',              'minutes' => 15],
-        'appearance' => ['label' => 'Marca y diseño',          'minutes' => 20],
-        'header'     => ['label' => 'Encabezado y navegación', 'minutes' => 15],
+        'business'   => ['label' => 'Datos del negocio',       'minutes' => 15],
+        'appearance' => ['label' => 'Apariencia',              'minutes' => 30],
         'home'       => ['label' => 'Página de inicio',        'minutes' => 45],
         'catalog'    => ['label' => 'Catálogo',                'minutes' => 150],
-        'sales'      => ['label' => 'Ventas y operación',      'minutes' => 45],
-        'pages'      => ['label' => 'Páginas y confianza',     'minutes' => 20],
+        'sales'      => ['label' => 'Venta',                   'minutes' => 45],
+        'pages'      => ['label' => 'Páginas',                 'minutes' => 25],
+        'legal'      => ['label' => 'Footer y legales',        'minutes' => 20],
+        'advanced'   => ['label' => 'Configuración',           'minutes' => 15],
         'publish'    => ['label' => 'Revisar y publicar',      'minutes' => 25],
     ];
 
@@ -88,11 +89,28 @@ class BuilderRuleRegistry
     {
         return [
             // ── Etapa 1: Datos del negocio ──
+            // BLOQUEA: una tienda sin nombre no puede publicarse.
+            ['code' => 'business.name_missing', 'stage' => 'business', 'severity' => 'attention', 'weight' => 10,
+                'message' => 'Tu tienda necesita un nombre comercial.', 'target' => 'business.nombre', 'blocks_publish' => true,
+                'evaluator' => fn ($c) => trim((string) ($c['project']->name ?? '')) !== ''],
+            // BLOQUEA solo si hay recojo en tienda o local fisico declarado.
+            ['code' => 'business.address_missing', 'stage' => 'business', 'severity' => 'attention', 'weight' => 6,
+                'message' => 'Declaraste local físico o recojo en tienda: falta la dirección.', 'target' => 'business.direccion',
+                'blocks_publish' => fn ($c) => ($c['settings']['has_physical_store'] ?? '0') === '1'
+                    || ($c['settings']['pickup_enabled'] ?? '0') === '1',
+                'evaluator' => fn ($c) => (($c['settings']['has_physical_store'] ?? '0') !== '1'
+                        && ($c['settings']['pickup_enabled'] ?? '0') !== '1')
+                    || trim((string) ($c['project']->address ?? '')) !== ''
+                    || $c['has']('contact_address')],
             ['code' => 'business.logo_missing', 'stage' => 'business', 'severity' => 'attention', 'weight' => 8,
                 'message' => 'Sube el logo de tu negocio.', 'target' => 'business.logo', 'blocks_publish' => false,
                 'evaluator' => fn ($c) => $c['logo']],
             ['code' => 'business.whatsapp_missing', 'stage' => 'business', 'severity' => 'attention', 'weight' => 8,
-                'message' => 'Registra el WhatsApp de ventas de tu tienda.', 'target' => 'business.whatsapp', 'blocks_publish' => false,
+                'message' => 'Registra el WhatsApp de ventas de tu tienda.', 'target' => 'business.whatsapp',
+                // BLOQUEA cuando la venta depende de WhatsApp: cotizacion, consulta
+                // o pedido. En una tienda de compra online directa, no.
+                'blocks_publish' => fn ($c) => ($c['settings']['store_mode'] ?? 'direct') !== 'direct'
+                    || in_array($c['settings']['product_button_mode'] ?? '', ['inquiry', 'both'], true),
                 'evaluator' => fn ($c) => strlen($c['whatsapp']) >= 9],
             ['code' => 'business.email_missing', 'stage' => 'business', 'severity' => 'recommendation', 'weight' => 2,
                 'message' => 'Agrega un correo de contacto.', 'target' => 'business.email', 'blocks_publish' => false,
@@ -103,14 +121,14 @@ class BuilderRuleRegistry
 
             // ── Etapa 2: Apariencia ──
             ['code' => 'appearance.template_missing', 'stage' => 'appearance', 'severity' => 'attention', 'weight' => 6,
-                'message' => 'Elige la plantilla de tu tienda.', 'target' => 'appearance.template', 'blocks_publish' => false,
+                'message' => 'Elige la plantilla de tu tienda.', 'target' => 'appearance.template', 'blocks_publish' => true,
                 'evaluator' => fn ($c) => $c['has']('catalog_template')],
             ['code' => 'appearance.primary_color_missing', 'stage' => 'appearance', 'severity' => 'recommendation', 'weight' => 4,
                 'message' => 'Define el color principal de tu marca.', 'target' => 'appearance.colors', 'blocks_publish' => false,
                 'evaluator' => fn ($c) => $c['has']('primary_color')],
             // ── Etapa: Encabezado y navegación ──
-            ['code' => 'header.defaults', 'stage' => 'header', 'severity' => 'recommendation', 'weight' => 2,
-                'message' => 'Personaliza el encabezado (modelo, colores y barra superior).', 'target' => 'header.presets', 'blocks_publish' => false,
+            ['code' => 'appearance.header_defaults', 'stage' => 'appearance', 'severity' => 'recommendation', 'weight' => 2,
+                'message' => 'Personaliza el encabezado (modelo, colores y barra superior).', 'target' => 'appearance.header', 'blocks_publish' => false,
                 'evaluator' => fn ($c) => $c['has']('header_preset') || $c['has']('header_bg_color') || $c['has']('announcement_text')],
 
             // ── Etapa 3: Página de inicio ──
@@ -130,13 +148,14 @@ class BuilderRuleRegistry
 
             // ── Etapa 4: Catálogo ──
             ['code' => 'catalog.no_products', 'stage' => 'catalog', 'severity' => 'attention', 'weight' => 10,
-                'message' => 'Tu catálogo no tiene productos.', 'target' => 'catalog.start', 'blocks_publish' => false,
+                'message' => 'Tu catálogo no tiene productos.', 'target' => 'catalog.start', 'blocks_publish' => true,
                 'evaluator' => fn ($c) => $c['counts']['total'] > 0],
             // Contextual: sin precio es grave en venta directa; en cotización solo informa.
             ['code' => 'catalog.products_without_price', 'stage' => 'catalog',
                 'severity' => fn ($c) => (($c['settings']['store_mode'] ?? 'direct') === 'direct') ? 'attention' : 'info',
                 'weight' => 8,
-                'message' => 'Hay productos sin precio (no podrán comprarse directamente).', 'target' => 'catalog.fix-price', 'blocks_publish' => false,
+                'message' => 'Hay productos sin precio (no podrán comprarse directamente).', 'target' => 'catalog.fix-price',
+                'blocks_publish' => fn ($c) => ($c['settings']['store_mode'] ?? 'direct') === 'direct',
                 'evaluator' => fn ($c) => $c['counts']['total'] === 0 || $c['counts']['without_price'] === 0,
                 'count' => fn ($c) => $c['counts']['without_price']],
             ['code' => 'catalog.products_without_image', 'stage' => 'catalog', 'severity' => 'recommendation', 'weight' => 6,
@@ -154,16 +173,17 @@ class BuilderRuleRegistry
 
             // ── Etapa 5: Venta y operación ──
             ['code' => 'sales.payment_missing', 'stage' => 'sales', 'severity' => 'attention', 'weight' => 6,
-                'message' => 'Configura al menos un método de cobro (o cambia a modo cotización).', 'target' => 'sales.payments', 'blocks_publish' => false,
+                'message' => 'Configura al menos un método de cobro (o cambia a modo cotización).', 'target' => 'sales.payments',
+                'blocks_publish' => fn ($c) => ($c['settings']['store_mode'] ?? 'direct') === 'direct',
                 'evaluator' => fn ($c) => (($c['settings']['store_mode'] ?? 'direct') !== 'direct') || $c['paymentConfigured'] || strlen($c['whatsapp']) >= 9],
             ['code' => 'sales.shipping_incomplete', 'stage' => 'sales', 'severity' => 'recommendation', 'weight' => 3,
                 'message' => 'Activaste envíos pero falta configurar el costo.', 'target' => 'sales.shipping', 'blocks_publish' => false,
                 'evaluator' => fn ($c) => (($c['settings']['shipping_enabled'] ?? '0') !== '1') || $c['has']('shipping_cost')],
-            ['code' => 'sales.about_missing', 'stage' => 'sales', 'severity' => 'recommendation', 'weight' => 2,
-                'message' => 'Completa la página Nosotros para generar confianza.', 'target' => 'sales.trust', 'blocks_publish' => false,
+            ['code' => 'pages.about_missing', 'stage' => 'pages', 'severity' => 'recommendation', 'weight' => 2,
+                'message' => 'Completa la página Nosotros para generar confianza.', 'target' => 'pages.about', 'blocks_publish' => false,
                 'evaluator' => fn ($c) => (bool) ($c['pages']->get('nosotros')?->is_enabled)],
-            ['code' => 'sales.legal_disabled', 'stage' => 'sales', 'severity' => 'recommendation', 'weight' => 3,
-                'message' => 'Las páginas legales están desactivadas (privacidad o términos).', 'target' => 'sales.trust', 'blocks_publish' => false,
+            ['code' => 'legal.pages_disabled', 'stage' => 'legal', 'severity' => 'recommendation', 'weight' => 3,
+                'message' => 'Las páginas legales están desactivadas (privacidad o términos).', 'target' => 'legal.pages', 'blocks_publish' => false,
                 'evaluator' => function ($c) {
                     foreach (['privacidad', 'terminos'] as $key) {
                         $page = $c['pages']->get($key);
@@ -192,7 +212,10 @@ class BuilderRuleRegistry
                 'weight' => $rule['weight'],
                 'message' => $rule['message'],
                 'target' => $rule['target'],
-                'blocks_publish' => !$passes && ($rule['blocks_publish'] ?? false),
+                // Bloqueo contextual: "sin precio" impide publicar en venta directa
+                // pero no en una tienda de solo cotizacion.
+                'blocks_publish' => !$passes && (bool) (is_callable($rule['blocks_publish'] ?? false)
+                    ? $rule['blocks_publish']($ctx) : ($rule['blocks_publish'] ?? false)),
                 'complete' => $passes,
                 'count' => isset($rule['count']) ? (int) $rule['count']($ctx) : null,
             ];
