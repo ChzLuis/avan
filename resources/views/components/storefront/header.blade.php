@@ -28,7 +28,7 @@
 <header class="store-header">
     <div class="store-container store-header-inner">
         <a class="store-brand" href="{{ route('public.catalog',$project->slug) }}">
-            @if($logoUrl)<img src="{{ $logoUrl }}" alt="{{ $project->name }}">@else<span class="store-brand-mark">{{ mb_strtoupper(mb_substr($project->name,0,1)) }}</span>@endif
+            @if($logoUrl)<img src="{{ $logoUrl }}" alt="{{ $project->name }}">@if(($settings['logo_wordmark'] ?? '0') === '1')<span class="brand-wordmark">{{ $settings['logo_wordmark_text'] ?? $project->name }}</span>@endif@else<span class="store-brand-mark">{{ mb_strtoupper(mb_substr($project->name,0,1)) }}</span>@endif
             <span class="store-brand-copy"><strong>{{ $project->name }}</strong>@if($project->description)<small>{{ $project->description }}</small>@endif</span>
         </a>
         <nav class="store-navigation" aria-label="Navegación principal">
@@ -57,3 +57,11 @@
 <script>
 (()=>{const panel=document.querySelector('[data-store-menu-panel]'),backdrop=document.querySelector('.store-mobile-backdrop'),open=document.querySelector('[data-store-menu-open]'),closes=document.querySelectorAll('[data-store-menu-close]');if(!panel||!open)return;const setOpen=value=>{panel.classList.toggle('is-open',value);backdrop?.classList.toggle('is-open',value);panel.setAttribute('aria-hidden',value?'false':'true');open.setAttribute('aria-expanded',value?'true':'false');document.body.classList.toggle('store-menu-open',value);if(value)panel.querySelector('a,button')?.focus();else open.focus()};open.addEventListener('click',()=>setOpen(true));closes.forEach(button=>button.addEventListener('click',()=>setOpen(false)));document.addEventListener('keydown',event=>{if(event.key==='Escape'&&panel.classList.contains('is-open'))setOpen(false)})})();
 </script>
+
+<style>
+  /* Titulo junto al logo. Apagado por defecto: donde va el logo no se repite
+     el nombre, salvo que el negocio lo pida. */
+  .brand-wordmark{margin-left:10px;font-family:var(--font-title,inherit);font-size:20px;
+                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap}
+  @media(max-width:760px){.brand-wordmark{font-size:16px;margin-left:7px}}
+</style>

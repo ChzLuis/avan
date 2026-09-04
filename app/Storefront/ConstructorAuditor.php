@@ -36,7 +36,7 @@ final class ConstructorAuditor
         'hover_card_effect' => '02', 'hover_image_zoom' => '02', 'anim_stagger_ms' => '02',
         'btn_shape' => '02', 'btn_show_icon' => '02', 'font_title' => '02', 'font_body' => '02',
         'ticker_' => '02', 'announcement_' => '02', 'header_' => '02', 'hp_' => '02',
-        'uni_top_note' => '02', 'section_head_' => '02', 'float_' => '02', 'login_' => '02',
+        'logo_wordmark' => '02', 'logo_wordmark_text' => '02', 'uni_top_note' => '02', 'section_head_' => '02', 'float_' => '02', 'login_' => '02',
         'primary_color' => '02', 'secondary_color' => '02', 'accent_color' => '02',
         'text_color' => '02', 'text_muted_color' => '02', 'text_strong_color' => '02',
         'surface_soft_color' => '02', 'surface_color' => '02', 'border_color' => '02',
@@ -44,7 +44,7 @@ final class ConstructorAuditor
         'popup_bg_color' => '02', 'buy_button_color' => '02', 'content_max_width' => '02',
         // 03 Página de inicio
         'section_' => '03', 'hero_' => '03', 'anim_' => '03', 'intro_' => '03', 'shape_' => '03', 'overlay_' => '03',
-        'pastel_band_' => '03', 'featured_categories_' => '03', 'featured_products_view' => '03',
+        'pastel_band_' => '03', 'featured_categories_' => '03', 'featured_products_view' => '03', 'featured_products_autoplay' => '03',
         'flash_sale_' => '03', 'trust_' => '03', 'promo_style' => '03',
         'promo_autoplay' => '03', 'promo_show_dots' => '03', 'collection_' => '03',
         // 04 Catálogo — presentación

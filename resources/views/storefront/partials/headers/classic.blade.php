@@ -20,6 +20,7 @@
                aria-label="Inicio de {{ $storeName }}">
                 @if($logoUrl)
                     <img class="brand-logo" src="{{ $logoUrl }}" alt="Logo de {{ $storeName }}">
+                    @if(($settings['logo_wordmark'] ?? '0') === '1')<span class="brand-wordmark">{{ $settings['logo_wordmark_text'] ?? $storeName }}</span>@endif
                 @else
                     <span class="brand-mark">{{ mb_strtoupper(mb_substr($storeName, 0, 1)) }}</span>
                     <span class="brand-copy">
@@ -151,3 +152,11 @@
         @endif
     </nav>
     </div>{{-- /header-zone --}}
+
+<style>
+  /* Titulo junto al logo. Apagado por defecto: donde va el logo no se repite
+     el nombre, salvo que el negocio lo pida. */
+  .brand-wordmark{margin-left:10px;font-family:var(--font-title,inherit);font-size:20px;
+                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap}
+  @media(max-width:760px){.brand-wordmark{font-size:16px;margin-left:7px}}
+</style>

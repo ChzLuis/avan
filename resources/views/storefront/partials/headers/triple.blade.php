@@ -71,7 +71,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <a class="ht3-brand" href="{{ \App\Support\StorefrontNavigation::resolveUrl($project, new \App\Models\StoreMenuItem(['destination_type' => 'home'])) }}">
-            @if($logoUrl)<img src="{{ $logoUrl }}" alt="{{ $storeName }}">@else<span>{{ $storeName }}</span>@endif
+            @if($logoUrl)<img src="{{ $logoUrl }}" alt="{{ $storeName }}">@if(($settings['logo_wordmark'] ?? '0') === '1')<span class="brand-wordmark">{{ $settings['logo_wordmark_text'] ?? $storeName }}</span>@endif@else<span>{{ $storeName }}</span>@endif
         </a>
 
         <div class="ht3-search">
@@ -141,3 +141,11 @@
     </div>
     @endif
 </div>{{-- /header-zone tri-fila --}}
+
+<style>
+  /* Titulo junto al logo. Apagado por defecto: donde va el logo no se repite
+     el nombre, salvo que el negocio lo pida. */
+  .brand-wordmark{margin-left:10px;font-family:var(--font-title,inherit);font-size:20px;
+                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap}
+  @media(max-width:760px){.brand-wordmark{font-size:16px;margin-left:7px}}
+</style>

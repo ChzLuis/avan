@@ -424,6 +424,19 @@
 
     {{-- Menú de navegación (administración canónica; guarda al instante) --}}
     <div class="bxb-card bxb-embed">
-        @include('settings.partials.store-navigation-builder')
+        
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Nombre junto al logo</strong>
+        <p class="bxb-note" style="margin:0 0 8px">Por defecto, donde va el logo no se repite el nombre: el logo ya lo dice. Enciéndelo si tu logo es solo un símbolo.</p>
+        <label class="bxb-check">
+            <input type="checkbox" :checked="settings.logo_wordmark==='1'" @change="setSetting('logo_wordmark',$event.target.checked?'1':'0')">
+            <span>Mostrar el nombre al lado del logo</span>
+        </label>
+        <label class="bxb-field" style="margin-top:8px" x-show="settings.logo_wordmark==='1'" x-cloak>Texto (vacío = nombre del negocio)
+            <input type="text" maxlength="60" :placeholder="settings.business_name||project" :value="settings.logo_wordmark_text||''" @input.debounce.600ms="setSetting('logo_wordmark_text',$event.target.value)">
+        </label>
+    </div>
+
+    @include('settings.partials.store-navigation-builder')
     </div>
 </section>
