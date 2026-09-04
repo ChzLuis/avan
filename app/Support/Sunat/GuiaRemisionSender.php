@@ -146,6 +146,15 @@ final class GuiaRemisionSender
             $envio['numBultos'] = (int) $guia->bultos;
         }
 
+        /* Los dos indicadores del bloque "Datos del traslado". El de M1/L no
+           es decorativo: es lo que autoriza a NO declarar vehiculo ni chofer
+           cuando la carga va en auto, camioneta o moto. */
+        $envio['indTransbordo'] = (bool) $guia->transbordo_programado;
+
+        if ($guia->exentoDeVehiculo()) {
+            $envio['indM1L'] = true;
+        }
+
         /* En transporte publico responde el transportista; en privado, el
            vehiculo y el conductor del propio negocio. Declarar los dos —o
            ninguno— es motivo de rechazo. */
@@ -160,6 +169,10 @@ final class GuiaRemisionSender
                 'rznSocial'   => $guia->transportista_razon_social,
                 'nroMtc'      => $guia->transportista_mtc ?: '',
             ];
+        } elseif ($guia->exentoDeVehiculo()) {
+            /* Exento: se declara el indicador y NADA mas. Mandar `vehiculo`
+               con la placa en blanco y un chofer con todo en null es peor que
+               omitirlos, porque SUNAT lo lee como declaracion incompleta. */
         } else {
             $envio['vehiculo'] = ['placa' => self::placa($guia->vehiculo_placa)];
             // El schema del proveedor pide `choferes` como lista, con el
@@ -259,6 +272,8 @@ final class GuiaRemisionSender
             'punto_de_partida_direccion'  => $guia->partida_direccion,
             'punto_de_llegada_ubigeo'     => $guia->llegada_ubigeo ?: '',
             'punto_de_llegada_direccion'  => $guia->llegada_direccion,
+            'indicador_transbordo_programado'      => (bool) $guia->transbordo_programado,
+            'indicador_vehiculo_conductor_m1l'     => $guia->exentoDeVehiculo(),
             'enviar_automaticamente_a_la_sunat' => true,
             'items' => $guia->items->map(fn ($i) => [
                 'unidad_de_medida' => $i->unit,
@@ -273,6 +288,8 @@ final class GuiaRemisionSender
             $payload['transportista_documento_numero'] = $guia->transportista_ruc;
             $payload['transportista_denominacion']     = $guia->transportista_razon_social;
             $payload['transportista_placa_numero']     = '';
+        } elseif ($guia->exentoDeVehiculo()) {
+            $payload['transportista_placa_numero'] = '';
         } else {
             $payload['transportista_placa_numero']  = self::placa($guia->vehiculo_placa);
             $payload['conductor_documento_tipo']    = $guia->conductor_doc_tipo ?: '1';

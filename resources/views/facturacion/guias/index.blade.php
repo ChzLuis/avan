@@ -1,12 +1,15 @@
 @php
-    $storeUrl  = route('guias.store');
-    $enviarUrl = route('guias.enviar', '__ID__');
+    // Las acciones apuntan a la MISMA cara por la que se entro: emitir una guia
+    // desde Ventas y acabar de vuelta en el panel de Configuracion rompe el hilo
+    // de trabajo. Es el mismo controlador, solo cambia el nombre de la ruta.
+    $rutaGuias = ($portalLayout ?? 'panel') === 'comercial' ? 'bixosales.guias' : 'guias';
+    $storeUrl  = route($rutaGuias.'.store');
+    $enviarUrl = route($rutaGuias.'.enviar', '__ID__');
 @endphp
 
-<x-app-layout>
-<x-slot name="slot">
+<x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" pageTitle="Guías de remisión">
 
-<div class="max-w-6xl mx-auto px-4 py-6" x-data="guiasPage()">
+<div class="max-w-6xl mx-auto px-4 py-6" x-data="guiasPage()" x-init="abrirNueva()">
 
     {{-- Encabezado --}}
     <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
@@ -17,9 +20,9 @@
                 <span class="font-semibold text-gray-700">{{ $serie }}</span>.
             </p>
         </div>
-        <button @click="abrirNueva()"
+        <button @click="abrirNueva(); $refs.formulario.scrollIntoView({behavior:'smooth', block:'start'})"
                 class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">
-            Nueva guía
+            Guía en blanco
         </button>
     </div>
 
@@ -89,7 +92,7 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <a href="{{ route('guias.pdf', $g->id) }}" target="_blank"
+                            <a href="{{ route($rutaGuias.'.pdf', $g->id) }}" target="_blank"
                                class="text-xs font-semibold text-gray-500 hover:text-gray-800 mr-3">
                                 Imprimir
                             </a>
@@ -109,10 +112,10 @@
     @endif
 
     {{-- ══ Nueva guía ═══════════════════════════════════════════════════ --}}
-    <div x-show="abierta" x-cloak class="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
-        <div class="absolute inset-0" style="background:rgba(15,23,42,.5)" @click="abierta = false"></div>
+    <div class="mt-6" x-ref="formulario">
 
-        <div class="relative w-full max-w-3xl my-6 rounded-2xl bg-white shadow-2xl">
+
+        <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div class="px-6 py-4 border-b border-gray-100">
                 <h3 class="text-lg font-bold text-gray-900">Nueva guía de remisión</h3>
                 <p class="text-xs text-gray-500 mt-0.5">Se emitirá con la serie {{ $serie }} y se enviará a SUNAT.</p>
@@ -216,7 +219,17 @@
 
                 <div x-show="form.modalidad === '02'" class="rounded-xl bg-gray-50 p-3 space-y-3">
                     <p class="text-xs font-semibold text-gray-600">Vehículo y conductor</p>
-                    <div class="grid md:grid-cols-3 gap-3">
+                    {{-- En categoria M1 o L (auto, camioneta, moto) SUNAT exime
+                         de declarar vehiculo y conductor: al marcarlo, esos campos
+                         dejan de pedirse y viajan vacios. --}}
+                    <label class="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
+                        <input type="checkbox" x-model="form.vehiculo_m1l" class="mt-0.5 rounded border-gray-300">
+                        <span>
+                            <span class="font-semibold text-gray-700">Traslado en vehículo de categoría M1 o L</span>
+                            <span class="block text-gray-500">Auto, camioneta o moto: SUNAT no exige declarar placa ni conductor.</span>
+                        </span>
+                    </label>
+                    <div class="grid md:grid-cols-3 gap-3" x-show="! form.vehiculo_m1l">
                         <input type="text" x-model="form.vehiculo_placa" class="rounded-lg border-gray-300 text-sm" placeholder="Placa">
                         <input type="text" x-model="form.conductor_doc_numero" class="rounded-lg border-gray-300 text-sm" placeholder="DNI del conductor">
                         <input type="text" x-model="form.conductor_licencia" class="rounded-lg border-gray-300 text-sm" placeholder="Licencia">
@@ -259,7 +272,7 @@
             </div>
 
             <div class="px-6 py-4 bg-gray-50 flex justify-end gap-2 rounded-b-2xl">
-                <button @click="abierta = false" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600">Cancelar</button>
+                <button @click="abrirNueva()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600">Limpiar</button>
                 <button @click="emitir()" :disabled="enviando"
                         class="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
                     <span x-text="enviando ? 'Emitiendo...' : 'Emitir y enviar a SUNAT'"></span>
@@ -288,6 +301,7 @@ function guiasPage() {
                 peso_total: '', peso_unidad: 'KGM', bultos: '',
                 partida_direccion: @json($project->address ?? ''), llegada_direccion: '',
                 transportista_ruc: '', transportista_razon_social: '',
+                vehiculo_m1l: false, transbordo_programado: false,
                 vehiculo_placa: '', conductor_doc_numero: '',
                 conductor_nombres: '', conductor_apellidos: '', conductor_licencia: '',
                 items: [{ description: '', unit: 'NIU', quantity: 1 }],
@@ -309,7 +323,7 @@ function guiasPage() {
                 this.form.llegada_direccion       = opcion.dataset.dir    || this.form.llegada_direccion;
             }
 
-            const res = await fetch(`{{ route('guias.opciones') }}?invoice_id=${this.form.invoice_id}`, {
+            const res = await fetch(`{{ route($rutaGuias.'.opciones') }}?invoice_id=${this.form.invoice_id}`, {
                 headers: { 'Accept': 'application/json' },
             });
             const data = await res.json().catch(() => ({}));
@@ -376,5 +390,4 @@ function guiasPage() {
 }
 </script>
 
-</x-slot>
-</x-app-layout>
+</x-portal-layout>

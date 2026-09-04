@@ -27,7 +27,7 @@ class ApisPeruService
             return ['ok' => false, 'message' => 'Configura el Token de APIsPERU en Ajustes → Facturación.'];
         }
 
-        $invoice->load('items');
+        $invoice->load('items.product');
 
         // Endpoint según tipo de comprobante
         $endpoint = match ($invoice->type) {
@@ -220,7 +220,11 @@ class ApisPeruService
 
             return [
                 'tipAfeIgv'        => '10', // Gravado - Operación Onerosa
-                'codProducto'      => (string) ($it->product_id ?? ''),
+                // Codigo del emisor (`SellersItemIdentification`): lo define el
+                // negocio, SUNAT no impone formato. Se manda el SKU cuando existe
+                // —es lo que el comerciante reconoce en su factura— y solo si no
+                // hay se cae al id interno, que no significa nada para el.
+                'codProducto'      => (string) ($it->product?->sku ?: ($it->product_id ?? '')),
                 // Catalogo 03: el producto guarda "CAJA" y SUNAT espera "BX".
                 'unidad'           => Catalogos::codigoUnidad($it->unit),
                 'descripcion'      => $it->description,

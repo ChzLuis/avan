@@ -28,7 +28,8 @@ class GuiaRemision extends Model
         'peso_total', 'peso_unidad', 'bultos',
         'partida_ubigeo', 'partida_direccion', 'llegada_ubigeo', 'llegada_direccion',
         'transportista_ruc', 'transportista_razon_social', 'transportista_mtc',
-        'vehiculo_placa', 'conductor_doc_tipo', 'conductor_doc_numero',
+        'vehiculo_placa', 'vehiculo_m1l', 'transbordo_programado',
+        'conductor_doc_tipo', 'conductor_doc_numero',
         'conductor_nombres', 'conductor_apellidos', 'conductor_licencia',
         'status', 'sunat_status', 'sunat_ticket', 'sunat_hash', 'sunat_cdr',
         'sunat_error', 'sunat_sent_at', 'observaciones', 'created_by',
@@ -37,6 +38,8 @@ class GuiaRemision extends Model
     protected $casts = [
         'fecha_traslado' => 'date',
         'peso_total'     => 'decimal:3',
+        'vehiculo_m1l'          => 'boolean',
+        'transbordo_programado' => 'boolean',
         'sunat_sent_at'  => 'datetime',
     ];
 
@@ -82,6 +85,19 @@ class GuiaRemision extends Model
     public function esPublico(): bool
     {
         return $this->modalidad === self::PUBLICO;
+    }
+
+    /**
+     * ¿Este traslado está exento de declarar vehículo y conductor?
+     *
+     * Solo en privado y solo con el indicador M1/L: SUNAT permite omitir
+     * placa, conductor y licencia cuando la carga va en auto, camioneta o
+     * moto. En cualquier otro traslado privado esos datos son obligatorios y
+     * mandarlos vacíos es motivo de rechazo.
+     */
+    public function exentoDeVehiculo(): bool
+    {
+        return ! $this->esPublico() && (bool) $this->vehiculo_m1l;
     }
 
     public function motivoLegible(): string

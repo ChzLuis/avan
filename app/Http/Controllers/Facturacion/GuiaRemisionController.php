@@ -39,6 +39,10 @@ class GuiaRemisionController extends Controller
         return view('facturacion.guias.index', [
             'project'     => $project,
             'guias'       => $guias,
+            // Guias se abria SIEMPRE con el shell del panel: quien entraba desde
+            // Ventas acababa en la cara de Configuracion sin haberla pedido. El
+            // shell lo decide la ruta por la que se entro, igual que el resto.
+            'portalLayout' => $request->routeIs('bixosales.*') ? 'comercial' : 'panel',
             'serie'       => $this->serie($project),
             'motivos'     => Catalogos::MOTIVOS_TRASLADO,
             'modalidades' => Catalogos::MODALIDADES_TRASLADO,
@@ -91,6 +95,11 @@ class GuiaRemisionController extends Controller
     {
         $project = $this->negocio();
 
+        /* Traslado privado que NO va en vehiculo M1/L: ahi el vehiculo y el
+           conductor siguen siendo obligatorios. */
+        $exigeVehiculo = (string) $request->input('modalidad') === '02'
+            && ! $request->boolean('vehiculo_m1l');
+
         $data = $request->validate([
             'invoice_id'              => ['nullable', 'integer', Rule::exists('invoices', 'id')->where('project_id', $project->id)],
             'destinatario_nombre'     => ['required', 'string', 'max:200'],
@@ -117,12 +126,18 @@ class GuiaRemisionController extends Controller
             'transportista_mtc'          => ['nullable', 'string', 'max:20'],
 
             // Transporte privado: con qué vehículo y quién conduce.
-            'vehiculo_placa'       => ['required_if:modalidad,02', 'nullable', 'string', 'max:10'],
+            'vehiculo_m1l'          => ['nullable', 'boolean'],
+            'transbordo_programado' => ['nullable', 'boolean'],
+
+            /* En privado el vehiculo y el conductor son obligatorios, SALVO
+               que el traslado vaya en categoria M1 o L (auto, camioneta,
+               moto): ahi SUNAT exime de declararlos. */
+            'vehiculo_placa'       => [$exigeVehiculo ? 'required' : 'nullable', 'nullable', 'string', 'max:10'],
             'conductor_doc_tipo'   => ['nullable', 'string', 'max:2'],
-            'conductor_doc_numero' => ['required_if:modalidad,02', 'nullable', 'string', 'max:15'],
-            'conductor_nombres'    => ['required_if:modalidad,02', 'nullable', 'string', 'max:120'],
-            'conductor_apellidos'  => ['required_if:modalidad,02', 'nullable', 'string', 'max:120'],
-            'conductor_licencia'   => ['required_if:modalidad,02', 'nullable', 'string', 'max:20'],
+            'conductor_doc_numero' => [$exigeVehiculo ? 'required' : 'nullable', 'nullable', 'string', 'max:15'],
+            'conductor_nombres'    => [$exigeVehiculo ? 'required' : 'nullable', 'nullable', 'string', 'max:120'],
+            'conductor_apellidos'  => [$exigeVehiculo ? 'required' : 'nullable', 'nullable', 'string', 'max:120'],
+            'conductor_licencia'   => [$exigeVehiculo ? 'required' : 'nullable', 'nullable', 'string', 'max:20'],
 
             'items'                 => ['required', 'array', 'min:1'],
             'items.*.description'   => ['required', 'string', 'max:300'],
@@ -135,9 +150,9 @@ class GuiaRemisionController extends Controller
         ], [
             'transportista_ruc.required_if'          => 'En transporte público hay que declarar el RUC del transportista.',
             'transportista_razon_social.required_if' => 'En transporte público hay que declarar la razón social del transportista.',
-            'vehiculo_placa.required_if'             => 'En transporte privado hay que declarar la placa del vehículo.',
-            'conductor_doc_numero.required_if'       => 'En transporte privado hay que declarar el documento del conductor.',
-            'conductor_licencia.required_if'         => 'En transporte privado hay que declarar la licencia del conductor.',
+            'vehiculo_placa.required'                => 'En transporte privado hay que declarar la placa, salvo que el traslado vaya en vehículo M1 o L.',
+            'conductor_doc_numero.required'          => 'En transporte privado hay que declarar el documento del conductor, salvo traslado en vehículo M1 o L.',
+            'conductor_licencia.required'            => 'En transporte privado hay que declarar la licencia del conductor, salvo traslado en vehículo M1 o L.',
         ]);
 
         $serie = $this->serie($project);
@@ -178,7 +193,9 @@ class GuiaRemisionController extends Controller
                 'transportista_razon_social' => $data['transportista_razon_social'] ?? null,
                 'transportista_mtc'          => $data['transportista_mtc'] ?? null,
 
-                'vehiculo_placa'       => $data['vehiculo_placa'] ?? null,
+                'vehiculo_placa'        => $data['vehiculo_placa'] ?? null,
+                'vehiculo_m1l'          => (bool) ($data['vehiculo_m1l'] ?? false),
+                'transbordo_programado' => (bool) ($data['transbordo_programado'] ?? false),
                 'conductor_doc_tipo'   => $data['conductor_doc_tipo'] ?? '1',
                 'conductor_doc_numero' => $data['conductor_doc_numero'] ?? null,
                 'conductor_nombres'    => $data['conductor_nombres'] ?? null,
@@ -225,7 +242,13 @@ class GuiaRemisionController extends Controller
         $project = $this->soloDeMiNegocio($guia);
         $guia->load('items', 'invoice');
 
-        return view('facturacion.guias.pdf', compact('project', 'guia'));
+        // Misma eleccion que los comprobantes: el ajuste `invoice_template`
+        // manda sobre toda la papeleria del negocio, no solo sobre la factura.
+        $vista = (string) $project->setting('invoice_template') === 'clasico'
+            ? 'facturacion.guias.pdf-clasico'
+            : 'facturacion.guias.pdf';
+
+        return view($vista, compact('project', 'guia'));
     }
 
     public function show(GuiaRemision $guia)
