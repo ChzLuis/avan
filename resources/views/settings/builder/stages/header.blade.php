@@ -1,7 +1,7 @@
 {{-- Etapa: Encabezado y navegación — modelo (8 presets), estructura clásica,
      colores/barra superior y administración del menú. TODO lo del header vive aquí. --}}
 <section class="bxb-stage">
-    <h2>Encabezado y navegación</h2>
+    <h2>Encabezado y menú</h2>
     <p class="bxb-stage-sub">Elige el modelo de encabezado, personalízalo y administra el menú. Los datos (categorías, perfiles y WhatsApp) vienen del Catálogo y de Datos del negocio: aquí solo decides cómo se muestran.</p>
 
     {{-- Encabezado y navegación: 8 presets modulares (HeaderPresets) --}}
@@ -24,20 +24,52 @@
             </template>
         </div>
 
+        {{-- Categorías en el menú. Fuera del bloque del preset a propósito: el
+             botón que abre las categorías y su modo de despliegue son de TODA
+             tienda, use preset, layout clásico o banda. Antes el despliegue solo
+             se podía elegir con preset activo, y el botón no se podía mover ni
+             estilizar: en la banda salía como un enlace de texto al final. --}}
+        <div class="bxb-card">
+            <strong class="bxb-card-title">Categorías en el menú</strong>
+            <p class="bxb-note">El botón que abre tus categorías y cómo se despliegan. Aplica a cualquier modelo de encabezado.</p>
+            <div class="bxb-grid2">
+                <label class="bxb-field">Botón de categorías
+                    <select :value="settings.hp_cats_pos||'izquierda'" @change="setSetting('hp_cats_pos',$event.target.value)">
+                        <option value="izquierda">A la izquierda del menú, resaltado</option>
+                        <option value="derecha">A la derecha del menú</option>
+                        <option value="oculto">Sin botón</option>
+                    </select>
+                </label>
+                <label class="bxb-field">Estilo del botón
+                    <select :value="settings.hp_cats_style||'solido'" @change="setSetting('hp_cats_style',$event.target.value)">
+                        <option value="solido">Sólido, con el color principal</option>
+                        <option value="contorno">Contorno</option>
+                        <option value="texto">Solo texto</option>
+                    </select>
+                </label>
+                <label class="bxb-field">Texto del botón
+                    <input type="text" maxlength="30" placeholder="Categorías" :value="settings.mega_button_text||''" @input.debounce.600ms="setSetting('mega_button_text',$event.target.value)">
+                </label>
+                <label class="bxb-field">Cómo se despliegan
+                    <select :value="settings.hp_cat_trigger||''" @change="setSetting('hp_cat_trigger',$event.target.value)">
+                        <option value="">Según el modelo elegido</option>
+                        <option value="mega">Panel en columnas: categorías y subcategorías a la vista</option>
+                        <option value="lista">Lista desplegable: subcategorías al pasar el cursor</option>
+                        <option value="editorial">Panel editorial con imagen (modelos Boutique)</option>
+                        <option value="visual">Tarjetas visuales por categoría (modelo Visual)</option>
+                        <option value="none">Sin desplegable</option>
+                    </select>
+                    <small class="bxb-note">El panel en columnas luce con muchas subcategorías; la lista, con pocas. Sin botón no hay despliegue.</small>
+                </label>
+            </div>
+        </div>
         {{-- Personalización según capabilities del modelo activo --}}
         <template x-if="hpActive">
             <div style="margin-top:14px">
                 <p class="bxb-note">La marca, colores, barra superior, menú y comportamiento sticky se configuran en las otras tarjetas de esta etapa — aplican a todos los modelos.</p>
 
-                <label class="bxb-field">Desplegable de categorías en el menú
-                    <select :value="settings.hp_cat_trigger||''" @change="setSetting('hp_cat_trigger',$event.target.value)">
-                        <option value="">Según el modelo elegido</option>
-                        <option value="none">Sin desplegable</option>
-                        <option value="mega">Panel de categorías y subcategorías</option>
-                        <option value="editorial">Panel editorial con imagen</option>
-                    </select>
-                    <small class="bxb-note">Actívalo si tu tienda tiene muchas subcategorías y quieres llegar a ellas desde el menú.</small>
-                </label>
+                {{-- El despliegue de categorías se elige en la tarjeta
+                     "Categorías en el menú", común a todos los modelos. --}}
 
                 {{-- Redes de la barra superior. El tamaño estaba fijo y en una
                      franja fina se veían desproporcionadas. --}}
@@ -252,7 +284,78 @@
                 <option value="{{ $vKey }}">{{ $vLabel }}</option>
                 @endforeach
             </select>
+            {{-- Qué se va a ver con cada diseño: el nombre solo no alcanza para elegir. --}}
+            <span class="bxb-note" x-text="(@js(\App\Support\StorefrontLayoutPacks::DESCRIPCIONES['headers']))[settings.header_layout||'classic'] || ''"></span>
         </label>
+
+        {{-- La cinta superior de la banda: lema a la izquierda y sellos a la
+             derecha. Vacíos, la cinta no se pinta (nada de texto de relleno). --}}
+        <template x-if="(settings.header_layout||'')==='banda'">
+            <div class="bxb-grid2">
+                <label class="bxb-field">Lema de la cinta superior
+                    <input type="text" maxlength="120" placeholder="Tu aliado en soluciones eléctricas desde 1998" :value="settings.header_tagline||''" @input.debounce.600ms="setSetting('header_tagline',$event.target.value)">
+                </label>
+                <label class="bxb-field">Sellos de la derecha (separados por |)
+                    <input type="text" maxlength="160" placeholder="Calidad | Confianza | Proyectos que iluminan el futuro" :value="settings.header_badges||''" @input.debounce.600ms="setSetting('header_badges',$event.target.value)">
+                </label>
+            </div>
+        </template>
+    </div>
+
+    {{-- Megamenú de catálogo: rubros con icono, subcategorías con foto, marcas,
+         accesos rápidos y ayuda. Los textos por categoría se guardan como
+         megacat_{id}_title / megacat_{id}_desc. --}}
+    <div class="bxb-card">
+        <strong class="bxb-card-title">Megamenú de categorías</strong>
+        <p class="bxb-card-note">Desplegable grande bajo el botón «Categorías» (cabecera «Banda»): rubros a la izquierda, subcategorías con foto al centro y marcas, accesos rápidos y ayuda a la derecha. En móvil se usa el menú lateral.</p>
+        <label class="bxb-switch"><input type="checkbox" :checked="settings.mega_enabled==='1'" @change="setSetting('mega_enabled',$event.target.checked?'1':'0')"> Activar el megamenú</label>
+        <div x-show="settings.mega_enabled==='1'" x-cloak>
+            <div class="bxb-grid2">
+                <label class="bxb-field">Botón «ver toda la categoría»<input type="text" maxlength="40" placeholder="Ver toda la categoría" :value="settings.mega_all_text||''" @input.debounce.600ms="setSetting('mega_all_text',$event.target.value)"></label>
+            </div>
+            <p class="bxb-card-note" style="margin-top:12px">Columna derecha</p>
+            <label class="bxb-switch"><input type="checkbox" :checked="(settings.mega_brands??'1')!=='0'" @change="setSetting('mega_brands',$event.target.checked?'1':'0')"> Marcas destacadas (logos de tus marcas del catálogo)</label>
+            <div class="bxb-grid2" x-show="(settings.mega_brands??'1')!=='0'">
+                <label class="bxb-field">Título de marcas<input type="text" maxlength="40" placeholder="Marcas destacadas" :value="settings.mega_brands_title||''" @input.debounce.600ms="setSetting('mega_brands_title',$event.target.value)"></label>
+                <label class="bxb-field">Cuántas marcas<input type="number" min="2" max="9" placeholder="6" :value="settings.mega_brands_max||''" @input.debounce.600ms="setSetting('mega_brands_max',$event.target.value)"></label>
+            </div>
+            <label class="bxb-field">Título de accesos rápidos<input type="text" maxlength="40" placeholder="Accesos rápidos" :value="settings.mega_quick_title||''" @input.debounce.600ms="setSetting('mega_quick_title',$event.target.value)"></label>
+            <div class="bxb-grid2">
+                @foreach([1 => ['Promociones', '/promociones'], 2 => ['Catálogo PDF', '/catalogo'], 3 => ['Marcas', '/marcas'], 4 => ['', '']] as $q => [$ql, $qu])
+                <label class="bxb-field">Acceso {{ $q }} — texto (escribe «-» para ocultarlo)<input type="text" maxlength="40" placeholder="{{ $ql ?: 'Vacío = sin acceso' }}" :value="settings.mega_quick_{{ $q }}_label||''" @input.debounce.600ms="setSetting('mega_quick_{{ $q }}_label',$event.target.value)"></label>
+                <label class="bxb-field">Acceso {{ $q }} — enlace
+                    <span class="bxb-color-row" style="gap:6px">
+                        <input type="text" maxlength="300" placeholder="{{ $qu ?: '/tienda' }}" :value="settings.mega_quick_{{ $q }}_url||''" @input.debounce.600ms="setSetting('mega_quick_{{ $q }}_url',$event.target.value)">
+                        <select style="width:120px" :value="settings.mega_quick_{{ $q }}_icon||''" @change="setSetting('mega_quick_{{ $q }}_icon',$event.target.value)">
+                            <option value="">Icono auto</option><option value="etiqueta">Etiqueta</option><option value="estrella">Estrella</option><option value="documento">Documento</option><option value="marca">Escudo</option><option value="camion">Camión</option>
+                        </select>
+                    </span>
+                </label>
+                @endforeach
+            </div>
+            <div class="bxb-grid2">
+                <label class="bxb-field">Ayuda — título (vacío = sin tarjeta)<input type="text" maxlength="40" placeholder="¿Necesitas ayuda?" :value="settings.mega_help_title||''" @input.debounce.600ms="setSetting('mega_help_title',$event.target.value)"></label>
+                <label class="bxb-field">Ayuda — texto<input type="text" maxlength="140" placeholder="Te asesoramos para encontrar los productos ideales para tu proyecto." :value="settings.mega_help_text||''" @input.debounce.600ms="setSetting('mega_help_text',$event.target.value)"></label>
+                <label class="bxb-field">Ayuda — botón<input type="text" maxlength="40" placeholder="Solicita una cotización" :value="settings.mega_help_button||''" @input.debounce.600ms="setSetting('mega_help_button',$event.target.value)"></label>
+                <label class="bxb-field">Ayuda — enlace (vacío = WhatsApp)<input type="text" maxlength="300" placeholder="https://wa.me/51…" :value="settings.mega_help_url||''" @input.debounce.600ms="setSetting('mega_help_url',$event.target.value)"></label>
+            </div>
+            <p class="bxb-card-note" style="margin-top:12px">Textos por categoría. El titular sale grande al centro («Cables que conectan tus proyectos»); la descripción, debajo. En las subcategorías solo hay descripción corta; la foto es la de la categoría.</p>
+            <div class="bxb-megacats">
+                <template x-for="c in storeCategories.filter(x => x.root)" :key="'mc'+c.id">
+                    <details class="bxb-megacat">
+                        <summary><span x-text="c.name"></span> <small x-text="storeCategories.filter(s => !s.root && s.parent_id === c.id).length + ' subcategorías'"></small></summary>
+                        <div class="bxb-grid2">
+                            <label class="bxb-field">Titular<input type="text" maxlength="90" :placeholder="c.name" :value="settings['megacat_'+c.id+'_title']||''" @input.debounce.600ms="setSetting('megacat_'+c.id+'_title',$event.target.value)"></label>
+                            <label class="bxb-field">Descripción<input type="text" maxlength="220" placeholder="Una frase que explique el rubro" :value="settings['megacat_'+c.id+'_desc']||''" @input.debounce.600ms="setSetting('megacat_'+c.id+'_desc',$event.target.value)"></label>
+                        </div>
+                        <template x-for="sc in storeCategories.filter(s => !s.root && s.parent_id === c.id)" :key="'msc'+sc.id">
+                            <label class="bxb-field"><span x-text="sc.name"></span><input type="text" maxlength="120" placeholder="Descripción corta (opcional)" :value="settings['megacat_'+sc.id+'_desc']||''" @input.debounce.600ms="setSetting('megacat_'+sc.id+'_desc',$event.target.value)"></label>
+                        </template>
+                    </details>
+                </template>
+            </div>
+            <style>.bxb-megacats{display:grid;gap:6px;margin-top:8px}.bxb-megacat{border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;background:#fff}.bxb-megacat summary{cursor:pointer;font-weight:700;font-size:13px}.bxb-megacat summary small{margin-left:6px;color:#64748b;font-weight:500}.bxb-megacat .bxb-field{margin-top:8px}</style>
+        </div>
     </div>
 
     {{-- Encabezado y barra superior --}}
@@ -277,7 +380,7 @@
         </label>
         <div class="bxb-field"><span>Colores del menú (opcional — "Auto" usa los del diseño elegido)</span>
             <div class="bxb-grid2">
-                @foreach(['menu_bg_color' => 'Fondo del menú', 'menu_text_color' => 'Texto del menú', 'menu_active_bg_color' => 'Fondo del botón activo', 'menu_active_text_color' => 'Texto del botón activo'] as $mk => $ml)
+                @foreach(['menu_bg_color' => 'Fondo del menú', 'menu_text_color' => 'Texto del menú', 'menu_active_bg_color' => 'Fondo del botón activo', 'menu_active_text_color' => 'Texto del botón activo', 'mega_btn_bg_color' => 'Fondo del botón Categorías', 'mega_btn_text_color' => 'Texto del botón Categorías'] as $mk => $ml)
                 <label class="bxb-field">{{ $ml }}
                     <x-bxb-color clave="{{ $mk }}" defecto="#ffffff" etiqueta="{{ $ml }}" />
                 </label>

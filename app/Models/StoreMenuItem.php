@@ -8,6 +8,7 @@ class StoreMenuItem extends Model
 {
     public const DESTINATIONS = [
         'home', 'shop', 'products', 'category', 'subcategory',
+        'brands', 'promotions', 'catalog_pdf',
         'about', 'contact', 'blog', 'page', 'external',
     ];
 

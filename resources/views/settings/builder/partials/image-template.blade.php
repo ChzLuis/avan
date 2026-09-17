@@ -151,6 +151,13 @@
                             <label class="bxb-field">Opacidad <b x-text="cfg.watermark_opacity + '%'"></b>
                                 <input type="range" min="0" max="100" :value="cfg.watermark_opacity" @input.debounce.300ms="set('watermark_opacity',+$event.target.value)">
                             </label>
+                            {{-- El PNG se entrega ya aplanado con la opacidad
+                                 configurada, para reutilizarlo fuera del
+                                 catalogo sin recrearlo a ojo en un editor. --}}
+                            <a class="bxb-btn" href="{{ route('builder.image-template.watermark') }}" download>
+                                Descargar marca de agua (PNG)
+                            </a>
+                            <small class="bxb-note">Se descarga con la misma transparencia que ves en las fotos.</small>
                         </div>
                     </div>
                 </details>
@@ -221,7 +228,15 @@
             </span>
 
             <button type="button" class="bxb-btn" @click="aplicar('all')" :disabled="ocupado">Aplicar a todo el catálogo</button>
-            <button type="button" class="bxb-link" @click="guardarComo()">Guardar como plantilla nueva</button>
+            {{-- El nombre se pide en linea: `prompt()` bloquea la pagina y el
+                 proyecto no admite cuadros del navegador (SinDialogosDelNavegador). --}}
+            <button type="button" class="bxb-link" x-show="!pidiendoNombre" @click="pidiendoNombre = true; nombreNuevo = 'Campaña ' + new Date().getFullYear()">Guardar como plantilla nueva</button>
+            <span class="bxb-inline-form" x-show="pidiendoNombre" x-cloak>
+                <input type="text" maxlength="80" placeholder="Nombre de la plantilla" x-model="nombreNuevo"
+                       @keydown.enter.prevent="guardarComo()" @keydown.escape="pidiendoNombre = false">
+                <button type="button" class="bxb-btn bxb-btn-primary" @click="guardarComo()" :disabled="!nombreNuevo.trim()">Guardar</button>
+                <button type="button" class="bxb-link" @click="pidiendoNombre = false">Cancelar</button>
+            </span>
             <button type="button" class="bxb-link" @click="restablecer()">Restablecer</button>
             <small x-text="estado" role="status"></small>
         </div>

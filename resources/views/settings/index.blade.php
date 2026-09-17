@@ -175,6 +175,29 @@
 .bx-sec-h p{font-size:.76rem; color:#8B9AA1; margin:.2rem 0 0;}
 .bx-tag{font-size:.62rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; background:#EDF1F7; color:#5B6B84; padding:.15rem .4rem; border-radius:5px;}
 .bx-actions{display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding-bottom:.5rem;}
+
+/* --- Movil --- */
+@media (max-width:767px){
+    .bx-top{padding:.7rem .85rem; gap:.6rem;}
+    .bx-top h1{font-size:1rem;}
+    .bx-top p{font-size:.72rem;}
+    .bx-new{padding:.6rem .85rem; font-size:.8rem; flex-shrink:0;}
+    .bx-tools{padding:.6rem .6rem .5rem;}
+    .bx-filters{gap:.35rem;}
+    .bx-chip{min-height:38px; font-size:.76rem;}
+    /* La fila "Nuevo negocio" de la lista repite el boton verde de arriba;
+       en una pantalla estrecha solo roba sitio a los negocios de verdad. */
+    .bx-add{display:none;}
+    .bx-item{padding:.7rem .8rem; min-height:58px;}
+    .bx-side{border-right:0;}
+    .bx-head{padding:.85rem .9rem; gap:.7rem;}
+    .bx-head-av{width:38px; height:38px;}
+    .bx-domain{max-width:100%;}
+    .bx-tabs{padding:0 .6rem;}
+    .bx-tab{padding:.7rem .7rem;}
+    .bx-form{gap:.9rem;}
+    .bx-sec{padding:.9rem 1rem 1rem; border-radius:12px;}
+}
 </style>
 
 {{-- TOP BAR (oculto en la pantalla dedicada de Flujo de estados) --}}
@@ -185,7 +208,7 @@
         <p x-text="projects.length + (projects.length === 1 ? ' negocio registrado' : ' negocios registrados')"></p>
     </div>
     @if($isOwnerOrSuper)
-    <button @click="openNew()" class="bx-new">
+    <button @click="openNew(); mv = 'detail'" class="bx-new">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
         </svg>
@@ -1173,6 +1196,50 @@
                             <p class="text-xs text-gray-400 mt-1">Autocompleta la razón social y dirección del cliente al escribir su RUC/DNI. Regístrate gratis en <strong>apiperu.dev</strong> y copia tu token JWT. Funciona con cualquier proveedor de emisión.</p>
                         </div>
                     </div>
+
+                    {{-- Lector de comprobantes: foto o PDF -> formulario ya rellenado.
+                         Cada negocio pone su clave; sin ella se usa la global de
+                         Eskala si existe. Apagado, la opcion ni aparece. --}}
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-3"
+                         x-data="{ on: {{ $selP->setting('lector_comprobantes', '0') === '1' ? 'true' : 'false' }} }">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="hidden" name="lector_comprobantes" value="0">
+                            <input type="checkbox" name="lector_comprobantes" value="1" x-model="on"
+                                   class="mt-1 rounded border-gray-300">
+                            <span>
+                                <span class="block text-sm font-semibold text-gray-800">Lector de comprobantes</span>
+                                <span class="block text-xs text-gray-500 mt-0.5">
+                                    Permite fotografiar una factura o boleta en papel y que el sistema
+                                    rellene solo el formulario de emisión. El usuario revisa antes de emitir.
+                                </span>
+                            </span>
+                        </label>
+
+                        <div x-show="on" x-cloak class="space-y-3 pt-1">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Motor de lectura</label>
+                                <select name="lector_motor" class="input">
+                                    @foreach(['anthropic' => 'Claude (Anthropic)', 'openai' => 'OpenAI GPT-4o', 'gemini' => 'Google Gemini'] as $k => $etiqueta)
+                                    <option value="{{ $k }}" @selected($selP->setting('lector_motor', 'anthropic') === $k)>{{ $etiqueta }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    Claude y Gemini leen también el PDF sin convertirlo; OpenAI solo fotos.
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Clave del negocio</label>
+                                <input type="text" name="lector_api_key" class="input font-mono text-xs"
+                                       placeholder="sk-ant-... · sk-... · AIza..."
+                                       value="{{ old('lector_api_key', $selP->setting('lector_api_key')) }}">
+                                <p class="text-xs text-gray-400 mt-1">
+                                    Cada lectura se cobra a esta clave. Si la dejas vacía se usa la de Eskala,
+                                    cuando esté disponible.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
 
                     </div>{{-- /x-data proveedor --}}
 

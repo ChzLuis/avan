@@ -61,7 +61,11 @@
 <style>
   /* Titulo junto al logo. Apagado por defecto: donde va el logo no se repite
      el nombre, salvo que el negocio lo pida. */
+  /* El nombre no puede empujar al buscador: se acota y, si no cabe, se corta
+     con puntos suspensivos. Por debajo de 1100 px desaparece — ahi el espacio
+     es del buscador y del carrito, que son lo que la gente usa. */
   .brand-wordmark{margin-left:10px;font-family:var(--font-title,inherit);font-size:20px;
-                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap}
-  @media(max-width:760px){.brand-wordmark{font-size:16px;margin-left:7px}}
+                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap;
+                  max-width:min(30vw,260px);overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:1100px){.brand-wordmark{display:none}}
 </style>

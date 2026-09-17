@@ -4,10 +4,10 @@
     $ckThumbs   = (string) ($settings['cart_show_thumbs'] ?? '1') !== '0';   // miniatura del producto
     $ckLineTotal= (string) ($settings['cart_line_total'] ?? '1') !== '0';    // subtotal por línea
     $ckFreeFrom = (float) ($settings['shipping_free_from'] ?? 0);            // aviso de envío gratis
-    $ckKeepText = trim((string) ($settings['cart_keep_shopping_text'] ?? 'Seguir comprando'));
+    $ckKeepText = trim((string) ($settings['cart_keep_shopping_text'] ?? (($isQuoteOnly ?? false) ? 'Seguir cotizando' : 'Seguir comprando')));
     $ckNote     = trim((string) ($settings['cart_footer_note'] ?? 'Confirmaremos disponibilidad, entrega y condiciones antes de procesar tu solicitud.'));
 @endphp
-    <div class="drawer-layer" x-show="cartOpen" x-cloak @keydown.escape.window="cartOpen=false" role="dialog" aria-modal="true" aria-label="Carrito">
+    <div class="drawer-layer" x-show="cartOpen" x-cloak @keydown.escape.window="cartOpen=false" role="dialog" aria-modal="true" aria-label="{{ ($isQuoteOnly ?? false) ? 'Mi cotización' : 'Carrito' }}">
         <div class="drawer-backdrop" @click="cartOpen=false"></div><aside class="cart-drawer">
             <div class="drawer-head">
                 <h2>{{ $quoteMode ? 'Mi cotización' : $cartTitle }} <span class="cart-head-count" x-show="cart.length>0" x-text="'('+itemCount()+')'"></span></h2>

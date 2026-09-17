@@ -28,6 +28,7 @@ final class ConstructorAuditor
         // 01 Datos del negocio — datos maestros e identidad
         'business_name' => '01', 'business_category' => '01', 'contact_email' => '01',
         'business_hours' => '01', 'razon_social' => '01', 'ruc' => '01',
+        'contact_numbers' => '01',
         'has_physical_store' => '01', 'contact_city' => '01', 'logo_url' => '01',
         'facebook_url' => '01', 'instagram_url' => '01', 'tiktok_url' => '01',
         'youtube_url' => '01', 'linkedin_url' => '01', 'twitter_url' => '01',
@@ -36,6 +37,8 @@ final class ConstructorAuditor
         'hover_card_effect' => '02', 'hover_image_zoom' => '02', 'anim_stagger_ms' => '02',
         'btn_shape' => '02', 'btn_show_icon' => '02', 'font_title' => '02', 'font_body' => '02',
         'ticker_' => '02', 'announcement_' => '02', 'header_' => '02', 'hp_' => '02',
+        // Boton y panel de categorias del menu (mega, lista, texto, marcas, ayuda)
+        'mega_' => '02', 'megacat_' => '02',
         'logo_wordmark' => '02', 'logo_wordmark_text' => '02', 'uni_top_note' => '02', 'section_head_' => '02', 'float_' => '02', 'login_' => '02',
         'primary_color' => '02', 'secondary_color' => '02', 'accent_color' => '02',
         'text_color' => '02', 'text_muted_color' => '02', 'text_strong_color' => '02',
@@ -44,11 +47,13 @@ final class ConstructorAuditor
         'popup_bg_color' => '02', 'buy_button_color' => '02', 'content_max_width' => '02',
         // 03 Página de inicio
         'section_' => '03', 'hero_' => '03', 'anim_' => '03', 'intro_' => '03', 'shape_' => '03', 'overlay_' => '03',
+        'home_template' => '03', 'home_hero_variant' => '03',
         'pastel_band_' => '03', 'featured_categories_' => '03', 'featured_products_view' => '03', 'featured_products_autoplay' => '03',
         'flash_sale_' => '03', 'trust_' => '03', 'promo_style' => '03',
         'promo_autoplay' => '03', 'promo_show_dots' => '03', 'collection_' => '03',
         // 04 Catálogo — presentación
         'catalog_' => '04', 'card_' => '04', 'cats_mobile_limit' => '04',
+        'pdp_' => '04', 'brands_page_' => '04', 'promo_cards_' => '04',
         'new_badge_days' => '04', 'product_card_style' => '04', 'related_title' => '04',
         'sold_out_text' => '04', 'price_on_request_text' => '04', 'txt_' => '04',
         // 05 Venta — comportamiento comercial
@@ -91,7 +96,6 @@ final class ConstructorAuditor
         'hp_boutique_promo_desc' => ['DEPRECATED_CANDIDATE', 'Control sin consumidor en HeaderPresets'],
         'hp_boutique_promo_title' => ['DEPRECATED_CANDIDATE', 'Control sin consumidor en HeaderPresets'],
         'hp_boutique_promo_url' => ['DEPRECATED_CANDIDATE', 'Control sin consumidor en HeaderPresets'],
-        'hp_cat_trigger' => ['DEPRECATED_CANDIDATE', 'Control sin consumidor en HeaderPresets'],
         'hp_commercial_cta_title' => ['DEPRECATED_CANDIDATE', 'Control sin consumidor en HeaderPresets'],
         'hp_commercial_cta_url' => ['DEPRECATED_CANDIDATE', 'Control sin consumidor en HeaderPresets'],
         'hp_commercial_wholesale_text' => ['DEPRECATED_CANDIDATE', 'Control sin consumidor en HeaderPresets'],
@@ -329,7 +333,11 @@ final class ConstructorAuditor
         if (preg_match('/setSetting\(.\{\{|setSetting\(.\s*\.\s*\$/', $texto)) {
             preg_match_all('/@foreach\s*\(\s*\[(.*?)\]\s*as\s/s', $texto, $bloques);
             foreach ($bloques[1] as $bloque) {
-                preg_match_all("/'([a-z][a-z0-9_]{4,})'/", $bloque, $m2);
+                // Solo la PRIMERA cadena de cada fila `['clave', 'Etiqueta', ...]`
+                // es la clave; las demas son textos de la interfaz. Antes se
+                // cosechaba todo y los nombres de icono de un mapa entraban
+                // como ajustes fantasma que nunca se podian clasificar.
+                preg_match_all("/\[\s*'([a-z][a-z0-9_]{4,})'/", $bloque, $m2);
                 $claves = array_merge($claves, $m2[1]);
             }
         }

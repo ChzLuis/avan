@@ -31,7 +31,9 @@ function plantillaImagenes() {
     cfg: {},
     stats: {}, muestras: [], muestraId: null, logoNegocio: null,
     guardadas: [], categorias: [], categoriaId: '',
-    previewUrl: '', mensaje: '', estado: '', confirmar: null, logoCambio: false,
+    previewUrl: '', mensaje: '', estado: '',
+    pidiendoNombre: false,
+    nombreNuevo: '', confirmar: null, logoCambio: false,
     _t: null, _tomado: null, _sondeo: null,
 
     // Rejilla 3x3: atajos a las nueve posiciones habituales.
@@ -206,8 +208,9 @@ function plantillaImagenes() {
 
     /** Congela la configuración actual como plantilla aparte y la deja activa. */
     async guardarComo() {
-      const nombre = (prompt('Nombre de la plantilla', 'Campaña ' + new Date().getFullYear()) || '').trim();
-      if (!nombre) return;
+      const nombre = (this.nombreNuevo || '').trim();
+      if (!nombre) { this.pidiendoNombre = true; return; }
+      this.pidiendoNombre = false;
       this.estado = 'Guardando la plantilla…';
       try {
         const d = await this.pedir(RUTAS.saveAs, { name: nombre });

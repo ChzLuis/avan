@@ -164,6 +164,72 @@ class ProductImageTemplateController extends Controller
         return response()->json(['ok' => true, 'template' => $this->serializar($plantilla)]);
     }
 
+    /**
+     * Descarga la marca de agua tal y como se ve en el catalogo: la imagen
+     * aplanada con la MISMA opacidad configurada, no el logo a full color.
+     *
+     * Sirve para reutilizarla fuera del catalogo (fichas, cotizaciones, redes)
+     * sin tener que recrearla a ojo en un editor.
+     */
+    public function descargarMarca()
+    {
+        $plantilla = $this->plantilla();
+        $cfg = $plantilla->config;
+
+        abort_unless(! empty($cfg['watermark_enabled']), 404, 'La marca de agua está desactivada.');
+
+        $compositor = app(CompositorProducto::class);
+        $ref = new \ReflectionClass($compositor);
+
+        $rutaLocal = $ref->getMethod('rutaLocal'); $rutaLocal->setAccessible(true);
+        $abrir     = $ref->getMethod('abrir');     $abrir->setAccessible(true);
+        $recursoDe = $ref->getMethod('recursoDe'); $recursoDe->setAccessible(true);
+
+        $referencia = $recursoDe->invoke($compositor, $cfg, 'watermark', $plantilla);
+        abort_unless($referencia, 404, 'No hay imagen de marca de agua.');
+
+        $local = $rutaLocal->invoke($compositor, $referencia);
+        abort_unless($local, 404, 'No se encontró el archivo de la marca de agua.');
+
+        $src = $abrir->invoke($compositor, $local);
+        abort_unless($src, 422, 'No se pudo leer la imagen.');
+
+        $w = imagesx($src);
+        $h = imagesy($src);
+        $out = imagecreatetruecolor($w, $h);
+        imagealphablending($out, false);
+        imagesavealpha($out, true);
+        imagefill($out, 0, 0, imagecolorallocatealpha($out, 0, 0, 0, 127));
+
+        // Se multiplica la transparencia que ya trae el PNG por la opacidad
+        // configurada, para que el archivo se vea igual que en las fotos.
+        $factor = max(0, min(100, (float) ($cfg['watermark_opacity'] ?? 100))) / 100;
+        for ($x = 0; $x < $w; $x++) {
+            for ($y = 0; $y < $h; $y++) {
+                $c = imagecolorat($src, $x, $y);
+                $a = ($c >> 24) & 0x7F;
+                $visible = (1 - $a / 127) * $factor;
+                $out_a = (int) round(127 * (1 - $visible));
+                imagesetpixel($out, $x, $y, imagecolorallocatealpha(
+                    $out, ($c >> 16) & 0xFF, ($c >> 8) & 0xFF, $c & 0xFF, $out_a
+                ));
+            }
+        }
+        imagedestroy($src);
+
+        ob_start();
+        imagepng($out);
+        $png = (string) ob_get_clean();
+        imagedestroy($out);
+
+        $nombre = \Illuminate\Support\Str::slug($this->proyecto()->name ?: 'marca').'-marca-de-agua.png';
+
+        return response($png, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="'.$nombre.'"',
+        ]);
+    }
+
     /** Sube el logo, la marca de agua o el fondo propios de la plantilla. */
     public function upload(Request $request)
     {

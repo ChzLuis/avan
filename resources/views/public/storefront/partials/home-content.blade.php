@@ -8,5 +8,12 @@
     </section>
 @else
     <x-storefront-shapes :settings="$settings" />
-    @include('components.storefront-home-sections', ['project' => $project, 'settings' => $settings, 'sections' => $sections])
+    <x-storefront-home-skins :settings="$settings" />
+    {{-- El diseño de Inicio reordena los bloques; no filtra ni cambia su
+         contenido, por eso cambiar de diseño nunca pierde nada. --}}
+    @include('components.storefront-home-sections', [
+        'project' => $project,
+        'settings' => $settings,
+        'sections' => \App\Storefront\HomePresets::ordenar($sections, $settings['home_template'] ?? null),
+    ])
 @endif

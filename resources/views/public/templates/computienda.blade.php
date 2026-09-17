@@ -73,7 +73,7 @@
     $themeIsDark = (bool) ($themePresetDef['dark'] ?? false);
 
     // Variante estructural de las tarjetas de producto (no solo color).
-    $productCardStyle = in_array(($settings['product_card_style'] ?? 'classic'), ['classic','tech','soft','elegant','contrast'], true)
+    $productCardStyle = in_array(($settings['product_card_style'] ?? 'classic'), ['classic','tech','soft','elegant','contrast','pro'], true)
         ? ($settings['product_card_style'] ?? 'classic') : 'classic';
     $sectionSpacing = in_array(($settings['section_spacing'] ?? 'comfortable'), ['compact','comfortable','dense'], true)
         ? ($settings['section_spacing'] ?? 'comfortable') : 'comfortable';
@@ -97,16 +97,76 @@
     $sectionCardShadow = (string) ($settings['section_card_shadow'] ?? '1') !== '0';
 
     // Dos vistas adicionales para productos.
-    $featuredProductsView = in_array(($settings['featured_products_view'] ?? 'cards'), ['cards','editorial'], true)
+    $featuredProductsView = in_array(($settings['featured_products_view'] ?? 'cards'), ['cards','editorial','carousel'], true)
         ? ($settings['featured_products_view'] ?? 'cards') : 'cards';
+    // Segundos entre saltos del carrusel. 0 lo deja quieto y solo manual.
+    $pfCarruselSeg = max(0, min(15, (int) ($settings['featured_products_autoplay'] ?? 3)));
+    // Cabecera del catalogo: la banda de siempre o una con imagen de fondo y
+    // lema a la derecha (la de la referencia de GABDE). Texto de
+    // disponibilidad de la tarjeta "pro": "Disponible para cotizar" en una
+    // tienda por cotizacion, "Disponible" en una de venta directa.
+    $catalogHeroStyle    = ($settings['catalog_hero_style'] ?? 'simple') === 'imagen' ? 'imagen' : 'simple';
+    $catalogHeroImage    = $assetUrl($settings['catalog_hero_image'] ?? null);
+    $catalogHeroSubtitle = trim((string) ($settings['catalog_hero_subtitle'] ?? ''));
+    $catalogHeroLema     = array_values(array_filter(array_map('trim', explode('|', (string) ($settings['catalog_hero_slogan'] ?? '')))));
+    $txtDisponible       = trim((string) ($settings['catalog_availability_text'] ?? ''))
+        ?: ((($settings['store_mode'] ?? 'direct') === 'quote') ? 'Disponible para cotizar' : 'Disponible');
+    // Como se avanza en el catalogo: boton "Cargar mas" (lo de siempre) o
+    // numeros de pagina con "Mostrando 1 - 12 de 128".
+    $catalogPagination = ($settings['catalog_pagination'] ?? 'load_more') === 'numbers' ? 'numbers' : 'load_more';
     $catalogProductsView = in_array(($settings['catalog_products_view'] ?? 'cards'), ['cards','compact'], true)
         ? ($settings['catalog_products_view'] ?? 'cards') : 'cards';
     $currency = $settings['currency_symbol'] ?? 'S/';
-    $storeName = $settings['seo_title'] ?? $project->name;
+    // El NOMBRE de la tienda (cabecera, pie, og:site_name, 19 sitios) y el
+    // TITULO de la pestaña son cosas distintas. `seo_title` alimentaba ambos,
+    // asi que escribir un titulo bueno para Google ("Marca | Que vende |
+    // Ciudad") ensuciaba toda la tienda. Un `seo_title` con separadores es un
+    // titulo, no un nombre: se queda solo para la pestaña.
+    $storeName = trim((string) ($settings['business_name'] ?? '')) ?: (
+        filled($settings['seo_title'] ?? null) && ! preg_match('/[|—]/u', (string) $settings['seo_title'])
+            ? $settings['seo_title']
+            : $project->name
+    );
     $tagline = $settings['footer_tagline'] ?? $project->description ?? 'Soluciones tecnológicas para empresas y hogares.';
     $heroTitle = $settings['hero_title'] ?? 'Tecnología confiable para cada necesidad';
     $heroSubtitle = $settings['hero_subtitle'] ?? 'Equipos, accesorios y soporte especializado con atención profesional.';
     $heroBadge = trim(preg_replace('/[\p{So}\p{Cs}]/u', '', $settings['hero_badge'] ?? 'Tecnología y soporte especializado'));
+    // Palabras del titulo que van en color de marca ("para tus proyectos").
+    // Se buscan dentro del titulo sin distinguir mayusculas; si no estan, no pasa nada.
+    $heroHighlight = trim((string) ($settings['hero_title_highlight'] ?? ''));
+    $heroTitleHtml = static function (string $t) use ($heroHighlight) {
+        if ($heroHighlight === '' || ($pos = mb_stripos($t, $heroHighlight)) === false) return e($t);
+        $len = mb_strlen($heroHighlight);
+        return e(mb_substr($t, 0, $pos)).'<em class="ph-hl">'.e(mb_substr($t, $pos, $len)).'</em>'.e(mb_substr($t, $pos + $len));
+    };
+    // Iconos de linea para el panel del hero y la tarjeta lateral de promociones.
+    // Clave explicita o deduccion por la palabra del texto.
+    $bxIconos = [
+        'calidad'   => '<path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 17.9l.9-5.4L4.2 8.7l5.4-.8z"/>',
+        'stock'     => '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+        'confianza' => '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+        'soporte'   => '<path d="M4 13a8 8 0 0 1 16 0"/><path d="M4 13v4a2 2 0 0 0 2 2h2v-6H4zM20 13v4a2 2 0 0 1-2 2h-2v-6h4z"/>',
+        'envio'     => '<path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/>',
+        'precio'    => '<path d="M20 13 11 22l-8-8V5h9l8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/>',
+        'obras'     => '<path d="M4 18h16M6 18V9a6 6 0 0 1 12 0v9"/><path d="M12 3v3M9 12h6"/>',
+        'industria' => '<path d="M3 21V10l5 3V10l5 3V10l5 3v8z"/><path d="M17 8V4h3v4"/>',
+        'comercio'  => '<path d="M4 9 5.5 4h13L20 9"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/><path d="M5 11v9h14v-9M10 20v-5h4v5"/>',
+        'hogar'     => '<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+        'default'   => '<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',
+    ];
+    $bxIconoPara = static function ($clave, $texto) use ($bxIconos) {
+        $clave = mb_strtolower(trim((string) $clave));
+        if ($clave !== '' && isset($bxIconos[$clave])) return $bxIconos[$clave];
+        $t = mb_strtolower((string) $texto);
+        foreach (['calidad' => ['calidad', 'original', 'garant'], 'stock' => ['stock', 'inventario', 'disponib'],
+                  'confianza' => ['confianza', 'segur', 'respald'], 'soporte' => ['soporte', 'asesor', 'atenci'],
+                  'envio' => ['envio', 'envío', 'entrega', 'despacho'], 'precio' => ['precio', 'cotiza'],
+                  'obras' => ['obra', 'construc', 'proyecto'], 'industria' => ['industr', 'planta', 'fabric'],
+                  'comercio' => ['comerc', 'tienda', 'negocio'], 'hogar' => ['hogar', 'casa', 'vivienda']] as $k => $pal) {
+            foreach ($pal as $w) if (str_contains($t, $w)) return $bxIconos[$k];
+        }
+        return $bxIconos['default'];
+    };
     $heroCta = $settings['hero_cta1_text'] ?? 'Explorar productos';
     $heroCtaVisible = (string) ($settings['hero_cta1_show'] ?? '1') !== '0';
     $contactCta = $settings['hero_cta2_text'] ?? 'Solicitar asesoría';
@@ -120,6 +180,12 @@
 
     /* ═══ Checkout / pago / envío (mismo esqueleto que la plantilla ecommerce) ═══ */
     $isQuoteOnly = $quoteMode;
+    // En modo cotizacion el boton de cierre no "finaliza un pedido": pide la
+    // cotizacion. Solo se sustituye el valor por defecto; un texto propio de
+    // la tienda se respeta.
+    if ($isQuoteOnly && blank($settings['btn_checkout_text'] ?? null) && blank($settings['checkout_button_text'] ?? null)) {
+        $checkoutText = 'Solicitar cotización';
+    }
     $payManualMethods = json_decode($settings['payment_manual_methods'] ?? '["yape"]', true) ?: [];
     $payManualEnabled = (string) ($settings['payment_manual_enabled'] ?? '1') !== '0';
     // Apagar un método en el Constructor lo oculta SIN borrar su configuración.
@@ -191,8 +257,9 @@
     $pcShowTierList  = $pcOpt('card_show_tier_list', '0');
     $pcCartStyle = in_array($settings['card_cart_style'] ?? 'full', ['full','compact','inline'], true)
         ? ($settings['card_cart_style'] ?? 'full') : 'full';
-    $pcWaStyle = in_array($settings['card_whatsapp_style'] ?? 'outline', ['outline','solid','link','icon'], true)
-        ? ($settings['card_whatsapp_style'] ?? 'outline') : 'outline';
+    $pcWaStyle = in_array($settings['card_whatsapp_style'] ?? ($quoteMode ? 'solid' : 'outline'), ['outline','solid','link','icon'], true)
+        ? ($settings['card_whatsapp_style'] ?? ($quoteMode ? 'solid' : 'outline'))
+        : ($quoteMode ? 'solid' : 'outline');
 
     // ═══ Textos comerciales de la tarjeta y la ficha ═══
     // Estaban escritos a mano en siete sitios distintos. Son frases que el
@@ -228,6 +295,31 @@
     // El campo existia en la base y en el formulario, pero la tienda nunca lo leia.
     $logoPerfil = !empty($activeProfile) ? ($activeProfile->logo_path ?: null) : null;
     $logoUrl = \App\Support\ImageVariants::webp($assetUrl($logoPerfil ?? $settings['logo_url'] ?? $project->logo_url ?? null));
+    // Marca de agua del catalogo: se controla desde el constructor
+    // (Catalogo -> Marca de agua en las fotos). Apagada por defecto y solo
+    // posible si la tienda tiene logo; la intensidad tambien es configurable.
+    $verVistaRapida = ($settings['catalog_quick_view'] ?? '1') !== '0';
+    $marcasPorNombre = \App\Models\CatalogValue::query()
+        ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
+        ->where('catalog_lists.project_id', $project->id)
+        ->where('catalog_lists.type', 'brand')
+        ->pluck('catalog_values.id', 'catalog_values.label')
+        ->mapWithKeys(fn ($id, $label) => [mb_strtoupper((string) $label) => $id])
+        ->all();
+    // Logo de cada marca (catalog_values.image_url) por nombre: la banda de
+    // marcas de la portada lo usa cuando el item no trae imagen propia.
+    $marcasImgPorNombre = \App\Models\CatalogValue::query()
+        ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
+        ->where('catalog_lists.project_id', $project->id)
+        ->where('catalog_lists.type', 'brand')
+        ->whereNotNull('catalog_values.image_url')
+        ->pluck('catalog_values.image_url', 'catalog_values.label')
+        ->mapWithKeys(fn ($img, $label) => [mb_strtoupper((string) $label) => $img])
+        ->all();
+
+    $marcaAgua = ($settings['catalog_watermark'] ?? '') === '1' ? $logoUrl : null;
+    $marcaOpacidad = max(5, min(100, (int) ($settings['catalog_watermark_opacity'] ?? 42))) / 100;
+
     $waSource = $settings['whatsapp_number']
         ?? $settings['quote_whatsapp']
         ?? $settings['contact_whatsapp']
@@ -299,8 +391,18 @@
     $waMsg            = $settings['quote_wa_msg']
         ?? $settings['whatsapp_msg']
         ?? 'Hola, quiero más información sobre sus productos.';
-    $waFloatPos = in_array(($settings['float_wa_pos'] ?? 'right'), ['left','right'], true)
-        ? ($settings['float_wa_pos'] ?? 'right') : 'right';
+    // El Constructor guarda "bottom-left"/"bottom-right" y las tiendas viejas
+    // "left"/"right": se aceptan los dos. Antes solo el segundo, y el boton
+    // ignoraba la eleccion.
+    $waFloatPos = str_contains((string) ($settings['float_wa_pos'] ?? 'right'), 'left') ? 'left' : 'right';
+    // Solo icono (el de siempre) o pildora con texto, como "Consultar por WhatsApp".
+    $waFloatStyle = ($settings['float_wa_style'] ?? 'icon') === 'pill' ? 'pill' : 'icon';
+    $waFloatText  = trim((string) ($settings['float_wa_text'] ?? '')) ?: 'Consultar por WhatsApp';
+    // Globo rojo con un "1", como un mensaje sin leer: llama la vista.
+    $waFloatBadge = (string) ($settings['float_wa_badge'] ?? '0') !== '0';
+    // Animacion de llamada: ninguna, salto, latido o vibracion.
+    $waFloatAnim  = in_array(($settings['float_wa_anim'] ?? 'none'), ['none', 'bounce', 'pulse', 'shake'], true)
+        ? ($settings['float_wa_anim'] ?? 'none') : 'none';
     $badgeSale        = $settings['catalog_badge_sale'] ?? 'OFERTA';
     $badgeNew         = $settings['catalog_badge_new'] ?? 'NUEVO';
     $filterSearch     = (string) ($settings['catalog_filter_search'] ?? '1') !== '0';
@@ -355,13 +457,13 @@
     $txtSearchPlaceholder = $settings['txt_search_placeholder'] ?? 'Buscar productos...';
     $txtViewMore = $settings['txt_view_more'] ?? 'Ver más';
     $cartTitle  = $settings['cart_title'] ?? 'Tu carrito';
-    $cartEmpty  = $settings['cart_empty_msg'] ?? 'Tu carrito está vacío.';
+    $cartEmpty  = $settings['cart_empty_msg'] ?? ($isQuoteOnly ? 'Tu cotización está vacía.' : 'Tu carrito está vacío.');
     // Hero overlay (oscurecer imagen de fondo)
     $heroOverlay = max(0, min(100, (int) ($settings['hero_overlay'] ?? 40)));
 
     // Sincronización con el constructor visual de Inicio.
     // store_sections es la única fuente principal para orden, publicación y visibilidad.
-    $homeSectionKeys = ['hero','media_banner','benefits','promotions','categories','collection_showcase','flash_sale','discount_products','featured_products','category_rows','brands','testimonials','gallery','faq','wa_advisory','cta_banner','locations','about_preview','info_strip','blog'];
+    $homeSectionKeys = ['hero','media_banner','promo_cards','benefits','promotions','categories','collection_showcase','flash_sale','discount_products','featured_products','category_rows','brands','testimonials','gallery','faq','wa_advisory','cta_banner','locations','about_preview','info_strip','blog'];
 
     $componentAliases = [
         'hero' => 'hero',
@@ -396,6 +498,7 @@
         'sale_products' => 'discount_products',
         'products_on_sale' => 'discount_products',
         'discounts' => 'discount_products', // nombre real del componente en store_sections
+        'promo_cards' => 'promo_cards', // promociones de la tabla `promotions`, no del slider
 
         'featured_products' => 'featured_products',
 
@@ -412,6 +515,7 @@
         'faq' => 'faq',
         'wa_advisory' => 'wa_advisory',
         'cta_banner' => 'cta_banner',
+        'delivery_banner' => 'delivery_banner',
         'category_rows' => 'category_rows',
         'locations' => 'locations',
         'about_preview' => 'about_preview',
@@ -506,7 +610,7 @@
     $featuredCatsAllText = trim($settings['featured_categories_all_text'] ?? 'Ver todo');
     $featuredCatsVisual = in_array(($settings['featured_categories_visual'] ?? 'auto'), ['auto','image','icon','initial'], true)
         ? ($settings['featured_categories_visual'] ?? 'auto') : 'auto';
-    $featuredCatsStyle = in_array(($settings['featured_categories_style'] ?? 'image-top'), ['image-top','overlay','minimal','horizontal','showcase','circles','carousel','editorial','ambientes','coleccion'], true)
+    $featuredCatsStyle = in_array(($settings['featured_categories_style'] ?? 'image-top'), ['image-top','overlay','minimal','horizontal','showcase','circles','carousel','editorial','ambientes','coleccion','tiles'], true)
         ? ($settings['featured_categories_style'] ?? 'image-top') : 'image-top';
     // Variante "showcase": banda de título destacada + círculos grandes.
     $featuredCatsBandBg = $color($settings['featured_categories_band_bg'] ?? null, $settings['primary_color'] ?? '#2563eb');
@@ -585,9 +689,15 @@
     ];
     $trustBenefits = [];
     foreach ($trustDefaults as $tn => $td) {
+        // La descripcion por defecto pertenece a SU titulo por defecto. Si el
+        // negocio escribio su propio titulo y no puso descripcion, rellenar
+        // con la ajena produce pares sin sentido ("Pago seguro / Cobertura
+        // segun destino"): mejor sin descripcion que con una que no es.
+        $tituloPropio = trim((string) ($settings["trust_text_{$tn}"] ?? ''));
+        $usaTituloDefecto = $tituloPropio === '' || $tituloPropio === $td['t'];
         $item = [
             'title' => trim($settings["trust_text_{$tn}"] ?? $td['t']),
-            'description' => trim($settings["trust_description_{$tn}"] ?? $td['d']),
+            'description' => trim($settings["trust_description_{$tn}"] ?? ($usaTituloDefecto ? $td['d'] : '')),
             'icon' => $settings["trust_icon_{$tn}"] ?? $td['i'],
             'url' => trim($settings["trust_url_{$tn}"] ?? ''),
             'enabled' => (string) ($settings["trust_item_{$tn}_enabled"] ?? '1') !== '0',
@@ -718,7 +828,7 @@
         ? ($settings['cards_no_photo_style'] ?? 'placeholder')
         : 'placeholder';
 
-    $heroNoImageStyle = in_array(($settings['hero_no_image_style'] ?? 'collage'), ['collage', 'typographic'], true)
+    $heroNoImageStyle = in_array(($settings['hero_no_image_style'] ?? 'collage'), ['collage', 'typographic', 'panel'], true)
         ? ($settings['hero_no_image_style'] ?? 'collage')
         : 'collage';
 
@@ -743,7 +853,7 @@
             && (string) ($settings["hero_slide_{$n}_cta2_show"] ?? ($contactCtaVisible ? '1' : '0')) !== '0';
         $heroSlides[] = [
             'slot'      => $n,
-            'img'       => $desktop,
+            'img'       => \App\Support\Imagen\Img::deAncho($desktop, 1600) ?: $desktop,
             'mobileImg' => $mobile,
             'badge'     => trim($settings["hero_badge_{$n}"] ?? ($n === 1 ? ($settings['hero_badge'] ?? '') : '')),
             'title'     => trim($settings["hero_title_{$n}"] ?? ($n === 1 ? ($settings['hero_title'] ?? '') : '')),
@@ -783,6 +893,9 @@
     $menuInkC = $menuCustomColor('menu_text_color');
     $menuActBgC = $menuCustomColor('menu_active_bg_color');
     $menuActInkC = $menuCustomColor('menu_active_text_color');
+    // Boton "Categorias" del menu (megamenu): colores propios, opcionales.
+    $megaBtnBgC = $menuCustomColor('mega_btn_bg_color');
+    $megaBtnInkC = $menuCustomColor('mega_btn_text_color');
     // Fondo global de la página (pinta el lienzo y las secciones claras; respeta las oscuras).
     $pageBgC = $menuCustomColor('page_bg_color');
     // Hero: alto
@@ -892,6 +1005,13 @@
         $seoDesc = $seoProducto
             ? \Illuminate\Support\Str::limit(strip_tags((string) ($seoProducto->description ?: $seoProducto->name)), 155, '')
             : (string) ($settings['seo_description'] ?? $heroSubtitle);
+        // Titulo propio de la portada. `seo_title` se usa ADEMAS como nombre de
+        // la tienda en toda la plantilla, asi que si el comerciante escribe ahi
+        // un titulo largo ("Marca | Que vende | Ciudad") no debe volver a
+        // pegarsele la coletilla del hero: ya viene completo.
+        if (! $seoProducto && ($storeView ?? 'home') === 'home' && filled($settings['seo_title'] ?? null)) {
+            $seoTitulo = (string) $settings['seo_title'];
+        }
         $seoCanonical = $seoProducto
             ? $seoBase.'/producto/'.\App\Support\ImageVariants::claveProducto($seoProducto->id, $seoProducto->name)
             : $seoBase.match ($storeView ?? 'home') {
@@ -932,6 +1052,45 @@
             'availability' => ((int) $seoProducto->stock) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
         ]),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+    @else
+    {{-- NEGOCIO LOCAL: sin esto Google ve un sitio cualquiera y no sabe que hay
+         una empresa con RUC, direccion y telefono detras. Es lo que alimenta la
+         ficha del buscador y las busquedas "cerca de mi". Solo fuera de la ficha
+         de producto, que ya declara su propio Product. --}}
+    @php
+        $bizLegal = \App\Storefront\DatosPie::legal($settings ?? [], $project);
+        $bizTel = \App\Storefront\ContactosTienda::todos($settings ?? [], $project);
+        $bizDir = trim((string) ($settings['contact_address'] ?? ''));
+        $bizCiudad = trim((string) ($settings['contact_city'] ?? ''));
+        $bizTipo = trim((string) ($settings['schema_type'] ?? '')) ?: 'LocalBusiness';
+        $bizHorario = \App\Storefront\DatosPie::horario($settings['business_hours'] ?? null);
+        $bizRedes = array_values(array_filter([
+            $settings['facebook_url'] ?? null, $settings['instagram_url'] ?? null,
+            $settings['tiktok_url'] ?? null, $settings['youtube_url'] ?? null,
+            $settings['linkedin_url'] ?? null,
+        ]));
+    @endphp
+    <script type="application/ld+json">{!! json_encode(array_filter([
+        '@context' => 'https://schema.org',
+        '@type' => $bizTipo,
+        'name' => $storeName,
+        'legalName' => $bizLegal['nombre'] !== $storeName ? $bizLegal['nombre'] : null,
+        'taxID' => $bizLegal['ruc'] ?: null,
+        'description' => $seoDesc,
+        'url' => $seoCanonical,
+        'image' => $seoImagen ?: null,
+        'logo' => !empty($settings['logo_url']) ? $assetUrl($settings['logo_url']) : null,
+        'telephone' => $bizTel[0]['visible'] ?? null,
+        'address' => $bizDir || $bizCiudad ? array_filter([
+            '@type' => 'PostalAddress',
+            'streetAddress' => $bizDir ?: null,
+            'addressLocality' => $bizCiudad ?: null,
+            'addressCountry' => 'PE',
+        ]) : null,
+        'openingHours' => $bizHorario ?: null,
+        'priceRange' => trim((string) ($settings['schema_price_range'] ?? '')) ?: null,
+        'sameAs' => $bizRedes ?: null,
+    ]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
     @endif
     @if(!empty($settings['favicon_url']))
     <link rel="icon" href="{{ \App\Support\ImageVariants::favicon($assetUrl($settings['favicon_url'])) }}">
@@ -942,6 +1101,15 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         :root{
+          /* Aire alrededor de la foto de un producto.
+             En PORCENTAJE, no en pixeles: el % se mide sobre el ancho del
+             contenedor, asi que el margen escala con la tarjeta y sale igual en
+             movil que en escritorio. Antes habia once reglas distintas de 4px a
+             28px y la misma foto aparecia con un aire distinto en la tarjeta, en
+             destacados y en la ficha. Una sola variable para que no divergan.
+             El procesador ya no hornea margen: la foto es el producto recortado
+             y el hueco lo define la tarjeta. */
+          --foto-aire:4%;
           --primary:{{ $primary }};
           --secondary:{{ $secondary }};
           --accent:{{ $accent }};
@@ -1022,6 +1190,11 @@
           --logo-h:{{ $logoHeight }}px;
           --footer-bg:{{ $footerBg }};
           --footer-text:{{ $footerText }};
+          {{-- Paleta del "Diseño del pie": la usan TODAS las composiciones. --}}
+          {!! \App\Storefront\DatosPie::variables(\App\Storefront\DatosPie::paleta(
+                $footerStyle, $footerBg, $footerText, $primary,
+                (bool) preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($settings['footer_bg_color'] ?? ''))
+          )) !!}
           --hero-mobile-h:{{ $heroMobileHeight }}px;
         }
         @if($themePresetDef)
@@ -1227,6 +1400,60 @@
         .cards-soft .catalog-card:hover,.cards-soft .pf-card:hover{transform:translateY(-4px) rotate(-.4deg)}
         .cards-elegant .catalog-card,.cards-elegant .pf-card{border-radius:var(--radius-sm);border-color:var(--border);box-shadow:none}
         .cards-elegant .catalog-card:hover,.cards-elegant .pf-card:hover{box-shadow:var(--shadow-lg)}
+
+        /* ═══ Movimiento ═══════════════════════════════════════════════════
+           La tarjeta ya declaraba `transition` pero ninguna variante base
+           definia el :hover, asi que prometia un movimiento que no ocurria.
+           Aqui vive el estado que faltaba, mas el resto de vida de la pagina.
+           Todo se apaga entero en prefers-reduced-motion, al final del bloque. */
+
+        .catalog-card,.pf-card{transition:transform .28s cubic-bezier(.2,.7,.3,1),box-shadow .28s ease,border-color .28s ease}
+        .catalog-card:hover,.pf-card:hover{transform:translateY(-6px);border-color:color-mix(in srgb,var(--primary) 38%,var(--border));box-shadow:0 18px 38px color-mix(in srgb,var(--primary) 20%,transparent)}
+
+        /* La foto respira dentro de su marco: el recorte lo hace el contenedor,
+           asi que la imagen puede crecer sin descuadrar la rejilla. */
+        .catalog-card-media,.pf-card-media{overflow:hidden}
+        .catalog-card-media img,.pf-card-media img{transition:transform .5s cubic-bezier(.2,.7,.3,1)}
+        .catalog-card:hover .catalog-card-media img,.pf-card:hover .pf-card-media img{transform:scale(1.07)}
+        .catalog-card-inquiry:hover,.catalog-card-action:hover{transform:translateY(-2px);box-shadow:0 8px 20px color-mix(in srgb,var(--primary) 26%,transparent)}
+
+        /* Entrada escalonada de las tarjetas cuando su seccion aparece.
+           Se hace con `animation ... backwards` y NO con opacity:0 de partida:
+           si el revelado nunca marcara la seccion, la tarjeta se ve igualmente.
+           Un producto invisible por un fallo de animacion es uno que no se vende. */
+        @keyframes bx-card-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+        .sf-reveal-ready [data-store-native-section].sf-in .catalog-card,.sf-reveal-ready [data-store-native-section].sf-in .pf-card,.sf-reveal-ready [data-store-native-section].sf-in .home-cat-card{animation:bx-card-in .52s cubic-bezier(.2,.7,.3,1) backwards}
+        .sf-reveal-ready [data-store-native-section].sf-in .catalog-card:nth-child(1),.sf-reveal-ready [data-store-native-section].sf-in .pf-card:nth-child(1),.sf-reveal-ready [data-store-native-section].sf-in .home-cat-card:nth-child(1){animation-delay:.04s}
+        .sf-reveal-ready [data-store-native-section].sf-in .catalog-card:nth-child(2),.sf-reveal-ready [data-store-native-section].sf-in .pf-card:nth-child(2),.sf-reveal-ready [data-store-native-section].sf-in .home-cat-card:nth-child(2){animation-delay:.10s}
+        .sf-reveal-ready [data-store-native-section].sf-in .catalog-card:nth-child(3),.sf-reveal-ready [data-store-native-section].sf-in .pf-card:nth-child(3),.sf-reveal-ready [data-store-native-section].sf-in .home-cat-card:nth-child(3){animation-delay:.16s}
+        .sf-reveal-ready [data-store-native-section].sf-in .catalog-card:nth-child(4),.sf-reveal-ready [data-store-native-section].sf-in .pf-card:nth-child(4),.sf-reveal-ready [data-store-native-section].sf-in .home-cat-card:nth-child(4){animation-delay:.22s}
+        .sf-reveal-ready [data-store-native-section].sf-in .catalog-card:nth-child(n+5),.sf-reveal-ready [data-store-native-section].sf-in .pf-card:nth-child(n+5){animation-delay:.28s}
+
+        /* Portada de categoria: la imagen avanza y la flecha acompaña. */
+        .home-cat-card .home-cat-arrow{transition:transform .28s cubic-bezier(.2,.7,.3,1),background-color .28s ease}
+        .home-cat-card:hover .home-cat-arrow{transform:translateX(5px)}
+        .home-cat-card:hover .home-cat-media img{transform:scale(1.06)}
+
+        .xs-brand{transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease}
+        .xs-brand:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(15,23,42,.10)}
+
+        /* Barra de avance de lectura. Usa scroll-driven animation: sin JS, sin
+           listener de scroll y sin coste en el hilo principal. Donde el
+           navegador no la soporta, simplemente no aparece. */
+        @keyframes bx-avance{to{transform:scaleX(1)}}
+        .bx-progreso{position:fixed;inset:0 0 auto 0;height:3px;z-index:999;transform:scaleX(0);transform-origin:0 50%;background:linear-gradient(90deg,var(--primary),color-mix(in srgb,var(--primary) 40%,#fff));animation:bx-avance linear both;animation-timeline:scroll(root block)}
+        @supports not (animation-timeline:scroll()){.bx-progreso{opacity:0}}
+
+        /* Quien pide menos movimiento ve la tienda quieta: no es un adorno,
+           para algunas personas el movimiento produce mareo real. */
+        @media(prefers-reduced-motion:reduce){
+            .catalog-card,.pf-card,.catalog-card-media img,.pf-card-media img,.catalog-card-inquiry,.catalog-card-action,.home-cat-arrow,.xs-brand{transition:none!important}
+            .catalog-card:hover,.pf-card:hover,.xs-brand:hover{transform:none!important}
+            .catalog-card:hover .catalog-card-media img,.pf-card:hover .pf-card-media img,.home-cat-card:hover .home-cat-media img{transform:none!important}
+            .sf-reveal-ready [data-store-native-section].sf-in .catalog-card,.sf-reveal-ready [data-store-native-section].sf-in .pf-card,.sf-reveal-ready [data-store-native-section].sf-in .home-cat-card{animation:none!important}
+            .bx-progreso{opacity:0}
+        }
+
         .cards-contrast .catalog-card,.cards-contrast .pf-card{border:2px solid var(--text-strong);border-radius:var(--radius-sm);box-shadow:var(--shadow-md)}
         .cards-contrast .catalog-card:hover,.cards-contrast .pf-card:hover{transform:translate(-2px,-2px);box-shadow:var(--shadow-lg)}
         .product-action,.catalog-card-action,.button{border-radius:var(--btn-radius)!important}
@@ -1259,6 +1486,25 @@
         body.section-heading-center .section-heading>div{margin-left:auto;margin-right:auto}
         body.section-heading-center .home-see-all,
         body.section-heading-center .pf-seeall{margin-left:auto}
+        /* La cabecera es flex con el enlace "Ver todos" al lado: centrar el
+           texto no basta, porque el bloque del titulo solo ocupa lo que mide y
+           queda descolocado. Pasa a columna centrada y el enlace debajo. */
+        body.section-heading-center .home-section-head,
+        body.section-heading-center .promo-section-head,
+        body.section-heading-center .pf-head{flex-direction:column;justify-content:center}
+        body.section-heading-center .home-section-copy,
+        body.section-heading-center .promo-section-head>div,
+        body.section-heading-center .pf-head>div:first-child{width:100%;text-align:center}
+        body.section-heading-center .home-see-all,
+        body.section-heading-center .pf-seeall{margin:10px auto 0}
+        /* Los subtitulos llevan un max-width para no hacer lineas larguisimas;
+           con la cabecera centrada ese ancho debe centrarse tambien, o el texto
+           queda pegado a la izquierda bajo un titulo centrado. */
+        body.section-heading-center .home-section-copy p,
+        body.section-heading-center .trust-section-head p,
+        body.section-heading-center .promo-section-head p,
+        body.section-heading-center .pf-head p,
+        body.section-heading-center .section-heading p{margin-inline:auto}
         body.section-bg-white [data-store-native-section]:not(.premium-hero):not(.flash-sale-section):not(.style-band){background:#fff!important}
         /* Este gris azulado estaba fijo: en una tienda de neutro calido convivian
            dos familias de gris y el conjunto se ensuciaba. Sale del tema. */
@@ -1352,7 +1598,8 @@
         .premium-hero .hero-actions .button{white-space:nowrap;flex:0 0 auto}
         @media(max-width:760px){
             /* El subtitulo del hero se salia de la caja en pantallas pequenas */
-            .premium-hero .ph-sub,.premium-hero .ph-title,.premium-hero .ph-eyebrow{max-width:100%!important;overflow-wrap:break-word;hyphens:auto}
+            .premium-hero .ph-sub,.premium-hero .ph-eyebrow{max-width:100%!important;overflow-wrap:break-word;hyphens:auto}
+            .premium-hero .ph-title{max-width:100%!important;overflow-wrap:normal;word-break:normal;hyphens:manual}
             .premium-hero .ph-slide-copy,.premium-hero .premium-hero-copy{max-width:100%!important;padding-left:18px!important;padding-right:18px!important;box-sizing:border-box}
             .premium-hero .hero-actions{flex-wrap:wrap;gap:10px;margin-top:16px}
             .premium-hero .hero-actions .button{flex:1 1 100%}
@@ -1522,22 +1769,83 @@
         body.section-preset-commerce .ph-dot.is-active{background:var(--accent,#C39C54);width:20px;border-radius:4px}
         /* Banda de beneficios: UNA banda pegada al hero, con divisores */
         body.section-preset-commerce [data-store-native-section="benefits"]{padding-top:var(--sp-2)!important}
-        body.section-preset-commerce .trust-grid{gap:0;border:1px solid #E7DFD4;border-radius:10px;background:#F5F4F2;overflow:hidden;box-shadow:none}
-        body.section-preset-commerce .trust-section .trust-grid>.trust-card,
-        body.section-preset-commerce .trust-card{border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;min-height:100px;padding:24px 26px;border-left:1px solid #DED8CF!important}
-        body.section-preset-commerce .trust-section .trust-grid>.trust-card:first-child{border-left:0!important}
+
+
+        {{-- Las tarjetas ya no van pegadas dentro de una caja: su aspecto (borde, fondo, sombra y filete) se define mas abajo, en un solo bloque. --}}
+
         /* §14: banda de beneficios pegada al hero, blanca, borde y sombra suave */
-        body.section-preset-commerce .trust-section .trust-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0!important;border:1px solid var(--border)!important;border-radius:0 0 10px 10px!important;background:var(--surface)!important;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.045)!important}
+        body.section-preset-commerce .trust-section .trust-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
         body.section-preset-commerce .trust-section{padding-top:0!important;margin-top:-1px}
         /* §15: la siguiente seccion arranca a 40-50px, no a 100 */
         body.section-preset-commerce .trust-section+*{padding-top:46px!important}
         @media(max-width:980px){body.section-preset-commerce .trust-section .trust-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:560px){body.section-preset-commerce .trust-section .trust-grid{grid-template-columns:1fr}}
-        body.section-preset-commerce .trust-grid>.trust-card:first-child{border-left:0}
+
         body.section-preset-commerce .trust-card strong{font-size:14px;font-weight:700;color:#142845}
         body.section-preset-commerce .trust-card span{font-size:12.5px;color:#5E6878;margin-top:4px}
         body.section-preset-commerce .trust-icon svg{width:34px;height:34px}
-        @media(max-width:760px){body.section-preset-commerce .trust-grid{border:0;border-radius:0}body.section-preset-commerce .trust-card{border-left:0;border:1px solid var(--border);border-radius:10px}}
+        /* La banda se veia muerta: cinco celdas pegadas dentro de una caja,
+           separadas solo por una raya. El relieve al pasar el raton no basta
+           —de entrada sigue igual de plana, y en movil no hay raton—, asi que
+           el cambio es EN REPOSO: tarjetas sueltas, con su borde, su fondo y
+           su sombra, como el resto de la tienda. */
+        body.section-preset-commerce .trust-section .trust-grid{
+            gap:16px!important;
+            border:0!important;
+            background:transparent!important;
+            border-radius:0!important;
+            box-shadow:none!important;
+            overflow:visible!important;
+        }
+        body.section-preset-commerce .trust-section .trust-grid>.trust-card,
+        body.section-preset-commerce .trust-card{
+            border:1px solid color-mix(in srgb,{{ $trustAccentColor }} 16%,#E3E7EE)!important;
+            border-left:1px solid color-mix(in srgb,{{ $trustAccentColor }} 16%,#E3E7EE)!important;
+            border-radius:14px!important;
+            background:#fff!important;
+            box-shadow:0 6px 20px rgba(15,23,42,.06)!important;
+            padding:24px 22px;
+            position:relative;
+            overflow:hidden;
+            transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+        }
+        /* Filete de color arriba: da identidad sin recargar. Siempre visible,
+           no solo al pasar por encima. */
+        body.section-preset-commerce .trust-card::before{
+            content:'';position:absolute;top:0;left:0;right:0;height:3px;
+            background:linear-gradient(90deg,
+                {{ $trustAccentColor }},
+                color-mix(in srgb,{{ $trustAccentColor }} 35%,#fff));
+        }
+        @media (hover:hover){
+            body.section-preset-commerce .trust-card:hover{
+                transform:translateY(-4px);
+                box-shadow:0 16px 36px color-mix(in srgb,{{ $trustAccentColor }} 16%,rgba(15,23,42,.10))!important;
+                border-color:color-mix(in srgb,{{ $trustAccentColor }} 45%,#fff)!important;
+            }
+            body.section-preset-commerce .trust-card:hover .trust-icon{
+                transform:translateY(-2px) scale(1.06);
+                box-shadow:0 12px 24px color-mix(in srgb,{{ $trustAccentColor }} 42%,transparent);
+            }
+        }
+        body.section-preset-commerce .trust-icon{transition:transform .22s ease, box-shadow .22s ease}
+        /* El icono llevaba un color plano y se veia como un cuadrado pegado. */
+        body.section-preset-commerce .trust-section.style-tiles .trust-icon{
+            background:linear-gradient(140deg,
+                color-mix(in srgb,{{ $trustAccentColor }} 82%,#fff),
+                {{ $trustAccentColor }})!important;
+            box-shadow:0 8px 18px color-mix(in srgb,{{ $trustAccentColor }} 30%,transparent);
+        }
+        /* La seccion respira: antes iba pegada al hero (padding-top:0). */
+        body.section-preset-commerce .trust-section{padding-top:44px!important;margin-top:0}
+        @media(max-width:760px){
+            body.section-preset-commerce .trust-section .trust-grid{gap:12px!important}
+            body.section-preset-commerce .trust-card{padding:18px 18px}
+        }
+        @media (prefers-reduced-motion:reduce){
+            body.section-preset-commerce .trust-card,
+            body.section-preset-commerce .trust-icon{transition:none}
+        }
         /* Títulos de sección con jerarquía mayor */
         body.section-preset-commerce .section-heading h2,body.section-preset-commerce .pf-title,body.section-preset-commerce .xs-head h2{font-size:clamp(26px,2.6vw,34px);font-weight:700;letter-spacing:-.02em}
         /* Tarjetas de producto: borde suave, sin sombra pesada */
@@ -1592,10 +1900,49 @@
         body.section-preset-modern .catalog-card:hover{transform:translateY(-5px)}
 
         /* Vista editorial de productos destacados */
+        /* ═══ Destacados en carrusel ══════════════════════════════════════
+           Tercera vista de la seccion, junto a Tarjetas y Editorial. La rejilla
+           pasa a ser una pista que se desplaza sola.
+
+           El desplazamiento es scroll real con scroll-snap, no un `transform`
+           sobre un carro: asi el teclado, la rueda y el gesto tactil funcionan
+           sin escribir nada, y si el JS no llegara a cargar queda una fila que
+           se puede arrastrar con el dedo. */
+        body.featured-view-carousel .pf-grid{
+            display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;
+            scroll-behavior:smooth;scrollbar-width:none;padding:4px 2px 8px}
+        body.featured-view-carousel .pf-grid::-webkit-scrollbar{display:none}
+        body.featured-view-carousel .pf-card{
+            flex:0 0 calc((100% - 54px) / 4);scroll-snap-align:start;min-width:0}
+        @media(max-width:1024px){body.featured-view-carousel .pf-card{flex-basis:calc((100% - 36px) / 3)}}
+        @media(max-width:760px){body.featured-view-carousel .pf-card{flex-basis:calc((100% - 18px) / 2)}}
+        @media(max-width:520px){body.featured-view-carousel .pf-card{flex-basis:82%}}
+
+        .pf-carrusel{position:relative}
+        /* Los puntos indican cuantas paginas hay y en cual se esta. Sin ellos
+           el movimiento automatico desorienta: nada dice donde termina. */
+        .pf-puntos{display:flex;gap:7px;justify-content:center;margin-top:16px}
+        .pf-punto{width:8px;height:8px;padding:0;border:0;border-radius:999px;cursor:pointer;
+            background:color-mix(in srgb,var(--text-strong) 22%,transparent);
+            transition:background-color .25s ease,width .25s ease}
+        .pf-punto.on{width:22px;background:var(--primary)}
+        .pf-flecha{position:absolute;top:calc(50% - 34px);z-index:3;width:38px;height:38px;display:grid;place-items:center;
+            border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text-strong);cursor:pointer;
+            box-shadow:0 6px 18px rgba(15,23,42,.12);transition:transform .2s ease,background-color .2s ease,opacity .2s ease}
+        .pf-flecha:hover{background:var(--primary);color:#fff;transform:scale(1.06)}
+        .pf-flecha[disabled]{opacity:.3;cursor:default}
+        .pf-flecha.izq{left:-8px}.pf-flecha.der{right:-8px}
+        @media(max-width:760px){.pf-flecha{display:none}}
+
+        @media(prefers-reduced-motion:reduce){
+            body.featured-view-carousel .pf-grid{scroll-behavior:auto}
+            .pf-punto,.pf-flecha{transition:none}
+        }
+
         body.featured-view-editorial .pf-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
         body.featured-view-editorial .pf-card{display:grid;grid-template-columns:42% 58%;min-height:280px}
         body.featured-view-editorial .pf-media{aspect-ratio:auto;height:100%;border-bottom:0;border-right:1px solid #eef2f7}
-        body.featured-view-editorial .pf-media img{padding:26px}
+        body.featured-view-editorial .pf-media img{padding:var(--foto-aire)}
         body.featured-view-editorial .pf-body{padding:28px}
         body.featured-view-editorial .pf-name{font-size:18px;line-height:1.35}
         body.featured-view-editorial .pf-price{font-size:23px}
@@ -1689,6 +2036,16 @@
         .ft-style-minimal .footer-contact{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:14px 26px}
         .ft-style-minimal .footer-help{display:none}
         @media(max-width:600px){.ft-style-minimal .footer-trust{display:flex}}
+
+        /* "Compacto centrado" para CUALQUIER composicion: menos aire y todo
+           al centro. Antes solo lo entendia la clasica. */
+        .fp-estilo-minimal footer{margin-top:40px!important}
+        .fp-estilo-minimal .fbo-main,.fp-estilo-minimal .fin-main,.fp-estilo-minimal .fta-cols,.fp-estilo-minimal .flo-top{padding-top:34px;padding-bottom:26px;gap:24px}
+        .fp-estilo-minimal .fbo-main,.fp-estilo-minimal .fin-main{grid-template-columns:1fr;text-align:center;justify-items:center}
+        .fp-estilo-minimal .fin-datos li,.fp-estilo-minimal .fin-flecha li,.fp-estilo-minimal .fbo li{justify-content:center}
+        .fp-estilo-minimal .fbo-social,.fp-estilo-minimal .fma-nav,.fp-estilo-minimal .flo-nav{justify-content:center}
+        .fp-estilo-minimal .fma-top{grid-template-columns:1fr;text-align:center;justify-items:center}
+        .fp-estilo-minimal .fma-contacto{text-align:center;justify-self:center}
 
         /* Secciones de la home (portada) */
 
@@ -1917,7 +2274,7 @@
         .special-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
         .special-product-card{min-width:0;overflow:hidden;background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 12px 34px rgba(15,23,42,.08)}
         .special-product-media{position:relative;display:block;height:190px;background:#f8fafc;border-bottom:1px solid #eef2f7}
-        .special-product-media img{width:100%;height:100%;object-fit:contain;padding:18px}
+        .special-product-media img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire)}
         .special-product-badge{position:absolute;left:12px;top:12px;padding:6px 9px;color:#fff;background:#dc2626;border-radius:999px;font-size:10px;font-weight:900}
         .special-product-body{padding:16px}.special-product-body small{display:block;color:#64748b;font-size:11px}.special-product-body strong{display:block;margin-top:6px;color:#0f172a;font-size:14px;line-height:1.4}.special-product-prices{display:flex;align-items:baseline;gap:8px;margin-top:12px}.special-product-prices b{color:var(--primary);font-size:19px}.special-product-prices del{color:#94a3b8;font-size:12px}
         .discount-section{background:#fff}
@@ -2023,7 +2380,7 @@
         .home-cat-card small{display:block;margin-top:5px;color:#64748b;font-size:11.5px}.home-cat-arrow{width:32px;height:32px;display:grid;place-items:center;flex:0 0 32px;color:{{ $featuredCatsAccent }};background:color-mix(in srgb,{{ $featuredCatsAccent }} 9%,#fff);border-radius:999px;transition:.2s}
         .home-cat-arrow svg{width:15px;height:15px}.home-cat-card:hover .home-cat-arrow{color:#fff;background:{{ $featuredCatsAccent }};transform:translateX(2px)}
         .home-cats.style-minimal .home-cat-card{text-align:center}.home-cats.style-minimal .home-cat-media{height:auto;padding:25px 16px 4px;background:transparent}.home-cats.style-minimal .home-cat-content{display:block;padding:12px 16px 22px}.home-cats.style-minimal .home-cat-arrow{display:none}
-        .home-cats.style-horizontal .home-cat-card{display:flex;align-items:center;gap:14px;padding:14px}.home-cats.style-horizontal .home-cat-media{width:104px;height:104px;flex:0 0 104px;overflow:hidden;border-radius:10px;background:var(--surface-soft,#f8fafc)}.home-cats.style-horizontal .home-cat-media img{width:100%;height:100%;object-fit:contain;padding:6px}.home-cats.style-horizontal .home-cat-content{flex:1;min-width:0}
+        .home-cats.style-horizontal .home-cat-card{display:flex;align-items:center;gap:14px;padding:14px}.home-cats.style-horizontal .home-cat-media{width:104px;height:104px;flex:0 0 104px;overflow:hidden;border-radius:10px;background:var(--surface-soft,#f8fafc)}.home-cats.style-horizontal .home-cat-media img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire)}.home-cats.style-horizontal .home-cat-content{flex:1;min-width:0}
         .home-cats.style-overlay .home-cat-media{height:210px}.home-cats.style-overlay .home-cat-content{position:absolute;left:0;right:0;bottom:0;z-index:2;color:#fff;background:linear-gradient(transparent,rgba(2,6,23,.88));padding:52px 18px 18px}.home-cats.style-overlay .home-cat-card strong,.home-cats.style-overlay .home-cat-card small{color:#fff}.home-cats.style-overlay .home-cat-arrow{background:rgba(255,255,255,.17);color:#fff}
 
         .home-prod-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
@@ -2041,7 +2398,7 @@
         .pf-card{display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid #eef1f6;border-radius:20px;box-shadow:0 2px 10px rgba(15,23,42,.04);transition:transform .25s ease,box-shadow .25s ease}
         .pf-card:hover{transform:translateY(-6px);box-shadow:0 22px 44px rgba(15,23,42,.12)}
         .pf-media{position:relative;aspect-ratio:1/.92;display:grid;place-items:center;overflow:hidden;background:#f7f8fb}
-        .pf-media img{width:100%;height:100%;padding:24px;object-fit:contain;transition:transform .4s ease}
+        .pf-media img{position:absolute;inset:0;width:100%;height:100%;padding:var(--foto-aire);object-fit:contain;transition:transform .4s ease}
         .pf-card:hover .pf-media img{transform:scale(1.06)}
         .pf-ph{width:56px;color:#cbd5e1}
         .pf-flag{position:absolute;top:14px;left:14px;padding:6px 11px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.03em;color:#fff}
@@ -2098,7 +2455,7 @@
         }
         .home-cta-row{display:flex;justify-content:center;margin-top:34px}
         /* Páginas Nosotros / Contacto */
-        .store-page{padding:44px 0 72px}.store-page-title{margin:14px 0 24px;color:var(--secondary);font-size:clamp(26px,3.4vw,40px);letter-spacing:-.03em}.store-page-hero{width:100%;max-height:360px;object-fit:cover;border-radius:var(--radius);margin-bottom:28px}.store-page-body{color:#475569;font-size:16px;line-height:1.8;white-space:pre-line}.store-page-block{margin-top:30px;padding-top:24px;border-top:1px solid var(--border)}.store-page-block h2{margin:0 0 10px;color:var(--secondary);font-size:20px}.store-page-block p{margin:0;color:#475569;line-height:1.8;white-space:pre-line}
+        .store-page{padding:44px 0 72px}.store-page-title{margin:14px 0 24px;color:var(--secondary);font-size:clamp(26px,3.4vw,40px);letter-spacing:-.03em}.store-page-hero{width:100%;max-height:360px;object-fit:cover;border-radius:var(--radius);margin-bottom:28px}.store-page-body{color:#475569;font-size:16px;line-height:1.8;white-space:pre-line}.store-page-block{margin-top:38px}.store-page-block h2{position:relative;margin:0 0 14px;padding-bottom:11px;color:var(--secondary);font-size:clamp(20px,2.2vw,24px);letter-spacing:-.02em}.store-page-block h2::after{content:'';position:absolute;left:0;bottom:0;width:46px;height:3px;border-radius:3px;background:var(--primary)}.store-page-block p{margin:0;max-width:70ch;color:#475569;font-size:15.5px;line-height:1.85;white-space:pre-line}.sp-values{list-style:none;margin:0;padding:0;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}.sp-values li{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;color:#334155;font-size:15px;line-height:1.5;background:#fff;border:1px solid var(--border);border-radius:var(--radius-md,12px);transition:border-color .18s,box-shadow .18s}.sp-values li:hover{border-color:var(--primary);box-shadow:0 2px 12px rgba(15,23,42,.06)}.sp-values svg{width:17px;height:17px;flex:0 0 17px;margin-top:2px;color:var(--primary)}
         /* Páginas legales + Libro de Reclamaciones */
         .legal-container{max-width:860px}
         .legal-updated{margin:-14px 0 22px;color:#94a3b8;font-size:12px}
@@ -2164,6 +2521,12 @@
            Ahora: la introduccion manda a ancho completo con medida de lectura, y
            mision y vision van debajo en dos columnas SIN caja, separadas por un
            filete dorado. El texto respira y el titular pesa. */
+        /* Nosotros SIN hero: el titulo quedaba suelto sobre blanco, sin nada que
+           lo sostuviera, y la pagina parecia a medio hacer aunque estuviera bien.
+           Se le da el mismo filete de acento que ya llevan los demas titulos de
+           bloque de la plantilla, para que lea como cabecera y no como sobra. */
+        .store-page--nosotros .store-page-title{position:relative;margin:16px 0 30px;padding-bottom:16px}
+        .store-page--nosotros .store-page-title::after{content:'';position:absolute;left:0;bottom:0;width:58px;height:4px;border-radius:3px;background:var(--accent,var(--primary))}
         .about-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(32px,4vw,52px);margin-top:10px}
         .about-grid .about-intro{max-width:none}
         .about-grid .store-page-body,.about-grid .about-intro>p{max-width:68ch}
@@ -2317,7 +2680,7 @@
         .search-suggest-item{display:flex;align-items:center;gap:11px;padding:9px 12px;color:#172033;transition:background .12s ease}
         .search-suggest-item:hover,.search-suggest-item:focus-visible{background:var(--surface,#f5f7fb)}
         .search-suggest-thumb{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border:1px solid #f1f5f9;border-radius:8px}
-        .search-suggest-thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
+        .search-suggest-thumb img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire)}
         .search-suggest-info{flex:1;min-width:0}
         .search-suggest-info strong{display:block;overflow:hidden;font-size:12.5px;font-weight:700;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}
         .search-suggest-info small{display:block;overflow:hidden;color:#7c899b;font-size:10px;font-weight:700;letter-spacing:.05em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}
@@ -2367,6 +2730,8 @@
         .category-list a:hover{color:{{ $menuInkC }}!important;background:color-mix(in srgb,{{ $menuInkC }} 14%,transparent)!important;border-bottom-color:{{ $menuInkC }}!important}@endif
         @if($menuActBgC).category-list a.is-active{background:{{ $menuActBgC }}!important}@endif
         @if($menuActInkC).category-list a.is-active{color:{{ $menuActInkC }}!important;border-bottom-color:{{ $menuActInkC }}!important}@endif
+        @if($megaBtnBgC).mega-btn,.hba-cats .hba-link{background:{{ $megaBtnBgC }}!important}@endif
+        @if($megaBtnInkC).mega-btn,.mega-btn svg,.hba-cats .hba-link{color:{{ $megaBtnInkC }}!important}@endif
         @if($pageBgC)
         /* Fondo global de la página */
         body{background:{{ $pageBgC }}!important}
@@ -2455,10 +2820,76 @@
         .premium-hero.is-typographic .ph-glow,
         .premium-hero.is-typographic .ph-grid,
         .premium-hero.is-typographic .ph-line{display:none}
+        .ph-hl{font-style:normal;color:var(--primary)}
+        /* Hero con panel lateral (hero_no_image_style=panel) */
+        .premium-hero.is-panel .ph-glow,.premium-hero.is-panel .ph-line{display:none}
+        .premium-hero.is-panel .premium-hero-inner{grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:48px}
+        .ph-panel{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:14px;align-items:stretch}
+        .ph-panel-claim{display:flex;align-items:flex-end;min-height:230px;padding:26px 24px;border-radius:16px;color:#fff;
+            background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);
+            box-shadow:0 24px 48px rgba(0,0,0,.25)}
+        .ph-panel-claim strong{font-family:var(--font-title);font-size:clamp(20px,2vw,27px);font-weight:900;line-height:1.15;text-transform:uppercase;letter-spacing:.01em}
+        .ph-panel-list{list-style:none;margin:0;padding:14px 6px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;border-radius:16px;
+            background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
+        .ph-panel-list li{display:flex;flex-direction:column;align-items:center;gap:6px;color:rgba(255,255,255,.92);font-size:11.5px;font-weight:700;line-height:1.1;text-align:center}
+        .ph-panel-ico{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:var(--primary);color:#fff}
+        .ph-panel-ico svg{width:21px;height:21px}
+        @media(max-width:960px){.premium-hero.is-panel .premium-hero-inner{grid-template-columns:1fr;gap:24px}.ph-panel{grid-template-columns:1fr}
+            .ph-panel-claim{min-height:0;padding:18px 20px}.ph-panel-list{flex-direction:row;justify-content:space-around;padding:12px}}
+        @media(max-width:760px){.ph-panel-claim{display:none}.ph-panel-list li{font-size:10.5px}.ph-panel-ico{width:36px;height:36px}}
         .premium-hero.is-typographic .premium-hero-inner{display:block;padding-block:clamp(64px,8vw,104px)}
         .premium-hero.is-typographic .premium-hero-copy{max-width:760px;margin-inline:auto;text-align:center;align-items:center}
         .premium-hero.is-typographic .ph-sub{margin-inline:auto;max-width:52ch}
         .premium-hero.is-typographic .hero-actions{justify-content:center}
+
+        /* ═══ Vida del hero ════════════════════════════════════════════════
+           El hero tipográfico se sostiene con texto y aire, así que el
+           movimiento tiene que venir del propio fondo y de cómo entra el texto,
+           no de adornos añadidos.
+
+           Entra una sola vez al cargar (`animation`, no `transition`): el hero
+           está siempre en pantalla al abrir, no hay nada que revelar al hacer
+           scroll. Y con `backwards` en vez de opacity:0 de partida, si la
+           animación no llegara a correr el texto se ve igual. */
+        @keyframes bx-hero-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+        .premium-hero.is-typographic .ph-eyebrow{animation:bx-hero-in .6s cubic-bezier(.2,.7,.3,1) backwards .05s}
+        .premium-hero.is-typographic .ph-title{animation:bx-hero-in .7s cubic-bezier(.2,.7,.3,1) backwards .16s}
+        .premium-hero.is-typographic .ph-sub{animation:bx-hero-in .7s cubic-bezier(.2,.7,.3,1) backwards .28s}
+        .premium-hero.is-typographic .hero-actions{animation:bx-hero-in .7s cubic-bezier(.2,.7,.3,1) backwards .40s}
+
+        /* El fondo respira: el degradado se desplaza muy despacio. 18s es
+           deliberadamente lento — a esa velocidad se percibe como que la página
+           está viva, no como una animación que reclama atención. */
+        @keyframes bx-hero-respira{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+        /* El ::after se ancla al hero: sin position en el padre se iria al
+           ancestro posicionado mas cercano y cubriria media pagina. */
+        .premium-hero.is-typographic{position:relative;overflow:hidden}
+        .premium-hero.is-typographic::after{
+            content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+            background:linear-gradient(115deg,transparent 30%,color-mix(in srgb,var(--primary) 22%,transparent) 50%,transparent 70%);
+            background-size:220% 100%;animation:bx-hero-respira 18s ease-in-out infinite}
+        .premium-hero.is-typographic .premium-hero-inner{position:relative;z-index:1}
+
+        /* Un brillo recorre el botón principal cada cierto tiempo para llevar el
+           ojo al catálogo. La pausa larga entre pasadas es lo que evita que
+           canse: si parpadeara sin parar, el ojo aprendería a ignorarlo. */
+        @keyframes bx-brillo{0%{left:-60%}18%,100%{left:130%}}
+        .premium-hero.is-typographic .hero-actions .button-primary{position:relative;overflow:hidden}
+        .premium-hero.is-typographic .hero-actions .button-primary::after{
+            content:'';position:absolute;top:0;bottom:0;left:-60%;width:45%;pointer-events:none;
+            background:linear-gradient(100deg,transparent,rgba(255,255,255,.42),transparent);
+            transform:skewX(-18deg);animation:bx-brillo 6.5s ease-in-out 2s infinite}
+
+        @media(prefers-reduced-motion:reduce){
+            .premium-hero.is-typographic .ph-eyebrow,
+            .premium-hero.is-typographic .ph-title,
+            .premium-hero.is-typographic .ph-sub,
+            .premium-hero.is-typographic .hero-actions{animation:none!important}
+            .premium-hero.is-typographic::after,
+            .premium-hero.is-typographic .hero-actions .button-primary::after{animation:none!important;display:none}
+        }
+
         .premium-hero-visual{position:relative;min-height:420px;display:flex;align-items:center;justify-content:center}
         .ph-stage{position:relative;width:100%;height:100%;min-height:420px;display:flex;align-items:center;justify-content:center}
         .ph-main{position:relative;z-index:3;width:min(560px,92%);filter:drop-shadow(0 40px 70px rgba(0,0,0,.55)) drop-shadow(0 0 40px color-mix(in srgb,{{ $primary }} 25%,transparent))}
@@ -2489,7 +2920,7 @@
         .trust-section.style-icons-top .trust-section-head{text-align:center;margin-left:auto;margin-right:auto}.trust-section.style-icons-top .trust-card{display:block;text-align:center;padding:26px 20px}.trust-section.style-icons-top .trust-icon{margin:0 auto 15px}
 
         .catalog{padding:72px 0 90px}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:32px;margin-bottom:26px}.section-heading h2{margin:0;color:var(--secondary);font-size:clamp(26px,3vw,36px);letter-spacing:-.035em}.section-heading p{max-width:550px;margin:10px 0 0;color:#64748b;font-size:14px;line-height:1.65}.product-total{flex:0 0 auto;color:#64748b;font-size:12px}.catalog-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) minmax(240px,.75fr);gap:14px;margin-bottom:30px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}.toolbar{position:relative}.toolbar input,.toolbar select{width:100%;height:44px;padding:0 14px;color:#1e293b;background:#fff;border:1px solid #cbd5e1;border-radius:calc(var(--radius)*.75);outline:0}.toolbar input{padding-left:42px}.toolbar svg{position:absolute;top:12px;left:13px;width:19px;color:#64748b}
-        .category-section{scroll-margin-top:145px;margin-top:54px}.category-section:first-of-type{margin-top:0}.category-title{display:flex;align-items:center;gap:14px;margin:0 0 18px;color:var(--secondary);font-size:18px}.category-title:after{height:1px;flex:1;content:'';background:var(--border)}.product-grid{display:grid;grid-template-columns:repeat(var(--columns),minmax(0,1fr));gap:18px}.product-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:var(--radius);transition:border-color .15s ease,box-shadow .15s ease}.product-card:hover{border-color:#cbd5e1;box-shadow:0 10px 28px rgba(15,23,42,.08)}.product-image{position:relative;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background:#fff;border-bottom:1px solid #edf1f5}.product-image img{width:100%;height:100%;object-fit:cover}.image-empty{width:52px;color:#cbd5e1}.product-badge{position:absolute;top:12px;left:12px;z-index:2;padding:5px 8px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.05em}.product-body{min-height:183px;display:flex;flex:1;flex-direction:column;padding:16px}.product-meta{min-height:17px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;color:#7c899b;font-size:10px}.available{color:#18794e}.unavailable{color:#b42318}.product-name{color:#243044;font-size:13px;font-weight:600;line-height:1.5}.product-name:hover{color:var(--primary)}.rating{margin-top:8px;color:#a16207;font-size:11px}.price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:auto;padding-top:15px}.price{color:var(--secondary);font-size:18px;font-weight:700}.compare-price{color:#94a3b8;font-size:11px;text-decoration:line-through}.quote-price{color:var(--primary);font-size:14px;font-weight:700}.wholesale{margin-top:5px;color:#64748b;font-size:10px}.product-action{width:100%;min-height:40px;margin-top:14px;color:#fff;background:var(--secondary);border:0;border-radius:calc(var(--radius)*.75);font-size:11px;font-weight:700;cursor:pointer}.product-action:hover{background:var(--primary)}.product-action:disabled{color:#94a3b8;background:#e2e8f0;cursor:not-allowed}.empty{padding:50px 20px;color:#64748b;text-align:center;border:1px dashed #cbd5e1;border-radius:var(--radius)}
+        .category-section{scroll-margin-top:145px;margin-top:54px}.category-section:first-of-type{margin-top:0}.category-title{display:flex;align-items:center;gap:14px;margin:0 0 18px;color:var(--secondary);font-size:18px}.category-title:after{height:1px;flex:1;content:'';background:var(--border)}.product-grid{display:grid;grid-template-columns:repeat(var(--columns),minmax(0,1fr));gap:18px}.product-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:var(--radius);transition:border-color .15s ease,box-shadow .15s ease}.product-card:hover{border-color:#cbd5e1;box-shadow:0 10px 28px rgba(15,23,42,.08)}.product-image{position:relative;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background:#fff;border-bottom:1px solid #edf1f5}.product-image img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire)}.image-empty{width:52px;color:#cbd5e1}.product-badge{position:absolute;top:12px;left:12px;z-index:2;padding:5px 8px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.05em}.product-body{min-height:183px;display:flex;flex:1;flex-direction:column;padding:16px}.product-meta{min-height:17px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;color:#7c899b;font-size:10px}.available{color:#18794e}.unavailable{color:#b42318}.product-name{color:#243044;font-size:13px;font-weight:600;line-height:1.5}.product-name:hover{color:var(--primary)}.rating{margin-top:8px;color:#a16207;font-size:11px}.price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:auto;padding-top:15px}.price{color:var(--secondary);font-size:18px;font-weight:700}.compare-price{color:#94a3b8;font-size:11px;text-decoration:line-through}.quote-price{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;color:var(--muted,#64748b);background:rgba(15,23,42,.045);border-radius:999px;font-size:12.5px;font-weight:600;letter-spacing:.01em}.quote-price::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--primary);opacity:.65}.wholesale{margin-top:5px;color:#64748b;font-size:10px}.product-action{width:100%;min-height:40px;margin-top:14px;color:#fff;background:var(--secondary);border:0;border-radius:calc(var(--radius)*.75);font-size:11px;font-weight:700;cursor:pointer}.product-action:hover{background:var(--primary)}.product-action:disabled{color:#94a3b8;background:#e2e8f0;cursor:not-allowed}.empty{padding:50px 20px;color:#64748b;text-align:center;border:1px dashed #cbd5e1;border-radius:var(--radius)}
         /* Catálogo avanzado: experiencia de filtros de Ecommerce con identidad CompuTienda. */
         .catalog-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:#64748b;font-size:12px}.catalog-breadcrumb a:hover{color:var(--primary)}
         .catalog-experience{display:grid;grid-template-columns:280px minmax(0,1fr);align-items:start;gap:30px;margin-top:28px}.catalog-filter-panel{position:sticky;top:96px;max-height:calc(100vh - 116px);overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:12px;scrollbar-width:thin}.catalog-filter-header{position:sticky;top:0;z-index:2;min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff;border-bottom:1px solid var(--border)}.catalog-filter-header strong{font-size:14px}.catalog-clear{min-height:44px;padding:0;color:var(--primary);background:transparent;border:0;font-size:12px;font-weight:700;cursor:pointer}.catalog-clear[disabled]{opacity:0;pointer-events:none}
@@ -2504,14 +2935,36 @@
         .catalog-filter-option-world:hover svg{transform:translateX(2px);opacity:1}
         .catalog-price-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.catalog-price-inputs label{display:flex;flex-direction:column;gap:5px;color:#64748b;font-size:10px}.catalog-price-inputs input{width:100%;height:38px;padding:0 9px;color:#172033;background:var(--surface);border:1px solid #cbd5e1;border-radius:6px;font-size:12px;outline:0}.catalog-price-inputs input:focus{border-color:var(--primary)}.catalog-range{position:relative;height:4px;margin:18px 5px 10px;background:#e2e8f0;border-radius:999px}.catalog-range span{position:absolute;height:4px;background:var(--primary);border-radius:999px}.catalog-range input{position:absolute;top:0;width:100%;height:4px;margin:0;appearance:none;background:transparent;pointer-events:none}.catalog-range input::-webkit-slider-thumb{width:18px;height:18px;appearance:none;background:#fff;border:2px solid var(--primary);border-radius:50%;box-shadow:0 1px 5px rgba(15,23,42,.2);pointer-events:auto}.catalog-range input::-moz-range-thumb{width:18px;height:18px;background:#fff;border:2px solid var(--primary);border-radius:50%;pointer-events:auto}
         .catalog-results{min-width:0}.catalog-chips{min-height:32px;display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}.catalog-chip{min-height:32px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;color:var(--primary);background:color-mix(in srgb,var(--primary) 9%,white);border:1px solid color-mix(in srgb,var(--primary) 18%,white);border-radius:999px;font-size:11px;font-weight:600;cursor:pointer}.catalog-chip:hover{background:color-mix(in srgb,var(--primary) 15%,white)}.catalog-chip-neutral{color:#475569;background:var(--surface);border-color:var(--border)}.catalog-results-head{min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px}.catalog-results-count{color:#64748b;font-size:12px}.catalog-results-count strong{color:#172033}.catalog-results-tools{display:flex;align-items:center;gap:8px}.catalog-sort{height:42px;min-width:205px;padding:0 36px 0 13px;color:#172033;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;outline:0}.catalog-sort:focus{border-color:var(--primary)}.catalog-mobile-filter{display:none;min-height:44px;align-items:center;gap:8px;padding:0 14px;color:#fff;background:var(--secondary);border:0;border-radius:6px;font-size:12px;font-weight:700}.catalog-mobile-filter svg{width:17px}.catalog-mobile-filter span{min-width:18px;height:18px;display:grid;place-items:center;background:var(--primary);border-radius:999px;font-size:9px}
-        .catalog-product-grid{display:grid;grid-template-columns:repeat({{ $catalogColumns }},minmax(0,1fr));gap:18px}.catalog-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:12px;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}.catalog-card:hover{transform:translateY(-2px);border-color:#cbd5e1;box-shadow:0 12px 30px rgba(15,23,42,.08)}.catalog-card-media{position:relative;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border-bottom:1px solid #f1f5f9}.catalog-card-media img{width:100%;height:100%;object-fit:cover;transition:transform .25s ease}.catalog-card:hover .catalog-card-media img{transform:scale(1.035)}.catalog-card-media.is-noimg,.catalog-card-media:has(.catalog-card-placeholder){background:linear-gradient(140deg,color-mix(in srgb,var(--primary) 9%,#fff),color-mix(in srgb,var(--primary) 3%,#fff))}.catalog-card-placeholder{width:74px;height:74px;color:color-mix(in srgb,var(--primary) 38%,#cbd5e1);opacity:.9}.catalog-card-media .ph-note{position:absolute;bottom:10px;left:0;right:0;text-align:center;color:color-mix(in srgb,var(--primary) 55%,#94a3b8);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.catalog-discount{position:absolute;top:12px;left:12px;z-index:1;padding:6px 9px;color:#fff;background:var(--primary);border-radius:6px;font-size:10px;font-weight:800}.catalog-sold-out{position:absolute;top:12px;right:12px;padding:6px 8px;color:#fff;background:#475569;border-radius:6px;font-size:9px;font-weight:700}.catalog-card-body{min-height:128px;display:flex;flex:1;flex-direction:column;padding:14px}.catalog-card-category{overflow:hidden;color:var(--muted,#64748b);font-size:9px;font-weight:700;letter-spacing:.07em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}.catalog-card-name{min-height:40px;margin-top:7px;color:#172033;font-size:13px;font-weight:700;line-height:1.45}.catalog-card-name:hover{color:var(--primary)}.catalog-card-prices{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:auto;padding-top:14px}.catalog-card-price{color:var(--secondary);font-size:17px;font-weight:800}.catalog-card-compare{color:#94a3b8;font-size:11px;text-decoration:line-through}.catalog-card-percent{padding:3px 6px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:800}.catalog-card-wholesale{display:block;margin-top:5px;color:#64748b;font-size:9px}.catalog-card-action{min-height:44px;margin:0 10px 10px;color:#fff;background:var(--primary);border:0;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer}.catalog-card-action:hover{filter:brightness(.92)}.catalog-card-action:disabled{color:#94a3b8;background:#e2e8f0;cursor:not-allowed}.catalog-empty{grid-column:1/-1;padding:64px 22px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:12px}.catalog-empty svg{width:42px;margin:0 auto;color:#94a3b8}.catalog-empty h3{margin:15px 0 6px;color:#172033;font-size:18px}.catalog-empty p{margin:0 0 18px;color:#64748b;font-size:13px}
-        .catalog-card-media-link{position:absolute;inset:0;display:grid;place-items:center}.catalog-card-media-link img{width:100%;height:100%;padding:18px;object-fit:contain;transition:transform .25s ease}.catalog-card:hover .catalog-card-media-link img{transform:scale(1.035)}
+        /* El <picture> que envuelve las fotos con srcset no debe contar para
+           el layout: sin esto se convierte en el elemento de la rejilla y el
+           width:100% de la imagen pasa a medir sobre una caja encogida. */
+        picture{display:contents}
+        /* Colores de un mismo modelo. Se muestra la foto de cada color en vez
+           de un circulo: en ropa el color no es un pantone, es como queda la
+           prenda, y una miniatura lo dice mejor que cualquier muestra. */
+        /* Muestras de color de la vista rapida (en la tarjeta no van: ahi la
+           fila de miniaturas no aportaba nada y ensuciaba la rejilla). */
+        .catalog-swatches{display:flex;flex-wrap:wrap;gap:5px}
+        .catalog-swatch{width:32px;height:32px;padding:0;overflow:hidden;background:#fff;
+            border:1px solid var(--border);border-radius:6px;cursor:pointer;
+            transition:border-color .15s ease,transform .15s ease}
+        .catalog-swatch img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire);display:block}
+        .catalog-swatch:hover{border-color:#94a3b8;transform:translateY(-1px)}
+        .catalog-swatch.is-on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+        .catalog-swatch:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+        @media(max-width:640px){.catalog-swatch{width:26px;height:26px}.catalog-swatches{gap:4px;margin-top:6px}}
+        .catalog-product-grid{display:grid;grid-template-columns:repeat({{ $catalogColumns }},minmax(0,1fr));gap:18px}.catalog-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:12px;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}.catalog-card:hover{transform:translateY(-2px);border-color:#cbd5e1;box-shadow:0 12px 30px rgba(15,23,42,.08)}.catalog-card-media{position:relative;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border-bottom:1px solid #f1f5f9}.catalog-card-media img{width:100%;height:100%;object-fit:contain;transition:transform .25s ease}.catalog-card:hover .catalog-card-media img{transform:scale(1.035)}.catalog-card-media.is-noimg,.catalog-card-media:has(.catalog-card-placeholder){background:linear-gradient(140deg,color-mix(in srgb,var(--primary) 9%,#fff),color-mix(in srgb,var(--primary) 3%,#fff))}.catalog-card-placeholder{width:74px;height:74px;color:color-mix(in srgb,var(--primary) 38%,#cbd5e1);opacity:.9}.catalog-card-media .ph-note{position:absolute;bottom:10px;left:0;right:0;text-align:center;color:color-mix(in srgb,var(--primary) 55%,#94a3b8);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.catalog-discount{position:absolute;top:12px;left:12px;z-index:1;padding:6px 9px;color:#fff;background:var(--primary);border-radius:6px;font-size:10px;font-weight:800}.catalog-sold-out{position:absolute;top:12px;right:12px;padding:6px 8px;color:#fff;background:#475569;border-radius:6px;font-size:9px;font-weight:700}.catalog-card-body{min-height:128px;display:flex;flex:1;flex-direction:column;padding:14px}.catalog-card-category{overflow:hidden;color:var(--muted,#64748b);font-size:9px;font-weight:700;letter-spacing:.07em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}.catalog-card-name{min-height:40px;margin-top:7px;color:#172033;font-size:13px;font-weight:700;line-height:1.45}.catalog-card-name:hover{color:var(--primary)}.catalog-card-prices{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:auto;padding-top:14px}.catalog-card-price{color:var(--secondary);font-size:17px;font-weight:800}.catalog-card-compare{color:#94a3b8;font-size:11px;text-decoration:line-through}.catalog-card-percent{padding:3px 6px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:800}.catalog-card-wholesale{display:block;margin-top:5px;color:#64748b;font-size:9px}.catalog-card-action{min-height:44px;margin:0 10px 10px;color:#fff;background:var(--primary);border:0;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer}.catalog-card-action:hover{filter:brightness(.92)}.catalog-card-action:disabled{color:#94a3b8;background:#e2e8f0;cursor:not-allowed}.catalog-empty{grid-column:1/-1;padding:64px 22px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:12px}.catalog-empty svg{width:42px;margin:0 auto;color:#94a3b8}.catalog-empty h3{margin:15px 0 6px;color:#172033;font-size:18px}.catalog-empty p{margin:0 0 18px;color:#64748b;font-size:13px}
+        /* El relleno de la foto lo pone ahora el procesador de imagenes (8% de
+           aire, proporcional). Los 18px que habia aqui se sumaban a aquel y
+           dejaban el producto en un 74% del marco, con un aire que ademas
+           cambiaba segun el ancho de la tarjeta. */
+        .catalog-card-media-link{position:absolute;inset:0;display:grid;place-items:center}/* La foto se posiciona en absoluto sobre el enlace. Sin esto, el enlace es una rejilla que centra (place-items:center): su fila se dimensiona por el contenido, el height:100% de la foto se vuelve circular y el navegador cae a la altura natural de la imagen, que desborda el marco y sale decapitada. Con las fotos cuadradas antiguas el corte se comia el margen blanco y no se veia; con la foto ajustada al producto se comia el producto. */.catalog-card-media-link img{position:absolute;inset:0;width:100%;height:100%;padding:var(--foto-aire);object-fit:contain;transition:transform .25s ease}.catalog-card:hover .catalog-card-media-link img{transform:scale(1.035)}
         /* El wrapper SSR no debe romper el grid: sus cards participan directamente */
         .catalog-ssr{display:contents}
         /* Vista rápida (quick view) — estilo computienda */
         .catalog-quickview{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;justify-content:center;padding:10px;opacity:0;transform:translateY(6px);transition:opacity .18s ease,transform .18s ease;pointer-events:none}.catalog-card:hover .catalog-quickview{opacity:1;transform:none;pointer-events:auto}.catalog-quickview button{min-height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;color:#172033;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,.16);font-size:12px;font-weight:800;cursor:pointer}.catalog-quickview button:hover{color:#fff;background:var(--primary);border-color:var(--primary)}.catalog-quickview svg{width:15px;height:15px}
         @media(hover:none){.catalog-quickview{position:static;padding:0 10px 10px;opacity:1;transform:none;pointer-events:auto}.catalog-quickview button{width:100%;justify-content:center;box-shadow:none}}
-        .qv-layer{position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;padding:16px}.qv-overlay{position:absolute;inset:0;background:rgba(15,23,42,.56)}.qv-box{position:relative;width:100%;max-width:420px;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 24px 64px rgba(15,23,42,.24);animation:qv-in .18s ease}@keyframes qv-in{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}.qv-head{display:flex;gap:14px;align-items:flex-start;padding:18px 18px 14px}.qv-media{flex:0 0 118px;width:118px;height:118px;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border:1px solid #f1f5f9;border-radius:10px}.qv-media img{width:100%;height:100%;object-fit:cover}.qv-media svg{width:44px;color:#cbd5e1}.qv-info{flex:1;min-width:0}.qv-cat{color:#7c899b;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.qv-name{display:block;margin-top:5px;color:#172033;font-size:16px;font-weight:800;line-height:1.35;text-decoration:none}.qv-name:hover,.qv-name:active{color:var(--primary)}.qv-prices{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-top:9px}.qv-price{color:var(--secondary);font-size:20px;font-weight:800}.qv-compare{color:#94a3b8;font-size:12px;text-decoration:line-through}.qv-percent{padding:3px 6px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:800}.qv-low{margin-top:8px;color:#92400e;font-size:12px;font-weight:700}.qv-close{position:absolute;top:12px;right:12px;width:30px;height:30px;display:grid;place-items:center;color:#475569;background:var(--surface);border:0;border-radius:50%;font-size:15px;cursor:pointer}.qv-foot{display:flex;flex-direction:column;gap:8px;padding:0 18px 18px}.qv-out{padding:9px 12px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;font-weight:700;text-align:center}.qv-add{min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;background:var(--primary);border:0;border-radius:9px;font-size:14px;font-weight:800;cursor:pointer}.qv-add:hover{filter:brightness(.93)}.qv-view{min-height:44px;display:flex;align-items:center;justify-content:center;color:#172033;background:#fff;border:1px solid #cbd5e1;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
+        .qv-layer{position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;padding:16px}.qv-overlay{position:absolute;inset:0;background:rgba(15,23,42,.56)}.qv-box{position:relative;width:100%;max-width:420px;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 24px 64px rgba(15,23,42,.24);animation:qv-in .18s ease}@keyframes qv-in{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}.qv-head{display:flex;gap:14px;align-items:flex-start;padding:18px 18px 14px}.qv-media{position:relative;flex:0 0 118px;width:118px;height:118px;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border:1px solid #f1f5f9;border-radius:10px}.qv-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:var(--foto-aire)}.qv-media svg{width:44px;color:#cbd5e1}.qv-info{flex:1;min-width:0}.qv-cat{color:#7c899b;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.qv-name{display:block;margin-top:5px;color:#172033;font-size:16px;font-weight:800;line-height:1.35;text-decoration:none}.qv-name:hover,.qv-name:active{color:var(--primary)}.qv-prices{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-top:9px}.qv-price{color:var(--secondary);font-size:20px;font-weight:800}.qv-compare{color:#94a3b8;font-size:12px;text-decoration:line-through}.qv-percent{padding:3px 6px;color:#fff;background:var(--primary);border-radius:4px;font-size:9px;font-weight:800}.qv-low{margin-top:8px;color:#92400e;font-size:12px;font-weight:700}.qv-close{position:absolute;top:12px;right:12px;width:30px;height:30px;display:grid;place-items:center;color:#475569;background:var(--surface);border:0;border-radius:50%;font-size:15px;cursor:pointer}.qv-foot{display:flex;flex-direction:column;gap:8px;padding:0 18px 18px}.qv-out{padding:9px 12px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;font-weight:700;text-align:center}.qv-add{min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;background:var(--primary);border:0;border-radius:9px;font-size:14px;font-weight:800;cursor:pointer}.qv-add:hover{filter:brightness(.93)}.qv-view{min-height:44px;display:flex;align-items:center;justify-content:center;color:#172033;background:#fff;border:1px solid #cbd5e1;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
         .catalog-filter-layer{position:fixed;inset:0;z-index:95}.catalog-filter-overlay{position:absolute;inset:0;background:rgba(15,23,42,.56)}.catalog-filter-drawer{position:absolute;right:0;bottom:0;left:0;max-height:88vh;overflow-y:auto;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -18px 50px rgba(15,23,42,.2)}.catalog-filter-drawer-head{position:sticky;top:0;z-index:2;min-height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff;border-bottom:1px solid var(--border)}.catalog-filter-drawer-head strong{font-size:16px}.catalog-filter-drawer-body{padding-bottom:76px}.catalog-filter-drawer-foot{position:sticky;right:0;bottom:0;left:0;display:grid;grid-template-columns:1fr 2fr;gap:8px;padding:12px 16px;background:#fff;border-top:1px solid var(--border)}.catalog-filter-drawer-foot button{min-height:46px;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer}.catalog-filter-drawer-foot button:first-child{color:#475569;background:#fff;border:1px solid #cbd5e1}.catalog-filter-drawer-foot button:last-child{color:#fff;background:var(--primary);border:1px solid var(--primary)}
         .native-footer{padding:26px 0;color:#94a3b8;background:var(--secondary);font-size:12px;text-align:center}.drawer-layer{position:fixed;inset:0;z-index:80}.drawer-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.52)}.cart-drawer{position:absolute;top:0;right:0;width:min(430px,100%);height:100%;display:flex;flex-direction:column;background:#fff;box-shadow:-20px 0 50px rgba(15,23,42,.18)}.drawer-head{min-height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border)}.drawer-head h2{margin:0;color:var(--secondary);font-size:18px}.icon-button{width:44px;height:44px;display:grid;place-items:center;color:#475569;background:#fff;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer}.icon-button svg{width:18px}.drawer-content{flex:1;overflow:auto;padding:22px 24px}.cart-empty{margin:80px 0 0;color:#64748b;font-size:14px;text-align:center}.cart-item{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--border)}.cart-item strong{display:block;color:var(--secondary);font-size:13px;line-height:1.45}.cart-item small{display:block;margin-top:4px;color:#64748b}.quantity{display:flex;align-items:center;border:1px solid #cbd5e1;border-radius:6px}.quantity button{width:40px;height:40px;color:#475569;background:#fff;border:0;cursor:pointer}.quantity span{width:28px;font-size:12px;text-align:center}.remove{width:44px;height:44px;display:grid;place-items:center;padding:0;color:#94a3b8;background:transparent;border:0;cursor:pointer}.remove svg{width:17px}.drawer-footer{padding:20px 24px 24px;border-top:1px solid var(--border)}.cart-total{display:flex;justify-content:space-between;margin-bottom:16px;color:var(--secondary);font-size:16px;font-weight:700}.drawer-footer .button{width:100%}.drawer-note{margin:11px 0 0;color:#64748b;font-size:10px;line-height:1.5;text-align:center}
         /* MOVIL: el encabezado del catalogo ocupaba media pantalla (titulo +
@@ -2531,7 +2984,7 @@
         .cart-head-count{color:#94a3b8;font-size:13px;font-weight:700}
         .cart-item{grid-template-columns:auto 1fr auto auto}
         .cart-thumb{width:52px;height:52px;display:grid;place-items:center;overflow:hidden;background:var(--surface-soft,#f8fafc);border:1px solid var(--border);border-radius:8px;color:#cbd5e1}
-        .cart-thumb img{width:100%;height:100%;object-fit:cover}
+        .cart-thumb img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire)}
         .cart-item-copy{min-width:0}
         .cart-line-total{display:block;margin-top:3px;color:var(--secondary);font-size:13px;font-weight:800}
         .cart-empty-box{padding:56px 10px 0;text-align:center;color:#94a3b8}
@@ -2564,7 +3017,7 @@
         .catalog-card-name{min-height:0;margin-top:5px;font-size:12px}
         .catalog-card-prices{padding-top:10px}
         .catalog-card-price{font-size:15px}
-        .catalog-card-media img{padding:0}}
+        .catalog-card-media img{padding:var(--foto-aire)}}
         @media(max-width:1100px){.catalog-product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.catalog-experience{grid-template-columns:250px minmax(0,1fr);gap:20px}}
         @media(max-width:900px){.catalog-experience{grid-template-columns:1fr}.catalog-filter-panel{display:none}.catalog-mobile-filter{display:inline-flex}.catalog-results-head{align-items:flex-start}.catalog-results-tools{flex-wrap:wrap;justify-content:flex-end}}
         @media(max-width:640px){.catalog-experience{margin-top:20px}.catalog-breadcrumb{margin-bottom:7px}.catalog-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px;scrollbar-width:none}.catalog-chip{flex:0 0 auto}.catalog-results-head{align-items:stretch;flex-direction:column}.catalog-results-tools{display:grid;grid-template-columns:auto 1fr;width:100%}.catalog-sort{width:100%;min-width:0}.catalog-product-grid{grid-template-columns:repeat(var(--mobile-columns),minmax(0,1fr));gap:10px}.catalog-card-body{min-height:120px;padding:11px}.catalog-card-media img{padding:0}.catalog-card-name{min-height:36px;font-size:12px}.catalog-card-price{font-size:15px}.catalog-card-percent{display:none}.catalog-card-action{margin:0 7px 7px;padding:0 5px;font-size:10px}.catalog-filter-option{min-height:44px}.catalog-filter-summary{min-height:52px}}
@@ -2580,6 +3033,25 @@
         @media(max-width:560px){.official-whatsapp-float.wa-pos-left{left:16px;right:auto}.official-whatsapp-float.wa-pos-right{right:16px;left:auto}}
         .official-whatsapp-float:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 15px 34px rgba(37,211,102,.48)}
         .official-whatsapp-float:focus-visible{outline:3px solid rgba(37,211,102,.35);outline-offset:4px}
+        /* Pildora con texto: el icono a la izquierda y dos lineas ("Consultar por" / "WhatsApp"). */
+        .official-whatsapp-float.wa-style-pill{width:auto;height:auto;border-radius:16px;padding:10px 18px 10px 14px;display:flex;align-items:center;gap:12px;overflow:visible}
+        .official-whatsapp-float.wa-style-pill svg{width:34px;height:34px;flex-shrink:0}
+        .official-whatsapp-float .wa-texto{display:flex;flex-direction:column;line-height:1.05;text-align:left}
+        .official-whatsapp-float .wa-texto small{font-size:13px;font-weight:600;opacity:.95}
+        .official-whatsapp-float .wa-texto b{font-size:19px;font-weight:800;letter-spacing:-.01em}
+        .official-whatsapp-float.wa-style-icon{overflow:visible}
+        .official-whatsapp-float .wa-globo{position:absolute;top:-8px;left:-8px;width:24px;height:24px;border-radius:50%;background:#ef4444;color:#fff;font:800 12px/24px Inter,system-ui,sans-serif;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+        .official-whatsapp-float.wa-pos-left .wa-globo{left:auto;right:-8px}
+        /* Animaciones de llamada: se detienen al pasar el raton y con "reducir movimiento". */
+        @keyframes wa-salto{0%,20%,50%,80%,100%{transform:translateY(0)}40%{transform:translateY(-14px)}60%{transform:translateY(-7px)}}
+        @keyframes wa-latido{0%{box-shadow:0 0 0 0 rgba(37,211,102,.55)}70%{box-shadow:0 0 0 18px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}
+        @keyframes wa-vibra{0%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-6deg)}20%,40%,60%{transform:rotate(6deg)}70%{transform:rotate(0)}}
+        .official-whatsapp-float.wa-anim-bounce{animation:wa-salto 2.6s ease-in-out infinite}
+        .official-whatsapp-float.wa-anim-pulse{animation:wa-latido 2.2s ease-out infinite}
+        .official-whatsapp-float.wa-anim-shake{animation:wa-vibra 3s ease-in-out infinite}
+        .official-whatsapp-float:hover{animation-play-state:paused}
+        @media(prefers-reduced-motion:reduce){.official-whatsapp-float{animation:none!important}}
+        @media(max-width:560px){.official-whatsapp-float.wa-style-pill{padding:8px 14px 8px 12px;border-radius:14px}.official-whatsapp-float.wa-style-pill svg{width:30px;height:30px}.official-whatsapp-float .wa-texto b{font-size:16px}.official-whatsapp-float .wa-texto small{font-size:12px}}
         @media(max-width:560px){.official-whatsapp-float{right:16px;bottom:16px;width:54px;height:54px}.official-whatsapp-float svg{width:29px;height:29px}}
     
         /* ═══════════════════════════════════════════════════════
@@ -2862,7 +3334,10 @@
     /* La proporcion y el fondo de la foto salen del constructor. */
     .catalog-card-media,.catalog-card-media-link{aspect-ratio:var(--card-ratio)!important}
     .catalog-card-media{background:var(--card-img-bg)!important}
-    .catalog-card-media img{object-fit:contain!important;padding:6px}
+    /* contain, nunca cover: recortar deja fuera parte del producto. Habia dos
+       reglas sueltas con cover que solo estaban tapadas por este !important;
+       ya estan alineadas, asi que quitarlo no cambiaria el encaje. */
+    .catalog-card-media img{object-fit:contain!important;padding:var(--foto-aire)}
     #storefront-main .catalog-card,
     #storefront-main .trust-card,
     #storefront-main .home-cat-card{border-radius:var(--r-card)!important;
@@ -2906,8 +3381,13 @@
     #storefront-main .pf-grid,
     #storefront-main .xs-crows .catalog-product-grid{
         grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important;gap:20px!important}
-    #storefront-main .catalog-card .catalog-card-media,
-    #storefront-main .catalog-card .catalog-card-media-link{aspect-ratio:var(--card-ratio)!important;height:auto!important}
+    /* La proporcion se fuerza SOLO en el marco. El enlace es absoluto con
+       inset:0 y ya lo llena; imponerle aspect-ratio + height:auto rompia la
+       cadena de alturas (el height:100% de la foto no podia resolverse, la
+       imagen tomaba su altura natural y el overflow del marco la decapitaba
+       por arriba y por abajo). */
+    #storefront-main .catalog-card .catalog-card-media{aspect-ratio:var(--card-ratio)!important;height:auto!important}
+    #storefront-main .catalog-card .catalog-card-media-link{height:100%!important}
     #storefront-main .catalog-card .catalog-card-media img{width:100%;height:100%;object-fit:contain}
     @media(max-width:760px){
         #storefront-main .catalog-product-grid,
@@ -2979,7 +3459,7 @@
     .catalog-card,.pf-card,.product-card{border-radius:var(--rd-radius)!important;border:1px solid #e6ebf3!important;box-shadow:var(--rd-shadow);background:#fff;overflow:hidden;transition:transform .22s cubic-bezier(.2,.7,.3,1),box-shadow .22s ease,border-color .22s ease}
     .catalog-card:hover,.pf-card:hover,.product-card:hover{transform:translateY(-6px);box-shadow:var(--rd-shadow-hover);border-color:color-mix(in srgb,var(--primary) 35%,#e6ebf3)!important}
     .catalog-card-media,.pf-card-media{aspect-ratio:1/1;background:#f8fafc;overflow:hidden}
-    .catalog-card-media img,.pf-card-media img{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+    .catalog-card-media img,.pf-card-media img{width:100%;height:100%;object-fit:contain;transition:transform .3s ease}
     .catalog-card:hover .catalog-card-media img{transform:scale(1.04)}
     .catalog-card-name,.pf-card-name{font-weight:700!important;color:var(--secondary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;padding-left:2px;margin-left:-2px}
     .catalog-card-price,.pf-price-now{font-size:19px!important;font-weight:800!important;color:var(--secondary)}
@@ -2996,6 +3476,17 @@
     .catalog-filter-panel{border-radius:var(--rd-radius)!important;box-shadow:var(--rd-shadow);border:1px solid #e6ebf3!important}
     .catalog-results-count strong{color:var(--primary)}
     .catalog-loadmore .button{border-radius:12px!important;padding:14px 34px!important;font-weight:800;letter-spacing:.02em}
+    /* ── Paginacion numerada ── */
+    .catalog-paginas{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:26px 0 8px}
+    .catalog-pagina{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:38px;height:38px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-size:14px;font-weight:600;text-decoration:none;transition:border-color .15s,background .15s}
+    .catalog-pagina:hover{border-color:var(--primary);color:var(--primary)}
+    .catalog-pagina.is-on{background:var(--primary);border-color:var(--primary);color:#fff}
+    .catalog-pagina.is-off{opacity:.45;pointer-events:none}
+    .catalog-pagina--puntos{border:0;background:transparent;min-width:24px;padding:0}
+    .catalog-pagina--prev,.catalog-pagina--next{color:var(--primary);font-weight:700}
+    .catalog-pagina svg{width:16px;height:16px}
+    .catalog-paginas-rango{margin-left:auto;font-size:13px;color:var(--muted)}
+    @media(max-width:640px){.catalog-paginas{justify-content:center}.catalog-pagina--prev span,.catalog-pagina--next span{display:none}.catalog-paginas-rango{width:100%;text-align:center;margin:8px 0 0}}
     /* Footer premium: contraste y separación */
     .footer-col strong,.footer-brand{letter-spacing:.01em}
     .footer-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:22px}
@@ -3094,7 +3585,7 @@
     .ck-order-item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
     .ck-order-item:last-of-type{border-bottom:0}
     .ck-order-thumb{width:48px;height:48px;flex-shrink:0;overflow:hidden;background:#f1f5f9;border-radius:8px}
-    .ck-order-thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
+    .ck-order-thumb img{width:100%;height:100%;object-fit:contain;padding:var(--foto-aire)}
     .ck-qtybtn{width:26px;height:26px;color:#475569;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;cursor:pointer}
     .ck-sum-row{display:flex;justify-content:space-between;margin-top:10px;color:#475569;font-size:13px}
     .ck-sum-row.total{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);color:var(--secondary);font-size:17px;font-weight:800}
@@ -3120,7 +3611,7 @@
     .cartpage-lines{display:flex;flex-direction:column;gap:12px}
     .cart-line{display:grid;grid-template-columns:88px 1fr auto;gap:16px;align-items:center;padding:16px;background:#fff;border:1px solid var(--border);border-radius:14px}
     .cart-line-thumb{width:88px;height:88px;display:grid;place-items:center;overflow:hidden;background:#fafaf9;border:1px solid #f1f5f9;border-radius:10px}
-    .cart-line-thumb img{width:100%;height:100%;padding:8px;object-fit:contain}
+    .cart-line-thumb img{width:100%;height:100%;padding:var(--foto-aire);object-fit:contain}
     .cart-line-cat{color:#7c899b;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
     /* En una tienda sin fotos, la miniatura del carrito era un cuadro gris con un
        icono: se lee como imagen rota. Sin foto no hay miniatura. */
@@ -3140,8 +3631,10 @@
     .cartpage-empty{padding:64px 22px;text-align:center;background:#fff;border:1px solid var(--border);border-radius:14px}
     @media(max-width:860px){.cartpage-grid{grid-template-columns:1fr}.cartpage-summary{position:static}.cartpage-inner{width:calc(100% - 28px)}}
     /* ═══ Página de producto (esqueleto ecommerce, estilo computienda) ═══ */
-    .pdp-wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px}
-    .pdp-gallery{position:sticky;top:96px;align-self:start}
+    .pdp-wrap{display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);gap:44px;margin-top:24px;align-items:start}
+    /* Sin tope, en un monitor ancho la foto pasaba de 580 px y la primera
+       pantalla de la ficha era solo imagen. 480 basta para ver la prenda. */
+    .pdp-gallery{position:sticky;top:96px;align-self:start;max-width:100%}
     /* Ficha sin fotografia: la galeria dejaba un hueco blanco de 652x702 ocupando
        media pantalla, peor aun que la caja gris de la tarjeta. Sin imagen no hay
        galeria: la ficha pasa a una sola columna centrada y se lee como una ficha
@@ -3179,12 +3672,31 @@
     .cpt-lb-zooms{position:absolute;bottom:16px;right:16px;z-index:2;display:flex;gap:8px}
     .cpt-lb-zooms .cpt-lb-btn{position:static;width:40px;height:40px;font-size:19px}
     .cpt-lb-counter{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:2;color:#fff;font-size:13px;font-weight:700;background:rgba(15,23,42,.62);padding:5px 12px;border-radius:999px}
-    .pdp-main-img img{width:100%;height:100%;padding:28px;object-fit:contain;transition:transform .3s}
+    .pdp-main-img img{position:absolute;inset:0;width:100%;height:100%;padding:var(--foto-aire);object-fit:contain;transition:transform .3s}
     .pdp-main-img:hover img{transform:scale(1.04)}
     .pdp-thumbs{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+    /* Miniaturas en columna a la izquierda de la foto grande (desde 900px).
+       Se hace con `grid` sobre la galeria y `order`, sin tocar el marcado: la
+       misma plantilla la usan otras tiendas y el HTML sigue siendo el mismo.
+       Debajo de 900px vuelven a su fila horizontal, que es lo que cabe. */
+    @media (min-width:900px){
+        .pdp-gallery:has(.pdp-thumbs){
+            display:grid; grid-template-columns:70px minmax(0,1fr); gap:12px;
+            align-items:start;
+        }
+        .pdp-gallery:has(.pdp-thumbs) .pdp-main-img{order:2}
+        .pdp-gallery:has(.pdp-thumbs) .pdp-thumbs{
+            order:1; flex-direction:column; flex-wrap:nowrap; margin-top:0;
+            max-height:520px; overflow-y:auto; scrollbar-width:thin;
+        }
+        /* Compartir cruza las dos columnas: si no, se metia bajo las miniaturas. */
+        .pdp-gallery:has(.pdp-thumbs) .pdp-share{grid-column:1/-1;order:3}
+    }
     .pdp-thumb{width:66px;height:66px;display:grid;place-items:center;overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer}
     .pdp-thumb.active{border-color:var(--primary)}
-    .pdp-thumb img{width:100%;height:100%;padding:6px;object-fit:contain}
+    .pdp-color-actual{margin:10px 0 0;color:#334155;font-size:13px}
+    .pdp-color-actual b{font-weight:800}
+    .pdp-thumb img{width:100%;height:100%;padding:var(--foto-aire);object-fit:contain}
     .pdp-cat{color:var(--primary);font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
     .pdp-title{margin:8px 0 0;color:var(--secondary);font-size:clamp(22px,3vw,30px);font-weight:800;line-height:1.2}
     .pdp-price-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:14px 0 4px}
@@ -3270,6 +3782,34 @@
     #storefront-main .catalog-quickview{min-height:44px}
     .hpx-uni-chip,.profile-chip,.hpx-corp-inner a{min-height:44px;display:inline-flex;align-items:center}
     .catalog-h1{margin:6px 0 0;color:var(--secondary);font-size:var(--t-lg);font-weight:800;line-height:1.15}
+    /* ── Cabecera del catalogo con imagen (catalog_hero_style = imagen) ── */
+    .cat-banner--imagen{padding:30px 32px 28px;border:0;border-radius:16px;color:#fff;background:linear-gradient(90deg,color-mix(in srgb,var(--secondary) 94%,#000) 0%,color-mix(in srgb,var(--secondary) 80%,#000) 48%,rgba(0,0,0,.18) 100%),var(--cat-hero) center/cover no-repeat}
+    .cat-banner--imagen .cat-banner-copy{padding-left:0}
+    .cat-banner--imagen .cat-banner-copy::before{display:none}
+    .cat-banner--imagen .catalog-h1,.cat-banner--imagen .cat-banner-copy p{color:#fff}
+    .cat-banner--imagen .cat-banner-copy p{opacity:.92}
+    .cat-banner--imagen .cat-banner-inner{align-items:center}
+    .cat-banner-lema{display:flex;flex-direction:column;font-family:var(--font-title);font-weight:900;font-size:clamp(17px,1.7vw,24px);line-height:1.08;letter-spacing:.03em;text-transform:uppercase;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.45);padding-right:8px}
+    @media(max-width:700px){.cat-banner--imagen{padding:22px 18px}.cat-banner-lema{display:none}}
+    /* ── Tarjeta "pro": marca arriba, codigo y unidad, disponibilidad, boton ancho ── */
+    body.cards-pro .catalog-card{border:1px solid var(--border);border-radius:10px;box-shadow:none;background:#fff}
+    body.cards-pro .catalog-card:hover{box-shadow:0 10px 26px rgba(15,23,42,.08);border-color:color-mix(in srgb,var(--primary) 35%,var(--border))}
+    body.cards-pro .catalog-card-category{display:none!important}
+    body.cards-pro .catalog-card-brand{display:block!important;color:var(--primary)!important;font-weight:800;font-size:13px;letter-spacing:.03em;text-transform:uppercase;margin:0 0 4px!important;padding:0!important;background:none!important}
+    body.cards-pro .catalog-card-name{font-weight:700;font-size:15px;line-height:1.35;min-height:0}
+    body.cards-pro .pc-pro-meta{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:13px;color:var(--muted)}
+    body.cards-pro .pc-pro-meta b{font-weight:600;color:var(--text)}
+    body.cards-pro .pc-pro-disp{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12.5px;font-weight:700;color:#15803d}
+    body.cards-pro .pc-pro-disp i{width:9px;height:9px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.16)}
+    body.cards-pro .pc-pro-disp.is-off{color:#b91c1c}body.cards-pro .pc-pro-disp.is-off i{background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.16)}
+    body.cards-pro .catalog-card-prices,body.cards-pro .quote-price{display:none!important}
+    body.cards-pro .catalog-card-actions{padding-top:10px}
+    body.cards-pro .catalog-card-action{width:100%!important;justify-content:center;border-radius:8px!important;background:var(--primary)!important;color:#fff!important;font-weight:700;min-height:42px}
+    body.cards-pro .catalog-card-action::before{content:"+";font-weight:800;margin-right:8px;font-size:16px;line-height:1}
+    body.cards-pro .catalog-card-more,body.cards-pro #storefront-main .catalog-card-more{display:none!important}
+    body.cards-pro #storefront-main .catalog-card-category{display:none!important}
+    body.cards-pro #storefront-main .catalog-card-prices{display:none!important}
+    body.cards-pro #storefront-main .catalog-card-action{width:100%!important;justify-content:center!important;background:var(--primary)!important;color:#fff!important;border-radius:8px!important}
     /* La flecha del carrusel se montaba encima del titulo: el bloque de texto
        deja sitio a las flechas en vez de compartirlo. */
     #storefront-main .premium-hero:has(.ph-arrow) .premium-hero-copy.is-left{padding-left:56px!important}
@@ -3440,7 +3980,7 @@
     #storefront-main .home-cats.style-horizontal .home-cat-media{flex:0 0 38%!important;width:auto!important;
         height:auto!important;align-self:stretch;border-radius:0!important;
         background:color-mix(in srgb,var(--primary) 8%,var(--surface-soft))!important}
-    #storefront-main .home-cats.style-horizontal .home-cat-media img{padding:14px!important;object-fit:contain!important;
+    #storefront-main .home-cats.style-horizontal .home-cat-media img{padding:var(--foto-aire)!important;object-fit:contain!important;
         width:100%!important;height:100%!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
     #storefront-main .home-cats.style-horizontal .home-cat-media > *{border:0!important;box-shadow:none!important;background:transparent!important}
     #storefront-main .home-cats.style-horizontal .home-cat-content{padding:22px 24px!important}
@@ -3532,10 +4072,20 @@
         body #storefront-main .catalog-card-action,
         body #storefront-main .catalog-card-inquiry{width:100%!important;min-width:0!important;
             justify-content:center!important;text-align:center;white-space:nowrap;
-            padding:0 8px!important;font-size:12.5px!important}
-        #storefront-main .catalog-card-body{padding:12px 10px 8px!important}
-        #storefront-main .catalog-card-price{font-size:17px!important}
-        #storefront-main .catalog-card-name{font-size:13.5px!important}
+            padding:0 8px!important;font-size:13.5px!important}
+        /* Estas tres llevan !important y pisaban al parcial de la tarjeta: el
+           nombre se quedaba en 13,5px y el precio en 17px por mucho que el
+           parcial dijera otra cosa. Se corrigen AQUI, que es donde mandan, en
+           vez de añadir otro !important encima. */
+        #storefront-main .catalog-card-body{padding:15px 15px 0!important}
+        #storefront-main .catalog-card-price{font-size:15px!important}
+        /* Sin `display` explícito: al declararlo en otra regla el navegador
+           resolvía `flow-root` y el recorte a dos líneas dejaba de aplicarse,
+           así que los nombres largos salían en UNA línea cortada con puntos
+           suspensivos en vez de ocupar las dos reservadas. */
+        #storefront-main .catalog-card-name{font-size:15.5px!important;
+            display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+            overflow:hidden;line-height:1.3!important;color:#1F2937!important}
     }
     /* Producto sin foto: el aviso iba a 9,5px y el icono flotaba suelto. Se
        resuelve como estado, con el icono contenido y el texto legible. */
@@ -3627,13 +4177,20 @@
         object-fit:contain!important;object-position:center;width:100%;height:100%}
     @media(max-width:760px){#storefront-main .catalog-card-media{padding:7px}}
     #storefront-main .catalog-card:hover .catalog-card-media img{transform:scale(1.04)}
-    #storefront-main .catalog-card-body{padding:14px 14px 10px!important;gap:2px}
-    #storefront-main .catalog-card-category{display:block;margin-bottom:4px;text-transform:uppercase;font-weight:700}
+    /* Este bloque es el ULTIMO que toca la tarjeta y lleva !important, asi que
+       es el que manda de verdad: cualquier ajuste hecho en el parcial o mas
+       arriba quedaba pisado aqui. Por eso las medidas finales viven aqui. */
+    #storefront-main .catalog-card-body{padding:16px 16px 0!important;gap:0}
+    #storefront-main .catalog-card-category{display:block;margin-bottom:6px;text-transform:uppercase;
+        font-size:11px!important;font-weight:600!important;letter-spacing:.04em;color:#6B7280!important}
     #storefront-main .catalog-card-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-        overflow:hidden;min-height:2.8em;font-size:14.5px!important;font-weight:600!important;line-height:1.4!important;color:var(--text-strong)!important}
+        overflow:hidden;min-height:calc(2 * 1.3 * 15.5px);margin-bottom:14px;
+        font-size:15.5px!important;font-weight:700!important;line-height:1.3!important;color:#111827!important}
     #storefront-main .catalog-card-name:hover{color:var(--primary)!important}
-    #storefront-main .catalog-card-prices{align-items:baseline;gap:8px;margin-top:8px}
-    #storefront-main .catalog-card-price{font-size:20px!important;font-weight:800!important;color:var(--secondary)!important;line-height:1.1}
+    #storefront-main .catalog-card-prices{align-items:baseline;gap:7px;margin-top:0;margin-bottom:14px}
+    /* El precio con el color de la tienda, no con el secundario: es el dato
+       que el comprador busca y tiene que destacar como tal. */
+    #storefront-main .catalog-card-price{font-size:15px!important;font-weight:700!important;color:var(--primary)!important;line-height:1.2}
     #storefront-main .catalog-card-compare{color:var(--muted)!important;text-decoration:line-through}
     /* Comprar arriba, consultar abajo. En fila los dos botones se repartían el
        ancho y "Agregar al carrito" quedaba estrecho y con el texto apretado,
@@ -3689,7 +4246,7 @@
            ancho, con aire a los lados. Cuadrado y a todo el ancho de la
            tarjeta; `max-height` para que en un móvil bajo no empuje los
            botones fuera de la pantalla. */
-        .qv-media{flex:0 0 auto;width:100%;height:auto;aspect-ratio:4/3;max-height:30vh;padding:10px;box-sizing:border-box}
+        .qv-media{flex:0 0 auto;width:100%;height:auto;aspect-ratio:4/3;max-height:30vh;padding:var(--foto-aire);box-sizing:border-box}
         /* `cover` recortaba el producto: en una laptop se comía el teclado y la
            pantalla quedaba descentrada. `contain` muestra la pieza entera, que
            es lo que el comprador quiere ver antes de decidir. */
@@ -3738,6 +4295,674 @@
     #storefront-main .pdp-consult{flex:1 1 auto!important;background:transparent!important;
         color:var(--text-strong)!important;border:1.5px solid var(--border)!important;font-weight:700!important}
     #storefront-main .pdp-consult:hover{background:var(--surface-soft)!important;border-color:#25D366!important;filter:none!important}
+    /* ═══ Descripción de la ficha: legible, no un muro gris ═══
+       Todo venía al mismo peso y en el mismo gris: los párrafos de venta, los
+       titulares y las 14 especificaciones. El ojo no encontraba dónde parar.
+       Se separa en tres niveles: entrada, argumentos y datos duros. */
+    #storefront-main .pdp-desc{
+        margin:18px 0; color:var(--text,#334155); font-size:14.5px; line-height:1.72;
+    }
+    /* Entrada: el primer párrafo es el que engancha, así que pesa más. */
+    #storefront-main .pdp-desc > p:first-child{
+        font-size:15.5px; line-height:1.65; color:var(--text-strong,#1f2937);
+    }
+    #storefront-main .pdp-desc p{margin:0 0 13px}
+
+    /* Argumentos de venta: los párrafos que abren con negrita se convierten en
+       tarjetas con una barra del color de la tienda. Se leen de un vistazo y
+       dejan de competir con las especificaciones. */
+    #storefront-main .pdp-desc p:has(> strong:first-child){
+        position:relative; margin:0 0 10px;
+        padding:11px 14px 11px 15px;
+        background:color-mix(in srgb, var(--primary,#7c3aed) 4%, #fff);
+        border-radius:0 10px 10px 0;
+        box-shadow:inset 3px 0 0 var(--primary,#7c3aed);
+        font-size:14px; line-height:1.6;
+    }
+    #storefront-main .pdp-desc p:has(> strong:first-child) > strong:first-child{
+        display:block; margin-bottom:2px;
+        color:var(--primary,#7c3aed); font-size:13.5px; font-weight:800;
+        letter-spacing:.01em;
+    }
+
+    /* Titular de la lista: "Especificaciones principales" deja de ser un
+       párrafo suelto y pasa a encabezar de verdad su bloque. */
+    #storefront-main .pdp-desc p:has(> strong:only-child){
+        margin:20px 0 10px; padding:0; background:none; box-shadow:none;
+        color:var(--text-strong,#1f2937); font-size:12px; font-weight:800;
+        letter-spacing:.08em; text-transform:uppercase;
+    }
+    #storefront-main .pdp-desc p:has(> strong:only-child) > strong{
+        display:inline; color:inherit; font-size:inherit; margin:0;
+    }
+
+    /* Especificaciones: dos columnas y filas alternas. Una lista de 14 viñetas
+       en una sola columna obligaba a bajar media pantalla para leer datos que
+       se consultan salteados, no en orden. */
+    #storefront-main .pdp-desc ul{
+        display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:0 22px; margin:0 0 14px; padding:0; list-style:none;
+        border-top:1px solid var(--border,#e5e7eb);
+    }
+    #storefront-main .pdp-desc ul li{
+        padding:8px 2px; border-bottom:1px solid var(--border,#e5e7eb);
+        font-size:13.5px; line-height:1.45; color:var(--text,#475569);
+    }
+    /* Un punto del color de la tienda en vez de la viñeta del navegador:
+       marca la fila sin el sangrado que descuadraba las dos columnas. */
+    #storefront-main .pdp-desc ul li::before{
+        content:""; display:inline-block; width:4px; height:4px; margin-right:9px;
+        border-radius:50%; background:var(--primary,#7c3aed); vertical-align:middle;
+        opacity:.55;
+    }
+    @media (max-width:640px){
+        #storefront-main .pdp-desc ul{grid-template-columns:1fr;gap:0}
+        #storefront-main .pdp-desc > p:first-child{font-size:15px}
+    }
+
+    /* Respaldo para navegadores sin `:has()` (anteriores a 2023): al menos la
+       negrita de apertura se lee como titulillo del color de la tienda. */
+    #storefront-main .pdp-desc p > strong:first-child{
+        color:var(--primary,#7c3aed); font-weight:800;
+    }
+    @supports selector(p:has(> strong)){
+        #storefront-main .pdp-desc p:has(> strong:only-child) > strong{color:inherit}
+    }
+
+    /* Cierre ("Incluye: ...") como nota destacada, no como otro párrafo mas. */
+    #storefront-main .pdp-desc > p:last-child:has(> strong:first-child){
+        background:color-mix(in srgb, #16a34a 6%, #fff);
+        box-shadow:inset 3px 0 0 #16a34a;
+    }
+    #storefront-main .pdp-desc > p:last-child:has(> strong:first-child) > strong:first-child{
+        color:#15803d;
+    }
+    /* ═══ Pestañas de la ficha ═══
+       La descripcion vivia en la columna derecha, estrecha, debajo del precio:
+       una lista de 14 especificaciones se hacia interminable y empujaba los
+       botones fuera de pantalla. Aqui va a ancho completo y repartida. */
+    #storefront-main .pdp-tabs{margin-top:44px}
+    #storefront-main .pdp-tabs-bar{
+        display:flex; gap:4px; overflow-x:auto; scrollbar-width:none;
+        border-bottom:1px solid var(--border,#e5e7eb);
+    }
+    #storefront-main .pdp-tabs-bar::-webkit-scrollbar{display:none}
+    #storefront-main .pdp-tabs-bar button{
+        flex:0 0 auto; position:relative; padding:12px 16px;
+        background:none; border:0; cursor:pointer;
+        color:var(--muted,#6b7280); font-size:14px; font-weight:600;
+        transition:color .18s ease;
+    }
+    /* La barra activa se dibuja con ::after y no con border-bottom: asi no
+       desplaza el texto un pixel al cambiar de pestaña. */
+    #storefront-main .pdp-tabs-bar button::after{
+        content:""; position:absolute; left:12px; right:12px; bottom:-1px; height:2px;
+        background:var(--primary,#7c3aed); border-radius:2px 2px 0 0;
+        transform:scaleX(0); transition:transform .2s ease;
+    }
+    #storefront-main .pdp-tabs-bar button.is-on{color:var(--primary,#7c3aed)}
+    #storefront-main .pdp-tabs-bar button.is-on::after{transform:scaleX(1)}
+    @media (hover:hover){
+        #storefront-main .pdp-tabs-bar button:hover{color:var(--text-strong,#1f2937)}
+    }
+    #storefront-main .pdp-tabs-bar button:focus-visible{
+        outline:2px solid var(--primary,#7c3aed); outline-offset:-2px; border-radius:6px;
+    }
+    #storefront-main .pdp-tabs-panel{padding-top:24px}
+    /* Con especificaciones: texto a la izquierda y tabla a la derecha. El
+       `max-width` de antes dejaba media pantalla en blanco a la derecha. */
+    #storefront-main .pdp-tabs-panel.has-specs{
+        display:grid; grid-template-columns:minmax(0,1fr) minmax(0,330px); gap:34px;
+        align-items:start;
+    }
+    /* Sin especificaciones el texto no se estira a 1400px: una linea de esa
+       longitud es imposible de seguir con la vista. */
+    #storefront-main .pdp-tabs-panel:not(.has-specs) .pdp-desc{max-width:820px}
+
+    /* Tabla de especificaciones: filas alternas, como una hoja de datos. */
+    #storefront-main .pdp-specs{
+        padding:18px 20px; background:var(--surface-soft,#f8fafc);
+        border:1px solid var(--border,#e5e7eb); border-radius:12px;
+    }
+    #storefront-main .pdp-specs p:has(> strong:only-child){margin:0 0 12px}
+    #storefront-main .pdp-specs ul{
+        display:block; margin:0; border-top:0;
+    }
+    #storefront-main .pdp-specs ul li{
+        display:flex; justify-content:space-between; align-items:baseline; gap:14px;
+        padding:9px 10px; margin:0 -10px; border-bottom:0; border-radius:6px;
+        font-size:13px;
+    }
+    /* Franjas alternas: en una tabla de 14 filas el ojo pierde el renglon. */
+    #storefront-main .pdp-specs ul li:nth-child(odd){background:rgba(255,255,255,.75)}
+    #storefront-main .pdp-specs ul li::before{content:none}
+    /* El valor a la derecha, en negrita: es el dato que se viene a buscar. */
+    #storefront-main .pdp-specs ul li .v{
+        flex:0 0 auto; max-width:58%; text-align:right;
+        color:var(--text-strong,#1f2937); font-weight:700;
+    }
+
+    @media (max-width:1023px){
+        #storefront-main .pdp-tabs-panel.has-specs{grid-template-columns:1fr;gap:24px}
+    }
+    /* A ancho completo caben tres columnas de especificaciones. */
+    @media (min-width:1024px){
+        #storefront-main .pdp-tabs-panel ul{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:640px){
+        #storefront-main .pdp-tabs{margin-top:32px}
+        #storefront-main .pdp-tabs-bar button{padding:11px 13px;font-size:13.5px}
+    }
+
+    /* ═══ Aviso al agregar ═══ */
+    #storefront-main ~ .sf-aviso, .sf-aviso{
+        position:fixed; left:50%; bottom:22px; z-index:95; transform:translateX(-50%);
+        display:flex; align-items:center; gap:12px; max-width:min(520px,calc(100vw - 28px));
+        padding:11px 12px 11px 14px; border-radius:12px;
+        background:#111827; color:#fff; box-shadow:0 12px 32px rgba(15,23,42,.28);
+        font-size:13.5px; line-height:1.3;
+    }
+    .sf-aviso > svg{flex:0 0 20px; width:20px; height:20px; color:#4ade80}
+    .sf-aviso-txt{display:flex; flex-direction:column; min-width:0}
+    .sf-aviso-txt b{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700}
+    .sf-aviso-txt small{color:#cbd5e1; font-size:12px}
+    .sf-aviso button{
+        flex:0 0 auto; margin-left:auto; padding:8px 12px; border:0; border-radius:8px;
+        background:var(--primary); color:#fff; font-size:12.5px; font-weight:700; cursor:pointer;
+    }
+    .sf-aviso-in{animation:sf-aviso-up .22s ease-out}
+    .sf-aviso-out{animation:sf-aviso-up .18s ease-in reverse}
+    @keyframes sf-aviso-up{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+    @media (prefers-reduced-motion:reduce){.sf-aviso-in,.sf-aviso-out{animation:none}}
+
+    /* Codigo y unidad en la linea de "Mi cotizacion". */
+    .cart-line-meta{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:3px; color:#64748b; font-size:11.5px}
+    .cart-line-meta b{color:#334155; font-weight:700}
+
+    /* ═══ Categorias: estilo `tiles` ═══
+       Icono de linea sobre fondo gris claro, nombre y conteo. Ocho entran en una
+       fila; a la derecha, la tarjeta de promociones en el azul corporativo. */
+    #storefront-main .hc-tiles-wrap{display:grid; grid-template-columns:1fr; gap:18px; align-items:stretch}
+    #storefront-main .hc-tiles-wrap.has-promo{grid-template-columns:minmax(0,1fr) 250px}
+    #storefront-main .hc-tiles{
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:12px 10px; align-content:start;
+    }
+    #storefront-main .hc-tile{
+        display:flex; flex-direction:column; align-items:center; gap:7px; min-width:0;
+        text-decoration:none; color:inherit; text-align:center;
+    }
+    #storefront-main .hc-tile-ico{
+        width:88px; height:88px; display:grid; place-items:center; border-radius:14px;
+        background:var(--surface-soft,#f1f3f6); border:1px solid transparent; color:var(--text-strong,#1f2937);
+        transition:transform .2s ease, border-color .2s ease, background .2s ease, color .2s ease;
+    }
+    #storefront-main .hc-tile-ico svg{width:40px; height:40px}
+    #storefront-main .hc-tile-ico.has-img{padding:8px; overflow:hidden}
+    #storefront-main .hc-tile-ico.has-img img{width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply}
+    #storefront-main .hc-tile strong{font-size:12.5px; font-weight:600; line-height:1.25; color:var(--text-strong,#1f2937)}
+    #storefront-main .hc-tile small{display:block; margin-top:-3px; font-size:11px; color:var(--muted,#6b7280)}
+    @media (hover:hover){
+        #storefront-main .hc-tile:hover .hc-tile-ico{transform:translateY(-3px); border-color:var(--primary); color:var(--primary);
+            background:color-mix(in srgb, var(--primary) 7%, #fff)}
+    }
+    #storefront-main .hc-promo-card{
+        position:relative; display:flex; align-items:flex-end; min-height:200px; padding:20px; border-radius:14px; overflow:hidden;
+        text-decoration:none; color:#fff;
+        background:linear-gradient(135deg, color-mix(in srgb, var(--secondary,#1c1917) 88%, #1d4ed8), var(--secondary,#1c1917));
+        transition:transform .2s ease, box-shadow .2s ease;
+    }
+    #storefront-main .hc-promo-card[style*="--promo-img"]::before{
+        content:""; position:absolute; inset:0; background:var(--promo-img) center right/cover no-repeat; opacity:.55;
+    }
+    #storefront-main .hc-promo-card::after{
+        content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(0,0,0,.35), transparent 70%);
+    }
+    #storefront-main .hc-promo-copy{position:relative; z-index:1; display:flex; flex-direction:column; gap:6px}
+    #storefront-main .hc-promo-copy strong{font-size:20px; font-weight:900; line-height:1.15; text-transform:uppercase; letter-spacing:.01em}
+    #storefront-main .hc-promo-copy small{font-size:12.5px; color:rgba(255,255,255,.85)}
+    #storefront-main .hc-promo-copy em{
+        display:inline-flex; align-items:center; gap:6px; margin-top:8px; padding:8px 12px; border-radius:8px;
+        background:var(--primary); color:#fff; font-style:normal; font-size:12.5px; font-weight:700; width:max-content;
+    }
+    #storefront-main .hc-promo-copy em svg{width:14px; height:14px}
+    @media (hover:hover){#storefront-main .hc-promo-card:hover{transform:translateY(-3px); box-shadow:0 12px 28px rgba(15,23,42,.18)}}
+    @media (max-width:1023px){
+        #storefront-main .hc-tiles-wrap.has-promo{grid-template-columns:1fr}
+        #storefront-main .hc-promo-card{min-height:140px}
+    }
+    @media (max-width:640px){
+        #storefront-main .hc-tiles{grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px 6px}
+        #storefront-main .hc-tile-ico{width:64px; height:64px; border-radius:12px}
+        #storefront-main .hc-tile-ico svg{width:28px; height:28px}
+        #storefront-main .hc-tile strong{font-size:11px}
+        #storefront-main .hc-tile small{display:none}
+    }
+
+    /* ═══ Ficha de producto B2B (pdp_layout=b2b) ═══
+       Banda compacta, tres columnas (galeria · datos · marca y garantias),
+       pestañas de hoja de datos y documentos, tarjeta de cotizacion por
+       volumen y relacionados compactos. */
+    #storefront-main .pdp-banner{position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:24px; margin-top:18px; padding:22px 28px; border-radius:14px; overflow:hidden; color:#fff;
+        background:linear-gradient(90deg, var(--secondary,#1c2a4e) 0%, color-mix(in srgb, var(--secondary,#1c2a4e) 70%, #1d4ed8) 100%)}
+    #storefront-main .pdp-banner[style*="--pdp-banner-img"]::before{content:""; position:absolute; inset:0; background:var(--pdp-banner-img) right center/cover no-repeat; opacity:.45;
+        -webkit-mask:linear-gradient(90deg, transparent 30%, #000 70%); mask:linear-gradient(90deg, transparent 30%, #000 70%)}
+    #storefront-main .pdp-banner > *{position:relative}
+    #storefront-main .pdp-banner-copy{display:flex; flex-direction:column; gap:4px}
+    #storefront-main .pdp-banner-copy strong{font-family:var(--font-title); font-size:clamp(20px,2.2vw,28px); font-weight:800; line-height:1.15; color:#fff}
+    #storefront-main .pdp-banner-copy .ph-hl{color:var(--primary)}
+    #storefront-main .pdp-banner-copy span{font-size:14px; color:rgba(255,255,255,.85)}
+    #storefront-main .pdp-banner-sectors{list-style:none; margin:0; padding:12px 14px; display:flex; flex-direction:column; gap:6px; border-radius:10px; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.12)}
+    #storefront-main .pdp-banner-sectors li{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.92)}
+    #storefront-main .pdp-banner-sectors svg{width:15px; height:15px; color:var(--primary)}
+    #storefront-main .pdp-wrap.is-b2b{grid-template-columns:minmax(0,.85fr) minmax(0,1fr) 250px; gap:28px}
+    #storefront-main .pdp-brand-logo{display:block; max-height:36px; max-width:150px; object-fit:contain; margin-bottom:10px}
+    #storefront-main .pdp-meta{display:grid; gap:4px; margin:12px 0 10px; font-size:14px}
+    #storefront-main .pdp-meta div{display:flex; gap:6px}
+    #storefront-main .pdp-meta dt{margin:0; color:var(--muted,#64748b)}
+    #storefront-main .pdp-meta dd{margin:0; color:var(--text-strong,#111827); font-weight:600}
+    #storefront-main .pdp-avail{display:inline-flex; align-items:center; gap:7px; width:max-content; padding:5px 11px; border-radius:999px; background:#ecfdf5; color:#047857; font-size:12.5px; font-weight:700}
+    #storefront-main .pdp-avail i{width:8px; height:8px; border-radius:50%; background:#10b981}
+    #storefront-main .pdp-avail.is-sm{padding:3px 8px; font-size:11px}
+    #storefront-main .pdp-unit{display:inline-flex; align-items:center; padding:0 14px; border:1px solid var(--border,#e5e7eb); border-radius:10px; background:#fff; color:var(--text-strong,#111827); font-size:13.5px; font-weight:600}
+    #storefront-main .pdp-quote-now{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:46px; margin-top:10px; border:1.5px solid var(--primary); border-radius:10px; background:#fff; color:var(--primary); font-size:14px; font-weight:700; cursor:pointer; transition:background .18s ease, color .18s ease}
+    #storefront-main .pdp-quote-now svg{width:17px; height:17px}
+    @media (hover:hover){#storefront-main .pdp-quote-now:hover{background:var(--primary); color:#fff}}
+    #storefront-main .pdp-side{position:sticky; top:96px; display:flex; flex-direction:column; gap:18px; padding:20px; border:1px solid var(--border,#e5e7eb); border-radius:14px; background:var(--surface-soft,#f8fafc)}
+    #storefront-main .pdp-side-brand{display:grid; place-items:center; min-height:64px; padding:10px; border-radius:10px; background:#fff; border:1px solid var(--border,#e5e7eb)}
+    #storefront-main .pdp-side-brand img{max-height:44px; max-width:150px; object-fit:contain}
+    #storefront-main .pdp-side-brand strong{font-family:var(--font-title); font-size:20px; font-weight:900; letter-spacing:.02em; text-transform:uppercase; color:var(--secondary)}
+    #storefront-main .pdp-side-list{list-style:none; margin:0; padding:0; display:grid; gap:14px}
+    #storefront-main .pdp-side-list li{display:flex; align-items:center; gap:12px}
+    #storefront-main .pdp-side-ico{flex:0 0 44px; width:44px; height:44px; display:grid; place-items:center; border-radius:12px; background:#fff; border:1px solid var(--border,#e5e7eb); color:var(--primary)}
+    #storefront-main .pdp-side-ico svg{width:22px; height:22px}
+    #storefront-main .pdp-side-list strong{display:block; font-size:14px; font-weight:700; color:var(--text-strong,#111827); line-height:1.2}
+    #storefront-main .pdp-side-list small{display:block; margin-top:2px; font-size:12px; color:var(--muted,#64748b); line-height:1.35}
+    #storefront-main .pdp-tabs-b2b{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:28px; align-items:start; margin-top:44px}
+    #storefront-main .pdp-tabs-b2b .pdp-tabs{margin-top:0; min-width:0}
+    #storefront-main .pdp-volume{position:sticky; top:96px; display:flex; flex-direction:column; gap:8px; margin-top:52px; padding:22px; border-radius:14px;
+        background:color-mix(in srgb, var(--primary) 7%, #fff); border:1px solid color-mix(in srgb, var(--primary) 22%, #fff)}
+    #storefront-main .pdp-volume-ico{width:42px; height:42px; display:grid; place-items:center; border-radius:50%; background:#fff; color:var(--primary); border:1px solid color-mix(in srgb, var(--primary) 30%, #fff)}
+    #storefront-main .pdp-volume-ico svg{width:22px; height:22px}
+    #storefront-main .pdp-volume strong{font-size:16px; font-weight:800; color:var(--text-strong,#111827); line-height:1.25}
+    #storefront-main .pdp-volume p{margin:0; font-size:13.5px; line-height:1.5; color:var(--text,#475569)}
+    #storefront-main .pdp-volume-cta{display:inline-flex; align-items:center; gap:8px; width:max-content; margin-top:6px; padding:10px 16px; border-radius:10px; border:1.5px solid var(--primary); background:#fff; color:var(--primary); font-size:13.5px; font-weight:700; text-decoration:none; transition:background .18s ease, color .18s ease}
+    #storefront-main .pdp-volume-cta svg{width:16px; height:16px}
+    @media (hover:hover){#storefront-main .pdp-volume-cta:hover{background:var(--primary); color:#fff}}
+    #storefront-main .pdp-docs{list-style:none; margin:0; padding:0; display:grid; gap:10px}
+    #storefront-main .pdp-docs li{display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--border,#e5e7eb); border-radius:10px; background:#fff}
+    #storefront-main .pdp-docs a{font-weight:700; color:var(--primary); text-decoration:none}
+    #storefront-main .pdp-docs small{margin-left:auto; padding:2px 8px; border-radius:6px; background:var(--surface-soft,#f1f5f9); font-size:11px; font-weight:700; color:var(--muted,#64748b)}
+    #storefront-main .pdp-related-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px}
+    #storefront-main .pdp-related-head h2{margin:0}
+    #storefront-main .pdp-rel-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px}
+    #storefront-main .pdp-rel-card{display:flex; gap:12px; padding:12px; border:1px solid var(--border,#e5e7eb); border-radius:12px; background:#fff; transition:box-shadow .2s ease, transform .2s ease}
+    @media (hover:hover){#storefront-main .pdp-rel-card:hover{transform:translateY(-2px); box-shadow:0 10px 24px rgba(15,23,42,.08)}}
+    #storefront-main .pdp-rel-media{flex:0 0 84px; width:84px; height:84px; display:grid; place-items:center; border-radius:10px; background:var(--surface-soft,#f8fafc); overflow:hidden}
+    #storefront-main .pdp-rel-media img{width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply}
+    #storefront-main .pdp-rel-body{display:flex; flex-direction:column; gap:4px; min-width:0}
+    #storefront-main .pdp-rel-name{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:13.5px; font-weight:700; color:var(--text-strong,#111827); text-decoration:none; line-height:1.3}
+    #storefront-main .pdp-rel-meta{font-size:11.5px; color:var(--muted,#64748b)}
+    #storefront-main .pdp-rel-price{font-size:14px; font-weight:800; color:var(--secondary)}
+    #storefront-main .pdp-rel-add{display:inline-flex; align-items:center; gap:6px; width:max-content; margin-top:4px; padding:6px 10px; border:1.5px solid var(--primary); border-radius:8px; background:#fff; color:var(--primary); font-size:12px; font-weight:700; cursor:pointer}
+    #storefront-main .pdp-rel-add svg{width:13px; height:13px}
+    @media (hover:hover){#storefront-main .pdp-rel-add:hover{background:var(--primary); color:#fff}}
+    @media (max-width:1100px){
+        #storefront-main .pdp-wrap.is-b2b{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
+        #storefront-main .pdp-side{grid-column:1/-1; position:static; flex-direction:row; flex-wrap:wrap; align-items:center}
+        #storefront-main .pdp-side-list{flex:1; grid-template-columns:repeat(3,minmax(0,1fr))}
+        #storefront-main .pdp-tabs-b2b{grid-template-columns:1fr}
+        #storefront-main .pdp-volume{position:static; margin-top:0}
+        #storefront-main .pdp-rel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:900px){#storefront-main .pdp-wrap.is-b2b{grid-template-columns:1fr}}
+    @media (max-width:760px){
+        #storefront-main .pdp-banner{grid-template-columns:1fr; padding:18px}
+        #storefront-main .pdp-banner-sectors{flex-direction:row; flex-wrap:wrap}
+        #storefront-main .pdp-side{flex-direction:column; align-items:stretch}
+        #storefront-main .pdp-side-list{grid-template-columns:1fr}
+        #storefront-main .pdp-rel-grid{grid-template-columns:1fr}
+    }
+
+    /* ═══ Pagina Catalogo PDF: banda, portada, opciones e informacion ═══ */
+    #storefront-main > section.store-page.store-page--catalogo.has-banner{padding-top:0!important; margin-top:0!important}
+    #storefront-main .store-page--catalogo.has-banner > .cp-banner{margin-top:0}
+    #storefront-main .cp-banner{position:relative; overflow:hidden; color:#fff; margin-bottom:34px;
+        background:linear-gradient(90deg, var(--secondary,#0f172a) 0%, color-mix(in srgb, var(--secondary,#0f172a) 80%, #1d4ed8) 100%)}
+    #storefront-main .cp-banner[style*="--cp-img"]::before{content:""; position:absolute; inset:0; background:var(--cp-img) right center/cover no-repeat; opacity:.55;
+        -webkit-mask:linear-gradient(90deg, transparent 22%, #000 62%); mask:linear-gradient(90deg, transparent 22%, #000 62%)}
+    #storefront-main .cp-banner-in{position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:28px; padding:28px 0 30px}
+    #storefront-main .cp-crumb{display:flex; gap:8px; align-items:center; font-size:13px; color:rgba(255,255,255,.75)}
+    #storefront-main .cp-crumb a{color:inherit; text-decoration:none} #storefront-main .cp-crumb strong{color:#fff; font-weight:600}
+    #storefront-main .cp-banner h1{margin:10px 0 4px; font-family:var(--font-title); font-size:clamp(30px,3.6vw,46px); font-weight:800; line-height:1.05; color:#fff}
+    #storefront-main .cp-sub{margin:0; font-size:clamp(16px,1.5vw,20px); font-weight:600; color:#fff}
+    #storefront-main .cp-intro{margin:10px 0 0; max-width:560px; font-size:14.5px; line-height:1.5; color:rgba(255,255,255,.82)}
+    #storefront-main .cp-feats{list-style:none; margin:18px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:0}
+    #storefront-main .cp-feats li{display:flex; align-items:center; gap:10px; padding:4px 22px 4px 0; margin-right:22px; border-right:1px solid rgba(255,255,255,.22); font-size:13.5px; font-weight:600; line-height:1.25; max-width:220px}
+    #storefront-main .cp-feats li:last-child{border-right:0}
+    #storefront-main .cp-feats svg{width:30px; height:30px; flex:0 0 30px; color:#fff}
+    #storefront-main .cp-claim{align-self:center; max-width:190px}
+    #storefront-main .cp-claim strong{display:block; font-family:var(--font-title); font-size:clamp(20px,2vw,26px); font-weight:900; line-height:1.1; text-transform:uppercase; color:#fff}
+    #storefront-main .cp-claim i{display:block; width:44px; height:4px; margin-top:12px; background:var(--primary)}
+    #storefront-main .cp-sectors{list-style:none; margin:0; padding:12px 14px; display:flex; flex-direction:column; gap:7px; border-radius:10px; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.12)}
+    #storefront-main .cp-sectors li{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.92)}
+    #storefront-main .cp-sectors svg{width:15px; height:15px; color:var(--primary)}
+    #storefront-main .cp-grid{display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.25fr) 250px; gap:22px; align-items:start; margin-top:18px}
+    /* Portada tipo libro */
+    #storefront-main .cp-cover-col{position:relative; padding:10px 0 0}
+    #storefront-main .cp-book{position:relative; max-width:380px; margin:0 auto; filter:drop-shadow(0 22px 30px rgba(15,23,42,.22))}
+    #storefront-main .cp-book::after{content:""; position:absolute; top:6px; bottom:-6px; left:10px; right:-10px; z-index:-1; border-radius:4px 10px 10px 4px; background:linear-gradient(90deg,#e5e7eb,#f8fafc)}
+    #storefront-main .cp-book-cover{position:relative; display:flex; flex-direction:column; gap:12px; padding:22px 20px 18px; border-radius:4px 12px 12px 4px; background:#fff; border:1px solid #e5e7eb; overflow:hidden}
+    #storefront-main .cp-book-cover::before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:linear-gradient(90deg, rgba(15,23,42,.18), transparent)}
+    #storefront-main .cp-book-brand{display:grid; place-items:center; min-height:44px}
+    #storefront-main .cp-book-brand img{max-height:48px; max-width:200px; object-fit:contain}
+    #storefront-main .cp-book-brand strong{font-family:var(--font-title); font-size:24px; font-weight:900; color:var(--secondary)}
+    #storefront-main .cp-book-title{text-align:center}
+    #storefront-main .cp-book-title strong{display:block; font-family:var(--font-title); font-size:24px; font-weight:900; line-height:1.1; text-transform:uppercase; color:var(--secondary,#0f172a)}
+    #storefront-main .cp-book-title span{display:block; margin-top:4px; font-size:13.5px; font-weight:600; color:var(--text,#334155)}
+    #storefront-main .cp-book-media{aspect-ratio:4/3; border-radius:8px; overflow:hidden; background:linear-gradient(160deg, var(--secondary,#0f172a), color-mix(in srgb, var(--secondary,#0f172a) 70%, #1d4ed8))}
+    #storefront-main .cp-book-media > img{width:100%; height:100%; object-fit:cover}
+    #storefront-main .cp-book-mosaic{display:grid; grid-template-columns:repeat(2,1fr); grid-template-rows:repeat(2,1fr); gap:4px; height:100%; padding:8px}
+    #storefront-main .cp-book-mosaic img{width:100%; height:100%; object-fit:contain; background:#fff; border-radius:6px; padding:6px}
+    #storefront-main .cp-book-mosaic.n1{grid-template-columns:1fr; grid-template-rows:1fr} #storefront-main .cp-book-mosaic.n2{grid-template-rows:1fr} #storefront-main .cp-book-mosaic.n3 img:first-child{grid-row:span 2}
+    #storefront-main .cp-book-brands{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px}
+    #storefront-main .cp-book-brands span{display:grid; place-items:center; height:34px; padding:0 4px; border:1px solid #eef0f3; border-radius:6px; font-family:var(--font-title); font-size:11px; font-weight:900; letter-spacing:0; text-transform:uppercase; color:var(--secondary,#0f172a); white-space:nowrap; overflow:hidden}
+    #storefront-main .cp-book-brands img{max-height:24px; max-width:100%; object-fit:contain}
+    #storefront-main .cp-book-cats{display:flex; flex-wrap:wrap; justify-content:center; gap:4px 0; padding-top:10px; border-top:1px solid #eef0f3}
+    #storefront-main .cp-book-cats span{padding:0 8px; font-size:10.5px; font-weight:700; color:var(--muted,#64748b); border-right:1px solid #e5e7eb}
+    #storefront-main .cp-book-cats span:last-child{border-right:0}
+    #storefront-main .cp-hand{position:relative; max-width:230px; margin:22px auto 0; text-align:center; transform:rotate(-4deg); font-family:'Segoe Script','Bradley Hand','Comic Sans MS',cursive; font-size:19px; line-height:1.15; color:var(--text,#334155)}
+    #storefront-main .cp-hand::after{content:""; display:block; width:140px; height:8px; margin:6px auto 0; border-radius:50%; border-bottom:3px solid var(--primary); transform:rotate(-2deg)}
+    /* Opciones */
+    #storefront-main .cp-options{padding:26px 24px; border:1px solid var(--border,#e5e7eb); border-radius:14px; background:#fff}
+    #storefront-main .cp-options h2{margin:0; font-family:var(--font-title); font-size:20px; font-weight:800; color:var(--secondary,#0f172a)}
+    #storefront-main .cp-options-sub{margin:4px 0 16px; font-size:13.5px; color:var(--muted,#64748b)}
+    #storefront-main .cp-opt{display:flex; align-items:flex-start; gap:14px; padding:14px 16px; margin-bottom:10px; border:1px solid var(--border,#e5e7eb); border-radius:12px; background:#fff; cursor:pointer; transition:border-color .15s ease, box-shadow .15s ease}
+    #storefront-main .cp-opt.is-on{border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent); background:color-mix(in srgb, var(--primary) 4%, #fff)}
+    #storefront-main .cp-opt input[type=radio]{margin-top:8px; width:18px; height:18px; accent-color:var(--primary); flex:0 0 18px}
+    #storefront-main .cp-opt-ico{flex:0 0 40px; width:40px; height:40px; display:grid; place-items:center; color:var(--secondary,#0f172a)}
+    #storefront-main .cp-opt-ico svg{width:30px; height:30px}
+    #storefront-main .cp-opt.is-on .cp-opt-ico{color:var(--primary)}
+    #storefront-main .cp-opt-txt{display:flex; flex-direction:column; gap:3px; min-width:0; flex:1}
+    #storefront-main .cp-opt-txt strong{font-size:15px; color:var(--text-strong,#111827)}
+    #storefront-main .cp-opt-txt small{font-size:12.5px; line-height:1.45; color:var(--muted,#64748b)}
+    #storefront-main .cp-opt select{margin-top:8px; padding:9px 10px; border:1px solid var(--border,#e5e7eb); border-radius:9px; font-size:13.5px; background:#fff; max-width:360px}
+    #storefront-main .cp-agrupar{display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; font-size:13px; color:var(--text,#334155)}
+    #storefront-main .cp-agrupar label{display:flex; align-items:center; gap:6px; cursor:pointer}
+    #storefront-main .cp-agrupar input{accent-color:var(--primary)}
+    #storefront-main .cp-generate{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:14px; min-height:52px; border-radius:10px; background:var(--primary); color:#fff; font-size:16px; font-weight:800; text-decoration:none; transition:filter .18s ease, transform .18s ease}
+    #storefront-main .cp-generate svg{width:20px; height:20px}
+    @media (hover:hover){#storefront-main .cp-generate:hover{filter:brightness(.94); transform:translateY(-1px)}}
+    #storefront-main .cp-generate.is-off{opacity:.45; cursor:not-allowed}
+    #storefront-main .cp-note{display:flex; align-items:center; justify-content:center; gap:6px; margin:10px 0 0; font-size:12.5px; color:var(--muted,#64748b)}
+    #storefront-main .cp-note svg{width:14px; height:14px}
+    /* Informacion */
+    #storefront-main .cp-info-card{display:flex; flex-direction:column; align-items:center; gap:10px; padding:26px 20px; text-align:center; border-radius:14px; border:1px solid color-mix(in srgb, var(--secondary,#0f172a) 12%, #fff); background:color-mix(in srgb, var(--secondary,#0f172a) 5%, #fff)}
+    #storefront-main .cp-info-ico{width:52px; height:52px; display:grid; place-items:center; color:var(--secondary,#0f172a)}
+    #storefront-main .cp-info-ico svg{width:40px; height:40px}
+    #storefront-main .cp-info-card > strong{font-size:16px; font-weight:800; color:var(--secondary,#0f172a)}
+    #storefront-main .cp-info-card ul{list-style:none; margin:6px 0 0; padding:0; display:grid; gap:10px; text-align:left; width:100%}
+    #storefront-main .cp-info-card li{display:flex; align-items:flex-start; gap:9px; font-size:13.5px; line-height:1.3; color:var(--text,#334155)}
+    #storefront-main .cp-info-card li svg{width:16px; height:16px; flex:0 0 16px; margin-top:1px; color:var(--primary)}
+    #storefront-main .cp-info-card blockquote{margin:14px 0 0; padding-top:14px; border-top:1px solid color-mix(in srgb, var(--secondary,#0f172a) 18%, #fff); font-size:14px; font-style:italic; font-weight:600; color:var(--secondary,#0f172a)}
+    @media (max-width:1100px){
+        #storefront-main .cp-banner-in{grid-template-columns:minmax(0,1fr) auto}
+        #storefront-main .cp-claim{display:none}
+        #storefront-main .cp-grid{grid-template-columns:minmax(0,1fr) 250px}
+        #storefront-main .cp-cover-col{grid-column:1/-1; padding-left:0}
+        #storefront-main .cp-hand{display:none}
+    }
+    @media (max-width:760px){
+        #storefront-main .cp-banner-in{grid-template-columns:1fr; padding:22px 0}
+        #storefront-main .cp-sectors{flex-direction:row; flex-wrap:wrap}
+        #storefront-main .cp-feats li{border-right:0; margin-right:0; max-width:none; width:100%}
+        #storefront-main .cp-grid{grid-template-columns:1fr}
+        #storefront-main .cp-book{max-width:300px}
+        #storefront-main .cp-options{padding:18px 14px}
+    }
+
+    /* ═══ Pagina Catalogo PDF ═══ */
+    #storefront-main .cpdf-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:22px}
+    #storefront-main .cpdf-card{
+        display:flex; flex-direction:column; gap:6px; padding:22px 20px; text-decoration:none; color:inherit;
+        background:#fff; border:1px solid var(--border,#e5e7eb); border-radius:14px;
+        transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    @media (hover:hover){#storefront-main a.cpdf-card:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(15,23,42,.09); border-color:color-mix(in srgb, var(--primary) 34%, var(--border,#e5e7eb))}}
+    #storefront-main .cpdf-ico{width:44px; height:44px; display:grid; place-items:center; margin-bottom:6px; border-radius:11px;
+        background:color-mix(in srgb, var(--primary) 10%, #fff); color:var(--primary)}
+    #storefront-main .cpdf-ico svg{width:22px; height:22px}
+    #storefront-main .cpdf-card strong{font-size:16px; color:var(--text-strong,#111827)}
+    #storefront-main .cpdf-card small{font-size:13px; color:var(--muted,#64748b); line-height:1.45}
+    #storefront-main .cpdf-card em{margin-top:auto; padding-top:10px; font-style:normal; font-size:13px; font-weight:700; color:var(--primary)}
+    #storefront-main .cpdf-card select{margin-top:8px; padding:9px 10px; border:1px solid var(--border,#e5e7eb); border-radius:9px; font-size:13.5px; background:#fff}
+    #storefront-main .cpdf-card .button{margin-top:10px; text-align:center}
+    #storefront-main .cpdf-card .button.is-off{opacity:.45; cursor:not-allowed}
+    #storefront-main .cpdf-nota{margin:22px 0 0; color:var(--muted,#64748b); font-size:13.5px}
+    #storefront-main .cpdf-nota a{color:var(--primary); font-weight:600}
+    @media (max-width:1023px){#storefront-main .cpdf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:640px){#storefront-main .cpdf-grid{grid-template-columns:1fr}}
+
+    /* ═══ Promociones (tarjetas desde la tabla `promotions`) ═══
+       Misma familia visual que la tarjeta de producto: la etiqueta de la promo
+       es el unico acento. Siempre termina en "Agregar a cotizacion". */
+    #storefront-main .promo-cards-section{padding:42px 0}
+    #storefront-main .promo-cards-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px}
+    #storefront-main .promo-card{
+        display:flex; flex-direction:column; background:#fff;
+        border:1px solid var(--border,#e5e7eb); border-radius:14px; overflow:hidden;
+        transition:transform .2s ease, box-shadow .2s ease;
+    }
+    @media (hover:hover){#storefront-main .promo-card:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(15,23,42,.09)}}
+    #storefront-main .promo-card-media{position:relative; display:grid; place-items:center; height:190px; padding:12px; background:#fff}
+    #storefront-main .promo-card-media img{max-width:100%; max-height:100%; object-fit:contain}
+    #storefront-main .promo-card-noimg{color:var(--muted,#94a3b8); font-size:12px}
+    #storefront-main .promo-card-tag{
+        position:absolute; top:10px; left:10px; padding:4px 9px; border-radius:6px;
+        background:var(--primary); color:#fff; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    }
+    #storefront-main .promo-card-body{display:flex; flex-direction:column; gap:3px; padding:12px 14px 6px; flex:1}
+    #storefront-main .promo-card-brand{font-size:10.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--primary)}
+    #storefront-main .promo-card-name{
+        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+        color:var(--text-strong,#111827); font-size:14.5px; font-weight:700; line-height:1.3; text-decoration:none;
+    }
+    #storefront-main .promo-card-sku{font-size:11.5px; color:var(--muted,#64748b)}
+    #storefront-main .promo-card-desc{margin:6px 0 0; color:var(--text,#475569); font-size:12.5px; line-height:1.45}
+    #storefront-main .promo-card-actions{padding:10px 14px 14px}
+    #storefront-main .promo-card-add{
+        display:flex; align-items:center; justify-content:center; gap:7px; width:100%; min-height:42px;
+        border:0; border-radius:9px; background:var(--primary); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;
+        transition:filter .18s ease, transform .18s ease;
+    }
+    #storefront-main .promo-card-add svg{width:16px; height:16px}
+    @media (hover:hover){#storefront-main .promo-card-add:hover{filter:brightness(.93); transform:translateY(-1px)}}
+    #storefront-main .promo-cards-wrap.has-side{display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:16px; align-items:stretch}
+    #storefront-main .promo-cards-wrap.has-side .promo-cards-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    #storefront-main .promo-side{
+        position:relative; display:flex; flex-direction:column; justify-content:space-between; gap:18px; padding:22px; border-radius:14px; overflow:hidden; color:#fff;
+        background:linear-gradient(160deg, color-mix(in srgb, var(--secondary,#1c1917) 86%, #1d4ed8), var(--secondary,#1c1917));
+    }
+    #storefront-main .promo-side[style*="--side-img"]::before{content:""; position:absolute; inset:0; background:var(--side-img) center/cover no-repeat; opacity:.28}
+    #storefront-main .promo-side > *{position:relative; z-index:1}
+    #storefront-main .promo-side-copy{display:flex; flex-direction:column; gap:10px}
+    #storefront-main .promo-side-copy strong{font-family:var(--font-title); font-size:24px; font-weight:900; line-height:1.1; text-transform:uppercase; letter-spacing:.01em}
+    #storefront-main .promo-side-copy p{margin:0; font-size:13px; line-height:1.45; color:rgba(255,255,255,.85)}
+    #storefront-main .promo-side-cta{
+        display:inline-flex; align-items:center; justify-content:center; width:max-content; padding:10px 16px; border-radius:9px;
+        background:var(--primary); color:#fff; font-size:13.5px; font-weight:800; text-decoration:none; transition:filter .18s ease, transform .18s ease;
+    }
+    @media (hover:hover){#storefront-main .promo-side-cta:hover{filter:brightness(.93); transform:translateY(-1px)}}
+    #storefront-main .promo-side-list{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+    #storefront-main .promo-side-list li{display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 6px; border-radius:10px; background:rgba(255,255,255,.08); font-size:12px; font-weight:700; text-align:center}
+    #storefront-main .promo-side-ico{width:36px; height:36px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,.12); color:#fff}
+    #storefront-main .promo-side-ico svg{width:19px; height:19px}
+    @media (max-width:1023px){#storefront-main .promo-cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+        #storefront-main .promo-cards-wrap.has-side{grid-template-columns:1fr}
+        #storefront-main .promo-cards-wrap.has-side .promo-cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+        #storefront-main .promo-side{flex-direction:row; align-items:center}
+        #storefront-main .promo-side-list{flex:0 0 46%; grid-template-columns:repeat(4,minmax(0,1fr))}}
+    @media (max-width:640px){#storefront-main .promo-side{flex-direction:column; align-items:stretch}
+        #storefront-main .promo-side-list{grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px}
+        #storefront-main .promo-side-list li{padding:8px 4px; font-size:10.5px}}
+    @media (max-width:640px){#storefront-main .promo-cards-grid{gap:10px} #storefront-main .promo-card-media{height:150px}
+        #storefront-main .promo-cards-section{padding:28px 0}}
+
+    /* ═══ Resultados de busqueda ═══ */
+    #storefront-main .buscar-head{margin-bottom:6px}
+    #storefront-main .buscar-tabs{
+        display:flex; gap:4px; margin:10px 0 14px; overflow-x:auto; scrollbar-width:none;
+        border-bottom:1px solid var(--border,#e5e7eb);
+    }
+    #storefront-main .buscar-tabs::-webkit-scrollbar{display:none}
+    #storefront-main .buscar-tabs button{
+        flex:0 0 auto; position:relative; padding:10px 14px; background:none; border:0; cursor:pointer;
+        color:var(--muted,#6b7280); font-size:14px; font-weight:600;
+    }
+    #storefront-main .buscar-tabs button span{
+        margin-left:5px; padding:1px 7px; border-radius:999px;
+        background:var(--surface-soft,#f1f5f9); color:var(--muted,#64748b); font-size:11.5px; font-weight:700;
+    }
+    #storefront-main .buscar-tabs button.is-on{color:var(--primary)}
+    #storefront-main .buscar-tabs button.is-on span{background:color-mix(in srgb, var(--primary) 12%, #fff); color:var(--primary)}
+    #storefront-main .buscar-tabs button.is-on::after{
+        content:""; position:absolute; left:10px; right:10px; bottom:-1px; height:2px;
+        background:var(--primary); border-radius:2px 2px 0 0;
+    }
+    #storefront-main .buscar-tabs button:disabled{opacity:.45; cursor:default}
+    #storefront-main .buscar-grupo{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:10px}
+    #storefront-main .buscar-grupo-t{
+        flex:0 0 100%; font-size:11px; font-weight:800; letter-spacing:.08em;
+        text-transform:uppercase; color:var(--muted,#6b7280);
+    }
+    #storefront-main .buscar-chip{
+        display:inline-flex; align-items:center; gap:8px; padding:9px 13px;
+        border:1px solid var(--border,#e5e7eb); border-radius:10px; background:#fff;
+        color:var(--text,#334155); font-size:13px; text-decoration:none;
+        transition:border-color .18s ease, color .18s ease;
+    }
+    #storefront-main .buscar-chip b{color:var(--text-strong,#111827)}
+    #storefront-main .buscar-chip svg{width:14px; height:14px; color:var(--primary)}
+    @media (hover:hover){#storefront-main .buscar-chip:hover{border-color:var(--primary); color:var(--primary)}}
+    #storefront-main .buscar-nota{margin:2px 0 8px; color:var(--muted,#64748b); font-size:12.5px}
+
+    /* ═══ Pagina de marcas ═══
+       Tarjeta sobria: logo (o nombre en su lugar), rubros y conteo. Sin fondos
+       de color: la marca ya pone el suyo con su logo. */
+    #storefront-main .marcas-sub{margin:-6px 0 22px; color:var(--muted,#64748b); font-size:14.5px}
+    #storefront-main .marcas-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px}
+    #storefront-main .marca-card{
+        display:flex; flex-direction:column; min-height:100%; text-decoration:none; color:inherit;
+        background:#fff; border:1px solid var(--border,#e5e7eb); border-radius:14px; overflow:hidden;
+        transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    @media (hover:hover){
+        #storefront-main .marca-card:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(15,23,42,.09);
+            border-color:color-mix(in srgb, var(--primary) 34%, var(--border,#e5e7eb))}
+    }
+    #storefront-main .marca-card-logo{
+        height:96px; display:grid; place-items:center; padding:16px;
+        background:var(--surface-soft,#f8fafc); border-bottom:1px solid var(--border,#e5e7eb);
+    }
+    #storefront-main .marca-card-logo img{max-height:56px; max-width:150px; object-fit:contain}
+    #storefront-main .marca-card-logo span{font-size:20px; font-weight:900; letter-spacing:.02em; color:var(--text-strong,#111827)}
+    #storefront-main .marca-card-body{display:flex; flex-direction:column; gap:4px; padding:14px 16px 6px; flex:1}
+    #storefront-main .marca-card-body strong{font-size:15px; color:var(--text-strong,#111827)}
+    #storefront-main .marca-card-body small{font-size:12.5px; color:var(--muted,#64748b); line-height:1.4}
+    #storefront-main .marca-card-body em{font-style:normal; font-size:12px; color:var(--muted,#64748b); margin-top:4px}
+    #storefront-main .marca-card-cta{
+        display:flex; align-items:center; gap:6px; padding:10px 16px 14px;
+        color:var(--primary); font-size:13px; font-weight:700;
+    }
+    #storefront-main .marca-card-cta svg{width:15px; height:15px; transition:transform .18s ease}
+    @media (hover:hover){#storefront-main .marca-card:hover .marca-card-cta svg{transform:translateX(3px)}}
+    @media (max-width:1023px){#storefront-main .marcas-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media (max-width:640px){#storefront-main .marcas-grid{grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+        #storefront-main .marca-card-logo{height:76px}}
+
+    /* Cabecera de marca en la tienda (/marca/{slug}). */
+    #storefront-main .marca-head{display:flex; align-items:center; gap:18px; margin-bottom:6px}
+    #storefront-main .marca-head-logo{
+        flex:0 0 auto; width:120px; height:72px; display:grid; place-items:center; padding:10px;
+        background:#fff; border:1px solid var(--border,#e5e7eb); border-radius:12px;
+    }
+    #storefront-main .marca-head-logo img{max-height:52px; max-width:100px; object-fit:contain}
+    #storefront-main .marca-head-logo span{font-size:16px; font-weight:900; color:var(--text-strong,#111827)}
+    #storefront-main .marca-head-body p{margin:4px 0 0; color:var(--muted,#64748b); font-size:14px}
+    #storefront-main .marca-head-rubros{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+    #storefront-main .marca-head-rubros span{
+        padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600;
+        background:color-mix(in srgb, var(--primary) 9%, #fff); color:var(--primary);
+    }
+    @media (max-width:640px){#storefront-main .marca-head{gap:12px}
+        #storefront-main .marca-head-logo{width:88px; height:60px}}
+
+    /* ═══ Marca en la tarjeta ═══
+       Junto a la categoria, alineada a la derecha. El comprador de ferreteria
+       decide por marca, asi que dejarla invisible obligaba a abrir la ficha. */
+    #storefront-main .catalog-card-body{position:relative}
+    #storefront-main .catalog-card-brand{
+        float:right; margin-left:8px;
+        color:var(--primary); font-size:10.5px; font-weight:800;
+        letter-spacing:.04em; text-transform:uppercase; white-space:nowrap;
+    }
+    /* En la ficha va como sello, sobre el nombre del producto. */
+    #storefront-main .pdp-brand{
+        display:inline-block; margin-bottom:6px; padding:3px 9px;
+        background:color-mix(in srgb, var(--primary) 10%, #fff);
+        border-radius:999px; color:var(--primary);
+        font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+    }
+
+    /* ═══ Destacados del producto ═══
+       Tres razones de compra en fila, con icono. Van entre el titulo y el
+       precio porque es donde el comprador decide si sigue leyendo. */
+    #storefront-main .pdp-highlights{
+        display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:14px; margin:18px 0 4px; padding:16px 0;
+        list-style:none;
+        border-top:1px solid var(--border,#e5e7eb);
+        border-bottom:1px solid var(--border,#e5e7eb);
+    }
+    #storefront-main .pdp-highlights li{
+        display:flex; align-items:flex-start; gap:9px; min-width:0;
+    }
+    #storefront-main .pdp-highlights svg{
+        flex:0 0 19px; width:19px; height:19px; margin-top:1px;
+        color:var(--primary,#7c3aed);
+    }
+    #storefront-main .pdp-highlights span{min-width:0; display:block}
+    #storefront-main .pdp-highlights strong{
+        display:block; color:var(--text-strong,#1f2937);
+        font-size:13px; font-weight:700; line-height:1.3;
+    }
+    #storefront-main .pdp-highlights small{
+        display:block; margin-top:2px;
+        color:var(--muted,#6b7280); font-size:11.5px; line-height:1.35;
+    }
+    /* En movil bajan a una columna: tres columnas de 100px cortaban los
+       titulos a media palabra. */
+    @media (max-width:640px){
+        #storefront-main .pdp-highlights{
+            grid-template-columns:1fr; gap:11px; padding:14px 0;
+        }
+    }
+
+    /* Ficha tecnica: enlace discreto bajo los botones. No compite con
+       "Consultar" —que es la accion que buscamos— pero se ve sin cazarlo. */
+    #storefront-main .pdp-ficha{
+        display:inline-flex;align-items:center;gap:8px;margin-top:12px;
+        padding:9px 14px;border:1px solid var(--border);border-radius:9px;
+        background:var(--surface-soft);color:var(--text);
+        font-size:13px;font-weight:600;text-decoration:none;
+        transition:border-color .18s ease,color .18s ease,background .18s ease;
+    }
+    @media (hover:hover){
+        #storefront-main .pdp-ficha:hover{
+            border-color:var(--primary);color:var(--primary);background:#fff;
+        }
+    }
+    #storefront-main .pdp-ficha:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+    #storefront-main .pdp-ficha svg{flex:0 0 17px}
     #storefront-main .pdp-consult svg{width:18px;height:18px;color:#25D366}
     #storefront-main .pdp-stock-low{padding:0!important;margin:10px 0 0!important;background:none!important;
         border:0!important;color:var(--muted)!important;font-size:13px!important;font-weight:600!important}
@@ -3832,6 +5057,35 @@
     #storefront-main .premium-hero.has-bg::before{content:'';position:absolute;inset:0;z-index:1;
         background:linear-gradient(100deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.80) 34%,rgba(255,255,255,.30) 56%,rgba(255,255,255,0) 74%);
         pointer-events:none}
+    /* El botón secundario iba en blanco translúcido: sobre el velo claro no se veía. */
+    #storefront-main .premium-hero.has-bg .hero-actions .button-ghost{color:var(--text-strong,#1d2b2a)!important;border:1.5px solid var(--text-strong,#1d2b2a)!important;background:rgba(255,255,255,.55)!important}
+    #storefront-main .premium-hero.has-bg .hero-actions .button-ghost:hover{background:#fff!important}
+    /* Texto claro sobre velo oscuro (hero_text_scheme=oscuro): para fotos
+       oscuras o marcas que quieren el hero en su color secundario, como la
+       referencia de GABDE. El velo sale del color secundario de la tienda. */
+    #storefront-main .premium-hero.has-bg.hero-oscuro::before{background:linear-gradient(100deg,
+        color-mix(in srgb,var(--secondary,#0f172a) 94%,transparent) 0%,
+        color-mix(in srgb,var(--secondary,#0f172a) 84%,transparent) 36%,
+        color-mix(in srgb,var(--secondary,#0f172a) 42%,transparent) 58%,
+        transparent 78%)}
+    #storefront-main .premium-hero.has-bg.hero-oscuro .ph-title,
+    #storefront-main .premium-hero.has-bg.hero-oscuro .ph-sub{color:#fff!important}
+    #storefront-main .premium-hero.has-bg.hero-oscuro .ph-sub{opacity:.9}
+    #storefront-main .premium-hero.has-bg.hero-oscuro .ph-hl{color:var(--primary)}
+    #storefront-main .premium-hero.has-bg.hero-oscuro .hero-actions .button-ghost{color:#fff!important;border:1.5px solid rgba(255,255,255,.75)!important;background:rgba(255,255,255,.08)!important}
+    #storefront-main .premium-hero.has-bg.hero-oscuro .hero-actions .button-ghost:hover{background:rgba(255,255,255,.18)!important}
+    @media(max-width:760px){
+        #storefront-main .premium-hero.has-bg.hero-oscuro::before{background:linear-gradient(180deg,
+            color-mix(in srgb,var(--secondary,#0f172a) 55%,transparent) 0%,
+            color-mix(in srgb,var(--secondary,#0f172a) 86%,transparent) 55%,
+            color-mix(in srgb,var(--secondary,#0f172a) 96%,transparent) 100%)}
+    }
+    /* Alto segun la foto (hero_height=foto): la imagen entera, sin recortes. */
+    @media(min-width:761px){
+        #storefront-main .premium-hero.has-bg.hero-foto,
+        body.section-preset-commerce .premium-hero.has-bg.hero-foto{min-height:0!important;max-height:none!important;height:auto!important;aspect-ratio:var(--hero-ratio)!important}
+        #storefront-main .premium-hero.has-bg.hero-foto .ph-picture img{object-fit:cover}
+    }
     #storefront-main .premium-hero.has-bg .container,
     #storefront-main .premium-hero.has-bg .ph-copy{position:relative;z-index:2}
     #storefront-main .premium-hero.has-bg .ph-title,
@@ -3873,18 +5127,36 @@
        Sube de tamaño, se aprieta el interletrado y el precio tachado se
        encoge: la comparación se entiende antes si uno de los dos pesa más. */
     #storefront-main .catalog-card-price,#storefront-main .buy-auto-price{
-        font-size:23px!important;font-weight:800!important;letter-spacing:-.02em!important;
-        color:var(--text-strong,#0f172a)!important;line-height:1.05}
+        font-size:18px!important;font-weight:800!important;letter-spacing:-.02em!important;
+        color:var(--text-strong,#0f172a)!important;line-height:1.15}
     #storefront-main .catalog-card-compare{font-size:12.5px!important;opacity:.75}
     #storefront-main .pdp-price{font-size:34px!important;letter-spacing:-.025em!important}
-    @media(max-width:760px){#storefront-main .catalog-card-price{font-size:19px!important}}
+    @media(max-width:760px){#storefront-main .catalog-card-price{font-size:16px!important}}
     /* El importe del carrito, que es el precio que se vigila mientras compra. */
     .hpx-cart-total{font-size:16px!important;font-weight:800!important}
     /* Precios: una sola escala en toda la tienda (tarjeta, ficha, carrito). */
     /* 23px, no 20: esta regla iba después de la que sube el precio y la anulaba.
        El precio es el dato que el comprador busca en la tarjeta. */
-    #storefront-main .catalog-card-price,#storefront-main .buy-auto-price{font-size:23px!important;font-weight:800!important;letter-spacing:-.02em!important}
-    @media(max-width:760px){#storefront-main .catalog-card-price,#storefront-main .buy-auto-price{font-size:19px!important}}
+    /* ═══ Precio a solicitud con etiqueta ═══
+       La plantilla lo pintaba como pildora gris con un punto delante. Se pasa
+       al color de la tienda y el punto se sustituye por un icono de etiqueta,
+       que es lo que el dato significa. El icono va con `mask` sobre
+       `currentColor` para que siga al color de cada tienda sin tocar el
+       marcado: el mismo texto se pinta desde cuatro sitios distintos. */
+    #storefront-main .quote-price{
+        display:inline-flex!important; align-items:center; gap:7px;
+        padding:0!important; background:none!important; border:0!important;
+        color:var(--primary)!important; font-weight:800!important; letter-spacing:-.02em;
+    }
+    #storefront-main .quote-price::before{
+        content:''!important; display:block!important; flex:0 0 16px;
+        width:16px!important; height:16px!important;
+        background:currentColor!important; border-radius:0!important; opacity:1!important;
+        -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z'/%3E%3Ccircle cx='7' cy='7' r='1.4'/%3E%3C/svg%3E") center/contain no-repeat;
+                mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z'/%3E%3Ccircle cx='7' cy='7' r='1.4'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+    #storefront-main .catalog-card-price,#storefront-main .buy-auto-price{font-size:18px!important;font-weight:800!important;letter-spacing:-.02em!important}
+    @media(max-width:760px){#storefront-main .catalog-card-price,#storefront-main .buy-auto-price{font-size:16px!important}}
     #storefront-main .pdp-price{font-size:30px!important;font-weight:800!important;letter-spacing:-.01em}
     #storefront-main .catalog-card-compare,#storefront-main .pdp-compare{font-size:13px!important;font-weight:600!important}
     #storefront-main .buy-price{font-size:14px!important;font-weight:700!important}
@@ -3902,6 +5174,28 @@
        3 tarjetas de 297x618, demasiado grandes para leer una coleccion. */
     #storefront-main .catalog-product-grid{grid-template-columns:repeat(var(--columns,4),minmax(0,1fr))!important}
     @media(max-width:1240px){#storefront-main .catalog-product-grid{grid-template-columns:repeat(min(var(--columns,4),3),minmax(0,1fr))!important}}
+    /* De 1023px hacia abajo, DOS columnas. La regla anterior topaba en tres y no
+       bajaba nunca de ahi: en una tablet de 768px entraban tres tarjetas de
+       ~230px y el nombre se partia en dos lineas en casi todas. */
+    @media(max-width:1023px){#storefront-main .catalog-product-grid{grid-template-columns:repeat(min(var(--columns,4),2),minmax(0,1fr))!important}}
+    /* En movil la tarjeta baja de 160px de ancho: con el cuerpo de escritorio el
+       nombre se cortaba en la primera palabra y "Precio a solicitud" ocupaba dos
+       renglones. Estas medidas llevan !important porque el bloque de arriba
+       tambien lo lleva y si no, no se aplican. */
+    @media(max-width:640px){
+        #storefront-main .catalog-card-body{padding:11px 11px 0!important}
+        #storefront-main .catalog-card-name{font-size:13.5px!important;min-height:calc(2 * 1.3 * 13.5px);margin-bottom:9px}
+        #storefront-main .catalog-card-category{font-size:10px!important;margin-bottom:4px}
+        #storefront-main .catalog-card-price{font-size:13px!important}
+        #storefront-main .catalog-card-prices .quote-price{font-size:13px!important}
+        #storefront-main .catalog-card-prices{margin-bottom:10px}
+    }
+    @media(max-width:400px){
+        #storefront-main .catalog-card-body{padding:9px 9px 0!important}
+        #storefront-main .catalog-card-name{font-size:12.5px!important;min-height:calc(2 * 1.3 * 12.5px)}
+        #storefront-main .catalog-card-price,
+        #storefront-main .catalog-card-prices .quote-price{font-size:12.5px!important}
+    }
     @media(max-width:760px){#storefront-main .pf-grid,#storefront-main .catalog-product-grid,
         #storefront-main .special-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     /* La cabecera de seccion gastaba 117px para dos lineas. */
@@ -3987,6 +5281,11 @@
     .mobile-nav-profiles a.is-active{color:#fff;background:var(--primary)}
     @media(max-width:900px){.profile-switch{display:none}}
     </style>
+    <x-analytics-tags :settings="$settings" />
+    <x-storefront-motion :settings="$settings" />
+    @include('public.templates.partials.computienda-card-styles')
+    @include('public.templates.partials.computienda-hero-veil')
+    @include('public.templates.partials.computienda-nosotros')
 </head>
 @php
     // Clases del preset de encabezado (tamaño del buscador y ajustes por modelo)
@@ -3998,6 +5297,37 @@
 <body x-data="professionalStore()" x-init="init()" :class="{'ck-focus': checkoutOpen}"
       @if(!empty($profileTint)) style="--profile-tint:{{ $profileTint }}" @endif
       class="section-preset-{{ $sectionPreset }} section-spacing-{{ $sectionSpacing }} section-heading-{{ $sectionHeadingAlign }} section-bg-{{ $sectionBackgroundMode }} {{ $sectionShowDividers ? 'section-dividers' : 'section-no-dividers' }} {{ $sectionCardShadow ? 'section-card-shadows' : 'section-no-shadows' }} featured-view-{{ $featuredProductsView }} catalog-view-{{ $catalogProductsView }} {{ $themeBodyClass }} cards-{{ $productCardStyle }} nophoto-{{ $cardsSinFoto }} cardwa-{{ $pcWaStyle }} sechead-{{ $estiloTituloSeccion }} ticker-{{ in_array($settings['ticker_position'] ?? 'fija', ['fija','pie'], true) ? ($settings['ticker_position'] ?? 'fija') : 'fija' }} {{ ($settings['hero_edges'] ?? 'redondeado') === 'recto' ? 'hero-recto' : '' }} {{ !empty($activeProfile) ? 'perfil-activo' : '' }} {{ $hpBodyClass }}">
+    {{-- Una foto cuyo servidor murio (URL externa caida, archivo borrado) no
+         debe enseñar el icono roto del navegador ni un bloque negro: el
+         contenedor pasa al mismo estado visual que un producto sin foto. El
+         listener va en captura y ANTES de las imagenes para no perder los
+         errores que ocurren durante el parseo. --}}
+    <div class="bx-progreso" aria-hidden="true"></div>
+
+    <style>
+      .img-caida{background:linear-gradient(140deg,color-mix(in srgb,var(--primary) 9%,#fff),color-mix(in srgb,var(--primary) 3%,#fff))!important}
+      .img-caida img,.img-caida picture{display:none!important}
+    </style>
+    <script>
+      (function(){
+        function caida(img){
+          // La imagen del visor ampliado (lupa) se vacia al cerrarlo y eso dispara
+          // `error`; ocultarla aqui la dejaba invisible para siempre en la
+          // siguiente apertura. No es una imagen caida: se ignora.
+          if (img.closest('.cpt-lb')) return;
+          var c = img.closest('.catalog-card-media,.home-cat-media,.qv-media,.pf-media,.hc-circle,.ph-shot,.ph-float,.hero-art');
+          if (c) c.classList.add('img-caida'); else img.style.visibility = 'hidden';
+        }
+        document.addEventListener('error', function(e){
+          if (e.target && e.target.tagName === 'IMG') caida(e.target);
+        }, true);
+        document.addEventListener('DOMContentLoaded', function(){
+          document.querySelectorAll('img').forEach(function(img){
+            if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) caida(img);
+          });
+        });
+      })();
+    </script>
     {{-- CABECERA: variante estructural (F1). classic = markup original extraído --}}
     {{-- Variables de navegación compartidas (header + menú móvil) --}}
     @php
@@ -4112,6 +5442,8 @@
             $hpHeaderView = view()->exists($hpCandidate) ? $hpCandidate : null;
         }
     @endphp
+    {{-- Iconos de categoria disponibles para la cabecera (megamenu). --}}
+    @include('storefront.partials.iconos-categoria')
     @include($hpHeaderView ?? \App\Support\StorefrontLayoutPacks::view($settings, 'headers') ?? 'storefront.partials.headers.classic')
     @if($hpKey)
         @includeIf('storefront.partials.nav.preset-modules')
@@ -4139,10 +5471,22 @@
             $heroKb     = $pickBy(['teclado','keyboard','mecánico','mecanico']) ?: $pool->get(3);
             $heroMain   = $heroImage ?: $heroLaptop?->main_image_url;
         @endphp
+        @php
+            // hero_height = "foto": el alto sigue la proporcion de la primera foto y
+            // se ve completa a cualquier ancho (con alto fijo se recortaba arriba
+            // y abajo en pantallas anchas). Solo en escritorio; en movil manda el
+            // alto movil porque a 390 px la foto entera mide 160 px.
+            $heroRatio = null;
+            if (($settings['hero_height'] ?? '') === 'foto') {
+                $hrRel = preg_replace('#^storage/#', '', trim((string) ($settings['hero_image'] ?? '')));
+                $hrLocal = $hrRel !== '' && !preg_match('#^(https?:)?//#i', $hrRel) ? \Illuminate\Support\Facades\Storage::disk('public')->path($hrRel) : null;
+                if ($hrLocal && is_file($hrLocal) && ($hrDim = @getimagesize($hrLocal)) && !empty($hrDim[1])) $heroRatio = $hrDim[0].' / '.$hrDim[1];
+            }
+        @endphp
         @if($isHomeSectionVisible('hero') && count($heroSlides))
         {{-- Slider profesional configurable por diapositiva. --}}
-        <section class="premium-hero has-bg" id="storefront-hero" data-store-native-section="hero"
-                 style="--hero-desktop-h:{{ $heroMinH }}px;--hero-mobile-h:{{ $heroMobileHeight }}px;order:{{ $sectionOrder('hero') }}"
+        <section class="premium-hero has-bg{{ $heroRatio ? ' hero-foto' : '' }}{{ ($settings['hero_text_scheme'] ?? 'auto') === 'oscuro' ? ' hero-oscuro' : '' }}" id="storefront-hero" data-store-native-section="hero"
+                 style="--hero-desktop-h:{{ $heroMinH }}px;--hero-mobile-h:{{ $heroMobileHeight }}px;order:{{ $sectionOrder('hero') }}{{ $heroRatio ? ';--hero-ratio:'.$heroRatio : '' }}"
                  x-data="{ s:0, n:{{ count($heroSlides) }}, dur:{{ $heroDuration }}, autoplay:{{ $heroAutoplay ? 'true' : 'false' }}, pauseHover:{{ $heroPauseHover ? 'true' : 'false' }}, timer:null,
                     go(i){ this.s=(i+this.n)%this.n; this.restart(); }, next(){ this.go(this.s+1); }, prev(){ this.go(this.s-1); },
                     stop(){ clearInterval(this.timer); this.timer=null; }, restart(){ this.stop(); if(!this.autoplay || this.n<2) return; this.timer=setInterval(()=>this.next(),this.dur); }
@@ -4174,14 +5518,14 @@
                         {{-- Solo la primera diapositiva declara el h1: las demas son titulos visuales.
                              Con un h1 por diapositiva la pagina anunciaba 6 titulos principales. --}}
                         @if($sl['title'] ?: $heroTitle)
-                            @if($i === 0)<h1 class="ph-title">{{ $sl['title'] ?: $heroTitle }}</h1>
+                            @if($i === 0)<h1 class="ph-title">{!! $heroTitleHtml($sl['title'] ?: $heroTitle) !!}</h1>
                             @else<p class="ph-title" role="heading" aria-level="2">{{ $sl['title'] ?: $heroTitle }}</p>@endif
                         @endif
                         @if($sl['sub'] ?: $heroSubtitle)<p class="ph-sub">{{ $sl['sub'] ?: $heroSubtitle }}</p>@endif
                         @if(($sl['cta1Show'] && $sl['cta1Text']) || ($sl['cta2Show'] && $sl['cta2Text'] && $sl['cta2Url']))
                         <div class="hero-actions">
-                            @if($sl['cta1Show'] && $sl['cta1Text'])<a class="button button-primary" href="{{ $sl['cta1Url'] ?: '#catalogo' }}">{{ $sl['cta1Text'] }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
-                            @if($sl['cta2Show'] && $sl['cta2Text'] && $sl['cta2Url'])<a class="button button-ghost" href="{{ $sl['cta2Url'] }}" @if(str_starts_with($sl['cta2Url'],'http')) target="_blank" rel="noopener" @endif>{{ $sl['cta2Text'] }}</a>@endif
+                            @if($sl['cta1Show'] && $sl['cta1Text'])<a class="button button-primary" data-rotulo-fijo href="{{ $sl['cta1Url'] ?: '#catalogo' }}">{{ $sl['cta1Text'] }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
+                            @if($sl['cta2Show'] && $sl['cta2Text'] && $sl['cta2Url'])<a class="button button-ghost" data-rotulo-fijo href="{{ $sl['cta2Url'] }}" @if(str_starts_with($sl['cta2Url'],'http')) target="_blank" rel="noopener" @endif>{{ $sl['cta2Text'] }}</a>@endif
                         </div>
                         @endif
                     </div>
@@ -4201,20 +5545,20 @@
         </section>
         @elseif($isHomeSectionVisible('hero'))
         {{-- Sin imágenes cargadas: hero con composición de productos (fallback) --}}
-        <section class="premium-hero {{ $heroNoImageStyle === 'typographic' ? 'is-typographic' : '' }}" id="storefront-hero" data-store-native-section="hero" style="order:{{ $sectionOrder('hero') }}">
+        <section class="premium-hero is-{{ $heroNoImageStyle }}" id="storefront-hero" data-store-native-section="hero" style="order:{{ $sectionOrder('hero') }}">
             <div class="premium-hero-bg" aria-hidden="true"><span class="ph-glow ph-glow-1"></span><span class="ph-glow ph-glow-2"></span><span class="ph-grid"></span><span class="ph-line ph-line-1"></span><span class="ph-line ph-line-2"></span></div>
             <div class="container premium-hero-inner">
                 @if($heroShowContent)
                 <div class="premium-hero-copy">
                     @if(trim($heroBadge) !== '')<span class="ph-eyebrow">{{ $heroBadge }}</span>@endif
-                    <h1 class="ph-title">{{ $heroTitle }}</h1>
+                    <h1 class="ph-title">{!! $heroTitleHtml($heroTitle) !!}</h1>
                     <p class="ph-sub">{{ $heroSubtitle }}</p>
                     <div class="hero-actions">
-                        @if($heroCtaVisible)<a class="button button-primary" href="{{ trim($settings['hero_slide_1_cta1_url'] ?? '') ?: '#catalogo' }}">{{ $heroCta }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
+                        @if($heroCtaVisible)<a class="button button-primary" data-rotulo-fijo href="{{ trim($settings['hero_slide_1_cta1_url'] ?? '') ?: '#catalogo' }}">{{ $heroCta }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
                         {{-- CTA secundario: enlace propio si está configurado; si no, WhatsApp --}}
                         @php $heroCta2Url = trim($settings['hero_slide_1_cta2_url'] ?? ''); @endphp
                         @if($contactCtaVisible && ($heroCta2Url !== '' || $whatsapp))
-                        <a class="button button-ghost" href="{{ $heroCta2Url ?: 'https://wa.me/'.$whatsapp }}" @if($heroCta2Url === '') target="_blank" rel="noopener" @endif>
+                        <a class="button button-ghost" data-rotulo-fijo href="{{ $heroCta2Url ?: 'https://wa.me/'.$whatsapp }}" @if($heroCta2Url === '') target="_blank" rel="noopener" @endif>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V4h9l8.6 8.6a1.4 1.4 0 0 1 0 2Z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg>{{ $contactCta }}
                         </a>
                         @endif
@@ -4226,7 +5570,31 @@
                 <button type="button" class="ph-arrow ph-arrow-prev" aria-label="Anterior" @click="heroPrev && heroPrev()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 6-6 6 6 6"/></svg></button>
                 <button type="button" class="ph-arrow ph-arrow-next" aria-label="Siguiente" @click="heroNext && heroNext()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
                 @endif
-                @if($heroNoImageStyle !== 'typographic')
+                @if($heroNoImageStyle === 'panel')
+                {{-- Panel lateral: una frase de posicionamiento y cuatro garantias con
+                     icono. Ocupa el sitio de la foto mientras no la haya; todo sale
+                     de ajustes hero_panel_* (constructor > Portada > Hero). --}}
+                @php
+                    $hpTitle = trim((string) ($settings['hero_panel_title'] ?? ''));
+                    $hpItems = [];
+                    foreach (range(1, 4) as $n) {
+                        $t = trim((string) ($settings["hero_panel_item_{$n}"] ?? ''));
+                        if ($t !== '') $hpItems[] = ['text' => $t, 'icon' => $settings["hero_panel_icon_{$n}"] ?? ''];
+                    }
+                @endphp
+                @if($hpTitle !== '' || $hpItems)
+                <aside class="ph-panel" aria-label="Por qué elegirnos">
+                    @if($hpTitle !== '')<div class="ph-panel-claim"><strong>{{ $hpTitle }}</strong></div>@endif
+                    @if($hpItems)
+                    <ul class="ph-panel-list">
+                        @foreach($hpItems as $it)
+                        <li><span class="ph-panel-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $bxIconoPara($it['icon'], $it['text']) !!}</svg></span><span>{{ $it['text'] }}</span></li>
+                        @endforeach
+                    </ul>
+                    @endif
+                </aside>
+                @endif
+                @elseif($heroNoImageStyle !== 'typographic')
                 <div class="premium-hero-visual" aria-hidden="true">
                     @if($heroMain)
                     <div class="ph-stage">
@@ -4239,6 +5607,90 @@
                     @endif
                 </div>
                 @endif
+            </div>
+        </section>
+        @endif
+
+        @php
+            // Promociones vigentes ligadas a un producto publicado. Salen de la tabla
+            // `promotions` (las administra el panel), no del slider de la portada.
+            $promoCards = \App\Models\Promotion::where('project_id', $project->id)->vigentes()
+                ->where('applies_to', 'product')->whereNotNull('applies_to_id')
+                ->with(['producto' => fn ($q) => $q->where('is_available', true)->with(['mainImage', 'marca', 'category'])])
+                ->orderByDesc('id')->get()->filter(fn ($pr) => $pr->producto)->values();
+        @endphp
+        @if($isHomeSectionVisible('promo_cards') && $promoCards->isNotEmpty())
+        <section class="promo-cards-section" data-store-native-section="promo_cards" style="order:{{ $sectionOrder('promo_cards') }}" aria-label="Promociones del mes">
+            <div class="container">
+                <div class="home-section-head">
+                    <div class="home-section-copy">
+                        <h2>{{ $settings['promo_cards_title'] ?? 'Promociones del mes' }}</h2>
+                        @if(!empty($settings['promo_cards_subtitle']))<p>{{ $settings['promo_cards_subtitle'] }}</p>@endif
+                    </div>
+                    <a href="{{ \App\Support\StorefrontNavigation::publicUrl($project) }}/promociones" class="home-see-all">Ver todas <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                </div>
+                @php
+                    // Tarjeta lateral: un mensaje de marca con boton y cuatro sectores con
+                    // icono. Con ella, tres promociones por fila; sin ella, cuatro.
+                    $pcSide = ($settings['promo_cards_side_card'] ?? '0') === '1';
+                    $pcSideItems = [];
+                    foreach (range(1, 4) as $n) {
+                        $t = trim((string) ($settings["promo_cards_side_item_{$n}"] ?? ''));
+                        if ($t !== '') $pcSideItems[] = ['text' => $t, 'icon' => $settings["promo_cards_side_icon_{$n}"] ?? ''];
+                    }
+                    $pcSideImg = $pcSide ? $assetUrl($settings['promo_cards_side_image'] ?? null) : null;
+                    $pcSideUrl = trim((string) ($settings['promo_cards_side_url'] ?? '')) ?: $shopUrl;
+                    $promoCardsHome = $promoCards;
+                    $promoCards = $promoCards->take((int) ($settings['promo_cards_limit'] ?? ($pcSide ? 3 : 4)));
+                @endphp
+                <div class="promo-cards-wrap{{ $pcSide ? ' has-side' : '' }}">
+                <div class="promo-cards-grid">
+                    @foreach($promoCards as $pr)
+                    @php
+                        $pp = $pr->producto;
+                        $ppImg = $pr->image_url ? $assetUrl($pr->image_url) : \App\Support\ImageVariants::webp($pp->main_image_url);
+                        $ppUrl = \App\Support\ImageVariants::productUrl($project, $pp->id, $pp->name);
+                        $ppEtq = $pr->label ?: ($pr->type === 'percentage' && $pr->value > 0 ? '-'.rtrim(rtrim(number_format((float) $pr->value, 2), '0'), '.').'%' : 'Promoción');
+                    @endphp
+                    <article class="promo-card">
+                        <a class="promo-card-media" href="{{ $ppUrl }}" aria-label="Ver {{ $pp->name }}">
+                            <span class="promo-card-tag">{{ $ppEtq }}</span>
+                            @if($ppImg)<img src="{{ $ppImg }}" alt="{{ $pp->name }}" loading="lazy">@else<span class="promo-card-noimg">Sin foto</span>@endif
+                        </a>
+                        <div class="promo-card-body">
+                            @if($pp->marca?->label)<span class="promo-card-brand">{{ $pp->marca->label }}</span>@endif
+                            <a class="promo-card-name" href="{{ $ppUrl }}">{{ $pp->name }}</a>
+                            @if($pp->sku)<span class="promo-card-sku">Código: {{ $pp->sku }}</span>@endif
+                            @if($pr->description)<p class="promo-card-desc">{{ $pr->description }}</p>@endif
+                        </div>
+                        <div class="promo-card-actions">
+                            <button type="button" class="promo-card-add"
+                                    @click="add({{ $pp->id }},{{ Js::from($pp->name) }},{{ (float) $pp->price }},{{ Js::from($ppImg ?: '') }},{{ Js::from($pp->category?->name ?? '') }},'',0,0,null,{sku:{{ Js::from($pp->sku) }},marca:{{ Js::from($pp->marca?->label) }},unidad:{{ Js::from($pp->unit) }}})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                {{ $isQuoteOnly ? 'Agregar a cotización' : ($settings['btn_cart_text'] ?? 'Agregar') }}
+                            </button>
+                        </div>
+                    </article>
+                    @endforeach
+                </div>
+                @if($pcSide)
+                <aside class="promo-side" @if($pcSideImg) style="--side-img:url('{{ $pcSideImg }}')" @endif>
+                    <div class="promo-side-copy">
+                        @if(filled($settings['promo_cards_side_title'] ?? null))<strong>{{ $settings['promo_cards_side_title'] }}</strong>@endif
+                        @if(filled($settings['promo_cards_side_text'] ?? null))<p>{{ $settings['promo_cards_side_text'] }}</p>@endif
+                        @if(filled($settings['promo_cards_side_cta'] ?? null))<a class="promo-side-cta" href="{{ $pcSideUrl }}">{{ $settings['promo_cards_side_cta'] }}</a>@endif
+                    </div>
+                    @if($pcSideItems)
+                    <ul class="promo-side-list">
+                        @foreach($pcSideItems as $it)
+                        <li><span class="promo-side-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $bxIconoPara($it['icon'], $it['text']) !!}</svg></span><span>{{ $it['text'] }}</span></li>
+                        @endforeach
+                    </ul>
+                    @endif
+                </aside>
+                @endif
+                </div>
+                @php $promoCards = $promoCardsHome; @endphp
             </div>
         </section>
         @endif
@@ -4357,9 +5809,25 @@
                 'decoracion' => '<path d="M12 3l2.6 5.6L20 9.4l-4 4.1.9 5.9-4.9-2.8-4.9 2.8.9-5.9-4-4.1 5.4-.8z"></path>',
                 'bano' => '<path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"></path><path d="M7 12V6a2 2 0 0 1 4 0"></path><path d="M7 19l-1 2M17 19l1 2"></path>',
                 'organizacion' => '<rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M3 15h18M9 3v18"></path>',
+                /* Rubro eléctrico y ferretero. Sin estos, una ferretería veía
+                   el mismo cuadrado gris en Cable, Cinta, Llaves y Toma: cuatro
+                   categorías distintas con el icono de "no sé qué eres". */
+                'tomacorriente' => '<rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="10" r="1.3"></circle><circle cx="15" cy="10" r="1.3"></circle><path d="M8 16h8"></path>',
+                'interruptor' => '<rect x="6" y="2" width="12" height="20" rx="2.5"></rect><path d="M9.5 8h5v8h-5z"></path>',
+                'llave-termica' => '<rect x="7" y="3" width="10" height="18" rx="1.5"></rect><path d="M12 7v4l-2.5 2.5H12"></path><path d="M4 12h3M17 12h3"></path>',
+                'cinta-aislante' => '<circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v4M12 16.5v4"></path>',
+                'tuberia' => '<path d="M3 8h9a3 3 0 0 1 3 3v2a3 3 0 0 0 3 3h3"></path><path d="M3 5v6M21 13v6"></path>',
+                'disco-corte' => '<circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="2"></circle><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"></path>',
+                'herramienta' => '<path d="M14.5 5.5a4 4 0 0 0 5.2 5.2L21 12l-9 9-3-3 9-9z"></path><path d="M6 18l-2 2"></path>',
             ];
             $autoCategoryIcon = static function ($name) {
                 $name = mb_strtolower($name ?? '');
+                if (str_contains($name, 'conductor')) return 'cable';
+                if (str_contains($name, 'canaliz') || str_contains($name, 'conduit')) return 'tuberia';
+                if (str_contains($name, 'ilumin') || str_contains($name, 'foco') || str_contains($name, 'luz')) return 'lampara';
+                if (str_contains($name, 'protecc')) return 'llave-termica';
+                if (str_contains($name, 'herramient') || str_contains($name, 'abrasiv')) return 'herramienta';
+                if (str_contains($name, 'seguridad') || str_contains($name, 'epp')) return 'herramienta';
                 if (str_contains($name, 'laptop')) return 'laptop';
                 if (str_contains($name, 'impres')) return 'impresora';
                 if (str_contains($name, 'seguridad')) return 'camera-security';
@@ -4390,6 +5858,16 @@
                 if (str_contains($name, 'decor') || str_contains($name, 'adorno')) return 'decoracion';
                 if (str_contains($name, 'baño') || str_contains($name, 'bano')) return 'bano';
                 if (str_contains($name, 'organiz') || str_contains($name, 'almacenamiento')) return 'organizacion';
+                /* Eléctrico y ferretero. Va al final para no pisar reglas de
+                   arriba: "cable" ya lo resuelve la de cómputo, e "iluminación"
+                   la de lámpara. */
+                if (str_contains($name, 'tomacorriente') || str_contains($name, 'enchufe') || str_contains($name, 'toma')) return 'tomacorriente';
+                if (str_contains($name, 'interruptor') || str_contains($name, 'dimmer')) return 'interruptor';
+                if (str_contains($name, 'llave') || str_contains($name, 'termomagn') || str_contains($name, 'diferencial') || str_contains($name, 'protecc')) return 'llave-termica';
+                if (str_contains($name, 'cinta') || str_contains($name, 'aislan') || str_contains($name, 'teip')) return 'cinta-aislante';
+                if (str_contains($name, 'tuber') || str_contains($name, 'conduit') || str_contains($name, 'tubo') || str_contains($name, 'canaleta')) return 'tuberia';
+                if (str_contains($name, 'disco') || str_contains($name, 'abrasiv') || str_contains($name, 'corte')) return 'disco-corte';
+                if (str_contains($name, 'herramient') || str_contains($name, 'ferret')) return 'herramienta';
                 return 'default';
             };
 
@@ -4475,6 +5953,55 @@
                     @endif
                 </div>
 
+                @elseif($featuredCatsStyle === 'tiles')
+                {{-- Iconos limpios en fila + tarjeta lateral de promociones. Pensado
+                     para catálogos técnicos: el icono se lee más rápido que una foto
+                     de producto y todas las tarjetas quedan iguales. --}}
+                @php
+                    $tilesPromo = ($settings['featured_categories_promo_card'] ?? '1') !== '0'
+                        && isset($promoCards) && $promoCards->isNotEmpty();
+                    $tilesPromoImg = $assetUrl($settings['featured_categories_promo_image'] ?? null);
+                @endphp
+                @unless($introActive('categories'))
+                <div class="home-section-head">
+                    <div class="home-section-copy"><h2>{{ $featuredCatsTitle }}</h2>@if(filled($featuredCatsSubtitle ?? null))<p>{{ $featuredCatsSubtitle }}</p>@endif</div>
+                    <a href="{{ $shopUrl }}" class="home-see-all">{{ $settings['featured_categories_all_text'] ?? 'Ver todas' }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                </div>
+                @endunless
+                <div class="hc-tiles-wrap{{ $tilesPromo ? ' has-promo' : '' }}">
+                    <div class="hc-tiles">
+                        @foreach($featuredCategoryItems as $item)
+                        @php
+                            $cat = $item['model'];
+                            $tIconKey = $item['icon'] && isset($categoryIconPaths[$item['icon']]) ? $item['icon'] : $autoCategoryIcon($cat->name);
+                            $tImg = ($settings['featured_categories_tiles_media'] ?? 'icon') === 'image' ? $assetUrl($item['image'] ?? null) : null;
+                        @endphp
+                        <a href="{{ \App\Support\StorefrontNavigation::categoryUrl($project, $cat->id) }}" class="hc-tile">
+                            <span class="hc-tile-ico{{ $tImg ? ' has-img' : '' }}">
+                                @if($tImg)
+                                    <img src="{{ \App\Support\ImageVariants::webp($tImg) }}" alt="" loading="lazy" decoding="async">
+                                @elseif(filled($settings['caticon_'.$cat->id] ?? null))
+                                    {!! $settings['caticon_'.$cat->id] !!}
+                                @else
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $categoryIconPaths[$tIconKey] ?? $categoryIconPaths['default'] !!}</svg>
+                                @endif
+                            </span>
+                            <strong>{{ $cat->name }}</strong>
+                            @if($featuredCatsShowCount)<small>{{ $item['count'] }} {{ $item['count'] === 1 ? 'producto' : 'productos' }}</small>@endif
+                        </a>
+                        @endforeach
+                    </div>
+                    @if($tilesPromo)
+                    <a class="hc-promo-card" href="{{ \App\Support\StorefrontNavigation::publicUrl($project) }}/promociones" @if($tilesPromoImg) style="--promo-img:url('{{ $tilesPromoImg }}')" @endif>
+                        <span class="hc-promo-copy">
+                            <strong>{{ $settings['featured_categories_promo_title'] ?? 'Promociones del mes' }}</strong>
+                            @if(filled($settings['featured_categories_promo_text'] ?? null))<small>{{ $settings['featured_categories_promo_text'] }}</small>@endif
+                            <em>{{ $settings['featured_categories_promo_cta'] ?? 'Ver promociones' }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></em>
+                        </span>
+                    </a>
+                    @endif
+                </div>
+
                 @elseif($featuredCatsStyle === 'editorial')
                 {{-- Tarjetas fotográficas altas con etiqueta y punto de acento --}}
 @unless($introActive('categories'))                <div class="home-section-head"><div class="home-section-copy"><h2>{{ $featuredCatsTitle }}<span class="hc-dot">.</span></h2></div></div>@endunless
@@ -4489,7 +6016,7 @@
                 </div>
                 @endif
 
-                @if(!in_array($featuredCatsStyle, ['showcase','circles','carousel','editorial'], true))
+                @if(!in_array($featuredCatsStyle, ['showcase','circles','carousel','editorial','tiles'], true))
                 @unless($introActive('categories'))
                 <div class="home-section-head">
                     <div class="home-section-copy">
@@ -4836,11 +6363,28 @@
                 </div>
                 <a href="{{ $shopUrl }}" class="pf-seeall">Ver toda la tienda<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>
             </div>@endunless
+            @if($featuredProductsView === 'carousel')
+            <div class="pf-carrusel" data-pf-carrusel data-seg="{{ $pfCarruselSeg }}">
+                <button type="button" class="pf-flecha izq" aria-label="Anteriores" data-pf-ir="-1">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <button type="button" class="pf-flecha der" aria-label="Siguientes" data-pf-ir="1">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+                <div class="pf-grid" data-pf-pista>
+                    @foreach($homeFeatured as $product)
+                    @include('public.templates.partials.computienda-card', ['p' => $product])
+                    @endforeach
+                </div>
+                <div class="pf-puntos" data-pf-puntos></div>
+            </div>
+            @else
             <div class="pf-grid">
                 @foreach($homeFeatured as $product)
                 @include('public.templates.partials.computienda-card', ['p' => $product])
                 @endforeach
             </div>
+            @endif
             <div class="home-cta-row"><a href="{{ $shopUrl }}" class="button button-primary">Ver todos los productos<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a></div>
         </div></section>
         @endif
@@ -4853,30 +6397,98 @@
         {{-- ═══ TIENDA: catálogo completo con filtros ═══ --}}
         @if($storeView === 'tienda')
         <section class="catalog" id="tienda-catalogo" data-store-native-section="catalog" style="order:{{ $sectionOrder('catalog') }}"><div class="container">
+            @if(!empty($activeBrand))
+            <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span><a href="{{ \App\Support\StorefrontNavigation::publicUrl($project) }}/marcas">Marcas</a><span>/</span><strong>{{ $activeBrand->label }}</strong></nav>
+            @else
             <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span><strong x-text="activeFilterLabel">Todos los productos</strong></nav>
+            @endif
             {{-- Un solo titulo. Antes salia el h1 y debajo un h2 con el MISMO texto,
                  y dos contadores distintos (57 en la banda, 26 sobre la rejilla).
                  El conteo vive junto a los filtros, que es lo que lo cambia. --}}
-            <div class="cat-banner{{ !empty($activeProfile) && $activeProfile->hero_desktop_path ? ' has-profile-media' : '' }}"@if(!empty($activeProfile) && $activeProfile->hero_desktop_path) style="--pf-media:url('{{ $assetUrl($activeProfile->hero_desktop_path) }}')"@endif>
+            <div class="cat-banner{{ !empty($activeProfile) && $activeProfile->hero_desktop_path ? ' has-profile-media' : '' }}{{ $catalogHeroStyle === 'imagen' && $catalogHeroImage && empty($activeProfile) ? ' cat-banner--imagen' : '' }}"@if($catalogHeroStyle === 'imagen' && $catalogHeroImage && empty($activeProfile)) style="--cat-hero:url('{{ $catalogHeroImage }}')" @endif @if(!empty($activeProfile) && $activeProfile->hero_desktop_path) style="--pf-media:url('{{ $assetUrl($activeProfile->hero_desktop_path) }}')"@endif>
                 <div class="cat-banner-inner">
                     <div class="cat-banner-copy">
+                        @if(!empty($searchMatches) && $searchMatches['q'] !== '')
+                        @php
+                            $sq   = $searchMatches['q'];
+                            $sMar = $searchMatches['marcas'];
+                            $sCat = $searchMatches['categorias'];
+                            $sProd = isset($catalogPage) ? $catalogPage->total() : 0;
+                            $sBase = \App\Support\StorefrontNavigation::publicUrl($project);
+                        @endphp
+                        {{-- Pestanas: Todos / Productos / Marcas / Categorias. La rejilla de
+                             productos sigue debajo con todos sus filtros; las pestanas
+                             despliegan los accesos directos a la marca o categoria que
+                             casan con lo escrito ("indeco" -> la pagina de Indeco). --}}
+                        <div class="buscar-head" x-data="{ t: 'todos' }">
+                            <h1 class="catalog-h1">Resultados para «{{ $sq }}»</h1>
+                            <div class="buscar-tabs" role="tablist">
+                                <button type="button" role="tab" :class="t==='todos'&&'is-on'" @click="t='todos'">Todos <span>{{ $sProd + $sMar->count() + $sCat->count() }}</span></button>
+                                <button type="button" role="tab" :class="t==='productos'&&'is-on'" @click="t='productos'">Productos <span>{{ $sProd }}</span></button>
+                                <button type="button" role="tab" :class="t==='marcas'&&'is-on'" @click="t='marcas'" @if($sMar->isEmpty()) disabled @endif>Marcas <span>{{ $sMar->count() }}</span></button>
+                                <button type="button" role="tab" :class="t==='categorias'&&'is-on'" @click="t='categorias'" @if($sCat->isEmpty()) disabled @endif>Categorías <span>{{ $sCat->count() }}</span></button>
+                            </div>
+                            @if($sMar->isNotEmpty())
+                            <div class="buscar-grupo" x-show="t==='todos'||t==='marcas'">
+                                <span class="buscar-grupo-t">Marcas</span>
+                                @foreach($sMar as $m)
+                                <a class="buscar-chip" href="{{ $sBase }}/marca/{{ $m->slug ?: $m->id }}"><b>{{ $m->label }}</b> Ver todos sus productos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                                @endforeach
+                            </div>
+                            @endif
+                            @if($sCat->isNotEmpty())
+                            <div class="buscar-grupo" x-show="t==='todos'||t==='categorias'">
+                                <span class="buscar-grupo-t">Categorías</span>
+                                @foreach($sCat as $c)
+                                <a class="buscar-chip" href="{{ \App\Support\StorefrontNavigation::categoryUrl($project, $c->id) }}"><b>{{ $c->name }}</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                                @endforeach
+                            </div>
+                            @endif
+                            <p class="buscar-nota" x-show="t==='marcas'||t==='categorias'" x-cloak>Los productos que coinciden siguen listados debajo.</p>
+                        </div>
+                        @elseif(!empty($activeBrand))
+                        {{-- Cabecera de marca: logo, descripcion y rubros en los que trabaja.
+                             Debajo sigue la rejilla con TODOS los filtros, asi que el
+                             cliente puede afinar "Indeco + Cables + 4 mm2". --}}
+                        @php $abRubros = collect($catalogBrandMap[$activeBrand->id] ?? [])->filter(fn ($cid) => isset($rubroNombres[$cid]))->map(fn ($cid) => $rubroNombres[$cid])->unique()->values(); @endphp
+                        <div class="marca-head">
+                            <div class="marca-head-logo">
+                                @if($activeBrand->image_url)<img src="{{ $assetUrl($activeBrand->image_url) }}" alt="{{ $activeBrand->label }}">
+                                @else<span>{{ $activeBrand->label }}</span>@endif
+                            </div>
+                            <div class="marca-head-body">
+                                <h1 class="catalog-h1">{{ $activeBrand->label }}</h1>
+                                @if($activeBrand->description)<p>{{ $activeBrand->description }}</p>@endif
+                                @if($abRubros->isNotEmpty())
+                                <div class="marca-head-rubros">
+                                    @foreach($abRubros as $r)<span>{{ $r }}</span>@endforeach
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @else
                         <h1 class="catalog-h1" @if(empty($activeProfile)) x-text="activeFilterLabel" @endif>{{ !empty($activeProfile) ? ($activeProfile->hero_title ?: $activeProfile->name) : 'Todos los productos' }}</h1>
+                        @endif
                         @if(!empty($activeProfile) && filled($activeProfile->hero_description))
                         <p>{{ $activeProfile->hero_description }}</p>
                         @else
-                        <p x-text="catalogSubtitle">Filtra por categoría, precio y disponibilidad para encontrar la mejor opción.</p>
+                        @if($catalogHeroSubtitle !== '')<p>{{ $catalogHeroSubtitle }}</p>@else<p x-text="catalogSubtitle">Filtra por categoría, precio y disponibilidad para encontrar la mejor opción.</p>@endif
                         @endif
                     </div>
+                    @if($catalogHeroStyle === 'imagen' && $catalogHeroImage && $catalogHeroLema && empty($activeProfile) && empty($activeBrand) && empty($searchMatches['q']))
+                    {{-- El lema en tres lineas cortas, a la derecha, sobre la foto. --}}
+                    <div class="cat-banner-lema" aria-hidden="true">@foreach($catalogHeroLema as $l)<span>{{ $l }}</span>@endforeach</div>
+                    @endif
                 </div>
             </div>
 
             <div class="catalog-experience">
                 <aside class="catalog-filter-panel" aria-label="Filtros del catálogo">
                     <div class="catalog-filter-header"><strong>Filtros</strong><button class="catalog-clear" type="button" @click="clearAllFilters()" :disabled="!hasActiveFilters">Limpiar todo</button></div>
-                    <x-computienda.catalog-filters :categories="$categoriasFiltro" :catalog-products="$catalogProducts" :profile-links="$perfilPorCategoria" filter-scope="desktop" />
+                    <x-computienda.catalog-filters :sin-precio="$quoteMode" :categories="$categoriasFiltro" :catalog-products="$catalogProducts" :profile-links="$perfilPorCategoria" :facets="$catalogFacets ?? collect()" :brands="$catalogBrands ?? collect()" :brand-map="$catalogBrandMap ?? []" filter-scope="desktop" />
                 </aside>
 
-                <div class="catalog-results" x-data="catalogBrowser({ endpoint: {{ Js::from(\App\Support\StorefrontNavigation::shopUrl($project)) }}, total: {{ $catalogPage->total() }}, hasMore: {{ $catalogPage->hasMorePages() ? 'true' : 'false' }} })" x-init="init()">
+                <div class="catalog-results" x-data="catalogBrowser({ endpoint: {{ Js::from(\App\Support\StorefrontNavigation::shopUrl($project)) }}, total: {{ $catalogPage->total() }}, hasMore: {{ $catalogPage->hasMorePages() ? 'true' : 'false' }}, lastPage: {{ $catalogPage->lastPage() }}, perPage: {{ $catalogPage->perPage() }}, startPage: {{ $catalogPage->currentPage() }} })" x-init="init()">
                     <div class="catalog-chips" x-show="hasActiveFilters" x-cloak aria-label="Filtros activos">
                         <template x-for="cid in filterCats" :key="'c'+cid">
                             <button class="catalog-chip" type="button" @click="filterCats=filterCats.filter(x=>x!==cid)" x-cloak><span x-text="categoryName(cid)"></span><span aria-hidden="true">×</span></button>
@@ -4904,7 +6516,7 @@
                             <template x-if="!serverRendered">
                                 <template x-for="product in products" :key="product.id">
                                     <article class="catalog-card">
-                                        <div class="catalog-card-media" :class="!product.image && 'is-noimg'">
+                                        <div class="catalog-card-media" :class="!product.image && 'is-noimg'" @if($marcaAgua) style="--card-marca:url('{{ $marcaAgua }}');--card-marca-op:{{ $marcaOpacidad }}"@endif>
                                             {{-- Descuento automático: todo producto con precio tachado
                                                  se marca solo, sin configurar nada. La rejilla del
                                                  catálogo era la única que no lo pintaba: 10 productos
@@ -4912,18 +6524,37 @@
                                             <template x-if="product.comparePrice && product.comparePrice > product.price">
                                                 <span class="catalog-discount" x-text="'-'+Math.round((1-product.price/product.comparePrice)*100)+'%'"></span>
                                             </template>
+                                            {{-- Etiquetas: mismo marcado y mismas clases que la tarjeta
+                                                 del servidor, pero armadas desde el payload. Vienen ya
+                                                 resueltas y recortadas a dos por `EtiquetasProducto`. --}}
+                                            <template x-for="lado in ['izquierda','derecha']" :key="lado">
+                                                <template x-if="(product.etiquetas||[]).some(e => e.posicion === lado)">
+                                                    <div class="pe-etqs" :class="'pe-etqs--'+lado">
+                                                        <template x-for="(e, ei) in (product.etiquetas||[]).filter(e => e.posicion === lado)" :key="ei">
+                                                            <span class="pe-etq" :style="'background:'+e.fondo+';color:'+e.texto_color" x-text="e.texto"></span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </template>
                                             <a class="catalog-card-media-link" :href="product.url" @click="qvMobile($event, product)" :aria-label="'Ver '+product.name">
                                                 <template x-if="product.image"><img :src="product.image" :alt="product.name" loading="lazy"></template>
                                                 <template x-if="!product.image"><svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span></template>
                                             </a>
-                                            <span class="catalog-sold-out" x-show="product.stock===0" x-cloak>{{ $settings['catalog_badge_sold_out'] ?? 'Agotado' }}</span>
-                                            <div class="catalog-quickview">
+                                            @unless($quoteMode)<span class="catalog-sold-out" x-show="product.stock===0" x-cloak>{{ $settings['catalog_badge_sold_out'] ?? 'Agotado' }}</span>@endunless
+                                            @if($verVistaRapida)<div class="catalog-quickview">
                                                 <button type="button" @click.prevent.stop="openQuickView(product)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>{{ $settings['catalog_quickview_text'] ?? 'Vista rápida' }}</button>
-                                            </div>
+                                            </div>@endif
                                         </div>
                                         <div class="catalog-card-body">
-                                            <span class="catalog-card-category" x-text="product.category"></span>
+                                            <span class="catalog-card-category" x-text="product.category"></span><template x-if="product.marca"><span class="catalog-card-brand" x-text="product.marca"></span></template>
                                             <a class="catalog-card-name" :href="product.url" @click="qvMobile($event, product)" x-text="product.name"></a>
+                                            @if($productCardStyle === 'pro')
+                                            <div class="pc-pro-meta">
+                                                <template x-if="product.sku"><span>Código: <b x-text="product.sku"></b></span></template>
+                                                <template x-if="product.unit && product.unit !== 'unidad'"><span x-text="product.unit"></span></template>
+                                            </div>
+                                            <div class="pc-pro-disp" :class="(!{{ $quoteMode ? 'true' : 'false' }} && product.stock===0) ? 'is-off' : ''"><i></i><span x-text="(!{{ $quoteMode ? 'true' : 'false' }} && product.stock===0) ? {{ Js::from($settings['catalog_badge_sold_out'] ?? 'Agotado') }} : {{ Js::from($txtDisponible) }}"></span></div>
+                                            @endif
                                             @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">{{ $txtPrecioConsul }}</span></div>@else
                                             @if($pcMode==='auto')
                                             {{-- MODALIDAD B: precio automatico por cantidad (una sola logica de precios) --}}
@@ -4988,7 +6619,8 @@
                                         </div>
                                         <div class="catalog-card-actions">
                                             @if($showCartButton)<button class="catalog-card-action" type="button" @click="(product.sizes&&product.sizes.length)?openQuickView(product):add(product.id,product.name,product.price,product.image,product.category)" :disabled="product.stock===0" x-text="product.stock===0 ? soldOutText : cartButtonText"></button>@endif
-                                            @if($showInquiryButton)<a class="catalog-card-inquiry" :href="'https://wa.me/{{ $whatsapp }}?text='+encodeURIComponent({{ Js::from($inquiryMsgBase) }}+product.name+' '+(product.url&&product.url.indexOf('http')===0?product.url:location.origin+(product.url||'')))" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.2 1.4Z"/></svg>{{ $inquiryText }}</a>@endif
+                                            @if($showInquiryButton)<a class="catalog-card-inquiry" :aria-label="'Consultar por WhatsApp: '+product.name" :href="'https://wa.me/{{ $whatsapp }}?text='+encodeURIComponent({{ Js::from($inquiryMsgBase) }}+product.name+' '+(product.url&&product.url.indexOf('http')===0?product.url:location.origin+(product.url||'')))" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.2 1.4Z"/></svg>{{ $inquiryText }}</a>@endif
+                                            <a class="catalog-card-more" :href="product.url">Ver producto <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
                                         </div>
                                     </article>
                                 </template>
@@ -4997,20 +6629,32 @@
                             {{-- SSR inicial (visible sin JS y para SEO) --}}
                             <div x-show="serverRendered" class="catalog-ssr">
                                 @foreach($catalogCards as $card)
-                                <article class="catalog-card">
-                                    <div class="catalog-card-media{{ $card['image'] ? '' : ' is-noimg' }}">
+                                {{-- vp arranca con los mismos datos que el HTML estático, así que
+                                     sin JS la tarjeta se ve igual (SEO intacto) y con JS el
+                                     selector de color puede reemplazarla en el sitio. --}}
+                                <article class="catalog-card" x-data="{ vp: {{ Js::from($card) }} }">
+                                    <div class="catalog-card-media{{ $card['image'] ? '' : ' is-noimg' }}" @if($marcaAgua) style="--card-marca:url('{{ $marcaAgua }}');--card-marca-op:{{ $marcaOpacidad }}"@endif>
                                         @php $cDesc = (!empty($card['comparePrice']) && $card['comparePrice'] > $card['price']) ? (int) round((1 - $card['price'] / max(0.01, (float) $card['comparePrice'])) * 100) : 0; @endphp
                                         @if($cDesc > 0)<span class="catalog-discount">-{{ $cDesc }}%</span>@endif
-                                        <a class="catalog-card-media-link" href="{{ $card['url'] }}" @click="qvMobile($event, {{ Js::from($card) }})" aria-label="Ver {{ $card['name'] }}">
-                                            @if($card['image'])<img src="{{ $card['image'] }}" alt="{{ $card['name'] }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span>@endif
+                                        <x-etiquetas-producto :etiquetas="$card['etiquetas'] ?? []" />
+                                        <a class="catalog-card-media-link" href="{{ $card['url'] }}" :href="vp.url" @click="qvMobile($event, vp)" aria-label="Ver {{ $card['name'] }}">
+                                            @if($card['image'])<img src="{{ $card['image'] }}" :src="vp.image" alt="{{ $card['name'] }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span>@endif
                                         </a>
-                                        <div class="catalog-quickview">
-                                            <button type="button" @click.prevent.stop="openQuickView({{ Js::from($card) }})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>{{ $settings['catalog_quickview_text'] ?? 'Vista rápida' }}</button>
-                                        </div>
+                                        @if($verVistaRapida)<div class="catalog-quickview">
+                                            <button type="button" @click.prevent.stop="openQuickView(vp)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>{{ $settings['catalog_quickview_text'] ?? 'Vista rápida' }}</button>
+                                        </div>@endif
                                     </div>
                                     <div class="catalog-card-body">
-                                        <span class="catalog-card-category">{{ $card['category'] }}</span>
-                                        <a class="catalog-card-name" href="{{ $card['url'] }}" @click="qvMobile($event, {{ Js::from($card) }})">{{ $card['name'] }}</a>
+                                        <span class="catalog-card-category">{{ $card['category'] }}</span>@if(!empty($card['marca']))<span class="catalog-card-brand">{{ $card['marca'] }}</span>@endif
+                                        <a class="catalog-card-name" href="{{ $card['url'] }}" :href="vp.url" @click="qvMobile($event, vp)">{{ $card['name'] }}</a>
+                                        @if($productCardStyle === 'pro')
+                                        <div class="pc-pro-meta">
+                                            @if(!empty($card['sku']))<span>Código: <b>{{ $card['sku'] }}</b></span>@endif
+                                            @if(!empty($card['unit']) && $card['unit'] !== 'unidad')<span>{{ $card['unit'] }}</span>@endif
+                                        </div>
+                                        @php $cAgotado = !$quoteMode && (int) ($card['stock'] ?? 1) === 0; @endphp
+                                        <div class="pc-pro-disp{{ $cAgotado ? ' is-off' : '' }}"><i></i><span>{{ $cAgotado ? ($settings['catalog_badge_sold_out'] ?? 'Agotado') : $txtDisponible }}</span></div>
+                                        @endif
                                         @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">{{ $txtPrecioConsul }}</span></div>@else
                                         @if($pcMode==='auto')
                                         {{-- MODALIDAD B (server): misma logica de precios via Alpine --}}
@@ -5049,7 +6693,7 @@
                                                     <input type="number" x-model.number="q" min="1" @click.stop>
                                                     <button type="button" @click.prevent.stop="q=q+1" aria-label="Agregar">+</button>
                                                 </span>
-                                                <button type="button" class="buy-add" @click.prevent.stop="Array.from({length:q},()=>add({{ $card['id'] }},{{ Js::from($card['name']) }},{{ (float) $card['price'] }},{{ Js::from($card['image'] ?? '') }},{{ Js::from($card['category'] ?? '') }}))">+ Agregar</button>
+                                                <button type="button" class="buy-add" @click.prevent.stop="Array.from({length:q},()=>add(vp.id, vp.name, vp.price, vp.image||'', vp.category||'', '', 0, 0, null, {sku:vp.sku, marca:vp.marca, unidad:vp.unit}))">+ Agregar</button>
                                             </div>
                                         </div>@endif
                                         @if($wholesale && !empty($card['wholesalePrice']))<div class="buy-block buy-block--wholesale" x-data="{ q: {{ max(1,(int) $card['wholesaleMinQty']) }} }">
@@ -5061,14 +6705,15 @@
                                                     <input type="number" x-model.number="q" min="{{ max(1,(int) $card['wholesaleMinQty']) }}" step="{{ max(1,(int) $card['wholesaleMinQty']) }}" @click.stop>
                                                     <button type="button" @click.prevent.stop="q=q+{{ max(1,(int) $card['wholesaleMinQty']) }}" aria-label="Agregar">+</button>
                                                 </span>
-                                                <button type="button" class="buy-add" @click.prevent.stop="addWholesale({{ $card['id'] }},{{ Js::from($card['name']) }},{{ (float) $card['wholesalePrice'] }},q,{{ Js::from($card['image'] ?? '') }},{{ Js::from($card['category'] ?? '') }})">+ Agregar</button>
+                                                <button type="button" class="buy-add" @click.prevent.stop="addWholesale(vp.id, vp.name, {{ (float) $card['wholesalePrice'] }}, q, vp.image||'', vp.category||'')">+ Agregar</button>
                                             </div>
                                         </div>@endif @endif
                                         @endif
                                     </div>
                                     <div class="catalog-card-actions">
-                                        @if($showCartButton)<button class="catalog-card-action" type="button" @click="@if(!empty($card['sizes']))openQuickView({{ Js::from($card) }})@else add({{ $card['id'] }},{{ Js::from($card['name']) }},{{ $card['price'] }},{{ Js::from($card['image'] ?? '') }},{{ Js::from($card['category'] ?? '') }})@endif">{{ $quoteMode ? $quoteBtnText : ($settings['btn_cart_text'] ?? 'Agregar') }}</button>@endif
-                                        @if($showInquiryButton)<a class="catalog-card-inquiry" href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($inquiryMsgBase.$card['name'].' '.$card['url']) }}" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.2 1.4Z"/></svg>{{ $inquiryText }}</a>@endif
+                                        @if($showCartButton)<button class="catalog-card-action" type="button" @click="@if(!empty($card['sizes']))openQuickView(vp)@else add(vp.id, vp.name, vp.price, vp.image||'', vp.category||'', '', 0, 0, null, {sku:vp.sku, marca:vp.marca, unidad:vp.unit})@endif">{{ $quoteMode ? $quoteBtnText : ($settings['btn_cart_text'] ?? 'Agregar') }}</button>@endif
+                                        @if($showInquiryButton)<a class="catalog-card-inquiry" aria-label="Consultar por WhatsApp: {{ $card['name'] }}" href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($inquiryMsgBase.$card['name'].' '.$card['url']) }}" :href="'https://wa.me/{{ $whatsapp }}?text='+encodeURIComponent(@js($inquiryMsgBase)+vp.name+' '+vp.url)" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.2 1.4Z"/></svg>{{ $inquiryText }}</a>@endif
+                                        <a class="catalog-card-more" href="{{ $card['url'] }}" :href="vp.url">Ver producto <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
                                     </div>
                                 </article>
                                 @endforeach
@@ -5081,9 +6726,27 @@
 
                         <div class="catalog-loading" x-show="loading" x-cloak aria-live="polite" style="grid-column:1/-1;text-align:center;padding:24px;color:#64748b">Cargando…</div>
                         <div class="catalog-error" x-show="error" x-cloak style="grid-column:1/-1;text-align:center;padding:16px;color:#dc2626">No pudimos cargar más productos. <button type="button" @click="loadMore()" style="text-decoration:underline">Reintentar</button></div>
+                        @if($catalogPagination === 'numbers')
+                        {{-- Numeros de pagina. Los enlaces llevan ?page= real para que
+                             funcionen sin JavaScript y para los buscadores; con JS se
+                             interceptan y la rejilla se reemplaza sin recargar. --}}
+                        @php $pgBase = request()->fullUrlWithQuery(['page' => null]); $pgSep = str_contains($pgBase, '?') ? '&' : '?'; @endphp
+                        <nav class="catalog-paginas" x-show="lastPage > 1 && !loading" x-cloak aria-label="Páginas del catálogo">
+                            <a class="catalog-pagina catalog-pagina--prev" :class="page<=1 && 'is-off'" :href="'{{ $pgBase }}{{ $pgSep }}page='+(page-1)" @click.prevent="page>1 && goPage(page-1)" :aria-disabled="page<=1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg><span>Anterior</span></a>
+                            <template x-for="(n, i) in pageList()" :key="i">
+                                <span>
+                                    <template x-if="n === '…'"><span class="catalog-pagina catalog-pagina--puntos">…</span></template>
+                                    <template x-if="n !== '…'"><a class="catalog-pagina" :class="n===page && 'is-on'" :href="'{{ $pgBase }}{{ $pgSep }}page='+n" @click.prevent="goPage(n)" :aria-current="n===page ? 'page' : null" x-text="n"></a></template>
+                                </span>
+                            </template>
+                            <a class="catalog-pagina catalog-pagina--next" :class="page>=lastPage && 'is-off'" :href="'{{ $pgBase }}{{ $pgSep }}page='+(page+1)" @click.prevent="page<lastPage && goPage(page+1)" :aria-disabled="page>=lastPage"><span>Siguiente</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></a>
+                            <span class="catalog-paginas-rango" x-text="rangoTexto()"></span>
+                        </nav>
+                        @else
                         <div class="catalog-loadmore" x-show="hasMore && !loading" x-cloak style="grid-column:1/-1;text-align:center;padding:20px">
                             <button class="button button-primary" type="button" @click="loadMore()" :disabled="loading">{{ $txtViewMore ?? 'Cargar más' }}</button>
                         </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -5091,23 +6754,366 @@
         @endif
 
         {{-- ═══ PÁGINA DE PRODUCTO (mismo header/menú/carrito/footer de la tienda) ═══ --}}
+        @if($storeView === 'catalogo')
+        @php
+            $cpBase = \App\Support\StorefrontNavigation::publicUrl($project); $cpPdf = $cpBase.'/catalogo.pdf';
+            $cpS = static fn ($k, $d = '') => trim((string) ($settings[$k] ?? '')) !== '' ? trim((string) $settings[$k]) : $d;
+            $cpBanner = ($settings['catalog_pdf_banner'] ?? '1') !== '0';
+            $cpBannerImg = $cpBanner ? $assetUrl($cpS('catalog_pdf_banner_image') ?: ($settings['hero_image'] ?? null)) : null;
+            $cpFeatDef = ['Información actualizada', 'Productos con códigos y especificaciones', 'Descarga rápida y gratuita'];
+            $cpFeatures = collect([1, 2, 3])->map(fn ($n) => $cpS("catalog_pdf_feature_{$n}", $cpFeatDef[$n - 1]))->filter(fn ($t) => $t !== '-')->values();
+            $cpFeatIcons = [
+                '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+                '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+                '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+            ];
+            $cpSectors = collect(range(1, 4))->map(fn ($n) => ['text' => trim((string) ($settings["promo_cards_side_item_{$n}"] ?? '')), 'icon' => $settings["promo_cards_side_icon_{$n}"] ?? ''])->filter(fn ($x) => $x['text'] !== '')->values();
+            $cpInfoDef = ['Productos con códigos', 'Imágenes referenciales', 'Especificaciones técnicas', 'Organizado por categorías', 'Incluye nuestras principales marcas', 'Información actualizada '.date('Y')];
+            $cpInfo = collect(range(1, 6))->map(fn ($n) => $cpS("catalog_pdf_info_{$n}", $cpInfoDef[$n - 1]))->filter(fn ($t) => $t !== '-')->values();
+            $cpCoverImg = $assetUrl($cpS('catalog_pdf_cover_image') ?: null);
+            $cpCoverFotos = $cpCoverImg ? collect() : (isset($categories) ? $categories->filter(fn ($c) => filled($c->image_url))->take(4)->values() : collect());
+            $cpLogo = $assetUrl($settings['header_logo_url'] ?? $settings['logo_url'] ?? $project->logo_url ?? null);
+            $cpQuote = $cpS('catalog_pdf_quote');
+            $cpClaim = $cpS('catalog_pdf_claim');
+        @endphp
+        <section class="store-page store-page--catalogo{{ $cpBanner ? ' has-banner' : '' }}" data-store-native-section="custom_page">
+            @if($cpBanner)
+            {{-- Banda superior: titulo, tres ventajas, claim y sectores (los de la
+                 tarjeta de promociones). Con la foto del hero de fondo si no hay
+                 una propia (catalog_pdf_banner_image). --}}
+            <div class="cp-banner" @if($cpBannerImg) style="--cp-img:url('{{ $cpBannerImg }}')" @endif>
+                <div class="container cp-banner-in">
+                    <div class="cp-banner-copy">
+                        <nav class="cp-crumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>›</span><strong>Catálogo PDF</strong></nav>
+                        <h1>{{ $cpS('catalog_pdf_title', 'Catálogo PDF') }}</h1>
+                        <p class="cp-sub">{{ $cpS('catalog_pdf_subtitle', 'Toda nuestra línea de productos en un solo catálogo') }}</p>
+                        @if($cpS('catalog_pdf_intro') !== '')<p class="cp-intro">{{ $cpS('catalog_pdf_intro') }}</p>@endif
+                        @if($cpFeatures->isNotEmpty())
+                        <ul class="cp-feats">
+                            @foreach($cpFeatures as $k => $ft)
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $cpFeatIcons[$k] ?? $cpFeatIcons[0] !!}</svg><span>{{ $ft }}</span></li>
+                            @endforeach
+                        </ul>
+                        @endif
+                    </div>
+                    @if($cpClaim !== '')<div class="cp-claim"><strong>{{ $cpClaim }}</strong><i></i></div>@endif
+                    @if($cpSectors->isNotEmpty())
+                    <ul class="cp-sectors">
+                        @foreach($cpSectors as $it)<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $bxIconoPara($it['icon'], $it['text']) !!}</svg>{{ $it['text'] }}</li>@endforeach
+                    </ul>
+                    @endif
+                </div>
+            </div>
+            @endif
+            <div class="container">
+                @unless($cpBanner)
+                <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span><strong>Catálogo PDF</strong></nav>
+                <h1 class="store-page-title">{{ $cpS('catalog_pdf_title', 'Catálogo PDF') }}</h1>
+                <p class="marcas-sub">{{ $cpS('catalog_pdf_subtitle', 'Toda nuestra línea de productos en un solo catálogo') }}</p>
+                @endunless
+
+                <div class="cp-grid" x-data="{ tipo:'general', cat:'', marca:'', agrupar:'categoria',
+                        url(){ const b='{{ $cpPdf }}';
+                            if(this.tipo==='general') return b;
+                            if(this.tipo==='categoria') return this.cat ? b+'?category_id='+this.cat : '';
+                            if(this.tipo==='marca') return this.marca ? b+'?brand_id='+this.marca : '';
+                            if(this.tipo==='promos') return b+'?promos=1';
+                            const p=[]; if(this.cat) p.push('category_id='+this.cat); if(this.marca) p.push('brand_id='+this.marca); if(this.agrupar==='marca') p.push('agrupar=marca');
+                            return (this.cat||this.marca) ? b+'?'+p.join('&') : ''; } }">
+                    {{-- Portada del catalogo: se arma con el logo, las fotos de
+                         categoria (o una imagen propia), las marcas y los rubros. --}}
+                    <aside class="cp-cover-col">
+                        <div class="cp-book" aria-hidden="true">
+                            <div class="cp-book-cover">
+                                <div class="cp-book-brand">@if($cpLogo)<img src="{{ $cpLogo }}" alt="">@else<strong>{{ $storeName }}</strong>@endif</div>
+                                <div class="cp-book-title">
+                                    <strong>{{ $cpS('catalog_pdf_cover_title', 'Catálogo general') }} {{ $cpS('catalog_pdf_cover_year', date('Y')) }}</strong>
+                                    <span>{{ $cpS('catalog_pdf_cover_tagline', 'Soluciones eléctricas para empresas y proyectos') }}</span>
+                                </div>
+                                <div class="cp-book-media">
+                                    @if($cpCoverImg)<img src="{{ $cpCoverImg }}" alt="">
+                                    @elseif($cpCoverFotos->isNotEmpty())
+                                    <div class="cp-book-mosaic n{{ $cpCoverFotos->count() }}">@foreach($cpCoverFotos as $c)<img src="{{ \App\Support\Imagen\Img::deAncho($assetUrl($c->image_url), 400) }}" alt="">@endforeach</div>
+                                    @endif
+                                </div>
+                                @if($catalogBrands->isNotEmpty())
+                                <div class="cp-book-brands">
+                                    @foreach($catalogBrands->take(6) as $m)
+                                    @php $mImg = data_get($m, 'image_url') ? $assetUrl(data_get($m, 'image_url')) : null; @endphp
+                                    <span>@if($mImg)<img src="{{ $mImg }}" alt="{{ data_get($m, 'label') }}">@else{{ data_get($m, 'label') }}@endif</span>
+                                    @endforeach
+                                </div>
+                                @endif
+                                @if($rubrosCatalogo->isNotEmpty())
+                                <div class="cp-book-cats">@foreach($rubrosCatalogo->take(7) as $r)<span>{{ $r->name }}</span>@endforeach</div>
+                                @endif
+                            </div>
+                        </div>
+                        @if($cpS('catalog_pdf_cover_note') !== '')<p class="cp-hand">{{ $cpS('catalog_pdf_cover_note') }}</p>@endif
+                    </aside>
+
+                    <div class="cp-options">
+                        <h2>{{ $cpS('catalog_pdf_options_title', 'Selecciona el tipo de catálogo') }}</h2>
+                        <p class="cp-options-sub">{{ $cpS('catalog_pdf_options_text', 'Elige la opción que mejor se adapte a tus necesidades. Genera tu PDF de forma rápida y gratuita.') }}</p>
+
+                        <label class="cp-opt" :class="tipo==='general' && 'is-on'">
+                            <input type="radio" name="cp-tipo" value="general" x-model="tipo">
+                            <span class="cp-opt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>
+                            <span class="cp-opt-txt"><strong>Catálogo general</strong><small>Todos los productos, categorías y marcas en un solo catálogo. Ideal para tener una vista completa de nuestro portafolio.</small></span>
+                        </label>
+
+                        <label class="cp-opt" :class="tipo==='categoria' && 'is-on'">
+                            <input type="radio" name="cp-tipo" value="categoria" x-model="tipo">
+                            <span class="cp-opt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+                            <span class="cp-opt-txt"><strong>Por categoría</strong><small>Solo los productos de una categoría específica. Ej.: cables, iluminación, protección eléctrica.</small>
+                                <select x-model="cat" x-show="tipo==='categoria' || tipo==='custom'" x-cloak aria-label="Elegir categoría" @click.stop>
+                                    <option value="">Elige una categoría</option>
+                                    @foreach($rubrosCatalogo as $r)<option value="{{ $r->id }}">{{ $r->name }}</option>@endforeach
+                                </select>
+                            </span>
+                        </label>
+
+                        <label class="cp-opt" :class="tipo==='marca' && 'is-on'">
+                            <input type="radio" name="cp-tipo" value="marca" x-model="tipo">
+                            <span class="cp-opt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13 11 22l-8-8V5h9l8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/></svg></span>
+                            <span class="cp-opt-txt"><strong>Por marca</strong><small>Solo los productos de una marca. Selecciona entre nuestras marcas: {{ $catalogBrands->take(4)->map(fn ($m) => data_get($m, 'label'))->implode(', ') }}{{ $catalogBrands->count() > 4 ? ', etc.' : '.' }}</small>
+                                <select x-model="marca" x-show="tipo==='marca' || tipo==='custom'" x-cloak aria-label="Elegir marca" @click.stop>
+                                    <option value="">Elige una marca</option>
+                                    @foreach($catalogBrands as $m)<option value="{{ data_get($m, 'id') }}">{{ data_get($m, 'label') }}</option>@endforeach
+                                </select>
+                            </span>
+                        </label>
+
+                        @if($hayPromos)
+                        <label class="cp-opt" :class="tipo==='promos' && 'is-on'">
+                            <input type="radio" name="cp-tipo" value="promos" x-model="tipo">
+                            <span class="cp-opt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l6 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></span>
+                            <span class="cp-opt-txt"><strong>Promociones</strong><small>Solo productos en promoción. Aprovecha nuestras ofertas y campañas especiales.</small></span>
+                        </label>
+                        @endif
+
+                        <label class="cp-opt" :class="tipo==='custom' && 'is-on'">
+                            <input type="radio" name="cp-tipo" value="custom" x-model="tipo">
+                            <span class="cp-opt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></span>
+                            <span class="cp-opt-txt"><strong>Personalizado</strong><small>Combina categoría y marca, y elige cómo ordenarlo. Crea un catálogo a la medida de tu proyecto.</small>
+                                <span class="cp-agrupar" x-show="tipo==='custom'" x-cloak @click.stop>
+                                    <label><input type="radio" name="cp-agrupar" value="categoria" x-model="agrupar"> Ordenar por categoría</label>
+                                    <label><input type="radio" name="cp-agrupar" value="marca" x-model="agrupar"> Ordenar por marca</label>
+                                </span>
+                            </span>
+                        </label>
+
+                        <a class="cp-generate" :class="!url() && 'is-off'" :href="url() || '#'" target="_blank" rel="noopener" @click="if(!url()) $event.preventDefault()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                            {{ $cpS('catalog_pdf_button', 'Generar PDF') }}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                        <p class="cp-note" x-show="!url()" x-cloak>Elige una categoría o una marca para generar el catálogo.</p>
+                        <p class="cp-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> El catálogo se genera en formato PDF. Descarga gratuita y sin registro.</p>
+                    </div>
+
+                    <aside class="cp-info">
+                        <div class="cp-info-card">
+                            <span class="cp-info-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>
+                            <strong>{{ $cpS('catalog_pdf_info_title', 'Información del catálogo') }}</strong>
+                            @if($cpInfo->isNotEmpty())
+                            <ul>@foreach($cpInfo as $it)<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>{{ $it }}</li>@endforeach</ul>
+                            @endif
+                            @if($cpQuote !== '')<blockquote>“{{ $cpQuote }}”</blockquote>@endif
+                        </div>
+                    </aside>
+                </div>
+                <p class="cpdf-nota">¿Necesitas un catálogo a medida para tu proyecto? <a href="{{ $cpBase }}/contacto">Escríbenos</a> y te lo preparamos.</p>
+            </div>
+        </section>
+        @endif
+
+        @if($storeView === 'promociones')
+        @php
+            // Promociones vigentes ligadas a un producto publicado. Salen de la tabla
+            // `promotions` (las administra el panel), no del slider de la portada.
+            $promoCards = \App\Models\Promotion::where('project_id', $project->id)->vigentes()
+                ->where('applies_to', 'product')->whereNotNull('applies_to_id')
+                ->with(['producto' => fn ($q) => $q->where('is_available', true)->with(['mainImage', 'marca', 'category'])])
+                ->orderByDesc('id')->get()->filter(fn ($pr) => $pr->producto)->values();
+        @endphp
+        <section class="store-page store-page--promociones" data-store-native-section="custom_page">
+            <div class="container">
+                <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span><strong>Promociones</strong></nav>
+                <h1 class="store-page-title">{{ $settings['promo_cards_title'] ?? 'Promociones' }}</h1>
+                <p class="marcas-sub">{{ $settings['promo_cards_subtitle'] ?? 'Aprovecha nuestras campañas y precios especiales. Todo se cotiza sin compromiso.' }}</p>
+                @if($promoCards->isEmpty())
+                <div class="catalog-empty">
+                    <h3>No hay promociones vigentes</h3>
+                    <p>Vuelve pronto o escríbenos: siempre tenemos precios por volumen.</p>
+                    <a class="button button-primary" href="{{ \App\Support\StorefrontNavigation::publicUrl($project) }}/tienda">Ver todos los productos</a>
+                </div>
+                @else
+                <div class="promo-cards-grid">
+                    @foreach($promoCards as $pr)
+                    @php
+                        $pp = $pr->producto;
+                        $ppImg = $pr->image_url ? $assetUrl($pr->image_url) : \App\Support\ImageVariants::webp($pp->main_image_url);
+                        $ppUrl = \App\Support\ImageVariants::productUrl($project, $pp->id, $pp->name);
+                        $ppEtq = $pr->label ?: ($pr->type === 'percentage' && $pr->value > 0 ? '-'.rtrim(rtrim(number_format((float) $pr->value, 2), '0'), '.').'%' : 'Promoción');
+                    @endphp
+                    <article class="promo-card">
+                        <a class="promo-card-media" href="{{ $ppUrl }}" aria-label="Ver {{ $pp->name }}">
+                            <span class="promo-card-tag">{{ $ppEtq }}</span>
+                            @if($ppImg)<img src="{{ $ppImg }}" alt="{{ $pp->name }}" loading="lazy">@else<span class="promo-card-noimg">Sin foto</span>@endif
+                        </a>
+                        <div class="promo-card-body">
+                            @if($pp->marca?->label)<span class="promo-card-brand">{{ $pp->marca->label }}</span>@endif
+                            <a class="promo-card-name" href="{{ $ppUrl }}">{{ $pp->name }}</a>
+                            @if($pp->sku)<span class="promo-card-sku">Código: {{ $pp->sku }}</span>@endif
+                            @if($pr->description)<p class="promo-card-desc">{{ $pr->description }}</p>@endif
+                        </div>
+                        <div class="promo-card-actions">
+                            <button type="button" class="promo-card-add"
+                                    @click="add({{ $pp->id }},{{ Js::from($pp->name) }},{{ (float) $pp->price }},{{ Js::from($ppImg ?: '') }},{{ Js::from($pp->category?->name ?? '') }},'',0,0,null,{sku:{{ Js::from($pp->sku) }},marca:{{ Js::from($pp->marca?->label) }},unidad:{{ Js::from($pp->unit) }}})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                {{ $isQuoteOnly ? 'Agregar a cotización' : ($settings['btn_cart_text'] ?? 'Agregar') }}
+                            </button>
+                        </div>
+                    </article>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+        </section>
+        @endif
+
+        @if($storeView === 'marcas')
+        @php
+            // Marca -> rubros con nombre. El mapa trae ids de rubro y subcategoria;
+            // aqui solo interesan los rubros raiz, que son los que se leen.
+            $rubrosDe = fn ($id) => collect($catalogBrandMap[$id] ?? [])
+                ->filter(fn ($cid) => isset($rubroNombres[$cid]))
+                ->map(fn ($cid) => $rubroNombres[$cid])->unique()->values();
+            $baseTienda = \App\Support\StorefrontNavigation::publicUrl($project);
+        @endphp
+        <section class="store-page store-page--marcas" data-store-native-section="custom_page">
+            <div class="container">
+                <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span><strong>Marcas</strong></nav>
+                <h1 class="store-page-title">{{ $settings['brands_page_title'] ?? 'Nuestras marcas' }}</h1>
+                <p class="marcas-sub">{{ $settings['brands_page_subtitle'] ?? 'Trabajamos con marcas líderes a nivel nacional e internacional.' }}</p>
+
+                @if(($catalogBrands ?? collect())->isEmpty())
+                <div class="catalog-empty">
+                    <h3>Aún no hay marcas publicadas</h3>
+                    <p>Cuando el catálogo tenga productos con marca, aparecerán aquí.</p>
+                    <a class="button button-primary" href="{{ $baseTienda }}/tienda">Ver todos los productos</a>
+                </div>
+                @else
+                <div class="marcas-grid">
+                    @foreach($catalogBrands as $m)
+                    <a class="marca-card" href="{{ $baseTienda }}/marca/{{ $m->slug ?: $m->id }}">
+                        <div class="marca-card-logo">
+                            @if($m->image_url)<img src="{{ $assetUrl($m->image_url) }}" alt="{{ $m->label }}" loading="lazy">
+                            @else<span>{{ $m->label }}</span>@endif
+                        </div>
+                        <div class="marca-card-body">
+                            <strong>{{ $m->label }}</strong>
+                            @if($m->description)<small>{{ $m->description }}</small>
+                            @elseif($rubrosDe($m->id)->isNotEmpty())<small>{{ $rubrosDe($m->id)->take(3)->implode(' · ') }}</small>@endif
+                            <em>{{ $m->total }} {{ $m->total === 1 ? 'producto' : 'productos' }}</em>
+                        </div>
+                        <span class="marca-card-cta">Ver productos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                    </a>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+        </section>
+        @endif
+
         @if($storeView === 'producto' && !empty($storeProduct))
         @php
             $sp = $storeProduct;
             $spImages = $sp->images && $sp->images->count() ? $sp->images : collect();
             $spMain = $sp->mainImage?->url ?? ($spImages->first()->url ?? null);
-            $spMainUrl = $spMain ? $assetUrl($spMain) : null;
+            // La ficha servia el archivo original (587 KB para un cuadro de
+            // 520 px). Se pide la variante del tamano que se ve.
+            $spMainUrl = $spMain ? \App\Support\Imagen\Img::deAncho($assetUrl($spMain), 800) : null;
             $spCompare = $sp->compare_price && $sp->compare_price > $sp->price ? (float) $sp->compare_price : null;
             $spStock = $sp->stock;
+            // Tras la fusion, cada foto de la galeria ES un color del modelo
+            // (options.color_images). Se resuelve que color ensena cada foto
+            // comparando el nombre sin extension ni ancho, y con eso las
+            // miniaturas hacen de selector: tocar una fija color y foto a la
+            // vez, y el color viaja al pedido junto a la talla.
+            $spColorPorFoto = [];
+            $spColores = collect((array) data_get($sp->options, 'color_images', []));
+            $huella = fn ($u) => preg_replace('/(-\d+)?\.[a-z0-9]+$/i', '', (string) parse_url((string) $u, PHP_URL_PATH));
+            foreach ($spImages as $imgFila) {
+                foreach ($spColores as $colorNombre => $colorFoto) {
+                    if ($huella($assetUrl($imgFila->url)) === $huella(\App\Support\Imagen\Img::url($colorFoto))) {
+                        $spColorPorFoto[$imgFila->id] = $colorNombre;
+                        break;
+                    }
+                }
+            }
+            $spTieneColores = $spColores->count() > 1;
+            $spColorInicial = $spTieneColores ? ($spColorPorFoto[$sp->mainImage?->id ?? 0] ?? null) : null;
+            // Variantes canónicas (Color/Talla/Capacidad, etc.). Estas reemplazan
+            // los selectores heredados cuando el producto ya tiene una matriz real.
+            $spRealVariants = $sp->relationLoaded('variants')
+                ? $sp->variants->where('is_active', true)->map(function ($variant) use ($sp, $assetUrl) {
+                    $variantImage = $variant->image?->url
+                        ? \App\Support\Imagen\Img::deAncho($assetUrl($variant->image->url), 800)
+                        : null;
+
+                    return [
+                        'id' => $variant->id,
+                        'label' => $variant->label(),
+                        'sku' => $variant->sku,
+                        'price' => (float) ($variant->price ?? $sp->price),
+                        'comparePrice' => filled($variant->compare_price) ? (float) $variant->compare_price : $spCompare,
+                        'stock' => $variant->stock ?? $sp->stock,
+                        'image' => $variantImage,
+                        'values' => $variant->values->sortBy(fn ($value) => $value->attribute?->sort_order ?? 0)->map(fn ($value) => [
+                            'attributeId' => (string) $value->product_attribute_id,
+                            'attribute' => $value->attribute?->name,
+                            'type' => $value->attribute?->type ?? 'button',
+                            'valueId' => (string) $value->id,
+                            'label' => $value->label,
+                            'color' => $value->color_hex,
+                        ])->values()->all(),
+                    ];
+                })->values()->all()
+                : [];
+            $spHasRealVariants = count($spRealVariants) > 0;
+            // Diseño B2B de la ficha (constructor > Catálogo > Página del producto).
+            $pdpB2b = ($settings['pdp_layout'] ?? 'classic') === 'b2b';
+            $pdpBanner = $pdpB2b && ($settings['pdp_banner'] ?? '0') === '1';
+            $pdpBannerImg = $pdpBanner ? $assetUrl($settings['hero_image'] ?? null) : null;
         @endphp
-        <section class="catalog" data-store-native-section="product" style="order:1" x-data="{ pdpImg: @js($spMainUrl), pdpQty: 1, pdpSize: null, pdpSizeErr: false }"><div class="container">
+        <section class="catalog" data-store-native-section="product" style="order:1"
+                 x-data="productVariantPicker({ variants: @js($spRealVariants), basePrice: {{ (float) $sp->price }}, baseCompare: {{ $spCompare ?: 'null' }}, baseStock: {{ is_null($spStock) ? 'null' : (int) $spStock }}, baseImage: @js($spMainUrl), initialColor: @js($spColorInicial), currency: @js($currency) })"><div class="container">
+            @if($pdpBanner)
+            {{-- Banda de portada en miniatura: mismo titulo, subtitulo y foto del
+                 hero, y los sectores de la tarjeta de promociones. Recuerda de
+                 quien es el catalogo sin robarle sitio al producto. --}}
+            @php
+                $pbItems = collect(range(1, 4))->map(fn ($n) => ['text' => trim((string) ($settings["promo_cards_side_item_{$n}"] ?? '')), 'icon' => $settings["promo_cards_side_icon_{$n}"] ?? ''])->filter(fn ($i) => $i['text'] !== '');
+            @endphp
+            <div class="pdp-banner" @if($pdpBannerImg) style="--pdp-banner-img:url('{{ $pdpBannerImg }}')" @endif>
+                <div class="pdp-banner-copy"><strong>{!! $heroTitleHtml($heroTitle) !!}</strong><span>{{ $heroSubtitle }}</span></div>
+                @if($pbItems->isNotEmpty())
+                <ul class="pdp-banner-sectors">
+                    @foreach($pbItems as $it)<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $bxIconoPara($it['icon'], $it['text']) !!}</svg>{{ $it['text'] }}</li>@endforeach
+                </ul>
+                @endif
+            </div>
+            @endif
             <nav class="catalog-breadcrumb" aria-label="Ruta de navegación" style="margin-top:22px">
                 <a href="{{ \App\Support\StorefrontNavigation::homeUrl($project) }}">Inicio</a><span>/</span>
                 <a href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}">Tienda</a><span>/</span>
+                @if($sp->category)<a href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}?category={{ $sp->category_id }}">{{ $sp->category->name }}</a><span>/</span>@endif
                 <strong>{{ $sp->name }}</strong>
             </nav>
 
-            <div class="pdp-wrap">
+            <div class="pdp-wrap{{ $pdpB2b ? ' is-b2b' : '' }}">
                 {{-- Galería --}}
                 <div class="pdp-gallery">
                     <div class="pdp-main-img" @click="pdpImg && window.__lightbox && window.__lightbox(pdpImg)">
@@ -5119,10 +7125,23 @@
                     @if($spImages->count() > 1)
                     <div class="pdp-thumbs">
                         @foreach($spImages as $img)
-                        @php $iu = $assetUrl($img->url); @endphp
-                        <div class="pdp-thumb" :class="pdpImg==='{{ $iu }}' && 'active'" @click="pdpImg='{{ $iu }}'"><img src="{{ $iu }}" alt="{{ $sp->name }}"></div>
+                        @php
+                            // Dos tamanos: el grande es el que se abre al tocarla;
+                            // la miniatura en si se sirve pequena.
+                            $iu = \App\Support\Imagen\Img::deAncho($assetUrl($img->url), 800);
+                            $iuMini = \App\Support\Imagen\Img::deAncho($assetUrl($img->url), 400);
+                        @endphp
+                        @php $iuColor = $spColorPorFoto[$img->id] ?? null; @endphp
+                        <div class="pdp-thumb" :class="pdpImg==='{{ $iu }}' && 'active'"
+                             @click="pdpImg='{{ $iu }}'; @if($iuColor) pdpColor={{ Js::from($iuColor) }}; pdpColorErr=false; @endif"
+                             @if($iuColor) role="button" title="{{ $iuColor }}" aria-label="Ver color {{ $iuColor }}" @endif>
+                            <img src="{{ $iuMini }}" alt="{{ $iuColor ?? $sp->name }}" loading="lazy" decoding="async" width="72" height="72"></div>
                         @endforeach
                     </div>
+                    @endif
+                    @if($spTieneColores && !$spHasRealVariants)
+                    <p class="pdp-color-actual" x-show="pdpColor" x-cloak>Color: <b x-text="pdpColor"></b></p>
+                    <p class="qv-size-req" x-show="pdpColorErr" x-cloak role="alert">Elige un color tocando una foto</p>
                     @endif
                     <div class="pdp-share">
                         <span>Compartir:</span>
@@ -5134,11 +7153,55 @@
                 {{-- Info --}}
                 <div>
                     @if($sp->category)<a class="pdp-cat" href="{{ \App\Support\StorefrontNavigation::shopUrl($project) }}?category={{ $sp->category_id }}">{{ $sp->category->name }}</a>@endif
+                    @if($sp->marca?->label)
+                        @if($pdpB2b && $sp->marca->image_url)<img class="pdp-brand-logo" src="{{ $assetUrl($sp->marca->image_url) }}" alt="{{ $sp->marca->label }}">
+                        @else<span class="pdp-brand">{{ $sp->marca->label }}</span>@endif
+                    @endif
                     <h1 class="pdp-title">{{ $sp->name }}</h1>
+                    @if($pdpB2b)
+                    <dl class="pdp-meta">
+                        @if($sp->sku)<div><dt>Código:</dt><dd>{{ $sp->sku }}</dd></div>@endif
+                        @if($sp->marca?->label)<div><dt>Marca:</dt><dd>{{ $sp->marca->label }}</dd></div>@endif
+                        @if($sp->unit)<div><dt>Presentación:</dt><dd>{{ $sp->unit }}</dd></div>@endif
+                    </dl>
+                    @if($quoteMode)<span class="pdp-avail"><i></i>{{ trim((string) ($settings['pdp_avail_text'] ?? '')) ?: 'Disponible para cotizar' }}</span>@endif
+                    @endif
+                    {{-- En la ficha hay sitio: se pintan TODAS las permitidas,
+                         no solo las dos de la tarjeta. --}}
+                    <x-etiquetas-producto :etiquetas="$sp->etiquetas('ficha')" donde="ficha" />
+                    @php
+                        // Destacados del producto: hasta 3 pares titulo/detalle
+                        // guardados en `options.destacados`. Se editan producto
+                        // a producto; sin ellos no se pinta nada.
+                        $spDestacados = collect((array) ($sp->options['destacados'] ?? []))
+                            ->filter(fn ($d) => filled($d['t'] ?? null))
+                            ->take(3);
+                        $spIconos = [
+                            'sol'    => '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+                            'sensor' => '<path d="M12 12h.01"/><path d="M8.5 8.5a5 5 0 0 0 0 7"/><path d="M15.5 15.5a5 5 0 0 0 0-7"/><path d="M5 5a9 9 0 0 0 0 14"/><path d="M19 19a9 9 0 0 0 0-14"/>',
+                            'hoja'   => '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
+                            'escudo' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+                            'rayo'   => '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>',
+                            'reloj'  => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+                        ];
+                    @endphp
+                    @if($spDestacados->isNotEmpty())
+                    <ul class="pdp-highlights">
+                        @foreach($spDestacados as $d)
+                        <li>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $spIconos[$d['i'] ?? 'escudo'] ?? $spIconos['escudo'] !!}</svg>
+                            <span>
+                                <strong>{{ $d['t'] }}</strong>
+                                @if(filled($d['d'] ?? null))<small>{{ $d['d'] }}</small>@endif
+                            </span>
+                        </li>
+                        @endforeach
+                    </ul>
+                    @endif
                     @unless($hidePrices)
                     <div class="pdp-price-row">
-                        <span class="pdp-price">{{ $currency }} {{ number_format($sp->price, 2) }}</span>
-                        @if($spCompare)<span class="pdp-compare">{{ $currency }} {{ number_format($spCompare, 2) }}</span>@endif
+                        <span class="pdp-price" x-text="pdpMoney(pdpVariant ? pdpVariant.price : pdpBasePrice)"></span>
+                        <span class="pdp-compare" x-show="pdpComparePrice && pdpComparePrice>(pdpVariant ? pdpVariant.price : pdpBasePrice)" x-cloak x-text="pdpMoney(pdpComparePrice)"></span>
                     </div>
                     @if($sp->has_tax)<p class="pdp-tax-note">Precio incluye IGV ({{ rtrim(rtrim(number_format((float) ($sp->tax_rate ?? 18), 2), '0'), '.') }}%)</p>@endif
                     @if($spCompare)<p class="pdp-save">Ahorras {{ $currency }} {{ number_format($spCompare - $sp->price, 2) }}</p>@endif
@@ -5147,17 +7210,46 @@
                     @endif
                     @endunless
 
-                    @if(!is_null($spStock) && $spStock === 0)
+                    {{-- En modo cotización el stock no manda: el negocio trae bajo
+                         pedido y lo que se pide es un precio, no una unidad del
+                         almacén. "Agotado" espanta a quien iba a preguntar, y
+                         "quedan 3 unidades" promete una existencia que no se está
+                         reservando. Ninguno de los dos avisos aplica aquí. --}}
+                    @unless($quoteMode)
+                    @if($spHasRealVariants)
+                        <div class="pdp-stock-out" x-show="pdpVariant && pdpVariant.stock===0" x-cloak>{{ $txtAgotado }}</div>
+                        <div class="pdp-stock-low" x-show="pdpVariant && pdpVariant.stock>0 && pdpVariant.stock<=10" x-cloak>Quedan <span x-text="pdpVariant ? pdpVariant.stock : ''"></span> unidades</div>
+                    @elseif(!is_null($spStock) && $spStock === 0)
                         <div class="pdp-stock-out">{{ $txtAgotado }}</div>
                     @elseif(!is_null($spStock) && $spStock > 0 && $spStock <= 10)
                         <div class="pdp-stock-low">Quedan {{ $spStock }} unidades</div>
                     @endif
+                    @endunless
 
-                    @if($sp->sku && $showSku)<p style="color:#94a3b8;font-size:12px;margin:4px 0">SKU: {{ $sp->sku }}</p>@endif
-                    @if($sp->description)<div class="pdp-desc">{!! \App\Support\RichText::render($sp->description) !!}</div>@endif
+                    @if($showSku)<p x-show="pdpCurrentSku" x-cloak style="color:#94a3b8;font-size:12px;margin:4px 0">SKU: <span x-text="pdpCurrentSku"></span></p>@endif
+
+                    @if($spHasRealVariants)
+                    <div class="pdp-variants" style="margin:18px 0 6px">
+                        <template x-for="attribute in pdpAttributes" :key="attribute.id">
+                            <fieldset class="pdp-sizes" style="border:0;padding:0">
+                                <legend class="qv-sizes-label"><span x-text="attribute.name"></span>: <b x-show="pdpSelectedLabel(attribute.id)" x-text="pdpSelectedLabel(attribute.id)" style="text-transform:none;letter-spacing:0"></b></legend>
+                                <div class="qv-size-list">
+                                    <template x-for="value in attribute.values" :key="value.id">
+                                        <button type="button" class="qv-size"
+                                                :class="pdpSelected[attribute.id]===value.id&&'on'"
+                                                :disabled="!pdpOptionAvailable(attribute.id,value.id)"
+                                                :style="attribute.type==='color' && value.color ? {'--variant-color':value.color,'box-shadow':pdpSelected[attribute.id]===value.id ? '0 0 0 2px #fff, 0 0 0 4px '+value.color : 'inset 0 -4px 0 '+value.color} : {}"
+                                                @click="pdpChoose(attribute.id,value.id)" x-text="value.label"></button>
+                                    </template>
+                                </div>
+                            </fieldset>
+                        </template>
+                        <p class="qv-size-req" x-show="pdpVariantError" x-cloak role="alert">Selecciona todas las opciones disponibles para continuar.</p>
+                    </div>
+                    @endif
 
                     @php $spSizes = $sp->sizes; @endphp
-                    @if(count($spSizes))
+                    @if(count($spSizes) && !$spHasRealVariants)
                     <div class="pdp-sizes">
                         <span class="qv-sizes-label">Talla:</span>
                         <div class="qv-size-list">
@@ -5176,14 +7268,41 @@
                                 <span x-text="pdpQty"></span>
                                 <button type="button" @click="pdpQty++" aria-label="Más">+</button>
                             </div>
-                            <button class="pdp-add" type="button" @if(!is_null($spStock) && $spStock === 0) disabled @else @click="if({{ count($sp->sizes) }}&&!pdpSize){pdpSizeErr=true}else{for(let i=0;i<pdpQty;i++)add({{ $sp->id }},{{ Js::from($sp->name) }},{{ $sp->price }},'','',pdpSize||'')}" @endif>
-                                @if(!is_null($spStock) && $spStock === 0){{ $soldOutText ?? 'Agotado' }}@else{{ $quoteMode ? $quoteBtnText : $cartText }}@endif
+                            <button class="pdp-add" type="button" x-ref="pdpAdd"
+                                    :disabled="{{ (!is_null($spStock) && $spStock === 0 && !$spHasRealVariants) ? 'true' : 'false' }} || (pdpVariant && pdpVariant.stock===0)"
+                                    @click="if(pdpVariants.length && !pdpVariant){pdpVariantError=true}else if({{ (!$spHasRealVariants && $spTieneColores) ? 'true' : 'false' }}&&!pdpColor){pdpColorErr=true}else if({{ !$spHasRealVariants ? count($sp->sizes) : 0 }}&&!pdpSize){pdpSizeErr=true}else{for(let i=0;i<pdpQty;i++)add({{ $sp->id }},{{ Js::from($sp->name) }},pdpVariant?pdpVariant.price:{{ $sp->price }},pdpImg||'','',pdpVariant?pdpVariant.label:[pdpSize,pdpColor].filter(Boolean).join(' · '),0,0,pdpVariant?pdpVariant.id:null,{sku:{{ Js::from($sp->sku) }},marca:{{ Js::from($sp->marca?->label) }},unidad:{{ Js::from($sp->unit) }}})}">
+                                {{-- Cotizar nunca se bloquea por stock: preguntar el
+                                     precio de algo que no hay en almacén es
+                                     exactamente lo que este modo espera. --}}
+                                @if(!$quoteMode && !is_null($spStock) && $spStock === 0){{ $soldOutText ?? 'Agotado' }}@else{{ $quoteMode ? $quoteBtnText : $cartText }}@endif
                             </button>
                             @endif
+                            @if($pdpB2b && $sp->unit && $showCartButton)<span class="pdp-unit">{{ $sp->unit }}</span>@endif
                             @if($showInquiryButton)
                             <a class="pdp-add pdp-consult" href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($inquiryMsgBase.$sp->name.' '.request()->fullUrl()) }}" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.2 1.4Z"/></svg>{{ $inquiryText }}</a>
                             @endif
                         </div>
+                        @if($pdpB2b && $quoteMode && $showCartButton)
+                        {{-- Agrega y abre "Mi cotizacion" en un solo toque. Si falta
+                             elegir talla/color, el boton de arriba ya avisa. --}}
+                        <button type="button" class="pdp-quote-now" data-rotulo-fijo
+                                @click="$refs.pdpAdd.click(); $nextTick(() => { if (!pdpVariantError && !pdpColorErr && !pdpSizeErr) cartOpen = true })">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>
+                            {{ trim((string) ($settings['pdp_quote_now_text'] ?? '')) ?: 'Solicitar cotización ahora' }}
+                        </button>
+                        @endif
+                        @php
+                            // Ficha tecnica: el PDF subido manda sobre el enlace
+                            // del proveedor, que se cae si rehacen su web.
+                            $fichaUrl = $sp->ficha_tecnica_url_resuelta;
+                        @endphp
+                        @if($fichaUrl)
+                        <a class="pdp-ficha" href="{{ $fichaUrl }}" target="_blank" rel="noopener"
+                           aria-label="Ver ficha técnica de {{ $sp->name }} (PDF, se abre en otra pestaña)">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+                            {{ trim((string) ($settings['pdp_ficha_text'] ?? '')) ?: 'Ficha técnica (PDF)' }}
+                        </a>
+                        @endif
                     </div>
                     @php
                         // Garantias junto al boton: es donde el cliente duda.
@@ -5196,7 +7315,7 @@
                             }
                         }
                     @endphp
-                    @if(count($pdpTrust))
+                    @if(count($pdpTrust) && !$pdpB2b)
                     <ul class="pdp-trust">
                         @foreach($pdpTrust as $tr)
                         <li><strong>{{ $tr['t'] }}</strong>@if($tr['d'])<span>{{ $tr['d'] }}</span>@endif</li>
@@ -5204,134 +7323,183 @@
                     </ul>
                     @endif
                 </div>
+                @if($pdpB2b && (count($pdpTrust) || $sp->marca?->label))
+                <aside class="pdp-side" aria-label="Marca y garantías">
+                    @if($sp->marca?->label)
+                    <div class="pdp-side-brand">
+                        @if($sp->marca->image_url)<img src="{{ $assetUrl($sp->marca->image_url) }}" alt="{{ $sp->marca->label }}">@else<strong>{{ $sp->marca->label }}</strong>@endif
+                    </div>
+                    @endif
+                    @if(count($pdpTrust))
+                    <ul class="pdp-side-list">
+                        @foreach($pdpTrust as $tr)
+                        <li><span class="pdp-side-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $bxIconoPara('', $tr['t']) !!}</svg></span><span><strong>{{ $tr['t'] }}</strong>@if($tr['d'])<small>{{ $tr['d'] }}</small>@endif</span></li>
+                        @endforeach
+                    </ul>
+                    @endif
+                </aside>
+                @endif
             </div>
+
+
+            {{-- Pestañas: la descripción sale de la columna estrecha y pasa a
+                 ancho completo. "Instalación" y "Envíos" se redactan una vez
+                 por tienda en el constructor y valen para todos los productos;
+                 una pestaña sin texto no se pinta. --}}
+            @php
+                $pdpTabs = [];
+                if (filled($sp->description)) {
+                    // La descripcion se parte en dos: el texto de venta y la
+                    // lista de especificaciones. Asi la pestaña puede pintarlas
+                    // en dos columnas en vez de dejar media pantalla en blanco.
+                    // Si el producto no trae lista, el texto ocupa todo el ancho.
+                    $pdpHtml = \App\Support\RichText::render($sp->description);
+                    $pdpSpecs = null;
+                    if (preg_match('~<p>\s*<strong>[^<]*</strong>\s*</p>\s*<ul>.*?</ul>~is', $pdpHtml, $mm)) {
+                        $pdpHtml = str_replace($mm[0], '', $pdpHtml);
+                        // "Etiqueta: valor" se parte para poder alinear el valor
+                        // a la derecha, como en una hoja de datos. Sin dos puntos
+                        // la fila se queda tal cual.
+                        $pdpSpecs = preg_replace_callback('~<li>(.*?)</li>~is', function ($m) {
+                            $partes = explode(':', $m[1], 2);
+                            return count($partes) === 2 && trim($partes[1]) !== ''
+                                ? '<li>'.trim($partes[0]).'<span class="v">'.trim($partes[1]).'</span></li>'
+                                : $m[0];
+                        }, $mm[0]);
+                    }
+                    $pdpTabs[] = ['k' => 'desc', 'l' => 'Descripción', 'html' => $pdpHtml, 'specs' => $pdpSpecs];
+                }
+                foreach ([['pdp_tab_instalacion', 'Instalación'], ['pdp_tab_envios', 'Envíos y pagos'], ['pdp_tab_garantia', 'Garantía']] as [$clave, $rotulo]) {
+                    $txt = trim((string) ($settings[$clave] ?? ''));
+                    if ($txt !== '') {
+                        $pdpTabs[] = ['k' => $clave, 'l' => trim((string) ($settings[$clave.'_label'] ?? '')) ?: $rotulo,
+                                      'html' => \App\Support\RichText::render($txt)];
+                    }
+                }
+                if ($pdpB2b) {
+                    // Hoja de datos y documentos como pestañas propias, como en
+                    // un catalogo tecnico. La descripcion se queda solo con el texto.
+                    if (!empty($pdpTabs[0]['specs'] ?? null)) {
+                        array_splice($pdpTabs, 1, 0, [['k' => 'specs', 'l' => 'Especificaciones', 'html' => $pdpTabs[0]['specs']]]);
+                        $pdpTabs[0]['specs'] = null;
+                    }
+                    if (!empty($fichaUrl ?? null)) {
+                        $pdpTabs[] = ['k' => 'docs', 'l' => 'Documentos', 'html' => '<ul class="pdp-docs"><li><a href="'.e($fichaUrl).'" target="_blank" rel="noopener">'
+                            .e(trim((string) ($settings['pdp_ficha_text'] ?? '')) ?: 'Ficha técnica (PDF)').'</a><small>PDF</small></li></ul>'];
+                    }
+                }
+            @endphp
+            @if(count($pdpTabs))
+            @if($pdpB2b)<div class="pdp-tabs-b2b">@endif
+            <div class="pdp-tabs" x-data="{ t: '{{ $pdpTabs[0]['k'] }}' }">
+                <div class="pdp-tabs-bar" role="tablist">
+                    @foreach($pdpTabs as $tab)
+                    <button type="button" role="tab" :aria-selected="t==='{{ $tab['k'] }}'"
+                            :class="t==='{{ $tab['k'] }}' && 'is-on'"
+                            @click="t='{{ $tab['k'] }}'">{{ $tab['l'] }}</button>
+                    @endforeach
+                </div>
+                @foreach($pdpTabs as $tab)
+                <div class="pdp-tabs-panel{{ empty($tab['specs']) ? '' : ' has-specs' }}" role="tabpanel"
+                     x-show="t==='{{ $tab['k'] }}'" @if(!$loop->first)x-cloak @endif>
+                    <div class="pdp-desc{{ $tab['k'] === 'specs' ? ' pdp-specs' : '' }}">{!! $tab['html'] !!}</div>
+                    @if(!empty($tab['specs']))
+                    <aside class="pdp-specs pdp-desc">{!! $tab['specs'] !!}</aside>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+            @if($pdpB2b)
+            @php $pdpVolT = trim((string) ($settings['pdp_volume_title'] ?? '')); @endphp
+            @if($pdpVolT !== '')
+            <aside class="pdp-volume">
+                <span class="pdp-volume-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
+                <strong>{{ $pdpVolT }}</strong>
+                @if(filled($settings['pdp_volume_text'] ?? null))<p>{{ $settings['pdp_volume_text'] }}</p>@endif
+                @if($whatsapp)
+                <a class="pdp-volume-cta" href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($inquiryMsgBase.$sp->name.' '.request()->fullUrl()) }}" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+                    {{ trim((string) ($settings['pdp_volume_cta'] ?? '')) ?: 'Hablar con un asesor' }}
+                </a>
+                @endif
+            </aside>
+            @endif
+            </div>
+            @endif
+            @endif
 
             {{-- Relacionados --}}
             @if(!empty($relatedProducts) && $relatedProducts->count())
-            <div class="pdp-related">
-                <h2>{{ $txtRelacionados }}</h2>
+            <div class="pdp-related{{ $pdpB2b ? ' is-b2b' : '' }}">
+                <div class="pdp-related-head">
+                    <h2>{{ $txtRelacionados }}</h2>
+                    @if($pdpB2b)<a class="home-see-all" href="{{ $shopUrl }}">Ver todos los productos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>@endif
+                </div>
+                @if($pdpB2b)
+                {{-- Tarjeta compacta horizontal: foto, nombre, codigo y cotizar.
+                     Cuatro entran en una fila sin robar protagonismo a la ficha. --}}
+                <div class="pdp-rel-grid">
+                    @foreach($relatedProducts as $rp)
+                    @php $rpImg = $rp->mainImage?->url ? \App\Support\Imagen\Img::deAncho($assetUrl($rp->mainImage->url), 400) : null; $rpUrl = \App\Support\ImageVariants::productUrl($project, $rp->id, $rp->name); @endphp
+                    <article class="pdp-rel-card">
+                        <a class="pdp-rel-media" href="{{ $rpUrl }}" aria-label="Ver {{ $rp->name }}">@if($rpImg)<img src="{{ $rpImg }}" alt="{{ $rp->name }}" loading="lazy">@endif</a>
+                        <div class="pdp-rel-body">
+                            <a class="pdp-rel-name" href="{{ $rpUrl }}">{{ $rp->name }}</a>
+                            @php $rpMeta = implode(' · ', array_filter([$rp->marca?->label, $rp->sku ? 'Código: '.$rp->sku : null])); @endphp
+                            @if($rpMeta !== '')<span class="pdp-rel-meta">{{ $rpMeta }}</span>@endif
+                            @unless($hidePrices)<span class="pdp-rel-price">{{ $currency }} {{ number_format($rp->price, 2) }}</span>@endunless
+                            @if($quoteMode)<span class="pdp-avail is-sm"><i></i>{{ trim((string) ($settings['pdp_avail_text'] ?? '')) ?: 'Disponible para cotizar' }}</span>@endif
+                            @if($showCartButton)<button type="button" class="pdp-rel-add" @click="add({{ $rp->id }},{{ Js::from($rp->name) }},{{ (float) $rp->price }},{{ Js::from($rpImg ?: '') }},{{ Js::from($rp->category?->name ?? '') }},'',0,0,null,{sku:{{ Js::from($rp->sku) }},marca:{{ Js::from($rp->marca?->label) }},unidad:{{ Js::from($rp->unit) }}})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{{ $quoteMode ? $quoteBtnText : $cartText }}</button>@endif
+                        </div>
+                    </article>
+                    @endforeach
+                </div>
+                @else
                 <div class="catalog-product-grid">
                     @foreach($relatedProducts as $rp)
-                    @php $rpImg = $rp->mainImage?->url ? $assetUrl($rp->mainImage->url) : null; $rpUrl = \App\Support\ImageVariants::productUrl($project, $rp->id, $rp->name); @endphp
+                    @php $rpImg = $rp->mainImage?->url ? \App\Support\Imagen\Img::deAncho($assetUrl($rp->mainImage->url), 400) : null; $rpUrl = \App\Support\ImageVariants::productUrl($project, $rp->id, $rp->name); @endphp
                     <article class="catalog-card">
-                        <div class="catalog-card-media">
+                        <div class="catalog-card-media" @if($marcaAgua) style="--card-marca:url('{{ $marcaAgua }}');--card-marca-op:{{ $marcaOpacidad }}"@endif>
                             <a class="catalog-card-media-link" href="{{ $rpUrl }}" aria-label="Ver {{ $rp->name }}">
                                 @if($rpImg)<img src="{{ $rpImg }}" alt="{{ $rp->name }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span>@endif
                             </a>
                         </div>
                         <div class="catalog-card-body">
-                            <span class="catalog-card-category">{{ $rp->category->name ?? '' }}</span>
+                            <span class="catalog-card-category">{{ $rp->category->name ?? '' }}</span>@if($rp->marca?->label)<span class="catalog-card-brand">{{ $rp->marca->label }}</span>@endif
                             <a class="catalog-card-name" href="{{ $rpUrl }}">{{ $rp->name }}</a>
                             @unless($hidePrices)<div class="catalog-card-prices"><span class="catalog-card-price">{{ $currency }} {{ number_format($rp->price, 2) }}</span></div>@endunless
                         </div>
                         <div class="catalog-card-actions">
                             @if($showCartButton)<button class="catalog-card-action" type="button" @click="add({{ $rp->id }},{{ Js::from($rp->name) }},{{ $rp->price }})">{{ $quoteMode ? $quoteBtnText : $cartText }}</button>@endif
-                            @if($showInquiryButton)<a class="catalog-card-inquiry" href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($inquiryMsgBase.$rp->name.' '.$rpUrl) }}" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.2 1.4Z"/></svg>{{ $inquiryText }}</a>@endif
+                            @if($showInquiryButton)<a class="catalog-card-inquiry" aria-label="Consultar por WhatsApp: {{ $rp->name }}" href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($inquiryMsgBase.$rp->name.' '.$rpUrl) }}" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.2 1.4Z"/></svg>{{ $inquiryText }}</a>@endif
+                            <a class="catalog-card-more" href="{{ $rpUrl }}">Ver producto <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
                         </div>
                     </article>
                     @endforeach
                 </div>
+                @endif
             </div>
             @endif
         </div></section>
         @endif
 
-        {{-- Lightbox de imagenes (lupa): global — producto y vista rapida --}}
-        <div id="cpt-lb" class="cpt-lb" role="dialog" aria-modal="true" aria-label="Imagen ampliada">
-            <button type="button" class="cpt-lb-btn cpt-lb-close" aria-label="Cerrar">✕</button>
-            <button type="button" class="cpt-lb-btn cpt-lb-prev" aria-label="Anterior" style="display:none">‹</button>
-            <button type="button" class="cpt-lb-btn cpt-lb-next" aria-label="Siguiente" style="display:none">›</button>
-            <div class="cpt-lb-counter" style="display:none"></div>
-            <div class="cpt-lb-zooms">
-                <button type="button" class="cpt-lb-btn" data-lbz="in" aria-label="Acercar">+</button>
-                <button type="button" class="cpt-lb-btn" data-lbz="out" aria-label="Alejar">−</button>
-                <button type="button" class="cpt-lb-btn" data-lbz="rst" aria-label="Restablecer" style="font-size:12px">1:1</button>
-            </div>
-            <div class="cpt-lb-stage"><img src="" alt="" draggable="false"></div>
-        </div>
-        <script>
-        (function(){
-            var imgs = @js(isset($spImages) && $spImages->count() ? $spImages->map(fn ($i) => $assetUrl($i->url))->values()->all() : (isset($spMainUrl) && $spMainUrl ? [$spMainUrl] : []));
-            var lb = document.getElementById('cpt-lb');
-            if (!lb) return;
-            var img = lb.querySelector('.cpt-lb-stage img'),
-                prev = lb.querySelector('.cpt-lb-prev'),
-                next = lb.querySelector('.cpt-lb-next'),
-                counter = lb.querySelector('.cpt-lb-counter'),
-                idx = 0, scale = 1, panX = 0, panY = 0, dragging = null;
 
-            function apply(){ img.style.transform = 'scale('+scale+') translate('+(panX/scale)+'px,'+(panY/scale)+'px)'; img.style.cursor = scale>1 ? 'grab' : 'zoom-in'; }
-            function reset(){ scale = 1; panX = 0; panY = 0; apply(); }
-            function show(){
-                img.src = imgs[idx];
-                var multi = imgs.length > 1;
-                prev.style.display = next.style.display = multi ? 'grid' : 'none';
-                counter.style.display = multi ? 'block' : 'none';
-                if (multi) counter.textContent = (idx+1)+' / '+imgs.length;
-            }
-            function open(i){ idx = i; reset(); show(); lb.classList.add('open'); document.body.classList.add('cpt-lb-open'); document.body.style.overflow = 'hidden'; }
-            function close(){ lb.classList.remove('open'); document.body.classList.remove('cpt-lb-open'); img.src=''; document.body.style.overflow=''; reset(); }
-            function zoomBy(f){ scale = Math.min(5, Math.max(1, scale*f)); if (scale===1){ panX=panY=0; } apply(); }
-
-            var gallery = imgs.slice();
-            window.__lightbox = function(src, list){
-                if (Array.isArray(list) && list.length) imgs = list.slice();
-                else if (gallery.length && (!src || gallery.indexOf(src) >= 0)) imgs = gallery.slice();
-                else if (src) imgs = [src];
-                if (!imgs.length) return;
-                open(Math.max(0, imgs.indexOf(src)));
-            };
-            lb.querySelector('.cpt-lb-close').addEventListener('click', close);
-            lb.addEventListener('click', function(e){ if (moved) return; if (e.target === lb || e.target.classList.contains('cpt-lb-stage')) close(); });
-            prev.addEventListener('click', function(){ idx = (idx-1+imgs.length)%imgs.length; reset(); show(); });
-            next.addEventListener('click', function(){ idx = (idx+1)%imgs.length; reset(); show(); });
-            lb.querySelector('[data-lbz=in]').addEventListener('click', function(){ zoomBy(1.4); });
-            lb.querySelector('[data-lbz=out]').addEventListener('click', function(){ zoomBy(0.7); });
-            lb.querySelector('[data-lbz=rst]').addEventListener('click', reset);
-            img.addEventListener('click', function(){ if (moved) return; if (scale === 1) zoomBy(1.8); else reset(); });
-            lb.addEventListener('wheel', function(e){ e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.15 : 0.87); }, { passive: false });
-            // Pellizco con dos dedos + arrastre con uno (pointer events)
-            var stage = lb.querySelector('.cpt-lb-stage'), pts = new Map(), pinchStart = 0, pinchBase = 1, moved = false;
-            function ptDist(){ var a = Array.from(pts.values()); return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); }
-            stage.addEventListener('pointerdown', function(e){
-                stage.setPointerCapture(e.pointerId);
-                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-                moved = false;
-                if (pts.size === 2) { pinchStart = ptDist(); pinchBase = scale; dragging = null; }
-                else if (pts.size === 1 && scale > 1) { dragging = { x: e.clientX - panX, y: e.clientY - panY }; img.style.cursor = 'grabbing'; }
-            });
-            stage.addEventListener('pointermove', function(e){
-                if (!pts.has(e.pointerId)) return;
-                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-                moved = true;
-                if (pts.size === 2 && pinchStart > 0) {
-                    scale = Math.min(5, Math.max(1, pinchBase * ptDist() / pinchStart));
-                    if (scale === 1) { panX = panY = 0; }
-                    apply();
-                } else if (pts.size === 1 && dragging) {
-                    panX = e.clientX - dragging.x; panY = e.clientY - dragging.y; apply();
-                }
-            });
-            function endPt(e){
-                pts.delete(e.pointerId);
-                if (pts.size < 2) pinchStart = 0;
-                if (!pts.size) { dragging = null; img.style.cursor = scale > 1 ? 'grab' : 'zoom-in'; }
-            }
-            stage.addEventListener('pointerup', endPt);
-            stage.addEventListener('pointercancel', endPt);
-            document.addEventListener('keydown', function(e){
-                if (!lb.classList.contains('open')) return;
-                if (e.key === 'Escape') close();
-                if (e.key === 'ArrowLeft' && imgs.length>1) prev.click();
-                if (e.key === 'ArrowRight' && imgs.length>1) next.click();
-            });
-        })();
-        </script>
 
         {{-- ═══ PÁGINA: Nosotros / Contacto (con el diseño de la tienda) ═══ --}}
         @if(in_array($storeView, ['nosotros','contacto'], true))
-        @php $storePage = $storePage ?? null; $pc = is_array($storePage?->content) ? $storePage->content : []; @endphp
-        <section class="store-page" data-store-native-section="custom_page" style="order:{{ $sectionOrder('custom_page') }}"><div class="container">
+        {{-- En VISTA PREVIA manda el borrador; en la tienda pública, solo lo
+             publicado. Antes se leía siempre `content`, así que el negocio subía
+             la foto de su portada, se guardaba bien en borrador, y la vista
+             previa seguía enseñando el degradado sin explicar por qué.
+             La condición es imprescindible: sin ella los borradores sin
+             publicar saldrían en la tienda de cara al cliente. --}}
+        @php
+            $storePage = $storePage ?? null;
+            $pc = ($previewMode ?? false)
+                ? ($storePage?->contenidoEfectivo() ?? [])
+                : (is_array($storePage?->content) ? $storePage->content : []);
+        @endphp
+        <section class="store-page{{ $storeView === 'nosotros' ? ' store-page--nosotros' : '' }}" data-store-native-section="custom_page" style="order:{{ $sectionOrder('custom_page') }}"><div class="container">
             <nav class="catalog-breadcrumb" aria-label="Ruta de navegación"><a href="{{ \App\Support\StorefrontNavigation::resolveUrl($project, new \App\Models\StoreMenuItem(['destination_type'=>'home'])) }}">Inicio</a><span>/</span><strong>{{ $storePage?->title ?? ($storeView === 'nosotros' ? 'Nosotros' : 'Contacto') }}</strong></nav>
             @php $abHeroActive = $storeView === 'nosotros' && !empty($pc['hero_enabled']); @endphp
             @unless($abHeroActive)<h1 class="store-page-title">{{ $storePage?->title ?? ($storeView === 'nosotros' ? 'Nosotros' : 'Contacto') }}</h1>@endunless
@@ -5343,8 +7511,12 @@
                     // fondo de marca (degradado navy/acento) para que la pagina conserve
                     // jerarquia. Al subir la foto, esta la reemplaza automaticamente.
                     $abHeroOn   = !empty($pc['hero_enabled']);
-                    $abHeroHasImg = !empty($pc['hero_image']) || !empty($pc['image']);
-                    $abHeroImg  = $assetUrl($pc['hero_image'] ?? $pc['image'] ?? null);
+                    // SOLO `hero_image` manda en la portada. Antes `image` —que es
+                    // la foto de la SECCION Nosotros— tambien la activaba: al
+                    // configurarla, la portada perdia su degradado de marca y se
+                    // quedaba gris, porque son dos fotos con papeles distintos.
+                    $abHeroHasImg = !empty($pc['hero_image']);
+                    $abHeroImg  = $assetUrl($pc['hero_image'] ?? null);
                     $abHeroImgM = !empty($pc['hero_image_mobile']) ? $assetUrl($pc['hero_image_mobile']) : $abHeroImg;
                     $abHeroAlign = in_array($pc['hero_align'] ?? 'left', ['left','center'], true) ? ($pc['hero_align'] ?? 'left') : 'left';
                     $abHeroOverlay = max(0, min(80, (int) ($pc['hero_overlay'] ?? 45))) / 100;
@@ -5400,23 +7572,72 @@
                 @endif
 
                 {{-- QUIÉNES SOMOS + MISIÓN / VISIÓN --}}
-                <div class="about-grid {{ $abHasCards ? '' : 'about-grid--single' }}">
+                @php
+                    // Indicadores de trayectoria: [{value, title, enabled}].
+                    // Se leen de `items`, la misma clave que ya usa el bloque
+                    // "Nosotros (resumen)" de la portada, para que el negocio
+                    // los escriba UNA vez y sirvan en los dos sitios.
+                    $abCifras = collect($pc['items'] ?? [])
+                        ->filter(fn ($i) => is_array($i) && ($i['enabled'] ?? true) && filled($i['value'] ?? null))
+                        ->take(4)->values();
+                    // La foto de la SECCIÓN es siempre `image`. La portada usa
+                    // su propia `hero_image`, así que ya no compiten y esta no
+                    // hay que descartarla nunca: la condición anterior venía de
+                    // cuando ambas compartían campo y dejaba la foto sin pintar
+                    // en cualquier tienda con la portada encendida.
+                    $abFoto = $assetUrl($pc['image'] ?? null);
+                    // Con misión/visión al lado, la foto no cabe: manda el contenido.
+                    $abFotoAlLado = $abFoto && ! $abHasCards;
+                @endphp
+                <div class="about-grid {{ ($abHasCards || $abFotoAlLado) ? '' : 'about-grid--single' }}">
                     <div class="about-intro">
+                        {{-- La etiqueta ROTULA el texto de presentacion: sin ese texto
+                             quedaba un "QUIENES SOMOS" subrayado encabezando el vacio,
+                             que es justo lo que hacia ver rota la pagina. --}}
+                        @if(!empty($pc['heading']) || !empty($pc['body']))
                         <span class="about-label">{{ $pc['label'] ?? 'Quiénes somos' }}</span>
+                        @endif
                         @if(!empty($pc['heading']))<h2 class="about-heading">{{ $pc['heading'] }}</h2>@endif
                         @if(!empty($pc['body']))<div class="store-page-body">{{ $pc['body'] }}</div>@endif
                         {{-- Sin button_url configurado el boton no aparecia, y con el
                              se perdian el titular y el texto de apoyo que ya estaban
                              guardados. Si no hay enlace propio se usa WhatsApp. --}}
                         @php $abCtaUrl = $pc['button_url'] ?? ($whatsapp ? 'https://wa.me/'.$whatsapp : ''); @endphp
-                        @if(!empty($pc['button_text']) && $abCtaUrl !== '')
+                        {{-- `show_cta` se ofrecia en el panel y esta plantilla lo
+                             ignoraba: el negocio lo desmarcaba y el bloque seguia
+                             saliendo. Mismo contrato que usa `storefront/page`. --}}
+                        @if(($pc['show_cta'] ?? true) && !empty($pc['button_text']) && $abCtaUrl !== '')
                         <div class="about-cta-block">
                             @if(!empty($pc['button_heading']))<strong>{{ $pc['button_heading'] }}</strong>@endif
                             @if(!empty($pc['button_body']))<p>{{ $pc['button_body'] }}</p>@endif
                             <a class="button button-primary about-cta" href="{{ $abCtaUrl }}" @if(str_starts_with($abCtaUrl, 'http')) target="_blank" rel="noopener" @endif>{{ $pc['button_text'] }}</a>
                         </div>
                         @endif
+
+                        {{-- Indicadores: la prueba de trayectoria. Solo si el
+                             negocio los configuró; sin ellos no se pinta el
+                             bloque ni sus filetes. --}}
+                        @if($abCifras->isNotEmpty())
+                        <div class="about-cifras">
+                            @foreach($abCifras as $c)
+                            <div class="about-cifra">
+                                <strong>{{ $c['value'] }}</strong>
+                                @if(filled($c['title'] ?? null))<span>{{ $c['title'] }}</span>@endif
+                            </div>
+                            @endforeach
+                        </div>
+                        @endif
                     </div>
+                    {{-- La foto del negocio ocupa la segunda columna cuando no
+                         hay misión/visión que poner ahí. --}}
+                    @if($abFotoAlLado)
+                    <figure class="about-foto" style="margin:0">
+                        <img src="{{ $abFoto }}" alt="{{ $storePage?->title ?? 'Nosotros' }}" loading="lazy" width="800" height="600">
+                        @if(filled($pc['image_caption'] ?? null))
+                        <figcaption class="about-foto-nota">{{ $pc['image_caption'] }}</figcaption>
+                        @endif
+                    </figure>
+                    @endif
                     @if($abHasCards)
                     <div class="about-cards">
                         @if(!empty($pc['mission']))
@@ -5450,12 +7671,97 @@
                 </div>
                 @endif
 
-                {{-- Bloques clásicos (compatibilidad): historia, valores, equipo --}}
-                @foreach(['history'=>'Nuestra historia','values'=>'Valores','team'=>'Equipo'] as $k=>$lbl)
+                {{-- Bloques clásicos (compatibilidad): historia, valores, equipo.
+                     Historia y Equipo van emparejados en dos columnas cuando los
+                     dos tienen texto: por separado cada uno ocupaba media
+                     pantalla y dejaba la otra media en blanco. Valores no entra
+                     porque ya son tarjetas a todo el ancho. --}}
+                {{-- Historia y Equipo se emparejan SOLO si no hay foto que
+                     colocar: con foto, la Historia la usa como su segunda
+                     columna, que es donde mejor se lee. Antes las dos
+                     condiciones se anulaban entre si y la foto no aparecia en
+                     ningun sitio aunque estuviera configurada. --}}
+                @php $abPareja = filled($pc['history'] ?? null) && filled($pc['team'] ?? null) && ! $abFoto; @endphp
+                @if($abPareja)<div class="about-cierre">@endif
+                @foreach(['history'=>'Nuestra historia','team'=>'Equipo'] as $k=>$lbl)
                     @if(!empty($pc[$k]))
-                    <div class="store-page-block"><h2>{{ $lbl }}</h2><p>{{ $pc[$k] }}</p></div>
+                    @php
+                        // "Valores" se escribe una por linea: pintarlas como un
+                        // parrafo corrido las convertia en un bloque de texto
+                        // indistinguible. Si hay mas de una, son una lista.
+                        $spItems = $k === 'values'
+                            ? array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $pc[$k]))))
+                            : [];
+                    @endphp
+                    @php
+                        // La historia se acompaña con la foto del negocio cuando
+                        // esa foto no se gastó ya arriba: es el bloque que más
+                        // se notaba a media pantalla con la otra media en blanco.
+                        // La foto acompaña a la Historia siempre que exista y no
+                        // se haya usado ya arriba, junto a la presentación.
+                        $abHistFoto = ($k === 'history' && ! $abFotoAlLado) ? $abFoto : null;
+                    @endphp
+                    @if($abHistFoto)<div class="about-historia">@endif
+                    <div class="store-page-block">
+                        <h2>{{ $lbl }}</h2>
+                        @if(count($spItems) > 1)
+                        <ul class="sp-values">
+                            @foreach($spItems as $spItem)
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                                <span>{{ $spItem }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                        @else
+                        <p>{{ $pc[$k] }}</p>
+                        @endif
+                    </div>
+                    @if($abHistFoto)
+                        <figure class="about-historia-foto" style="margin:0">
+                            <img src="{{ $abHistFoto }}" alt="{{ $lbl }}" loading="lazy" width="800" height="600">
+                        </figure>
+                    </div>
+                    @endif
                     @endif
                 @endforeach
+                @if($abPareja)</div>@endif
+
+                {{-- Galería. El panel la ofrecía y ESTA plantilla no la pintaba:
+                     el negocio subía fotos, las guardaba y no salían en ningún
+                     sitio. Mismo contrato que `storefront/page`. --}}
+                @if(($pc['show_gallery'] ?? true) && !empty($pc['gallery']))
+                <div class="store-page-block">
+                    <div class="about-galeria">
+                        @foreach($pc['gallery'] as $gImg)
+                        <img src="{{ $assetUrl($gImg) }}" alt="{{ $storePage?->title ?? 'Nosotros' }} — imagen {{ $loop->iteration }}" loading="lazy" width="600" height="450">
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
+                {{-- Valores aparte: son tarjetas y ocupan el ancho completo,
+                     así que no entran en el emparejado de dos columnas. --}}
+                @if(filled($pc['values'] ?? null))
+                    @php
+                        $spItems = array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $pc['values']))));
+                    @endphp
+                    <div class="store-page-block">
+                        <h2>Valores</h2>
+                        @if(count($spItems) > 1)
+                        <ul class="sp-values">
+                            @foreach($spItems as $spItem)
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>
+                                <span>{{ $spItem }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                        @else
+                        <p>{{ $pc['values'] }}</p>
+                        @endif
+                    </div>
+                @endif
             @else
                 @if(!empty($pc['body']))<div class="store-page-body">{{ $pc['body'] }}</div>@endif
                 @php
@@ -5467,6 +7773,12 @@
                     $ctWhats   = $pc['whatsapp'] ?? null ?: ($whatsapp ?: null);
                     $ctAddress = $pc['address']  ?? null ?: $footerAddress;
                     $ctHours   = $pc['hours']    ?? null ?: $footerHours;
+                    // Ancla del mapa: con coordenadas configuradas el pin cae
+                    // exacto; buscar por el texto de la direccion puede caer a
+                    // cuadras (o en otra ciudad homonima). El texto visible
+                    // sigue siendo la direccion escrita.
+                    $ctCoords = trim((string) ($settings['map_coords'] ?? ''));
+                    $ctMapQ   = $ctCoords !== '' ? $ctCoords : $ctAddress;
                 @endphp
                 <div class="store-page-contact">
                     <div class="store-contact-info">
@@ -5489,7 +7801,7 @@
                             </a>
                             @endif
                             @if($ctAddress)
-                            <a class="ct-accion" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ctAddress) }}" target="_blank" rel="noopener">
+                            <a class="ct-accion" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ctMapQ ?? $ctAddress) }}" target="_blank" rel="noopener">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                                 <span><strong>{{ $txtoLibre('contact_map_label', 'Cómo llegar') }}</strong><small>{{ $ctAddress }}</small></span>
                             </a>
@@ -5511,10 +7823,10 @@
                         @if($ctAddress)
                         {{-- Ubicación en Google Maps de la dirección configurada --}}
                         <div class="store-contact-map">
-                            <iframe src="https://www.google.com/maps?q={{ urlencode($ctAddress) }}&output=embed&hl=es"
+                            <iframe src="https://www.google.com/maps?q={{ urlencode($ctMapQ) }}&output=embed&hl=es"
                                     title="Ubicación: {{ $ctAddress }}" loading="lazy" allowfullscreen
                                     referrerpolicy="no-referrer-when-downgrade"></iframe>
-                            <a class="store-contact-map-link" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ctAddress) }}"
+                            <a class="store-contact-map-link" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ctMapQ) }}"
                                target="_blank" rel="noopener">Abrir en Google Maps →</a>
                         </div>
                         <style>
@@ -5611,13 +7923,13 @@
         @endif
     </main>
 
-    <div class="ck-modal" x-show="checkoutOpen" x-cloak role="dialog" aria-modal="true" aria-label="Finalizar compra">
+    <div class="ck-modal" x-show="checkoutOpen" x-cloak role="dialog" aria-modal="true" aria-label="{{ $isQuoteOnly ? 'Tu cotización' : 'Finalizar compra' }}">
         {{-- Carrito vacío --}}
         <div x-show="cart.length===0" style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px">
             <div style="max-width:340px;width:100%;padding:32px 24px;text-align:center;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(15,23,42,.15)">
-                <div style="font-size:52px;margin-bottom:12px">🛒</div>
-                <h3 style="margin-bottom:8px;color:var(--secondary);font-size:18px;font-weight:800">Tu carrito está vacío</h3>
-                <p style="margin-bottom:20px;color:#64748b;font-size:13px">Agrega productos antes de continuar.</p>
+                <div style="font-size:52px;margin-bottom:12px">{{ $isQuoteOnly ? '📋' : '🛒' }}</div>
+                <h3 style="margin-bottom:8px;color:var(--secondary);font-size:18px;font-weight:800">{{ $isQuoteOnly ? 'Tu cotización está vacía' : 'Tu carrito está vacío' }}</h3>
+                <p style="margin-bottom:20px;color:#64748b;font-size:13px">{{ $isQuoteOnly ? 'Agrega productos para solicitar tu cotización.' : 'Agrega productos antes de continuar.' }}</p>
                 <button class="ck-submit" @click="checkoutOpen=false">Ir al catálogo</button>
             </div>
         </div>
@@ -5645,11 +7957,11 @@
                         <div class="ck-error" x-show="orderError" x-cloak x-text="orderError"></div>
 
                         <div class="ck-section">
-                            <h3>Datos de contacto</h3>
+                            <h3>{{ $isQuoteOnly ? 'Completa tus datos para recibir la cotización' : 'Datos de contacto' }}</h3>
                             <div class="ck-field-row">
-                                <div class="ck-field"><label>Nombre *</label><input x-model="form.fname" type="text" placeholder="Tu nombre"></div>
+                                <div class="ck-field"><label>{{ $isQuoteOnly ? 'Nombre o empresa *' : 'Nombre *' }}</label><input x-model="form.fname" type="text" placeholder="{{ $isQuoteOnly ? 'Empresa o nombre completo' : 'Tu nombre' }}"></div>
                                 @if($ckFields['fixed']['lname']['enabled'] ?? true)
-                                <div class="ck-field"><label>Apellido</label><input x-model="form.lname" type="text" placeholder="Tu apellido"></div>
+                                @unless($isQuoteOnly)<div class="ck-field"><label>Apellido</label><input x-model="form.lname" type="text" placeholder="Tu apellido"></div>@endunless
                                 @endif
                             </div>
                             <div class="ck-field-row">
@@ -5678,7 +7990,7 @@
                         <div class="ck-section">
                             <h3>Dirección de entrega</h3>
                             <div class="ck-field-row">
-                                <div class="ck-field"><label>Departamento</label><input x-model="form.department" type="text" placeholder="Lima"></div>
+                                <div class="ck-field"><label>{{ $isQuoteOnly ? 'Ciudad' : 'Departamento' }}</label><input x-model="form.department" type="text" placeholder="Lima"></div>
                                 <div class="ck-field"><label>Distrito</label><input x-model="form.district" type="text" placeholder="Miraflores"></div>
                             </div>
                             <div class="ck-field"><label>Dirección *</label><input x-model="form.address" type="text" placeholder="Av. Principal 123"></div>
@@ -5891,18 +8203,18 @@
     @endphp
 
     {{-- ═══ PÁGINA DE CARRITO (esqueleto ecommerce, estilo computienda) ═══ --}}
-    <div class="cartpage" x-show="cartPageOpen" x-cloak role="dialog" aria-modal="true" aria-label="Tu carrito">
+    <div class="cartpage" x-show="cartPageOpen" x-cloak role="dialog" aria-modal="true" aria-label="{{ $isQuoteOnly ? 'Mi cotización' : 'Tu carrito' }}">
         <div class="cartpage-inner">
-            <button class="cartpage-back" type="button" @click="cartPageOpen=false;document.body.style.overflow=''"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>Seguir comprando</button>
+            <button class="cartpage-back" type="button" @click="cartPageOpen=false;document.body.style.overflow=''"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>{{ $isQuoteOnly ? 'Seguir cotizando' : 'Seguir comprando' }}</button>
             {{-- h2, no h1: el h1 de la pagina es el titulo del contenido, no el carrito. --}}
-            <h2>Tu carrito</h2>
+            <h2>{{ $isQuoteOnly ? 'Mi cotización' : 'Tu carrito' }}</h2>
             <p style="color:#64748b;font-size:13px;margin:0 0 22px" x-text="itemCount()+' '+(itemCount()===1?'producto':'productos')"></p>
 
             <template x-if="cart.length===0">
                 <div class="cartpage-empty">
-                    <div style="font-size:56px;margin-bottom:12px">🛒</div>
-                    <h3 style="margin-bottom:8px;color:var(--secondary);font-size:18px;font-weight:800">Tu carrito está vacío</h3>
-                    <p style="margin-bottom:20px;color:#64748b;font-size:13px">Agrega productos para comenzar.</p>
+                    <div style="font-size:56px;margin-bottom:12px">{{ $isQuoteOnly ? '📋' : '🛒' }}</div>
+                    <h3 style="margin-bottom:8px;color:var(--secondary);font-size:18px;font-weight:800">{{ $isQuoteOnly ? 'Tu cotización está vacía' : 'Tu carrito está vacío' }}</h3>
+                    <p style="margin-bottom:20px;color:#64748b;font-size:13px">{{ $isQuoteOnly ? 'Agrega los productos que necesitas y te enviamos la cotización.' : 'Agrega productos para comenzar.' }}</p>
                     <button class="ck-submit" style="max-width:240px;margin:0 auto" @click="cartPageOpen=false;document.body.style.overflow=''">Explorar catálogo</button>
                 </div>
             </template>
@@ -5917,7 +8229,12 @@
                                     <template x-if="!item.imagen"><svg class="catalog-card-placeholder" style="width:34px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"></path></svg></template>
                                 </div>
                                 <div style="min-width:0">
-                                    <div class="cart-line-cat" x-text="item.categoria" x-show="item.categoria"></div>
+                                    <div class="cart-line-cat" x-text="item.marca||item.categoria" x-show="item.marca||item.categoria"></div>
+                                    {{-- Codigo y unidad: es lo que un distribuidor necesita para cotizar. --}}
+                                    <div class="cart-line-meta" x-show="item.sku||item.unidad" x-cloak>
+                                        <span x-show="item.sku">Código: <b x-text="item.sku"></b></span>
+                                        <span x-show="item.unidad" x-text="item.unidad"></span>
+                                    </div>
                                     <div class="cart-line-name" x-text="item.nombre+(item.talla?(' · Talla '+item.talla):'')"></div>
                                     {{-- Aviso de tramo mayorista: se activa solo al llegar al minimo --}}
                                     <div class="cart-line-mayor is-on" x-show="lineaEsMayorista(item)" x-cloak>
@@ -5941,7 +8258,7 @@
                     </div>
 
                     <div class="cartpage-summary">
-                        <h4>Resumen del pedido</h4>
+                        <h4>{{ $isQuoteOnly ? 'Resumen de tu cotización' : 'Resumen del pedido' }}</h4>
                         <div class="ck-sum-row"><span>Subtotal</span><span x-text="money(total())"></span></div>
                         @if($shippingEnabled)
                         <div class="ck-sum-row"><span>Envío</span><span x-text="shippingLabel"></span></div>
@@ -5959,7 +8276,7 @@
                         <div class="cart-ship is-ok" style="margin-top:14px" x-show="total() >= {{ $cpFree }}" x-cloak>✓ ¡Tienes envío gratis!</div>
                         @endif
                         <button class="ck-submit" style="margin-top:18px" @click="cartPageOpen=false;openCheckout()">{{ $isQuoteOnly ? ($settings['btn_quote_text'] ?? 'Cotizar') : 'Finalizar compra' }}</button>
-                        <button type="button" class="cart-keep cart-keep--foot" @click="cartPageOpen=false">{{ trim((string) ($settings['cart_keep_shopping_text'] ?? 'Seguir comprando')) }}</button>
+                        <button type="button" class="cart-keep cart-keep--foot" @click="cartPageOpen=false">{{ trim((string) ($settings['cart_keep_shopping_text'] ?? ($isQuoteOnly ? 'Seguir cotizando' : 'Seguir comprando'))) }}</button>
                     </div>
                 </div>
             </template>
@@ -5976,7 +8293,11 @@
     </div>
 </div>
 @endif
+    {{-- `fp-estilo-*` deja que cada composicion ajuste aire y alineacion al
+         diseno elegido sin repetir la paleta. --}}
+    <div class="fp-estilo-{{ $footerStyle }}">
     @include(\App\Support\StorefrontLayoutPacks::view($settings, 'footers') ?? 'storefront.partials.footers.classic')
+    </div>
 
     {{-- ═══ MENÚ MÓVIL (drawer) ═══ --}}
     <div class="mobile-nav-layer" x-show="mobileNav" x-cloak @keydown.escape.window="mobileNav=false" role="dialog" aria-modal="true" aria-label="Menú">
@@ -6129,11 +8450,25 @@
                     </div>
                     @if($wholesale)<div class="wh-buy" x-show="qv.wholesalePrice" x-cloak><span class="wh-buy-info"><b x-text="'MAYORISTA '+money(qv.wholesalePrice)"></b><small x-text="'Mín. '+qv.wholesaleMinQty+' '+qv.wholesaleUnit"></small></span><button type="button" class="wh-buy-btn" @click="addWholesale(qv.id,qv.name,qv.wholesalePrice,qv.wholesaleMinQty,qv.image,qv.category)">+ Agregar por mayor</button></div>@endif
                     @endif
-                    <div class="qv-low" x-show="qv.stock!==null && qv.stock!==undefined && qv.stock>0 && qv.stock<=10" x-cloak x-text="'⚡ ¡Solo quedan '+qv.stock+' unidades!'"></div>
+                    @unless($quoteMode)<div class="qv-low" x-show="qv.stock!==null && qv.stock!==undefined && qv.stock>0 && qv.stock<=10" x-cloak x-text="'⚡ ¡Solo quedan '+qv.stock+' unidades!'"></div>@endunless
                 </div>
             </div>
             <div class="qv-foot">
-                <div class="qv-out" x-show="qv.stock===0" x-cloak>⚠️ {{ $txtAgotado }}</div>
+                @unless($quoteMode)<div class="qv-out" x-show="qv.stock===0" x-cloak>⚠️ {{ $txtAgotado }}</div>@endunless
+                <div class="qv-sizes" x-show="qv.variantes&&qv.variantes.length>1" x-cloak>
+                    <span class="qv-sizes-label">Color: <b x-text="qvColor||''" style="font-weight:800;text-transform:none;letter-spacing:0"></b></span>
+                    <div class="catalog-swatches">
+                        <template x-for="v in (qv.variantes||[])" :key="v.color">
+                            <button type="button" class="catalog-swatch" :class="qvColor===v.color&&'is-on'"
+                                    :title="v.color" :aria-label="'Elegir color '+v.color"
+                                    :aria-pressed="qvColor===v.color ? 'true' : 'false'"
+                                    @click="elegirColorQv(v)">
+                                <img :src="v.image" :alt="v.color" loading="lazy" decoding="async">
+                            </button>
+                        </template>
+                    </div>
+                    <p class="qv-size-req" x-show="qvColorError" x-cloak role="alert">Elige un color para continuar</p>
+                </div>
                 <div class="qv-sizes" x-show="qv.sizes&&qv.sizes.length" x-cloak>
                     <span class="qv-sizes-label">Talla:</span>
                     <div class="qv-size-list">
@@ -6143,9 +8478,11 @@
                     </div>
                     <p class="qv-size-req" x-show="qvSizeError" x-cloak role="alert">Elige una talla para continuar</p>
                 </div>
-                <button class="qv-add" type="button" x-show="qv.stock!==0" @click="if(qv.sizes&&qv.sizes.length&&!qvSize){qvSizeError=true}else{add(qv.id,qv.name,qv.price,qv.image,qv.category,qvSize||'');closeQuickView()}">
+                <p class="qv-size-req" x-show="qv.realVariants&&qv.realVariants.length" x-cloak>Este producto tiene opciones. Elige color, talla o capacidad en su ficha.</p>
+                <button class="qv-add" type="button" x-show="qv.stock!==0"
+                        @click="if(qv.realVariants&&qv.realVariants.length){window.location.href=qv.url}else if(qv.variantes&&qv.variantes.length>1&&!qvColor){qvColorError=true}else if(qv.sizes&&qv.sizes.length&&!qvSize){qvSizeError=true}else{add(qv.id,qv.name,qv.price,qv.image,qv.category,variante());closeQuickView()}">
                     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"></path></svg>
-                    <span x-text="cartButtonText"></span>
+                    <span x-text="qv.realVariants&&qv.realVariants.length ? 'Elegir opciones' : cartButtonText"></span>
                 </button>
                 <a class="qv-view" :href="qv.url" x-show="qv.url">Ver producto completo</a>
             </div>
@@ -6162,7 +8499,7 @@
         <div class="catalog-filter-overlay" @click="filterDrawerOpen=false"></div>
         <aside class="catalog-filter-drawer">
             <div class="catalog-filter-drawer-head"><strong>Filtrar productos</strong><button class="icon-button" type="button" @click="filterDrawerOpen=false" aria-label="Cerrar filtros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button></div>
-            <div class="catalog-filter-drawer-body"><x-computienda.catalog-filters :categories="$categoriasFiltro" :catalog-products="$catalogProducts" :profile-links="$perfilPorCategoria" filter-scope="mobile" /></div>
+            <div class="catalog-filter-drawer-body"><x-computienda.catalog-filters :sin-precio="$quoteMode" :categories="$categoriasFiltro" :catalog-products="$catalogProducts" :profile-links="$perfilPorCategoria" :facets="$catalogFacets ?? collect()" :brands="$catalogBrands ?? collect()" :brand-map="$catalogBrandMap ?? []" filter-scope="mobile" /></div>
             <div class="catalog-filter-drawer-foot"><button type="button" @click="clearAllFilters()">Limpiar</button><button type="button" @click="filterDrawerOpen=false">Ver <span x-text="catalogProducts.length"></span> productos</button></div>
         </aside>
     </div>
@@ -6180,7 +8517,8 @@
         function catalogBrowser(cfg){
             return {
                 endpoint: cfg.endpoint, products: [], total: cfg.total ?? 0,
-                page: 1, hasMore: cfg.hasMore ?? false, loading: false, error: false,
+                page: cfg.startPage ?? 1, hasMore: cfg.hasMore ?? false, loading: false, error: false,
+                lastPage: cfg.lastPage ?? 1, perPage: cfg.perPage ?? 12,
                 serverRendered: true, sort: new URLSearchParams(location.search).get('sort') || 'recommended',
                 _ctrl: null, _t: null, _ids: new Set(),
                 init(){
@@ -6199,8 +8537,12 @@
                         const cats = (store.filterSubCats && store.filterSubCats.length) ? store.filterSubCats : (store.filterCats || []);
                         cats.forEach(id=>u.append('category[]', id));
                         if (store.filterOnSale) u.set('sale', '1');
+                        if (store.filterInStock) u.set('in_stock', '1');
                         if (store.priceMin>0) u.set('min_price', store.priceMin);
                         if (store.priceMax>0 && store.maxPrice && store.priceMax<store.maxPrice) u.set('max_price', store.priceMax);
+                        Object.entries(store.filterAttributes || {}).forEach(([attributeId, valueIds]) => {
+                            (valueIds || []).forEach(valueId => u.append(`attribute[${attributeId}][]`, valueId));
+                        });
                     }
                     u.set('sort', this.sort);
                     u.set('page', page);
@@ -6222,7 +8564,7 @@
                         this.serverRendered = false;
                         if(!append){ this.products = []; this._ids.clear(); }
                         for(const p of data.products){ if(!this._ids.has(p.id)){ this._ids.add(p.id); this.products.push(p); } }
-                        this.total = data.total; this.page = data.current_page; this.hasMore = data.has_more;
+                        this.total = data.total; this.page = data.current_page; this.hasMore = data.has_more; this.lastPage = data.last_page ?? this.lastPage;
                     }catch(e){ if(e.name!=='AbortError'){ this.error = true; } }
                     finally{ this.loading = false; }
                 },
@@ -6231,6 +8573,95 @@
                     this._t = setTimeout(()=>{ if(sync) this.syncUrl(); this.fetchPage(1,false); }, 300);
                 },
                 loadMore(){ if(this.hasMore && !this.loading) this.fetchPage(this.page+1,true); },
+                // Paginacion numerada: reemplaza la rejilla y vuelve arriba de los
+                // resultados, que es lo que espera quien pulsa un numero.
+                async goPage(n){
+                    n = Math.max(1, Math.min(this.lastPage, Number(n)||1));
+                    if(n === this.page && !this.serverRendered) return;
+                    await this.fetchPage(n, false);
+                    const top = this.$root.closest('.catalog-experience') || this.$root;
+                    top.scrollIntoView({behavior:'smooth', block:'start'});
+                    const u = new URL(location.href); u.searchParams.set('page', n); history.replaceState(null, '', u);
+                },
+                // 1 … 4 5 [6] 7 8 … 16: siempre la primera, la ultima y dos a cada lado.
+                pageList(){
+                    const L = this.lastPage, c = this.page, out = [];
+                    if (L <= 9) { for (let i=1;i<=L;i++) out.push(i); return out; }
+                    const set = new Set([1, L, c-2, c-1, c, c+1, c+2].filter(x => x>=1 && x<=L));
+                    const nums = [...set].sort((a,b)=>a-b);
+                    nums.forEach((n,i)=>{ if(i && n - nums[i-1] > 1) out.push('…'); out.push(n); });
+                    return out;
+                },
+                rangoTexto(){
+                    if(!this.total) return '';
+                    const ini = (this.page-1)*this.perPage + 1, fin = Math.min(this.total, this.page*this.perPage);
+                    return `Mostrando ${ini} - ${fin} de ${this.total} productos`;
+                },
+            };
+        }
+
+        function productVariantPicker(config){
+            const variants=Array.isArray(config.variants)?config.variants:[];
+            const attributeMap=new Map();
+            variants.forEach(variant=>(variant.values||[]).forEach(value=>{
+                const aid=String(value.attributeId), vid=String(value.valueId);
+                if(!attributeMap.has(aid)) attributeMap.set(aid,{id:aid,name:value.attribute||'Opción',type:value.type||'button',values:[]});
+                const attribute=attributeMap.get(aid);
+                if(!attribute.values.some(item=>item.id===vid)) attribute.values.push({id:vid,label:value.label,color:value.color||null});
+            }));
+
+            return {
+                pdpImg:config.baseImage||null,
+                pdpQty:1,
+                pdpSize:null,
+                pdpSizeErr:false,
+                pdpColor:config.initialColor||null,
+                pdpColorErr:false,
+                pdpVariants:variants,
+                pdpAttributes:Array.from(attributeMap.values()),
+                pdpSelected:{},
+                pdpVariant:null,
+                pdpVariantError:false,
+                pdpBasePrice:Number(config.basePrice)||0,
+                pdpBaseCompare:config.baseCompare===null?null:Number(config.baseCompare),
+                pdpBaseStock:config.baseStock===null?null:Number(config.baseStock),
+                pdpCurrency:config.currency||'',
+                init(){
+                    this.pdpAttributes.forEach(attribute=>{
+                        if(attribute.values.length===1) this.pdpSelected[attribute.id]=attribute.values[0].id;
+                    });
+                    this.pdpResolveVariant();
+                },
+                get pdpComparePrice(){ return this.pdpVariant ? this.pdpVariant.comparePrice : this.pdpBaseCompare; },
+                get pdpCurrentSku(){ return this.pdpVariant ? (this.pdpVariant.sku||'') : @js($sp->sku ?? ''); },
+                pdpMoney(value){ return this.pdpCurrency+' '+Number(value||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); },
+                pdpSelectedLabel(attributeId){
+                    const attribute=this.pdpAttributes.find(item=>item.id===String(attributeId));
+                    return attribute?.values.find(item=>item.id===this.pdpSelected[String(attributeId)])?.label||'';
+                },
+                pdpChoose(attributeId,valueId){
+                    this.pdpSelected[String(attributeId)]=String(valueId);
+                    this.pdpSelected={...this.pdpSelected};
+                    this.pdpVariantError=false;
+                    this.pdpResolveVariant();
+                },
+                pdpOptionAvailable(attributeId,valueId){
+                    const proposed={...this.pdpSelected,[String(attributeId)]:String(valueId)};
+                    return this.pdpVariants.some(variant=>{
+                        if(variant.stock===0) return false;
+                        const selected=new Map((variant.values||[]).map(value=>[String(value.attributeId),String(value.valueId)]));
+                        return Object.entries(proposed).every(([aid,vid])=>!vid||selected.get(aid)===vid);
+                    });
+                },
+                pdpResolveVariant(){
+                    if(!this.pdpVariants.length){ this.pdpVariant=null; return; }
+                    const complete=this.pdpAttributes.every(attribute=>this.pdpSelected[attribute.id]);
+                    this.pdpVariant=complete ? (this.pdpVariants.find(variant=>{
+                        const selected=new Map((variant.values||[]).map(value=>[String(value.attributeId),String(value.valueId)]));
+                        return this.pdpAttributes.every(attribute=>selected.get(attribute.id)===this.pdpSelected[attribute.id]);
+                    })||null) : null;
+                    if(this.pdpVariant?.image) this.pdpImg=this.pdpVariant.image;
+                },
             };
         }
 
@@ -6255,7 +8686,7 @@
                 suggest:[], suggestOpen:false, _sCtrl:null,
                 async fetchSuggest(){
                     const q=(this.query||'').trim();
-                    if(q.length<2){ this.suggest=[]; this.suggestOpen=false; return; }
+                    if(q.length<3){ this.suggest=[]; this.suggestOpen=false; return; }
                     if(this._sCtrl) this._sCtrl.abort();
                     this._sCtrl=new AbortController();
                     try{
@@ -6270,12 +8701,17 @@
                     const q=(this.query||'').trim(); if(!q) return;
                     const base=@js($shopUrl);
                     if(location.href.split('?')[0].replace(/\/$/,'')===base.replace(/\/$/,'')){ this.suggestOpen=false; return; }
-                    window.location=base+'?q='+encodeURIComponent(q);
+                    // A /buscar y no a /tienda: la pagina de resultados anade la
+                    // franja de marcas y categorias que casan con lo escrito.
+                    window.location=base.replace(/\/tienda$/,'/buscar')+'?q='+encodeURIComponent(q);
                 },
                 filterCats:[],
+                filterBrands:[],
+                brandMap: {{ Js::from($catalogBrandMap ?? []) }},
                 filterSubCats:[],
                 filterInStock:false,
                 filterOnSale:false,
+                filterAttributes:@json(collect($catalogFacets ?? [])->mapWithKeys(fn ($attribute) => [(string) $attribute->id => []])->all()),
                 priceMin:0,
                 priceMax:1000,
                 maxPrice:1000,
@@ -6285,7 +8721,7 @@
                 soldOutText:@js($settings['catalog_badge_sold_out'] ?? 'Agotado'),
                 cartButtonText:@js($quoteMode ? $quoteBtnText : $cartText),
                 cart:[],
-                qv:null, qvSize:null, qvSizeError:false,
+                qv:null, qvSize:null, qvSizeError:false, qvColor:null, qvColorError:false,
 
                 init(){
                     try {
@@ -6301,28 +8737,50 @@
                     ['query','filterOnSale','filterInStock','priceMin','priceMax'].forEach(f=>{
                         this.$watch(f, ()=>window.dispatchEvent(new CustomEvent('catalog:filters-changed')));
                     });
-                    // Multi-selección: los arrays de categorías se vigilan en profundidad.
+                    // Los arrays de categorías se vigilan para sincronizar la URL.
+                    this.$watch('filterBrands', ()=>{ this.syncCategoryUrl(); window.dispatchEvent(new CustomEvent('catalog:filters-changed')); });
                     ['filterCats','filterSubCats'].forEach(f=>{
                         this.$watch(f, ()=>{ this.syncCategoryUrl(); window.dispatchEvent(new CustomEvent('catalog:filters-changed')); });
                     });
+                    this.$watch('filterAttributes', ()=>window.dispatchEvent(new CustomEvent('catalog:filters-changed')), {deep:true});
                     // Aplicar filtro desde la URL (?category=ID o ?category[]=..) al llegar desde el mega-menú
                     try {
                         const params = new URLSearchParams(location.search);
                         const cids = params.getAll('category[]').concat(params.getAll('category'));
-                        cids.forEach(cid=>this.applyCategoryFromUrl(String(cid)));
+                        // Solo la primera: el filtro de categoria es de una sola.
+                        if(cids.length) this.applyCategoryFromUrl(String(cids[0]));
+                        // Marca desde la URL: es como entra el visitante que
+                        // pulsa una marca en la banda de la portada.
+                        this.filterBrands = params.getAll('brand[]').concat(params.getAll('brand'))
+                            .filter(v=>/^\d+$/.test(v));
+                        Object.keys(this.filterAttributes).forEach(attributeId => {
+                            this.filterAttributes[attributeId] = params.getAll(`attribute[${attributeId}][]`);
+                        });
                     } catch(e){}
                 },
-                // Detecta si el id es categoría raíz o subcategoría y lo AÑADE a la selección
+                // Detecta si el id es categoría raíz o subcategoría y REEMPLAZA la
+                // selección: el filtro de categoría admite una sola a la vez.
                 applyCategoryFromUrl(id){
                     if(!id)return;
                     const cat = COMPUTIENDA_CATEGORIES.find(c=>String(c.id)===String(id));
                     if(cat && cat.parentId){ // es subcategoría
-                        if(!this.filterSubCats.includes(String(id)))this.filterSubCats.push(String(id));
+                        this.filterSubCats=[String(id)]; this.filterCats=[];
                         this.catOpen[cat.parentId]=true;
                     } else { // categoría raíz (o id desconocido, se trata como raíz)
-                        if(!this.filterCats.includes(String(id)))this.filterCats.push(String(id));
+                        this.filterCats=[String(id)]; this.filterSubCats=[];
                         this.catOpen[id]=true;
                     }
+                },
+                /* ¿Esta marca tiene producto en el rubro elegido?
+                   Sin rubro elegido, todas aplican. Con rubro, se ocultan las
+                   que darian cero resultados: en este catalogo la marca casi
+                   coincide con el rubro, asi que la mayoria de combinaciones
+                   estaban muertas y el cliente acababa en una pagina vacia. */
+                marcaAplica(idMarca){
+                    const rubro = this.filterSubCats[0] || this.filterCats[0];
+                    if(!rubro) return true;
+                    const rubros = this.brandMap[idMarca];
+                    return !rubros || rubros.includes(Number(rubro));
                 },
                 clearCategoryFilters(){ this.filterCats=[]; this.filterSubCats=[]; },
 
@@ -6336,11 +8794,10 @@
                     return COMPUTIENDA_CATEGORIES.find(category=>String(category.id)===String(id))?.name || 'Categoría';
                 },
                 selectCategory(id){
-                    // Alterna la categoría en la selección múltiple.
+                    // Selección única: elegir una categoría reemplaza la anterior.
                     const s=String(id||'');
-                    if(!s){ this.filterCats=[]; return; }
-                    if(this.filterCats.includes(s))this.filterCats=this.filterCats.filter(x=>x!==s);
-                    else { this.filterCats.push(s); this.catOpen[s]=true; }
+                    if(!s){ this.filterCats=[]; this.filterSubCats=[]; return; }
+                    this.filterCats=[s]; this.filterSubCats=[]; this.catOpen[s]=true;
                 },
                 selectSubCategory(parentId,id){
                     const s=String(id||'');
@@ -6354,7 +8811,10 @@
                         const url=new URL(window.location.href);
                         url.searchParams.delete('category');
                         url.searchParams.delete('category[]');
+                        url.searchParams.delete('brand');
+                        url.searchParams.delete('brand[]');
                         this.filterCats.concat(this.filterSubCats).forEach(id=>url.searchParams.append('category[]',String(id)));
+                        this.filterBrands.forEach(id=>url.searchParams.append('brand[]',String(id)));
                         history.replaceState({},'',url);
                     } catch(e){}
                 },
@@ -6370,8 +8830,10 @@
                     this.query='';
                     this.filterCats=[];
                     this.filterSubCats=[];
+                    this.filterBrands=[];
                     this.filterInStock=false;
                     this.filterOnSale=false;
+                    Object.keys(this.filterAttributes).forEach(key=>this.filterAttributes[key]=[]);
                     this.priceMin=0;
                     this.priceMax=this.maxPrice;
                     this.sortBy='default';
@@ -6406,10 +8868,10 @@
                     return 'Filtra por categoría, precio y disponibilidad para encontrar la mejor opción.';
                 },
                 get hasActiveFilters(){
-                    return Boolean(this.query || this.selectedCats.length || this.filterInStock || this.filterOnSale || this.priceMin>0 || this.priceMax<this.maxPrice);
+                    return Boolean(this.query || this.selectedCats.length || this.filterBrands.length || this.filterInStock || this.filterOnSale || Object.values(this.filterAttributes).some(values=>values.length) || this.priceMin>0 || this.priceMax<this.maxPrice);
                 },
                 get activeFilterCount(){
-                    return this.selectedCats.length+Number(this.filterInStock)+Number(this.filterOnSale)+Number(this.priceMin>0||this.priceMax<this.maxPrice)+Number(Boolean(this.query));
+                    return this.selectedCats.length+this.filterBrands.length+Number(this.filterInStock)+Number(this.filterOnSale)+Object.values(this.filterAttributes).reduce((n,values)=>n+values.length,0)+Number(this.priceMin>0||this.priceMax<this.maxPrice)+Number(Boolean(this.query));
                 },
                 get catalogProducts(){
                     let products=COMPUTIENDA_PRODUCTS.slice();
@@ -6460,6 +8922,9 @@
                 nextTier(p,qty){ const q=Math.max(1,Number(qty)||1); return this.priceTiers(p).find(t=>t.min>q)||null },
                 // Alta al carrito respetando el tramo (modalidad automatica).
                 addSmart(p,qty){
+                    // Una variante real necesita una decisión explícita del cliente.
+                    // La tarjeta lleva a la ficha en vez de agregar una combinación arbitraria.
+                    if(Array.isArray(p.realVariants) && p.realVariants.length){ window.location.href=p.url; return; }
                     const q=Math.max(1,Number(qty)||1);
                     const t=this.priceTierFor(p,q);
                     const talla=t.wholesale?'por mayor':'';
@@ -6474,14 +8939,20 @@
                     else this.cart.push({id,nombre,precio:Number(t.price),base,cantidad:q,imagen:p.image||p.imagen||'',categoria:p.category||p.categoria||'',talla,wPrecio:wp,wMin:wq});
                     this.cartOpen=true;
                 },
-                add(id,nombre,precio,imagen,categoria,talla,wPrecio,wMin){
+                add(id,nombre,precio,imagen,categoria,talla,wPrecio,wMin,variantId,extra){
                     talla=talla||'';
-                    const row=this.cart.find(item=>String(item.id)===String(id)&&(item.talla||'')===talla);
+                    variantId=variantId||null;
+                    extra=extra||{};
+                    const row=this.cart.find(item=>String(item.id)===String(id)&&(item.talla||'')===talla&&String(item.variantId||'')===String(variantId||''));
                     if(row){row.cantidad++;this._retarifar(row)}
                     else this.cart.push({id,nombre,precio:Number(precio),base:Number(precio),cantidad:1,
-                        imagen:imagen||'',categoria:categoria||'',talla,
+                        imagen:imagen||'',categoria:categoria||'',talla,variantId,
+                        // Datos B2B de la linea: en una cotizacion se pide por codigo y
+                        // marca, no solo por nombre.
+                        sku:extra.sku||'',marca:extra.marca||'',unidad:extra.unidad||'',
                         wPrecio:Number(wPrecio)||0,wMin:Number(wMin)||0});
                     this.cartOpen=true;
+                    this.avisarAgregado(nombre);
                 },
                 // Compra POR MAYOR: línea propia en el carrito (usa la dimensión "talla"
                 // como discriminador) al precio mayorista y arrancando en el mínimo.
@@ -6517,12 +8988,25 @@
                 itemCount(){return this.cart.reduce((sum,item)=>sum+Number(item.cantidad||0),0)},
                 total(){return this.cart.reduce((sum,item)=>sum+Number(item.precio||0)*Number(item.cantidad||0),0)},
                 money(value){return @js($currency)+' '+Number(value||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2})},
+                // Mismo gesto dentro de la vista rapida, donde ademas hay que
+                // dejar constancia del color para que llegue al pedido.
+                elegirColorQv(v){
+                    if(!this.qv || !v) return;
+                    this.qv.image=v.image; this.qv.price=v.price; this.qv.stock=v.stock;
+                    this.qvColor=v.color; this.qvColorError=false;
+                },
+                // Etiqueta de la linea del carrito: talla y color juntos, que es
+                // lo que distingue una linea de otra en el pedido.
+                variante(){
+                    return [this.qvSize, this.qvColor].filter(Boolean).join(' · ');
+                },
                 // En móvil, tocar la tarjeta abre la vista previa (como ecommerce) en vez de navegar.
                 qvMobile(ev, p){
                     if(window.matchMedia('(max-width:640px)').matches){ ev.preventDefault(); this.openQuickView(p); }
                 },
                 openQuickView(product){
                     this.qvSize=null; this.qvSizeError=false;
+                    this.qvColor=null; this.qvColorError=false;
                     if(!product)return;
                     this.qv={
                         id:product.id,
@@ -6537,8 +9021,14 @@
                         // no se nombre aqui NO llega a la vista rapida por mucho que
                         // venga en los datos. Era por esto que el resumen salia vacio.
                         resumen:product.resumen||'',
-                        sku:product.sku||''
+                        sku:product.sku||'',
+                        // Colores del modelo. Sin esto la lista blanca de abajo
+                        // los dejaba fuera y la vista rapida no podia ofrecerlos.
+                        variantes:Array.isArray(product.variantes)?product.variantes:[],
+                        realVariants:Array.isArray(product.realVariants)?product.realVariants:[]
                     };
+                    // Si la tarjeta ya venia con un color puesto, se respeta.
+                    if(product.color) this.qvColor=product.color;
                     document.body.style.overflow='hidden';
                 },
                 closeQuickView(){this.qv=null;document.body.style.overflow=''},
@@ -6559,6 +9049,15 @@
                 get shippingLabel(){ return this.shippingCost>0 ? this.money(this.shippingCost) : @js(trim((string) ($settings['cart_shipping_zero_label'] ?? '')) ?: 'Gratis'); },
                 get checkoutTotal(){ return this.total() + this.shippingCost; },
                 openCartPage(){ this.cartOpen=false; this.cartPageOpen=true; document.body.style.overflow=''; window.scrollTo({top:0}); },
+                aviso:{on:false,texto:'',t:null},
+                /* Aviso breve al agregar. Se reemplaza si llega otro antes de
+                   cerrarse, asi agregar en rafaga no apila diez avisos. */
+                avisarAgregado(nombre){
+                    clearTimeout(this.aviso.t);
+                    this.aviso.texto=nombre;
+                    this.aviso.on=true;
+                    this.aviso.t=setTimeout(()=>{this.aviso.on=false},3200);
+                },
                 openCheckout(){ this.cartOpen=false; this.cartPageOpen=false; this.checkoutOpen=true; this.orderError='';
                     document.body.style.overflow=''; window.scrollTo({top:0,behavior:'smooth'}); },
                 proofUrl:'', proofName:'', proofUploading:false,
@@ -6600,18 +9099,28 @@
                     const entrega=@js($pickupEnabled)?(this.deliveryMode==='pickup'?'Entrega: RECOJO EN TIENDA':'Entrega: Envío a domicilio'):'';
                     const comprobante='Comprobante: '+(this.docType==='factura'?'FACTURA':'BOLETA');
                     const notes=[this.form.notes,this.form.dni?('DNI/RUC: '+this.form.dni):'',comprobante,entrega].filter(Boolean).join(' | ');
-                    const items=this.cart.map(i=>({product_id:i.id,name:i.nombre+(i.talla?(' (Talla '+i.talla+')'):''),price:Number(i.precio),quantity:Number(i.cantidad)}));
+                    const items=this.cart.map(i=>({product_id:i.id,product_variant_id:i.variantId||null,name:i.nombre+(i.talla?(' ('+i.talla+')'):''),price:Number(i.precio),quantity:Number(i.cantidad)}));
                     try{
-                        const res=await fetch(@js(route('public.order',$project->slug)),{
+                        // Modo cotizacion: la solicitud es una COTIZACION, no un pedido.
+                        // Antes iba a public.order y se guardaba como venta, con lo que
+                        // el panel de cotizaciones nunca la veia.
+                        const esCotizacion = {{ $isQuoteOnly ? 'true' : 'false' }};
+                        const payloadCot = {
+                            client_name: fullName, client_phone: this.form.phone, client_email: this.form.email,
+                            client_doc_type: doc.length===11 ? 'RUC' : (doc ? 'DNI' : null), client_doc_number: doc || null,
+                            client_address: (this.form.department||'').trim() || null, notes,
+                            items: this.cart.map(i=>({product_id:i.id, description:i.nombre, quantity:Number(i.cantidad), unit:i.unidad||null})),
+                        };
+                        const res=await fetch(esCotizacion ? @js(route('public.quote',$project->slug)) : @js(route('public.order',$project->slug)),{
                             method:'POST',
                             headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]')?.content||'','Accept':'application/json'},
-                            body:JSON.stringify({client_name:fullName,client_phone:this.form.phone,client_email:this.form.email,delivery_address:addr,notes,items,payment_method:this.payMethod||'',payment_reference:'',payment_proof:this.proofUrl||''}),
+                            body:JSON.stringify(esCotizacion ? payloadCot : {client_name:fullName,client_phone:this.form.phone,client_email:this.form.email,delivery_address:addr,notes,items,shipping_cost:this.shippingCost,payment_method:this.payMethod||'',payment_reference:'',payment_proof:this.proofUrl||''}),
                         });
                         const data=await res.json();
-                        if(!res.ok){ this.orderError=data.message||'Error al procesar el pedido.'; }
+                        if(!res.ok){ this.orderError=data.message||(esCotizacion ? 'No pudimos enviar la solicitud. Revisa los datos.' : 'Error al procesar el pedido.'); }
                         else{
                             this.orderSuccess=true;
-                            this.orderSuccessMsg=data.message||'¡Gracias! Tu pedido fue recibido correctamente.';
+                            this.orderSuccessMsg=data.message||(esCotizacion ? 'Tu solicitud de cotización fue enviada correctamente. Te responderemos a la brevedad.' : '¡Gracias! Tu pedido fue recibido correctamente.');
                             this.cart=[];
                         }
                     }catch(e){ this.orderError='Error de conexión. Intenta nuevamente.'; }
@@ -6621,21 +9130,221 @@
         }
     </script>
 
-    {{-- Botón flotante de WhatsApp con logotipo oficial --}}
+    {{-- Aviso "agregado a tu cotizacion" (o al carrito). --}}
+<div class="sf-aviso" x-show="aviso.on && !cartOpen" x-cloak role="status" aria-live="polite"
+     x-transition:enter="sf-aviso-in" x-transition:leave="sf-aviso-out">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+    <span class="sf-aviso-txt">
+        <b x-text="aviso.texto"></b>
+        <small>{{ $isQuoteOnly ? 'agregado a tu cotización' : 'agregado al carrito' }}</small>
+    </span>
+    <button type="button" @click="aviso.on=false;openCartPage()">{{ $isQuoteOnly ? 'Ver cotización' : 'Ver carrito' }}</button>
+</div>
+
+{{-- Botón flotante de WhatsApp con logotipo oficial --}}
     @if($waFloatShow && $whatsapp)
     <a href="https://wa.me/{{ $whatsapp }}?text={{ urlencode($waMsg) }}"
        target="_blank"
        rel="noopener"
        title="{{ $waTooltip }}"
        aria-label="Contactar por WhatsApp"
-       class="official-whatsapp-float wa-pos-{{ $waFloatPos }}">
+       class="official-whatsapp-float wa-pos-{{ $waFloatPos }} wa-style-{{ $waFloatStyle }} wa-anim-{{ $waFloatAnim }}">
+        @if($waFloatBadge)<span class="wa-globo" aria-hidden="true">1</span>@endif
         <svg viewBox="0 0 32 32" width="31" height="31" aria-hidden="true" focusable="false">
             <path fill="#ffffff" d="M27.6 4.4A15.5 15.5 0 0 0 16.5 0C7.9 0 .9 7 .9 15.6c0 2.7.7 5.4 2.1 7.7L0 32l8.9-2.9a15.4 15.4 0 0 0 7.4 1.9h.1c8.6 0 15.6-7 15.6-15.6 0-4.1-1.6-8.1-4.4-11zM16.4 28.4h-.1c-2.3 0-4.5-.6-6.4-1.7l-.5-.3-5.3 1.7 1.7-5.2-.3-.5a12.7 12.7 0 1 1 10.9 6z"/>
             <path fill="#ffffff" d="M23.2 18.7c-.4-.2-2.2-1.1-2.6-1.2-.3-.1-.6-.2-.8.2-.2.3-1 1.2-1.2 1.4-.2.2-.4.3-.7.1-.4-.2-1.6-.6-3.1-2-1.2-1-2-2.2-2.3-2.6-.3-.4 0-.6.2-.8.1-.1.3-.4.5-.6.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.8-2-1.1-2.8-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.3 3.7c.2.2 2.4 3.7 5.8 5.1.8.4 1.5.6 2 .7.8.2 1.6.2 2.2.1.7-.1 2.2-.9 2.5-1.8.3-.9.3-1.7.2-1.8-.1-.2-.4-.3-.8-.5z"/>
         </svg>
+        @if($waFloatStyle === 'pill')
+        @php [$waT1, $waT2] = array_pad(preg_split('/\s+por\s+|\s*\|\s*|\n/u', $waFloatText, 2) ?: [$waFloatText], 2, ''); @endphp
+        <span class="wa-texto">@if($waT2 !== '')<small>{{ $waT1 }} por</small><b>{{ $waT2 }}</b>@else<b>{{ $waFloatText }}</b>@endif</span>
+        @endif
     </a>
     @endif
 
     <x-public-store-runtime :project="$project" :settings="array_merge($settings, ['primary_color' => $primary])" :popup="$popup ?? null" :sections="$sections ?? collect()" :about-page="$aboutPage ?? null" :store-view="$storeView ?? 'home'" :own-footer="true" :active-profile="$activeProfile ?? null" />
+        <script>
+        /* Carrusel de destacados. Trabaja sobre el scroll real de la pista, no
+           sobre un transform: el gesto tactil, la rueda y el teclado ya
+           funcionan solos y aqui solo se automatiza el avance. */
+        (function(){
+            document.querySelectorAll('[data-pf-carrusel]').forEach(function(caja){
+                var pista  = caja.querySelector('[data-pf-pista]'),
+                    puntos = caja.querySelector('[data-pf-puntos]'),
+                    seg    = parseInt(caja.dataset.seg || '3', 10),
+                    quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+                    timer  = null, tocado = false;
+                if (!pista) return;
+
+                function paginas(){ return Math.max(1, Math.ceil(pista.scrollWidth / pista.clientWidth)); }
+                function actual(){ return Math.round(pista.scrollLeft / pista.clientWidth); }
+
+                function pintarPuntos(){
+                    var n = paginas();
+                    // Con una sola pagina no hay nada que indicar ni que rotar.
+                    if (n < 2) { puntos.innerHTML = ''; return; }
+                    if (puntos.children.length !== n) {
+                        puntos.innerHTML = '';
+                        for (var i = 0; i < n; i++) {
+                            var b = document.createElement('button');
+                            b.type = 'button';
+                            b.className = 'pf-punto';
+                            b.setAttribute('aria-label', 'Ir al grupo ' + (i + 1));
+                            b.dataset.i = i;
+                            puntos.appendChild(b);
+                        }
+                    }
+                    var a = actual();
+                    Array.prototype.forEach.call(puntos.children, function(b, i){
+                        b.classList.toggle('on', i === a);
+                    });
+                }
+
+                function irA(i){
+                    var n = paginas();
+                    pista.scrollTo({ left: ((i % n) + n) % n * pista.clientWidth, behavior: quieto ? 'auto' : 'smooth' });
+                }
+
+                function arrancar(){
+                    if (timer || seg <= 0 || quieto || paginas() < 2) return;
+                    timer = setInterval(function(){
+                        // Si alguien ya esta navegando a mano, el automatico no
+                        // le mueve el suelo debajo de los pies.
+                        if (tocado || document.hidden) return;
+                        irA(actual() + 1);
+                    }, seg * 1000);
+                }
+                function parar(){ if (timer) { clearInterval(timer); timer = null; } }
+
+                caja.querySelectorAll('[data-pf-ir]').forEach(function(b){
+                    b.addEventListener('click', function(){ tocado = true; irA(actual() + parseInt(b.dataset.pfIr, 10)); });
+                });
+                puntos.addEventListener('click', function(e){
+                    var b = e.target.closest('.pf-punto');
+                    if (b) { tocado = true; irA(parseInt(b.dataset.i, 10)); }
+                });
+
+                // Al pasar el raton o tocar, se detiene: nada peor que ir a
+                // pulsar un producto y que se te escape.
+                caja.addEventListener('mouseenter', function(){ tocado = true; });
+                caja.addEventListener('mouseleave', function(){ tocado = false; });
+                caja.addEventListener('touchstart', function(){ tocado = true; }, {passive:true});
+
+                pista.addEventListener('scroll', function(){
+                    clearTimeout(pista._t);
+                    pista._t = setTimeout(pintarPuntos, 90);
+                }, {passive:true});
+                window.addEventListener('resize', function(){
+                    clearTimeout(caja._r);
+                    caja._r = setTimeout(pintarPuntos, 150);
+                });
+                document.addEventListener('visibilitychange', function(){
+                    if (document.hidden) parar(); else arrancar();
+                });
+
+                pintarPuntos();
+                arrancar();
+            });
+        })();
+        </script>
+
+    {{-- El visor de imagen vive al final del body, fuera de todo
+         contenedor. Un `position:fixed` deja de ser relativo a la
+         ventana en cuanto CUALQUIER ancestro tiene transform, y el
+         revelado por scroll aplica uno a cada seccion: dentro del
+         contenido, el visor quedaba atrapado por debajo de la vista
+         rapida por mucho z-index que tuviera. --}}
+        {{-- Lightbox de imagenes (lupa): global — producto y vista rapida --}}
+        <div id="cpt-lb" class="cpt-lb" role="dialog" aria-modal="true" aria-label="Imagen ampliada">
+            <button type="button" class="cpt-lb-btn cpt-lb-close" aria-label="Cerrar">✕</button>
+            <button type="button" class="cpt-lb-btn cpt-lb-prev" aria-label="Anterior" style="display:none">‹</button>
+            <button type="button" class="cpt-lb-btn cpt-lb-next" aria-label="Siguiente" style="display:none">›</button>
+            <div class="cpt-lb-counter" style="display:none"></div>
+            <div class="cpt-lb-zooms">
+                <button type="button" class="cpt-lb-btn" data-lbz="in" aria-label="Acercar">+</button>
+                <button type="button" class="cpt-lb-btn" data-lbz="out" aria-label="Alejar">−</button>
+                <button type="button" class="cpt-lb-btn" data-lbz="rst" aria-label="Restablecer" style="font-size:12px">1:1</button>
+            </div>
+            <div class="cpt-lb-stage"><img src="" alt="" draggable="false"></div>
+        </div>
+        <script>
+        (function(){
+            var imgs = @js(isset($spImages) && $spImages->count() ? $spImages->map(fn ($i) => $assetUrl($i->url))->values()->all() : (isset($spMainUrl) && $spMainUrl ? [$spMainUrl] : []));
+            var lb = document.getElementById('cpt-lb');
+            if (!lb) return;
+            var img = lb.querySelector('.cpt-lb-stage img'),
+                prev = lb.querySelector('.cpt-lb-prev'),
+                next = lb.querySelector('.cpt-lb-next'),
+                counter = lb.querySelector('.cpt-lb-counter'),
+                idx = 0, scale = 1, panX = 0, panY = 0, dragging = null;
+
+            function apply(){ img.style.transform = 'scale('+scale+') translate('+(panX/scale)+'px,'+(panY/scale)+'px)'; img.style.cursor = scale>1 ? 'grab' : 'zoom-in'; }
+            function reset(){ scale = 1; panX = 0; panY = 0; apply(); }
+            function show(){
+                img.style.visibility = '';
+                img.src = imgs[idx];
+                var multi = imgs.length > 1;
+                prev.style.display = next.style.display = multi ? 'grid' : 'none';
+                counter.style.display = multi ? 'block' : 'none';
+                if (multi) counter.textContent = (idx+1)+' / '+imgs.length;
+            }
+            function open(i){ idx = i; reset(); show(); lb.classList.add('open'); document.body.classList.add('cpt-lb-open'); document.body.style.overflow = 'hidden'; }
+            function close(){ lb.classList.remove('open'); document.body.classList.remove('cpt-lb-open'); img.removeAttribute('src'); document.body.style.overflow=''; reset(); }
+            function zoomBy(f){ scale = Math.min(5, Math.max(1, scale*f)); if (scale===1){ panX=panY=0; } apply(); }
+
+            var gallery = imgs.slice();
+            window.__lightbox = function(src, list){
+                if (Array.isArray(list) && list.length) imgs = list.slice();
+                else if (gallery.length && (!src || gallery.indexOf(src) >= 0)) imgs = gallery.slice();
+                else if (src) imgs = [src];
+                if (!imgs.length) return;
+                open(Math.max(0, imgs.indexOf(src)));
+            };
+            lb.querySelector('.cpt-lb-close').addEventListener('click', close);
+            lb.addEventListener('click', function(e){ if (moved) return; if (e.target === lb || e.target.classList.contains('cpt-lb-stage')) close(); });
+            prev.addEventListener('click', function(){ idx = (idx-1+imgs.length)%imgs.length; reset(); show(); });
+            next.addEventListener('click', function(){ idx = (idx+1)%imgs.length; reset(); show(); });
+            lb.querySelector('[data-lbz=in]').addEventListener('click', function(){ zoomBy(1.4); });
+            lb.querySelector('[data-lbz=out]').addEventListener('click', function(){ zoomBy(0.7); });
+            lb.querySelector('[data-lbz=rst]').addEventListener('click', reset);
+            img.addEventListener('click', function(){ if (moved) return; if (scale === 1) zoomBy(1.8); else reset(); });
+            lb.addEventListener('wheel', function(e){ e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.15 : 0.87); }, { passive: false });
+            // Pellizco con dos dedos + arrastre con uno (pointer events)
+            var stage = lb.querySelector('.cpt-lb-stage'), pts = new Map(), pinchStart = 0, pinchBase = 1, moved = false;
+            function ptDist(){ var a = Array.from(pts.values()); return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); }
+            stage.addEventListener('pointerdown', function(e){
+                stage.setPointerCapture(e.pointerId);
+                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                moved = false;
+                if (pts.size === 2) { pinchStart = ptDist(); pinchBase = scale; dragging = null; }
+                else if (pts.size === 1 && scale > 1) { dragging = { x: e.clientX - panX, y: e.clientY - panY }; img.style.cursor = 'grabbing'; }
+            });
+            stage.addEventListener('pointermove', function(e){
+                if (!pts.has(e.pointerId)) return;
+                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                moved = true;
+                if (pts.size === 2 && pinchStart > 0) {
+                    scale = Math.min(5, Math.max(1, pinchBase * ptDist() / pinchStart));
+                    if (scale === 1) { panX = panY = 0; }
+                    apply();
+                } else if (pts.size === 1 && dragging) {
+                    panX = e.clientX - dragging.x; panY = e.clientY - dragging.y; apply();
+                }
+            });
+            function endPt(e){
+                pts.delete(e.pointerId);
+                if (pts.size < 2) pinchStart = 0;
+                if (!pts.size) { dragging = null; img.style.cursor = scale > 1 ? 'grab' : 'zoom-in'; }
+            }
+            stage.addEventListener('pointerup', endPt);
+            stage.addEventListener('pointercancel', endPt);
+            document.addEventListener('keydown', function(e){
+                if (!lb.classList.contains('open')) return;
+                if (e.key === 'Escape') close();
+                if (e.key === 'ArrowLeft' && imgs.length>1) prev.click();
+                if (e.key === 'ArrowRight' && imgs.length>1) next.click();
+            });
+        })();
+        </script>
+
 </body>
 </html>

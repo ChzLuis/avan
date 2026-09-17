@@ -1,3 +1,10 @@
+@php
+    // Razon social y RUC: obligatorios en la web de un comercio peruano.
+    $fpLegal = \App\Storefront\DatosPie::legal($settings ?? [], $project);
+    $fpVerLegal = (string) (($settings ?? [])['footer_show_legal'] ?? '1') !== '0'
+        && ($fpLegal['nombre'] !== '' || $fpLegal['ruc'] !== '');
+    $fpTextoLegal = trim($fpLegal['nombre'].($fpLegal['ruc'] ? ' · RUC '.$fpLegal['ruc'] : ''), ' ·');
+@endphp
 {{-- FOOTER MINIMAL centrado: logo · menú corto · redes · legal. --}}
 @php $legalBase = ($project->custom_domain && request()->getHost() === $project->custom_domain ? '' : '/'.$project->slug); @endphp
 <style>
@@ -37,5 +44,5 @@
         <a href="{{ url($legalBase.'/privacidad') }}">Privacidad</a>
         <a href="{{ url($legalBase.'/terminos') }}">Términos</a>
     </div>
-    <p class="ftm-copy">{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}</p>
+    <p class="ftm-copy">{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}@if($fpVerLegal)<br>{{ $fpTextoLegal }}@endif</p>
 </footer>

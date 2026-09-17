@@ -3,6 +3,12 @@
     'catalogProducts',
     'filterScope' => 'desktop',
     'profileLinks' => [],
+    'facets' => collect(),
+    'brands' => collect(),
+    'brandMap' => [],
+    // Tienda por cotizacion: no se muestran precios, asi que filtrar por
+    // precio (o por "en oferta") no tiene sentido y confunde.
+    'sinPrecio' => false,
 ])
 
 @php
@@ -11,8 +17,8 @@
     // ocultar los que no aportan en esta tienda.
     $fPrecios = collect($catalogProducts)->pluck('price')->filter(fn ($v) => (float) $v > 0);
     $fRango = $fPrecios->count() ? (float) $fPrecios->max() - (float) $fPrecios->min() : 0.0;
-    $fMostrarPrecio = $fPrecios->count() > 3 && $fRango >= 20;
-    $fHayOfertas = collect($catalogProducts)->contains(fn ($p) => filled($p['comparePrice'] ?? null) && (float) $p['comparePrice'] > (float) ($p['price'] ?? 0));
+    $fMostrarPrecio = ! $sinPrecio && $fPrecios->count() > 3 && $fRango >= 20;
+    $fHayOfertas = ! $sinPrecio && collect($catalogProducts)->contains(fn ($p) => filled($p['comparePrice'] ?? null) && (float) $p['comparePrice'] > (float) ($p['price'] ?? 0));
     $fHayStock = collect($catalogProducts)->contains(fn ($p) => ($p['stock'] ?? null) === null || (int) $p['stock'] > 0);
 @endphp
 
@@ -70,7 +76,9 @@
                     </a>
                 @else
                 <label class="catalog-filter-option">
-                    <input type="checkbox" value="{{ $category->id }}" x-model="filterCats" @change="catOpen[String({{ (int) $category->id }})]=true">
+                    <input type="radio" name="category_{{ $filterScope }}" value="{{ $category->id }}"
+                           :checked="filterCats.includes('{{ $category->id }}')"
+                           @change="filterCats=['{{ $category->id }}'];filterSubCats=[];catOpen[String({{ (int) $category->id }})]=true">
                     <span>{{ $category->name }}</span>
                     <small>{{ $categoryTotal }}</small>
                 </label>
@@ -80,7 +88,9 @@
                     <div class="catalog-subcategories" x-show="filterCats.includes(String({{ (int) $category->id }})) || catOpen[String({{ (int) $category->id }})]" x-cloak>
                         @foreach($category->children as $subcategory)
                             <label class="catalog-filter-option catalog-filter-option-sub">
-                                <input type="checkbox" value="{{ $subcategory->id }}" x-model="filterSubCats">
+                                <input type="radio" name="category_{{ $filterScope }}" value="{{ $subcategory->id }}"
+                                       :checked="filterSubCats.includes('{{ $subcategory->id }}')"
+                                       @change="filterSubCats=['{{ $subcategory->id }}'];filterCats=[]">
                                 <span>{{ $subcategory->name }}</span>
                                 <small>{{ $subcategory->products->count() }}</small>
                             </label>
@@ -91,6 +101,25 @@
         @endforeach
     </div>
 </details>
+
+@foreach($facets as $attribute)
+<details class="catalog-filter-group" open>
+    <summary class="catalog-filter-summary">
+        <span>{{ $attribute->name }}</span>
+        <span class="catalog-filter-badge" x-show="(filterAttributes['{{ $attribute->id }}']||[]).length" x-text="(filterAttributes['{{ $attribute->id }}']||[]).length" x-cloak></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </summary>
+    <div class="catalog-filter-body">
+        @foreach($attribute->values as $value)
+        <label class="catalog-filter-option catalog-filter-checkbox">
+            <input type="checkbox" value="{{ $value->id }}" x-model="filterAttributes['{{ $attribute->id }}']">
+            @if($attribute->type === 'color' && $value->color_hex)<span aria-hidden="true" style="width:18px;height:18px;flex:0 0 auto;border:1px solid #cbd5e1;border-radius:50%;background:{{ $value->color_hex }}"></span>@endif
+            <span>{{ $value->label }}</span>
+        </label>
+        @endforeach
+    </div>
+</details>
+@endforeach
 
 @if($fMostrarPrecio)
 <details class="catalog-filter-group" open>
@@ -109,6 +138,33 @@
             <input type="range" min="0" :max="maxPrice" x-model.number="priceMin" @input="clampPrices('min')" tabindex="-1">
             <input type="range" min="0" :max="maxPrice" x-model.number="priceMax" @input="clampPrices('max')" tabindex="-1">
         </div>
+    </div>
+</details>
+@endif
+
+
+{{-- Marca: seleccion multiple (a diferencia de categoria, que es unica).
+     Quien compra en ferreteria acepta dos marcas equivalentes para el mismo
+     articulo, asi que marcar Indeco Y Bticino a la vez tiene sentido. --}}
+@if(!empty($brands) && count($brands))
+<details class="catalog-filter-group" open>
+    <summary class="catalog-filter-summary">
+        <span>Marca</span>
+        <span class="catalog-filter-badge" x-show="filterBrands.length" x-text="filterBrands.length" x-cloak></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </summary>
+    <div class="catalog-filter-body">
+        {{-- `marcaAplica` oculta la marca cuando no tiene nada en el rubro
+             elegido: sin esto, 46 de las 56 combinaciones posibles llevaban a
+             una pagina vacia (medido en este catalogo). --}}
+        @foreach($brands as $m)
+        <label class="catalog-filter-option catalog-filter-checkbox"
+               x-show="marcaAplica({{ $m->id }})" x-cloak>
+            <input type="checkbox" value="{{ $m->id }}" x-model="filterBrands">
+            <span>{{ $m->label }}</span>
+            <small>{{ $m->total }}</small>
+        </label>
+        @endforeach
     </div>
 </details>
 @endif

@@ -15,7 +15,7 @@
     </div>
     <div class="bxb-preview-frame" x-ref="previewWrap" :class="'is-'+device">
         <div class="bxb-preview-scaler" :style="previewScaleStyle">
-            <iframe x-ref="previewFrame" :src="urls.preview+'?view=home'" title="Vista previa de la tienda (borrador)" loading="lazy" @load="fitPreview()"></iframe>
+            <iframe x-ref="previewFrame" :src="urls.preview+'?view='+previewView" title="Vista previa de la tienda (borrador)" loading="lazy" @load="fitPreview()"></iframe>
         </div>
         <div class="bxb-preview-error" x-show="previewError" x-cloak>
             No se pudo cargar la vista previa. <button type="button" class="bxb-link" @click="refreshPreview(true)">Reintentar</button>

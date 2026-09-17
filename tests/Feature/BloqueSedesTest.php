@@ -100,4 +100,37 @@ class BloqueSedesTest extends TestCase
 
         $this->assertStringContainsString('sf-loc-grid is-side', $html);
     }
+
+    /** Una sección sin sedes explícitas reutiliza los datos maestros publicados. */
+    public function test_una_seccion_sin_items_usa_los_datos_del_negocio(): void
+    {
+        $project = Project::create([
+            'owner_id' => User::factory()->create()->id,
+            'name' => 'IMPORT MURUHUAY SAC',
+            'slug' => 'fallback-sede-'.uniqid(),
+            'whatsapp' => '908845390',
+            'is_active' => true,
+        ]);
+        $project->settings()->createMany([
+            ['key' => 'storefront_structure_v2', 'value' => '1'],
+            ['key' => 'catalog_template', 'value' => 'computienda'],
+            ['key' => 'contact_address', 'value' => 'Av Guillermo Dansey 444 Psj. 3 AQ-1'],
+        ]);
+
+        StoreSection::create([
+            'project_id' => $project->id,
+            'component' => 'locations',
+            'content' => ['title' => 'Visítanos', 'items' => []],
+            'is_enabled' => true,
+            'sort_order' => 1,
+        ]);
+
+        $html = $this->get(route('public.catalog', $project->slug))->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-store-native-section="locations"', $html);
+        $this->assertStringContainsString('IMPORT MURUHUAY SAC', $html);
+        $this->assertStringContainsString('Av Guillermo Dansey 444 Psj. 3 AQ-1', $html);
+        $this->assertStringContainsString('908845390', $html);
+        $this->assertStringContainsString('output=embed', $html);
+    }
 }

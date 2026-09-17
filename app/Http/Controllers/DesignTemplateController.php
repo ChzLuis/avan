@@ -111,7 +111,9 @@ class DesignTemplateController extends Controller
             'thumbnail' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
         if ($request->hasFile('thumbnail')) {
-            $data['thumbnail_path'] = $request->file('thumbnail')->store('design-templates/thumbs', 'public');
+            $data['thumbnail_path'] = \App\Support\Imagen\ProcesadorImagenes::ruta(
+                $request->file('thumbnail'), 'design-templates/thumbs', 'miniatura'
+            );
         }
         unset($data['thumbnail']);
         $template->update($data);

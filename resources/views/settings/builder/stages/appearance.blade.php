@@ -1,8 +1,8 @@
-{{-- Etapa 2: Apariencia — unifica plantilla, marca, colores, tipografía,
-     encabezado, barra superior y footer. Rápido primero; experto colapsable. --}}
+{{-- Etapa 2: Apariencia — plantilla, marca, colores y tipografía.
+     El encabezado y el menú tienen su propio paso (stages/header). --}}
 <section class="bxb-stage">
     <h2>Apariencia</h2>
-    <p class="bxb-stage-sub">Elige cómo se ve tu tienda. Todo se guarda en borrador y lo ves al instante en la vista previa.</p>
+    <p class="bxb-stage-sub">Elige la plantilla, los colores y la tipografía de tu tienda. El encabezado y el menú se configuran en el paso siguiente. Todo se guarda en borrador y lo ves al instante en la vista previa.</p>
 
     {{-- Plantilla (tarjetas visuales) --}}
     <div class="bxb-card">
@@ -513,6 +513,26 @@
                 <label class="bxb-field" x-show="(settings.float_wa_show??'1')!=='0'">Tooltip del botón
                     <input type="text" maxlength="80" placeholder="¿Necesitas ayuda?" :value="settings.float_wa_tooltip||''" @input.debounce.600ms="setSetting('float_wa_tooltip',$event.target.value)">
                 </label>
+                {{-- Como se ve el boton: solo el icono redondo o una pildora con texto. --}}
+                <div class="bxb-field" x-show="(settings.float_wa_show??'1')!=='0'"><span>Forma del botón</span>
+                    <div class="bxb-seg">
+                        <button type="button" :class="(settings.float_wa_style||'icon')==='icon'&&'on'" @click="setSetting('float_wa_style','icon')">Solo icono</button>
+                        <button type="button" :class="settings.float_wa_style==='pill'&&'on'" @click="setSetting('float_wa_style','pill')">Con texto</button>
+                    </div>
+                </div>
+                <label class="bxb-field" x-show="(settings.float_wa_show??'1')!=='0' && settings.float_wa_style==='pill'">Texto del botón
+                    <input type="text" maxlength="40" placeholder="Consultar por WhatsApp" :value="settings.float_wa_text||''" @input.debounce.600ms="setSetting('float_wa_text',$event.target.value)">
+                    <span class="bxb-note">Con "por" en medio se parte en dos líneas: "Consultar por" arriba y "WhatsApp" grande abajo.</span>
+                </label>
+                <label class="bxb-field" x-show="(settings.float_wa_show??'1')!=='0'">Llamar la atención
+                    <select :value="settings.float_wa_anim||'none'" @change="setSetting('float_wa_anim',$event.target.value)">
+                        <option value="none">Quieto</option>
+                        <option value="bounce">Salta cada pocos segundos</option>
+                        <option value="pulse">Late (onda verde)</option>
+                        <option value="shake">Vibra</option>
+                    </select>
+                </label>
+                <label class="bxb-switch" x-show="(settings.float_wa_show??'1')!=='0'"><input type="checkbox" :checked="(settings.float_wa_badge??'0')==='1'" @change="setSetting('float_wa_badge',$event.target.checked?'1':'0')"> Globo rojo con "1", como mensaje sin leer</label>
             </div>
             <div class="bxb-field">
                 <label class="bxb-switch"><input type="checkbox" :checked="(settings.float_cart_show??'1')!=='0'" @change="setSetting('float_cart_show',$event.target.checked?'1':'0')"> Carrito flotante</label>

@@ -76,9 +76,9 @@ class StorefrontContextIntegrationTest extends TestCase
         $this->assertSame(CatalogTemplates::get('ecommerce')['label'], $context->template()['label']);
     }
 
-    public function test_only_three_templates_are_officially_selectable(): void
+    public function test_only_two_storefront_engines_are_officially_selectable(): void
     {
-        $this->assertSame(['ecommerce', 'direct', 'computienda'], CatalogTemplates::supportedKeys());
+        $this->assertSame(['ecommerce', 'direct'], CatalogTemplates::supportedKeys());
     }
 
     public function test_all_official_templates_receive_the_same_context_and_derived_legacy_variables(): void

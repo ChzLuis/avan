@@ -4,19 +4,19 @@ function quickSetup(cfg){
     saveUrl: cfg.saveUrl, csrf: cfg.csrf,
     step: 0, saving: false,
     stepLabels: ['Negocio','Identidad','Inicio','Venta'],
-    form: { rubro:'', logo_url:'', primary_color:'#4f46e5', secondary_color:'#0f172a', quote_whatsapp:'', store_mode:'direct', template:'computienda' },
+    form: { rubro:'', logo_url:'', primary_color:'#4f46e5', secondary_color:'#0f172a', quote_whatsapp:'', store_mode:'direct', template:'ecommerce', theme_preset:'classic', product_card_style:'classic' },
 
     // Rubros → configuración recomendada (plantilla + paleta). Sólo ajustes, sin marcas.
     rubroIcons: @js(collect(\App\Support\DesignerIcons::all())->only(['rubro_tecnologia','rubro_moda','rubro_bebes','rubro_muebles','rubro_ferreteria','rubro_alimentos','rubro_servicios','rubro_mayorista'])),
     rubros: [
-      { id:'tecnologia', label:'Tecnología', icon:'rubro_tecnologia', template:'computienda', primary:'#2563eb', secondary:'#0f172a' },
+      { id:'tecnologia', label:'Tecnología', icon:'rubro_tecnologia', template:'ecommerce', theme:'tech-dark', card:'tech', primary:'#2563eb', secondary:'#0f172a' },
       { id:'moda',       label:'Moda',        icon:'rubro_moda', template:'ecommerce',   primary:'#db2777', secondary:'#1f2937' },
       { id:'bebes',      label:'Bebés',       icon:'rubro_bebes', template:'ecommerce',   primary:'#38bdf8', secondary:'#334155' },
       { id:'muebles',    label:'Muebles',     icon:'rubro_muebles', template:'ecommerce',   primary:'#b45309', secondary:'#292524' },
-      { id:'ferreteria', label:'Ferretería',  icon:'rubro_ferreteria', template:'computienda', primary:'#ea580c', secondary:'#1c1917' },
+      { id:'ferreteria', label:'Ferretería',  icon:'rubro_ferreteria', template:'ecommerce', theme:'high-contrast', card:'contrast', primary:'#ea580c', secondary:'#1c1917' },
       { id:'alimentos',  label:'Alimentos',   icon:'rubro_alimentos', template:'ecommerce',   primary:'#16a34a', secondary:'#14532d' },
       { id:'servicios',  label:'Servicios',   icon:'rubro_servicios', template:'direct',      primary:'#7c3aed', secondary:'#1e1b4b' },
-      { id:'mayorista',  label:'Mayorista',   icon:'rubro_mayorista', template:'computienda', primary:'#0891b2', secondary:'#0f172a' },
+      { id:'mayorista',  label:'Mayorista',   icon:'rubro_mayorista', template:'ecommerce', theme:'classic', card:'classic', primary:'#0891b2', secondary:'#0f172a' },
     ],
     palettes: [
       { name:'Índigo',   primary:'#4f46e5', secondary:'#0f172a' },
@@ -36,6 +36,8 @@ function quickSetup(cfg){
     pickRubro(r){
       this.form.rubro = r.id;
       this.form.template = r.template;
+      this.form.theme_preset = r.theme || 'classic';
+      this.form.product_card_style = r.card || 'classic';
       this.form.primary_color = r.primary;
       this.form.secondary_color = r.secondary;
     },
@@ -62,6 +64,8 @@ function quickSetup(cfg){
         fd.append('_token',this.csrf);
         fd.append('primary_color', this.form.primary_color);
         fd.append('secondary_color', this.form.secondary_color);
+        fd.append('theme_preset', this.form.theme_preset);
+        fd.append('product_card_style', this.form.product_card_style);
         if(this.form._logo_path) fd.append('logo_url', this.form._logo_path);
         if(this.form.quote_whatsapp) fd.append('quote_whatsapp', this.form.quote_whatsapp);
         fd.append('store_mode', this.form.store_mode);

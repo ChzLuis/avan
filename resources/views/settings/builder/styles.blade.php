@@ -295,18 +295,134 @@
   .bxb-hide-md{display:none!important}
 }
 @media(max-width:767px){
+  /* Nada dentro del constructor puede empujar el ancho: el shell es fixed y el
+     body no scrollea, asi que un desborde deja la interfaz cortada sin retorno. */
+  .bx-builder,.bxb-body,.bxb-panel,.bxb-stage,.bxb-card,.bxb-topbar{min-width:0;max-width:100%}
   .bxb-body{grid-template-columns:minmax(0,1fr)}
-  .bxb-stages{flex-direction:row;border-right:0;border-bottom:1px solid var(--dz-line)}
-  .bxb-stages{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+
+  /* Campos a 16px. Por debajo de eso Chrome de Android hace zoom automatico al
+     enfocar un campo: la interfaz se sale de la pantalla y ya no vuelve, porque
+     el constructor es position:fixed y no hay scroll horizontal que la alcance.
+     Era la causa de que el paso 01 se viera cortado por la derecha. */
+  .bx-builder input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),
+  .bx-builder select,
+  .bx-builder textarea{font-size:16px}
+  .bx-builder .bxb-color-one .bxb-color-hex{font-size:16px}
+  .bx-builder .bxb-picksearch input{font-size:16px}
+  .bx-builder .bxb-bulk-set input{width:auto;flex:1 1 90px;min-width:0}
+
+  /* ── Barra superior: dos filas fijas en vez de un flex que se desborda ──
+     Fila 1: volver · nombre · publicar. Fila 2: progreso · % · estado.
+     Fila 3: aviso de borrador (solo cuando lo hay). */
+  .bxb-topbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;
+    grid-template-areas:"back name name pub" "prog prog pct save";
+    align-items:center;gap:6px 8px;padding:6px 10px;min-height:0}
+  .bxb-back{grid-area:back;padding:0 6px;min-height:40px}
+  .bxb-name{grid-area:name;max-width:100%;font-size:14px}
+  .bxb-topbar .bxb-btn-publish{grid-area:pub;margin-left:0;min-height:40px;padding:0 14px}
+  .bxb-progressbar{grid-area:prog;width:auto;justify-self:stretch}
+  .bxb-percent{grid-area:pct;justify-self:end}
+  .bxb-save{grid-area:save;justify-self:end;min-width:0;font-size:11px;white-space:nowrap}
+  .bxb-draft-chip{grid-column:1/-1;grid-row:3;justify-self:stretch;justify-content:center;min-height:38px;font-size:11.5px}
+
+  /* ── Pasos: pastillas con nombre, no numeros sueltos ── */
+  .bxb-stages{flex-direction:row;background:var(--dz-card);border-right:0;
+    border-bottom:1px solid var(--dz-line);overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
   .bxb-stages::-webkit-scrollbar{display:none}
-  .bxb-stages ol{flex-direction:row;justify-content:flex-start;padding:6px;min-width:max-content}
-  .bxb-stage-item{min-height:44px}
+  .bxb-stages ol{flex-direction:row;justify-content:flex-start;gap:6px;padding:8px 10px;min-width:max-content}
+  .bxb-stage-item{min-height:44px;justify-content:flex-start;gap:8px;padding:5px 13px 5px 5px;
+    border:1px solid var(--dz-line);border-radius:999px;background:var(--dz-card);
+    white-space:nowrap;scroll-snap-align:center}
+  .bxb-stage-item.is-active{border-color:var(--dz-accent)}
+  .bxb-stage-n{width:26px;height:26px;flex:0 0 26px}
+  .bxb-stage-copy{display:block;flex:0 0 auto;min-width:0}
+  .bxb-stage-copy strong{font-size:12.5px}
+  .bxb-stage-copy small{display:none}
   .bxb-stage-dot{display:none}
+
   .bxb-hide-sm{display:none!important}
-  .bxb-name{max-width:110px}
+
+  /* ── Panel ── */
+  .bxb-panel{padding:16px 12px 92px}
+  .bxb-stage h2{font-size:19px}
+  .bxb-stage-sub{margin-bottom:14px;font-size:13.5px}
+  .bxb-card{padding:14px;gap:12px;border-radius:12px}
+  .bxb-grid2{grid-template-columns:1fr;gap:12px}
+  .bxb-local-nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:4px;padding:4px}
+  .bxb-local-nav::-webkit-scrollbar{display:none}
+  .bxb-local-nav button{flex:0 0 auto;padding:0 12px;font-size:12.5px;white-space:nowrap}
+
+  /* Logo, favicon y demas subidas: la caja y su boton se apilan a lo ancho.
+     En una sola fila la caja de 150px dejaba el boton fuera de la pantalla. */
+  .bxb-media{flex-direction:column;align-items:stretch;gap:10px}
+  .bxb-media-box,.bxb-media-box--sq{width:100%;height:104px}
+  .bxb-media .bxb-btn{justify-content:center}
+
+  .bxb-actions-row>.bxb-btn,.bxb-actions-row>a.bxb-btn{flex:1 1 100%;justify-content:center}
+  .bxb-seg{width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .bxb-seg::-webkit-scrollbar{display:none}
+  .bxb-seg button{flex:1 0 auto;white-space:nowrap}
+  .bxb-tpl-grid{grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
+  .bxb-metrics{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}
+  .bxb-it-rejilla{max-width:120px}
+
+  /* Con la pagina ampliada el armazon se ajusta a lo que se ve; sus piezas
+     tienen que colgar de el y no del viewport, o quedarian descolocadas. */
+  .bxb-preview,.bxb-preview-fab,.bxb-modal{position:absolute}
+
+  /* ── Pie de navegacion: dos botones grandes, fuera del area del sistema ── */
+  .bxb-panel-foot{position:absolute;left:0;right:0;bottom:0;z-index:65;margin:0;gap:8px;
+    padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px));
+    background:var(--dz-card);border-top:1px solid var(--dz-line);
+    box-shadow:0 -6px 20px rgba(15,23,42,.08)}
+  .bxb-panel-foot>span{display:none}
+  .bxb-panel-foot .bxb-btn{flex:1 1 0;min-width:0;min-height:48px;justify-content:center}
+
+  /* ── Vista previa y modales ── */
   .bxb-preview{width:100%}
-  .bxb-panel{padding:18px 14px 90px}
-  .bxb-panel-foot{position:fixed;left:0;right:0;bottom:0;z-index:65;margin:0;padding:10px 14px;background:var(--dz-card);border-top:1px solid var(--dz-line)}
+  .bxb-preview-resizer{display:none}
+  .bxb-preview-fab{right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+  .bxb-modal{align-items:flex-end;padding:0}
+  .bxb-modal-box{width:100%;max-height:88vh;overflow-y:auto;border-radius:16px 16px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+  .bxb-modal-actions .bxb-btn{flex:1 1 100%;justify-content:center;min-height:46px}
+}
+@media(max-width:400px){
+  .bxb-topbar{gap:5px 6px;padding:6px 8px}
+  .bxb-name{font-size:13px}
+  .bxb-btn-publish{padding:0 11px;font-size:12.5px}
+  .bxb-save{font-size:10.5px}
+  .bxb-panel{padding:14px 10px 92px}
+  .bxb-card{padding:12px}
 }
 @media(prefers-reduced-motion:reduce){.bx-builder *{transition:none!important;animation:none!important}}
+
+/* Miniaturas del Diseño de Inicio.
+   Son esquemas, no capturas: dibujan la ESTRUCTURA de cada preset (cuánto
+   ocupa la portada, cuántas columnas, cuánto aire) con cuatro barras. Una
+   captura envejece con cada cambio de la tienda; un esquema no. */
+.bxb-hp-mini{display:grid;gap:3px;height:56px;padding:6px;border-radius:8px;background:#f1f3f9;border:1px solid var(--dz-line)}
+.bxb-hp-mini i{display:block;border-radius:2px;background:#c3cad9}
+.bxb-hp-mini .m-hero{background:var(--dz-accent);opacity:.55}
+/* 01 Comercial: portada media y bloques regulares. */
+.bxb-hp-mini--1{grid-template-rows:22px 1fr 1fr 1fr}
+/* 02 Producto primero: portada baja, el resto gana espacio. */
+.bxb-hp-mini--2{grid-template-rows:11px 1fr 1fr 1fr}
+.bxb-hp-mini--2 .m-a{background:#9aa6bd}
+/* 03 Marca e historia: portada alta y bloques anchos, con aire. */
+.bxb-hp-mini--3{grid-template-rows:26px 1fr 1fr;gap:5px}
+.bxb-hp-mini--3 .m-c{display:none}
+/* 04 Minimal: casi todo portada y mucho blanco debajo. */
+.bxb-hp-mini--4{grid-template-rows:32px 1fr;gap:6px;background:#fff}
+.bxb-hp-mini--4 .m-b,.bxb-hp-mini--4 .m-c{display:none}
+.bxb-hp-mini--4 .m-a{background:#dde2ec}
+/* 05 Mayorista: denso, muchas bandas y esquinas rectas. */
+.bxb-hp-mini--5{grid-template-rows:15px 1fr 1fr 1fr;gap:2px}
+.bxb-hp-mini--5 i{border-radius:1px}
+/* Variantes de portada: A = texto sobre la foto; B = foto y texto partidos. */
+.bxb-hp-mini--heroa{grid-template-rows:34px 1fr}
+.bxb-hp-mini--heroa .m-hero{opacity:.75}
+.bxb-hp-mini--herob{grid-template-columns:1fr 1fr;grid-template-rows:34px}
+.bxb-hp-mini--herob .m-a{background:var(--dz-accent);opacity:.28}
 </style>

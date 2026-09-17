@@ -1,3 +1,10 @@
+@php
+    // Razon social y RUC: obligatorios en la web de un comercio peruano.
+    $fpLegal = \App\Storefront\DatosPie::legal($settings ?? [], $project);
+    $fpVerLegal = (string) (($settings ?? [])['footer_show_legal'] ?? '1') !== '0'
+        && ($fpLegal['nombre'] !== '' || $fpLegal['ruc'] !== '');
+    $fpTextoLegal = trim($fpLegal['nombre'].($fpLegal['ruc'] ? ' · RUC '.$fpLegal['ruc'] : ''), ' ·');
+@endphp
 {{-- FOOTER INSTITUCIONAL: descripción amplia de la marca + políticas + contacto. --}}
 @php $legalBase = ($project->custom_domain && request()->getHost() === $project->custom_domain ? '' : '/'.$project->slug); @endphp
 <style>
@@ -36,6 +43,7 @@
             <h4>Atención</h4>
             <ul class="fti-contact">
                 @if($phone)<li><span>Teléfono</span><a href="tel:{{ preg_replace('/[^\d+]/','',$phone) }}">{{ $phone }}</a></li>@endif
+                @include('storefront.partials.numeros-extra')
                 @if($email)<li><span>Correo</span><a href="mailto:{{ $email }}">{{ $email }}</a></li>@endif
                 @if($waFooter)<li><span>WhatsApp</span><a href="https://wa.me/{{ $waFooter }}" target="_blank" rel="noopener">Escríbenos</a></li>@endif
                 @if($footerAddress)<li><span>Dirección</span><span>{{ $footerAddress }}</span></li>@endif
@@ -45,7 +53,7 @@
     </div>
     <div class="fti-bottom">
         <div class="fti-bottom-inner">
-            <span>{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}</span>
+            <span>{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}@if($fpVerLegal) · {{ $fpTextoLegal }}@endif</span>
             <span>Compra protegida · Atención personalizada</span>
         </div>
     </div>

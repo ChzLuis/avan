@@ -16,9 +16,14 @@
     // del constructor (hp_cat_trigger) y el preset solo aporta el valor por defecto,
     // de modo que una tienda con muchas subcategorias pueda activarlo sin cambiar
     // de preset ni tocar codigo. Sin ajuste, comportamiento identico al anterior.
-    $shCatTrigger = in_array($hp('cat_trigger'), ['mega', 'editorial', 'none'], true)
+    $shCatTrigger = in_array($hp('cat_trigger'), ['mega', 'editorial', 'visual', 'lista', 'none'], true)
         ? $hp('cat_trigger')
         : ($sh['cat_trigger'] ?? 'none');
+    // Posicion del boton de categorias (constructor, comun a todos los
+    // layouts). Oculto equivale a no tener desplegable: sin boton no hay
+    // forma de abrirlo, y un panel inalcanzable solo confunde.
+    $shCatsPos = in_array($hp('cats_pos'), ['izquierda', 'derecha', 'oculto'], true) ? $hp('cats_pos') : 'izquierda';
+    if ($shCatsPos === 'oculto' && in_array($shCatTrigger, ['mega', 'lista'], true)) $shCatTrigger = 'none';
     $shUniRow = $sh['universes_row'] ?? null;
     $shWa = preg_replace('/\D/', '', (string) ($settings['quote_whatsapp'] ?? ''));
     if ($shWa && !str_starts_with($shWa, '51')) $shWa = '51' . $shWa;
@@ -246,7 +251,7 @@
                 <a class="phone-copy" href="tel:{{ preg_replace('/[^0-9+]/', '', $phone) }}" style="--tel-bg:{{ $hp('phone_btn_bg', '#ffffff') }};--tel-txt:{{ $hp('phone_btn_color', '#0f172a') }}"><span class="phone-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg></span><span class="phone-txt"><small>{{ $hp('header_phone_label', 'Atención comercial') }}</small><strong>{{ $phone }}</strong></span></a>
             @endif
             <span class="ck-safe" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Compra segura</span></span>
-            <span class="hpx-sep" aria-hidden="true"></span><button class="cart-trigger hpx-cart" type="button" @click="openCartPage()" aria-label="Abrir carrito"><span class="hpx-cart-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3h2l2.1 11.2a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21 7H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg><span class="cart-count" x-text="itemCount()" aria-live="polite">0</span></span><span class="hpx-cart-total" x-text="money(total())"></span></button>
+            <span class="hpx-sep" aria-hidden="true"></span><button class="cart-trigger hpx-cart" type="button" @click="openCartPage()" aria-label="{{ ($settings['store_mode'] ?? 'direct') === 'quote' ? 'Ver mi cotización' : 'Abrir carrito' }}"><span class="hpx-cart-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3h2l2.1 11.2a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21 7H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg><span class="cart-count" x-text="itemCount()" aria-live="polite">0</span></span>@if(($settings['store_mode'] ?? 'direct') === 'quote')<span class="hpx-cart-total hpx-cart-label">Mi cotización</span>@else<span class="hpx-cart-total" x-text="money(total())"></span>@endif</button>
         </div>
     </div>
 </header>
@@ -255,14 +260,11 @@
 @if($shNavRow)
 <nav class="category-nav hpx-nav hpx-nav-{{ $shNavAlign }}" aria-label="Navegación" x-data="{ mega:false, megaCat: {{ $navCategories->first()->id ?? 'null' }}, vsp:false }" @mouseleave="mega=false">
     <div class="container category-bar">
-        @if($shCatTrigger === 'mega' && $navCategories->count())
-        <div class="mega-trigger" @mouseenter="mega=true" @click="mega=!mega">
-            <button type="button" class="mega-btn">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                Categorías
-                <svg class="mega-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" :style="mega && 'transform:rotate(180deg)'"><path d="M6 9l6 6 6-6"></path></svg>
-            </button>
-        </div>
+        {{-- Boton de categorias comun (posicion, estilo y texto desde el
+             Constructor). En modo mega solo pinta el boton y abre el panel
+             de este layout; en modo lista trae su propio desplegable. --}}
+        @if(in_array($shCatTrigger, ['mega', 'lista'], true) && $navCategories->count())
+            @include('storefront.partials.nav.cats-button', ['modo' => $shCatTrigger, 'pos' => $shCatsPos, 'var' => 'mega'])
         @endif
         @if($shCatTrigger === 'editorial' && $navCategories->count())
         <button type="button" class="hpx-ed-trigger" @click="vsp=!vsp" :aria-expanded="vsp">
@@ -429,7 +431,7 @@
             <button class="hpx-nav-mini" type="button" @click="searchOpen = !searchOpen" aria-label="Buscar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
             </button>
-            <button class="hpx-nav-mini hpx-nav-mini-cart" type="button" @click="openCartPage()" aria-label="Abrir carrito">
+            <button class="hpx-nav-mini hpx-nav-mini-cart" type="button" @click="openCartPage()" aria-label="{{ ($settings['store_mode'] ?? 'direct') === 'quote' ? 'Ver mi cotización' : 'Abrir carrito' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3h2l2.1 11.2a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
                 <span class="cart-count" x-text="itemCount()">0</span>
             </button>
@@ -671,7 +673,13 @@
         .hpx-main .hpx-searchbox,.hpx-main .hpx-search{order:9;flex:1 1 100%;width:100%;max-width:none}
         /* el boton se colaba antes del input al reordenar la fila */
         /* Sin relleno: campo y boton son una sola pieza, a la misma altura. */
-        .hpx-searchbox{display:flex;align-items:stretch;height:48px;padding:0;overflow:hidden}
+        /* overflow VISIBLE, no hidden. El recorte estaba para redondear las
+           esquinas de input y boton dentro de la caja, pero eso ya lo hacen los
+           radios de los hijos (reglas de :first-child/:last-child e input).
+           Con hidden, el desplegable de la busqueda predictiva, que cuelga por
+           debajo con position:absolute, se pintaba entero y quedaba recortado
+           a cero: el negocio escribia tres letras y no veia nada. */
+        .hpx-searchbox{display:flex;align-items:stretch;height:48px;padding:0;overflow:visible}
         .hpx-search,.hpx-search input{height:100%}
         .hpx-searchbox .hpx-search{order:1;flex:1 1 auto;min-width:0}
         .hpx-searchgo{order:2}
@@ -822,17 +830,35 @@
        letra del encabezado, que es quien manda ahí. */
     .brand-wordmark{margin-left:12px;font-family:var(--font-title);font-size:23px;font-weight:800;
         letter-spacing:-.02em;color:var(--header-text,var(--secondary));white-space:nowrap;line-height:1}
-    .brand{align-items:center}
-    @media(max-width:760px){.brand-wordmark{font-size:18px;margin-left:8px}}
+    .brand{align-items:center;min-width:0}
+    /* El nombre iba en una linea fija de 339px y se metia bajo el buscador
+       (empezaba 15px antes de que el nombre terminara). Se recorta al espacio
+       que de verdad tiene, sin empujar ni taparse con nada. */
+    @media(min-width:761px){
+        .hpx-main > .brand{flex:0 0 auto!important;width:max-content;padding-right:24px;box-sizing:content-box}
+        .brand-wordmark{overflow:visible;max-width:none}
+    }
+    /* En movil el nombre iba a 18px y en una sola linea: "DISTRIBUIDORA
+       MURUHUAY" medía 265px sobre 390 de pantalla y se metía debajo del
+       carrito. Ahora la marca comparte el ancho disponible y el nombre se
+       encoge y parte en dos lineas antes que invadir nada. */
+    @media(max-width:760px){
+        .brand-wordmark{font-size:clamp(11px,3.4vw,15px);margin-left:7px;white-space:normal;
+            line-height:1.05;overflow-wrap:anywhere;max-height:2.2em;overflow:hidden}
+        .brand{min-width:0;flex:1 1 auto;overflow:hidden}
+        .brand-logo{flex:0 0 auto}
+    }
+    @media(max-width:400px){.brand-wordmark{font-size:clamp(10px,3vw,13px)}}
     /* El buscador ocupaba 900px de 1240 y su radio no pegaba con la marca. */
-    .hpx-main .hpx-searchbox,body .hpx-searchbox{max-width:560px!important;flex:1 1 560px!important;border-radius:12px!important}
+    .hpx-main .hpx-searchbox,body .hpx-searchbox{max-width:560px!important;flex:1 1 320px!important;min-width:200px;border-radius:12px!important}
     .hpx-searchbox input{border-radius:12px 0 0 12px}
     /* ═══ Buscador: campo y botón, una sola pieza ═══
        El arreglo anterior solo entraba en móvil. En escritorio el botón seguía
        con radio propio y montado sobre el campo, y asomaba un filo blanco a su
        derecha. Se resuelve en la caja, para todos los anchos: ella pone el
        redondeo y recorta, y los dos hijos van a tope sin redondeo propio. */
-    .hpx-main .hpx-searchbox,body .hpx-searchbox{display:flex;align-items:stretch;padding:0;overflow:hidden}
+    /* Misma razon que arriba: visible, o la busqueda predictiva no se ve. */
+    .hpx-main .hpx-searchbox,body .hpx-searchbox{display:flex;align-items:stretch;padding:0;overflow:visible}
     .hpx-searchbox .hpx-search{flex:1 1 auto;min-width:0;max-width:none}
     .hpx-searchbox .hpx-search input{width:100%;height:100%;border-radius:0!important;border:0}
     .hpx-searchbox .hpx-searchgo{flex:0 0 56px;margin:0!important;border-radius:0!important;align-self:stretch;

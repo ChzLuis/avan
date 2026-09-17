@@ -103,6 +103,10 @@ final class HeaderPresets
             'defaults' => ['hp_visual_columns' => '4', 'hp_visual_overlay' => '35'],
         ],
         'multiverse' => [
+            // Retirado del selector: la banda de chips sobre la navegacion no
+            // convencia y ninguna tienda lo usaba. Se conserva la entrada para
+            // que un proyecto que lo tuviera guardado siga renderizando igual.
+            'hidden' => true,
             'label' => 'Multiuniverso / Segmentado',
             'desc' => 'Selector de público (perfiles) siempre visible sobre la navegación.',
             'ideal' => 'Tiendas con públicos o líneas claramente separados.',
@@ -145,7 +149,8 @@ final class HeaderPresets
     /** Metadatos para el selector del Constructor (sin closures, serializable a JS). */
     public static function forBuilder(): array
     {
-        return collect(self::PRESETS)->map(fn ($p, $k) => [
+        // Los presets `hidden` no se ofrecen, pero `get()` sigue resolviendolos.
+        return collect(self::PRESETS)->reject(fn ($p) => !empty($p['hidden']))->map(fn ($p, $k) => [
             'key' => $k,
             'label' => $p['label'],
             'desc' => $p['desc'],

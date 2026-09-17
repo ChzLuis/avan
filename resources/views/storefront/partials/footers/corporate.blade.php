@@ -10,7 +10,8 @@
     // Identificacion legal del comercio (razon social + RUC). Obligatoria en Peru
     // y hasta ahora no se mostraba en ninguna pagina publica aunque el dato ya
     // estaba guardado. Se puede ocultar, pero viene activa por defecto.
-    $ftLegalName = trim((string) ($settings['legal_name'] ?? '')) ?: trim((string) $project->name);
+    // Via DatosPie: el Constructor guarda la razon social en `razon_social`.
+    $ftLegalName = \App\Storefront\DatosPie::legal($settings ?? [], $project)['nombre'];
     $ftRuc       = preg_replace('/[^0-9]/', '', (string) ($settings['ruc'] ?? ''));
     $ftShowLegal = (string) ($settings['footer_show_legal'] ?? '1') !== '0' && ($ftLegalName !== '' || $ftRuc !== '');
 
@@ -109,6 +110,7 @@
             <ul class="ftc-contact">
                 @if($phone)<li><span>Teléfono</span><a href="tel:{{ preg_replace('/[^\d+]/','',$phone) }}">{{ $phone }}</a></li>@endif
                 @if($waFooter)<li><span>WhatsApp</span><a href="https://wa.me/{{ $waFooter }}" target="_blank" rel="noopener">Escríbenos</a></li>@endif
+                @include('storefront.partials.numeros-extra')
                 @if($email)<li><span>Correo</span><a href="mailto:{{ $email }}">{{ $email }}</a></li>@endif
                 @if($footerAddress)<li><span>Dirección</span><span>{{ $footerAddress }}</span></li>@endif
             </ul>

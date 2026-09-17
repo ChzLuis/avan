@@ -1,3 +1,10 @@
+@php
+    // Razon social y RUC: obligatorios en la web de un comercio peruano.
+    $fpLegal = \App\Storefront\DatosPie::legal($settings ?? [], $project);
+    $fpVerLegal = (string) (($settings ?? [])['footer_show_legal'] ?? '1') !== '0'
+        && ($fpLegal['nombre'] !== '' || $fpLegal['ruc'] !== '');
+    $fpTextoLegal = trim($fpLegal['nombre'].($fpLegal['ruc'] ? ' · RUC '.$fpLegal['ruc'] : ''), ' ·');
+@endphp
 {{-- FOOTER COMERCIAL: categorías + enlaces + contacto directo + pagos. --}}
 @php $legalBase = ($project->custom_domain && request()->getHost() === $project->custom_domain ? '' : '/'.$project->slug); @endphp
 <style>
@@ -61,6 +68,7 @@
             <h4>Contacto directo</h4>
             <ul>
                 @if($phone)<li><a href="tel:{{ preg_replace('/[^\d+]/','',$phone) }}">📞 {{ $phone }}</a></li>@endif
+                @include('storefront.partials.numeros-extra')
                 @if($email)<li><a href="mailto:{{ $email }}">✉ {{ $email }}</a></li>@endif
                 @if($footerAddress)<li>📍 {{ $footerAddress }}</li>@endif
                 @if($footerHours)<li>🕐 {{ $footerHours }}</li>@endif
@@ -68,7 +76,7 @@
         </div>
     </div>
     <div class="ftc-bottom"><div class="ftc-bottom-inner">
-        <span>{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}</span>
+        <span>{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}@if($fpVerLegal) · {{ $fpTextoLegal }}@endif</span>
         <span>Compra segura · Productos garantizados</span>
     </div></div>
 </footer>

@@ -71,6 +71,17 @@
     .sf-cta-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
     .sf-cta h2{margin:0 0 6px}.sf-cta p{margin:0;opacity:.9}
     .sf-cta-btn{background:#fff;color:#111}
+    .sf-delivery{color:#fff;background:linear-gradient(100deg,#0a0a0a,#262626 58%,#121212)}
+    .sf-delivery.v-brand{background:linear-gradient(100deg,color-mix(in srgb,var(--primary,#2563eb) 82%,#000),var(--primary,#2563eb) 60%,color-mix(in srgb,var(--primary,#2563eb) 70%,#000))}
+    .sf-delivery.v-light{background:#f5f5f4;color:#111827}
+    .sf-delivery-inner{display:grid;grid-template-columns:1.1fr auto 1.2fr;align-items:center;gap:32px}
+    .sf-delivery-inner img{max-height:200px;max-width:100%;object-fit:contain;justify-self:center;filter:drop-shadow(0 18px 24px rgba(0,0,0,.45))}
+    .sf-delivery-placa{background:var(--sf-placa,var(--primary,#2563eb));color:#fff;border-radius:34px;padding:22px 44px;text-align:center}
+    .sf-delivery-placa b{display:block;font-size:clamp(34px,4.4vw,58px);font-weight:900;line-height:1;letter-spacing:-.02em}
+    .sf-delivery-placa span{display:block;font-size:clamp(17px,2vw,26px);font-weight:800;margin-top:6px}
+    .sf-delivery-txt h3{margin:0;font-size:20px;font-weight:800;line-height:1.35}
+    .sf-delivery-txt p{margin:12px 0 0;font-size:14px;opacity:.9}
+    @media(max-width:900px){.sf-delivery-inner{grid-template-columns:1fr;text-align:center;gap:18px}.sf-delivery-placa{justify-self:center}}
 
     .sf-faq-list{display:grid;gap:10px}
     .sf-faq-list.is-2col{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -211,9 +222,7 @@
              su dirección y no salía nada. El mapa va por el incrustado público
              de Google, que no pide clave de API ni cuenta. --}}
         @php
-            $items = collect($content['items'] ?? [])
-                ->filter(fn ($i) => ($i['enabled'] ?? true) && (filled($i['name'] ?? null) || filled($i['address'] ?? null)))
-                ->sortBy('sort_order')->take(8);
+            $items = \App\Support\StorefrontSections::locationItems($project, $content, (array) $settings);
             $ladoMapa = ($content['variant'] ?? 'cards') === 'map-side';
         @endphp
         @if($items->isNotEmpty())
@@ -313,6 +322,23 @@
             <div class="sf-home-container sf-cta-inner">
                 <div><h2>{{ $content['title'] }}</h2>@if(filled($content['subtitle'] ?? null))<p>{{ $content['subtitle'] }}</p>@endif</div>
                 @if(filled($content['button_text'] ?? null))<a class="sf-button sf-cta-btn" href="{{ $content['button_url'] ?? '#' }}">{{ $content['button_text'] }}</a>@endif
+            </div>
+        </section>
+        @endif
+
+    @elseif($section->component === 'delivery_banner')
+        {{-- Delivery: vehiculo, placa y condicion. --}}
+        @php $dvVar = in_array($content['variant'] ?? 'dark', ['dark','brand','light'], true) ? ($content['variant'] ?? 'dark') : 'dark'; $dvImg = $assetUrl($content['image'] ?? null); $dvPlaca = $safeColor($content['badge_color'] ?? null, ''); @endphp
+        @if(filled($content['badge_line1'] ?? null) || filled($content['title'] ?? null))
+        <section class="sf-home-section sf-delivery v-{{ $dvVar }} {{ $deviceClass }}" data-store-home-section="delivery_banner" data-store-placement="after-catalog" @if($dvPlaca) style="--sf-placa:{{ $dvPlaca }}" @endif>
+            <div class="sf-home-container sf-delivery-inner">
+                <div>@if($dvImg)<img src="{{ $dvImg }}" alt="" loading="lazy">@endif</div>
+                @if(filled($content['badge_line1'] ?? null))<div class="sf-delivery-placa"><b>{{ $content['badge_line1'] }}</b>@if(filled($content['badge_line2'] ?? null))<span>{{ $content['badge_line2'] }}</span>@endif</div>@endif
+                <div class="sf-delivery-txt">
+                    @if(filled($content['title'] ?? null))<h3>{{ $content['title'] }}</h3>@endif
+                    @if(filled($content['note'] ?? null))<p>{{ $content['note'] }}</p>@endif
+                    @if(filled($content['button_text'] ?? null))<a class="sf-button sf-cta-btn" href="{{ $content['button_url'] ?? '#' }}">{{ $content['button_text'] }}</a>@endif
+                </div>
             </div>
         </section>
         @endif

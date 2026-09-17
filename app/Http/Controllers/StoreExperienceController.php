@@ -321,8 +321,9 @@ class StoreExperienceController extends Controller
             ],
             'brands' => [
                 'content.title' => ['nullable', 'string', 'max:180'], 'content.subtitle' => ['nullable', 'string', 'max:500'],
-                'content.variant' => ['nullable', Rule::in(['strip', 'grid', 'carousel'])],
+                'content.variant' => ['nullable', Rule::in(['strip', 'grid', 'carousel', 'marquee', 'marquee-slow', 'cards'])],
                 'content.grayscale' => ['nullable', 'boolean'],
+                'content.show_cta' => ['nullable', 'boolean'], 'content.cta_text' => ['nullable', 'string', 'max:60'],
                 'content.items' => ['nullable', 'array', 'max:16'], 'content.items.*.key' => ['nullable', 'string', 'max:60'],
                 'content.items.*.enabled' => ['nullable', 'boolean'], 'content.items.*.sort_order' => ['nullable', 'integer', 'min:0'],
                 'content.items.*.name' => ['nullable', 'string', 'max:80'],
@@ -362,9 +363,17 @@ class StoreExperienceController extends Controller
                 'content.button_text' => $text, 'content.message' => ['nullable', 'string', 'max:500'],
                 'content.phone' => ['nullable', 'string', 'max:20'],
             ],
+            'delivery_banner' => [
+                'content.variant' => ['nullable', Rule::in(['dark', 'brand', 'light'])],
+                'content.badge_line1' => ['nullable', 'string', 'max:40'], 'content.badge_line2' => ['nullable', 'string', 'max:60'],
+                'content.title' => ['nullable', 'string', 'max:180'], 'content.note' => ['nullable', 'string', 'max:300'],
+                'content.image' => $url, 'content.image_upload' => $image,
+                'content.badge_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+                'content.button_text' => $text, 'content.button_url' => $url,
+            ],
             'locations' => [
                 'content.title' => ['nullable', 'string', 'max:180'], 'content.subtitle' => ['nullable', 'string', 'max:500'],
-                'content.variant' => ['nullable', Rule::in(['cards', 'map-side'])],
+                'content.variant' => ['nullable', Rule::in(['cards', 'map-side', 'map-wide', 'map-hero', 'map-split', 'compact'])],
                 'content.items' => ['nullable', 'array', 'max:8'], 'content.items.*.key' => ['nullable', 'string', 'max:60'],
                 'content.items.*.enabled' => ['nullable', 'boolean'], 'content.items.*.sort_order' => ['nullable', 'integer', 'min:0'],
                 'content.items.*.name' => ['nullable', 'string', 'max:120'], 'content.items.*.address' => ['nullable', 'string', 'max:300'],
@@ -425,7 +434,12 @@ class StoreExperienceController extends Controller
 
     private function mergeImages(Request $request, string $component, array $content, array $old): array
     {
-        $store = fn ($file) => $file->store('store-sections/' . $this->project()->id, 'public');
+        // El constructor sube tanto banners a lo ancho como fotos sueltas de
+        // galería; 'seccion' respeta la proporción de cada una y solo les pone
+        // techo de tamaño.
+        $store = fn ($file) => \App\Support\Imagen\ProcesadorImagenes::ruta(
+            $file, 'store-sections/'.$this->project()->id, 'seccion'
+        );
 
         if ($component === 'hero') {
             foreach (['desktop', 'mobile'] as $device) {
@@ -509,7 +523,7 @@ class StoreExperienceController extends Controller
             'discounts' => $content['layout'] ?? 'grid',
             'media_banner' => $content['media_type'] ?? 'image',
             // Secciones nuevas: la variante visual viaja dentro del contenido.
-            'collection_showcase', 'brands', 'testimonials', 'gallery', 'faq', 'wa_advisory', 'cta_banner', 'locations', 'about_preview', 'info_strip'
+            'collection_showcase', 'brands', 'testimonials', 'gallery', 'faq', 'wa_advisory', 'cta_banner', 'delivery_banner', 'locations', 'about_preview', 'info_strip'
                 => $content['variant'] ?? (StorefrontSections::defaults($this->project())[$component]['variant'] ?? 'default'),
             default => StorefrontSections::defaults($this->project())[$component]['variant'] ?? 'default',
         };
@@ -525,7 +539,7 @@ class StoreExperienceController extends Controller
             'component' => ['required', Rule::in(array_keys(StorefrontSections::COMPONENTS))],
             'variant' => 'nullable|string|max:60',
             'title' => 'nullable|string|max:180', 'body' => 'nullable|string|max:4000', 'button_text' => 'nullable|string|max:80',
-            'button_url' => 'nullable|string|max:500', 'image' => 'nullable|image|max:4096', 'sort_order' => 'nullable|integer|min:0',
+            'button_url' => 'nullable|string|max:500', 'image' => 'nullable|image|max:12288', 'sort_order' => 'nullable|integer|min:0',
             'publish_from' => 'nullable|date', 'publish_until' => 'nullable|date|after_or_equal:publish_from',
         ]);
         $old = $request->integer('id') ? $project->storeSections()->findOrFail($request->integer('id')) : null;
@@ -557,7 +571,7 @@ class StoreExperienceController extends Controller
         $data = $request->validate([
             'key' => ['required','string','max:50','regex:/^[a-z0-9-]+$/'], 'title' => 'required|string|max:160', 'body' => 'nullable|string|max:12000',
             'history' => 'nullable|string|max:12000', 'mission' => 'nullable|string|max:3000', 'vision' => 'nullable|string|max:3000',
-            'values' => 'nullable|string|max:5000', 'team' => 'nullable|string|max:8000', 'image' => 'nullable|image|max:4096',
+            'values' => 'nullable|string|max:5000', 'team' => 'nullable|string|max:8000', 'image' => 'nullable|image|max:12288',
             'gallery_images' => ['nullable','array','max:8'], 'gallery_images.*' => ['image','mimes:jpg,jpeg,png,webp','max:4096'],
             'button_heading' => 'nullable|string|max:160', 'button_body' => 'nullable|string|max:500',
             'button_text' => 'nullable|string|max:80', 'button_url' => ['nullable','string','max:500',function($attribute,$value,$fail){if($value&&!str_starts_with($value,'/')&&!(filter_var($value,FILTER_VALIDATE_URL)&&in_array(strtolower((string)parse_url($value,PHP_URL_SCHEME)),['http','https'],true)))$fail('El enlace debe ser interno o comenzar con http:// o https://.');}],
@@ -571,8 +585,8 @@ class StoreExperienceController extends Controller
             'hero_title' => 'nullable|string|max:160', 'hero_subtitle' => 'nullable|string|max:200', 'hero_desc' => 'nullable|string|max:500',
             'hero_align' => 'nullable|in:left,center', 'hero_height' => 'nullable|in:compact,standard,tall',
             'hero_overlay' => 'nullable|integer|min:0|max:80',
-            'hero_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,avif|max:10240',
-            'hero_image_mobile' => 'nullable|file|mimes:jpg,jpeg,png,webp,avif|max:10240',
+            'hero_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,avif|max:12288',
+            'hero_image_mobile' => 'nullable|file|mimes:jpg,jpeg,png,webp,avif|max:12288',
             'mission_icon' => 'nullable|string|max:30', 'vision_icon' => 'nullable|string|max:30',
             'differentials' => 'nullable|string|max:6000',
         ]);
@@ -623,7 +637,7 @@ class StoreExperienceController extends Controller
     {
         $project = $this->project();
         $data = $request->validate([
-            'title' => 'nullable|string|max:160', 'description' => 'nullable|string|max:4000', 'image' => 'nullable|image|max:4096',
+            'title' => 'nullable|string|max:160', 'description' => 'nullable|string|max:4000', 'image' => 'nullable|image|max:12288',
             'button_text' => 'nullable|string|max:80', 'button_url' => 'nullable|string|max:500', 'starts_at' => 'nullable|date',
             'ends_at' => 'nullable|date|after_or_equal:starts_at', 'delay_seconds' => 'nullable|integer|min:0|max:60',
             'frequency' => 'required|in:session,day,always',

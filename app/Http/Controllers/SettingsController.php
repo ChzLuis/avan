@@ -82,10 +82,9 @@ class SettingsController extends Controller
             'slug'          => 'nullable|string|max:120|regex:/^[a-z0-9\-]+$/|unique:projects,slug,'.$project->id,
             'description'   => 'nullable|string|max:500',
             'category'      => 'nullable|string|max:80',
-            // Telefono, WhatsApp y direccion YA NO se aceptan por esta puerta:
-            // se editan en el Constructor (etapa Datos del negocio) y publican
-            // a las columnas canonicas. Dos formularios para el mismo dato era
-            // la fuente de la divergencia (revision 01).
+            'phone'         => 'nullable|string|max:30',
+            'whatsapp'      => 'nullable|string|max:30',
+            'address'       => 'nullable|string|max:200',
             'custom_domain' => $customDomainRule,
         ]);
 
@@ -122,18 +121,17 @@ class SettingsController extends Controller
             'ruc', 'razon_social', 'email', 'country', 'currency', 'sunat_url', 'sunat_url_prod',
             'nubefact_url', 'nubefact_token', 'serie_factura', 'serie_boleta', 'apiperu_token',
             'billing_provider', 'apisperu_token', 'apisperu_ubigeo',
+            // Lector de comprobantes: interruptor, motor y clave del negocio.
+            // La clave es de cada empresa; sin ella cae en la global de Eskala.
+            'lector_comprobantes', 'lector_motor', 'lector_api_key', 'lector_modelo',
             // Series de nota y guia: SUNAT las autoriza por negocio.
             'serie_nota_credito', 'serie_nota_debito', 'serie_guia', 'cuentas_bancarias',
-            // Redes sociales, SEO y envio YA NO se aceptan por esta puerta: son
-            // configuracion de Mi Tienda y se editan en el Constructor
-            // (01 Datos, 08 Configuracion y 05 Venta). Tener dos formularios
-            // para el mismo dato era la fuente de la divergencia. Los valores
-            // existentes no se tocan; solo deja de haber una segunda escritura.
-            //   facebook_url, instagram_url, tiktok_url, youtube_url,
-            //   twitter_url, linkedin_url  -> 01
-            //   seo_title, seo_description, seo_keywords -> 08
-            //   shipping_enabled, shipping_cost, shipping_free_from,
-            //   require_address -> 05
+            // Redes sociales
+            'facebook_url', 'instagram_url', 'tiktok_url', 'youtube_url', 'twitter_url', 'linkedin_url',
+            // SEO
+            'seo_title', 'seo_description', 'seo_keywords',
+            // Envío
+            'shipping_enabled', 'shipping_cost', 'shipping_free_from', 'require_address',
             // Modalidades de venta. Apagadas, el catálogo esconde los campos que
             // no aplican: una tienda que solo vende al detalle cargaba con precio
             // mayorista, cantidad mínima y unidad en cada producto.
@@ -151,14 +149,6 @@ class SettingsController extends Controller
 
     public function seo(Request $request)
     {
-        // Superficie legacy retirada: el Constructor es el unico editor oficial
-        // de Mi Tienda. Sus capacidades ya viven en las etapas correspondientes
-        // (auditadas con `bixo:auditar-constructor`). Se conserva ?classic=1
-        // para el superadmin como salida de emergencia, igual que Diseno clasico.
-        if (!($request->boolean('classic') && auth()->user()?->is_superadmin)) {
-            return redirect()->route('settings.builder');
-        }
-
         $userId = auth()->id();
         $isSuperadmin = auth()->user()->is_superadmin ?? false;
         $projects = $isSuperadmin
@@ -177,10 +167,6 @@ class SettingsController extends Controller
     public function updateSeo(Request $request)
     {
         $userId = auth()->id();
-        // `$isSuperadmin` se usaba sin estar definida en este método: con
-        // `project_id` en la petición, un superadmin caía en la rama de dueño
-        // y recibía 404 sobre un negocio ajeno.
-        $isSuperadmin = auth()->user()->is_superadmin ?? false;
         if ($request->input('project_id')) {
             $project = $isSuperadmin
                 ? Project::findOrFail($request->input('project_id'))
@@ -189,24 +175,14 @@ class SettingsController extends Controller
             $project = app('active_project');
             $this->authorizeProject($project);
         }
-        // SEO básico: disponible con el permiso de siempre.
         $seoKeys = [
             'seo_title', 'seo_description', 'seo_keywords', 'seo_canonical',
             'og_title', 'og_description', 'og_image',
+            'ga_id', 'gtm_id', 'fb_pixel_id', 'tiktok_pixel_id',
+            'robots', 'sitemap_enabled',
+            'schema_type', 'schema_price_range', 'schema_opening_hours',
+            'google_site_verification', 'bing_site_verification',
         ];
-        // SEO técnico (analítica, píxeles de terceros, robots, schema y
-        // verificaciones): inyecta scripts ajenos en la tienda y toca cómo la
-        // indexa Google. Capacidad restringida `cap_seo_avanzado` — el menú ya
-        // no lo ofrece sin ella y aquí tampoco se guarda (matriz de
-        // capacidades). No basta con ocultar la pestaña.
-        if (\App\Support\Capacidades::permite($project, auth()->user(), 'seo_avanzado')) {
-            $seoKeys = array_merge($seoKeys, [
-                'ga_id', 'gtm_id', 'fb_pixel_id', 'tiktok_pixel_id',
-                'robots', 'sitemap_enabled',
-                'schema_type', 'schema_price_range', 'schema_opening_hours',
-                'google_site_verification', 'bing_site_verification',
-            ]);
-        }
         foreach ($seoKeys as $key) {
             if ($request->has($key)) {
                 $project->settings()->updateOrCreate(['key' => $key], ['value' => $request->input($key) ?? '']);
@@ -306,14 +282,6 @@ class SettingsController extends Controller
      */
     public function designer()
     {
-        // Superficie legacy retirada: el Constructor es el unico editor oficial
-        // de Mi Tienda. Sus capacidades ya viven en las etapas correspondientes
-        // (auditadas con `bixo:auditar-constructor`). Se conserva ?classic=1
-        // para el superadmin como salida de emergencia, igual que Diseno clasico.
-        if (!(request()->boolean('classic') && auth()->user()?->is_superadmin)) {
-            return redirect()->route('settings.builder');
-        }
-
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         StorefrontSections::ensure($project);
@@ -425,7 +393,6 @@ class SettingsController extends Controller
             'primary_color','secondary_color','whatsapp_msg',
             'logo_url','logo_height','favicon_url',
             'font_title','font_body','border_radius','currency_symbol',
-            'theme_preset','product_card_style',
             'header_bg_color','header_text_color','header_height','menu_align','header_sticky_mode',
             'footer_bg_color','footer_text_color','footer_logo_height',
             'facebook_url','instagram_url','tiktok_url','youtube_url','twitter_url','linkedin_url',
@@ -493,6 +460,9 @@ class SettingsController extends Controller
             'catalog_filter_price','catalog_filter_cats','catalog_filter_sale','catalog_filter_search',
             'catalog_badge_sale','catalog_badge_new','catalog_badge_featured','catalog_badge_sold_out',
             'catalog_show_ratings','catalog_quick_view','catalog_show_sku','catalog_show_stock','wholesale_enabled',
+            'catalog_watermark','catalog_watermark_opacity',
+            'brands_page_title','brands_page_subtitle','promo_cards_title','promo_cards_subtitle','promo_cards_limit','catalog_pdf_title','catalog_pdf_subtitle',
+            'pdp_ficha_text','pdp_tab_instalacion','pdp_tab_instalacion_label','pdp_tab_envios','pdp_tab_envios_label','pdp_tab_garantia','pdp_tab_garantia_label','pdp_trust_1_title','pdp_trust_1_text','pdp_trust_2_title','pdp_trust_2_text','pdp_trust_3_title','pdp_trust_3_text',
             // Catálogo — Botones y flotantes
             'btn_cart_text','btn_quote_text','btn_shape','btn_show_icon',
             'float_cart_show','float_cart_pos','float_wa_show','float_wa_tooltip','float_wa_pos',
@@ -580,7 +550,7 @@ class SettingsController extends Controller
         // Guardar también el estado apagado, pero solo para la pestaña enviada.
         $booleanKeysByTab = [
             'portada' => ['section_card_shadow','section_show_dividers','promo_item_3_enabled','promo_item_2_enabled','promo_item_1_enabled','promo_show_dots','promo_autoplay','promo_enabled','trust_section_enabled','trust_show_descriptions','trust_mobile_carousel','trust_item_1_enabled','trust_item_2_enabled','trust_item_3_enabled','trust_item_4_enabled','featured_categories_enabled','featured_categories_show_all','featured_categories_hide_empty','featured_categories_show_count','featured_categories_mobile_carousel','hero_cta1_show','hero_cta2_show','hero_autoplay','hero_pause_hover','hero_show_arrows','hero_show_dots','hero_slide_1_enabled','hero_slide_2_enabled','hero_slide_3_enabled','hero_slide_4_enabled','hero_slide_5_enabled','hero_slide_1_show_content','hero_slide_2_show_content','hero_slide_3_show_content','hero_slide_4_show_content','hero_slide_5_show_content','hero_slide_1_cta1_show','hero_slide_2_cta1_show','hero_slide_3_cta1_show','hero_slide_4_cta1_show','hero_slide_5_cta1_show','hero_slide_1_cta2_show','hero_slide_2_cta2_show','hero_slide_3_cta2_show','hero_slide_4_cta2_show','hero_slide_5_cta2_show'],
-            'catalogo' => ['catalog_filter_price','catalog_filter_cats','catalog_filter_sale','catalog_filter_search','catalog_show_ratings','catalog_quick_view','catalog_show_sku','catalog_show_stock','wholesale_enabled','btn_show_icon','float_cart_show','float_wa_show'],
+            'catalogo' => ['catalog_filter_price','catalog_filter_cats','catalog_filter_sale','catalog_filter_search','catalog_show_ratings','catalog_quick_view','catalog_show_sku','catalog_show_stock','wholesale_enabled','catalog_watermark','btn_show_icon','float_cart_show','float_wa_show'],
             'sistema' => ['shipping_enabled','require_address','show_flash_sale','show_testimonials','show_newsletter','show_trust_strip','footer_show_social','footer_show_categories','footer_show_newsletter','footer_show_benefits','footer_show_address','payment_manual_enabled','culqi_enabled','mp_enabled'],
         ];
         $designTab = (string) $request->input('_design_tab', '');
@@ -724,6 +694,26 @@ class SettingsController extends Controller
             'qr_preset'       => 'nullable|in:classic,brand,orange,dark,minimal',
             'qr_quality'      => 'nullable|in:standard,high',
             'qr_show_logo'    => 'nullable|boolean',
+            'qr_logo_size'    => 'nullable|integer|min:40|max:220',
+            'qr_template'     => 'nullable|in:marca,promocional,minimal,redes,impresion',
+            'qr_tinte'        => 'nullable|integer|min:0|max:95',
+            'qr_card_color'   => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'qr_body_color'   => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'qr_background_style' => 'nullable|in:solido,degradado',
+            'qr_icons'        => 'nullable|string|max:120',
+            'qr_scale'        => 'nullable|integer|min:80|max:115',
+            'qr_brands'       => 'nullable|string|max:200',
+            'qr_show_brands'  => 'nullable|boolean',
+            'qr_show_trama'   => 'nullable|boolean',
+            'qr_show_brackets'=> 'nullable|boolean',
+            'qr_format'       => 'nullable|in:flyer,historia,post,cuadrado,impresion',
+            'qr_subtitle'     => 'nullable|string|max:140',
+            'qr_benefits'     => 'nullable|string|max:400',
+            'qr_text_color'   => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'qr_show_benefits'=> 'nullable|boolean',
+            'qr_show_name'    => 'nullable|boolean',
+            'qr_show_bixo'    => 'nullable|boolean',
+            'qr_logo_in_qr'   => 'nullable|boolean',
             'qr_show_url'     => 'nullable|boolean',
         ]);
 
@@ -732,12 +722,14 @@ class SettingsController extends Controller
         }
 
         foreach (['qr_size','qr_margin','qr_foreground','qr_background','qr_header_color',
-                  'qr_top_text','qr_bottom_text','qr_share_message','qr_preset','qr_quality'] as $key) {
+                  'qr_top_text','qr_bottom_text','qr_share_message','qr_preset','qr_quality','qr_logo_size',
+                  'qr_template','qr_format','qr_subtitle','qr_benefits','qr_text_color',
+                  'qr_tinte','qr_card_color','qr_body_color','qr_background_style','qr_icons','qr_scale','qr_brands'] as $key) {
             if (array_key_exists($key, $data)) {
                 $project->settings()->updateOrCreate(['key' => $key], ['value' => $data[$key]]);
             }
         }
-        foreach (['qr_show_logo', 'qr_show_url'] as $key) {
+        foreach (['qr_show_logo', 'qr_show_url', 'qr_show_benefits', 'qr_show_name', 'qr_show_bixo', 'qr_logo_in_qr', 'qr_show_trama', 'qr_show_brackets', 'qr_show_brands'] as $key) {
             $project->settings()->updateOrCreate([
                 'key' => $key,
             ], ['value' => $request->boolean($key) ? '1' : '0']);
@@ -755,14 +747,6 @@ class SettingsController extends Controller
 
     public function payments()
     {
-        // Superficie legacy retirada: el Constructor es el unico editor oficial
-        // de Mi Tienda. Sus capacidades ya viven en las etapas correspondientes
-        // (auditadas con `bixo:auditar-constructor`). Se conserva ?classic=1
-        // para el superadmin como salida de emergencia, igual que Diseno clasico.
-        if (!(request()->boolean('classic') && auth()->user()?->is_superadmin)) {
-            return redirect()->route('settings.builder');
-        }
-
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         return view('settings.payments', compact('project'));
@@ -779,13 +763,9 @@ class SettingsController extends Controller
             'payment_bank_details','payment_manual_instructions',
             'payment_bank_bcp','payment_bank_interbank','payment_bank_bbva','payment_bank_nacion','payment_bank_scotiabank',
             'culqi_public_key','culqi_mode',
-            'store_mode','quote_price_display','quote_wa_msg',
+            'store_mode','quote_price_display',
+            'quote_whatsapp','quote_whatsapp_country','quote_wa_msg',
         ];
-        // El WhatsApp NO se configura aqui: su fuente canonica es
-        // `projects.whatsapp` (01 Datos del negocio). Esta pantalla lo escribia
-        // y creaba una segunda fuente maestra desde un formulario de pagos.
-        // Se deja de aceptar `quote_whatsapp` y `quote_whatsapp_country`; los
-        // valores existentes no se tocan.
         foreach ($request->only($keys) as $key => $value) {
             $project->settings()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
@@ -835,7 +815,7 @@ class SettingsController extends Controller
         //
         // Y estar en el catalogo NO basta: hay que estar SOPORTADA.
         // `CatalogTemplates::isSupported()` ya existia para esto —las
-        // soportadas son ecommerce y direct— pero aqui no se
+        // soportadas son ecommerce, direct y computienda— pero aqui no se
         // usaba, asi que se podia aplicar cualquier clave del catalogo. Entre
         // ellas `editorial`, `luxe` y `bistro`, que ni siquiera tienen Blade
         // (3 de 18): al elegirlas la tienda caia a la plantilla por defecto

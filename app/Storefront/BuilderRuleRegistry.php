@@ -19,7 +19,11 @@ class BuilderRuleRegistry
 {
     public const STAGES = [
         'business'   => ['label' => 'Datos del negocio',       'minutes' => 15],
-        'appearance' => ['label' => 'Apariencia',              'minutes' => 30],
+        'appearance' => ['label' => 'Apariencia',              'minutes' => 20],
+        // El encabezado y el menu vivian dentro de Apariencia, en una segunda
+        // pestaña que nadie encontraba. Son la navegacion de la tienda: merecen
+        // su propio paso numerado y no estar escondidos detras de otro.
+        'header'     => ['label' => 'Encabezado y menú',       'minutes' => 15],
         'home'       => ['label' => 'Página de inicio',        'minutes' => 45],
         'catalog'    => ['label' => 'Catálogo',                'minutes' => 150],
         'sales'      => ['label' => 'Venta',                   'minutes' => 45],
@@ -126,10 +130,16 @@ class BuilderRuleRegistry
             ['code' => 'appearance.primary_color_missing', 'stage' => 'appearance', 'severity' => 'recommendation', 'weight' => 4,
                 'message' => 'Define el color principal de tu marca.', 'target' => 'appearance.colors', 'blocks_publish' => false,
                 'evaluator' => fn ($c) => $c['has']('primary_color')],
-            // ── Etapa: Encabezado y navegación ──
-            ['code' => 'appearance.header_defaults', 'stage' => 'appearance', 'severity' => 'recommendation', 'weight' => 2,
-                'message' => 'Personaliza el encabezado (modelo, colores y barra superior).', 'target' => 'appearance.header', 'blocks_publish' => false,
+            // ── Etapa 3: Encabezado y menú ──
+            // El `target` manda: el checklist deriva la etapa de su prefijo
+            // (`target.split('.')[0]`), asi que tiene que ser `header.` o el
+            // enlace del pendiente seguiria llevando a Apariencia.
+            ['code' => 'appearance.header_defaults', 'stage' => 'header', 'severity' => 'recommendation', 'weight' => 2,
+                'message' => 'Personaliza el encabezado (modelo, colores y barra superior).', 'target' => 'header.preset', 'blocks_publish' => false,
                 'evaluator' => fn ($c) => $c['has']('header_preset') || $c['has']('header_bg_color') || $c['has']('announcement_text')],
+            ['code' => 'header.menu_missing', 'stage' => 'header', 'severity' => 'recommendation', 'weight' => 3,
+                'message' => 'Revisa el menú de tu tienda (Inicio, Tienda, Nosotros…).', 'target' => 'header.menu', 'blocks_publish' => false,
+                'evaluator' => fn ($c) => $c['project']->storeMenus()->exists()],
 
             // ── Etapa 3: Página de inicio ──
             ['code' => 'home.sections_missing', 'stage' => 'home', 'severity' => 'attention', 'weight' => 5,

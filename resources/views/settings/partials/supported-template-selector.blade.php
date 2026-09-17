@@ -1,5 +1,8 @@
 @php
   $activeTemplate = (string) $project->setting('catalog_template', '');
+  $supportedTemplateNames = collect($supportedTemplates)
+    ->mapWithKeys(fn (array $template, string $key) => [$key => $template['name']])
+    ->all();
   $initialTemplateFeedback = $initialAppliedTheme ? [
     'type' => 'success',
     'message' => $initialAppliedTheme['name'].' — '.$initialAppliedTheme['description'].' aplicada',
@@ -11,6 +14,7 @@
   selected: @js($activeTemplateIsSupported ? $activeTemplate : ''),
   applying: false,
   applyingKey: '',
+  templateNames: @js($supportedTemplateNames),
   feedback: @js($initialTemplateFeedback),
   pending: null,
   requestTemplate(key) { this.pending = key; },
@@ -63,7 +67,8 @@
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <p class="text-xs font-bold uppercase tracking-wider text-indigo-600">Plantilla activa</p>
-        <h2 class="mt-1 text-xl font-bold text-slate-900">{{ $tplInfo['label'] }}</h2>
+        <h2 class="mt-1 text-xl font-bold text-slate-900"
+            x-text="templateNames[selected] || @js($tplInfo['label'])">{{ $tplInfo['label'] }}</h2>
         <p class="mt-1 text-sm text-slate-500">Tus colores, logo, portada, catálogo, checkout y contenido son globales y se conservan al cambiar de plantilla.</p>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -74,9 +79,9 @@
   </div>
 
   @unless($activeTemplateIsSupported)
-    <div class="mt-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status" data-legacy-template-warning>
+    <div x-show="!selected" class="mt-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status" data-legacy-template-warning>
       <p class="font-semibold">Esta tienda utiliza una plantilla heredada que ya no recibe nuevas funciones.</p>
-      <p class="mt-1 text-xs text-amber-800">Puedes conservarla o cambiarla manualmente a una de las tres plantillas oficiales.</p>
+      <p class="mt-1 text-xs text-amber-800">Puedes conservarla temporalmente o cambiarla a uno de los dos motores oficiales: Ecommerce o Directo.</p>
     </div>
   @endunless
 

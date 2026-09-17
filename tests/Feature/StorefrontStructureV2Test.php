@@ -113,6 +113,36 @@ class StorefrontStructureV2Test extends TestCase
         $this->assertFalse($project->storeMenuItems()->where('label','Enlace peligroso')->exists());
     }
 
+    public function test_all_menu_destinations_offered_by_the_builder_can_be_added(): void
+    {
+        [$owner, $project] = $this->project('destinos-menu-v2');
+
+        foreach ([
+            'brands' => 'Marcas',
+            'promotions' => 'Promociones',
+            'catalog_pdf' => 'Catálogo PDF',
+        ] as $destination => $label) {
+            $response = $this->actingAs($owner)
+                ->withSession(['active_project_id' => $project->id])
+                ->post(route('settings.storefront.menu.items.store'), [
+                    'label' => $label,
+                    'destination_type' => $destination,
+                    'target' => '_self',
+                    'is_enabled' => '1',
+                    'show_desktop' => '1',
+                    'show_tablet' => '1',
+                    'show_mobile' => '1',
+                ]);
+
+            $response->assertSessionHasNoErrors()
+                ->assertRedirect(route('settings.builder').'#header');
+            $this->assertTrue($project->storeMenuItems()
+                ->where('label', $label)
+                ->where('destination_type', $destination)
+                ->exists());
+        }
+    }
+
     public function test_shared_layout_is_used_by_institutional_blog_custom_and_product_pages(): void
     {
         [, $project]=$this->project('paginas-v2');
@@ -264,7 +294,7 @@ class StorefrontStructureV2Test extends TestCase
             'is_active' => true,
         ]);
 
-        foreach (['ella', 'editorial', 'luxe', 'bistro', 'inexistente', ''] as $template) {
+        foreach (['computienda', 'ella', 'editorial', 'luxe', 'bistro', 'inexistente', ''] as $template) {
             $this->actingAs($owner)
                 ->withSession(['active_project_id' => $project->id])
                 ->postJson(route('settings.design.applyTemplate'), ['template' => $template])
@@ -279,7 +309,7 @@ class StorefrontStructureV2Test extends TestCase
         }
     }
 
-    public function test_template_selector_exposes_exactly_the_three_supported_templates_and_legacy_warning(): void
+    public function test_template_selector_exposes_exactly_the_two_supported_engines_and_legacy_warning(): void
     {
         [$owner, $project] = $this->project('catalogo-oficial-v2');
         $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => 'ella']);
@@ -291,11 +321,11 @@ class StorefrontStructureV2Test extends TestCase
             ->assertSee('Esta tienda utiliza una plantilla heredada que ya no recibe nuevas funciones.')
             ->assertSee('data-supported-template-card="ecommerce"', false)
             ->assertSee('data-supported-template-card="direct"', false)
-            ->assertSee('data-supported-template-card="computienda"', false);
+            ->assertDontSee('data-supported-template-card="computienda"', false);
 
         $html = $response->getContent();
-        $this->assertSame(3, substr_count($html, 'data-supported-template-card='));
-        foreach (['ella', 'editorial', 'luxe', 'bistro', 'default', 'nordic', 'flash', 'urban', 'boutique', 'fresh', 'porto', 'licoreria', 'farma', 'lavanderia', 'tecnologia'] as $legacyKey) {
+        $this->assertSame(2, substr_count($html, 'data-supported-template-card='));
+        foreach (['computienda', 'ella', 'editorial', 'luxe', 'bistro', 'default', 'nordic', 'flash', 'urban', 'boutique', 'fresh', 'porto', 'licoreria', 'farma', 'lavanderia', 'tecnologia'] as $legacyKey) {
             $this->assertStringNotContainsString('data-supported-template-card="'.$legacyKey.'"', $html);
         }
         $this->assertSame('ella', $project->fresh()->setting('catalog_template'));
@@ -383,7 +413,7 @@ class StorefrontStructureV2Test extends TestCase
             ->withSession(['active_project_id' => $project->id])
             ->get(route('settings.design', ['s' => 'plantilla', 'applied' => 'ecommerce', 'classic' => 1]))
             ->assertOk()
-            ->assertSee('Ecommerce — Tienda online completa aplicada')
+            ->assertSee('Ecommerce — Sitio web completo con tienda online aplicada')
             ->assertSee('Ver cambio en la tienda')
             ->assertSee('role="status"', false)
             ->assertSee('aria-live="polite"', false)

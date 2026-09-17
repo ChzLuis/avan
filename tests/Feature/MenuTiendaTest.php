@@ -53,22 +53,35 @@ class MenuTiendaTest extends TestCase
         );
     }
 
-    /** El editor tiene que ser alcanzable: si no, el control no existe. */
-    public function test_el_editor_esta_en_apariencia(): void
+    /**
+     * El editor tiene que ser alcanzable: si no, el control no existe.
+     *
+     * Estuvo escondido dos veces seguidas. Primero como segunda pestaña de
+     * Apariencia, que abría por defecto en "Plantilla y marca" y dejaba el menú
+     * detrás de un clic que nadie daba. Y aunque el marcado de esa pestaña
+     * llegó a producción, sus estilos NO: los botones se pintaban sin fondo ni
+     * borde, invisibles. Ahora es un paso propio y numerado de la lista.
+     */
+    public function test_el_menu_es_un_paso_propio_del_constructor(): void
     {
-        $apariencia = file_get_contents(resource_path('views/settings/builder/stages/appearance.blade.php'));
         $indice = file_get_contents(resource_path('views/settings/builder/index.blade.php'));
         $encabezado = file_get_contents(resource_path('views/settings/builder/stages/header.blade.php'));
 
         $this->assertStringContainsString('store-navigation-builder', $encabezado,
-            'El editor de menú no está en la pestaña de encabezado.');
-        $this->assertStringContainsString("appearanceArea==='header'", $indice,
-            'La pestaña del menú no se puede abrir.');
+            'El editor de menú no está en el paso de encabezado.');
+        $this->assertStringContainsString("stage==='header'", $indice,
+            'El paso del menú no se puede abrir.');
+
         // Se llama "menú" porque es la palabra que busca el negocio: con
         // "navegación" el editor estaba ahí y nadie lo encontraba.
-        $this->assertStringContainsString('Encabezado y menú', $indice,
-            'La pestaña debe nombrar el menú para que se encuentre.');
-        $this->assertNotEmpty($apariencia);
+        $this->assertSame('Encabezado y menú',
+            \App\Storefront\BuilderRuleRegistry::STAGES['header']['label'],
+            'El paso debe nombrar el menú para que se encuentre.');
+
+        // Con x-if se destruye el DOM al cambiar de paso y el gestor de menú
+        // pierde sus listeners: tiene que ser x-show.
+        $this->assertStringContainsString('<div x-show="stage===\'header\'"', $indice,
+            'El paso del menú debe usar x-show para no perder los listeners.');
     }
 
     /** Las seis rutas del menú existen y exigen permiso de escritura. */

@@ -78,6 +78,69 @@
         </div>
     </div>
 
+    {{-- Mas numeros: un negocio con varias lineas (ventas, soporte, un vendedor
+         por zona) no tenia donde ponerlas. Se guardan como lista en
+         `contact_numbers`; los dos de arriba siguen siendo los principales. --}}
+    <div class="bxb-card" x-data="numerosTienda()">
+        <div class="bxb-card-head">
+            <h4>Más números de contacto</h4>
+            <p class="bxb-note">Se muestran en el pie de tu tienda y en la página de contacto. Ponle una etiqueta a cada uno (Ventas, Soporte, Almacén…) para que el cliente sepa a cuál escribir.</p>
+        </div>
+
+        <template x-for="(c, i) in nums" :key="i">
+            <div class="bxb-num-fila">
+                <select :value="c.t" @change="c.t=$event.target.value; guardar()">
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="telefono">Teléfono</option>
+                </select>
+                <input type="text" inputmode="tel" maxlength="30" placeholder="987654321"
+                       :value="c.n" @input.debounce.600ms="c.n=$event.target.value; guardar()">
+                <input type="text" maxlength="40" placeholder="Etiqueta (Ventas, Soporte…)"
+                       :value="c.l" @input.debounce.600ms="c.l=$event.target.value; guardar()">
+                <button type="button" class="bxb-num-quitar" @click="quitar(i)" aria-label="Quitar este número">✕</button>
+            </div>
+        </template>
+
+        <p class="bxb-note" x-show="!nums.length">Todavía no agregaste números adicionales.</p>
+
+        <button type="button" class="bxb-btn-sec" @click="agregar()" x-show="nums.length < {{ \App\Storefront\ContactosTienda::MAXIMO }}">
+            + Agregar número
+        </button>
+        <p class="bxb-note" x-show="nums.length >= {{ \App\Storefront\ContactosTienda::MAXIMO }}">Llegaste al máximo de {{ \App\Storefront\ContactosTienda::MAXIMO }} números adicionales.</p>
+    </div>
+
+    <style>
+        .bxb-num-fila { display:grid; grid-template-columns:130px 1fr 1fr 40px; gap:8px; margin-bottom:8px; align-items:center; }
+        .bxb-num-fila select, .bxb-num-fila input { height:38px; padding:0 10px; border:1px solid #D1D5DB; border-radius:8px; font-size:13px; background:#fff; min-width:0; }
+        .bxb-num-quitar { height:38px; border:1px solid #FCA5A5; background:#FEF2F2; color:#B91C1C; border-radius:8px; cursor:pointer; font-size:13px; font-weight:700; }
+        .bxb-btn-sec { height:38px; padding:0 14px; border:1px dashed #A5B4FC; background:#EEF2FF; color:#4338CA; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+        @media (max-width:640px) { .bxb-num-fila { grid-template-columns:1fr 1fr; } .bxb-num-fila select { grid-column:1/2; } .bxb-num-quitar { grid-column:2/3; justify-self:end; width:44px; } }
+    </style>
+
+    <script>
+        function numerosTienda() {
+            return {
+                nums: [],
+                init() {
+                    // Lo guardado es JSON; una tienda sin nada configurado da lista vacia.
+                    try {
+                        const g = this.$root.closest('[x-data]');
+                        const crudo = (this.settings && this.settings.contact_numbers) || '';
+                        this.nums = crudo ? (JSON.parse(crudo) || []) : [];
+                    } catch (e) { this.nums = []; }
+                    if (!Array.isArray(this.nums)) this.nums = [];
+                },
+                agregar() { this.nums.push({ t: 'whatsapp', n: '', l: '' }); },
+                quitar(i) { this.nums.splice(i, 1); this.guardar(); },
+                guardar() {
+                    // Solo viajan los que tienen numero: una fila en blanco no se guarda.
+                    const utiles = this.nums.filter(c => (c.n || '').replace(/\D/g, '') !== '');
+                    this.setSetting('contact_numbers', utiles.length ? JSON.stringify(utiles) : '');
+                },
+            };
+        }
+    </script>
+
     {{-- Ubicación: revelado progresivo — sin local físico no se piden dirección ni horario --}}
     <div class="bxb-card">
         <strong class="bxb-card-title">Ubicación</strong>

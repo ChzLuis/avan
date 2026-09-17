@@ -68,7 +68,7 @@ final class CatalogQueryService
         // catálogo hasta que la fuente traiga su precio.
         $query = self::mostrable($project->products(), $project)
             ->with([
-                'mainImage', 'category',
+                'mainImage', 'category', 'marca',
                 'variants' => fn ($builder) => $builder->where('is_active', true)
                     ->with(['values.attribute', 'image']),
             ]);
@@ -93,10 +93,29 @@ final class CatalogQueryService
         }
 
         if ($search !== '') {
-            $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
-            $query->where(function ($b) use ($like) {
-                $b->where('name', 'like', $like)->orWhere('sku', 'like', $like)->orWhere('description', 'like', $like);
-            });
+            // Varias palabras = TODAS deben aparecer, cada una en cualquier campo.
+            // Antes se buscaba la frase entera con un solo LIKE: "cable indeco 4mm"
+            // no casaba nada porque ningun campo contiene las tres seguidas.
+            // Marca y categoria entran en la busqueda: son lo primero que escribe
+            // un electricista ("indeco", "bticino tomacorriente").
+            $palabras = collect(preg_split('/\s+/u', $search))->filter()->take(6);
+            foreach ($palabras as $palabra) {
+                $escapada = str_replace(['%', '_'], ['\\%', '\\_'], $palabra);
+                // "4mm" tambien debe casar "4 mm": se prueba con el espacio insertado
+                // entre el numero y la unidad, que es como suele estar escrito.
+                $variantes = array_unique([$escapada, preg_replace('/(\d)([a-z])/iu', '$1 $2', $escapada)]);
+                $query->where(function ($b) use ($variantes) {
+                    foreach ($variantes as $v) {
+                        $like = '%'.$v.'%';
+                        $b->orWhere('name', 'like', $like)
+                          ->orWhere('sku', 'like', $like)
+                          ->orWhere('barcode', 'like', $like)
+                          ->orWhere('description', 'like', $like)
+                          ->orWhereHas('marca', fn ($m) => $m->where('label', 'like', $like))
+                          ->orWhereHas('category', fn ($c) => $c->where('name', 'like', $like));
+                    }
+                });
+            }
         }
 
         // Categoría / subcategoría (solo de esta tienda). Acepta una o varias:
@@ -157,6 +176,14 @@ final class CatalogQueryService
                     ->orWhereHas('variants', fn ($variants) => $variants->where('is_active', true)
                         ->where(fn ($v) => $v->whereNull('stock')->orWhere('stock', '>', 0)));
             });
+        }
+
+        // Filtro por marca: el comprador de ferreteria busca por marca tanto
+        // como por tipo de producto ("llave Schneider", "cable Indeco").
+        $marcas = collect(\Illuminate\Support\Arr::wrap($request->query('brand')))
+            ->filter(fn ($v) => is_numeric($v))->map(fn ($v) => (int) $v)->unique()->values();
+        if ($marcas->isNotEmpty()) {
+            $query->whereIn('brand_catalog_id', $marcas->all());
         }
 
         if (is_numeric($request->query('min_price'))) {
@@ -299,10 +326,16 @@ final class CatalogQueryService
             'taxRate' => $p->has_tax ? (float) ($p->tax_rate ?? 18) : null,
             'image' => $img, 'img' => $img,
             'category' => $p->category?->name, 'cat' => $p->category?->name,
+            'marca' => $p->marca?->label,
+            'unit' => $p->unit,
             'catId' => (string) $p->category_id,
             'parentId' => $p->category?->parent_id ? (string) $p->category->parent_id : null,
             'sku' => $p->sku,
             'stock' => $p->stock,
+            // Etiquetas ya resueltas (texto + colores + posicion) y recortadas
+            // a las dos de mayor prioridad. Van en el payload canonico para
+            // que las pinten igual la tarjeta del servidor y la de Alpine.
+            'etiquetas' => \App\Support\EtiquetasProducto::para($p, 'card'),
             // Directo ordena "mas nuevos" en el cliente con este sello.
             'ts' => $p->created_at?->timestamp ?? 0,
             // Resumen para la vista rapida: sin el, la tarjeta solo decia nombre
@@ -322,6 +355,65 @@ final class CatalogQueryService
             // Una sola serializacion para los dos motores y la ficha publica.
             'realVariants' => \App\Storefront\VariantPresenter::forProduct($p, $img, $cp),
         ];
+    }
+
+    /**
+     * Marcas con productos visibles, para el panel de filtros.
+     *
+     * Solo devuelve las que tienen algo publicado: una marca sin stock en la
+     * lista es un filtro que siempre da cero resultados.
+     */
+    public function marcas(Project $project): \Illuminate\Support\Collection
+    {
+        return \App\Models\CatalogValue::query()
+            ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
+            ->where('catalog_lists.project_id', $project->id)
+            ->where('catalog_lists.type', 'brand')
+            ->where('catalog_values.is_active', true)
+            ->select('catalog_values.id', 'catalog_values.label', 'catalog_values.slug',
+                     'catalog_values.description', 'catalog_values.image_url')
+            ->selectSub(
+                self::mostrable($project->products(), $project)
+                    ->whereColumn('products.brand_catalog_id', 'catalog_values.id')
+                    ->selectRaw('COUNT(*)'),
+                'total'
+            )
+            ->orderBy('catalog_values.sort_order')
+            ->get()
+            ->filter(fn ($m) => $m->total > 0)
+            ->values();
+    }
+
+    /**
+     * Rubros en los que cada marca tiene producto: {idMarca: [idRubro, ...]}.
+     *
+     * Sirve para no ofrecer combinaciones muertas. En una distribuidora la
+     * marca casi coincide con el rubro (Indeco = cable, Opalux = iluminacion),
+     * asi que cruzar "Iluminacion" con "Indeco" da cero. Medido en GABDE: 46 de
+     * 56 combinaciones estaban vacias. Con este mapa el panel oculta las marcas
+     * que no aplican al rubro elegido, en vez de dejar al cliente en una
+     * pagina vacia.
+     */
+    public function marcasPorRubro(Project $project): array
+    {
+        return self::mostrable($project->products(), $project)
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->whereNotNull('products.brand_catalog_id')
+            ->select(
+                'products.brand_catalog_id as marca',
+                'categories.id as sub',
+                'categories.parent_id as rubro'
+            )
+            ->distinct()
+            ->get()
+            ->groupBy('marca')
+            // Se guardan el rubro Y la subcategoria: el cliente puede filtrar
+            // por cualquiera de los dos niveles y en ambos hay que saber si la
+            // marca aplica.
+            ->map(fn ($filas) => $filas
+                ->flatMap(fn ($f) => array_filter([$f->sub, $f->rubro]))
+                ->map(fn ($v) => (int) $v)->unique()->values()->all())
+            ->all();
     }
 
     public function facets(Project $project): \Illuminate\Support\Collection

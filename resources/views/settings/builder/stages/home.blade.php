@@ -6,6 +6,50 @@
             <h2>Página de inicio</h2>
             <p class="bxb-stage-sub">Activa, ordena y edita los bloques de tu portada. Los cambios quedan en borrador y se ven a la derecha.</p>
 
+            {{-- Diseño de Inicio: cinco lenguajes visuales sobre los MISMOS
+                 bloques. Cambiarlo reordena y repinta; no borra contenido, así
+                 que ir y volver entre diseños es seguro. --}}
+            <div class="bxb-card">
+                <strong class="bxb-card-title">Diseño de Inicio</strong>
+                <p class="bxb-note" style="margin:2px 0 10px">Cada diseño cambia el orden y el estilo de tu portada. Tus textos, fotos y bloques se mantienen: puedes probar y volver cuando quieras.</p>
+                <div class="bxb-tpl-grid" role="radiogroup" aria-label="Diseño de la página de inicio">
+                    @foreach(\App\Storefront\HomePresets::todos() as $hpKey => $hp)
+                        <button type="button" class="bxb-tpl bxb-hp"
+                            :class="(settings.home_template||'{{ \App\Storefront\HomePresets::POR_DEFECTO }}')==='{{ $hpKey }}'&&'is-active'"
+                            :aria-checked="((settings.home_template||'{{ \App\Storefront\HomePresets::POR_DEFECTO }}')==='{{ $hpKey }}').toString()"
+                            role="radio"
+                            @click="setSetting('home_template','{{ $hpKey }}')">
+                            {{-- Miniatura: un esquema real del preset (no una
+                                 foto), para que se entienda la diferencia de
+                                 estructura de un vistazo. --}}
+                            <span class="bxb-hp-mini bxb-hp-mini--{{ $hpKey }}" aria-hidden="true">
+                                <i class="m-hero"></i><i class="m-a"></i><i class="m-b"></i><i class="m-c"></i>
+                            </span>
+                            <strong>0{{ $hpKey }} · {{ $hp['nombre'] }}</strong>
+                            <small>{{ $hp['ideal'] }}</small>
+                        </button>
+                    @endforeach
+                </div>
+                <p class="bxb-note" x-text="{{ Js::from(collect(\App\Storefront\HomePresets::todos())->map->resumen) }}[settings.home_template||'{{ \App\Storefront\HomePresets::POR_DEFECTO }}']"></p>
+
+                <strong class="bxb-card-title" style="margin-top:14px;display:block">Variante de portada</strong>
+                <div class="bxb-tpl-grid" role="radiogroup" aria-label="Variante de portada">
+                    @foreach(['a' => 'Variante A', 'b' => 'Variante B'] as $hvKey => $hvLabel)
+                        <button type="button" class="bxb-tpl bxb-hp"
+                            :class="(settings.home_hero_variant||'a')==='{{ $hvKey }}'&&'is-active'"
+                            :aria-checked="((settings.home_hero_variant||'a')==='{{ $hvKey }}').toString()"
+                            role="radio"
+                            @click="setSetting('home_hero_variant','{{ $hvKey }}')">
+                            <span class="bxb-hp-mini bxb-hp-mini--hero{{ $hvKey }}" aria-hidden="true"><i class="m-hero"></i><i class="m-a"></i></span>
+                            <strong>{{ $hvLabel }}</strong>
+                            {{-- El texto depende del diseño elegido: la B del
+                                 01 no es la misma composición que la B del 04. --}}
+                            <small x-text="{{ Js::from(collect(\App\Storefront\HomePresets::todos())->map->{'hero'.strtoupper($hvKey)}) }}[settings.home_template||'{{ \App\Storefront\HomePresets::POR_DEFECTO }}']"></small>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
             <details class="bxb-advanced">
                 <summary>Diseño general de la página de inicio</summary>
                 <div class="bxb-card">
@@ -61,11 +105,11 @@
                 </div>
             </details>
 
-            {{-- Bloques fijos: un solo lugar de edición (Apariencia) --}}
+            {{-- Bloques fijos: un solo lugar de edición (Encabezado y menú) --}}
             <div class="bxb-block bxb-block--fixed">
                 <span class="bxb-block-ico">▤</span>
                 <span class="bxb-block-copy"><strong>Barra superior y Encabezado</strong><small>Colores, logo, buscador y menú de tu tienda.</small></span>
-                <button type="button" class="bxb-btn" @click="stage='appearance'">Editar en Apariencia</button>
+                <button type="button" class="bxb-btn" @click="stage='header'; highlightForStage()">Editar en Encabezado y menú</button>
             </div>
 
             <ul class="bxb-blocks" role="list">
@@ -115,6 +159,16 @@
             <p class="bxb-stage-sub">Contenido y diseño del bloque en un solo lugar. Todo va al borrador.</p>
 
             {{-- Animación de entrada del bloque (aplica a TODOS los bloques) --}}
+                <div class="bxb-card">
+        <strong class="bxb-card-title">Velo de la portada</strong>
+        <p class="bxb-note" style="margin:0 0 8px">El degradado que va bajo el texto para que se lea. Elige según tu foto: si es nocturna u oscura, usa el oscuro.</p>
+        <label class="bxb-field">Tono
+            <select :value="settings.hero_veil||'claro'" @change="setSetting('hero_veil',$event.target.value)">
+                <option value="claro">Claro — para fotos luminosas (texto oscuro)</option>
+                <option value="oscuro">Oscuro — para fotos nocturnas (texto blanco)</option>
+            </select>
+        </label>
+    </div>
             <div class="bxb-card">
                 <strong class="bxb-card-title">Animación de entrada</strong>
                 <div class="bxb-grid2">
@@ -235,10 +289,48 @@
                             </div>
                             <small>"Solo carrusel" oculta título, subtítulo y botones en todas las imágenes — ideal si tus fotos ya llevan el texto.</small>
                         </div>
+                        <div class="bxb-field"><span>Texto sobre la foto</span>
+                            <div class="bxb-seg">
+                                <button type="button" :class="(settings.hero_text_scheme||'auto')!=='oscuro'&&'on'" @click="setSetting('hero_text_scheme','auto')">Velo claro, texto oscuro</button>
+                                <button type="button" :class="settings.hero_text_scheme==='oscuro'&&'on'" @click="setSetting('hero_text_scheme','oscuro')">Velo oscuro, texto blanco</button>
+                            </div>
+                            <small>El velo oscuro usa el color secundario de tu marca y se apoya en el lado del texto; la foto queda limpia a la derecha.</small>
+                        </div>
+                        <div class="bxb-field"><span>Alto del hero en PC</span>
+                            <div class="bxb-seg">
+                                <button type="button" :class="settings.hero_height==='foto'&&'on'" @click="setSetting('hero_height','foto')">Según la foto (se ve completa)</button>
+                                <button type="button" :class="settings.hero_height!=='foto'&&'on'" @click="setSetting('hero_height', settings.hero_height==='foto' ? '460' : (settings.hero_height||'460'))">Alto fijo</button>
+                            </div>
+                            <label class="bxb-field" x-show="settings.hero_height!=='foto'">Alto fijo en píxeles (300 a 760)
+                                <input type="number" min="300" max="760" step="10" placeholder="460" :value="settings.hero_height==='foto' ? '' : (settings.hero_height||'')" @input.debounce.600ms="setSetting('hero_height',$event.target.value)">
+                            </label>
+                            <small>«Según la foto» usa la proporción de la imagen 1: en un monitor ancho el hero crece para que no se recorte nada. Con alto fijo, la foto se recorta y se ancla según la posición elegida.</small>
+                        </div>
                         <div class="bxb-field"><span>Si todavía no has subido ninguna foto</span>
                             <div class="bxb-seg">
                                 <button type="button" :class="(settings.hero_no_image_style||'collage')==='collage'&&'on'" @click="setSetting('hero_no_image_style','collage')">Montaje con tus productos</button>
                                 <button type="button" :class="settings.hero_no_image_style==='typographic'&&'on'" @click="setSetting('hero_no_image_style','typographic')">Solo texto, centrado</button>
+                                <button type="button" :class="settings.hero_no_image_style==='panel'&&'on'" @click="setSetting('hero_no_image_style','panel')">Texto + panel de garantías</button>
+                            </div>
+                            <div x-show="settings.hero_no_image_style==='panel'" x-cloak>
+                                <label class="bxb-field">Frase del panel
+                                    <input type="text" maxlength="120" placeholder="Construye proyectos más grandes con las mejores marcas" :value="settings.hero_panel_title||''" @input.debounce.600ms="setSetting('hero_panel_title',$event.target.value)">
+                                </label>
+                                <div class="bxb-grid2">
+                                    @foreach([1,2,3,4] as $hp)
+                                    <label class="bxb-field">Garantía {{ $hp }}
+                                        <span class="bxb-color-row" style="gap:6px">
+                                            <input type="text" maxlength="30" placeholder="{{ ['Calidad','Stock','Confianza','Soporte'][$hp-1] }}" :value="settings.hero_panel_item_{{ $hp }}||''" @input.debounce.600ms="setSetting('hero_panel_item_{{ $hp }}',$event.target.value)">
+                                            <select style="width:118px" :value="settings.hero_panel_icon_{{ $hp }}||''" @change="setSetting('hero_panel_icon_{{ $hp }}',$event.target.value)">
+                                                <option value="">Icono auto</option>
+                                                @foreach(['calidad'=>'Calidad','stock'=>'Stock','confianza'=>'Confianza','soporte'=>'Soporte','envio'=>'Envío','precio'=>'Precio','obras'=>'Obras','industria'=>'Industria','comercio'=>'Comercio','hogar'=>'Hogar'] as $ik=>$il)
+                                                <option value="{{ $ik }}">{{ $il }}</option>
+                                                @endforeach
+                                            </select>
+                                        </span>
+                                    </label>
+                                    @endforeach
+                                </div>
                             </div>
                             <small>El montaje recorta fotos de producto y flota unas sobre otras: funciona con packshots sin fondo, pero delata el recorte si tus fotos están sobre blanco. En ese caso elige "Solo texto".</small>
                         </div>
@@ -281,6 +373,12 @@
                             <label class="bxb-field">Subtítulo
                                 <input type="text" maxlength="200" :value="settings['{{ $n === 1 ? 'hero_subtitle' : 'hero_subtitle_'.$n }}']||''" @input.debounce.600ms="setSetting('{{ $n === 1 ? 'hero_subtitle' : 'hero_subtitle_'.$n }}',$event.target.value)">
                             </label>
+                            @if($n === 1)
+                            <label class="bxb-field">Palabras del título en color de marca
+                                <input type="text" maxlength="80" placeholder="para tus proyectos" :value="settings.hero_title_highlight||''" @input.debounce.600ms="setSetting('hero_title_highlight',$event.target.value)">
+                                <small>Escribe un trozo exacto del título; se pinta con el color principal.</small>
+                            </label>
+                            @endif
                             <div class="bxb-field"><span>Alineación del contenido</span>
                                 <div class="bxb-seg">
                                     <button type="button" :class="(settings.hero_slide_{{ $n }}_align||'left')==='left'&&'on'" @click="setSetting('hero_slide_{{ $n }}_align','left')">Izquierda</button>
@@ -407,11 +505,27 @@
                             <option value="horizontal">Horizontal</option>
                             <option value="showcase">Círculos con banda de título</option>
                             <option value="circles">Círculos limpios</option>
-                            <option value="carousel">Carrusel de círculos con flechas</option>
+                            <option value="tiles">Iconos en fila + tarjeta de promociones</option><option value="carousel">Carrusel de círculos con flechas</option>
                             <option value="editorial">Tarjetas fotográficas altas</option>
                             <option value="ambientes">Ambientes (cards altas, funciona sin fotos)</option>
                             <option value="coleccion">Colecciones visuales (foto arriba, datos abajo)</option>
                         </select>
+                    </div>
+                    <div x-show="settings.featured_categories_style==='tiles'" x-cloak>
+                        <div class="bxb-field"><span>Qué se ve en cada cuadro</span>
+                            <div class="bxb-seg">
+                                <button type="button" :class="(settings.featured_categories_tiles_media||'icon')==='icon'&&'on'" @click="setSetting('featured_categories_tiles_media','icon')">Icono</button>
+                                <button type="button" :class="settings.featured_categories_tiles_media==='image'&&'on'" @click="setSetting('featured_categories_tiles_media','image')">Foto de la categoría</button>
+                            </div>
+                            <small>Con "Foto", la categoría sin imagen cae al icono.</small>
+                        </div>
+                        <label class="bxb-switch"><input type="checkbox" :checked="(settings.featured_categories_promo_card??'1')!=='0'" @change="setSetting('featured_categories_promo_card',$event.target.checked?'1':'0')"> Tarjeta lateral de promociones (solo si hay promociones vigentes)</label>
+                        <div class="bxb-grid2" x-show="(settings.featured_categories_promo_card??'1')!=='0'">
+                            <label class="bxb-field">Título de la tarjeta<input type="text" maxlength="60" placeholder="Promociones del mes" :value="settings.featured_categories_promo_title||''" @input.debounce.600ms="setSetting('featured_categories_promo_title',$event.target.value)"></label>
+                            <label class="bxb-field">Texto corto<input type="text" maxlength="120" :value="settings.featured_categories_promo_text||''" @input.debounce.600ms="setSetting('featured_categories_promo_text',$event.target.value)"></label>
+                            <label class="bxb-field">Texto del botón<input type="text" maxlength="40" placeholder="Ver promociones" :value="settings.featured_categories_promo_cta||''" @input.debounce.600ms="setSetting('featured_categories_promo_cta',$event.target.value)"></label>
+                            <label class="bxb-field">Imagen de fondo (ruta en uploads, opcional)<input type="text" maxlength="255" :value="settings.featured_categories_promo_image||''" @input.debounce.600ms="setSetting('featured_categories_promo_image',$event.target.value)"></label>
+                        </div>
                     </div>
                     <div class="bxb-grid2" x-show="settings.featured_categories_style==='showcase'">
                         <label class="bxb-field">Fondo de la banda<span class="bxb-color-row"><input type="color" :value="settings.featured_categories_band_bg||'#2563eb'" @input="setSetting('featured_categories_band_bg',$event.target.value)"><code x-text="settings.featured_categories_band_bg||''"></code></span></label>
@@ -527,11 +641,21 @@
             <template x-if="['featured_products','discounts','blog'].includes(editingBlock.component)">
                 <div class="bxb-card">
                     <template x-if="editingBlock.component==='featured_products'">
-                        <div class="bxb-field"><span>Vista</span>
-                            <div class="bxb-seg">
-                                <button type="button" :class="(settings.featured_products_view||'cards')==='cards'&&'on'" @click="setSetting('featured_products_view','cards')">Tarjetas</button>
-                                <button type="button" :class="settings.featured_products_view==='editorial'&&'on'" @click="setSetting('featured_products_view','editorial')">Editorial</button>
+                        <div>
+                            <div class="bxb-field"><span>Vista</span>
+                                <div class="bxb-seg">
+                                    <button type="button" :class="(settings.featured_products_view||'cards')==='cards'&&'on'" @click="setSetting('featured_products_view','cards')">Tarjetas</button>
+                                    <button type="button" :class="settings.featured_products_view==='editorial'&&'on'" @click="setSetting('featured_products_view','editorial')">Editorial</button>
+                                    <button type="button" :class="settings.featured_products_view==='carousel'&&'on'" @click="setSetting('featured_products_view','carousel')">Carrusel</button>
+                                </div>
                             </div>
+                            {{-- Solo tiene sentido preguntarlo cuando la vista es
+                                 carrusel: en las otras dos no hay nada que rotar. --}}
+                            <label class="bxb-field" x-show="settings.featured_products_view==='carousel'">Cambia cada (segundos)
+                                <input type="number" min="0" max="15" :value="settings.featured_products_autoplay ?? 3"
+                                       @change="setSetting('featured_products_autoplay', String(Math.max(0,Math.min(15,parseInt($event.target.value)||0))))">
+                                <small style="display:block;color:#94a3b8;font-size:11px;margin-top:4px">0 = no se mueve solo, únicamente con las flechas.</small>
+                            </label>
                         </div>
                     </template>
                     <label class="bxb-field" x-show="editingBlock.component!=='blog'">Cuántos mostrar
@@ -731,11 +855,20 @@
                                 <select :value="blockContent.variant||'strip'" @change="setBlockContent('variant',$event.target.value)">
                                     <option value="strip">Fila de logos</option>
                                     <option value="grid">Cuadrícula con borde</option>
-                                    <option value="carousel">Carrusel deslizable</option>
+                                    <option value="carousel">Carrusel deslizable (con flechas)</option>
+                                    <option value="marquee">Cinta en movimiento</option>
+                                    <option value="marquee-slow">Cinta en movimiento (lenta)</option>
+                                    <option value="cards">Tarjetas con relieve</option>
                                 </select>
                             </label>
                         </div>
                         <label class="bxb-switch"><input type="checkbox" :checked="blockContent.grayscale!==false" @change="setBlockContent('grayscale',$event.target.checked)"> Logos en gris (a color al pasar el mouse)</label>
+                        {{-- El boton se quitaba dejando su texto vacio, que no
+                             se le ocurre a nadie. Ahora es un interruptor. --}}
+                        <label class="bxb-switch"><input type="checkbox" :checked="blockContent.show_cta!==false" @change="setBlockContent('show_cta',$event.target.checked)"> Mostrar el botón &ldquo;Ver todas las marcas&rdquo;</label>
+                        <label class="bxb-field" x-show="blockContent.show_cta!==false" x-cloak>Texto del botón
+                            <input type="text" maxlength="60" placeholder="Ver todas las marcas" :value="blockContent.cta_text||''" @input.debounce.600ms="setBlockContent('cta_text',$event.target.value)">
+                        </label>
                     </div>
                     <template x-for="(it,i) in contentItems('items')" :key="it.key||i">
                         <div class="bxb-card">
@@ -876,6 +1009,41 @@
             </template>
 
             {{-- Llamada a la acción --}}
+            {{-- Promociones del mes: tarjetas desde Promociones + tarjeta lateral --}}
+            <template x-if="editingBlock.component==='promo_cards'">
+                <div class="bxb-card">
+                    <div class="bxb-grid2">
+                        <label class="bxb-field">Título<input type="text" maxlength="120" placeholder="Promociones del mes" :value="settings.promo_cards_title||''" @input.debounce.600ms="setSetting('promo_cards_title',$event.target.value)"></label>
+                        <label class="bxb-field">Subtítulo<input type="text" maxlength="200" :value="settings.promo_cards_subtitle||''" @input.debounce.600ms="setSetting('promo_cards_subtitle',$event.target.value)"></label>
+                        <label class="bxb-field">Cuántas promociones<input type="number" min="1" max="12" placeholder="4 (3 con tarjeta lateral)" :value="settings.promo_cards_limit||''" @input.debounce.600ms="setSetting('promo_cards_limit',$event.target.value)"></label>
+                    </div>
+                    <small>Las promociones se crean en Marketing → Promociones (producto, etiqueta e imagen).</small>
+                    <label class="bxb-switch"><input type="checkbox" :checked="settings.promo_cards_side_card==='1'" @change="setSetting('promo_cards_side_card',$event.target.checked?'1':'0')"> Tarjeta lateral con mensaje y sectores</label>
+                    <div x-show="settings.promo_cards_side_card==='1'" x-cloak>
+                        <div class="bxb-grid2">
+                            <label class="bxb-field">Título<input type="text" maxlength="60" placeholder="Equipamos tus ideas" :value="settings.promo_cards_side_title||''" @input.debounce.600ms="setSetting('promo_cards_side_title',$event.target.value)"></label>
+                            <label class="bxb-field">Texto corto<input type="text" maxlength="160" :value="settings.promo_cards_side_text||''" @input.debounce.600ms="setSetting('promo_cards_side_text',$event.target.value)"></label>
+                            <label class="bxb-field">Texto del botón<input type="text" maxlength="40" placeholder="Solicita tu cotización" :value="settings.promo_cards_side_cta||''" @input.debounce.600ms="setSetting('promo_cards_side_cta',$event.target.value)"></label>
+                            <label class="bxb-field">Enlace del botón<input type="text" maxlength="300" placeholder="/tienda" :value="settings.promo_cards_side_url||''" @input.debounce.600ms="setSetting('promo_cards_side_url',$event.target.value)"></label>
+                            @foreach([1,2,3,4] as $ps)
+                            <label class="bxb-field">Sector {{ $ps }}
+                                <span class="bxb-color-row" style="gap:6px">
+                                    <input type="text" maxlength="30" placeholder="{{ ['Obras','Industria','Comercio','Hogar'][$ps-1] }}" :value="settings.promo_cards_side_item_{{ $ps }}||''" @input.debounce.600ms="setSetting('promo_cards_side_item_{{ $ps }}',$event.target.value)">
+                                    <select style="width:118px" :value="settings.promo_cards_side_icon_{{ $ps }}||''" @change="setSetting('promo_cards_side_icon_{{ $ps }}',$event.target.value)">
+                                        <option value="">Icono auto</option>
+                                        @foreach(['obras'=>'Obras','industria'=>'Industria','comercio'=>'Comercio','hogar'=>'Hogar','calidad'=>'Calidad','stock'=>'Stock','confianza'=>'Confianza','soporte'=>'Soporte','envio'=>'Envío','precio'=>'Precio'] as $ik=>$il)
+                                        <option value="{{ $ik }}">{{ $il }}</option>
+                                        @endforeach
+                                    </select>
+                                </span>
+                            </label>
+                            @endforeach
+                        </div>
+                        <label class="bxb-field">Imagen de fondo (ruta en uploads, opcional)<input type="text" maxlength="255" :value="settings.promo_cards_side_image||''" @input.debounce.600ms="setSetting('promo_cards_side_image',$event.target.value)"></label>
+                    </div>
+                </div>
+            </template>
+
             <template x-if="editingBlock.component==='cta_banner'">
                 <div class="bxb-card">
                     <div class="bxb-field"><span>Diseño</span>
@@ -889,12 +1057,46 @@
                         <label class="bxb-field">Subtítulo<input type="text" maxlength="500" :value="blockContent.subtitle||''" @input.debounce.600ms="setBlockContent('subtitle',$event.target.value)"></label>
                         <label class="bxb-field">Texto del botón<input type="text" maxlength="60" :value="blockContent.button_text||''" @input.debounce.600ms="setBlockContent('button_text',$event.target.value)"></label>
                         <label class="bxb-field">Enlace del botón<input type="text" maxlength="500" placeholder="/tienda" :value="blockContent.button_url||''" @input.debounce.600ms="setBlockContent('button_url',$event.target.value)"></label>
+                        <label class="bxb-field">Segundo botón (opcional)<input type="text" maxlength="60" placeholder="Hablar con un asesor" :value="blockContent.button2_text||''" @input.debounce.600ms="setBlockContent('button2_text',$event.target.value)"></label>
+                        <label class="bxb-field">Enlace del segundo botón<input type="text" maxlength="500" placeholder="Vacío = WhatsApp de la tienda" :value="blockContent.button2_url||''" @input.debounce.600ms="setBlockContent('button2_url',$event.target.value)"></label>
+                        @foreach([1,2,3,4] as $cb)
+                        <label class="bxb-field">Beneficio {{ $cb }} (a la derecha)<input type="text" maxlength="60" placeholder="{{ ['Atención personalizada','Cotizaciones rápidas','Asesoría técnica','Proyectos de cualquier tamaño'][$cb-1] }}" :value="blockContent.benefit_{{ $cb }}||''" @input.debounce.600ms="setBlockContent('benefit_{{ $cb }}',$event.target.value)"></label>
+                        @endforeach
                     </div>
                     <label class="bxb-field">Color de fondo
                         <span class="bxb-color-row"><input type="color" :value="blockContent.background_color||'#0f172a'" @input="setBlockContent('background_color',$event.target.value)"><code x-text="blockContent.background_color||''"></code></span>
                     </label>
                     <div class="bxb-field"><span>Imagen de fondo (opcional, tapa el color)</span>
                         <div class="bxb-media"><span class="bxb-media-box" :style="blockContent.image?'background-image:url('+assetUrl(blockContent.image)+')':''"><template x-if="!blockContent.image"><em>Opcional</em></template></span>
+                        <label class="bxb-btn">Subir<input type="file" accept="image/*" class="bxb-hidden" @change="uploadContentImage($event,null,null,'image')"></label>
+                        <button type="button" class="bxb-link" x-show="blockContent.image" @click="setBlockContent('image','')">Quitar</button></div>
+                    </div>
+                </div>
+            </template>
+
+            {{-- Delivery: banda con vehiculo, placa y condicion --}}
+            <template x-if="editingBlock.component==='delivery_banner'">
+                <div class="bxb-card">
+                    <div class="bxb-field"><span>Fondo</span>
+                        <div class="bxb-seg">
+                            <button type="button" :class="(blockContent.variant||'dark')==='dark'&&'on'" @click="setBlockContent('variant','dark')">Oscuro</button>
+                            <button type="button" :class="blockContent.variant==='brand'&&'on'" @click="setBlockContent('variant','brand')">Color de marca</button>
+                            <button type="button" :class="blockContent.variant==='light'&&'on'" @click="setBlockContent('variant','light')">Claro</button>
+                        </div>
+                    </div>
+                    <div class="bxb-grid2">
+                        <label class="bxb-field">Placa, línea grande<input type="text" maxlength="40" placeholder="Delivery" :value="blockContent.badge_line1||''" @input.debounce.600ms="setBlockContent('badge_line1',$event.target.value)"></label>
+                        <label class="bxb-field">Placa, línea pequeña<input type="text" maxlength="60" placeholder="a todo el Perú" :value="blockContent.badge_line2||''" @input.debounce.600ms="setBlockContent('badge_line2',$event.target.value)"></label>
+                        <label class="bxb-field">Título<input type="text" maxlength="180" placeholder="Delivery gratis con pedidos superiores a S/ 300" :value="blockContent.title||''" @input.debounce.600ms="setBlockContent('title',$event.target.value)"></label>
+                        <label class="bxb-field">Nota pequeña<input type="text" maxlength="300" placeholder="Si estás en Lima recibe tu pedido hoy. No aplica en cables." :value="blockContent.note||''" @input.debounce.600ms="setBlockContent('note',$event.target.value)"></label>
+                        <label class="bxb-field">Texto del botón (opcional)<input type="text" maxlength="60" :value="blockContent.button_text||''" @input.debounce.600ms="setBlockContent('button_text',$event.target.value)"></label>
+                        <label class="bxb-field">Enlace del botón<input type="text" maxlength="500" placeholder="/envios" :value="blockContent.button_url||''" @input.debounce.600ms="setBlockContent('button_url',$event.target.value)"></label>
+                    </div>
+                    <label class="bxb-field">Color de la placa (vacío = color de marca)
+                        <span class="bxb-color-row"><input type="color" :value="blockContent.badge_color||'#ff2d16'" @input="setBlockContent('badge_color',$event.target.value)"><code x-text="blockContent.badge_color||'marca'"></code><button type="button" class="bxb-link" x-show="blockContent.badge_color" @click="setBlockContent('badge_color','')">Usar color de marca</button></span>
+                    </label>
+                    <div class="bxb-field"><span>Imagen del vehículo (PNG sin fondo queda mejor)</span>
+                        <div class="bxb-media"><span class="bxb-media-box" :style="blockContent.image?'background-image:url('+assetUrl(blockContent.image)+')':''"><template x-if="!blockContent.image"><em>Sin imagen: la banda se pinta sin vehículo</em></template></span>
                         <label class="bxb-btn">Subir<input type="file" accept="image/*" class="bxb-hidden" @change="uploadContentImage($event,null,null,'image')"></label>
                         <button type="button" class="bxb-link" x-show="blockContent.image" @click="setBlockContent('image','')">Quitar</button></div>
                     </div>
@@ -912,6 +1114,10 @@
                                 <select :value="blockContent.variant||'cards'" @change="setBlockContent('variant',$event.target.value)">
                                     <option value="cards">Tarjetas con mapa arriba</option>
                                     <option value="map-side">Mapa al costado (una por fila)</option>
+                                    <option value="map-wide">Mapa ancho con los datos debajo</option>
+                                    <option value="map-hero">Mapa de fondo con la ficha encima</option>
+                                    <option value="map-split">Mitad mapa, mitad datos (a pantalla partida)</option>
+                                    <option value="compact">Solo datos, sin mapa</option>
                                 </select>
                             </label>
                         </div>

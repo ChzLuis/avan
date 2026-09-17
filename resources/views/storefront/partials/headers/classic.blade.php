@@ -33,7 +33,7 @@
             </a>
             <label class="search" :class="{'search-open': searchOpen}" @click.outside="suggestOpen=false" @keydown.escape="suggestOpen=false">
                 <span class="sr-only">Buscar en el catálogo</span>
-                <input type="search" x-model.debounce.200ms="query" @input.debounce.250ms="fetchSuggest()" @focus="suggest.length && (suggestOpen=true)" @keydown.enter.prevent="goSearch()" placeholder="{{ $txtSearchPlaceholder }}" autocomplete="off" role="combobox" aria-label="Buscar productos" :aria-expanded="suggestOpen">
+                <input type="search" x-model="query" @input.debounce.250ms="fetchSuggest()" @focus="suggest.length && (suggestOpen=true)" @keydown.enter.prevent="goSearch()" placeholder="{{ $txtSearchPlaceholder }}" autocomplete="off" role="combobox" aria-label="Buscar productos" :aria-expanded="suggestOpen">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
                 {{-- Sugerencias predictivas --}}
                 <div class="search-suggest" x-show="suggestOpen" x-cloak role="listbox" @click.stop>
@@ -41,7 +41,11 @@
                         <a class="search-suggest-item" :href="sp.url" role="option">
                             <span class="search-suggest-thumb"><template x-if="sp.image"><img :src="sp.image" :alt="sp.name" loading="lazy"></template></span>
                             <span class="search-suggest-info"><strong x-text="sp.name"></strong><small x-text="sp.category||''"></small></span>
-                            <span class="search-suggest-price" x-text="money(sp.price)"></span>
+                            @if($hidePrices ?? false)
+                            <span class="search-suggest-price">{{ $txtPrecioConsul ?? 'A consultar' }}</span>
+                            @else
+                            <span class="search-suggest-price" x-show="sp.price > 0" x-text="money(sp.price)"></span>
+                            @endif
                         </a>
                     </template>
                     <button type="button" class="search-suggest-all" @click="goSearch()">Ver todos los resultados <span aria-hidden="true">→</span></button>
@@ -69,15 +73,16 @@
                 @endforeach
             </div>
             @endif
-            {{-- Botón mega-menú de categorías --}}
-            @if($navCategories->count())
-            <div class="mega-trigger" @mouseenter="mega=true" @click="mega=!mega">
-                <button type="button" class="mega-btn">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    Todas las categorías
-                    <svg class="mega-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" :style="mega && 'transform:rotate(180deg)'"><path d="M6 9l6 6 6-6"></path></svg>
-                </button>
-            </div>
+            {{-- Boton de categorias comun: posicion, estilo, texto y modo de
+                 despliegue desde el Constructor. Antes era un boton fijo
+                 "Todas las categorias" que solo sabia abrir el panel mega. --}}
+            @php
+                $clCatsPos = in_array($settings['hp_cats_pos'] ?? '', ['izquierda', 'derecha', 'oculto'], true) ? $settings['hp_cats_pos'] : 'izquierda';
+                $clModo = in_array($settings['hp_cat_trigger'] ?? '', ['mega', 'lista', 'none'], true) ? $settings['hp_cat_trigger'] : 'mega';
+                if ($clCatsPos === 'oculto' || ! $navCategories->count()) $clModo = 'none';
+            @endphp
+            @if($clModo !== 'none')
+                @include('storefront.partials.nav.cats-button', ['modo' => $clModo, 'pos' => $clCatsPos, 'var' => 'mega'])
             @endif
 
             {{-- Menú del Constructor (Inicio, Productos, Nosotros, Contacto) --}}
@@ -156,7 +161,11 @@
 <style>
   /* Titulo junto al logo. Apagado por defecto: donde va el logo no se repite
      el nombre, salvo que el negocio lo pida. */
+  /* El nombre no puede empujar al buscador: se acota y, si no cabe, se corta
+     con puntos suspensivos. Por debajo de 1100 px desaparece — ahi el espacio
+     es del buscador y del carrito, que son lo que la gente usa. */
   .brand-wordmark{margin-left:10px;font-family:var(--font-title,inherit);font-size:20px;
-                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap}
-  @media(max-width:760px){.brand-wordmark{font-size:16px;margin-left:7px}}
+                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap;
+                  max-width:min(30vw,260px);overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:1100px){.brand-wordmark{display:none}}
 </style>

@@ -20,6 +20,8 @@
                     <option value="{{ $key }}">{{ $label }}</option>
                     @endforeach
                 </select>
+                {{-- Qué se va a ver con cada composición: el nombre solo no alcanza para elegir. --}}
+                <span class="bxb-note" x-text="(@js(\App\Support\StorefrontLayoutPacks::DESCRIPCIONES['footers']))[settings.footer_layout||'classic'] || ''"></span>
             </label>
             <label class="bxb-field">Frase corta bajo el logo
                 <input type="text" maxlength="200" placeholder="Todo para tu hogar, en un solo lugar" :value="settings.footer_tagline||''" @input.debounce.600ms="setSetting('footer_tagline',$event.target.value)">

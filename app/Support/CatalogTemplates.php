@@ -23,7 +23,6 @@ class CatalogTemplates
     public const SUPPORTED_KEYS = [
         'ecommerce',
         'direct',
-        'computienda',
     ];
 
     public static function all(): array
@@ -37,14 +36,14 @@ class CatalogTemplates
             'ecommerce' => [
                 'key'            => 'ecommerce',
                 'name'           => 'Ecommerce',
-                'short_description' => 'Tienda online completa',
+                'short_description' => 'Sitio web completo con tienda online',
                 'view'           => 'public.templates.ecommerce',
                 'supported'      => true,
-                'capabilities'   => ['catalog', 'filters', 'cart', 'checkout', 'responsive'],
-                'label'          => 'Ecommerce — Tienda Completa',
+                'capabilities'   => ['home', 'catalog', 'filters', 'cart', 'checkout', 'about', 'contact', 'blog', 'responsive'],
+                'label'          => 'Ecommerce — Web y Tienda Completa',
                 'category'       => 'General',
                 'icon'           => '🛒',
-                'description'    => 'Diseño moderno de tienda ecommerce completa. Topbar, header con búsqueda, nav con flyouts, hero, catálogo con filtros, PDP y checkout fullscreen.',
+                'description'    => 'Sitio web comercial completo con Inicio, Tienda, Nosotros, Contacto, Blog, catálogo con filtros, ficha de producto, carrito y checkout.',
                 'preview_bg'     => '#f7f7f5',
                 'preview_accent' => '#3340ff',
                 'components'     => ['hero','announcement','catalog','cart','whatsapp','footer','newsletter','trust_bar'],

@@ -45,7 +45,9 @@ class StoreNavigationController extends Controller
         ]);
 
         if ($request->hasFile('header_logo')) {
-            $data['header_logo_url'] = $request->file('header_logo')->store("store-header/{$project->id}", 'public');
+            $data['header_logo_url'] = \App\Support\Imagen\ProcesadorImagenes::ruta(
+                $request->file('header_logo'), "store-header/{$project->id}", 'logo'
+            );
         }
         unset($data['header_logo']);
         foreach (['header_sticky', 'header_show_search', 'header_show_contact', 'header_show_cart'] as $key) {
@@ -133,6 +135,6 @@ class StoreNavigationController extends Controller
     private function back(string $message)
     {
         return redirect()->route('settings.builder')
-            ->withFragment('pages')->with('success', $message);
+            ->withFragment('header')->with('success', $message);
     }
 }

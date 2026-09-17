@@ -1,14 +1,29 @@
+@php
+    // Razon social y RUC: obligatorios en la web de un comercio peruano.
+    $fpLegal = \App\Storefront\DatosPie::legal($settings ?? [], $project);
+    $fpVerLegal = (string) (($settings ?? [])['footer_show_legal'] ?? '1') !== '0'
+        && ($fpLegal['nombre'] !== '' || $fpLegal['ruc'] !== '');
+    $fpTextoLegal = trim($fpLegal['nombre'].($fpLegal['ruc'] ? ' · RUC '.$fpLegal['ruc'] : ''), ' ·');
+@endphp
     <footer class="site-footer ft-style-{{ $footerStyle }}">
         <div class="container footer-main">
             {{-- Columna 1: Marca --}}
             <div class="footer-brand">
                 <div class="footer-logo">
-                    @if($logoUrl)<img src="{{ $logoUrl }}" alt="{{ $storeName }}">@else<span class="footer-logo-mark">{{ mb_strtoupper(mb_substr($storeName,0,1)) }}</span>@endif
-                    <strong>{{ $storeName }}</strong>
+                    {{-- Con logo NO se repite el nombre al lado: el logotipo ya
+                         lo dice, y escrito otra vez compite con el. Sin logo, la
+                         inicial sola no identifica nada y el nombre es obligado.
+                         Es el mismo criterio que la cabecera (brand--logo-only). --}}
+                    @if($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="{{ $storeName }}">
+                    @else
+                        <span class="footer-logo-mark">{{ mb_strtoupper(mb_substr($storeName,0,1)) }}</span>
+                        <strong>{{ $storeName }}</strong>
+                    @endif
                 </div>
                 <p class="footer-desc">{{ Str::limit($tagline, 130) }}</p>
 
-                @if(count($footerTrust))
+                @if(($showBenefits ?? true) && count($footerTrust))
                 <div class="footer-trust">
                     @foreach($footerTrust as $t)
                     <div class="footer-trust-item">
@@ -69,6 +84,7 @@
                 <ul class="footer-contact">
                     @if($phone)<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">{!! $svgIcons['phone'] !!}</svg><a href="tel:{{ preg_replace('/[^\d+]/','',$phone) }}">{{ $phone }}</a></li>@endif
                     @if($footerAddress)<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">{!! $svgIcons['pin'] !!}</svg><span>{{ $footerAddress }}</span></li>@endif
+                    @include('storefront.partials.numeros-extra')
                     @if($email)<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">{!! $svgIcons['mail'] !!}</svg><a href="mailto:{{ $email }}">{{ $email }}</a></li>@endif
                     @if($footerHours)<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">{!! $svgIcons['clock'] !!}</svg><span>{{ $footerHours }}</span></li>@endif
                 </ul>
@@ -98,7 +114,7 @@
                 @else<span></span>@endif
 
                 {{-- Centro: copyright + crédito --}}
-                <span class="footer-copy">{{ $footerCopyright }} · Desarrollado por <a href="https://eskalagroup.com/" target="_blank" rel="noopener" class="footer-dev-link">Eskala</a></span>
+                <span class="footer-copy">{{ $footerCopyright }}@if($fpVerLegal) · {{ $fpTextoLegal }}@endif · Desarrollado por <a href="https://eskalagroup.com/" target="_blank" rel="noopener" class="footer-dev-link">Eskala</a></span>
 
                 {{-- Derecha: métodos de pago (logos) --}}
                 @if($showFooterPay)

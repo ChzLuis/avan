@@ -15,6 +15,8 @@
             'draftSettings' => route('settings.builder.draft.settings'),
             'designPreset' => route('settings.builder.design-preset'),
             'publish' => route('settings.builder.publish'),
+            'versions' => route('settings.builder.versions'),
+            'rollback' => route('settings.builder.rollback'),
             'preview' => route('settings.builder.preview'),
             'classic' => route('settings.design'),
             'stores' => url('/bixoadmin'),
@@ -69,19 +71,20 @@
                 @include('settings.builder.stages.business')
             </template>
 
-            {{-- Apariencia concentra plantilla, marca, cabecera y navegación.
-                 x-show conserva los formularios de menú que enlazan listeners al cargar. --}}
-            <div x-show="stage==='appearance'" x-cloak x-data="{ appearanceArea: 'brand' }">
-                <nav class="bxb-local-nav" aria-label="Secciones de Apariencia">
-                    <button type="button" :class="appearanceArea==='brand'&&'is-active'" @click="appearanceArea='brand'">Plantilla y marca</button>
-                    <button type="button" :class="appearanceArea==='header'&&'is-active'" @click="appearanceArea='header'">Encabezado y menú</button>
-                </nav>
-                <div x-show="appearanceArea==='brand'">
-                    @include('settings.builder.stages.appearance')
-                </div>
-                <div x-show="appearanceArea==='header'" x-cloak>
-                    @include('settings.builder.stages.header')
-                </div>
+            {{-- Apariencia: plantilla, marca y tema. El encabezado y el menú
+                 salieron de aquí a su propio paso; estaban en una pestaña que
+                 no se veía y nadie los encontraba. --}}
+            <div x-show="stage==='appearance'" x-cloak>
+                @include('settings.builder.stages.appearance')
+            </div>
+
+            {{-- Encabezado y menú: paso propio.
+                 Va con x-show y NO con x-if porque los formularios de menú
+                 enlazan sus listeners al cargar la página; con x-if se destruye
+                 el DOM al cambiar de paso y el gestor de navegación deja de
+                 responder. --}}
+            <div x-show="stage==='header'" x-cloak>
+                @include('settings.builder.stages.header')
             </div>
 
             <template x-if="stage==='home'">
@@ -165,6 +168,32 @@
                             <span x-show="!publishing">Publicar tienda</span><span x-show="publishing" x-cloak>Publicando…</span>
                         </button>
                     </div>
+
+                    {{-- Historial: cada publicacion guarda como estaba la tienda
+                         ANTES. Sin esta lista, quien dejaba su tienda peor que
+                         antes no tenia forma de volver. --}}
+                    <div class="bxb-card" x-data="historialPublicaciones()" x-init="cargar()">
+                        <strong class="bxb-card-title">Versiones publicadas</strong>
+                        <p class="bxb-note">Si algo quedó mal, vuelve a como estaba tu tienda antes de esa publicación. No se pierde nada: siempre puedes volver a avanzar.</p>
+
+                        <p class="bxb-note" x-show="cargando" x-cloak>Cargando…</p>
+                        <p class="bxb-note" x-show="!cargando && !versiones.length" x-cloak>Todavía no publicaste tu tienda ninguna vez.</p>
+
+                        <ul class="bxb-hist" x-show="versiones.length" x-cloak>
+                            <template x-for="v in versiones" :key="v.version">
+                                <li>
+                                    <div>
+                                        <b>Versión <span x-text="v.version"></span></b>
+                                        <span class="bxb-hist-meta" x-text="v.fecha + ' · ' + v.autor"></span>
+                                    </div>
+                                    <button type="button" class="bxb-hist-btn" @click="restaurar(v.version)" :disabled="restaurando">
+                                        Volver a antes de esta
+                                    </button>
+                                </li>
+                            </template>
+                        </ul>
+                        <p class="bxb-note" x-show="aviso" x-cloak x-text="aviso" style="margin-top:10px;font-weight:600"></p>
+                    </div>
                 </section>
             </template>
 
@@ -230,3 +259,66 @@
 @include('settings.builder.script')
 @include('settings.builder.partials.image-template-script')
 </x-app-layout>
+
+
+{{-- Historial de publicaciones: lista y restauracion. --}}
+<style>
+    .bxb-hist { list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; }
+    .bxb-hist li { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 11px; border:1px solid #E5E7EB; border-radius:9px; background:#fff; }
+    .bxb-hist b { font-size:13px; color:#111827; display:block; }
+    .bxb-hist-meta { font-size:11px; color:#6B7280; }
+    .bxb-hist-btn { flex-shrink:0; min-height:36px; padding:0 12px; border:1px solid #D1D5DB; background:#F9FAFB; color:#374151; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+    .bxb-hist-btn:hover:not(:disabled) { border-color:#6366F1; color:#4338CA; }
+    .bxb-hist-btn:disabled { opacity:.5; cursor:default; }
+    @media (max-width:640px) { .bxb-hist li { flex-direction:column; align-items:stretch; } .bxb-hist-btn { width:100%; } }
+</style>
+<script>
+function historialPublicaciones() {
+    return {
+        versiones: [], cargando: false, restaurando: false, aviso: '',
+        async cargar() {
+            this.cargando = true;
+            try {
+                const r = await fetch(this.urls.versions, { headers: { 'Accept': 'application/json' } });
+                const d = await r.json();
+                this.versiones = (d && d.versions) || [];
+            } catch (e) { this.versiones = []; }
+            this.cargando = false;
+        },
+        async restaurar(version) {
+            // Reescribe la tienda publicada: se pregunta antes, con el popup del
+            // panel y no con el cuadro del navegador.
+            const ok = await window.__confirm({
+                title: 'Volver a la versión anterior',
+                msg: 'Tu tienda volverá a como estaba antes de publicar la versión ' + version + '. Lo que publicaste después dejará de verse.',
+                confirmLabel: 'Sí, volver atrás',
+            });
+            if (!ok) return;
+
+            this.restaurando = true; this.aviso = '';
+            try {
+                const r = await fetch(this.urls.rollback, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                    },
+                    body: JSON.stringify({ version: version }),
+                });
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok || !d.ok) {
+                    this.aviso = d.message || 'No se pudo restaurar. Inténtalo de nuevo.';
+                } else {
+                    this.aviso = d.message || 'Listo.';
+                    // La pagina refleja el estado ya restaurado.
+                    setTimeout(() => location.reload(), 1200);
+                }
+            } catch (e) {
+                this.aviso = 'Sin conexión: no se pudo restaurar.';
+            }
+            this.restaurando = false;
+        },
+    };
+}
+</script>

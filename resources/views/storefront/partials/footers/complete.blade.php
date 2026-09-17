@@ -1,3 +1,10 @@
+@php
+    // Razon social y RUC: obligatorios en la web de un comercio peruano.
+    $fpLegal = \App\Storefront\DatosPie::legal($settings ?? [], $project);
+    $fpVerLegal = (string) (($settings ?? [])['footer_show_legal'] ?? '1') !== '0'
+        && ($fpLegal['nombre'] !== '' || $fpLegal['ruc'] !== '');
+    $fpTextoLegal = trim($fpLegal['nombre'].($fpLegal['ruc'] ? ' · RUC '.$fpLegal['ruc'] : ''), ' ·');
+@endphp
 {{-- FOOTER COMPLETO: marca+descripción · categorías · información · contacto
      + fila de confianza (pagos/seguridad) + legal. El más denso. --}}
 @php $legalBase = ($project->custom_domain && request()->getHost() === $project->custom_domain ? '' : '/'.$project->slug); @endphp
@@ -60,6 +67,7 @@
             <h4>Contacto</h4>
             <ul>
                 @if($phone)<li><a href="tel:{{ preg_replace('/[^\d+]/','',$phone) }}">Teléfono: {{ $phone }}</a></li>@endif
+                @include('storefront.partials.numeros-extra')
                 @if($email)<li><a href="mailto:{{ $email }}">{{ $email }}</a></li>@endif
                 @if($waFooter)<li><a href="https://wa.me/{{ $waFooter }}" target="_blank" rel="noopener">WhatsApp directo</a></li>@endif
                 @if($footerAddress)<li>{{ $footerAddress }}</li>@endif
@@ -68,7 +76,7 @@
         </div>
     </div>
     <div class="ftk-bottom"><div class="ftk-bottom-inner">
-        <span>{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}</span>
+        <span>{{ $footerCopyright ?: '© '.date('Y').' '.$storeName.'. Todos los derechos reservados.' }}@if($fpVerLegal) · {{ $fpTextoLegal }}@endif</span>
         <nav><a href="{{ url($legalBase.'/privacidad') }}">Privacidad</a><a href="{{ url($legalBase.'/terminos') }}">Términos</a></nav>
     </div></div>
 </footer>

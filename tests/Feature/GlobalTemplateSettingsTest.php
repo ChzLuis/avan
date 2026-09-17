@@ -61,7 +61,7 @@ class GlobalTemplateSettingsTest extends TestCase
         $controller = app(SettingsController::class);
 
         $templateKeys = CatalogTemplates::supportedKeys();
-        $this->assertSame(['ecommerce', 'direct', 'computienda'], $templateKeys);
+        $this->assertSame(['ecommerce', 'direct'], $templateKeys);
         foreach ($templateKeys as $template) {
             $request = Request::create('/settings/design/apply-template', 'POST', [
                 'template' => $template,

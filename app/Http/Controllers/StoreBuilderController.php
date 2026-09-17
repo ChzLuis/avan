@@ -96,6 +96,7 @@ class StoreBuilderController extends Controller
                     'name' => $c->name,
                     'image' => $this->publicAsset($c->image_url),
                     'root' => $c->parent_id === null,
+                    'parent_id' => $c->parent_id,
                     'products' => (int) ($c->products_count ?? 0),
                 ])->values()->all(),
             'saleProducts' => $project->products()->where('is_available', true)
@@ -182,6 +183,11 @@ class StoreBuilderController extends Controller
         foreach ($data['settings'] as $key => $value) {
             if (!is_string($key) || !preg_match('/^[a-z0-9_]{1,80}$/', $key)) continue;
             if (in_array($key, $vetadas, true)) { $omitidas[] = $key; continue; }
+            // Los numeros de contacto viajan como JSON: se sanean aqui para que
+            // no entre a la tienda una estructura inventada desde fuera.
+            if ($key === 'contact_numbers') {
+                $value = \App\Storefront\ContactosTienda::normaliza($value);
+            }
             $this->drafts->putSetting($project, $key, $value, auth()->id());
             $saved++;
         }
@@ -193,6 +199,78 @@ class StoreBuilderController extends Controller
             // que si y descubrirlo al publicar.
             'omitidas' => $omitidas,
             'progress' => BuilderProgress::for($project),
+        ]);
+    }
+
+    /**
+     * Historial de publicaciones: cada versión con quién y cuándo la publicó.
+     *
+     * `publish()` ya guardaba un snapshot de lo que había ANTES de cada
+     * publicación, y `rollback()` sabe restaurarlo, pero nada de eso estaba
+     * expuesto: el comerciante que dejaba su tienda peor que antes no tenía
+     * cómo volver.
+     */
+    public function versions()
+    {
+        $project = $this->project();
+
+        $filas = \Illuminate\Support\Facades\DB::table('store_publications as p')
+            ->leftJoin('users as u', 'u.id', '=', 'p.published_by')
+            ->where('p.project_id', $project->id)
+            ->orderByDesc('p.version')
+            ->limit(30)
+            ->get(['p.version', 'p.created_at', 'u.name as autor']);
+
+        return response()->json([
+            'ok' => true,
+            'actual' => (int) $filas->max('version'),
+            'versions' => $filas->map(fn ($f) => [
+                'version' => (int) $f->version,
+                'fecha'   => \Illuminate\Support\Carbon::parse($f->created_at)->format('d/m/Y H:i'),
+                'autor'   => $f->autor ?: 'Alguien de tu equipo',
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * Vuelve al estado público anterior a una versión.
+     *
+     * Antes de restaurar se publica el estado actual como una versión más: si
+     * el comerciante se arrepiente de haber vuelto atrás, todavía puede
+     * regresar. Deshacer nunca debe ser un camino de una sola dirección.
+     */
+    public function rollback(Request $request)
+    {
+        $project = $this->project();
+        $version = (int) $request->validate([
+            'version' => 'required|integer|min:1',
+        ])['version'];
+
+        $existe = \Illuminate\Support\Facades\DB::table('store_publications')
+            ->where('project_id', $project->id)->where('version', $version)->exists();
+        if (! $existe) {
+            return response()->json(['ok' => false, 'message' => 'Esa versión ya no está disponible.'], 404);
+        }
+
+        try {
+            $ok = $this->drafts->rollback($project, $version);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->telemetry($project, 'builder_rollback_failed', ['version' => $version]);
+
+            return response()->json(['ok' => false, 'message' => 'No se pudo restaurar. Inténtalo de nuevo.'], 500);
+        }
+
+        if (! $ok) {
+            return response()->json(['ok' => false, 'message' => 'Esa versión ya no está disponible.'], 404);
+        }
+
+        $this->telemetry($project, 'builder_rolled_back', ['version' => $version]);
+
+        return response()->json([
+            'ok' => true,
+            'version' => $version,
+            'message' => 'Tu tienda volvió a como estaba antes de la versión '.$version.'.',
         ]);
     }
 
@@ -334,7 +412,12 @@ class StoreBuilderController extends Controller
     public function preview(Request $request, PublicController $public)
     {
         $project = $this->project();
-        $storeView = in_array($request->query('view'), ['home', 'tienda'], true) ? $request->query('view') : 'home';
+        // `nosotros` y `contacto` faltaban: la vista previa solo sabía mostrar
+        // la portada y el catálogo, así que al editar la página Nosotros el
+        // negocio nunca veía sus cambios —ni su foto del hero— por mucho que se
+        // guardaran bien.
+        $storeView = in_array($request->query('view'), ['home', 'tienda', 'nosotros', 'contacto'], true)
+            ? $request->query('view') : 'home';
 
         $overlay = array_filter($this->drafts->settingsDrafts($project), fn ($v) => $v !== null);
         // El cambio de plantilla también puede estar en borrador: el preview lo respeta.
@@ -345,14 +428,70 @@ class StoreBuilderController extends Controller
             return $public->previewStorefront($project);
         }
         [$tplView, $data] = $public->prepararCatalogo($project, true, $storeView, $overlay);
-        $html = view($tplView, $data + ['builderSettingsOverlay' => $overlay])->render();
+
+        // Las páginas institucionales necesitan su registro: sin él la plantilla
+        // no tiene contenido que pintar. En preview se lee el BORRADOR
+        // (`contenidoEfectivo()` dentro de la vista), que es justo lo que el
+        // negocio acaba de guardar y quiere comprobar.
+        $extra = [];
+        if (in_array($storeView, ['nosotros', 'contacto'], true)) {
+            $extra['storePage'] = $project->storePages()->where('key', $storeView)->first();
+        }
+
+        // La vista de tienda necesita el paginador y las facetas: sin ellos la
+        // plantilla revienta con "Undefined variable $catalogPage". Solo la
+        // ruta publica los preparaba, asi que la vista previa del constructor
+        // daba 500 al elegir "Tienda".
+        if ($storeView === 'tienda') {
+            $catalogo = app(\App\Storefront\CatalogQueryService::class);
+            $pagina = $catalogo->paginate($project, $request);
+            $extra['catalogPage'] = $pagina;
+            $extra['catalogCards'] = collect($pagina->items())
+                ->map(fn ($p) => $catalogo->toCard($p, $project->slug))->all();
+            $extra['catalogMaxPrice'] = (float) $project->products()->where('is_available', true)->max('price');
+            $extra['catalogFacets'] = $catalogo->facets($project);
+            $extra['catalogBrands'] = $catalogo->marcas($project);
+            $extra['catalogBrandMap'] = $catalogo->marcasPorRubro($project);
+            $extra['activeProfile'] = null;
+            $extra['catalogProfiles'] = collect();
+        }
+
+        $html = view($tplView, $data + $extra + ['builderSettingsOverlay' => $overlay])->render();
 
         // Puente postMessage del preview: resaltar/seleccionar secciones.
         // Se inyecta SOLO aquí; el render público queda intacto.
+        // El menu de la tienda, dentro del preview, enlaza a la tienda PUBLICA:
+        // al pulsar "Nosotros" el iframe salia del borrador y enseñaba lo
+        // publicado. Se le pasa al puente la URL del preview y la raiz de la
+        // tienda para que esos clics se queden dentro del borrador.
+        // Ruta RELATIVA: el iframe es del mismo origen que el panel, y asi no
+        // depende de APP_URL ni del dominio por el que se entre.
+        $previewBase = json_encode(route('settings.builder.preview', [], false));
+        // La raiz se ancla al slug y no a `publicUrl()`: con dominio propio esa
+        // funcion devuelve `/` (raiz vacia) mientras que los enlaces DENTRO del
+        // preview llevan el slug, y el clic en "Inicio" se escapaba al publico.
+        $storeRoot = json_encode('/'.$project->slug);
+
         $bridge = <<<'JS'
 <script>
 (function () {
     var ORIGIN = window.location.origin;
+    var PREVIEW = __PREVIEW__, ROOT = __ROOT__;
+    // Navegar dentro del preview SIN salir del borrador: los enlaces a las
+    // paginas de la tienda se traducen a su vista del preview.
+    document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a || a.target === '_blank') return;
+        var u; try { u = new URL(a.getAttribute('href'), window.location.href); } catch (err) { return; }
+        if (u.origin !== ORIGIN) return;
+        var p = u.pathname.replace(/\/$/, '');
+        var view = null;
+        if (/\/(nosotros|contacto|tienda)$/.test(p)) view = p.split('/').pop();
+        else if (p === ROOT) view = 'home';
+        if (!view) return;
+        e.preventDefault();
+        window.location.href = PREVIEW + '?view=' + view + '&_=' + Date.now();
+    }, true);
     function sections() { return document.querySelectorAll('[data-store-native-section]'); }
     function clear() { sections().forEach(function (el) { el.style.outline = ''; el.style.outlineOffset = ''; }); }
     window.addEventListener('message', function (e) {
@@ -373,6 +512,7 @@ class StoreBuilderController extends Controller
 })();
 </script>
 JS;
+        $bridge = str_replace(['__PREVIEW__', '__ROOT__'], [$previewBase, $storeRoot], $bridge);
         $html = str_replace('</body>', $bridge.'</body>', $html);
 
         return response($html)->header('X-Frame-Options', 'SAMEORIGIN');
@@ -615,6 +755,7 @@ JS;
             'faq'                 => ['label' => 'Preguntas frecuentes',   'native' => 'faq'],
             'wa_advisory'         => ['label' => 'Asesoría por WhatsApp',  'native' => 'wa_advisory'],
             'cta_banner'          => ['label' => 'Llamada a la acción',    'native' => 'cta_banner'],
+            'delivery_banner'     => ['label' => 'Delivery',               'native' => 'delivery_banner'],
             'locations'           => ['label' => 'Sucursales y ubicación', 'native' => 'locations'],
             'about_preview'       => ['label' => 'Nosotros (resumen)',     'native' => 'about_preview'],
             'info_strip'          => ['label' => 'Banda informativa',       'native' => 'info_strip'],

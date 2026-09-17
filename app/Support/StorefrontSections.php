@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Project;
 use App\Storefront\StoreSectionWriteService;
+use Illuminate\Support\Collection;
 
 class StorefrontSections
 {
@@ -24,6 +25,7 @@ class StorefrontSections
         'faq' => 'Preguntas frecuentes',
         'wa_advisory' => 'Asesoría por WhatsApp',
         'cta_banner' => 'Llamada a la acción',
+        'delivery_banner' => 'Delivery (banda con vehículo y placa)',
         'locations' => 'Sucursales y ubicación',
         'about_preview' => 'Nosotros (resumen en Inicio)',
         'info_strip' => 'Banda informativa (4 bloques)',
@@ -214,8 +216,20 @@ class StorefrontSections
                     'background_color' => '#0f172a',
                 ],
             ],
+            'delivery_banner' => [
+                'variant' => 'dark',               // dark | brand | light
+                'enabled' => false,
+                'content' => [
+                    'badge_line1' => 'Delivery', 'badge_line2' => 'a todo el Perú',
+                    'title' => 'Delivery gratis con pedidos superiores a S/ 300',
+                    'note'  => 'Si estás en Lima Metropolitana recibe tu pedido hoy mismo.',
+                    'image' => null,               // el vehiculo, sin fondo idealmente
+                    'badge_color' => '',           // vacio = color de marca
+                    'button_text' => '', 'button_url' => '',
+                ],
+            ],
             'locations' => [
-                'variant' => 'cards',              // cards | map-side
+                'variant' => 'cards',              // cards | map-side | map-wide | map-hero | map-split | compact
                 'enabled' => false,
                 'content' => [
                     'title' => 'Visítanos', 'subtitle' => 'Te esperamos en nuestras tiendas',
@@ -249,6 +263,58 @@ class StorefrontSections
     public static function ensure(Project $project): void
     {
         app(StoreSectionWriteService::class)->ensureHomeSections($project);
+    }
+
+    /**
+     * Devuelve las sucursales publicables de la sección.
+     *
+     * Si el bloque se activa antes de crear una sede, utiliza los datos maestros
+     * del negocio. Las sedes configuradas siempre tienen prioridad y este
+     * fallback no modifica la base de datos.
+     */
+    public static function locationItems(Project $project, array $content, array $settings = []): Collection
+    {
+        $items = collect($content['items'] ?? [])
+            ->filter(fn ($item) => ($item['enabled'] ?? true)
+                && (filled($item['name'] ?? null) || filled($item['address'] ?? null)))
+            ->sortBy(fn ($item) => $item['sort_order'] ?? 999)
+            ->take(8)
+            ->values();
+
+        if ($items->isNotEmpty()) {
+            return $items;
+        }
+
+        $setting = static function (string $key, mixed $default = null) use ($project, $settings): mixed {
+            if (array_key_exists($key, $settings) && $settings[$key] !== null) {
+                return $settings[$key];
+            }
+
+            return $project->relationLoaded('settings')
+                ? ($project->settings->firstWhere('key', $key)?->value ?? $default)
+                : $project->setting($key, $default);
+        };
+
+        $address = trim((string) ($project->address ?: $setting('contact_address', '')));
+        $phone = trim((string) ($setting('contact_phone', '')
+            ?: $project->phone
+            ?: $project->whatsapp
+            ?: $setting('quote_whatsapp', '')));
+
+        // Una tarjeta sin dirección ni contacto no aporta información pública.
+        if ($address === '' && $phone === '') {
+            return collect();
+        }
+
+        return collect([[
+            'name' => trim((string) ($setting('business_name', '') ?: $project->name)),
+            'address' => $address,
+            'phone' => $phone,
+            'hours' => trim((string) $setting('business_hours', '')),
+            'show_map' => $address !== '',
+            'enabled' => true,
+            'sort_order' => 10,
+        ]]);
     }
 
     public static function definition(Project $project, string $component): array

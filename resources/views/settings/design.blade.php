@@ -121,7 +121,7 @@
           : ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria','farma','lavanderia'];
         $templateLabels = collect($allTemplates)->mapWithKeys(fn ($template, $key) => [$key => $template['label']])->all();
         // Plantillas soportadas (mantenidas activamente): se ofrecen primero.
-        $supportedTemplateKeys = ['ecommerce', 'direct', 'computienda'];
+        $supportedTemplateKeys = \App\Support\CatalogTemplates::supportedKeys();
         $supportedTemplates = collect($allTemplates)->only($supportedTemplateKeys)->map(fn ($t) => [
           'name' => $t['label'],
           'short_description' => \Illuminate\Support\Str::limit($t['description'], 96),
@@ -145,7 +145,7 @@
         {{-- Plantillas soportadas (recomendadas) --}}
         @include('settings.partials.supported-template-selector')
 
-        <div class="mt-8 mb-1 flex items-center gap-2">
+        <div class="hidden mt-8 mb-1 items-center gap-2" aria-hidden="true">
           <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Todas las plantillas</h3>
           <div class="flex-1 h-px bg-gray-100"></div>
         </div>
@@ -187,7 +187,7 @@
           }
         }">
 
-          <div class="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-violet-50 p-5 shadow-sm">
+          <div class="hidden rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-violet-50 p-5 shadow-sm" aria-hidden="true">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div><p class="text-xs font-bold uppercase tracking-wider text-indigo-600">Plantilla activa</p><h2 class="mt-1 text-xl font-bold text-slate-900" x-text="templateLabels[selected] || @js($tplInfo['label'])">{{ $tplInfo['label'] }}</h2><p class="mt-1 text-sm text-slate-500">Tus colores, logo, portada, catálogo, checkout y contenido son globales y se conservan al cambiar de plantilla.</p></div>
               <div class="flex flex-wrap gap-2"><a href="{{ $storeUrl }}" target="_blank" class="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Vista previa ↗</a><a href="{{ route('settings.experience') }}" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Configurar inicio</a></div>
@@ -199,7 +199,7 @@
               <a href="{{ $storeUrl }}?theme_refresh={{ now()->timestamp }}" target="_blank" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800">Ver cambio en la tienda ↗</a>
             </div>
           @endif
-          <div class="mt-5 flex gap-2 overflow-x-auto pb-1">
+          <div class="hidden mt-5 gap-2 overflow-x-auto pb-1" aria-hidden="true">
             <button @click="filter='all'" :class="filter==='all'?'bg-indigo-600 text-white':'bg-white text-slate-600'" class="rounded-full border px-3 py-1.5 text-xs font-semibold">Todas</button>
             @foreach(array_keys($grouped) as $group)<button @click="filter=@js($group)" :class="filter===@js($group)?'bg-indigo-600 text-white':'bg-white text-slate-600'" class="whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold">{{ $group }}</button>@endforeach
           </div>
@@ -260,6 +260,7 @@
 
 
         {{-- Plantillas por grupo --}}
+        @if(false)
         @foreach($grouped as $categoryName => $templates)
         <div>
           <div class="flex items-center gap-2 mb-3">
@@ -347,14 +348,15 @@
           </div>
         </div>
         @endforeach
+        @endif
 
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-          <p class="font-semibold mb-1">¿Qué pasa al aplicar una plantilla?</p>
+          <p class="font-semibold mb-1">¿Qué pasa al cambiar de motor?</p>
           <ul class="text-xs text-blue-600 space-y-1 list-disc pl-4 leading-relaxed">
-            <li>Se configura automáticamente: color principal, fondo del hero, títulos y banners</li>
-            <li>Cambia el layout del catálogo y el estilo de las tarjetas de productos</li>
-            <li>La tipografía y paleta de colores se ajustan al rubro de la plantilla</li>
-            <li>Todos los cambios son editables desde las otras secciones de diseño</li>
+            <li>Ecommerce incluye sitio web, Inicio, Tienda, páginas, carrito y checkout.</li>
+            <li>Directo abre un catálogo ligero para vender o cotizar con menos pasos.</li>
+            <li>Productos, páginas, colores y configuraciones se conservan.</li>
+            <li>La apariencia se personaliza con temas y presets, sin crear otro motor.</li>
           </ul>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
@@ -2048,7 +2050,7 @@
       @if($s === 'constructor')
       <div id="constructor-sistema" x-show="cvTab==='sistema'" x-cloak class="max-w-2xl mx-auto constructor-panel constructor-panel--sistema">
       <form method="POST" action="{{ route('settings.design.update') }}" class="space-y-5"
-            @submit="$refs.waHidden && ($refs.waHidden.value = country + local.replace(/\D/g,''))">
+>
         @csrf
         
         <input type="hidden" name="_design_tab" value="sistema">
@@ -2188,7 +2190,8 @@
                 </select>
                 <input type="tel" x-model="local" placeholder="999 888 777"
                        class="flex-1 border border-gray-300 rounded-r-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition min-w-0">
-                <input type="hidden" name="quote_whatsapp" x-ref="waHidden" :value="country + local.replace(/\D/g,'')">
+                {{-- quote_whatsapp salio de esta puerta (revision 01): se edita en el
+                     Constructor. El campo queda visible como referencia, sin name. --}}
               </div>
               <p class="text-xs text-gray-400 mt-1">Número completo: <span x-text="'+' + country + ' ' + local.replace(/\D/g,'')"></span></p>
             </div>
@@ -2256,24 +2259,19 @@
 
             {{-- Contacto en footer --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t pt-4">
+              {{-- Solo lectura (revision 01): estos datos se editan en el Constructor. --}}
               <div>
                 <label class="label">Correo de contacto</label>
-                <input type="email" name="contact_email" class="input"
-                       placeholder="contacto@tuempresa.com"
-                       value="{{ $project->setting('contact_email') }}">
+                <input type="email" class="input bg-gray-50 text-gray-500" readonly value="{{ $project->setting('contact_email') }}" placeholder="—">
               </div>
               <div>
                 <label class="label">Teléfono de contacto</label>
-                <input type="text" name="contact_phone" class="input"
-                       placeholder="999 888 777"
-                       value="{{ $project->setting('contact_phone') }}">
+                <input type="text" class="input bg-gray-50 text-gray-500" readonly value="{{ $project->setting('contact_phone') }}" placeholder="—">
               </div>
               <div class="md:col-span-2">
                 <label class="label">Horario de atención</label>
-                <input type="text" name="business_hours" class="input"
-                       placeholder="Lunes a sábado, 9am – 6pm"
-                       value="{{ $project->setting('business_hours') }}">
-                <p class="text-xs text-gray-400 mt-1">Opcional. Se muestra en el footer de algunas plantillas.</p>
+                <input type="text" class="input bg-gray-50 text-gray-500" readonly value="{{ $project->setting('business_hours') }}" placeholder="—">
+                <p class="text-xs text-gray-400 mt-1">Se editan en <a href="{{ route('settings.builder') }}" class="text-indigo-600 font-semibold hover:underline">Mi Tienda → Datos del negocio</a>.</p>
               </div>
             </div>
 

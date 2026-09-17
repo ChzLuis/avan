@@ -158,6 +158,9 @@ class StorefrontNavigation
             'home' => $home,
             'shop', 'products' => $shopUrl,
             'category', 'subcategory' => $categoryUrl($item->destination_id),
+            'brands' => $base . '/marcas',
+            'promotions' => $base . '/promociones',
+            'catalog_pdf' => $base . '/catalogo',
             'about' => $base . '/nosotros',
             'contact' => $base . '/contacto',
             'blog' => $base . '/blog',
@@ -171,6 +174,9 @@ class StorefrontNavigation
     {
         return match ($item->destination_type) {
             'home' => $routeName === 'public.catalog',
+            'brands' => in_array($routeName, ['public.brands', 'public.brand'], true),
+            'promotions' => $routeName === 'public.promotions',
+            'catalog_pdf' => $routeName === 'public.catalog_page',
             'shop', 'products' => $routeName === 'public.shop' && !$categoryId,
             'category', 'subcategory' => $routeName === 'public.shop' && (int) $item->destination_id === (int) $categoryId,
             'about' => $routeName === 'public.about', 'contact' => $routeName === 'public.contact',

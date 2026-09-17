@@ -73,6 +73,29 @@
                     <input type="text" x-model="form.name" placeholder="Ej: Descuento fin de semana"
                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                 </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Producto *</label>
+                    {{-- Una promocion B2B es de un producto concreto: la tienda pinta su
+                         foto, marca y boton de cotizar. Sin duplicar el articulo. --}}
+                    <select x-model="form.applies_to_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                        <option value="">Selecciona un producto</option>
+                        @foreach($productos as $pr)
+                        <option value="{{ $pr['id'] }}">{{ $pr['name'] }}@if($pr['sku']) · {{ $pr['sku'] }}@endif</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Etiqueta</label>
+                        <input type="text" x-model="form.label" maxlength="40" placeholder="Precio por volumen"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Imagen (URL, opcional)</label>
+                        <input type="text" x-model="form.image_url" placeholder="Vacío = foto del producto"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo</label>
@@ -139,7 +162,7 @@ function promoPage() {
     return {
         promos: @json($promotionsJson),
         modal:false, editing:null, saving:false, error:'',
-        form:{ name:'',type:'percentage',value:'',coupon_code:'',min_order:'',max_uses:'',is_active:true,starts_at:'',ends_at:'' },
+        form:{ name:'',type:'percentage',applies_to:'product',applies_to_id:'',label:'',image_url:'',value:'',coupon_code:'',min_order:'',max_uses:'',is_active:true,starts_at:'',ends_at:'' },
 
         openNew() {
             this.editing=null;
@@ -148,13 +171,13 @@ function promoPage() {
         },
         openEdit(p) {
             this.editing=p.id;
-            this.form={ name:p.name,type:p.type,value:p.value,coupon_code:p.coupon_code||'',min_order:p.min_order||'',max_uses:p.max_uses||'',is_active:p.is_active,starts_at:p.starts_at||'',ends_at:p.ends_at||'' };
+            this.form={ name:p.name,type:p.type,value:p.value,coupon_code:p.coupon_code||'',min_order:p.min_order||'',max_uses:p.max_uses||'',is_active:p.is_active,applies_to:p.applies_to||'product',applies_to_id:p.applies_to_id||'',label:p.label||'',image_url:p.image_url||'',starts_at:p.starts_at||'',ends_at:p.ends_at||'' };
             this.error=''; this.modal=true;
         },
         async save() {
             this.error='';
             if(!this.form.name){ this.error='El nombre es requerido'; return; }
-            if(!this.form.value){ this.error='El descuento es requerido'; return; }
+            if(this.form.applies_to==='product' && !this.form.applies_to_id){ this.error='Elige el producto de la promoción'; return; }
             this.saving=true;
             const url=this.editing ? `/bixoadmin/promotions/${this.editing}` : '/bixoadmin/promotions';
             const method=this.editing ? 'PUT' : 'POST';

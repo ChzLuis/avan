@@ -19,12 +19,12 @@
         <button type="button" class="bxb-link" x-show="saveState==='error'" @click="flushQueue()">Reintentar</button>
     </span>
 
-    <span class="bxb-undo" role="group" aria-label="Deshacer y rehacer">
+    <span class="bxb-undo bxb-hide-sm" role="group" aria-label="Deshacer y rehacer">
         <button type="button" @click="undo()" :disabled="!canUndo" aria-label="Deshacer" title="Deshacer (Ctrl+Z)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
         <button type="button" @click="redo()" :disabled="!canRedo" aria-label="Rehacer" title="Rehacer (Ctrl+Y)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
     </span>
 
-    <span class="bxb-device" role="group" aria-label="Dispositivo de la vista previa">
+    <span class="bxb-device bxb-hide-sm" role="group" aria-label="Dispositivo de la vista previa">
         <button type="button" :class="device==='desktop'&&'on'" @click="setDevice('desktop')" aria-label="Vista escritorio"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M9 21h6M12 17v4"/></svg></button>
         <button type="button" :class="device==='mobile'&&'on'" @click="setDevice('mobile')" aria-label="Vista móvil"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="7.5" y="2.5" width="9" height="19" rx="2"/><path d="M11 18h2"/></svg></button>
     </span>

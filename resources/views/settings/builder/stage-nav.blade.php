@@ -1,5 +1,5 @@
 {{-- Navegación lateral por etapas (única navegación principal) --}}
-<nav class="bxb-stages" aria-label="Etapas del constructor">
+<nav class="bxb-stages" x-ref="stagesNav" aria-label="Etapas del constructor">
     <div class="bxb-stages-head">
         <strong>MI TIENDA</strong>
         <small>Configura y publica paso a paso</small>
@@ -7,7 +7,7 @@
     <ol>
         <template x-for="(s, i) in stageList" :key="s.key">
             <li>
-                <button type="button" class="bxb-stage-item" :class="[stage===s.key&&'is-active']" :data-state="s.state"
+                <button type="button" class="bxb-stage-item" :class="[stage===s.key&&'is-active']" :data-state="s.state" :data-stage="s.key"
                         @click="stage=s.key; highlightForStage()" :aria-current="stage===s.key ? 'step' : false">
                     <span class="bxb-stage-n" x-text="String(i+1).padStart(2,'0')"></span>
                     <span class="bxb-stage-copy">

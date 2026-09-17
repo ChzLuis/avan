@@ -252,7 +252,7 @@
     #bixo-runtime-hero[hidden] { display: none !important; }
     .bixo-runtime-hero-content { width: min(860px,100%); margin: 0 auto; }
     .bixo-runtime-hero-badge { display: inline-flex; margin-bottom: 12px; padding: 6px 11px; border-radius: 999px; background: rgba(255,255,255,.16); font-size: 12px; font-weight: 800; }
-    #bixo-runtime-hero h1 { margin: 0; font-size: clamp(34px,6vw,68px); line-height: 1.05; }
+    #bixo-runtime-hero h1, #bixo-runtime-hero .bixo-runtime-hero-title { margin: 0; font-size: clamp(34px,6vw,68px); line-height: 1.05; }
     #bixo-runtime-hero p { max-width: 680px; margin: 16px auto 0; font-size: clamp(16px,2vw,21px); opacity: .9; }
     .bixo-runtime-hero-actions { display: flex; justify-content: inherit; gap: 10px; margin-top: 24px; }
     .bixo-runtime-hero-action { display: inline-flex; padding: 12px 20px; border-radius: var(--store-button-radius); background: var(--store-primary); color: white; font-weight: 800; text-decoration: none; }
@@ -320,7 +320,10 @@
 <section id="bixo-runtime-hero" hidden>
     <div class="bixo-runtime-hero-content">
         @if(filled($settings['hero_badge'] ?? null))<span class="bixo-runtime-hero-badge">{{ $settings['hero_badge'] }}</span>@endif
-        <h1>{{ $effectiveHeroTitle }}</h1>
+        {{-- H2, no H1: esta seccion va `hidden` como respaldo del hero, pero
+             Google la lee igual y la pagina terminaba con dos H1 compitiendo.
+             El H1 real es el titulo del hero de la plantilla. --}}
+        <h2 class="bixo-runtime-hero-title">{{ $effectiveHeroTitle }}</h2>
         @if(filled($effectiveHeroSubtitle))<p>{{ $effectiveHeroSubtitle }}</p>@endif
         <div class="bixo-runtime-hero-actions">
             @if($enabled('hero_cta1_show'))<a class="bixo-runtime-hero-action" href="{{ $effectiveHeroCtaUrl }}">{{ $effectiveHeroCtaText }}</a>@endif
@@ -379,7 +382,9 @@
      secciones, así que el runtime no debe volver a inyectarlas (evita el doble
      "Explora por categoría", "Promociones", etc.). --}}
 @if($storeView === 'home' && ! $ownFooter && ! $ownWhatsapp)
-<x-storefront-home-sections :project="$project" :settings="$settings" :sections="$sections" />
+<x-storefront-home-skins :settings="$settings" />
+<x-storefront-home-sections :project="$project" :settings="$settings"
+    :sections="\App\Storefront\HomePresets::ordenar($sections, $settings['home_template'] ?? null)" />
 @endif
 
 {{-- Compatibilidad del renderer anterior: no genera duplicados con el constructor visual. --}}
@@ -414,6 +419,11 @@
     </section>
 @endforeach
 
+{{-- El pie del runtime SOLO cuando la plantilla no trae el suyo.
+     Hasta hoy se pintaba siempre: computienda ya pasa `own-footer`, elegia su
+     composicion en el Constructor... y debajo aparecia igualmente esta banda
+     generica. Dos pies en cada tienda, y todas terminaban pareciendose. --}}
+@if(! $ownFooter)
 <footer id="bixo-runtime-footer">
     <div class="bixo-runtime-container">
         @if($enabled('footer_show_benefits') && $benefits->isNotEmpty())
@@ -447,6 +457,7 @@
         <div class="bixo-runtime-footer-bottom">{{ $settings['footer_copyright'] ?? ('© '.date('Y').' '.$project->name.'. Todos los derechos reservados.') }} @if(filled($settings['footer_dev_text'] ?? null)) · {{ $settings['footer_dev_text'] }} @endif · Desarrollado por <a href="https://eskalagroup.com/" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Eskala</a></div>
     </div>
 </footer>
+@endif
 
 {{-- El WhatsApp flotante del runtime NO se renderiza cuando la plantilla trae
      el suyo propio (ownFooter/ownWhatsapp): evita el botón duplicado. --}}
@@ -465,7 +476,7 @@
 
 <div id="bixo-runtime-checkout" role="dialog" aria-modal="true" aria-labelledby="bixo-checkout-title">
     <form class="bixo-runtime-checkout-card" data-bixo-fallback-form>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><small style="color:var(--store-primary);font-weight:800">FINALIZAR</small><h2 id="bixo-checkout-title" style="margin:3px 0">{{ $settings['cart_title'] ?? 'Datos del pedido' }}</h2></div><button type="button" data-bixo-checkout-close aria-label="Cerrar" style="border:0;background:transparent;font-size:25px">×</button></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><small style="color:var(--store-primary);font-weight:800">{{ (($settings['store_mode'] ?? 'direct') === 'quote') ? 'COTIZACIÓN' : 'FINALIZAR' }}</small><h2 id="bixo-checkout-title" style="margin:3px 0">{{ $settings['cart_title'] ?? ((($settings['store_mode'] ?? 'direct') === 'quote') ? 'Mi cotización' : 'Datos del pedido') }}</h2></div><button type="button" data-bixo-checkout-close aria-label="Cerrar" style="border:0;background:transparent;font-size:25px">×</button></div>
         <p style="margin:8px 0 18px;color:#64748b;font-size:14px">Completa tus datos para registrar el pedido.</p>
         <div class="bixo-runtime-checkout-grid">
             <label class="bixo-runtime-checkout-field"><span>Nombre *</span><input name="client_name" required maxlength="100"></label>
@@ -675,6 +686,7 @@
         }
 
         document.querySelectorAll('button,a').forEach(element => {
+            if (element.hasAttribute('data-rotulo-fijo')) return; // texto propio, no se reescribe
             const value = normalize(element.textContent);
             if (config.cartText && /(agregar|anadir).*(carrito)?/.test(value)) element.textContent = config.cartText;
             if (config.quoteText && /(cotizar|solicitar cotizacion)/.test(value)) element.textContent = config.quoteText;
@@ -727,7 +739,7 @@
             else if (value.includes('agotado') || value.includes('sold out')) el.textContent = config.badges.soldOut;
         });
         if (config.storeMode === 'quote_only') {
-            document.querySelectorAll('button,a').forEach(el => { if (config.quoteText && textMatches(el,['agregar','anadir'])) el.textContent = config.quoteText; });
+            document.querySelectorAll('button,a').forEach(el => { if (config.quoteText && !el.hasAttribute('data-rotulo-fijo') && textMatches(el,['agregar','anadir'])) el.textContent = config.quoteText; });
             if (config.quotePrice === 'hide') document.querySelectorAll('span,p,div').forEach(el => { if (!el.children.length && /^(S\/|\$|\u20ac)\s*[\d,.]+$/.test(el.textContent.trim())) el.hidden = true; });
         }
 

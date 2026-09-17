@@ -14,7 +14,8 @@
     // Identificacion legal del comercio (razon social + RUC). Obligatoria en Peru
     // y hasta ahora no se mostraba en ninguna pagina publica aunque el dato ya
     // estaba guardado. Se puede ocultar, pero viene activa por defecto.
-    $ftLegalName = trim((string) ($settings['legal_name'] ?? '')) ?: trim((string) $project->name);
+    // Via DatosPie: el Constructor guarda la razon social en `razon_social`.
+    $ftLegalName = \App\Storefront\DatosPie::legal($settings ?? [], $project)['nombre'];
     $ftRuc       = preg_replace('/[^0-9]/', '', (string) ($settings['ruc'] ?? ''));
     $ftShowLegal = (string) ($settings['footer_show_legal'] ?? '1') !== '0' && ($ftLegalName !== '' || $ftRuc !== '');
 
@@ -28,8 +29,11 @@
     $ftCatUrl = fn ($cat) => ($shopBaseFooter ?? '#').'?category='.$cat->id;
 
     // Paleta: deriva de la tienda; se puede fijar desde el constructor.
-    $ftBg     = $settings['footer_bg_color']     ?? '#061B36';
-    $ftBg2    = $settings['footer_bg2_color']    ?? '#07284A';
+    // Antes fijaba su propio azul marino: al elegir "Claro elegante" o "Color
+    // de marca" en el Constructor, este pie los ignoraba. Ahora parte de la
+    // paleta del diseño elegido y solo cae al navy si no hay ninguna.
+    $ftBg     = $settings['footer_bg_color']     ?? 'var(--fp-bg, #061B36)';
+    $ftBg2    = $settings['footer_bg2_color']    ?? 'var(--fp-fuerte, #07284A)';
     $ftAccent = $settings['footer_accent_color'] ?? ($settings['accent_color'] ?? '#16BDF2');
 
     // ═══ El pie también pertenece al perfil activo ═══
@@ -312,6 +316,7 @@
             <ul class="ftt-contact">
                 @if($phone)<li><span><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg></span><a href="tel:{{ preg_replace('/[^\d+]/','',$phone) }}">{{ $phone }}</a></li>@endif
                 @if($waFooter)<li><span><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/></svg></span><a href="https://wa.me/{{ $waFooter }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a></li>@endif
+                @include('storefront.partials.numeros-extra')
                 @if($email)<li><span><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span><a href="mailto:{{ $email }}">{{ $email }}</a></li>@endif
                 @if($footerAddress)<li><span><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span><span>{{ $footerAddress }}</span></li>@endif
                 @if($footerHours)<li><span><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span style="white-space:pre-line">{{ $footerHours }}</span></li>@endif

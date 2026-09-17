@@ -75,7 +75,14 @@ function builderApp(cfg) {
                 const firstPending = this.stageList.find(s => s.state !== 'complete');
                 this.stage = firstPending ? firstPending.key : 'publish';
             }
-            this.$watch('stage', v => { try { history.replaceState(null, '', '#' + v); } catch (e) {} });
+            this.$watch('stage', (v, anterior) => {
+                try { history.replaceState(null, '', '#' + v); } catch (e) {}
+                this.$nextTick(() => this.scrollStageIntoView());
+                // Si la etapa nueva se mira en OTRA pagina de la tienda (Paginas
+                // se mira en Nosotros, el resto en la portada), se recarga el
+                // preview para enseñar esa pagina y no la portada de siempre.
+                if (this.previewViewFor(v) !== this.previewViewFor(anterior)) this.refreshPreview(true);
+            });
             // Formularios embebidos (perfiles, paginas, navegacion): al enviarlos el
             // navegador no manda el #hash, el controlador responde back() y al volver
             // no habia etapa que restaurar, asi que el constructor arrancaba en el
@@ -93,7 +100,26 @@ function builderApp(cfg) {
             // Ancho del preview persistido + escala de escritorio.
             document.documentElement.style.setProperty('--bxb-pw', this.previewWidth + 'px');
             window.addEventListener('resize', () => this.fitPreview());
-            this.$nextTick(() => this.fitPreview());
+            this.$nextTick(() => { this.fitPreview(); this.scrollStageIntoView(); });
+            // ── Encaje en movil ──
+            // Chrome de Android conserva la ampliacion (pinch-zoom) al pasar de
+            // una pagina a otra del mismo sitio. El Constructor es una pantalla
+            // fija y sin scroll horizontal: si se entra ampliado, la mitad
+            // derecha queda fuera y no hay manera de alcanzarla. Al abrirlo se
+            // devuelve la escala a 1 y, si aun asi quedara ampliado, el armazon
+            // se encoge a lo que el usuario ve de verdad.
+            this.$nextTick(() => this.encajarEnPantalla());
+            window.addEventListener('pageshow', () => this.encajarEnPantalla());
+            const alCambiar = () => {
+                if (this._vvRaf) return;
+                this._vvRaf = requestAnimationFrame(() => { this._vvRaf = 0; this.ajustarAlAnchoVisible(); });
+            };
+            window.addEventListener('resize', alCambiar);
+            window.addEventListener('orientationchange', () => setTimeout(alCambiar, 250));
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', alCambiar);
+                window.visualViewport.addEventListener('scroll', alCambiar);
+            }
             this.$watch('expertMode', v => localStorage.setItem('bxb_expert', v ? '1' : '0'));
             window.addEventListener('online', () => { if (this.saveState === 'offline') this.flushQueue(); });
             window.addEventListener('beforeunload', e => {
@@ -111,6 +137,73 @@ function builderApp(cfg) {
             return Object.values(this.progress.stages);
         },
         get stageIndex() { return this.stageList.findIndex(s => s.key === this.stage); },
+
+        // En movil los pasos son una tira horizontal: si el paso activo queda
+        // fuera de la tira, el usuario no ve donde esta. Se centra solo.
+        // Ancho que el usuario ve DE VERDAD. En algunos moviles el ancho con el
+        // que el navegador maqueta es mayor que el de la pantalla: la interfaz
+        // se dibuja a ese ancho y, como el Constructor es una pantalla fija y el
+        // panel no se desplaza en horizontal, el lado derecho queda inalcanzable
+        // (el boton Publicar, el estado de guardado, el borde de las tarjetas).
+        // No es zoom: la letra sale del tamaño correcto. Se toma la medida mas
+        // pequeña de las tres que da el navegador.
+        anchoVisible() {
+            let ancho = document.documentElement.clientWidth;
+            const vv = window.visualViewport;
+            if (vv && vv.width > 240) ancho = Math.min(ancho, vv.width);
+            const apaisado = window.innerWidth > window.innerHeight;
+            if (!apaisado && window.screen && window.screen.width > 240) ancho = Math.min(ancho, window.screen.width);
+            return Math.round(ancho);
+        },
+
+        // Encaja el armazon en ese ancho. Al encogerlo, todo el interior se
+        // vuelve a maquetar y no queda nada fuera de alcance.
+        ajustarAlAnchoVisible() {
+            const el = this.$root;
+            if (!el) return;
+            const css = document.documentElement.clientWidth, ancho = this.anchoVisible(), vv = window.visualViewport;
+            if (css > 900 || ancho >= css - 8) {
+                el.style.width = ''; el.style.left = ''; el.style.height = ''; el.style.top = '';
+                return;
+            }
+            el.style.width = ancho + 'px';
+            el.style.left = Math.round(vv ? vv.offsetLeft : 0) + 'px';
+            if (vv && vv.scale > 1.01) {
+                el.style.height = Math.round(vv.height) + 'px';
+                el.style.top = Math.round(vv.offsetTop) + 'px';
+            } else {
+                el.style.height = ''; el.style.top = '';
+            }
+        },
+
+        // Ademas, Chrome de Android conserva la ampliacion (pinch-zoom) al pasar
+        // de una pagina a otra del mismo sitio. Tocar el meta viewport es la
+        // unica via desde JavaScript para devolver la escala a 1: el zoom manual
+        // queda bloqueado 350 ms, lo justo para que el navegador reajuste.
+        encajarEnPantalla() {
+            const vv = window.visualViewport, meta = document.querySelector('meta[name="viewport"]');
+            if (vv && vv.scale > 1.01 && meta && !this._resetZoom && document.documentElement.clientWidth <= 900) {
+                this._resetZoom = true;
+                const original = meta.getAttribute('content');
+                meta.setAttribute('content', original + ', maximum-scale=1, user-scalable=0');
+                setTimeout(() => {
+                    meta.setAttribute('content', original);
+                    this._resetZoom = false;
+                    this.ajustarAlAnchoVisible();
+                }, 350);
+            }
+            this.ajustarAlAnchoVisible();
+        },
+
+        scrollStageIntoView() {
+            const nav = this.$refs.stagesNav;
+            if (!nav || nav.scrollWidth <= nav.clientWidth + 4) return;
+            const el = nav.querySelector('[data-stage="' + this.stage + '"]');
+            if (!el) return;
+            const caja = el.getBoundingClientRect(), tira = nav.getBoundingClientRect();
+            const destino = nav.scrollLeft + (caja.left - tira.left) - (tira.width - caja.width) / 2;
+            nav.scrollTo({ left: Math.max(0, destino), behavior: 'smooth' });
+        },
         goStage(dir) {
             const i = this.stageIndex + dir;
             if (i >= 0 && i < this.stageList.length) { this.stage = this.stageList[i].key; this.highlightForStage(); }
@@ -734,6 +827,14 @@ function builderApp(cfg) {
             window.addEventListener('pointerup', up);
         },
         setDevice(d) { this.device = d; this.fitPreview(); this._post({ type: 'builder:set-device', device: d }); },
+        /* Que pagina de la tienda se mira en cada etapa.
+           El preview cargaba SIEMPRE la portada: el negocio guardaba su foto
+           del hero de Nosotros, el panel recargaba, el iframe volvia a la
+           portada, pulsaba "Nosotros" dentro del iframe... y ese enlace lleva a
+           la tienda PUBLICA, que enseña lo publicado y no el borrador. Asi que
+           veia el degradado de siempre y creia que no se habia guardado. */
+        previewViewFor(stage) { return stage === 'pages' ? 'nosotros' : 'home'; },
+        get previewView() { return this.previewViewFor(this.stage); },
         refreshPreview(force = false) {
             clearTimeout(this._previewTimer);
             this._previewTimer = setTimeout(() => {
@@ -744,7 +845,7 @@ function builderApp(cfg) {
                 // guardaba el ajuste y la vista previa seguia mostrando lo anterior.
                 // Una URL distinta en cada refresco obliga a pedirla de nuevo.
                 try {
-                    f.src = this.urls.preview + '?view=home&_=' + Date.now();
+                    f.src = this.urls.preview + '?view=' + this.previewView + '&_=' + Date.now();
                 } catch (e) {
                     try { f.contentWindow.location.reload(); } catch (e2) {}
                 }

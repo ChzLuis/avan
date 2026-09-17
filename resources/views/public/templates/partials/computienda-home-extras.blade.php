@@ -50,6 +50,10 @@
     .xs-section{padding:clamp(44px,6vw,72px) 0}
     .xs-head{margin-bottom:26px}.xs-head h2{margin:0;font-family:var(--font-title);font-size:clamp(24px,3vw,34px);letter-spacing:-.02em;color:var(--text-strong)}.xs-head p{margin:8px 0 0;color:var(--muted);max-width:640px;line-height:1.6}
     body.section-heading-center .xs-head{text-align:center}.section-heading-center .xs-head p{margin-inline:auto}
+    /* El subrayado del encabezado se centraba siempre (margin:auto), asi que con
+       los titulos a la izquierda quedaba flotando en mitad de la seccion. Debe
+       seguir al titulo. */
+    body.section-heading-left [data-store-native-section] .xs-head::after{margin-inline:0}
     /* ── media_banner ── */
     .xs-media{position:relative;overflow:hidden;display:grid;place-items:center;padding:0;color:#fff}
     .xs-media.h-small{min-height:280px}.xs-media.h-medium{min-height:420px}.xs-media.h-large{min-height:560px}.xs-media.h-full{min-height:calc(100svh - var(--header-h,72px))}
@@ -127,7 +131,11 @@
     .xs-brand:hover{border-color:color-mix(in srgb,var(--primary) 35%,#E3E6EB);box-shadow:0 4px 14px rgba(15,23,42,.06)}
     .xs-brand img{max-width:118px;max-height:36px;width:auto;height:auto;object-fit:contain;transition:filter .2s,opacity .2s}
     .xs-brands.is-gray .xs-brand img{filter:grayscale(1);opacity:.62}.xs-brands.is-gray .xs-brand:hover img{filter:none;opacity:1}
-    .xs-brand-name{padding:0;border:0;border-radius:0;background:transparent;color:var(--secondary);font-family:var(--font-title);font-size:15px;font-weight:700;letter-spacing:.01em;text-align:center}
+    .xs-brand-name{padding:0;border:0;border-radius:0;background:transparent;color:var(--secondary);font-family:var(--font-title);font-size:17px;font-weight:900;letter-spacing:.02em;text-align:center;text-transform:uppercase}
+    .xs-brand-cta{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;height:62px;padding:0 18px;box-sizing:border-box;border:1.5px solid var(--primary);border-radius:8px;background:#fff;color:var(--primary);font-size:13.5px;font-weight:700;text-decoration:none;transition:background .18s ease,color .18s ease}
+    .xs-brand-cta svg{width:15px;height:15px;transition:transform .18s ease}
+    @media(hover:hover){.xs-brand-cta:hover{background:var(--primary);color:#fff}.xs-brand-cta:hover svg{transform:translateX(3px)}}
+    @media(max-width:640px){.xs-brand-cta{height:48px;padding:0 14px;font-size:12.5px}}
     .v-grid .xs-brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
     .v-grid .xs-brand{padding:8px 14px;border:1px solid #E3E6EB;border-radius:8px;background:#fff}
     .v-carousel .xs-brands{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:6px}
@@ -135,6 +143,64 @@
     .xs-brands-wrap{position:relative}
     .xs-brands-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;display:grid;place-items:center;width:28px;height:28px;background:#fff;border:1px solid #E3E6EB;border-radius:50%;color:var(--secondary);cursor:pointer;transition:box-shadow .18s ease}
     .xs-brands-nav:hover{box-shadow:0 4px 12px rgba(15,23,42,.1)}
+
+    /* En la cinta las tarjetas son mas grandes y el logo se ve a su tamaño:
+       con 62px de alto y el logo a 36 no se apreciaba de que marca se trataba,
+       que es justo para lo que esta la banda. */
+    .v-marquee .xs-brand, .v-marquee-slow .xs-brand{width:190px;height:92px;padding:14px 18px}
+    .v-marquee .xs-brand img, .v-marquee-slow .xs-brand img{max-width:150px;max-height:58px}
+    .v-marquee .xs-brands, .v-marquee-slow .xs-brands{gap:28px}
+    /* Y a color: en gris al 62% los logos se leian a medias y la cinta pasa
+       sola, sin darle tiempo al visitante a pasar el raton para revelarlos. */
+    .v-marquee .xs-brands.is-gray .xs-brand img,
+    .v-marquee-slow .xs-brands.is-gray .xs-brand img{filter:none;opacity:1}
+    @media(max-width:640px){
+        .v-marquee .xs-brands, .v-marquee-slow .xs-brands{gap:18px}
+        .v-marquee .xs-brand, .v-marquee-slow .xs-brand{width:150px;height:76px;padding:10px 14px}
+        .v-marquee .xs-brand img, .v-marquee-slow .xs-brand img{max-width:118px;max-height:46px}
+    }
+
+    /* ── Cinta en movimiento continuo (de derecha a izquierda) ──────────
+       La lista va duplicada y se desplaza media pista: al terminar, la copia
+       esta justo donde empezo la original y el ciclo se reanuda sin salto.
+       Se pausa al pasar el raton para poder leer o hacer clic. */
+    .v-marquee .xs-brands, .v-marquee-slow .xs-brands{
+        flex-wrap:nowrap; justify-content:flex-start; width:max-content;
+        animation:xsMarquee 32s linear infinite;
+    }
+    .v-marquee-slow .xs-brands{animation-duration:56s}
+    .v-marquee .xs-brands-wrap, .v-marquee-slow .xs-brands-wrap{
+        overflow:hidden;
+        /* Los bordes se desvanecen: sin esto las marcas aparecen y desaparecen
+           de golpe contra el borde y se ve tosco. */
+        -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+        mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+    }
+    @media (hover:hover){
+        .v-marquee .xs-brands-wrap:hover .xs-brands,
+        .v-marquee-slow .xs-brands-wrap:hover .xs-brands{animation-play-state:paused}
+    }
+    @keyframes xsMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    /* Quien pide menos movimiento no ve ninguno: la cinta se queda quieta y
+       se puede desplazar a mano. */
+    @media (prefers-reduced-motion:reduce){
+        .v-marquee .xs-brands, .v-marquee-slow .xs-brands{
+            animation:none; width:auto; overflow-x:auto; scrollbar-width:none;
+        }
+    }
+
+    /* ── Tarjetas: cada marca en su caja, con relieve al pasar por encima. */
+    .v-cards .xs-brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+    .v-cards .xs-brand{
+        background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:14px;
+        padding:18px 16px;min-height:96px;
+        transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    @media (hover:hover){
+        .v-cards .xs-brand:hover{transform:translateY(-3px);
+            box-shadow:0 10px 24px rgba(15,23,42,.10);
+            border-color:color-mix(in srgb, var(--primary) 34%, var(--border,#e5e7eb))}
+    }
     .xs-brands-nav svg{width:14px;height:14px}
     .xs-brands-nav.prev{left:-12px}.xs-brands-nav.next{right:-12px}
     @media(max-width:640px){.xs-brands-nav{display:none}}
@@ -179,15 +245,33 @@
        bloque, con una separación acotada. La banda sigue a ancho completo. */
     .xs-wa{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
         gap:clamp(24px,5vw,72px);padding:clamp(26px,3.2vw,38px) clamp(28px,4vw,44px);
-        border-radius:var(--radius-lg);background:linear-gradient(120deg,#128c4b,#25d366);color:#fff;box-shadow:var(--shadow-md)}
+        border-radius:var(--radius-lg);color:#fff;box-shadow:var(--shadow-md);
+        /* La banda lleva el color de la tienda y el verde queda para el boton:
+           pintar el fondo entero de verde WhatsApp metia un color ajeno a la
+           paleta y le quitaba fuerza justo a la accion que se quiere pulsar. */
+        background:linear-gradient(120deg,color-mix(in srgb,var(--primary) 74%,#000),var(--primary))}
     .xs-wa-copy{flex:0 1 auto;min-width:0}
     .xs-wa-copy h2{margin:0;color:#fff;font-family:var(--font-title);font-size:clamp(21px,2.6vw,29px)}
     .xs-wa-copy p{margin:8px 0 0;color:rgba(255,255,255,.9);max-width:560px;line-height:1.6}
-    .xs-wa-btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:12px 24px;border-radius:999px;background:#fff;color:#128c4b;font-weight:800;text-decoration:none;transition:transform .18s}
+    .xs-wa-btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:12px 24px;border-radius:999px;background:#25d366;color:#0b3d21;font-weight:800;text-decoration:none;transition:transform .18s}
     .xs-wa-btn:hover{transform:translateY(-2px)}.xs-wa-btn svg{width:22px;height:22px}
     .v-card .xs-wa{flex-direction:column;text-align:center;justify-content:center;background:var(--surface);color:var(--text);border:2px solid #25d366}
     .v-card .xs-wa-copy h2{color:var(--text-strong)}.v-card .xs-wa-copy p{color:var(--muted)}
     .v-card .xs-wa-btn{background:#25d366;color:#fff}
+    /* ── delivery_banner ── */
+    .xs-delivery{position:relative;overflow:hidden;border-radius:var(--radius-lg);display:grid;grid-template-columns:1.1fr auto 1.2fr;align-items:center;gap:clamp(18px,3vw,44px);padding:clamp(22px,3vw,36px) clamp(22px,4vw,56px);color:#fff;background:linear-gradient(100deg,#0a0a0a 0%,#262626 58%,#121212 100%)}
+    .xs-delivery.v-brand{background:linear-gradient(100deg,color-mix(in srgb,var(--primary) 82%,#000) 0%,var(--primary) 60%,color-mix(in srgb,var(--primary) 70%,#000) 100%)}
+    .xs-delivery.v-light{background:#f5f5f4;color:#111827}
+    .xs-delivery-img{display:flex;align-items:center;justify-content:center;min-height:120px}
+    .xs-delivery-img img{max-height:210px;max-width:100%;object-fit:contain;filter:drop-shadow(0 18px 24px rgba(0,0,0,.45))}
+    .xs-delivery-placa{background:var(--xs-placa,var(--primary));color:#fff;border-radius:34px;padding:22px 44px;text-align:center;box-shadow:0 18px 40px -18px rgba(0,0,0,.6)}
+    .xs-delivery-placa b{display:block;font-family:var(--font-title);font-size:clamp(34px,4.4vw,58px);font-weight:900;line-height:1;letter-spacing:-.02em}
+    .xs-delivery-placa span{display:block;font-size:clamp(17px,2vw,26px);font-weight:800;margin-top:6px}
+    .xs-delivery-txt h3{margin:0;font-size:clamp(17px,1.6vw,21px);font-weight:800;line-height:1.35}
+    .xs-delivery-txt p{margin:12px 0 0;font-size:14px;line-height:1.55;opacity:.9}
+    .xs-delivery-txt .button{margin-top:16px}
+    @media(max-width:900px){.xs-delivery{grid-template-columns:1fr;text-align:center;gap:18px}.xs-delivery-placa{justify-self:center}.xs-delivery-img img{max-height:150px}}
+
     /* ── cta_banner ── */
     .xs-cta{position:relative;overflow:hidden;border-radius:var(--radius-lg);padding:clamp(36px,5vw,64px);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;color:#fff;background:var(--xs-cta-bg,#0f172a) center/cover no-repeat}
     .xs-cta::before{content:"";position:absolute;inset:0;background:rgba(2,6,23,.45);opacity:var(--xs-cta-dim,0)}
@@ -204,6 +288,19 @@
     .xs-cta.is-brand .button,.xs-cta.is-brand a.button-primary{background:#fff!important;color:var(--secondary,#0f172a)!important;border-color:#fff!important;font-weight:800}
     .xs-cta.is-brand .button:hover{background:rgba(255,255,255,.92)!important;transform:translateY(-1px)}
     .v-split .xs-cta{flex-direction:row;justify-content:space-between;text-align:left;align-items:center;flex-wrap:wrap}
+    .xs-cta-copy{display:flex;flex-direction:column;align-items:center;gap:14px}
+    .v-split .xs-cta-copy,.xs-cta.has-list .xs-cta-copy{align-items:flex-start;text-align:left}
+    .xs-cta-actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+    .xs-cta .button-ghost{background:transparent;border:1.5px solid rgba(255,255,255,.72);color:#fff}
+    .xs-cta .button-ghost:hover{background:rgba(255,255,255,.12)}
+    .xs-cta.is-brand .button-ghost{background:transparent!important;color:#fff!important;border-color:rgba(255,255,255,.72)!important}
+    .xs-cta.has-list{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);align-items:center;gap:36px;text-align:left}
+    .xs-cta.has-list p{max-width:none}
+    .xs-cta-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+    .xs-cta-list li{display:flex;align-items:center;gap:12px;color:#fff;font-size:15.5px;font-weight:600}
+    .xs-cta-list svg{width:24px;height:24px;flex:0 0 24px;color:var(--primary)}
+    .xs-cta.is-brand .xs-cta-list svg{color:#fff}
+    @media(max-width:760px){.xs-cta.has-list{grid-template-columns:1fr;gap:22px}.xs-cta-list li{font-size:14px}}
     @media(max-width:1023px){.xs-coll-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.v-mosaic .xs-coll-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.xs-testi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xs-gal{grid-template-columns:repeat(2,minmax(0,1fr))!important}.v-two-columns .xs-faq{grid-template-columns:1fr}}
     @media(max-width:719px){.xs-coll-grid{grid-template-columns:1fr!important}.v-circles .xs-coll-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.v-mosaic .xs-coll-card:first-child{grid-column:span 2}.xs-testi-grid{grid-template-columns:1fr}.v-carousel .xs-testi-grid{grid-auto-columns:minmax(260px,86%)}.xs-media.h-medium{min-height:360px}.xs-media.h-large{min-height:440px}.xs-wa{justify-content:center;text-align:center}}
     @media(prefers-reduced-motion:reduce){.xs-coll-card,.xs-gal-item img,.xs-wa-btn{transition:none}}
@@ -289,30 +386,68 @@
 @php
     $brC = $sectionContentFor('brands');
     $brItems = $xsItems($brC);
-    $brVariant = in_array($brC['variant'] ?? 'strip', ['strip','grid','carousel'], true) ? ($brC['variant'] ?? 'strip') : 'strip';
+    $brVariant = in_array($brC['variant'] ?? 'strip', ['strip','grid','carousel','marquee','marquee-slow','cards'], true) ? ($brC['variant'] ?? 'strip') : 'strip';
+    // La cinta en movimiento necesita la lista DUPLICADA: al llegar la copia al
+    // inicio, la animacion vuelve a empezar y el salto no se ve. Con pocas
+    // marcas se repite mas veces, o se veria el hueco entre vuelta y vuelta.
+    $brEsCinta = in_array($brVariant, ['marquee','marquee-slow'], true);
+    $brVueltas = $brEsCinta ? max(2, (int) ceil(12 / max(1, $brItems->count()))) : 1;
 @endphp
 @if($isHomeSectionVisible('brands') && $brItems->isNotEmpty())
 <section class="xs-section v-{{ $brVariant }}" data-store-native-section="brands" style="order:{{ $sectionOrder('brands') }}"><div class="container">
     @if(filled($brC['title'] ?? null))<div class="xs-head"><h2>{{ $brC['title'] }}</h2>@if(filled($brC['subtitle'] ?? null))<p>{{ $brC['subtitle'] }}</p>@endif</div>@endif
     <div class="xs-brands-wrap" x-data="{ sc(d){ const t=$refs.brandTrack; if(t) t.scrollBy({left:d*280,behavior:'smooth'}); } }">
-    @if($brItems->count() > 4)
+    @if($brItems->count() > 4 && !$brEsCinta)
     <button type="button" class="xs-brands-nav prev" @click="sc(-1)" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg></button>
     <button type="button" class="xs-brands-nav next" @click="sc(1)" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></button>
     @endif
     <div class="xs-brands {{ ($brC['grayscale'] ?? true) ? 'is-gray' : '' }}" x-ref="brandTrack">
+        @for($brVuelta = 0; $brVuelta < $brVueltas; $brVuelta++)
         @foreach($brItems as $brand)
         @php
-            $bImg = $assetUrl($brand['image'] ?? null);
             $bUrl = trim((string) ($brand['url'] ?? ''));
             $bName = $brand['name'] ?? '';
+            // Imagen del item o, si no tiene, el logo de la marca del catalogo.
+            $bImg = $assetUrl($brand['image'] ?? null) ?: $assetUrl(($marcasImgPorNombre ?? [])[mb_strtoupper($bName)] ?? null);
+            // Enlace al FILTRO por marca, no a una busqueda de texto: buscar
+            // "3M" por texto devolvia cualquier producto con "3M" en el nombre
+            // y se saltaba los que solo la llevan como marca.
+            $bId = $marcasPorNombre[mb_strtoupper($bName)] ?? null;
+            $bDestino = $bUrl !== ''
+                ? $bUrl
+                : ($bId
+                    ? ($shopBase ?? '#').'?brand[]='.$bId
+                    : ($shopBase ?? '#').'?q='.urlencode($bName));
         @endphp
         {{-- Siempre <a> (nunca tag dinámico: el compilador Blade no lo soporta) --}}
-        <a class="xs-brand" href="{{ $bUrl !== '' ? $bUrl : ($shopBase ?? '#').'?q='.urlencode($bName) }}" @if($bUrl !== '') target="_blank" rel="noopener" @endif>
-            @if($bImg)<img src="{{ $bImg }}" alt="{{ $bName ?: 'Marca' }}" loading="lazy">
+        {{-- Las copias de la cinta son decorativas: se ocultan al lector de
+             pantalla y se sacan del recorrido del tabulador, o la lista de
+             marcas se leeria varias veces seguidas. --}}
+        <a class="xs-brand" href="{{ $bDestino }}" @if($bUrl !== '') target="_blank" rel="noopener" @endif
+           @if($brVuelta > 0) aria-hidden="true" tabindex="-1" @endif>
+            @if($bImg)<img src="{{ $bImg }}" alt="{{ $brVuelta > 0 ? '' : ($bName ?: 'Marca') }}" loading="lazy">
             @else<span class="xs-brand-name">{{ $bName }}</span>@endif
         </a>
         @endforeach
+        @endfor
+        {{-- Acceso a la pagina de marcas. Es lo que convierte la banda en algo
+             navegable y no solo decorativo. Configurable; vacio = sin boton. --}}
+        @php
+            // El interruptor manda: apagado, no hay boton aunque haya texto.
+            $brCta = ($brC['show_cta'] ?? true) === false
+                ? ''
+                : trim((string) ($brC['cta_text'] ?? ($settings['brands_band_cta'] ?? 'Ver todas las marcas')));
+        @endphp
+        @if($brCta !== '' && !$brEsCinta)
+        <a class="xs-brand-cta" href="{{ \App\Support\StorefrontNavigation::publicUrl($project) }}/marcas">{{ $brCta }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        @endif
     </div>
+    @if($brCta !== '' && $brEsCinta)
+    {{-- Fuera de la cinta y centrado: dentro se desplazaria con las marcas. --}}
+    <div style="display:flex;justify-content:center;margin-top:16px">
+        <a class="xs-brand-cta" href="{{ \App\Support\StorefrontNavigation::publicUrl($project) }}/marcas">{{ $brCta }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    @endif
 </div></section>
 @endif
 
@@ -476,12 +611,58 @@
 
 <section class="xs-section v-{{ $ctVariant }}" data-store-native-section="cta_banner" style="order:{{ $sectionOrder('cta_banner') }}"><div class="container">
     {{-- Sin color propio cae a un degradado de marca (antes: navy fijo #0f172a, ajeno a tiendas con otra paleta) --}}
-    <div class="xs-cta{{ $ctImage || filled($ctC['background_color'] ?? null) ? '' : ' is-brand' }}" style="--xs-cta-bg:{{ $ctImage ? "url('{$ctImage}')" : $color($ctC['background_color'] ?? null, '#0f172a') }};--xs-cta-dim:{{ $ctImage ? '1' : '0' }}">
+    @php
+        // Segundo boton (asesor por WhatsApp) y lista de beneficios a la derecha.
+        // Con lista, la banda pasa a dos columnas; sin ella, se queda centrada.
+        $ctList = collect(range(1, 4))->map(fn ($n) => trim((string) ($ctC["benefit_{$n}"] ?? '')))->filter()->values();
+        $ctBtn2Url = trim((string) ($ctC['button2_url'] ?? ''));
+        if ($ctBtn2Url === '' && $whatsapp) $ctBtn2Url = 'https://wa.me/'.$whatsapp;
+    @endphp
+    <div class="xs-cta{{ $ctImage || filled($ctC['background_color'] ?? null) ? '' : ' is-brand' }}{{ $ctList->isNotEmpty() ? ' has-list' : '' }}" style="--xs-cta-bg:{{ $ctImage ? "url('{$ctImage}')" : $color($ctC['background_color'] ?? null, '#0f172a') }};--xs-cta-dim:{{ $ctImage ? '1' : '0' }}">
+        <div class="xs-cta-copy">
         <h2>{{ $ctC['title'] }}</h2>
         @if(filled($ctC['subtitle'] ?? null))<p>{{ $ctC['subtitle'] }}</p>@endif
-        @if(filled($ctC['button_text'] ?? null))
-        <a class="button button-primary" href="{{ ($ctC['button_url'] ?? '') === '#catalogo' || blank($ctC['button_url'] ?? null) ? $shopUrl : $ctC['button_url'] }}">{{ $ctC['button_text'] }}</a>
+        @if(filled($ctC['button_text'] ?? null) || (filled($ctC['button2_text'] ?? null) && $ctBtn2Url !== ''))
+        <div class="xs-cta-actions">
+            @if(filled($ctC['button_text'] ?? null))
+            <a class="button button-primary" href="{{ ($ctC['button_url'] ?? '') === '#catalogo' || blank($ctC['button_url'] ?? null) ? $shopUrl : $ctC['button_url'] }}">{{ $ctC['button_text'] }}</a>
+            @endif
+            @if(filled($ctC['button2_text'] ?? null) && $ctBtn2Url !== '')
+            <a class="button button-ghost" href="{{ $ctBtn2Url }}" @if(str_starts_with($ctBtn2Url, 'http')) target="_blank" rel="noopener" @endif>{{ $ctC['button2_text'] }}</a>
+            @endif
+        </div>
         @endif
+        </div>
+        @if($ctList->isNotEmpty())
+        <ul class="xs-cta-list">
+            @foreach($ctList as $b)
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span>{{ $b }}</span></li>
+            @endforeach
+        </ul>
+        @endif
+    </div>
+</div></section>
+@endif
+
+{{-- ═══ DELIVERY ═══ --}}
+@php
+    $dvC = $sectionContentFor('delivery_banner');
+    $dvVariant = in_array($dvC['variant'] ?? 'dark', ['dark','brand','light'], true) ? ($dvC['variant'] ?? 'dark') : 'dark';
+    $dvImage = $assetUrl($dvC['image'] ?? null);
+    $dvPlaca = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($dvC['badge_color'] ?? '')) ? $dvC['badge_color'] : null;
+@endphp
+@if($isHomeSectionVisible('delivery_banner') && (filled($dvC['badge_line1'] ?? null) || filled($dvC['title'] ?? null)))
+<section class="xs-section" data-store-native-section="delivery_banner" style="order:{{ $sectionOrder('delivery_banner') }}"><div class="container">
+    <div class="xs-delivery v-{{ $dvVariant }}" @if($dvPlaca) style="--xs-placa:{{ $dvPlaca }}" @endif>
+        <div class="xs-delivery-img">@if($dvImage)<img src="{{ $dvImage }}" alt="" loading="lazy">@endif</div>
+        @if(filled($dvC['badge_line1'] ?? null))
+        <div class="xs-delivery-placa"><b>{{ $dvC['badge_line1'] }}</b>@if(filled($dvC['badge_line2'] ?? null))<span>{{ $dvC['badge_line2'] }}</span>@endif</div>
+        @endif
+        <div class="xs-delivery-txt">
+            @if(filled($dvC['title'] ?? null))<h3>{{ $dvC['title'] }}</h3>@endif
+            @if(filled($dvC['note'] ?? null))<p>{{ $dvC['note'] }}</p>@endif
+            @if(filled($dvC['button_text'] ?? null))<a class="button button-primary" href="{{ blank($dvC['button_url'] ?? null) ? $shopUrl : $dvC['button_url'] }}">{{ $dvC['button_text'] }}</a>@endif
+        </div>
     </div>
 </div></section>
 @endif
@@ -489,8 +670,8 @@
 {{-- ═══ SUCURSALES Y UBICACIÓN ═══ --}}
 @php
     $lcC = $sectionContentFor('locations');
-    $lcItems = $xsItems($lcC)->filter(fn ($i) => filled($i['name'] ?? null) || filled($i['address'] ?? null));
-    $lcVariant = in_array($lcC['variant'] ?? 'cards', ['cards','map-side'], true) ? ($lcC['variant'] ?? 'cards') : 'cards';
+    $lcItems = \App\Support\StorefrontSections::locationItems($project, $lcC, (array) $settings);
+    $lcVariant = in_array($lcC['variant'] ?? 'cards', ['cards','map-side','map-wide','map-hero','map-split','compact'], true) ? ($lcC['variant'] ?? 'cards') : 'cards';
 @endphp
 @if($isHomeSectionVisible('locations') && $lcItems->isNotEmpty())
 <style>
@@ -501,19 +682,76 @@
     .xs-loc-body strong{display:block;color:var(--text-strong);font-size:16px;font-family:var(--font-title)}
     .xs-loc-body p{margin:7px 0 0;color:var(--text);font-size:13.5px;line-height:1.55}
     .xs-loc-body small{color:var(--muted)}
+    /* El horario (o los puestos del local) iba en gris apagado y se perdia,
+       cuando es justo lo que el cliente necesita para encontrarte dentro del
+       edificio. Se le da el mismo peso que al telefono, con un punto de color. */
+    .xs-loc-body p:last-of-type small{
+        display:inline-flex; align-items:center; gap:7px;
+        margin-top:2px; padding:5px 10px;
+        background:color-mix(in srgb, var(--primary) 7%, #fff);
+        border:1px solid color-mix(in srgb, var(--primary) 18%, #E3E7EE);
+        border-radius:8px;
+        color:var(--text); font-size:12.5px; font-weight:600;
+    }
+    .xs-loc-body p:last-of-type small::before{
+        content:''; width:6px; height:6px; border-radius:50%;
+        background:var(--primary); flex:0 0 6px;
+    }
     .xs-loc-link{display:inline-block;margin-top:10px;color:var(--primary);font-size:12.5px;font-weight:700;text-decoration:none}
     .v-map-side .xs-loc-grid{grid-template-columns:1fr}
     .v-map-side .xs-loc{flex-direction:row}
     .v-map-side .xs-loc-map{flex:0 0 46%}
     .v-map-side .xs-loc-map iframe{height:100%;min-height:220px}
     @media(max-width:760px){.v-map-side .xs-loc{flex-direction:column}.v-map-side .xs-loc-map iframe{height:180px}}
+
+    /* ── Mapa ancho: una sola fila, el mapa manda y los datos van debajo.
+          Es el que mejor funciona con UNA sucursal, que es el caso comun. */
+    .v-map-wide .xs-loc-grid{grid-template-columns:1fr}
+    .v-map-wide .xs-loc-map iframe{height:340px}
+    .v-map-wide .xs-loc-body{padding:20px 24px 22px}
+    @media(max-width:760px){.v-map-wide .xs-loc-map iframe{height:240px}}
+
+    /* ── Mapa de fondo con la ficha encima. El mapa ocupa toda la banda y la
+          tarjeta flota sobre el, como en las webs de tiendas fisicas. */
+    .v-map-hero .xs-loc-grid{grid-template-columns:1fr}
+    .v-map-hero .xs-loc{position:relative; border:0; background:transparent; overflow:visible}
+    .v-map-hero .xs-loc-map{border-radius:16px; overflow:hidden}
+    .v-map-hero .xs-loc-map iframe{height:420px}
+    .v-map-hero .xs-loc-body{
+        position:absolute; left:28px; bottom:28px; right:auto; width:min(360px, calc(100% - 56px));
+        background:#fff; border:1px solid var(--border,#e5e7eb); border-radius:14px;
+        box-shadow:0 18px 40px rgba(15,23,42,.18); padding:18px 20px;
+    }
+    /* En movil la ficha flotante taparia el mapa entero: se coloca debajo. */
+    @media(max-width:760px){
+        .v-map-hero .xs-loc-map iframe{height:260px}
+        .v-map-hero .xs-loc-body{position:static; width:auto; margin-top:12px; box-shadow:none}
+    }
+
+    /* ── Pantalla partida: mitad mapa, mitad datos, ambos a la misma altura. */
+    .v-map-split .xs-loc-grid{grid-template-columns:1fr}
+    .v-map-split .xs-loc{flex-direction:row; align-items:stretch}
+    .v-map-split .xs-loc-map{flex:0 0 58%}
+    .v-map-split .xs-loc-map iframe{height:100%; min-height:300px}
+    .v-map-split .xs-loc-body{flex:1; display:flex; flex-direction:column; justify-content:center; padding:26px 28px}
+    .v-map-split .xs-loc-body strong{font-size:19px}
+    @media(max-width:860px){
+        .v-map-split .xs-loc{flex-direction:column}
+        .v-map-split .xs-loc-map iframe{height:220px; min-height:0}
+        .v-map-split .xs-loc-body{padding:18px 20px}
+    }
+
+    /* ── Solo datos: sin mapa. Para quien no quiere ensenar la ubicacion
+          exacta, o vende a domicilio y el mapa no aporta. */
+    .v-compact .xs-loc-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+    .v-compact .xs-loc-body{padding:18px 20px}
 </style>
 <section class="xs-section v-{{ $lcVariant }}" data-store-native-section="locations" style="order:{{ $sectionOrder('locations') }}"><div class="container">
     <div class="xs-head"><h2>{{ $lcC['title'] ?? 'Visítanos' }}</h2>@if(filled($lcC['subtitle'] ?? null))<p>{{ $lcC['subtitle'] }}</p>@endif</div>
     <div class="xs-loc-grid">
         @foreach($lcItems as $loc)
         <article class="xs-loc">
-            @if(($loc['show_map'] ?? true) && filled($loc['address'] ?? null))
+            @if($lcVariant !== 'compact' && ($loc['show_map'] ?? true) && filled($loc['address'] ?? null))
             <div class="xs-loc-map">
                 <iframe src="https://www.google.com/maps?q={{ urlencode($loc['address']) }}&output=embed&hl=es"
                         title="Mapa: {{ $loc['name'] ?? $loc['address'] }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
