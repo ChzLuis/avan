@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Personas\Controllers;
 
-use App\Models\Attendance;
+use App\Http\Controllers\Controller;
+
+use App\Modules\Personas\Models\Attendance;
 use App\Models\Employee;
 use App\Models\Order;
 use App\Models\Project;
@@ -43,7 +45,7 @@ class AttendanceController extends Controller
             'horas'      => round($registros->sum('minutes_worked') / 60, 1),
         ];
 
-        return view('hr.attendance', compact('project', 'empleados', 'registros', 'resumen', 'mes', 'empleadoId'));
+        return view('personas::hr.attendance', compact('project', 'empleados', 'registros', 'resumen', 'mes', 'empleadoId'));
     }
 
     /** Fichar entrada (el propio empleado) */
@@ -178,7 +180,7 @@ class AttendanceController extends Controller
             );
         }
 
-        return view('hr.comisiones', compact('project', 'comisiones', 'desde', 'hasta'));
+        return view('personas::hr.comisiones', compact('project', 'comisiones', 'desde', 'hasta'));
     }
 
     private function exportCsv(string $filename, array $headers, array $rows): \Symfony\Component\HttpFoundation\StreamedResponse

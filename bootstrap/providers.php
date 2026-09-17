@@ -6,4 +6,5 @@ use App\Providers\CatalogServiceProvider;
 return [
     AppServiceProvider::class,
     CatalogServiceProvider::class,
+    App\Modules\ModulosServiceProvider::class,
 ];

@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Personas\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Employee;
 use App\Models\Project;
@@ -26,7 +28,7 @@ class HRController extends Controller
             'name'    => $r->name,
             'display' => $r->name,
         ]);
-        return view('hr.employees', compact('project', 'employees', 'departments', 'jobTitles', 'contractTypes', 'availableRoles'));
+        return view('personas::hr.employees', compact('project', 'employees', 'departments', 'jobTitles', 'contractTypes', 'availableRoles'));
     }
 
     /**

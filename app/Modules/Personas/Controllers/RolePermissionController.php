@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Personas\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -29,7 +31,7 @@ class RolePermissionController extends Controller
         $allPermissions = Permission::all()
             ->groupBy(fn($p) => explode('.', $p->name)[0] ?? 'general');
 
-        return view('roles.index', compact('project', 'roles', 'allPermissions'));
+        return view('personas::roles.index', compact('project', 'roles', 'allPermissions'));
     }
 
     public function store(Request $request)

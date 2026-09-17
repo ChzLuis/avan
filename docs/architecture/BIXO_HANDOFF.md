@@ -123,8 +123,31 @@ variante, `headers/banda.blade.php` con el boton de categorias. El bloque de
 consolidacion de tienda diverge a proposito: al desplegarlo saltara la
 puerta de deriva; revisar, no forzar.
 
-**Siguiente paso del plan:** mover `Personas/` (HR, Attendance, WorkSchedule,
-UserGroup, RolePermission) a `app/Modules/Personas/`, un modulo por sesion.
+### Modulo 1/8 — `Personas/` MOVIDO (2026-09-17, misma sesion)
+
+Ensayo del metodo del plan. 4 controladores (HR, Attendance, UserGroup,
+RolePermission), 3 modelos (Attendance, WorkSchedule, UserGroup) y 2 vistas
+(hr/employees, roles/index) pasaron a `app/Modules/Personas/` con `git mv`
+(historial conservado). `Employee` y `User` se quedan en Core. Vistas bajo
+`personas::` via `App\Modules\ModulosServiceProvider` (generico: registra
+`app/Modules/*/Views` solo; nada que tocar en los modulos siguientes).
+Referencias externas: solo `use` en Employee, Project, AdminTurnosController y
+routes/web.php. Linea base 124 tests → 124 tras mover; `PersonasModuloTest`
+(4) pinta las pantallas con su vista y vigila la frontera (ruta vieja
+prohibida). Metodo: script Python con conteo exacto por reemplazo (el shell
+del agente se come las barras invertidas de los namespaces: no usar sed).
+
+**Bug previo detectado, NO corregido:** `hr.attendance` y `hr.comisiones` no
+existen como vistas ni en local ni en ARIN → asistencia y comisiones dan 500
+en produccion desde antes. Escribirlas o retirar las rutas.
+
+**NO DESPLEGADO.** Para subir un modulo movido a ARIN: archivos nuevos +
+**borrar los viejos** + `composer dump-autoload -o` (ARIN tiene el classmap
+optimizado; local no) + cache de rutas (esa si la hace deploy.py). Conviene
+un modo `--modulo` en deploy.py antes de desplegar el segundo.
+
+**Siguiente paso del plan:** modulo 2/8, `Control/` (superadmin: AccessEvent,
+licencias, DemoRequest, plantillas de proyecto). Un modulo por sesion.
 
 Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
 `getContent()`); los bloques del FlowRunner van indexados por id y necesitan

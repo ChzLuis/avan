@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\Project;
-use App\Models\WorkSchedule;
+use App\Modules\Personas\Models\WorkSchedule;
 use Illuminate\Http\Request;
 
 class AdminTurnosController extends Controller

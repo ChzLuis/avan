@@ -1,5 +1,8 @@
 <?php
 namespace App\Models;
+
+use App\Modules\Personas\Models\Attendance;
+use App\Modules\Personas\Models\WorkSchedule;
 use Illuminate\Database\Eloquent\Model;
 class Employee extends Model {
     protected $fillable = [

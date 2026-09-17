@@ -1,7 +1,9 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Modules\Personas\Controllers;
+
+use App\Http\Controllers\Controller;
 use App\Models\Project;
-use App\Models\UserGroup;
+use App\Modules\Personas\Models\UserGroup;
 use Illuminate\Http\Request;
 
 class UserGroupController extends Controller

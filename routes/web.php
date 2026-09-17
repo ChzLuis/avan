@@ -15,10 +15,10 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\CatalogListController;
-use App\Http\Controllers\RolePermissionController;
-use App\Http\Controllers\HRController;
+use App\Modules\Personas\Controllers\RolePermissionController;
+use App\Modules\Personas\Controllers\HRController;
 use App\Http\Controllers\SedeController;
-use App\Http\Controllers\UserGroupController;
+use App\Modules\Personas\Controllers\UserGroupController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\PublicController;
@@ -345,17 +345,17 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/hr/employees/{employee}',  [HRController::class, 'destroy'])->name('hr.employees.destroy')->middleware('can:hr.eliminar');
 
         // Asistencia y Comisiones
-        Route::get('/hr/asistencia',               [\App\Http\Controllers\AttendanceController::class, 'index'])->name('hr.attendance.index')->middleware('can:attendance.ver');
+        Route::get('/hr/asistencia',               [\App\Modules\Personas\Controllers\AttendanceController::class, 'index'])->name('hr.attendance.index')->middleware('can:attendance.ver');
         // Escritura autorizada por un permiso de LECTURA: `store` hace
         // updateOrCreate de asistencias, y esas horas alimentan el calculo de
         // comisiones (`AttendanceController::159`). Quien solo podia MIRAR la
         // asistencia podia FABRICARLA, y con ella la comision a pagar.
         // `attendance.editar` ya existe y lo tienen admin, rrhh y gerente; el
         // unico que pierde algo es `solo_lectura`, que es justo el objetivo.
-        Route::post('/hr/asistencia',              [\App\Http\Controllers\AttendanceController::class, 'store'])->name('hr.attendance.store')->middleware('can:attendance.editar');
-        Route::post('/hr/asistencia/check-in',     [\App\Http\Controllers\AttendanceController::class, 'checkIn'])->name('hr.attendance.checkin')->middleware('can:attendance.fichar');
-        Route::post('/hr/asistencia/check-out',    [\App\Http\Controllers\AttendanceController::class, 'checkOut'])->name('hr.attendance.checkout')->middleware('can:attendance.fichar');
-        Route::get('/hr/comisiones',               [\App\Http\Controllers\AttendanceController::class, 'comisiones'])->name('hr.comisiones.index')->middleware('can:attendance.ver');
+        Route::post('/hr/asistencia',              [\App\Modules\Personas\Controllers\AttendanceController::class, 'store'])->name('hr.attendance.store')->middleware('can:attendance.editar');
+        Route::post('/hr/asistencia/check-in',     [\App\Modules\Personas\Controllers\AttendanceController::class, 'checkIn'])->name('hr.attendance.checkin')->middleware('can:attendance.fichar');
+        Route::post('/hr/asistencia/check-out',    [\App\Modules\Personas\Controllers\AttendanceController::class, 'checkOut'])->name('hr.attendance.checkout')->middleware('can:attendance.fichar');
+        Route::get('/hr/comisiones',               [\App\Modules\Personas\Controllers\AttendanceController::class, 'comisiones'])->name('hr.comisiones.index')->middleware('can:attendance.ver');
 
         // Sedes
         Route::get('/company/sedes',           [SedeController::class, 'index'])->name('sedes.index');
