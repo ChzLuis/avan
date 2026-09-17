@@ -54,7 +54,6 @@ class AuthController extends Controller
             }
             session()->forget('facturacion_picking_project');
             session(["facturacion_auth.{$project->slug}" => true]);
-            session(['active_project_id' => $project->id]);
             return redirect()->route('facturacion.dashboard', ['slug' => $project->slug]);
         }
 
@@ -77,7 +76,6 @@ class AuthController extends Controller
         if ($projects->count() === 1) {
             $project = $projects->first();
             session(["facturacion_auth.{$project->slug}" => true]);
-            session(['active_project_id' => $project->id]);
             return redirect()->route('facturacion.dashboard', ['slug' => $project->slug]);
         }
 
@@ -122,7 +120,6 @@ class AuthController extends Controller
         }
 
         session(["facturacion_auth.{$slug}" => true]);
-        session(['active_project_id' => $project->id]);
 
         return redirect()->route('facturacion.dashboard', ['slug' => $slug]);
     }

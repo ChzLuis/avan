@@ -23,9 +23,10 @@
         $guia->destinatario_doc_tipo ?: '-', $guia->destinatario_doc_numero ?: '-',
     ]);
 
-    $placa = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $guia->vehiculo_placa));
+    // La misma normalizacion que viaja en el XML, sin repetir la expresion.
+    $placa = $guia->placaNormalizada();
 @endphp
-<x-doc.hoja :project="$project" :anulado="$anulado"
+<x-doc.hoja :incrustada="request()->query('vista') === 'incrustada'" :project="$project" :anulado="$anulado"
             :titulo="$guia->numero.' — Guía de remisión'">
   <x-slot:pieEmisor>
     {{ $guia->emisor_razon_social ?: $project->name }} &nbsp;·&nbsp; RUC {{ $guia->emisor_ruc }}
@@ -148,8 +149,9 @@
 
   {{-- Validación --}}
   <div class="validacion">
-    <img class="validacion-qr" alt="QR de la guía"
-         src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data={{ urlencode($qrDatos) }}">
+    {{-- QR local: ni el RUC ni el destino de la carga salen a un tercero,
+         y la guia lleva su QR aunque el equipo este sin internet. --}}
+    <div class="validacion-qr" data-qr="{{ $qrDatos }}" role="img" aria-label="QR de la guía"></div>
     <div>
       <div class="validacion-titulo">Validación del documento</div>
       <div class="validacion-texto">
@@ -164,4 +166,18 @@
   </div>
   </div>
 
+<script>{!! file_get_contents(public_path('js/qrcode.min.js')) !!}</script>
+<script>
+(function () {
+    document.querySelectorAll('[data-qr]').forEach(function (el) {
+        try {
+            var qr = qrcode(0, 'M');
+            qr.addData(el.getAttribute('data-qr'));
+            qr.make();
+            el.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+            var svg = el.querySelector('svg'); if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); }
+        } catch (e) { el.textContent = ''; }
+    });
+})();
+</script>
 </x-doc.hoja>

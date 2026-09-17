@@ -71,7 +71,14 @@
         <span x-text="errorMsg"></span>
     </div>
 
-    <div class="p-6 space-y-4 max-w-6xl mx-auto">
+    {{-- Dos columnas: el formulario y, al lado, el comprobante tal y como se va
+         a imprimir. Emitir es irreversible ante SUNAT, asi que ver el papel
+         mientras se rellena evita la nota de credito por un dato mal tecleado.
+         Bajo 1280px la vista previa se va al final: en pantalla estrecha,
+         partirla en dos columnas deja ambas ilegibles. --}}
+    <div class="p-6 max-w-[1500px] mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-5 items-start">
+
+      <div class="space-y-4 min-w-0">
 
         {{-- ── ENCABEZADO: EMISOR + COMPROBANTE + CLIENTE ── --}}
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -119,20 +126,83 @@
                 </div>
 
                 {{-- CLIENTE --}}
-                <div class="space-y-3">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Cliente</p>
+                <div class="space-y-3 relative">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cliente</p>
+                        {{-- Traer los datos de un comprobante ya emitido. Es la
+                             via mas rapida para un cliente que repite, y la unica
+                             que recupera su RUC o DNI: la tabla de clientes no
+                             guarda documento fiscal. --}}
+                        <button type="button" @click="buscadorAbierto = !buscadorAbierto"
+                                class="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg border transition-colors
+                                       {{ $esBoleta ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' : 'border-blue-200 text-blue-700 hover:bg-blue-50' }}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            Buscar anterior
+                        </button>
+                    </div>
+
+                    {{-- Panel de comprobantes anteriores --}}
+                    <div x-show="buscadorAbierto" x-cloak @click.outside="buscadorAbierto = false"
+                         class="absolute z-40 top-7 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                        <div class="p-2 border-b border-gray-100">
+                            <input type="text" x-model="buscaPrevio" x-ref="buscaPrevio"
+                                   placeholder="Número, cliente o RUC/DNI..."
+                                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 {{ $esBoleta ? 'focus:ring-emerald-400' : 'focus:ring-blue-400' }}">
+                        </div>
+                        <div class="max-h-72 overflow-y-auto">
+                            <template x-if="previosFiltrados.length === 0">
+                                <p class="px-3 py-4 text-xs text-gray-400 text-center">Sin comprobantes que coincidan.</p>
+                            </template>
+                            <template x-for="r in previosFiltrados" :key="r.id">
+                                <div class="px-3 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold text-gray-800 truncate" x-text="r.cliente.client_name || 'Sin nombre'"></p>
+                                            <p class="text-[10px] text-gray-400 font-mono">
+                                                <span x-text="r.numero"></span> ·
+                                                <span x-text="r.cliente.client_doc_number || 's/doc'"></span> ·
+                                                <span x-text="r.fecha"></span>
+                                            </p>
+                                        </div>
+                                        <div class="flex gap-1 flex-shrink-0">
+                                            <button type="button" @click="traerDePrevio(r, false)"
+                                                    class="text-[10px] px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">
+                                                Solo cliente
+                                            </button>
+                                            <button type="button" @click="traerDePrevio(r, true)"
+                                                    class="text-[10px] px-2 py-1 rounded-lg font-semibold text-white
+                                                           {{ $esBoleta ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700' }}">
+                                                Todo
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Tipo doc.</label>
+                            @if($esBoleta)
                             <select x-model="form.client_doc_type"
-                                    class="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 {{ $esBoleta ? 'focus:ring-emerald-400' : 'focus:ring-blue-400' }}">
+                                    class="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
                                 <option value="">— —</option>
                                 <option value="DNI">DNI</option>
                                 <option value="RUC">RUC</option>
                                 <option value="CE">CE</option>
                                 <option value="pasaporte">Pasaporte</option>
                             </select>
+                            @else
+                            {{-- Una factura solo se emite a un RUC: SUNAT no acepta
+                                 DNI, carne de extranjeria ni pasaporte como receptor.
+                                 Ofrecer esas opciones solo servia para que el
+                                 comprobante lo rechazaran despues de emitirlo. Si el
+                                 cliente da su DNI, lo que corresponde es una boleta. --}}
+                            <div class="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm bg-gray-50 text-gray-700 font-semibold">RUC</div>
+                            @endif
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold text-gray-400 uppercase mb-1">
@@ -146,7 +216,8 @@
                             </label>
                             <input type="text" x-model="form.client_doc_number"
                                    @input.debounce.600ms="buscarRuc()"
-                                   placeholder="RUC / DNI"
+                                   placeholder="{{ $esBoleta ? 'RUC / DNI' : 'RUC (11 dígitos)' }}"
+                                   @if(!$esBoleta) inputmode="numeric" maxlength="11" @endif
                                    class="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 {{ $esBoleta ? 'focus:ring-emerald-400' : 'focus:ring-blue-400' }}">
                         </div>
                     </div>
@@ -367,17 +438,123 @@
             </button>
         </div>
 
+      </div>
+
+      {{-- ── VISTA PREVIA: el comprobante como saldra impreso ── --}}
+      <aside class="xl:sticky xl:top-20 min-w-0">
+        <div class="flex items-center justify-between mb-2 px-1">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Así se verá impreso</p>
+            <span class="text-[10px] text-gray-400">Actualiza mientras escribes</span>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden text-[11px] text-gray-700">
+            {{-- Cabecera: emisor y recuadro de denominacion, como en el papel --}}
+            <div class="flex gap-3 p-4 border-b border-gray-100">
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-gray-900 text-[12px] leading-tight">{{ $emisorRazon }}</p>
+                    @if($emisorDir)<p class="text-gray-500 mt-0.5 leading-snug">{{ $emisorDir }}</p>@endif
+                    @if($project->phone)<p class="text-gray-500">{{ $project->phone }}</p>@endif
+                </div>
+                <div class="w-[132px] flex-shrink-0 border-2 rounded-lg p-2 text-center
+                            {{ $esBoleta ? 'border-emerald-500' : 'border-blue-600' }}">
+                    @if($emisorRuc)<p class="font-mono font-bold text-gray-800">R.U.C. {{ $emisorRuc }}</p>@endif
+                    <p class="font-bold text-[10px] leading-tight mt-1 {{ $esBoleta ? 'text-emerald-700' : 'text-blue-700' }}">
+                        {{ $esBoleta ? 'BOLETA DE VENTA ELECTRÓNICA' : 'FACTURA ELECTRÓNICA' }}
+                    </p>
+                    <p class="font-mono font-bold text-gray-800 mt-1">{{ $serie }}-<span class="text-gray-400">·····</span></p>
+                </div>
+            </div>
+
+            {{-- Receptor --}}
+            <div class="px-4 py-3 border-b border-gray-100 space-y-0.5">
+                <p><span class="text-gray-400">Señor(es):</span>
+                   <span class="font-semibold text-gray-800" x-text="form.client_name || '—'"></span></p>
+                <p><span class="text-gray-400" x-text="(form.client_doc_type || 'Doc.') + ':'"></span>
+                   <span class="font-mono" x-text="form.client_doc_number || '—'"></span></p>
+                <p><span class="text-gray-400">Dirección:</span>
+                   <span x-text="form.client_address || '—'"></span></p>
+                <p><span class="text-gray-400">F. Emisión:</span>
+                   <span x-text="fechaLarga(form.issue_date)"></span>
+                   <template x-if="form.due_date">
+                       <span><span class="text-gray-400 ml-2">Vence:</span> <span x-text="fechaLarga(form.due_date)"></span></span>
+                   </template>
+                </p>
+            </div>
+
+            {{-- Detalle --}}
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50 text-[9px] uppercase tracking-wide text-gray-500">
+                        <th class="text-center py-1.5 px-2 font-bold w-10">Cant</th>
+                        <th class="text-left py-1.5 px-2 font-bold">Descripción</th>
+                        <th class="text-right py-1.5 px-2 font-bold w-16">P.Unit</th>
+                        <th class="text-right py-1.5 px-2 font-bold w-16">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(l, i) in form.lines" :key="'prev'+i">
+                        <tr class="border-b border-gray-50 align-top">
+                            <td class="text-center py-1.5 px-2" x-text="l.qty || 0"></td>
+                            <td class="py-1.5 px-2 break-words" x-text="l.desc || '—'"></td>
+                            <td class="text-right py-1.5 px-2 font-mono" x-text="(parseFloat(l.price)||0).toFixed(2)"></td>
+                            <td class="text-right py-1.5 px-2 font-mono font-semibold" x-text="lineTotal(l).toFixed(2)"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+
+            {{-- Totales e importe en letras: lo que SUNAT exige que figure --}}
+            <div class="px-4 py-3 border-t border-gray-200 space-y-1">
+                <div class="flex justify-between"><span class="text-gray-400">OP. GRAVADA</span>
+                    <span class="font-mono" x-text="simbolo + ' ' + totales.sub.toFixed(2)"></span></div>
+                <div class="flex justify-between"><span class="text-gray-400">I.G.V. (18%)</span>
+                    <span class="font-mono" x-text="simbolo + ' ' + totales.igv.toFixed(2)"></span></div>
+                <div class="flex justify-between text-[13px] font-bold text-gray-900 border-t border-gray-200 pt-1.5 mt-1">
+                    <span>IMPORTE TOTAL</span>
+                    <span class="font-mono {{ $esBoleta ? 'text-emerald-600' : 'text-blue-600' }}"
+                          x-text="simbolo + ' ' + totales.total.toFixed(2)"></span>
+                </div>
+                <p class="text-[9px] text-gray-500 uppercase leading-snug pt-1" x-text="'SON: ' + importeEnLetras()"></p>
+            </div>
+
+            <div class="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center gap-2">
+                <div class="w-10 h-10 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                    </svg>
+                </div>
+                <p class="text-[9px] text-gray-400 leading-snug">
+                    El código QR y el número definitivo se generan al emitir.
+                    Representación impresa del comprobante electrónico.
+                </p>
+            </div>
+        </div>
+      </aside>
+
     </div>
 </div>
 
 @php
-$clientsForJs = $clients->map(function($c){ return ['id'=>$c->id,'name'=>$c->name]; })->values();
+// El cliente viaja completo: antes solo iban id y nombre, asi que elegir uno de
+// la lista dejaba direccion, telefono y correo vacios y habia que teclearlos.
+$clientsForJs = $clients->map(fn ($c) => [
+    'id'      => $c->id,
+    'name'    => $c->name,
+    'phone'   => $c->phone ?? '',
+    'email'   => $c->email ?? '',
+    'address' => $c->direccion ?? '',
+])->values();
 @endphp
 <script>
 function emisionPage() {
     const catalogo   = @json($catalogo->values());
     const allClients = @json($clientsForJs);
     const fromQuote  = @json($fromQuote ?? null);
+    const recientes  = @json($recientes ?? []);
+    // Una factura solo se emite a un RUC. Se deja como constante para que las
+    // tres vias por las que entran datos del cliente (tecleado, cotizacion y
+    // comprobante anterior) no puedan colar otro tipo de documento.
+    const esFactura  = {{ $esBoleta ? 'false' : 'true' }};
 
     return {
         catalogo,
@@ -394,7 +571,7 @@ function emisionPage() {
             due_date:          '',
             currency:          'PEN',
             client_name:       '',
-            client_doc_type:   '',
+            client_doc_type:   '{{ $esBoleta ? '' : 'RUC' }}',
             client_doc_number: '',
             client_address:    '',
             notes:             '',
@@ -409,7 +586,7 @@ function emisionPage() {
         init() {
             if (fromQuote) {
                 this.form.client_name       = fromQuote.client_name       || '';
-                this.form.client_doc_type   = fromQuote.client_doc_type   || '';
+                this.form.client_doc_type   = esFactura ? 'RUC' : (fromQuote.client_doc_type || '');
                 this.form.client_doc_number = fromQuote.client_doc_number || '';
                 this.form.client_address    = fromQuote.client_address    || '';
                 this.form.notes             = fromQuote.notes             || '';
@@ -459,31 +636,140 @@ function emisionPage() {
             if (q.length < 2) { this.clientSugg = []; return; }
             this.clientSugg = allClients.filter(c => c.name.toLowerCase().includes(q)).slice(0,6);
         },
-        selectClient(c) { this.form.client_name = c.name; this.clientSugg = []; },
+        selectClient(c) {
+            this.form.client_name = c.name;
+            // Solo se rellena lo que esta vacio: si el operador ya escribio una
+            // direccion distinta para esta venta, elegir el cliente no se la pisa.
+            if (!this.form.client_address && c.address) this.form.client_address = c.address;
+            this.clientSugg = [];
+        },
+
+        // ── Traer de un comprobante anterior ──────────────────────────────
+        // La tabla de clientes no guarda RUC ni DNI; el unico sitio donde vive
+        // el documento del receptor es un comprobante ya emitido.
+        buscadorAbierto: false,
+        buscaPrevio: '',
+
+        get previosFiltrados() {
+            const q = (this.buscaPrevio || '').toLowerCase().trim();
+            if (!q) return recientes.slice(0, 8);
+            return recientes.filter(r =>
+                (r.numero || '').toLowerCase().includes(q) ||
+                (r.cliente.client_name || '').toLowerCase().includes(q) ||
+                (r.cliente.client_doc_number || '').includes(q)
+            ).slice(0, 12);
+        },
+
+        traerDePrevio(r, conLineas) {
+            Object.assign(this.form, r.cliente);
+            if (esFactura) this.form.client_doc_type = 'RUC';
+            if (conLineas && r.lineas.length) {
+                this.form.lines = r.lineas.map(l => ({ ...l, showSugg: false, suggestions: [] }));
+            }
+            this.buscadorAbierto = false;
+            this.buscaPrevio = '';
+            this.clientSugg = [];
+        },
+
+        // ── Ayudas de la vista previa ────────────────────────────────────
+        get simbolo() { return this.form.currency === 'USD' ? '$' : 'S/'; },
+
+        fechaLarga(iso) {
+            if (!iso) return '—';
+            const [a, m, d] = iso.split('-');
+            return `${d}/${m}/${a}`;
+        },
+
+        /** Importe en letras: SUNAT exige que figure en la representación impresa. */
+        importeEnLetras() {
+            const n = this.totales.total;
+            const entero = Math.floor(n);
+            const cent = Math.round((n - entero) * 100);
+            const moneda = this.form.currency === 'USD' ? 'DÓLARES AMERICANOS' : 'SOLES';
+            return `${this.letras(entero)} CON ${String(cent).padStart(2, '0')}/100 ${moneda}`;
+        },
+
+        letras(n) {
+            if (n === 0) return 'CERO';
+            const U = ['','UNO','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE','DIEZ',
+                       'ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISÉIS','DIECISIETE','DIECIOCHO','DIECINUEVE'];
+            const D = ['','','VEINTE','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+            const C = ['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS',
+                       'SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+
+            const hasta999 = (x) => {
+                if (x === 100) return 'CIEN';
+                let t = '';
+                const c = Math.floor(x / 100), r = x % 100;
+                if (c) t += C[c] + (r ? ' ' : '');
+                if (r < 20) t += U[r];
+                else {
+                    const d = Math.floor(r / 10), u = r % 10;
+                    if (d === 2 && u) t += 'VEINTI' + U[u].toLowerCase().toUpperCase();
+                    else t += D[d] + (u ? ' Y ' + U[u] : '');
+                }
+                return t.trim();
+            };
+
+            if (n < 1000) return hasta999(n);
+            if (n < 1000000) {
+                const miles = Math.floor(n / 1000), resto = n % 1000;
+                const pref = miles === 1 ? 'MIL' : hasta999(miles) + ' MIL';
+                return (pref + (resto ? ' ' + hasta999(resto) : '')).trim();
+            }
+            const mill = Math.floor(n / 1000000), resto = n % 1000000;
+            const pref = mill === 1 ? 'UN MILLÓN' : hasta999(mill) + ' MILLONES';
+            return (pref + (resto ? ' ' + this.letras(resto) : '')).trim();
+        },
 
         async buscarRuc() {
-            const ruc = (this.form.client_doc_number||'').replace(/\D/g,'');
-            if (this.form.client_doc_type !== 'RUC' || ruc.length !== 11) return;
+            const doc = (this.form.client_doc_number||'').replace(/\D/g,'');
+
+            // El tipo se deduce del propio numero: en Peru 11 digitos es RUC y 8
+            // es DNI. Antes habia que elegir "RUC" en el selector ANTES de
+            // teclear; si no, escribir el numero no consultaba nada y tampoco
+            // avisaba de nada, asi que parecia que la consulta estaba rota.
+            if (doc.length === 11 && this.form.client_doc_type !== 'RUC') this.form.client_doc_type = 'RUC';
+            // En una factura el receptor es siempre un RUC; no se degrada a DNI.
+            if (!esFactura && doc.length === 8 && !this.form.client_doc_type) this.form.client_doc_type = 'DNI';
+
+            if (doc.length !== 11) return;
+
             this.buscandoRuc = true;
             try {
-                const res  = await fetch('{{ $rucUrl }}?ruc=' + ruc, {
+                const res  = await fetch('{{ $rucUrl }}?ruc=' + doc, {
                     headers:{ 'Accept':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}' }
                 });
                 const data = await res.json();
                 if (data.ok) {
                     this.form.client_name    = data.razon_social;
                     this.form.client_address = data.direccion;
+                    this.clientSugg = [];
                 } else {
                     this.errorMsg = data.message || 'RUC no encontrado.';
-                    setTimeout(() => this.errorMsg = '', 4000);
+                    // Un RUC inexistente es un tropiezo y el aviso se va solo;
+                    // que falte el token es algo que hay que ir a configurar, y
+                    // ese mensaje se queda hasta que el operador lo lea.
+                    if (!/token/i.test(this.errorMsg)) setTimeout(() => this.errorMsg = '', 5000);
                 }
-            } catch(e) {}
+            } catch (e) {
+                this.errorMsg = 'No se pudo consultar el RUC. Revisa tu conexión.';
+                setTimeout(() => this.errorMsg = '', 5000);
+            }
             this.buscandoRuc = false;
         },
 
         async guardar(emitir) {
             this.errorMsg = '';
             if (!this.form.client_name.trim()) { this.errorMsg = 'El nombre del cliente es obligatorio.'; return; }
+            if (esFactura) {
+                const ruc = (this.form.client_doc_number || '').replace(/\D/g, '');
+                if (ruc.length !== 11) {
+                    this.errorMsg = 'Una factura necesita el RUC del cliente (11 dígitos). Si solo tienes su DNI, emite una boleta.';
+                    return;
+                }
+                this.form.client_doc_type = 'RUC';
+            }
             if (this.form.lines.some(l => !l.desc.trim())) { this.errorMsg = 'Todas las líneas deben tener descripción.'; return; }
             if (this.form.lines.some(l => parseFloat(l.price) <= 0)) { this.errorMsg = 'Todos los precios deben ser mayores a 0.'; return; }
 

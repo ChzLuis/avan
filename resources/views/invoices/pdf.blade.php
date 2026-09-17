@@ -57,7 +57,7 @@
     // La columna de descuento solo existe si alguna linea lo tiene.
     $hayDescuento = $invoice->items->contains(fn ($i) => (float) ($i->discount ?? 0) > 0);
 @endphp
-<x-doc.hoja :project="$project" :anulado="$anulado"
+<x-doc.hoja :incrustada="request()->query('vista') === 'incrustada'" :project="$project" :anulado="$anulado" :previa="!empty($vistaPrevia)"
             :titulo="$invoice->numero.' — '.$project->name">
   <x-slot:pieEmisor>
     {{ $invoice->emisor_razon_social ?: $project->name }} &nbsp;·&nbsp; RUC {{ $invoice->emisor_ruc }}
@@ -129,7 +129,7 @@
       @foreach($invoice->items as $item)
       <tr>
         <td class="desc">{{ $item->description }}</td>
-        <td>{{ $item->unit }}</td>
+        <td>{{ \App\Support\Sunat\Catalogos::etiquetaUnidad($item->unit) }}</td>
         <td>{{ rtrim(rtrim(number_format($item->quantity, 3), '0'), '.') }}</td>
         <td>{{ number_format($item->unit_price, 2) }}</td>
         @if($hayDescuento)<td>{{ (float) ($item->discount ?? 0) > 0 ? rtrim(rtrim(number_format($item->discount, 2), '0'), '.').'%' : '—' }}</td>@endif
@@ -174,8 +174,7 @@
 
   {{-- Validación: el QR normado, el hash y el estado ante SUNAT --}}
   <div class="validacion">
-    <img class="validacion-qr" alt="QR del comprobante"
-         src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data={{ urlencode($qrDatos) }}">
+    <div class="validacion-qr" role="img" aria-label="QR del comprobante" data-qr="{{ $qrDatos }}"></div>
     <div>
       <div class="validacion-titulo">Validación del comprobante</div>
       <div class="validacion-texto">
@@ -190,4 +189,20 @@
   </div>
   </div>
 
+{{-- QR generado AQUI, sin servicio externo: antes se pedia a api.qrserver.com,
+     que recibia RUC, importes y hash de cada comprobante y podia caerse. --}}
+<script>{!! file_get_contents(public_path('js/qrcode.min.js')) !!}</script>
+<script>
+(function () {
+    document.querySelectorAll('[data-qr]').forEach(function (el) {
+        try {
+            var qr = qrcode(0, 'M');
+            qr.addData(el.getAttribute('data-qr'));
+            qr.make();
+            el.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+            var svg = el.querySelector('svg'); if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); }
+        } catch (e) { el.textContent = ''; }
+    });
+})();
+</script>
 </x-doc.hoja>

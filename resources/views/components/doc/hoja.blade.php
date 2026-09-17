@@ -18,7 +18,7 @@
     la marca (`doc_color_acento`, o el `primary_color` de la tienda): así GABDE
     firma en azul marino con su naranja, y cada negocio con el suyo.
 --}}
-@props(['project', 'titulo' => 'Documento', 'anulado' => false])
+@props(['project', 'titulo' => 'Documento', 'anulado' => false, 'previa' => false, 'descargar' => null, 'incrustada' => false])
 
 @php
     $pri = trim((string) $project->setting('doc_color_primario')) ?: '#1E3A5F';
@@ -170,26 +170,45 @@
   @media screen {
     body { background: #EEF1F5; }
     .hoja { background: #fff; margin: 18px auto; box-shadow: 0 4px 24px rgba(15, 23, 42, .12); }
+    /* Dentro del visor del panel la ventana puede ser mas angosta que los
+       210mm de la hoja. Sin esto aparece scroll horizontal y el documento se
+       ve corrido a la izquierda en vez de centrado. */
+    @media (max-width: 230mm) {
+      .hoja { width: 100%; padding: 0 6mm; }
+      .franja, .pie-franja { margin-left: -6mm; margin-right: -6mm; }
+    }
   }
 </style>
 </head>
 <body>
 @if($anulado)<div class="anulado">ANULADO</div>@endif
+@if($previa)<div class="anulado" style="color:rgba(220,38,38,.16);font-size:40pt;line-height:1.1">VISTA PREVIA<br><span style="font-size:15pt;letter-spacing:.06em">SIN VALIDEZ · AÚN NO EMITIDO</span></div>@endif
 <div class="hoja" id="hoja">
 
   <div class="contenido">
     <div class="franja"><span></span><span></span></div>
 
+    {{-- Dentro del panel (iframe) la hoja se muestra como vista previa: los
+         botones de Descargar/Imprimir/Cerrar los pone el propio panel, y aqui
+         solo estorbarian (Cerrar ni siquiera funciona en un iframe). --}}
+    @unless($incrustada)
     <div class="no-print" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6mm;">
+      @if($descargar)
+      <a href="{{ $descargar }}"
+         style="background:var(--pri);color:#fff;text-decoration:none;padding:8px 20px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+        Descargar PDF
+      </a>
+      @endif
       <button onclick="window.print()"
-              style="background:var(--pri);color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;">
-        Imprimir / Guardar PDF
+              style="background:#fff;color:var(--pri);border:1px solid var(--pri);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;">
+        Imprimir
       </button>
       <button onclick="window.close()"
               style="background:#fff;color:#475569;border:1px solid #E2E8F0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;">
         Cerrar
       </button>
     </div>
+    @endunless
 
     {{ $slot }}
   </div>

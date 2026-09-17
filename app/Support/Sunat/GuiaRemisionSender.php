@@ -133,11 +133,12 @@ final class GuiaRemisionSender
             'pesoTotal'    => (float) $guia->peso_total,
             'undPesoTotal' => $guia->peso_unidad,
             'llegada'      => [
-                'ubigueo'   => $guia->llegada_ubigeo ?: '150101',
+                // Sin inventar: el ubigeo ahora es obligatorio al crear la guia.
+                'ubigueo'   => $guia->llegada_ubigeo,
                 'direccion' => $guia->llegada_direccion,
             ],
             'partida' => [
-                'ubigueo'   => $guia->partida_ubigeo ?: '150101',
+                'ubigueo'   => $guia->partida_ubigeo,
                 'direccion' => $guia->partida_direccion,
             ],
         ];
@@ -151,8 +152,21 @@ final class GuiaRemisionSender
            cuando la carga va en auto, camioneta o moto. */
         $envio['indTransbordo'] = (bool) $guia->transbordo_programado;
 
+        /* Los indicadores viajan en la LISTA `indicadores` con el nombre
+           literal del catalogo de SUNAT. Antes se mandaba `indM1L => true`,
+           que el proveedor IGNORA en silencio: el XML salia sin el tag y
+           SUNAT rechazaba con el error 2566 pidiendo la placa de un vehiculo
+           que, por ser M1/L, no hay que declarar. Comprobado el 2026-09-08
+           contra /despatch/xml: con `indicadores` el tag SI aparece. */
+        $indicadores = [];
         if ($guia->exentoDeVehiculo()) {
-            $envio['indM1L'] = true;
+            $indicadores[] = 'SUNAT_Envio_IndicadorTrasladoVehiculoM1L';
+        }
+        if ($guia->transbordo_programado) {
+            $indicadores[] = 'SUNAT_Envio_IndicadorTransbordoProgramado';
+        }
+        if ($indicadores !== []) {
+            $envio['indicadores'] = $indicadores;
         }
 
         /* En transporte publico responde el transportista; en privado, el
@@ -335,7 +349,7 @@ final class GuiaRemisionSender
             $motivo = $resp['error'] ?? ($resp['errors'] ?? ($resp['message'] ?? ($sunat['error'] ?? null)));
             $motivo = is_string($motivo) && $motivo !== '' ? $motivo : ($motivo ? json_encode($motivo, JSON_UNESCAPED_UNICODE) : null);
 
-            return $this->falla($guia, $motivo ?: 'SUNAT no aceptó la guía (HTTP '.$http.').');
+            return $this->falla($guia, self::enCristiano($motivo, $http));
         }
 
         $ticket = $sunat['ticket'] ?? ($sunat['numTicket'] ?? ($resp['ticket'] ?? null));
@@ -351,6 +365,36 @@ final class GuiaRemisionSender
 
         return ['ok' => true, 'message' => 'Guía '.$guia->numero.' aceptada por SUNAT.'
             .($ticket ? ' Ticket '.$ticket.'.' : ''), 'ticket' => $ticket];
+    }
+
+    /**
+     * Traduce los errores opacos del proveedor a algo accionable.
+     *
+     * APIsPERU contesta "Error al comunicarse con el servidor interno" (HTTP
+     * 500) cuando faltan las credenciales GRE (client_id/client_secret), aunque
+     * el mismo RUC y token emitan facturas sin problema (comprobado el
+     * 2026-09-08 con GABDE: /invoice/send devolvia 200 y /despatch/send 500).
+     * Ese texto deja al operador creyendo que es una caida pasajera y
+     * reintentando para siempre, cuando lo que falta es un alta en el
+     * proveedor. Aqui se dice lo que hay que hacer.
+     */
+    private static function enCristiano(?string $motivo, int $http): string
+    {
+        $motivo = trim((string) $motivo);
+
+        if (stripos($motivo, 'servidor interno') !== false) {
+            return 'Faltan las credenciales GRE de SUNAT. Desde 2022 la guia de remision '
+                .'NO usa la clave SOL como la factura, sino un client_id y client_secret '
+                .'propios: generalos en SUNAT (SOL > registrar aplicacion) y cargalos en tu '
+                .'cuenta de APIsPERU. Por eso tus facturas si salen y la guia no.';
+        }
+
+        if (stripos($motivo, 'Empresa no encontrada') !== false) {
+            return 'El RUC del emisor no esta dado de alta en APIsPERU. Revisa el RUC en '
+                .'Ajustes o da de alta la empresa en el proveedor.';
+        }
+
+        return $motivo !== '' ? $motivo : 'SUNAT no acepto la guia (HTTP '.$http.').';
     }
 
     private function falla(GuiaRemision $guia, string $motivo): array

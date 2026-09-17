@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Project;
 use App\Support\Sunat\Catalogos;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -47,6 +48,10 @@ class GuiaRemisionController extends Controller
             'motivos'     => Catalogos::MOTIVOS_TRASLADO,
             'modalidades' => Catalogos::MODALIDADES_TRASLADO,
             'unidades'    => Catalogos::UNIDADES,
+            // El MISMO catalogo que los comprobantes: en la guia se teclaba
+            // la descripcion a mano, con sus erratas, y la linea salia sin
+            // enlace al producto.
+            'catalogo'    => \App\Support\CatalogoDocumentos::para($project),
             // Solo las facturas y boletas aceptadas pueden respaldar un traslado.
             'comprobantes' => $project->invoices()
                 ->whereIn('type', ['factura', 'boleta'])
@@ -57,6 +62,81 @@ class GuiaRemisionController extends Controller
     }
 
     /** Lo que el formulario necesita: catálogos y, si viene de una venta, sus datos. */
+    /** Direccion y ubigeo de la ultima guia emitida a ese documento. */
+    private function ultimoDestino($project, ?string $doc): ?array
+    {
+        $doc = preg_replace('/\D/', '', (string) $doc);
+        if ($doc === '') {
+            return null;
+        }
+
+        $previa = $project->guiasRemision()
+            ->where('destinatario_doc_numero', $doc)
+            ->whereNotNull('llegada_ubigeo')->where('llegada_ubigeo', '!=', '')
+            ->latest('id')
+            ->first(['llegada_ubigeo', 'llegada_direccion']);
+
+        return $previa ? [
+            'ubigeo'    => $previa->llegada_ubigeo,
+            'direccion' => $previa->llegada_direccion,
+        ] : null;
+    }
+
+    /**
+     * HISTORICO de guias: buscar y consultar lo ya emitido.
+     *
+     * La pantalla de Guias mezcla la lista corta con el formulario de emitir:
+     * sirve para sacar la siguiente, no para encontrar la de hace dos meses.
+     * Aqui solo se busca, con los mismos filtros que "Comprobantes emitidos"
+     * para que las dos pantallas se sientan una sola.
+     */
+    public function consulta(Request $request)
+    {
+        $project = $this->negocio();
+
+        $q      = trim((string) $request->query('q', ''));
+        $estado = (string) $request->query('estado', '');
+        $desde  = (string) $request->query('desde', '');
+        $hasta  = (string) $request->query('hasta', '');
+
+        // "T001-1" o "t001 1" encuentra T001-00000001: nadie teclea ocho digitos.
+        $numeroCompleto = null;
+        if (preg_match('/^([A-Za-z]{1,2}\d{3})[\s-]*(\d{1,8})$/', $q, $m)) {
+            $numeroCompleto = strtoupper($m[1]).'-'.str_pad($m[2], 8, '0', STR_PAD_LEFT);
+        }
+
+        // La fecha que importa en una guia es la del traslado; si no la tiene,
+        // la de emision. El filtro mira la misma fecha que se muestra.
+        $fechaVisible = 'COALESCE(fecha_traslado, created_at)';
+
+        $guias = $project->guiasRemision()
+            ->with('invoice:id,numero')
+            ->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
+                ->where('numero', 'like', "%{$q}%")
+                ->when($numeroCompleto, fn ($x) => $x->orWhere('numero', $numeroCompleto))
+                ->orWhere('destinatario_nombre', 'like', "%{$q}%")
+                ->orWhere('destinatario_doc_numero', 'like', "%{$q}%")
+                ->orWhere('vehiculo_placa', 'like', "%{$q}%")))
+            ->when($estado !== '', fn ($b) => match ($estado) {
+                'sin_enviar' => $b->whereNull('sunat_status'),
+                default      => $b->where('sunat_status', $estado),
+            })
+            ->when($desde !== '', fn ($b) => $b->whereRaw("DATE({$fechaVisible}) >= ?", [$desde]))
+            ->when($hasta !== '', fn ($b) => $b->whereRaw("DATE({$fechaVisible}) <= ?", [$hasta]))
+            ->orderByRaw("{$fechaVisible} DESC")
+            ->latest('id')
+            ->paginate(30)
+            ->withQueryString();
+
+        return view('facturacion.guias.consulta', [
+            'project'      => $project,
+            'guias'        => $guias,
+            'filtros'      => compact('q', 'estado', 'desde', 'hasta'),
+            'motivos'      => Catalogos::MOTIVOS_TRASLADO,
+            'portalLayout' => $request->routeIs('bixosales.*') ? 'comercial' : 'panel',
+        ]);
+    }
+
     public function opciones(Request $request)
     {
         $project = $this->negocio();
@@ -82,6 +162,11 @@ class GuiaRemisionController extends Controller
                 'doc_tipo'        => Catalogos::codigoDocumentoIdentidad($invoice->client_doc_type, $invoice->client_doc_number),
                 'doc_numero'      => $invoice->client_doc_number,
                 'direccion'       => $invoice->client_address,
+                /* El ubigeo de destino no vive en la factura ni en la ficha
+                   del cliente: SUNAT lo exige y se tecleaba a mano cada vez.
+                   La ultima guia emitida a ESE documento si lo tiene, y el
+                   destino de un cliente rara vez cambia. */
+                'ultimo_destino'  => $this->ultimoDestino($project, $invoice->client_doc_number),
                 'items'           => $invoice->items->map(fn ($i) => [
                     'description' => $i->description,
                     'unit'        => Catalogos::codigoUnidad($i->unit),
@@ -97,31 +182,82 @@ class GuiaRemisionController extends Controller
 
         /* Traslado privado que NO va en vehiculo M1/L: ahi el vehiculo y el
            conductor siguen siendo obligatorios. */
+        /* DOBLE EMISION. Con el camion en la puerta y mala señal, el
+           operador pulsa "Emitir", tarda, recarga y vuelve a pulsar: salian
+           dos guias y dos correlativos quemados. La huella del intento la
+           manda el navegador; el segundo envio recibe la guia ya creada. */
+        $huella = trim((string) $request->header('X-Idempotencia'));
+        $candado = null;
+        if ($huella !== '') {
+            $candado = 'guia:'.$project->id.':'.substr(preg_replace('/[^A-Za-z0-9\-]/', '', $huella), 0, 64);
+
+            if ($yaEmitida = Cache::get($candado)) {
+                $previa = GuiaRemision::where('project_id', $project->id)->find($yaEmitida);
+                if ($previa) {
+                    return response()->json([
+                        'ok' => true, 'repetida' => true,
+                        'guia' => $previa->only(['id', 'numero']),
+                        'message' => "Esta guía ya se emitió: {$previa->numero}.",
+                    ]);
+                }
+            }
+            if (! Cache::add($candado.':curso', 1, 30)) {
+                return response()->json([
+                    'message' => 'Esa guía ya se está emitiendo. Espera un momento.',
+                ], 409);
+            }
+            /* El candado se suelta pase lo que pase. Antes solo se liberaba al
+               crear la guia con exito: si la emision fallaba (un dato que SUNAT
+               rechaza, una validacion), quedaba puesto y bloqueaba 30 segundos
+               al operador que ya habia corregido el dato. Con el camion en la
+               puerta, esos 30 segundos a ciegas son el peor momento posible. */
+            $liberar = fn () => Cache::forget($candado.':curso');
+            app()->terminating($liberar);
+        }
+
         $exigeVehiculo = (string) $request->input('modalidad') === '02'
             && ! $request->boolean('vehiculo_m1l');
 
         $data = $request->validate([
-            'invoice_id'              => ['nullable', 'integer', Rule::exists('invoices', 'id')->where('project_id', $project->id)],
+            /* El comprobante que respalda el traslado tiene que existir de
+               verdad ante SUNAT. Antes valia cualquier id del negocio: un
+               borrador (sin numero), uno rechazado o uno ya dado de baja
+               entraban igual, y se declaraba un traslado respaldado por un
+               comprobante inexistente. */
+            'invoice_id'              => ['nullable', 'integer', Rule::exists('invoices', 'id')
+                ->where('project_id', $project->id)
+                ->where('sunat_status', 'accepted')],
             'destinatario_nombre'     => ['required', 'string', 'max:200'],
             'destinatario_doc_tipo'   => ['nullable', 'string', Rule::in(array_keys(Catalogos::DOCUMENTOS_IDENTIDAD))],
             'destinatario_doc_numero' => ['nullable', 'string', 'max:15'],
 
             'motivo_codigo'      => ['required', Rule::in(array_keys(Catalogos::MOTIVOS_TRASLADO))],
             'motivo_descripcion' => ['nullable', 'string', 'max:120'],
-            'fecha_traslado'     => ['required', 'date'],
+            /* La guia viaja EN el camion: una fecha de hace seis meses o del
+               2030 la rechaza SUNAT, y eso se descubre con la mercaderia ya
+               en carretera. El comprobante ya tenia esta cota; la guia no. */
+            'fecha_traslado'     => ['required', 'date',
+                'after_or_equal:'.now()->subDays(3)->toDateString(),
+                'before_or_equal:'.now()->addDays(30)->toDateString()],
             'modalidad'          => ['required', Rule::in(array_keys(Catalogos::MODALIDADES_TRASLADO))],
 
-            'peso_total'  => ['required', 'numeric', 'gt:0'],
+            // Un camion no pesa 0.001 kg ni 999999 t: los extremos son erratas.
+            'peso_total'  => ['required', 'numeric', 'gt:0', 'max:100000'],
             'peso_unidad' => ['nullable', Rule::in(['KGM', 'TNE'])],
             'bultos'      => ['nullable', 'integer', 'min:0'],
 
-            'partida_ubigeo'    => ['nullable', 'string', 'size:6'],
+            /* UBIGEO. Sin el, el envio caia en '150101' (Lima-Lima-Lima)
+               hardcodeado: un traslado Arequipa->Cusco se declaraba como
+               Lima->Lima y SUNAT lo ACEPTABA. La guia quedaba con datos
+               falsos y en un control de carretera no cuadra con la ruta. */
+            'partida_ubigeo'    => ['required', 'digits:6'],
             'partida_direccion' => ['required', 'string', 'max:300'],
-            'llegada_ubigeo'    => ['nullable', 'string', 'size:6'],
+            'llegada_ubigeo'    => ['required', 'digits:6'],
             'llegada_direccion' => ['required', 'string', 'max:300'],
 
             // Transporte público: hace falta saber quién lo lleva.
-            'transportista_ruc'          => ['required_if:modalidad,01', 'nullable', 'string', 'size:11'],
+            // `size:11` admitia "ABCDEFGHIJK": SUNAT lo rechaza (error 2564).
+            'transportista_ruc'          => ['required_if:modalidad,01', 'nullable', 'digits:11'],
             'transportista_razon_social' => ['required_if:modalidad,01', 'nullable', 'string', 'max:200'],
             'transportista_mtc'          => ['nullable', 'string', 'max:20'],
 
@@ -150,6 +286,14 @@ class GuiaRemisionController extends Controller
         ], [
             'transportista_ruc.required_if'          => 'En transporte público hay que declarar el RUC del transportista.',
             'transportista_razon_social.required_if' => 'En transporte público hay que declarar la razón social del transportista.',
+            'partida_ubigeo.required'  => 'Falta el ubigeo del punto de partida (6 dígitos).',
+            'llegada_ubigeo.required'  => 'Falta el ubigeo del punto de llegada (6 dígitos).',
+            'partida_ubigeo.digits'    => 'El ubigeo de partida son 6 dígitos.',
+            'llegada_ubigeo.digits'    => 'El ubigeo de llegada son 6 dígitos.',
+            'invoice_id.exists'        => 'Ese comprobante no existe o aún no fue aceptado por SUNAT.',
+            'fecha_traslado.after_or_equal'  => 'La fecha de traslado no puede ser tan antigua.',
+            'fecha_traslado.before_or_equal' => 'La fecha de traslado está demasiado lejos.',
+            'transportista_ruc.digits' => 'El RUC del transportista son 11 dígitos.',
             'vehiculo_placa.required'                => 'En transporte privado hay que declarar la placa, salvo que el traslado vaya en vehículo M1 o L.',
             'conductor_doc_numero.required'          => 'En transporte privado hay que declarar el documento del conductor, salvo traslado en vehículo M1 o L.',
             'conductor_licencia.required'            => 'En transporte privado hay que declarar la licencia del conductor, salvo traslado en vehículo M1 o L.',
@@ -225,6 +369,12 @@ class GuiaRemisionController extends Controller
         $guia->update(['sunat_status' => 'pending']);
         EnviarGuiaASunat::dispatch($guia->id);
 
+        // Con la guia ya creada, el reintento devuelve esta misma.
+        if ($candado) {
+            Cache::put($candado, $guia->id, 30);
+            Cache::forget($candado.':curso');
+        }
+
         return response()->json([
             'ok'      => true,
             'guia'    => $guia->load('items'),
@@ -246,9 +396,74 @@ class GuiaRemisionController extends Controller
         // manda sobre toda la papeleria del negocio, no solo sobre la factura.
         $vista = (string) $project->setting('invoice_template') === 'clasico'
             ? 'facturacion.guias.pdf-clasico'
-            : 'facturacion.guias.pdf';
+            // La moderna se llama `pdf-simple`, no `pdf`: apuntar a un nombre
+            // inexistente reventaba la impresion con "View not found".
+            : 'facturacion.guias.pdf-simple';
 
-        return view($vista, compact('project', 'guia'));
+        $hoja = view($vista, compact('project', 'guia'));
+
+        // `?descargar=1` entrega el PDF como archivo (para adjuntarlo a un
+        // correo); sin el, la hoja imprimible de siempre.
+        return request()->boolean('descargar')
+            ? $this->comoArchivoPdf($hoja, $guia)
+            : $hoja;
+    }
+
+    /**
+     * El PDF de verdad, no la vista para imprimir: Chrome sin ventana rinde la
+     * MISMA hoja y se entrega como archivo con su nombre. Mismo mecanismo que
+     * los comprobantes.
+     *
+     * Si Chrome no esta o falla, se devuelve la vista imprimible en lugar de
+     * un error: el usuario conserva siempre el camino de Ctrl+P.
+     */
+    private function comoArchivoPdf(\Illuminate\Contracts\View\View $hoja, GuiaRemision $guia)
+    {
+        $chrome = collect([
+            '/usr/bin/google-chrome-stable', '/usr/bin/google-chrome',
+            '/usr/bin/chromium-browser', '/usr/bin/chromium',
+        ])->first(fn ($bin) => is_executable($bin));
+
+        if (! $chrome) {
+            return $hoja;
+        }
+
+        $tmp    = sys_get_temp_dir();
+        $id     = \Illuminate\Support\Str::random(12);
+        $html   = "{$tmp}/gre-{$id}.html";
+        $pdf    = "{$tmp}/gre-{$id}.pdf";
+        $perfil = "{$tmp}/gre-perfil-{$id}";
+
+        try {
+            file_put_contents($html, $hoja->render());
+
+            \Illuminate\Support\Facades\Process::timeout(60)->run([
+                $chrome, '--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
+                '--no-pdf-header-footer',
+                // La hoja calcula su alto con JS y trae el QR de fuera: sin
+                // margen de tiempo, Chrome imprime antes de que termine.
+                '--virtual-time-budget=10000',
+                "--user-data-dir={$perfil}",
+                "--print-to-pdf={$pdf}",
+                'file://'.$html,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PDF: Chrome no pudo generar la guia', [
+                'guia' => $guia->numero, 'error' => $e->getMessage(),
+            ]);
+        }
+
+        @unlink($html);
+        \Illuminate\Support\Facades\File::deleteDirectory($perfil);
+
+        // Un PDF de cuatro bytes es un fallo silencioso: mejor la vista.
+        if (! is_file($pdf) || filesize($pdf) < 1024) {
+            @unlink($pdf);
+
+            return $hoja;
+        }
+
+        return response()->download($pdf, $guia->numero.'.pdf')->deleteFileAfterSend();
     }
 
     public function show(GuiaRemision $guia)
@@ -267,6 +482,14 @@ class GuiaRemisionController extends Controller
 
         $guia->update(['sunat_status' => 'pending', 'sunat_error' => null]);
         EnviarGuiaASunat::dispatch($guia->id);
+
+        /* El historico manda un formulario normal, no un fetch: devolverle
+           JSON dejaba al usuario mirando {"ok":true,...} en una pagina en
+           blanco, y perdiendo la busqueda que tenia puesta. El mismo guard
+           que ya lleva InvoiceController::sendSunat. */
+        if (! request()->expectsJson()) {
+            return back()->with('ok', "Enviando {$guia->numero} a SUNAT. El estado se actualiza en unos segundos.");
+        }
 
         return response()->json(['ok' => true, 'message' => 'Enviando la guía a SUNAT...']);
     }

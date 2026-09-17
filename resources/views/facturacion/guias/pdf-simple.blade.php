@@ -160,7 +160,7 @@
 
   .gm-val { display: flex; align-items: center; gap: 4mm; margin-top: 5mm; }
   .gm-val .qr { flex: 0 0 26mm; }
-  .gm-val .qr img { width: 26mm; height: 26mm; display: block; }
+  .gm-val .qr img, .gm-val .qr [data-qr] { width: 26mm; height: 26mm; display: block; }
   .gm-val .txt { font-size: 7.2pt; color: var(--mut); line-height: 1.6; }
 </style>
 
@@ -220,13 +220,18 @@
     </div>
 
     <div class="gm-fiscal">
-      <div class="den">GUÍA DE REMISIÓN<br>REMITENTE ELECTRÓNICA</div>
+      {{-- La denominacion oficial de SUNAT es "GUIA DE REMISION ELECTRONICA
+           REMITENTE", en ese orden: aqui salia "GUIA DE REMISION / REMITENTE
+           ELECTRONICA", que ademas partia la frase en dos con el salto. --}}
+      <div class="den">GUÍA DE REMISIÓN ELECTRÓNICA<br>REMITENTE</div>
       <div class="ruc"><b>RUC:</b> <span>{{ $guia->emisor_ruc }}</span></div>
       <div class="nro">Nro. {{ $guia->numero }}</div>
-      <div class="est" style="color: {{ $estadoOk ? $tinta : $acento }};">
-        {!! $ico($estadoOk ? $icoOk : $icoAlerta, 3.8) !!}
+      @if(in_array($estado, ['ANULADA', 'RECHAZADA POR SUNAT'], true))
+      <div class="est" style="color: {{ $acento }};">
+        {!! $ico($icoAlerta, 3.8) !!}
         <span>{{ $estado }}</span>
       </div>
+      @endif
     </div>
   </div>
 
@@ -272,6 +277,12 @@
     <div class="gm-aviso">
       UNA VEZ SALIDA LA MERCADERÍA NO HAY DERECHO A RECLAMO, LA MERCADERÍA VIAJA POR CUENTA DEL CLIENTE
     </div>
+    {{-- Una guia NO es una factura: sin decirlo, el cliente que recibe la
+         mercaderia con este papel cree tener su comprobante y no reclama la
+         factura, y en una fiscalizacion nadie puede acreditar la venta. --}}
+    <div class="gm-aviso" style="border-top:0.5px solid var(--bor);">
+      Este documento sustenta el traslado de los bienes; no acredita la venta ni otorga crédito fiscal.
+    </div>
   </div>
 
   <div class="gm-caja gm-sec" style="margin-top:3mm;">
@@ -299,7 +310,7 @@
         <tr><td class="et">LICENCIA DE CONDUCIR:</td>
             <td>{{ $exentoM1L ? '' : $guia->conductor_licencia }}</td></tr>
         <tr><td class="et">NÚMERO DE PLACA:</td>
-            <td>{{ $exentoM1L ? '' : $guia->vehiculo_placa }}</td></tr>
+            <td>{{ $exentoM1L ? '' : $guia->placaNormalizada() }}</td></tr>
       </table>
       @if($exentoM1L)
       <div class="gm-nota">
@@ -339,14 +350,17 @@
 
   <div class="gm-val">
     <div class="qr">
-      <img alt="QR de la guía"
-           src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data={{ urlencode($qrDatos) }}">
+      {{-- QR local: no se manda el RUC ni el destino de la carga a un
+           servicio externo, y sale aunque el equipo este sin internet. --}}
+      <div data-qr="{{ $qrDatos }}" role="img" aria-label="QR de la guía"></div>
     </div>
     {!! $ico($icoDoc, 9, '#b9c4d2') !!}
     <div class="txt">
       Representación impresa<br>de la guía de remisión remitente.<br>
-      <b style="color: {{ $estadoOk ? $tinta : $acento }};">{{ $estado }}</b> —
+      @if(in_array($estado, ['ANULADA', 'BAJA EN TRÁMITE', 'RECHAZADA POR SUNAT', 'ACEPTADA CON OBSERVACIONES'], true))
+      <b style="color: {{ $acento }};">{{ $estado }}</b> —
       {{ $estadoNota }}
+      @endif
       @if(! empty($guia->sunat_observaciones))
       <br>{{ is_array($guia->sunat_observaciones) ? implode(' · ', $guia->sunat_observaciones) : $guia->sunat_observaciones }}
       @endif
@@ -359,4 +373,20 @@
   </div>
 
 </div>
+{{-- El mismo dibujante de QR que usa el comprobante: incrustado para
+     que la guia salga con su QR aunque no haya red. --}}
+<script>{!! file_get_contents(public_path('js/qrcode.min.js')) !!}</script>
+<script>
+(function () {
+    document.querySelectorAll('[data-qr]').forEach(function (el) {
+        try {
+            var qr = qrcode(0, 'M');
+            qr.addData(el.getAttribute('data-qr'));
+            qr.make();
+            el.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+            var svg = el.querySelector('svg'); if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); }
+        } catch (e) { el.textContent = ''; }
+    });
+})();
+</script>
 </x-doc.hoja>

@@ -71,7 +71,11 @@ class ComprobantesPorTipoTest extends TestCase
         return [
             'Facturas' => ['factura', 'Cliente Factura', ['Cliente Boleta', 'Cliente Nota']],
             'Boletas'  => ['boleta',  'Cliente Boleta',  ['Cliente Factura', 'Cliente Nota']],
-            'Notas'    => ['nota',    'Cliente Nota',    ['Cliente Factura', 'Cliente Boleta']],
+            /* Notas es la excepcion, y a proposito: una nota corrige a una
+               factura o boleta concreta, asi que la seccion tiene que ofrecer
+               esos comprobantes para poder elegir cual. Lo que NO puede salir
+               es el formulario de venta en blanco (lo cubre NotasPantallaTest). */
+            'Notas'    => ['nota',    'Cliente Nota',    []],
         ];
     }
 
@@ -93,10 +97,15 @@ class ComprobantesPorTipoTest extends TestCase
         }
     }
 
-    /** Y al entrar, el formulario de ESE documento ya está abierto. */
+    /**
+     * Y al entrar, el formulario de ESE documento ya está abierto.
+     *
+     * Notas queda fuera: no se emite desde este formulario, se elige antes el
+     * comprobante a corregir.
+     */
     public function test_cada_seccion_abre_su_formulario_directo(): void
     {
-        foreach (['factura', 'boleta', 'nota'] as $tipo) {
+        foreach (['factura', 'boleta'] as $tipo) {
             $html = $this->get('/bixosales/facturas?tipo='.$tipo)->assertOk()->getContent();
 
             $this->assertStringContainsString("const seccion = '{$tipo}'", $html,

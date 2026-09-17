@@ -126,6 +126,19 @@ class GuiaRemision extends Model
         };
     }
 
+    /**
+     * La placa tal como se declara a SUNAT: sin guiones ni espacios.
+     *
+     * "ABC-123" con guion es el error 2567, asi que el XML siempre viaja
+     * normalizado. El papel imprimia lo tecleado, de modo que el chofer
+     * ensenaba en un control una placa escrita distinta de la que figura en
+     * el comprobante electronico. Un solo criterio para los dos.
+     */
+    public function placaNormalizada(): string
+    {
+        return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $this->vehiculo_placa));
+    }
+
     public function estadoSunatLegible(): string
     {
         return match ($this->sunat_status) {

@@ -63,6 +63,9 @@ class InvoiceController extends Controller
             'type'        => $inv->type,
             'type_label'  => $inv->getTypeLabel(),
             'client_name' => $inv->client_name,
+            // El buscador de la lista tambien busca por documento: es lo que
+            // dicta el cliente por telefono cuando no recuerda el numero.
+            'client_doc_number' => $inv->client_doc_number,
             'total'       => (float) $inv->total,
             'status'      => $inv->status,
             'status_label'=> $inv->getStatusLabel(),
@@ -174,6 +177,21 @@ class InvoiceController extends Controller
                 'draft'      => $b->where('status', 'draft'),
                 'anulado'    => $b->where(fn ($w) => $w->where('status', 'cancelled')->orWhere('baja_estado', 'accepted')),
                 'sin_enviar' => $b->whereNull('sunat_status')->where('status', '!=', 'draft'),
+                /* TODO lo que sigue sin aceptar, sea cual sea el motivo: nunca
+                   enviado, en cola, con error o rechazado. Es exactamente lo
+                   que cuenta el aviso del plazo de SUNAT; sin este filtro, el
+                   aviso decia "3 comprobantes sin aceptar" y al pulsarlo caia
+                   en `estado=error`, que solo trae uno de los cuatro casos y
+                   respondia "ninguno coincide". El usuario aprendia a ignorar
+                   el unico aviso con plazo legal.
+                   `whereNotIn` descarta los NULL en silencio, asi que el nulo
+                   se pide aparte. */
+                'sin_aceptar' => $b->where('status', '!=', 'draft')
+                                   ->where('status', '!=', 'cancelled')
+                                   ->where(fn ($w) => $w->whereNull('sunat_status')
+                                                        ->orWhere('sunat_status', '!=', 'accepted'))
+                                   ->where(fn ($w) => $w->whereNull('baja_estado')
+                                                        ->orWhere('baja_estado', '!=', 'accepted')),
                 // Un comprobante dado de baja ya no es "aceptado" aunque SUNAT
                 // lo aceptara en su dia: se aparta de cualquier estado SUNAT.
                 default      => $b->where('sunat_status', $estado)->where('status', '!=', 'cancelled')
@@ -695,6 +713,21 @@ class InvoiceController extends Controller
             'notes'          => 'nullable|string',
             'due_date'       => 'nullable|date',
         ]);
+
+        /* MARCAR "ANULADA" NO ANULA NADA ANTE SUNAT.
+           El desplegable de estado dejaba poner "Anulada" en un comprobante ya
+           ACEPTADO: en pantalla salia en rojo como anulado mientras SUNAT lo
+           seguia teniendo por valido y declarado. El cajero creia haber
+           anulado y no habia anulado. Un comprobante aceptado solo se deshace
+           con nota de credito o comunicacion de baja, que tienen sus propios
+           botones. `destroy()` ya cortaba asi; esto faltaba. */
+        if (($data['status'] ?? null) === 'cancelled' && $invoice->sunat_status === 'accepted') {
+            return response()->json([
+                'message' => 'Este comprobante fue aceptado por SUNAT: no se anula cambiando su estado. '
+                    .'Emite una nota de crédito o comunica la baja.',
+            ], 422);
+        }
+
         $invoice->update($data);
         return response()->json(['ok' => true]);
     }

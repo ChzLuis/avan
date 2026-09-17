@@ -173,7 +173,6 @@ class NotaController extends Controller
             422,
             match (true) {
                 $invoice->sunat_status !== 'accepted' => 'Solo se da de baja un comprobante que SUNAT ya aceptó. Este todavía no lo está: bórralo o vuelve a enviarlo.',
-                $invoice->type === 'boleta' => 'Una boleta no se da de baja de una en una: va en el resumen diario de bajas. Para dejarla sin efecto, emite una nota de crédito.',
                 $invoice->esNota() => 'Una nota no se da de baja: se corrige emitiendo otra sobre el comprobante original.',
                 default => 'Este comprobante ya tiene una baja en curso o aceptada.',
             }
@@ -194,7 +193,9 @@ class NotaController extends Controller
 
         return response()->json([
             'ok'      => true,
-            'message' => 'Comunicando la baja de '.$invoice->numero.' a SUNAT...',
+            'message' => $invoice->type === 'boleta'
+                ? 'Enviando a SUNAT el resumen diario que anula '.$invoice->numero.'. El resultado llega en unos minutos.'
+                : 'Comunicando la baja de '.$invoice->numero.' a SUNAT...',
         ]);
     }
 

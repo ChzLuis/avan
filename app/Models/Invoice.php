@@ -19,8 +19,8 @@ class Invoice extends Model
         'client_name', 'client_phone', 'client_email',
         'client_doc_type', 'client_doc_number', 'client_address',
         'subtotal', 'igv', 'total', 'currency', 'igv_included',
-        'payment_method', 'paid_at', 'status', 'notes',
-        'issue_date', 'due_date',
+        'payment_method', 'payment_condition', 'paid_at', 'status', 'notes',
+        'issue_date', 'internal_issue_date', 'due_date',
         'sunat_status', 'sunat_hash', 'sunat_cdr', 'sunat_ticket', 'sunat_error', 'sunat_sent_at',
         'baja_estado', 'baja_ticket', 'baja_motivo', 'baja_error', 'baja_at',
         'created_by',
@@ -33,6 +33,7 @@ class Invoice extends Model
         'igv_included'  => 'boolean',
         'paid_at'       => 'datetime',
         'issue_date'    => 'date',
+        'internal_issue_date' => 'date',
         'due_date'      => 'date',
         'sunat_sent_at' => 'datetime',
         'baja_at'       => 'datetime',
@@ -47,6 +48,18 @@ class Invoice extends Model
     public function client()  { return $this->belongsTo(Client::class); }
     public function items()   { return $this->hasMany(InvoiceItem::class); }
     public function creadoPor() { return $this->belongsTo(User::class, 'created_by'); }
+
+    /**
+     * Fecha mostrada únicamente dentro del sistema.
+     *
+     * La fecha fiscal (`issue_date`) permanece inmutable para XML, SUNAT, PDF,
+     * QR, libros y exportaciones. Esta alternativa permite corregir la fecha
+     * operativa que ve el equipo sin alterar el comprobante electrónico.
+     */
+    public function fechaInterna()
+    {
+        return $this->internal_issue_date ?? $this->issue_date;
+    }
 
     /** El comprobante que esta nota corrige. */
     public function afecta() { return $this->belongsTo(self::class, 'afecta_invoice_id'); }
@@ -139,6 +152,20 @@ class Invoice extends Model
      * y colapsar las dos primeras esconde exactamente lo que SUNAT quiso
      * anotar. Salen del CDR ya guardado: no hace falta columna nueva.
      */
+    /**
+     * Nombre con el que se archiva el comprobante: numero, cliente y su
+     * documento. Sin los caracteres que Windows no admite en un fichero, para
+     * que la descarga no llegue con el nombre mutilado.
+     */
+    public function nombreArchivo(): string
+    {
+        $nombre = $this->numero
+            .($this->client_name ? ' - '.$this->client_name : '')
+            .($this->client_doc_number ? ' - '.$this->client_doc_number : '');
+
+        return trim(preg_replace('/\s+/', ' ', preg_replace('#[\\\\/:*?"<>|]+#', ' ', $nombre)));
+    }
+
     public function observacionesSunat(): array
     {
         if ($this->sunat_status !== 'accepted' || ! $this->sunat_cdr) {
@@ -164,17 +191,16 @@ class Invoice extends Model
     }
 
     /**
-     * La baja solo cabe sobre una FACTURA que SUNAT ya aceptó.
+     * La baja cabe sobre una factura o una boleta que SUNAT ya aceptó.
      *
-     * Una boleta no se da de baja de una en una: va en el resumen diario de
-     * bajas, que es otro documento y otro endpoint. Ofrecer el botón igual
-     * garantizaría el rechazo, y se descubriría con la venta ya anulada en el
-     * sistema y viva en SUNAT. Para una boleta, la salida es la nota de crédito.
+     * Van por caminos distintos: la factura por comunicación de baja (RA) y
+     * la boleta por resumen diario (RC, desde 2026-09-05). El job elige el
+     * camino según el tipo; aquí solo se decide si procede.
      */
     public function sePuedeDarDeBaja(): bool
     {
         return $this->sunat_status === 'accepted'
-            && $this->type === 'factura'
+            && in_array($this->type, ['factura', 'boleta'], true)
             && ! in_array($this->baja_estado, ['pending', 'accepted'], true);
     }
 

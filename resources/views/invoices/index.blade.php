@@ -17,6 +17,14 @@
     $invoicesApiBase = ($portalLayout ?? 'panel') === 'comercial'
         ? route('bixosales.facturas')
         : route('invoices.index');
+    /* "Comprobantes emitidos" SOLO existe en la cara comercial: no hay una
+       ruta equivalente en el panel. Antes se enlazaba a `bixosales.*` desde
+       las dos, asi que quien entraba por el panel aterrizaba en el shell de
+       Ventas a media tarea. Si no es su cara, el enlace no se pinta: mejor no
+       ofrecerlo que sacar al usuario de donde esta. */
+    $consultaUrl = ($portalLayout ?? 'panel') === 'comercial'
+        ? route('bixosales.facturas.consulta')
+        : null;
 @endphp
 @php $_tituloSeccion = ['factura' => 'Facturas', 'boleta' => 'Boletas', 'nota' => 'Notas de crédito y débito'][$seccion ?? ''] ?? 'Comprobantes'; @endphp
 <x-portal-layout :layout="$portalLayout ?? 'panel'" :project="$project" :pageTitle="$_tituloSeccion">
@@ -269,11 +277,19 @@
          (separación 2026-09-02). La lista queda como contexto: lo último
          emitido, para confirmar de un vistazo que salió. --}}
     <div id="inv-cab" class="px-4 py-3 border-b flex items-center gap-2" style="border-color:#e5e7eb;">
-        <span class="flex-1 min-w-0 text-xs font-semibold uppercase tracking-wide text-gray-500">Últimos emitidos</span>
-        <a href="{{ route('bixosales.facturas.consulta') }}"
+        {{-- BUSCADOR EN LA PANTALLA DONDE SE TRABAJA.
+             El estado `search` existia y el getter lo usaba, pero ningun campo
+             lo alimentaba: para encontrar un comprobante habia que irse a otra
+             pantalla. Quien atiende por telefono lo tiene aqui. --}}
+        <input type="search" x-model="search" placeholder="Buscar N.°, cliente o RUC…"
+               class="flex-1 min-w-0 h-8 px-2.5 rounded-lg border text-xs"
+               style="border-color:#e5e7eb;" aria-label="Buscar entre los emitidos">
+        @if($consultaUrl)
+        <a href="{{ $consultaUrl }}"
            class="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap">
             Ver todos
         </a>
+        @endif
         <button @click="openNew(@js($seccion === 'nota' ? 'nota_credito' : ($seccion ?: null)))"
                 class="inv-nuevo-desktop flex-shrink-0 w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors"
                 aria-label="Nuevo comprobante">
@@ -353,7 +369,7 @@
             — al más urgente le {{ $porVencer['dias'] == 1 ? 'queda 1 día' : 'quedan '.$porVencer['dias'].' días' }}@if($porVencer['dias'] === 0) <strong> (vence HOY)</strong>@endif.
         @endif
         Se reintentan solos cada hora; pasado el plazo ya no se pueden enviar.
-        <a href="{{ route('bixosales.facturas.consulta') }}?estado=error" class="font-semibold underline">Ver cuáles</a>
+        @if($consultaUrl)<a href="{{ $consultaUrl }}?estado=sin_aceptar" class="font-semibold underline">Ver cuáles</a>@endif
     </div>
     @endif
 
@@ -486,7 +502,7 @@
                         class="btn-secondary text-sm hidden md:inline-flex">Cancelar</button>
                 <button @click="guardarBorrador()" type="button" :disabled="saving"
                         class="btn-secondary text-sm hidden md:inline-flex"
-                        title="Se guarda sin declararlo a SUNAT">Guardar borrador</button>
+                        title="Reserva el número de la serie, pero no se declara a SUNAT">Guardar borrador</button>
 
                 {{-- En movil solo en el ultimo paso, para no competir con
                      "Continuar": sin esto, quien tenia que atender otra cosa a
@@ -585,9 +601,19 @@
                             'bg-red-100 text-red-700': selected.status==='cancelled'
                           }"
                           x-text="selected.status_label"></span>
+                    {{-- Decia "SUNAT: accepted" —jerga en ingles— y SIEMPRE en
+                         verde, aunque el estado fuera `rejected` o `error`: el
+                         color afirmaba lo contrario de la verdad. El mismo mapa
+                         y los mismos colores que ya usa el resto de la ficha. --}}
                     <template x-if="selected.sunat_status">
-                        <span class="text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-200"
-                              x-text="'SUNAT: '+selected.sunat_status"></span>
+                        <span class="text-xs px-2 py-1 rounded-full border"
+                              :class="{
+                                'bg-green-50 text-green-700 border-green-200': selected.sunat_status === 'accepted',
+                                'bg-amber-50 text-amber-700 border-amber-200': selected.sunat_status === 'pending',
+                                'bg-red-50 text-red-700 border-red-200': ['error','rejected'].includes(selected.sunat_status),
+                                'bg-gray-50 text-gray-600 border-gray-200': !['accepted','pending','error','rejected'].includes(selected.sunat_status)
+                              }"
+                              x-text="({accepted:'Aceptado por SUNAT', pending:'Enviando a SUNAT…', error:'Error de envío', rejected:'Rechazado por SUNAT'})[selected.sunat_status] || selected.sunat_status"></span>
                     </template>
                     <div class="ml-auto flex items-center gap-1">
                         <label class="text-xs text-gray-500">Estado:</label>
@@ -595,7 +621,13 @@
                             <option value="draft">Borrador</option>
                             <option value="issued">Emitida</option>
                             <option value="sent">Enviada</option>
-                            <option value="cancelled">Anulada</option>
+                            {{-- Un comprobante ACEPTADO no se anula cambiando su
+                                 estado: SUNAT lo sigue teniendo por valido y en
+                                 pantalla quedaba en rojo como anulado. Se deshace
+                                 con nota de credito o con la baja, que estan mas
+                                 abajo en esta misma ficha. --}}
+                            <option value="cancelled"
+                                    x-show="selected.sunat_status !== 'accepted'">Anulada</option>
                         </select>
                     </div>
                 </div>
@@ -1404,12 +1436,24 @@ function invoicesApp() {
         buscarParaNota() { /* el filtro es reactivo; el boton es para el teclado movil */ },
 
         get filtered() {
+            /* `inv.client_name.toLowerCase()` sin guarda reventaba con un
+               nombre vacio, y un error aqui no deja una fila mal: tumba la
+               lista entera. Se busca tambien por documento, que es lo que
+               tiene delante quien atiende por telefono. */
+            const t = (this.search || '').trim().toLowerCase();
+            /* En la seccion de Notas la lista mostraba TAMBIEN las facturas y
+               boletas: el servidor carga los cuatro tipos (las ventas hacen
+               falta para elegir cual corregir) y `filterType` quedaba vacio,
+               asi que no filtraba nada. Aqui se listan las notas emitidas;
+               los comprobantes a corregir tienen su propio buscador. */
+            const soloNotas = @js(($seccion ?? '') === 'nota');
             return this.invoices.filter(inv => {
-                const s = !this.search ||
-                    inv.client_name.toLowerCase().includes(this.search.toLowerCase()) ||
-                    (inv.numero || '').toLowerCase().includes(this.search.toLowerCase());
-                const t = !this.filterType || inv.type === this.filterType;
-                return s && t;
+                const s = !t || [inv.numero, inv.client_name, inv.client_doc_number]
+                    .some(v => String(v ?? '').toLowerCase().includes(t));
+                const tipo = soloNotas
+                    ? ['nota_credito', 'nota_debito'].includes(inv.type)
+                    : (!this.filterType || inv.type === this.filterType);
+                return s && tipo;
             });
         },
 
@@ -2019,7 +2063,13 @@ function invoicesApp() {
         },
 
         money(value) {
-            return 'S/ ' + (Number(value) || 0).toFixed(2);
+            /* El simbolo lo manda la moneda del comprobante, no una constante.
+               Estaba fijo en 'S/': al facturar en dolares, la rejilla, los
+               totales Y la pantalla de confirmacion previa a emitir decian
+               "S/ 3,400.00" cuando se iban a declarar 3,400 DOLARES. El ultimo
+               vistazo antes de un acto irreversible mostraba otra cosa. */
+            const simbolo = (this.form?.currency === 'USD') ? 'US$ ' : 'S/ ';
+            return simbolo + (Number(value) || 0).toFixed(2);
         },
 
         /* La fecha de emision en claro para el aviso de confirmacion. Se parte
@@ -2564,7 +2614,10 @@ function invoicesApp() {
             if (ruc.length !== 11 || this.buscandoRuc) return;
 
             this.buscandoRuc = true;
-            const res = await fetch(`{{ route('invoices.ruc') }}?ruc=${ruc}`, {
+            // RUC_URL ya trae la ruta de ESTA cara (linea de constantes): con
+            // la ruta del panel escrita a mano, la consulta desde Ventas salia
+            // por una URL de bixoadmin sujeta a otro middleware.
+            const res = await fetch(`${RUC_URL}?ruc=${ruc}`, {
                 headers: { 'Accept': 'application/json' },
             });
             const data = await res.json().catch(() => ({}));
@@ -2745,9 +2798,14 @@ function invoicesApp() {
             });
             const data = await res.json();
             if (!res.ok) { bxAviso(data.message || 'No se pudo eliminar.', 'error'); return; }
+            // El comprobante desaparecia de la pantalla sin una palabra: el
+            // error si avisaba y el exito no, asi que quedaba la duda de si
+            // se habia borrado o la pantalla habia fallado.
+            const borrado = this.selected.numero || 'El comprobante';
             this.invoices = this.invoices.filter(i => i.id !== this.selected.id);
             this.selected = null;
             this.panel = 'list';
+            bxAviso(borrado + ' se eliminó.', 'success');
         }
     };
 }

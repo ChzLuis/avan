@@ -76,6 +76,10 @@ class ApisPeruService
                 'sunat_error'   => null,
                 'status'        => 'sent',
             ]);
+            // XML firmado y CDR como ficheros: la obligacion de conservar y
+            // el derecho del comprador a su XML se cumplen desde el disco, no
+            // desde una columna.
+            \App\Support\Sunat\ArchivoComprobantes::guardar($invoice, $resp);
             return [
                 'ok'           => true,
                 'sunat_status' => 'accepted',
@@ -89,6 +93,24 @@ class ApisPeruService
         $errorMsg = is_array($sunatErr)
             ? (($sunatErr['code'] ?? '') . ' - ' . ($sunatErr['message'] ?? 'Rechazado por SUNAT'))
             : (string) $sunatErr;
+
+        /* 1033 = "el comprobante fue informado anteriormente". SUNAT ya lo
+           tiene: no es un rechazo, es un reenvio de algo que ya llego. Antes
+           quedaba en rojo para siempre y el reintento automatico lo mandaba
+           cada hora contra una puerta que ya estaba abierta. Se marca como
+           registrado, dejando dicho que el CDR hay que consultarlo aparte. */
+        $codigo = is_array($sunatErr) ? (string) ($sunatErr['code'] ?? '') : '';
+
+        if ($codigo === '1033') {
+            $invoice->update([
+                'sunat_status'  => 'accepted',
+                'sunat_error'   => null,
+                'sunat_cdr'     => $body,
+                'sunat_sent_at' => now(),
+            ]);
+
+            return ['ok' => true, 'message' => 'SUNAT ya tenía registrado este comprobante.'];
+        }
 
         $invoice->update([
             'sunat_status'  => 'rejected',
@@ -187,6 +209,147 @@ class ApisPeruService
         return ['ok' => true, 'message' => 'Baja comunicada a SUNAT. Ticket '.$ticket.'.', 'ticket' => $ticket];
     }
 
+    /**
+     * Baja de una BOLETA: va por resumen diario (RC), no por comunicacion de
+     * baja (RA). SUNAT responde con un ticket y el veredicto llega despues,
+     * en /summary/status. Aqui se envia y se guarda el ticket; el comando
+     * horario consulta el resultado.
+     */
+    public function anularBoleta(Invoice $invoice): array
+    {
+        $project = $invoice->project;
+        $token   = $project->setting('apisperu_token');
+        if (! $token) {
+            return ['ok' => false, 'message' => 'Configura el Token de APIsPERU en Ajustes → Facturación.'];
+        }
+
+        [$http, $body, $err] = $this->post(self::URL . '/summary/send', $token, $this->payloadResumenBaja($invoice));
+        \Log::debug('APIsPERU RESUMEN BAJA', ['http' => $http, 'body' => $body, 'curl_error' => $err]);
+
+        if ($err || $http === 0) {
+            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => $err ?: 'Sin respuesta de APIsPERU']);
+            return ['ok' => false, 'message' => $err ?: 'Sin respuesta de APIsPERU'];
+        }
+
+        $resp   = json_decode($body ?: '{}', true) ?: [];
+        $sunat  = $resp['sunatResponse'] ?? [];
+        $ticket = $sunat['ticket'] ?? ($resp['ticket'] ?? null);
+
+        if ($http !== 200 || isset($resp['error']) || ! $ticket) {
+            $motivo = $resp['error'] ?? ($sunat['error']['message'] ?? ($sunat['error'] ?? null));
+            $motivo = is_string($motivo) ? $motivo : ($motivo ? json_encode($motivo) : 'SUNAT no recibió el resumen (HTTP '.$http.').');
+            $invoice->update(['baja_estado' => 'rejected', 'baja_error' => $motivo]);
+            return ['ok' => false, 'message' => $motivo];
+        }
+
+        // Con ticket el resumen esta RECIBIDO, no aceptado: sigue pendiente
+        // hasta que /summary/status diga codigo 0.
+        $invoice->update(['baja_estado' => 'pending', 'baja_ticket' => $ticket, 'baja_error' => null]);
+
+        return ['ok' => true, 'ticket' => $ticket, 'message' => 'Resumen diario recibido por SUNAT (ticket '.$ticket.'). El resultado llega en unos minutos.'];
+    }
+
+    /**
+     * Veredicto de un resumen ya enviado. Codigo 0 = aceptado; 98 = en
+     * proceso; 99 u otro = rechazado con detalle.
+     */
+    public function consultarResumen(Invoice $invoice): array
+    {
+        $token = $invoice->project->setting('apisperu_token');
+        if (! $token || ! $invoice->baja_ticket) {
+            return ['ok' => false, 'estado' => 'sin_ticket'];
+        }
+
+        [$http, $body] = $this->get(self::URL . '/summary/status?ticket=' . urlencode($invoice->baja_ticket), $token);
+        $resp = json_decode($body ?: '{}', true) ?: [];
+        $cdr  = $resp['cdrResponse'] ?? ($resp['sunatResponse']['cdrResponse'] ?? $resp);
+        $code = (string) ($cdr['code'] ?? $resp['code'] ?? '');
+
+        if ($http === 200 && $code === '0') {
+            $invoice->update(['baja_estado' => 'accepted', 'baja_error' => null, 'baja_at' => now(), 'status' => 'cancelled']);
+            return ['ok' => true, 'estado' => 'accepted'];
+        }
+        if ($code === '98' || $http !== 200) {
+            return ['ok' => true, 'estado' => 'pending'];
+        }
+        $desc = $cdr['description'] ?? ($resp['error'] ?? 'SUNAT rechazó el resumen (código '.$code.').');
+        $invoice->update(['baja_estado' => 'rejected', 'baja_error' => is_string($desc) ? $desc : json_encode($desc), 'status' => 'issued']);
+
+        return ['ok' => false, 'estado' => 'rejected', 'message' => $desc];
+    }
+
+    /** El resumen diario con la boleta en estado 3 (anulada). */
+    public function payloadResumenBaja(Invoice $invoice): array
+    {
+        $project = $invoice->project;
+        $moneda  = $invoice->currency ?: 'PEN';
+        $total   = round((float) $invoice->total, 2);
+        $igv     = round((float) $invoice->igv, 2);
+        $base    = round((float) $invoice->subtotal, 2);
+
+        return [
+            'fecGeneracion' => now()->format('Y-m-d\TH:i:sP'),
+            // El resumen es del DIA de emision de la boleta, no de hoy.
+            'fecResumen'    => ($invoice->issue_date ?? now())->format('Y-m-d\TH:i:sP'),
+            'correlativo'   => (string) $this->correlativoResumen($invoice),
+            'moneda'        => $moneda,
+            'company' => [
+                'ruc'         => $invoice->emisor_ruc,
+                'razonSocial' => $invoice->emisor_razon_social,
+                'address'     => [
+                    'direccion'    => $invoice->emisor_direccion ?: '-',
+                    'provincia'    => 'LIMA',
+                    'departamento' => 'LIMA',
+                    'distrito'     => 'LIMA',
+                    'ubigueo'      => $project->setting('apisperu_ubigeo') ?: '150101',
+                ],
+            ],
+            'details' => [[
+                'tipoDoc'            => $invoice->codigoSunat(),
+                'serieNro'           => $invoice->serie.'-'.(int) $invoice->correlativo,
+                'estado'             => '3',
+                'clienteTipo'        => Catalogos::codigoDocumentoIdentidad($invoice->client_doc_type, $invoice->client_doc_number),
+                'clienteNro'         => $invoice->client_doc_number ?: '00000000',
+                'total'              => $total,
+                'mtoOperGravadas'    => $base,
+                'mtoOperExoneradas'  => 0,
+                'mtoOperInafectas'   => 0,
+                'mtoOperExportacion' => 0,
+                'mtoOperGratuitas'   => 0,
+                'mtoIGV'             => $igv,
+                'mtoISC'             => 0,
+            ]],
+        ];
+    }
+
+    /** Un correlativo de resumen por envio y dia: SUNAT los numera por dia de generacion. */
+    private function correlativoResumen(Invoice $invoice): int
+    {
+        return Invoice::allProjects()
+            ->where('project_id', $invoice->project_id)
+            ->where('type', 'boleta')
+            ->whereNotNull('baja_ticket')
+            ->whereDate('updated_at', now()->toDateString())
+            ->where('id', '!=', $invoice->id)
+            ->count() + 1;
+    }
+
+    private function get(string $url, string $token): array
+    {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json', 'Authorization: Bearer ' . $token],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $body = curl_exec($ch);
+        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return [$http, $body];
+    }
+
     /** Cuantas bajas lleva hoy el negocio: SUNAT numera las comunicaciones. */
     private function correlativoDeBaja(Invoice $invoice): int
     {
@@ -243,6 +406,20 @@ class ApisPeruService
         $igvTotal = round((float) $invoice->igv, 2);
         $total    = round((float) $invoice->total, 2);
 
+        /* Venta a credito: SUNAT exige declararla como tal y con al menos una
+           cuota (monto y fecha). Antes TODO salia "Contado", tambien lo que el
+           negocio habia vendido a 30 dias. Sin vencimiento guardado (registros
+           viejos) se usa la fecha de emision para no romper el envio. */
+        $aCredito  = ($invoice->payment_condition ?? 'contado') === 'credito';
+        $formaPago = $aCredito
+            ? ['moneda' => $moneda, 'tipo' => 'Credito', 'monto' => $total]
+            : ['moneda' => $moneda, 'tipo' => 'Contado'];
+        $cuotas = $aCredito ? [[
+            'moneda'    => $moneda,
+            'monto'     => $total,
+            'fechaPago' => ($invoice->due_date ?? $invoice->issue_date)->format('Y-m-d\TH:i:sP'),
+        ]] : null;
+
         $payload = [
             'ublVersion'      => '2.1',
             'tipoOperacion'   => '0101', // Venta interna
@@ -250,8 +427,9 @@ class ApisPeruService
             'serie'           => $invoice->serie,
             'correlativo'     => (string) $invoice->correlativo,
             'fechaEmision'    => $invoice->issue_date->format('Y-m-d\TH:i:sP'),
-            'formaPago'       => ['moneda' => $moneda, 'tipo' => 'Contado'],
+            'formaPago'       => $formaPago,
             'tipoMoneda'      => $moneda,
+            'cuotas'          => $cuotas,
             'client' => [
                 'tipoDoc'   => $cliTipoDoc,
                 'numDoc'    => $invoice->client_doc_number ?: '00000000',
@@ -296,7 +474,7 @@ class ApisPeruService
 
             // El tipo de nota va aparte del tipo de comprobante.
             $payload['tipoNota'] = $invoice->motivo_codigo;
-            unset($payload['formaPago'], $payload['tipoOperacion']);
+            unset($payload['formaPago'], $payload['cuotas'], $payload['tipoOperacion']);
         }
 
         // Cliente con dirección si existe

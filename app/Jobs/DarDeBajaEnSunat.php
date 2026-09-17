@@ -39,7 +39,10 @@ class DarDeBajaEnSunat implements ShouldQueue
         $provider = (string) $invoice->project->setting('billing_provider', '');
 
         $result = match ($provider) {
-            'apisperu' => (new ApisPeruService())->anular($invoice),
+            // Una boleta no admite comunicacion de baja: va en el resumen diario.
+            'apisperu' => $invoice->type === 'boleta'
+                ? (new ApisPeruService())->anularBoleta($invoice)
+                : (new ApisPeruService())->anular($invoice),
             'nubefact' => (new NubefactService())->anular($invoice),
             default    => ['ok' => false, 'message' =>
                 'Elige el proveedor de facturación electrónica (Nubefact o APIsPERU) en Ajustes → Facturación.'],

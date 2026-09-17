@@ -69,8 +69,12 @@ class GuiaRemisionTest extends TestCase
             'peso_total'              => 250.5,
             'peso_unidad'             => 'KGM',
             'bultos'                  => 12,
+            // El ubigeo es obligatorio desde 2026-09-04: sin el, la guia se
+            // declaraba como Lima-Lima aunque el traslado fuera a Huancayo.
             'partida_direccion'       => 'Av. Argentina 1234, Lima',
+            'partida_ubigeo'          => '150101',
             'llegada_direccion'       => 'Jr. Comercio 456, Huancayo',
+            'llegada_ubigeo'          => '120101',
             'vehiculo_placa'          => 'ABC-123',
             'conductor_doc_numero'    => '45678912',
             'conductor_nombres'       => 'Luis',
@@ -182,7 +186,12 @@ class GuiaRemisionTest extends TestCase
         $this->assertStringContainsString('Ferretería El Sol EIRL', $html);
         $this->assertStringContainsString('ABC123', $html, 'la placa impresa va sin guion, como en el XML');
         $this->assertStringContainsString('no acredita la venta', $html, 'la leyenda que evita confundir guía con factura');
-        $this->assertStringContainsString('qr-code', $html, 'lleva su QR');
+        /* El QR se dibuja en la propia hoja, no se pide a un servicio externo:
+           antes se mandaba a api.qrserver.com el RUC del emisor y el destino
+           de la carga, y sin internet la guia salia sin QR. Se comprueba el
+           contenedor Y que nadie haya vuelto a poner la llamada de fuera. */
+        $this->assertStringContainsString('data-qr', $html, 'lleva su QR');
+        $this->assertStringNotContainsString('qrserver.com', $html, 'el QR no sale a un tercero');
     }
 
     /** Una guía aceptada por SUNAT no se borra. */

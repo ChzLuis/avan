@@ -45,6 +45,17 @@ class ReintentarComprobantes extends Command
                   ->orWhere(function ($q) use ($pendienteViejo) {
                       $q->where('sunat_status', 'pending')
                         ->where('updated_at', '<', $pendienteViejo);
+                  })
+                  /* El estado mudo: emitido pero con sunat_status en NULL.
+                     No es un error ni un pendiente, asi que esta consulta no
+                     lo veia y el comprobante llegaba al plazo de 3 dias sin
+                     que nadie se enterase. Un emitido sin declarar siempre es
+                     un fallo, venga de un job perdido o de una emision vieja
+                     anterior al envio automatico. El borrador queda fuera:
+                     todavia no es un comprobante. */
+                  ->orWhere(function ($q) {
+                      $q->whereNull('sunat_status')
+                        ->whereNotIn('status', ['draft', 'cancelled']);
                   });
             })
             ->get();
@@ -75,6 +86,20 @@ class ReintentarComprobantes extends Command
                 $g->update(['sunat_status' => 'pending', 'sunat_error' => null]);
                 EnviarGuiaASunat::dispatch($g->id);
             }
+        }
+
+        // ── Resúmenes diarios de baja de boletas: SUNAT responde después ──
+        $resumenes = Invoice::allProjects()
+            ->where('type', 'boleta')
+            ->where('baja_estado', 'pending')
+            ->whereNotNull('baja_ticket')
+            ->with('project')
+            ->get();
+        foreach ($resumenes as $b) {
+            if ($this->option('dry-run')) { $this->line("  boleta {$b->numero}: consultaría el ticket {$b->baja_ticket}"); continue; }
+            app()->instance('active_project', $b->project);
+            $r = (new \App\Support\ApisPeruService())->consultarResumen($b);
+            $this->line("  boleta {$b->numero}: resumen ".($r['estado'] ?? '?'));
         }
 
         // ── Lo ya perdido se dice, no se disimula ─────────────────────────

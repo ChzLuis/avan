@@ -8,6 +8,14 @@
 <x-slot name="slot">
 
 @php
+    /* "HAY FILTROS PUESTOS" no puede mirar `porFecha`: esa clave SIEMPRE trae
+       valor ('emision' por defecto), asi que `array_filter($filtros)` daba
+       true incluso con la pantalla recien abierta. Consecuencia: el boton
+       Limpiar salia siempre —se pulsaba y no pasaba nada— y un negocio sin
+       comprobantes leia "Ninguno coincide con esa busqueda" en vez de
+       "Todavia no hay comprobantes". */
+    $ce_hayFiltros = (bool) array_filter(\Illuminate\Support\Arr::except($filtros, ['porFecha']));
+
     $ce_tipos = [
         '' => 'Todos los tipos',
         'factura' => 'Facturas',
@@ -18,100 +26,33 @@
     $ce_estados = [
         '' => 'Cualquier estado',
         'accepted' => 'Aceptado por SUNAT',
-        'pending' => 'Pendiente',
+        'pending' => 'Pendiente de envío',
+        'rejected' => 'Rechazado por SUNAT',
         'error' => 'Con error',
+        'sin_enviar' => 'Sin enviar',
+        // El que cuenta el aviso del plazo: todo lo que sigue sin aceptar.
+        'sin_aceptar' => 'Pendientes ante SUNAT',
+        'anulado' => 'Anulado (baja)',
+        'draft' => 'Borrador',
     ];
     $ce_badge = [
         'accepted' => ['Aceptado', '#065f46', '#d1fae5'],
         'pending'  => ['Pendiente', '#92400e', '#fef3c7'],
+        'rejected' => ['Rechazado', '#991b1b', '#fee2e2'],
         'error'    => ['Error', '#991b1b', '#fee2e2'],
+        'anulado'  => ['Anulado', '#374151', '#e5e7eb'],
+        'draft'    => ['Borrador', '#1e40af', '#dbeafe'],
     ];
+    /* El estado que ve el usuario no es solo sunat_status: un comprobante
+       dado de baja o un borrador tienen prioridad sobre lo que dijo SUNAT. */
+    $ce_estadoDe = function ($c) {
+        if ($c->status === 'draft') return 'draft';
+        if ($c->status === 'cancelled' || $c->baja_estado === 'accepted') return 'anulado';
+        return $c->sunat_status;
+    };
 @endphp
 
-<style>
-    .ce-wrap{padding:20px;max-width:1200px;margin:0 auto;width:100%}
-    .ce-head{margin-bottom:16px}
-    .ce-head h1{margin:0;font-size:20px;font-weight:700;color:#111827;letter-spacing:-.01em}
-    .ce-head p{margin:4px 0 0;font-size:13px;color:#6b7280}
-    /* El buscador manda: es lo único a lo que se viene aquí. */
-    .ce-buscar{position:relative;margin-bottom:10px}
-    .ce-buscar svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:#9ca3af;pointer-events:none}
-    .ce-buscar input{width:100%;padding:11px 14px 11px 40px;font-size:14px;color:#111827;background:#fff;border:1px solid #e5e7eb;border-radius:10px}
-    .ce-buscar input:focus{outline:2px solid #6366f1;outline-offset:-1px;border-color:transparent}
-    .ce-filtros{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
-    .ce-filtros select,.ce-filtros input[type=date]{padding:8px 11px;font-size:13px;color:#374151;background:#fff;border:1px solid #e5e7eb;border-radius:8px}
-    .ce-filtros .ce-sep{font-size:12px;color:#9ca3af}
-    .ce-btn{padding:8px 16px;font-size:13px;font-weight:600;color:#fff;background:#4f46e5;border:0;border-radius:8px;cursor:pointer}
-    .ce-btn:hover{background:#4338ca}
-    .ce-btn-ghost{padding:8px 14px;font-size:13px;font-weight:600;color:#4b5563;background:#fff;border:1px solid #e5e7eb;border-radius:8px;text-decoration:none}
-    .ce-tabla{width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
-    .ce-scroll{overflow-x:auto}
-    .ce-tabla table{width:100%;border-collapse:collapse;font-size:13px}
-    .ce-tabla th{padding:10px 14px;text-align:left;font-weight:600;color:#6b7280;background:#f9fafb;border-bottom:1px solid #e5e7eb;white-space:nowrap}
-    .ce-tabla td{padding:11px 14px;color:#374151;border-bottom:1px solid #f3f4f6}
-    .ce-tabla tr:last-child td{border-bottom:0}
-    .ce-tabla tr:hover td{background:#f9fafb}
-    .ce-num{font-weight:600;color:#111827;white-space:nowrap}
-    .ce-monto{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-    .ce-chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
-    .ce-acciones{text-align:right;white-space:nowrap}
-    .ce-accion{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;color:#4f46e5;background:#eef2ff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none}
-    .ce-accion:hover{background:#e0e7ff}
-    .ce-accion svg{width:15px;height:15px}
-    .ce-vacio{padding:44px 20px;text-align:center;color:#9ca3af;font-size:14px}
-    .ce-accion-ghost{color:#4b5563;background:#f3f4f6;border:0;cursor:pointer;font-family:inherit}
-    .ce-accion-ghost:hover{background:#e5e7eb}
-    .ce-acciones{display:flex;gap:6px;justify-content:flex-end}
-    /* Visor: se mira el comprobante sin perder la búsqueda de detrás. */
-    .ce-visor{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
-    .ce-visor-fondo{position:absolute;inset:0;background:rgba(15,23,42,.55)}
-    .ce-visor-caja{position:relative;display:flex;flex-direction:column;width:min(940px,100%);height:min(88vh,100%);background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(15,23,42,.3)}
-    .ce-visor-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid #e5e7eb;font-size:14px;color:#111827}
-    .ce-visor-acc{display:flex;align-items:center;gap:8px}
-    .ce-visor-x{width:34px;height:34px;font-size:22px;line-height:1;color:#6b7280;background:transparent;border:0;border-radius:8px;cursor:pointer}
-    .ce-visor-x:hover{background:#f3f4f6;color:#111827}
-    .ce-visor iframe{flex:1;width:100%;border:0;background:#f8fafc}
-    .ce-pag{margin-top:14px}
-
-    /* ── MÓVIL ────────────────────────────────────────────────────────────
-       Una tabla de 6 columnas en 390 px no se lee ni con scroll lateral: se
-       pierde la referencia de qué columna es cada dato. Cada comprobante
-       pasa a ser una tarjeta con sus datos etiquetados, que es como se
-       consulta de pie en el mostrador. */
-    @media (max-width: 720px) {
-        .ce-wrap{padding:14px}
-        .ce-head h1{font-size:18px}
-
-        /* Filtros: cada uno a su ancho, sin apretarse en una línea. */
-        .ce-filtros{gap:8px}
-        .ce-filtros select{flex:1 1 100%}
-        .ce-filtros input[type=date]{flex:1 1 calc(50% - 16px)}
-        .ce-filtros .ce-sep{display:none}
-        .ce-filtros .ce-btn,.ce-filtros .ce-btn-ghost{flex:1 1 auto;text-align:center;min-height:44px;line-height:26px}
-
-        /* Campos a 16px: por debajo, iOS hace zoom al tocarlos y descuadra. */
-        .ce-buscar input,.ce-filtros select,.ce-filtros input[type=date]{font-size:16px;min-height:46px}
-
-        .ce-tabla{border:0;background:transparent;border-radius:0}
-        .ce-scroll{overflow:visible}
-        .ce-tabla thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-        .ce-tabla tr{display:block;margin-bottom:10px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px}
-        .ce-tabla td{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:4px 0;border:0}
-        .ce-tabla tr:hover td{background:transparent}
-        /* La etiqueta la pone el CSS: sin cabecera, el dato solo no dice nada. */
-        .ce-tabla td::before{content:attr(data-col);flex:0 0 auto;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em}
-        .ce-tabla td.ce-num{padding-bottom:8px;margin-bottom:4px;border-bottom:1px solid #f3f4f6;font-size:15px}
-        .ce-tabla td.ce-monto{text-align:right;font-size:15px;font-weight:700;color:#111827}
-        .ce-visor{padding:0}
-        .ce-visor-caja{width:100%;height:100%;border-radius:0}
-        .ce-tabla td.ce-acciones{margin-top:10px;padding-top:10px;border-top:1px solid #f3f4f6;display:flex;gap:8px}
-        .ce-accion{flex:1}
-        .ce-tabla td.ce-acciones::before{content:''}
-        .ce-accion{width:100%;justify-content:center;min-height:44px;font-size:14px}
-        .ce-tabla td.ce-vacio{display:block;text-align:center}
-        .ce-tabla td.ce-vacio::before{content:''}
-    }
-</style>
+@include('partials.consulta-estilos')
 
 <div class="ce-wrap" x-data="{ verUrl: '', verNum: '' }">
 
@@ -119,6 +60,12 @@
         <h1>Comprobantes emitidos</h1>
         <p>Busca cualquier comprobante ya emitido. Para emitir uno nuevo, entra a Facturas, Boletas o Notas.</p>
     </div>
+
+    {{-- Sin esto el envio no daba senal ninguna: la pagina volvia igual y
+         parecia que el boton no habia hecho nada. --}}
+    @if(session('ok'))
+    <div class="ce-aviso">{{ session('ok') }}</div>
+    @endif
 
     <form method="GET" action="{{ route('bixosales.facturas.consulta') }}">
         <div class="ce-buscar">
@@ -142,14 +89,42 @@
                 @endforeach
             </select>
 
+            {{-- Por que fecha se busca. La de emision es la fiscal (la que ve
+                 SUNAT); la de creacion es el dia real en que se tecleo. Con
+                 hasta 3 dias de atraso permitidos, no son la misma. --}}
+            <select name="por_fecha" aria-label="Buscar por fecha de">
+                <option value="emision" @selected(($filtros['porFecha'] ?? 'emision') === 'emision')>Fecha de emisión</option>
+                <option value="creacion" @selected(($filtros['porFecha'] ?? '') === 'creacion')>Fecha de creación</option>
+            </select>
+
             <input type="date" name="desde" value="{{ $filtros['desde'] }}" aria-label="Desde">
             <span class="ce-sep">a</span>
             <input type="date" name="hasta" value="{{ $filtros['hasta'] }}" aria-label="Hasta">
 
             <button type="submit" class="ce-btn">Buscar</button>
-            @if(array_filter($filtros))
+            @if($ce_hayFiltros)
             <a href="{{ route('bixosales.facturas.consulta') }}" class="ce-btn-ghost">Limpiar</a>
             @endif
+        </div>
+
+        {{-- Atajos de periodo: teclear dos fechas para ver "lo de hoy" es
+             trabajo de mas, y el mes cerrado es lo que pide el contador. Se
+             conservan el tipo, el estado y la fecha elegida. --}}
+        @php
+            $ce_hoy = now();
+            $ce_periodos = [
+                'Hoy'        => [$ce_hoy->copy()->toDateString(), $ce_hoy->copy()->toDateString()],
+                'Ayer'       => [$ce_hoy->copy()->subDay()->toDateString(), $ce_hoy->copy()->subDay()->toDateString()],
+                'Este mes'   => [$ce_hoy->copy()->startOfMonth()->toDateString(), $ce_hoy->copy()->endOfMonth()->toDateString()],
+                'Mes pasado' => [$ce_hoy->copy()->subMonthNoOverflow()->startOfMonth()->toDateString(), $ce_hoy->copy()->subMonthNoOverflow()->endOfMonth()->toDateString()],
+            ];
+            $ce_base = ['tipo' => $filtros['tipo'], 'estado' => $filtros['estado'], 'q' => $filtros['q'], 'por_fecha' => $filtros['porFecha'] ?? 'emision'];
+        @endphp
+        <div class="ce-periodos">
+            @foreach($ce_periodos as $ce_nombre => [$ce_d, $ce_h])
+            <a class="ce-chip-periodo @if($filtros['desde'] === $ce_d && $filtros['hasta'] === $ce_h) es-activo @endif"
+               href="{{ route('bixosales.facturas.consulta', $ce_base + ['desde' => $ce_d, 'hasta' => $ce_h]) }}">{{ $ce_nombre }}</a>
+            @endforeach
         </div>
     </form>
 
@@ -160,7 +135,8 @@
                 <tr>
                     <th>Número</th>
                     <th>Tipo</th>
-                    <th>Fecha</th>
+                    <th>Emisión</th>
+                    <th class="ce-col-creacion">Creación</th>
                     <th>Cliente</th>
                     <th>SUNAT</th>
                     <th style="text-align:right">Total</th>
@@ -169,11 +145,22 @@
             </thead>
             <tbody>
                 @forelse($comprobantes as $c)
-                @php [$eTexto, $eColor, $eFondo] = $ce_badge[$c->sunat_status] ?? ['Sin enviar', '#4b5563', '#f3f4f6']; @endphp
+                @php [$eTexto, $eColor, $eFondo] = $ce_badge[$ce_estadoDe($c)] ?? ['Sin enviar', '#4b5563', '#f3f4f6']; @endphp
                 <tr>
                     <td class="ce-num" data-col="Número">{{ $c->numero }}</td>
                     <td data-col="Tipo">{{ $c->getTypeLabel() }}</td>
-                    <td data-col="Fecha">{{ $c->issue_date?->format('d/m/Y') ?? '—' }}</td>
+                    {{-- EMISION: la fecha fiscal, la que viaja en el XML. --}}
+                    <td data-col="Emisión">{{ $c->issue_date?->format('d/m/Y') ?? '—' }}</td>
+                    {{-- CREACION: cuando se tecleo de verdad. Si no coinciden se
+                         marca, porque esa diferencia es la que explica por que
+                         una factura "de ayer" aparece en el registro de hoy. --}}
+                    <td data-col="Creación" class="ce-col-creacion">
+                        @php $creada = $c->created_at; $desfase = $creada && $c->issue_date && $creada->toDateString() !== $c->issue_date->toDateString(); @endphp
+                        <span @class(['ce-creada', 'ce-desfase' => $desfase])
+                              @if($desfase) title="Se emitió con fecha {{ $c->issue_date->format('d/m/Y') }} pero se registró el {{ $creada->format('d/m/Y H:i') }}" @endif>
+                            {{ $creada?->format('d/m/Y') ?? '—' }}
+                        </span>
+                    </td>
                     <td data-col="Cliente">{{ $c->client_name }}</td>
                     <td data-col="SUNAT"><span class="ce-chip" style="color:{{ $eColor }};background:{{ $eFondo }}">{{ $eTexto }}</span></td>
                     <td class="ce-monto" data-col="Total">{{ $c->currency ?? 'S/' }} {{ number_format((float) $c->total, 2) }}</td>
@@ -190,8 +177,38 @@
                             </svg>
                             <span>Ver</span>
                         </button>
-                        <a class="ce-accion" href="{{ route('bixosales.facturas.pdf', $c->id) }}" target="_blank" rel="noopener"
-                           title="Ver o descargar el PDF de {{ $c->numero }}">
+                        @if($c->sunat_status === 'accepted')
+                        <a class="ce-accion ce-accion-ghost" href="{{ route('bixosales.facturas.xml', $c->id) }}" title="XML firmado">XML</a>
+                        @endif
+                        {{-- Enviar a SUNAT sin salir de la consulta. Ahora
+                             emitir ya declara solo, pero cuando el envio falla
+                             (proveedor caido, corte de red) el comprobante se
+                             ve aqui y aqui mismo se reintenta, en vez de
+                             buscarlo en la pantalla de emision. Un aceptado o
+                             un anulado no se reenvian; un borrador tampoco,
+                             porque todavia no es un comprobante. --}}
+                        @can('invoices.crear')
+                        @if($c->sunat_status !== 'accepted' && $c->status !== 'draft'
+                            && $c->status !== 'cancelled' && $c->baja_estado !== 'accepted')
+                        <form method="POST" action="{{ route('bixosales.facturas.sunat', $c->id) }}"
+                              class="ce-envio" x-data="{ enviando: false }"
+                              @submit="enviando = true">
+                            @csrf
+                            <button type="submit" class="ce-accion ce-accion-sunat" :disabled="enviando"
+                                    title="Enviar {{ $c->numero }} a SUNAT">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 12h12m0 0-4-4m4 4-4 4M18 4v16"/>
+                                </svg>
+                                <span x-text="enviando ? 'Enviando...' : '{{ $c->sunat_status ? 'Reintentar' : 'Enviar' }}'">{{ $c->sunat_status ? 'Reintentar' : 'Enviar' }}</span>
+                            </button>
+                        </form>
+                        @endif
+                        @endcan
+                        {{-- Descarga DIRECTA: `descargar=1` devuelve el PDF como archivo,
+                             sin abrir una pestaña que el usuario tenga que cerrar. Quien
+                             baja doce comprobantes seguidos no quiere doce pestañas. --}}
+                        <a class="ce-accion" href="{{ route('bixosales.facturas.pdf', $c->id) }}?descargar=1"
+                           download title="Descargar el PDF de {{ $c->numero }}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
                             </svg>
@@ -200,8 +217,8 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="ce-vacio">
-                    @if(array_filter($filtros))
+                <tr><td colspan="8" class="ce-vacio">
+                    @if($ce_hayFiltros)
                         Ningún comprobante coincide con esa búsqueda.
                     @else
                         Todavía no hay comprobantes emitidos.
@@ -222,7 +239,7 @@
             <div class="ce-visor-cab">
                 <strong x-text="verNum"></strong>
                 <span class="ce-visor-acc">
-                    <a :href="verUrl" target="_blank" rel="noopener" class="ce-accion">
+                    <a :href="verUrl + '?descargar=1'" download class="ce-accion">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
                         </svg>
@@ -231,7 +248,7 @@
                     <button type="button" class="ce-visor-x" @click="verUrl = ''" aria-label="Cerrar vista previa">&times;</button>
                 </span>
             </div>
-            <iframe :src="verUrl" title="Vista previa del comprobante"></iframe>
+            <iframe :src="verUrl + '?vista=incrustada'" title="Vista previa del comprobante"></iframe>
         </div>
     </div>
 </div>

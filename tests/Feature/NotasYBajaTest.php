@@ -79,6 +79,52 @@ class NotasYBajaTest extends TestCase
         return $invoice->fresh('items');
     }
 
+    /**
+     * El formulario de venta NO emite notas.
+     *
+     * La seccion "Notas de credito y debito" del menu abria ese formulario con
+     * el tipo cambiado: salia con serie de facturas, sin documento afectado y
+     * sin motivo. El servidor lo aceptaba, asi que se grababa una nota que
+     * SUNAT habria rechazado y que ademas quemaba un correlativo, que no se
+     * puede reutilizar.
+     */
+    public function test_el_formulario_de_venta_no_puede_emitir_una_nota(): void
+    {
+        $antes = Invoice::whereIn('type', ['nota_credito', 'nota_debito'])->count();
+
+        $res = $this->postJson('/invoices', [
+            'type' => 'nota_credito',
+            'serie' => 'F001',
+            'client_name' => 'Constructora Andina SAC',
+            'client_doc_type' => 'RUC',
+            'client_doc_number' => '20600819110',
+            'issue_date' => now()->toDateString(),
+            'items' => [[
+                'description' => 'Devolución', 'unit' => 'NIU',
+                'quantity' => 1, 'unit_price' => '118.00',
+            ]],
+        ]);
+
+        $res->assertStatus(422)->assertJsonValidationErrors('type');
+        $this->assertSame($antes, Invoice::whereIn('type', ['nota_credito', 'nota_debito'])->count(),
+            'No debe quedar ninguna nota creada por esta via.');
+    }
+
+    /** La via correcta sigue funcionando: nota sobre la factura afectada. */
+    public function test_la_via_correcta_si_emite_la_nota(): void
+    {
+        $factura = $this->facturaAceptada();
+
+        $this->postJson('/invoices/'.$factura->id.'/nota', [
+            'type' => 'nota_credito', 'motivo_codigo' => '01',
+        ])->assertOk();
+
+        $nota = Invoice::where('type', 'nota_credito')->latest('id')->first();
+        $this->assertNotNull($nota);
+        $this->assertSame($factura->id, $nota->afecta_invoice_id);
+        $this->assertSame('01', $nota->motivo_codigo);
+    }
+
     /** El número se imprime con ceros: "F001-1" no lo reconoce SUNAT. */
     public function test_el_numero_lleva_ceros_a_la_izquierda(): void
     {
@@ -338,7 +384,12 @@ class NotasYBajaTest extends TestCase
         $this->assertStringContainsString('FACTURA ELECTRÓNICA', $html, 'la denominación oficial, no la abreviatura');
         $this->assertStringContainsString('RUC 20512345678', $html);
         $this->assertStringContainsString('SON CIENTO DIECIOCHO CON 00/100 SOLES', $html, 'el importe en letras (leyenda 1000)');
-        $this->assertStringContainsString('qr-code', $html, 'el QR normado');
+        /* El QR se dibuja en la propia hoja, no se pide a api.qrserver.com:
+           ese servicio recibia el RUC y los importes de cada comprobante, y
+           sin internet la factura salia sin QR. Se comprueba el contenedor Y
+           que nadie devuelva la llamada externa. */
+        $this->assertStringContainsString('data-qr', $html, 'el QR normado');
+        $this->assertStringNotContainsString('qrserver.com/v1/create', $html, 'el QR no sale a un tercero');
         $this->assertStringContainsString('Representación impresa', $html);
     }
 

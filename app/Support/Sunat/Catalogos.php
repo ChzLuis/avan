@@ -217,6 +217,41 @@ final class Catalogos
      * Lo que no reconoce cae en el valor por defecto —NIU para bienes— porque
      * un código inventado hace que SUNAT rechace el comprobante entero.
      */
+    /**
+     * Etiqueta CORTA para imprimir en la columna UM del comprobante. La tabla
+     * oficial dice "UNIDAD (BIENES)": en una columna de 5 mm eso se parte en
+     * dos lineas y no aporta nada. Lo que no este aqui cae al nombre oficial.
+     */
+    public static function etiquetaUnidad(?string $codigo): string
+    {
+        $c = self::codigoUnidad($codigo);
+
+        return self::ETIQUETAS_CORTAS[$c]
+            ?? mb_convert_case(mb_strtolower(self::UNIDADES[$c] ?? $c), MB_CASE_TITLE);
+    }
+
+    /** Las que de verdad se usan en un mostrador, en el orden en que se buscan. */
+    public static function unidadesComunes(): array
+    {
+        $salida = [];
+        foreach (['NIU', 'ZZ', 'BX', 'PK', 'KGM', 'MTR', 'LTR', 'GLL', 'DZN', 'SET', 'BG', 'PR', 'MLL', 'C62'] as $c) {
+            if (isset(self::UNIDADES[$c])) {
+                $salida[$c] = self::etiquetaUnidad($c);
+            }
+        }
+
+        return $salida;
+    }
+
+    private const ETIQUETAS_CORTAS = [
+        'NIU' => 'Unidad', 'ZZ' => 'Servicio', 'BX' => 'Caja', 'PK' => 'Paquete',
+        'KGM' => 'kg', 'GRM' => 'g', 'TNE' => 't', 'MTR' => 'm', 'CMT' => 'cm', 'MMT' => 'mm',
+        'MTK' => 'm²', 'MTQ' => 'm³', 'LTR' => 'L', 'MLT' => 'mL', 'GLL' => 'Galón',
+        'DZN' => 'Docena', 'SET' => 'Juego', 'BG' => 'Bolsa', 'PR' => 'Par', 'MLL' => 'Millar',
+        'CEN' => 'Ciento', 'C62' => 'Pieza', 'KT' => 'Kit', 'BO' => 'Botella', 'CA' => 'Lata',
+        'LBR' => 'lb', 'ONZ' => 'oz', 'FOT' => 'pie', 'KTM' => 'km', 'KWH' => 'kWh',
+    ];
+
     public static function codigoUnidad(?string $texto, string $porDefecto = 'NIU'): string
     {
         $t = trim((string) $texto);
