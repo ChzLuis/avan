@@ -19,7 +19,14 @@ class DeliveryController extends Controller
         $ordersRaw = $project->orders()
             ->where('order_type', 'delivery')
             ->whereNotIn('status', ['cancelled'])
-            ->whereDate('created_at', '>=', now()->subDays(2))
+            /* LO PENDIENTE NO CADUCA. El corte a 2 dias se aplicaba a TODO:
+               un delivery sin entregar de hace 3 dias desaparecia del tablero
+               —trabajo pendiente que nadie vuelve a ver— y la pantalla no
+               decia en ningun sitio que solo mostraba 48 horas. Ahora el
+               limite solo recorta lo ya cerrado; lo que sigue en marcha se ve
+               siempre, por viejo que sea. */
+            ->where(fn ($q) => $q->whereDate('created_at', '>=', now()->subDays(2))
+                                 ->orWhereNotIn('status', ['done', 'completed', 'delivered']))
             ->with('items')
             ->orderByDesc('created_at')
             ->get();

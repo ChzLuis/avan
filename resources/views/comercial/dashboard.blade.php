@@ -22,7 +22,109 @@ $scoreDeg   = $hayScore ? round($semScore * 3.6) : 0;
 $scoreColor = $hayScore
     ? ($semScore >= 80 ? '#10B981' : ($semScore >= 60 ? '#F59E0B' : '#EF4444'))
     : '#E5E8EF';
+
+// ── Avisos del negocio (los usa el centro operativo y la portada movil) ──
+    $avisos = [];
+
+    // El unico aviso con fecha de muerte: SUNAT deja de aceptar el envio a
+    // los 3 dias de la emision, asi que va primero y con la cuenta atras.
+    if (($sunatRiesgo['n'] ?? 0) > 0) {
+        $n = $sunatRiesgo['n'];
+        $dias = $sunatRiesgo['dias'];
+        $avisos[] = [
+            'nivel' => 'alto',
+            'titulo' => $n.' comprobante'.($n === 1 ? '' : 's').' sin aceptar por SUNAT',
+            'detalle' => $dias === 0 ? 'El plazo de envío vence HOY' : 'Al más urgente le quedan '.$dias.' día'.($dias === 1 ? '' : 's').' de plazo',
+            'accion' => 'Enviar', 'url' => route('bixosales.facturas'),
+            'icono' => 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z',
+        ];
+    }
+
+    // Mercaderia que salio por VENTA sin factura ni boleta vinculada: cada
+    // dia que pasa es mas dificil de explicar ante una fiscalizacion.
+    if (($guiasSinComprobante ?? 0) > 0) {
+        $n = $guiasSinComprobante;
+        $avisos[] = [
+            'nivel' => 'alto',
+            'titulo' => $n.' entrega'.($n === 1 ? '' : 's').' por venta sin comprobante',
+            'detalle' => 'Guía'.($n === 1 ? '' : 's').' de remisión con motivo venta sin factura ni boleta',
+            // Este panel vive en Ventas: el aviso tiene que llevar a las guias
+            // de Ventas, no sacar al operador a la cara de Configuracion.
+            'accion' => 'Revisar', 'url' => route('bixosales.guias.index'),
+            'icono' => 'M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12',
+        ];
+    }
+
+    if (($docsVencidos ?? 0) > 0) {
+        $avisos[] = [
+            'nivel' => 'alto',
+            'titulo' => $docsVencidos.' documento'.($docsVencidos === 1 ? '' : 's').' vencido'.($docsVencidos === 1 ? '' : 's'),
+            'detalle' => 'S/ '.number_format($vencido ?? 0, 2).' pendientes de cobro',
+            'accion' => 'Cobrar', 'url' => route('bixosales.cuentas'),
+            'icono' => 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z',
+        ];
+    }
+    if ($esLavanderia && $lavOverdue > 0) {
+        $avisos[] = [
+            'nivel' => 'alto',
+            'titulo' => $lavOverdue.' pedido'.($lavOverdue === 1 ? '' : 's').' fuera de plazo',
+            'detalle' => 'Superaron el tiempo configurado para su estado',
+            'accion' => 'Atender', 'url' => route('bixosales.pedidos'),
+            'icono' => 'M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+        ];
+    }
+    if (($pendientes + ($enProceso ?? 0)) > 0) {
+        $n = $pendientes + ($enProceso ?? 0);
+        $avisos[] = [
+            'nivel' => 'medio',
+            'titulo' => $n.' pedido'.($n === 1 ? '' : 's').' pendiente'.($n === 1 ? '' : 's'),
+            'detalle' => $pendientes.' sin empezar · '.($enProceso ?? 0).' en proceso',
+            'accion' => 'Atender', 'url' => route('bixosales.pedidos'),
+            'icono' => 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z',
+        ];
+    }
+    // Una cotizacion aceptada no es deuda: es trabajo a medias. El cliente
+    // dijo que si y falta convertirla en pedido para que exista la venta.
+    // Antes su importe se sumaba a "por cobrar", que es lo que hacia parecer
+    // que el cliente ya debia ese dinero.
+    if (($porConvertir['n'] ?? 0) > 0) {
+        $avisos[] = [
+            'nivel' => 'medio',
+            'titulo' => $porConvertir['n'].' cotización'.($porConvertir['n'] === 1 ? '' : 'es').' aceptada'.($porConvertir['n'] === 1 ? '' : 's').' sin convertir',
+            'detalle' => 'S/ '.number_format($porConvertir['cents'] / 100, 2).' en juego: falta generar el pedido',
+            'accion' => 'Convertir', 'url' => route('bixosales.cotizaciones'),
+            'icono' => 'M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5A3.375 3.375 0 0 0 10.125 2.25H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z',
+        ];
+    }
+    if (($stockCritico ?? 0) > 0) {
+        $avisos[] = [
+            'nivel' => 'bajo',
+            'titulo' => $stockCritico.' producto'.($stockCritico === 1 ? '' : 's').' con stock crítico',
+            'detalle' => 'Requieren reposición',
+            'accion' => 'Revisar', 'url' => route('bixosales.reportes.inventario'),
+            'icono' => 'M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z',
+        ];
+    }
+    if (($waPendientes ?? 0) > 0) {
+        $avisos[] = [
+            'nivel' => 'medio',
+            'titulo' => $waPendientes.' pedido'.($waPendientes === 1 ? '' : 's').' de WhatsApp sin cerrar',
+            'detalle' => 'Llegaron por el bot y no se han entregado',
+            'accion' => 'Ver', 'url' => route('bixosales.pedidos'),
+            'icono' => 'M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+        ];
+    }
+
+    $paleta = [
+        'alto'  => ['bg-red-50 text-red-600', 'bg-red-500'],
+        'medio' => ['bg-amber-50 text-amber-600', 'bg-amber-500'],
+        'bajo'  => ['bg-yellow-50 text-yellow-700', 'bg-yellow-400'],
+    ];
 @endphp
+
+{{-- En movil la portada es la de la app (tarjetas por area); el centro
+     operativo de abajo queda para escritorio. --}}
+@include('comercial.panel.inicio-movil')
 
 {{-- ══════════════════════════════════════════════════════
      RESUMEN DEL NEGOCIO
@@ -175,7 +277,10 @@ $scoreColor = $hayScore
 
     {{-- ── SECCIÓN 3: OBJETOS OPERATIVOS ── --}}
     {{-- ══ PAGOS POR APROBAR (Yape/Plin reportados en el bot) ══ --}}
-    <div class="co-section" x-data="pagosAprobar()" x-init="cargar()" x-show="pedidos.length > 0" x-cloak>
+    {{-- Con ancla: las tarjetas "Pagos por aprobar" de las portadas enlazaban
+         al ENDPOINT `bixosales.pagos.pendientes`, que es POST, asi que un
+         <a href> daba error 405 y el boton estaba muerto. Ahora traen aqui. --}}
+    <div id="pagos-por-aprobar" class="co-section" x-data="pagosAprobar()" x-init="cargar()" x-show="pedidos.length > 0" x-cloak>
         <div class="co-section-header">
             <div>
                 <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -240,7 +345,19 @@ $scoreColor = $hayScore
                     this.pedidos = d.pedidos || [];
                 } catch(e) { this.pedidos = []; }
             },
-            async aprobar(p) { await this.accion('{{ route("bixosales.pagos.aprobar") }}', { order_id: p.id }); },
+            /* Aprobar mueve dinero: se pregunta, como ya hacia Rechazar. Sin
+               confirmacion, un toque accidental daba por bueno un Yape que
+               nadie habia comprobado. */
+            async aprobar(p) {
+                const ok = await bxConfirmar({
+                    titulo: 'Aprobar el pago',
+                    descripcion: 'Se dará por cobrado el pedido de ' + (p.client_name || 'este cliente')
+                        + ' por S/ ' + Number(p.total || 0).toFixed(2) + '. ¿Confirmas que el pago llegó?',
+                    boton: 'Aprobar pago',
+                });
+                if (! ok) return;
+                await this.accion('{{ route("bixosales.pagos.aprobar") }}', { order_id: p.id });
+            },
             async rechazar(p) {
                 const motivo = await bxConfirmar({
                     titulo: 'Rechazar el pago',
@@ -260,8 +377,19 @@ $scoreColor = $hayScore
                         body: JSON.stringify(body)
                     });
                     const d = await r.json();
-                    if (d.ok) { this.mensaje = d.mensaje_cliente || ''; await this.cargar(); }
-                } catch(e) {}
+                    if (d.ok) {
+                        this.mensaje = d.mensaje_cliente || '';
+                        await this.cargar();
+                        bxAviso('Listo. El pedido se actualizó.', 'success');
+                    } else {
+                        /* Sin `else` y con el catch vacio, un 403 o un 422
+                           dejaban la pantalla muda: el operador creia haber
+                           aprobado y el pedido seguia en revision. */
+                        bxAviso(d.message || d.error || 'No se pudo completar la acción.', 'error');
+                    }
+                } catch(e) {
+                    bxAviso('Sin conexión: la acción no se completó.', 'error');
+                }
                 this.cargando = false;
             },
             async copiar() {

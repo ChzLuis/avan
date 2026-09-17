@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use Illuminate\Http\Request;
 use App\Models\Project;
 
 class MesaController extends Controller
@@ -85,10 +86,50 @@ class MesaController extends Controller
             'pedidos' => $pedidos,
         ];
 
-        return view('comercial.mesas', compact('project', 'mesasData', 'catalogUrl'));
+        /* Estado del salon guardado en el servidor: llega ya resuelto a la
+           vista, para que las dos tablets arranquen viendo lo mismo. */
+        $salon = [
+            'mozos'   => json_decode((string) $project->setting('salon_mozos', '{}'), true)   ?: (object) [],
+            'uniones' => json_decode((string) $project->setting('salon_uniones', '{}'), true) ?: (object) [],
+            'espera'  => json_decode((string) $project->setting('salon_espera', '[]'), true)  ?: [],
+        ];
+
+        return view('comercial.mesas', compact('project', 'mesasData', 'catalogUrl', 'salon'));
     }
 
     // GET /bixosales/mesas/data — polling JSON
+    /**
+     * El estado "blando" del salon: quien atiende cada mesa, que mesas estan
+     * unidas y quien espera sitio.
+     *
+     * Vivia en `localStorage`, o sea en UN navegador: la tablet de la puerta
+     * apuntaba a alguien en la lista de espera y la de la barra no lo veia, y
+     * todo se perdia al limpiar el navegador. No son datos fiscales ni piden
+     * tabla propia, asi que se guardan en los ajustes del proyecto, que ya
+     * existen y ya estan aislados por negocio.
+     */
+    public function guardarEstado(Request $request)
+    {
+        $project = $this->project();
+
+        $datos = $request->validate([
+            'mozos'    => ['nullable', 'array'],
+            'uniones'  => ['nullable', 'array'],
+            'espera'   => ['nullable', 'array'],
+        ]);
+
+        foreach (['mozos', 'uniones', 'espera'] as $clave) {
+            if (array_key_exists($clave, $datos)) {
+                $project->settings()->updateOrCreate(
+                    ['key'   => 'salon_'.$clave],
+                    ['value' => json_encode($datos[$clave], JSON_UNESCAPED_UNICODE)]
+                );
+            }
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
     public function data()
     {
         $project = $this->project();

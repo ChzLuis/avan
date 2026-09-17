@@ -557,6 +557,16 @@ $_nav = match(true) {
             .vdiv { display: none; }
             .top-btn { width: 38px; height: 38px; }
             #topbar { gap: 4px; padding-right: 4px; }
+
+            /* ZOOM AL ENFOCAR, DE UNA VEZ PARA TODO EL PORTAL.
+               Chrome en Android amplia la pagina al tocar cualquier campo por
+               debajo de 16px y deja la pantalla descuadrada, sin forma comoda
+               de volver. Cada pantalla lo venia arreglando por su cuenta —y
+               varias se quedaron sin hacerlo—, asi que la regla vive aqui: la
+               heredan todas las de Ventas, incluidas las que se anadan.
+               Solo en movil: en escritorio no ocurre y 16px descuadraria
+               rejillas pensadas a 13px. */
+            input, select, textarea { font-size: 16px !important; }
         }
         /* ══ MENU LATERAL ══════════════════════════════════════════════
            Dos estados reales. Contraido: solo iconos con tooltip y
@@ -648,6 +658,50 @@ $_nav = match(true) {
         .nav-menu-btn { display: none; }
         @media (max-width: 767px) { .nav-menu-btn { display: flex; } }
 
+
+        /* ══ MOVIL: la cara de la app (referencia: app de SUNAT) ══════════
+           Cabecera roja con marca, globos y hamburguesa a la derecha; el
+           cajon del menu sale por la DERECHA, azul, con letra grande y la
+           mancha clara al fondo. Solo en movil: en escritorio el panel sigue
+           siendo el de siempre. */
+        .top-marca { display: none; }
+        #sidebar .nav-acciones { display: none; }
+        @media (max-width: 767px) {
+            :root { --topbar-h: 60px; }
+            #topbar { background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 55%, #2563EB 100%); border-bottom: 0; box-shadow: none; padding: 0 12px 0 14px; gap: 14px; }
+            #topbar > span, #topbar > svg, #topbar .top-conv, #topbar .top-panel, #topbar .vdiv, #topbar .empresa-chip { display: none !important; }
+            .top-marca { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 900; font-size: 22px; letter-spacing: -.02em; text-decoration: none; margin-right: auto; }
+            .top-marca svg { width: 26px; height: 26px; }
+            #topbar .top-btn { color: #fff; background: transparent; border: 0; width: 40px; height: 40px; }
+            #topbar .top-btn svg { width: 27px; height: 27px; }
+            #topbar .top-btn.top-btn-alerta { background: transparent; color: #fff; }
+            #topbar .badge { top: -4px; right: -6px; min-width: 22px; height: 22px; font-size: 11px; font-weight: 800; color: #fff; border: 0; }
+            #topbar .badge-red { background: #EF4444; }
+            #topbar .badge-yellow { background: #F59E0B; color: #fff; }
+            #topbar .nav-menu-btn { order: 9; }
+            #topbar .nav-menu-btn svg { width: 32px; height: 32px; stroke-width: 2.6; }
+
+            #sidebar { left: auto; right: 0; width: 84%; max-width: 380px; transform: translateX(100%);
+                background: linear-gradient(180deg, #0F172A 0%, #1E3A8A 100%); border: 0; color: #fff; padding: 22px 20px 20px; overflow: hidden; }
+            #sidebar.nav-movil-abierto { transform: translateX(0); box-shadow: -12px 0 40px rgba(0,0,0,.35); }
+            #sidebar::after { content: ""; position: absolute; right: -30%; bottom: -25%; width: 120%; height: 85%;
+                border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(37,99,235,.55), rgba(37,99,235,0) 70%); pointer-events: none; }
+            #sidebar .nav-scroll, #sidebar .nav-pie, #sidebar .nav-marca { position: relative; z-index: 1; }
+            #sidebar .nav-marca-cuadro { background: #fff; color: #1D4ED8; }
+            #sidebar .nav-marca-texto { color: #fff; font-size: 22px; font-weight: 900; }
+            #sidebar .nav-marca-empresa { color: #93C5FD; }
+            #sidebar .nav-grupo { color: #93C5FD; font-size: 11px; margin: 14px 0 2px; }
+            #sidebar .nav-item { color: #fff; height: 50px; gap: 20px; border-radius: 10px; }
+            #sidebar .nav-item svg { width: 26px; height: 26px; color: #93C5FD; }
+            #sidebar .nav-label { color: #fff; font-size: 17px; font-weight: 600; }
+            #sidebar .nav-item:hover, #sidebar .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
+            #sidebar .nav-item.active .nav-label { color: #fff; }
+            #nav-overlay { background: rgba(15,23,42,.55); }
+            #sidebar .nav-acciones { display: flex; position: absolute; top: 26px; right: 20px; gap: 22px; z-index: 2; }
+            #sidebar .nav-acciones a, #sidebar .nav-acciones button { color: #93C5FD; background: none; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center; }
+            #sidebar .nav-acciones svg { width: 30px; height: 30px; }
+            #sidebar .nav-marca { padding-right: 90px; }
+        }
         @media (prefers-reduced-motion: reduce) { #sidebar, .nav-item { transition: none; } }
     </style>
 <style>
@@ -735,6 +789,13 @@ $_nav = match(true) {
     {{-- Breadcrumb rubro. Las DOS CARAS del Workspace (ADR-002) se distinguen
          aqui: en las pantallas de configuracion (/bixoadmin) el chip dice
          "Configuración" con su propio tono; en la operacion, el rubro. --}}
+    {{-- Marca de la app en movil (la barra roja de la referencia). En
+         escritorio no se pinta: la marca ya esta en el menu lateral. --}}
+    <a href="{{ route('bixosales.dashboard') }}" class="top-marca" aria-label="Inicio">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 2 12l10 10 10-10zM12 6.8 17.2 12 12 17.2 6.8 12z"/></svg>
+        <span>BIXO</span>
+    </a>
+
     @php
         // Debe coincidir con la lista del sidebar (_sidebar.blade.php).
         $_caraConfig = request()->routeIs(
@@ -840,7 +901,7 @@ $_nav = match(true) {
 
     {{-- Conversaciones (solo superadmin) --}}
     @if($_hasBot && auth()->user()->is_superadmin)
-    <a href="{{ route('bixosales.rifas') }}" class="top-btn" title="Conversaciones">
+    <a href="{{ route('bixosales.rifas') }}" class="top-btn top-conv" title="Conversaciones">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
                   d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -860,7 +921,7 @@ $_nav = match(true) {
     </button>
 
     {{-- Panel toggle --}}
-    <button class="top-btn" @click="panelOpen=!panelOpen" title="Panel lateral"
+    <button class="top-btn top-panel" @click="panelOpen=!panelOpen" title="Panel lateral"
             :style="panelOpen ? 'background:var(--blue-light);color:var(--blue);' : ''">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"

@@ -76,9 +76,26 @@ class TicketsWpController extends Controller
         $codigo = trim($request->input('codigo', ''));
         if (!$codigo) return response()->json(['ok' => false, 'error' => 'codigo requerido']);
 
-        $payload = escapeshellarg(json_encode(['key' => self::API_KEY, 'codigo' => $codigo]));
-        exec("curl -s -m 5 -X POST -H 'Content-Type: application/json' -d {$payload} https://pruebatusuerte.com.pe/wp-json/bixo/v1/eliminar > /dev/null 2>&1 &");
+        /* Antes esto era `exec(curl ... &)`: disparaba y olvidaba, devolviendo
+           siempre `ok:true` sin mirar el resultado. Si el WordPress estaba
+           caido, el usuario leia "borrado" y el ticket seguia vivo. Ademas el
+           `&` y `/dev/null` no funcionan en Windows, asi que en local no
+           borraba nada en absoluto. Se usa el mismo cliente Http que el resto
+           del archivo y se dice la verdad de lo que paso. */
+        $res = Http::timeout(10)
+            ->acceptJson()
+            ->post('https://pruebatusuerte.com.pe/wp-json/bixo/v1/eliminar', [
+                'key'    => self::API_KEY,
+                'codigo' => $codigo,
+            ]);
 
-        return response()->json(['ok' => true]);
+        if (! $res->successful()) {
+            return response()->json([
+                'ok'    => false,
+                'error' => 'No se pudo eliminar el ticket: el servidor respondió '.$res->status().'.',
+            ], 502);
+        }
+
+        return response()->json(['ok' => true] + (is_array($res->json()) ? $res->json() : []));
     }
 }

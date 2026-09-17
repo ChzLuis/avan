@@ -219,7 +219,13 @@ class BixoSalesAuthorizationTest extends TestCase
         // SUNAT (`invoices.crear`) y anular (`invoices.anular`). El conteo es
         // el aviso de que alguien anadio rutas; la comprobacion que de verdad
         // importa es la de abajo, que exige permiso en TODAS.
-        $this->assertSame(68, $mutadoras, 'El portal deberia tener 68 rutas con verbo mutador');
+        // +2 con el lector de comprobantes: analizar la foto y volcarla al
+        // formulario. Ambas con `invoices.crear`, porque su salida acaba
+        // siendo un comprobante: quien no puede emitir tampoco lee para emitir.
+        // +1 con la vista previa del comprobante (POST porque viaja el
+        // formulario entero). No escribe nada, pero es el paso previo a
+        // emitir: va con `invoices.crear`, nunca con un permiso de lectura.
+        $this->assertSame(71, $mutadoras, 'El portal deberia tener 71 rutas con verbo mutador');
         $this->assertSame([], $abiertas, 'Rutas mutadoras sin permiso: ' . implode(', ', $abiertas));
     }
 

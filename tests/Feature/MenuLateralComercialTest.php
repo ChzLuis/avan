@@ -66,6 +66,65 @@ class MenuLateralComercialTest extends TestCase
         return $u;
     }
 
+    /**
+     * Los grupos se pliegan, y el de la pantalla actual sale abierto.
+     *
+     * Con ocho grupos desplegados el menu no cabia: para llegar a Reportes
+     * habia que desplazarse. Cada titulo es ahora el mando de su bloque.
+     */
+    public function test_los_grupos_del_menu_se_pliegan(): void
+    {
+        $this->entrar('menu_gerente_plegable', [
+            'orders.ver', 'quotes.ver', 'clients.ver', 'reports.ver',
+            'invoices.ver', 'caja.ver', 'pos.usar',
+        ]);
+
+        $html = $this->get('/bixosales')->assertOk()->getContent();
+
+        // El titulo dejo de ser un rotulo muerto: ahora es un boton con estado.
+        $this->assertStringContainsString('nav-grupo-btn', $html);
+        $this->assertStringContainsString('alternarGrupo(', $html);
+        $this->assertStringContainsString('aria-controls="grp-ventas"', $html);
+        $this->assertStringContainsString('id="grp-ventas"', $html);
+    }
+
+    /**
+     * El grupo de la pantalla actual viene desplegado; los demas, recogidos.
+     *
+     * El valor por defecto lo calcula el SERVIDOR (segundo argumento de
+     * `grupoAbierto`), que es quien ya sabe cual es la entrada activa. Se
+     * comprueba desde la portada, donde ningun grupo esta activo, y por eso
+     * todos salen recogidos: es el estado mas corto posible del menu.
+     */
+    public function test_el_grupo_de_la_pantalla_actual_se_abre_solo(): void
+    {
+        $this->entrar('menu_actual_plegable', [
+            'orders.ver', 'quotes.ver', 'clients.ver', 'reports.ver',
+        ]);
+
+        $html = $this->get('/bixosales')->assertOk()->getContent();
+
+        // Inicio no pertenece a ningun grupo: nada se despliega de origen.
+        $this->assertMatchesRegularExpression(
+            "/grupoAbierto\('ventas',\s*false\)/", $html);
+        $this->assertMatchesRegularExpression(
+            "/grupoAbierto\('reportes',\s*false\)/", $html);
+        // Y el mando existe para cada grupo, que es lo que permite abrirlos.
+        $this->assertStringContainsString('aria-controls="grp-reportes"', $html);
+    }
+
+    /** Vuelca el HTML real a disco para revisarlo en un navegador. */
+    public function test_zz_volcar(): void
+    {
+        if (!env('VOLCAR_MENU')) { $this->markTestSkipped('solo bajo demanda'); }
+        $this->entrar('menu_volcado', [
+            'orders.ver', 'quotes.ver', 'clients.ver', 'reports.ver',
+            'invoices.ver', 'caja.ver', 'pos.usar',
+        ]);
+        file_put_contents(env('VOLCAR_MENU'), $this->get('/bixosales')->assertOk()->getContent());
+        $this->assertTrue(true);
+    }
+
     public function test_el_menu_ofrece_los_modulos_que_existen_y_no_solo_iconos(): void
     {
         $this->entrar('menu_gerente', [

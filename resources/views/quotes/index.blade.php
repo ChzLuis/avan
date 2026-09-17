@@ -405,7 +405,7 @@
 .q-fila-nueva .q-prod-img { opacity:.45; }
 
 /* Sugerencias del catalogo bajo la celda */
-.q-sugerencias { position:absolute; z-index:60; top:calc(100% + 4px); left:0; min-width:280px; max-width:420px; background:var(--q-card); border:1px solid var(--q-bd); border-radius:10px; box-shadow:0 10px 30px rgba(15,23,42,.10); padding:4px; max-height:230px; overflow-y:auto; }
+.q-sugerencias { position:absolute; z-index:60; top:calc(100% + 4px); left:0; min-width:min(280px, 100%); max-width:min(420px, calc(100vw - 32px)); background:var(--q-card); border:1px solid var(--q-bd); border-radius:10px; box-shadow:0 10px 30px rgba(15,23,42,.10); padding:4px; max-height:230px; overflow-y:auto; }
 .q-sugerencia { display:flex; align-items:center; justify-content:space-between; gap:var(--q-s3); width:100%; padding:8px 10px; border:none; background:none; border-radius:7px; font-size:var(--q-t-sm); color:var(--q-tx); text-align:left; cursor:pointer; }
 .q-sugerencia:hover { background:var(--q-pri-soft); }
 .q-sug-precio { color:var(--q-pri); font-weight:700; flex-shrink:0; font-variant-numeric:tabular-nums; }
@@ -425,7 +425,10 @@
   .q-wrap { height:auto; min-height:calc(100vh - 56px); flex-direction:column; overflow:visible; }
   /* En tablet y movil la lista es la pantalla anterior, no una columna: el
      plegado no tiene sentido y el rail estorbaria. */
-  .q-sidebar { width:100%; border-right:none; }
+  /* `width:100%` no bastaba: `min-width` y `max-width` seguian clavados en
+     los 328 px de escritorio, asi que en un movil de 412 la lista se quedaba
+     corta y dejaba una franja vacia a la derecha. */
+  .q-sidebar { width:100%; min-width:0; max-width:none; border-right:none; }
   .q-colapsar, .q-rail { display:none; }
   .q-main-head { padding:16px 16px 12px; }
   .q-head-sub { padding:0 16px 14px; }
@@ -440,14 +443,21 @@
      `display:contents` sube los hijos de .q-main a la columna principal, y
      asi el panel puede colocarse entre la cabecera y el contenido sin
      duplicar una sola linea de marcado. */
-  .q-main, .q-doc { display:contents !important; }
+  /* `display:contents` sube los hijos a la columna principal, pero con
+     !important tambien ganaba al ocultamiento: la clase `hidden` de la zona
+     central y el `display:none` que Alpine escribe en el panel derecho dejaban
+     de surtir efecto. Resultado en el movil: la lista y el detalle se veian a
+     la vez, el Resumen salia en S/ 0.00 sin cotizacion elegida y "Eliminar"
+     no hacia nada porque no habia ninguna seleccionada. Se excluye el estado
+     oculto para que reordenar no impida esconder. */
+  .q-main:not(.hidden), .q-doc { display:contents !important; }
   .q-main-head { order:1; }
   .q-head-sub  { order:2; }
   .q-volver    { order:0; }
   /* El panel tambien se disuelve para que sus tres tarjetas se coloquen
      por separado: Resumen arriba (es lo que se consulta) y Actividad al
      final, detras del documento. */
-  .q-panel { display:contents !important; }
+  .q-panel:not([style*="display:none"]):not([style*="display: none"]) { display:contents !important; }
   .q-resumen   { order:3; margin:0 16px; }
   .q-main-body { order:4; }
   .q-acciones-barra, .q-empty { order:5; }
@@ -574,6 +584,19 @@
 @media (max-width:360px) {
   .q-table td { flex-direction:column; align-items:stretch; gap:4px; }
   .q-table td .q-td-input { width:100%; max-width:100%; }
+}
+
+/* ZOOM AL ENFOCAR EN MOVIL.
+   Chrome en Android amplia la pagina al tocar cualquier campo por debajo de
+   16px, y deja la pantalla descuadrada sin forma comoda de volver. Los campos
+   de aqui estaban a 13px. Es el mismo remedio que ya llevan el Constructor y
+   la consulta de comprobantes: 16px reales solo en movil, que en escritorio
+   no hace falta. */
+@media (max-width:767px) {
+  .q-search,
+  .q-field input, .q-field select, .q-field textarea,
+  .q-table td .q-td-input,
+  .q-modal input, .q-modal select, .q-modal textarea { font-size:16px !important; }
 }
 
 /* 9. Objetivo tactil 44x44 en TODO control del modulo (no solo los nuevos):
@@ -805,8 +828,21 @@
     payingStatus: false,
 
     get filtered() {
+        /* BUSCAR POR LO QUE LA GENTE TECLEA.
+           Buscaba solo por nombre de cliente y telefono: quien tenia el papel
+           delante y escribia el numero (COT-00009) o el RUC no encontraba
+           nada, y parecia que el buscador estaba roto. Ahora entra tambien el
+           numero, el documento y el correo.
+
+           Ademas `q.client_name.toLowerCase()` reventaba si el nombre venia
+           vacio, y un error ahi no vacia una fila: tumba TODA la lista, que
+           es como se ve un fallo total de la pantalla. */
+        const t = (this.search || '').trim().toLowerCase();
         return this.quotes.filter(q => {
-            const s = !this.search || q.client_name.toLowerCase().includes(this.search.toLowerCase()) || (q.client_phone||'').includes(this.search);
+            const s = !t || [
+                q.numero, q.client_name, q.client_phone,
+                q.client_doc_number, q.client_email,
+            ].some(v => String(v ?? '').toLowerCase().includes(t));
             const f = !this.filterStatus || q.status === this.filterStatus;
             return s && f;
         });
@@ -844,7 +880,19 @@
         const data = await res.json();
         const q = data.quote;
         if (!q) return;
-        const row = { id:q.id, client_name:q.client_name, client_phone:q.client_phone||'', client_email:q.client_email||'', client_doc_type:q.client_doc_type||'', client_doc_number:q.client_doc_number||'', client_address:q.client_address||'', client_id:q.client_id||null, status:q.status, payment_status:q.payment_status||'pending', paid_amount:q.paid_amount??null, payment_proof_url:'', payment_proof_at:'', reject_reason:'', rejected_at:'', seen_at:'', updated_at:q.updated_at||'', total:String(q.total ?? '0.00'), notes:q.notes||'', valid_until:q.valid_until||'', payment_method:q.payment_method||'', payment_condition:q.payment_condition||'', created_at:q.created_at||new Date().toLocaleDateString('es'), token:'', sent_at:'', items:q.items||[] };
+        /* Se parte de lo que devuelve el servidor y solo se normaliza lo
+           que la plantilla necesita en un formato concreto. Antes se
+           enumeraban los campos a mano y se quedaba fuera `numero`: la
+           cotizacion recien creada aparecia en la lista SIN su codigo
+           hasta recargar la pagina. */
+        const row = { ...q,
+            client_phone: q.client_phone||'', client_email: q.client_email||'',
+            client_doc_type: q.client_doc_type||'', client_doc_number: q.client_doc_number||'',
+            client_address: q.client_address||'', client_id: q.client_id||null,
+            payment_status: q.payment_status||'pending', paid_amount: q.paid_amount??null,
+            total: String(q.total ?? '0.00'), notes: q.notes||'',
+            created_at: q.created_at||new Date().toLocaleDateString('es'),
+            items: q.items||[] };
         this.quotes.unshift(row);
         this.select(row);
         window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Cotización duplicada como borrador', type: 'success' } }));
@@ -1095,6 +1143,7 @@
 
     async convertir() {
         if (this.convirtiendo) return;              // doble clic: no dispara dos veces
+        if (!this.selected) { this.error = 'Elige primero una cotización.'; return; }
         this.convirtiendo = true;
         try {
             const res = await fetch(this.urlConvertir(this.selected.id), {
@@ -1332,7 +1381,19 @@
         const q = data.quote;
         if (q) {
             const display = {...q, items: q.items||this.form.items, total:String(q.total ?? '0.00')};
-            const row = { id:q.id, client_name:q.client_name, client_phone:q.client_phone||'', client_email:q.client_email||'', client_doc_type:q.client_doc_type||'', client_doc_number:q.client_doc_number||'', client_address:q.client_address||'', client_id:q.client_id||null, status:q.status, payment_status:q.payment_status||'pending', paid_amount:q.paid_amount??null, payment_proof_url:q.payment_proof_url||'', payment_proof_at:q.payment_proof_at||'', reject_reason:q.reject_reason||'', rejected_at:q.rejected_at||'', seen_at:q.seen_at||'', updated_at:q.updated_at||'', total:String(q.total ?? '0.00'), notes:q.notes||'', valid_until:q.valid_until||'', payment_method:q.payment_method||'', payment_condition:q.payment_condition||'', created_at:q.created_at||new Date().toLocaleDateString('es'), token:q.token||'', sent_at:q.sent_at||'', items:q.items||[] };
+            /* Se parte de lo que devuelve el servidor y solo se normaliza lo
+               que la plantilla necesita en un formato concreto. Antes se
+               enumeraban los campos a mano y se quedaba fuera `numero`: la
+               cotizacion recien creada aparecia en la lista SIN su codigo
+               hasta recargar la pagina. */
+            const row = { ...q,
+                client_phone: q.client_phone||'', client_email: q.client_email||'',
+                client_doc_type: q.client_doc_type||'', client_doc_number: q.client_doc_number||'',
+                client_address: q.client_address||'', client_id: q.client_id||null,
+                payment_status: q.payment_status||'pending', paid_amount: q.paid_amount??null,
+                total: String(q.total ?? '0.00'), notes: q.notes||'',
+                created_at: q.created_at||new Date().toLocaleDateString('es'),
+                items: q.items||[] };
             if (this.creating) { this.quotes.unshift(row); } else { const idx=this.quotes.findIndex(x=>x.id===q.id); if(idx>-1) this.quotes[idx]=row; }
             this.selected = row; this.creating = false;
             this.form.items = (q.items||[]).map(i=>({...i,discount:i.discount||0}));
@@ -1346,7 +1407,10 @@
     },
 
     del() {
-        if (!this.selected) return;
+        // Antes se salia en silencio: el boton parecia roto. Con el reordenado
+        // de movil arreglado ya no se llega aqui sin cotizacion, pero si pasara
+        // hay que decirlo en vez de no hacer nada.
+        if (!this.selected) { this.error = 'Elige primero la cotización que quieres eliminar.'; return; }
         const q = this.selected;
         this.pedirConfirmacion({
             titulo: 'Eliminar ' + (q.numero || 'la cotización'),
@@ -1422,7 +1486,10 @@
         <button @click="openNew()" class="q-btn-new" x-show="puede.crear" title="Nueva cotización" aria-label="Nueva cotización">+</button>
     </div>
     <div class="q-sidebar-head">
-        <input type="text" x-model="search" placeholder="Buscar cotización..." class="q-search">
+        {{-- El marcador dice POR QUE se puede buscar: "Buscar cotizacion..."
+             no insinuaba que el numero o el RUC sirvieran, y quien tenia el
+             papel delante tecleaba el nombre a mano. --}}
+        <input type="text" x-model="search" placeholder="Número, cliente, RUC/DNI o teléfono…" class="q-search">
         {{-- Atajo a los filtros: la referencia lo pone junto al buscador. --}}
         <button type="button" class="q-filtros-btn" @click="filtrosAbiertos = !filtrosAbiertos"
                 :aria-expanded="filtrosAbiertos ? 'true' : 'false'" aria-label="Filtros" title="Filtros">

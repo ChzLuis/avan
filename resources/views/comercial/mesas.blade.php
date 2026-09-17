@@ -475,7 +475,7 @@ function mesasBoard() {
         showListaEspera: false,
         listaEspera: [],
         esperaInput: '',
-        // Mozo por mesa (persiste en localStorage)
+        // Mozo por mesa (se guarda en el servidor: lo ven todas las tablets)
         mozos: {},
         mozoInput: '',
         // Cambio de mesa
@@ -486,10 +486,15 @@ function mesasBoard() {
             this.mesas    = MESAS_DATA.mesas;
             this.sectores = MESAS_DATA.sectores;
             this.pedidos  = MESAS_DATA.pedidos;
-            const pid = @json($project->id);
-            try { this.unionesActivas = JSON.parse(localStorage.getItem('avan_uniones_' + pid) || '{}'); } catch(e){}
-            try { this.mozos          = JSON.parse(localStorage.getItem('avan_mozos_'   + pid) || '{}'); } catch(e){}
-            try { this.listaEspera    = JSON.parse(localStorage.getItem('avan_espera_'  + pid) || '[]'); } catch(e){}
+            /* Del SERVIDOR. Antes esto salia de `localStorage`, o sea de UN
+               navegador: la tablet de la puerta apuntaba a alguien en la lista
+               de espera y la de la barra no lo veia, y todo se perdia al
+               limpiar el navegador. Ahora llega resuelto desde el proyecto y
+               las dos tablets arrancan viendo lo mismo. */
+            const SALON = @json($salon ?? ['mozos' => [], 'uniones' => [], 'espera' => []]);
+            this.unionesActivas = SALON.uniones || {};
+            this.mozos         = SALON.mozos   || {};
+            this.listaEspera   = Array.isArray(SALON.espera) ? SALON.espera : [];
             setInterval(() => this.reload(), 20000);
             setInterval(() => this.ticker++, 1000);
         },
@@ -656,7 +661,7 @@ function mesasBoard() {
         asignarMozo() {
             if (!this.mesaActiva || !this.mozoInput.trim()) return;
             this.mozos[String(this.mesaActiva.numero)] = this.mozoInput.trim();
-            localStorage.setItem('avan_mozos_' + @json($project->id), JSON.stringify(this.mozos));
+            this.guardarSalon();
             this.mozos = { ...this.mozos };
             this.mozoInput = '';
         },
@@ -665,7 +670,7 @@ function mesasBoard() {
         agregarEspera() {
             if (!this.esperaInput.trim()) return;
             this.listaEspera.push({ nombre: this.esperaInput.trim(), at: Date.now() });
-            localStorage.setItem('avan_espera_' + @json($project->id), JSON.stringify(this.listaEspera));
+            this.guardarSalon();
             this.esperaInput = '';
         },
 
@@ -765,7 +770,7 @@ function mesasBoard() {
         },
 
         persistirUniones() {
-            localStorage.setItem('avan_uniones_' + @json($project->id), JSON.stringify(this.unionesActivas));
+            this.guardarSalon();
             this.unionesActivas = { ...this.unionesActivas };
         },
 
@@ -803,6 +808,11 @@ function mesasBoard() {
                     if (newStatus === 'served') this.pedidos.splice(idx, 1);
                     this.pedidos = [...this.pedidos];
                 }
+            } else {
+                /* Un 403 dejaba el pedido donde estaba sin decir nada: el mozo
+                   pulsaba otra vez creyendo que no habia registrado. */
+                const d = await res.json().catch(() => ({}));
+                bxAviso(d.message || 'No se pudo cambiar el estado del pedido.', 'error');
             }
         },
 
@@ -815,8 +825,44 @@ function mesasBoard() {
         verQr(mesa) {
             const url = CATALOG_URL + '?mesa=' + mesa.numero;
             this.qrMesa = mesa.numero;
-            this.qrSrc  = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(url) + '&color=1a1a1a&bgcolor=ffffff&margin=2&format=png';
+            /* QR LOCAL. Se pedia a api.qrserver.com, lo que mandaba a un
+               tercero la URL del catalogo del negocio y dejaba el QR roto —sin
+               explicacion— si el servicio caia o el local no tenia internet.
+               `createDataURL` devuelve una imagen incrustada, asi que el <img>
+               y el enlace de descarga siguen funcionando igual. */
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(url);
+                qr.make();
+                this.qrSrc = qr.createDataURL(8, 8);
+            } catch (e) {
+                this.qrSrc = '';
+                bxAviso('No se pudo generar el QR de la mesa.', 'error');
+            }
             this.qrModal = true;
+        },
+
+        /* Guarda el estado del salon en el servidor. Se manda entero —son
+           tres objetos pequenos— para no tener tres rutas; si falla, se avisa
+           y no se pierde en silencio lo que el mozo acaba de apuntar. */
+        async guardarSalon() {
+            try {
+                const res = await fetch(@js(route('bixosales.mesas.estado')), {
+                    method: 'POST',
+                    headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept':'application/json' },
+                    body: JSON.stringify({
+                        mozos:   this.mozos,
+                        uniones: this.unionesActivas,
+                        espera:  this.listaEspera,
+                    }),
+                });
+                if (! res.ok) {
+                    const d = await res.json().catch(() => ({}));
+                    bxAviso(d.message || 'No se pudo guardar el estado del salón.', 'error');
+                }
+            } catch (e) {
+                bxAviso('Sin conexión: el cambio no se guardó para las demás tablets.', 'error');
+            }
         },
 
         async reload() {
@@ -852,4 +898,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </div>
+{{-- El mismo dibujante de QR que usan comprobantes y guias. --}}
+<script>{!! file_get_contents(public_path('js/qrcode.min.js')) !!}</script>
 </x-portal-layout>

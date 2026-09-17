@@ -89,17 +89,34 @@
                     </svg>
                 </button>
             </div>
-            <div class="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-                <button @click="filterCat=null"
-                        :class="filterCat===null ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex-shrink-0">Todos</button>
-                <template x-for="cat in categories" :key="cat.id">
-                    <button @click="filterCat = filterCat===cat.id ? null : cat.id"
-                            :class="filterCat===cat.id ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex-shrink-0"
-                            x-text="cat.name">
-                    </button>
-                </template>
+            {{-- Dos desplegables, no filas de chips: en caja hay que ver el
+                 catalogo, no los filtros. La categoria lleva sus subcategorias
+                 agrupadas dentro; la marca ofrece solo las presentes en lo ya
+                 filtrado, con su conteo. --}}
+            <div class="flex gap-2">
+                <select :value="valorCatSel" @change="elegirDesdeSelect($event.target.value)" aria-label="Categoría"
+                        class="flex-1 min-w-0 text-sm border border-gray-200 rounded-xl py-2 px-3 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="">Todas las categorías</option>
+                    <template x-for="cat in catRaicesVisibles" :key="cat.id">
+                        <optgroup :label="cat.name + ' (' + contarCat(cat.id) + ')'">
+                            <option :value="'c' + cat.id" x-text="'Todo en ' + cat.name"></option>
+                            <template x-for="sub in categories.filter(c => c.parent_id === cat.id && (cuentaEnCat(c.id) > 0 || filterSub === c.id))" :key="'s' + sub.id">
+                                <option :value="'s' + sub.id" x-text="'   ' + sub.name + ' (' + contarCat(sub.id) + ')'"></option>
+                            </template>
+                        </optgroup>
+                    </template>
+                </select>
+                <select :value="filterBrand" @change="filterBrand = $event.target.value || null; ajustarCat()" aria-label="Marca" x-show="marcasDisponibles.length || filterBrand"
+                        class="w-40 flex-shrink-0 text-sm border border-gray-200 rounded-xl py-2 px-3 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="">Todas las marcas</option>
+                    <template x-for="m in marcasDisponibles" :key="'m' + m.nombre">
+                        <option :value="m.nombre" x-text="(m.etiqueta || m.nombre) + ' (' + m.n + ')'"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-gray-400" x-show="filterCat!==null || filterBrand!==null || search" x-cloak>
+                <span><b class="text-gray-600" x-text="filteredProducts.length"></b> productos</span>
+                <button type="button" class="font-semibold text-indigo-600 hover:underline" @click="limpiarFiltros()">Limpiar filtros</button>
             </div>
         </div>
     </div>
@@ -135,7 +152,7 @@
                                 </svg>
                             </template>
                         </div>
-                        <p class="text-xs font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[2.5rem]" x-text="p.name"></p>
+                        <p class="pos-nombre font-semibold text-gray-800" x-text="p.name" :title="p.name"></p>
                         <p class="text-sm font-black text-indigo-600 mt-1" x-text="'S/ ' + p.price.toFixed(2)"></p>
                         <template x-if="p.stock !== null && p.stock !== undefined">
                             <p class="text-[10px] mt-0.5 font-medium"
@@ -166,7 +183,7 @@
                             </template>
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium text-gray-800 truncate" x-text="p.name"></p>
+                            <p class="text-sm font-medium text-gray-800 leading-snug" x-text="p.name" :title="p.name"></p>
                             <template x-if="p.stock !== null && p.stock !== undefined">
                                 <p class="text-[11px] font-medium"
                                    :class="p.stock <= 0 ? 'text-red-500' : p.stock <= 5 ? 'text-amber-500' : 'text-gray-400'"
@@ -277,7 +294,7 @@
                       class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full"
                       x-text="cart.reduce((s,i)=>s+i.qty,0) + ' ítem' + (cart.reduce((s,i)=>s+i.qty,0)!==1?'s':'')"></span>
             </h2>
-            <button @click="clearCart()" x-show="cart.length > 0"
+            <button @click="vaciarCarrito()" x-show="cart.length > 0"
                     class="text-xs text-gray-400 hover:text-red-500 transition flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-50">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -558,9 +575,19 @@
                 <input x-model.number="paymentForm.received" type="number" min="0" step="0.5"
                        @focus="$event.target.select()"
                        class="flex-1 text-sm border border-green-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-green-500 outline-none text-right font-black">
-                <span class="text-xs font-black whitespace-nowrap"
-                      :class="paymentForm.received >= cartTotal ? 'text-green-700' : 'text-red-500'"
-                      x-text="'V: S/ ' + Math.max(0, paymentForm.received - cartTotal).toFixed(2)"></span>
+            </div>
+            {{-- El vuelto es lo que el cajero canta en voz alta: va en grande.
+                 Si el dinero no alcanza se dice CUANTO falta, en vez de
+                 mostrar 0.00 como si estuviera bien. --}}
+            <div x-show="paymentForm.received > 0" x-cloak
+                 class="flex items-baseline justify-between rounded-lg px-2 py-1"
+                 :class="paymentForm.received >= cartTotal ? 'bg-green-100' : 'bg-red-50'">
+                <span class="text-[11px] font-bold uppercase tracking-wide"
+                      :class="paymentForm.received >= cartTotal ? 'text-green-700' : 'text-red-600'"
+                      x-text="paymentForm.received >= cartTotal ? 'Vuelto' : 'Falta'"></span>
+                <span class="text-2xl font-black leading-none"
+                      :class="paymentForm.received >= cartTotal ? 'text-green-700' : 'text-red-600'"
+                      x-text="'S/ ' + Math.abs(paymentForm.received - cartTotal).toFixed(2)"></span>
             </div>
             <div class="flex gap-1 flex-wrap">
                 <template x-for="amt in quickAmounts" :key="amt">
@@ -614,9 +641,27 @@
                 </div>
                 {{-- Datos cliente --}}
                 <div x-show="showClientFields" class="space-y-1">
-                    <div class="flex gap-1.5">
-                        <input x-model="paymentForm.client_name" type="text" placeholder="Nombre cliente"
+                    <div class="flex gap-1.5 relative">
+                        {{-- Se escribe el nombre O el documento: si el cliente
+                             ya esta registrado se elige de la lista y la venta
+                             queda a su nombre (historial y deuda), en vez de
+                             crear un texto suelto cada vez. --}}
+                        <input x-model="paymentForm.client_name" type="text" placeholder="Nombre o RUC/DNI del cliente"
+                               @input.debounce.300ms="buscarCliente()" @focus="buscarCliente()"
+                               @keydown.escape="clientesSug = []"
+                               @click.outside="clientesSug = []"
+                               autocomplete="off"
                                class="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <div x-show="clientesSug.length" x-cloak
+                             class="absolute z-40 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                            <template x-for="c in clientesSug" :key="c.id">
+                                <button type="button" @mousedown.prevent="elegirCliente(c)"
+                                        class="w-full text-left px-2.5 py-1.5 text-xs hover:bg-indigo-50 border-b border-gray-50 last:border-0">
+                                    <span class="font-semibold text-gray-900" x-text="c.nombre"></span>
+                                    <span class="text-gray-400" x-text="[c.doc_numero, c.telefono].filter(Boolean).join(' · ')"></span>
+                                </button>
+                            </template>
+                        </div>
                         <input x-model="paymentForm.client_phone" type="text" placeholder="Teléfono"
                                class="w-28 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
@@ -714,7 +759,11 @@
 ══════════════════════════════════════════════════════ --}}
 <div x-show="successModal" x-cloak
      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-     @click.self="successModal = false">
+     {{-- Cerrar tocando fuera tambien limpia. Solo el boton "Nueva venta"
+          limpiaba: al cerrar por aqui el carrito quedaba intacto y el
+          siguiente cliente arrancaba con los productos del anterior, con
+          riesgo de cobrarlos dos veces. --}}
+     @click.self="successModal = false; clearCart()">
     <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center" @click.stop>
         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1102,7 +1151,23 @@
 
 </div>
 
+<style>
+    /* Nombre del producto en la tarjeta: tres lineas a la vista y, al pasar
+       el raton o tocar, se despliega entero encima de la tarjeta. Antes se
+       cortaba a dos lineas y "DISCO DE CORTE METAL NORTON 7 x 1/8" y
+       "... 1/2 x 1/16" se veian iguales. */
+    .pos-nombre { font-size: 11.5px; line-height: 1.25; min-height: 3.75em; display: -webkit-box;
+                  -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+    .group:hover .pos-nombre, .group:focus-within .pos-nombre { -webkit-line-clamp: unset; overflow: visible; }
+</style>
 <script>
+/* Buscador de clientes: cada cara tiene su ruta (el panel y Ventas llevan
+   sesiones distintas, y la del otro portal rebota al login). */
+const RUTA_CLIENTES = @json(
+    ($portalLayout ?? 'panel') === 'comercial'
+        ? (\Illuminate\Support\Facades\Route::has('bixosales.facturas.clientes') ? route('bixosales.facturas.clientes') : '')
+        : (\Illuminate\Support\Facades\Route::has('invoices.clientes') ? route('invoices.clientes') : '')
+);
 function posApp() {
     return {
         products: @json($productsJs),
@@ -1112,6 +1177,8 @@ function posApp() {
 
         search: '',
         filterCat: null,
+        filterSub: null,     // subcategoria dentro de filterCat
+        filterBrand: null,   // marca (texto), se interseca con lo anterior
         catalogTab: 'products',
         cart: [],
         mode: 'sale',          // 'sale' = venta directa | 'quote' = cotización
@@ -1119,6 +1186,8 @@ function posApp() {
         vista: 'grid',         // 'grid' | 'lista' — formato del catalogo
         quickSale: { open: false, item: null, price: 0, qty: 1 },  // popup Venta Rápida
         processing: false,
+        huellaVenta: '',     // idempotencia: una venta, un cobro
+        clientesSug: [],     // clientes ya registrados que coinciden
         showCustom: false,
         showClientFields: false,
         showTransactions: false,
@@ -1152,6 +1221,7 @@ function posApp() {
             amount1: 0,
             amount2: 0,
             received: 0,
+            client_id: null,      // cliente ya registrado, si se eligio uno
             client_name: '',
             client_phone: '',
             notes: '',
@@ -1169,6 +1239,11 @@ function posApp() {
             // al cajero atrapado en un modo que ya no puede ver ni cambiar.
             this.resellerMode = @json($modRevendedor) && localStorage.getItem('pos_reseller_mode') === '1';
             this.vista = localStorage.getItem('pos_vista') === 'lista' ? 'lista' : 'grid';
+            this.recuperarCarrito();
+            // Cada cambio del carrito se respalda: una recarga, un toque atras
+            // o que el navegador descarte la pestaña ya no borran la venta a
+            // medio armar con el cliente delante.
+            this.$watch('cart', () => this.guardarCarrito());
             this.$watch('resellerMode', v => localStorage.setItem('pos_reseller_mode', v ? '1' : '0'));
             if (this.products.length === 0 && this.services.length > 0) {
                 this.catalogTab = 'services';
@@ -1181,19 +1256,101 @@ function posApp() {
             }
         },
 
+        /* ── Filtros: categoria -> subcategoria -> marca, intersecados ────
+           Las categorias raiz van en chips; si la elegida tiene hijas, salen
+           debajo. Las marcas que se ofrecen son SOLO las presentes en lo ya
+           filtrado, con su conteo, para no ofrecer chips que dejan la lista
+           vacia. La busqueda mira nombre, SKU y marca. */
+        get catRaices() {
+            return this.categories.filter(c => !c.parent_id);
+        },
+        get subCats() {
+            return this.filterCat === null ? [] : this.categories.filter(c => c.parent_id === this.filterCat);
+        },
+        // Ids de categoria que cuentan: la sub elegida, o la raiz con sus hijas.
+        catIdsActivos() {
+            if (this.filterSub !== null) return [this.filterSub];
+            if (this.filterCat === null) return null;
+            return [this.filterCat, ...this.categories.filter(c => c.parent_id === this.filterCat).map(c => c.id)];
+        },
+        pasaTexto(p) {
+            if (!this.search) return true;
+            const q = this.search.toLowerCase();
+            return [p.name, p.sku, p.brand].some(v => (v || '').toLowerCase().includes(q));
+        },
+        pasaCat(p) {
+            const ids = this.catIdsActivos();
+            return ids === null || ids.includes(p.cat_id);
+        },
+        contarCat(catId) {
+            return this.cuentaEnCat(catId);
+        },
+        // Categorias que se ofrecen: las que tienen algo con la marca elegida.
+        get catRaicesVisibles() {
+            return this.catRaices.filter(c => this.cuentaEnCat(c.id) > 0 || this.filterCat === c.id);
+        },
+        /* Marcas que se ofrecen: las presentes en lo ya filtrado POR TEXTO Y
+           CATEGORIA (no por marca, o siempre saldria una sola). Si todavia no
+           hay categoria elegida, salen todas: se puede empezar por la marca. */
+        get marcasDisponibles() {
+            const n = {};
+            let sinMarca = 0;
+            this.products.filter(p => this.pasaTexto(p) && this.pasaCat(p))
+                .forEach(p => { p.brand ? (n[p.brand] = (n[p.brand] || 0) + 1) : sinMarca++; });
+            const lista = Object.keys(n).sort((a, b) => a.localeCompare(b, 'es')).map(nombre => ({ nombre, n: n[nombre] }));
+            // Los productos sin marca cargada no pueden quedar inalcanzables.
+            if (sinMarca) lista.push({ nombre: '__sin__', etiqueta: 'Sin marca', n: sinMarca });
+            return lista;
+        },
+        /* Y al reves: las categorias se acotan a las de la marca elegida, para
+           que "marca -> categoria" funcione igual de bien que "categoria ->
+           marca". Sin marca elegida, salen todas. */
+        cuentaEnCat(catId) {
+            const ids = [catId, ...this.categories.filter(c => c.parent_id === catId).map(c => c.id)];
+            return this.products.filter(p => ids.includes(p.cat_id) && this.pasaTexto(p) && this.pasaMarca(p)).length;
+        },
+        pasaMarca(p) {
+            if (this.filterBrand === null) return true;
+            return this.filterBrand === '__sin__' ? !p.brand : p.brand === this.filterBrand;
+        },
+        elegirCat(id) {
+            this.filterCat = id; this.filterSub = null; this.ajustarMarca();
+        },
+        // El desplegable guarda 'c<id>' (toda la categoria) o 's<id>' (una sub).
+        get valorCatSel() {
+            if (this.filterSub !== null) return 's' + this.filterSub;
+            return this.filterCat === null ? '' : 'c' + this.filterCat;
+        },
+        elegirDesdeSelect(v) {
+            if (!v) return this.elegirCat(null);
+            const id = Number(v.slice(1));
+            if (v[0] === 'c') return this.elegirCat(id);
+            const sub = this.categories.find(c => c.id === id);
+            this.filterCat = sub ? sub.parent_id : null; this.filterSub = id; this.ajustarMarca();
+        },
+        // Si la marca elegida ya no existe en la nueva categoria, se suelta:
+        // dejarla puesta daba una lista vacia sin decir por que.
+        ajustarMarca() {
+            if (this.filterBrand !== null && !this.marcasDisponibles.some(m => m.nombre === this.filterBrand)) this.filterBrand = null;
+        },
+        // Al elegir marca: si la categoria puesta no tiene nada de esa marca,
+        // se suelta la categoria, no la marca. Manda lo ultimo que se toco.
+        ajustarCat() {
+            if (this.filterSub !== null && this.cuentaEnCat(this.filterSub) === 0) this.filterSub = null;
+            if (this.filterCat !== null && this.cuentaEnCat(this.filterCat) === 0) { this.filterCat = null; this.filterSub = null; }
+        },
+        limpiarFiltros() {
+            this.search = ''; this.filterCat = null; this.filterSub = null; this.filterBrand = null;
+        },
         get filteredProducts() {
-            return this.products.filter(p => {
-                const s = !this.search || p.name.toLowerCase().includes(this.search.toLowerCase());
-                const c = this.filterCat === null || p.cat_id === this.filterCat;
-                return s && c;
-            });
+            return this.products.filter(p => this.pasaTexto(p) && this.pasaCat(p) && this.pasaMarca(p));
         },
 
         get filteredServices() {
             return this.services.filter(s => {
                 const q = !this.search || s.name.toLowerCase().includes(this.search.toLowerCase());
-                const c = this.filterCat === null || s.cat_id === this.filterCat;
-                return q && c;
+                const ids = this.catIdsActivos();
+                return q && (ids === null || ids.includes(s.cat_id));
             });
         },
 
@@ -1363,18 +1520,38 @@ function posApp() {
         removeFromCart(idx) { this.cart.splice(idx, 1); },
         clearCart() { this.cart = []; this.paymentForm.received = 0; this.showCustom = false; },
 
+        /* Vaciar a peticion del usuario SI pregunta: el boton vive junto al
+           ticket armado, con el cliente delante, y un toque de mas perdia todo
+           el trabajo. Venta Express ya lo hacia asi. `clearCart()` se sigue
+           usando tal cual despues de cobrar, donde no hay nada que preguntar. */
+        async vaciarCarrito() {
+            if (!this.cart.length) return;
+            if (typeof bxConfirmar === 'function') {
+                const ok = await bxConfirmar({
+                    titulo: 'Vaciar el carrito',
+                    descripcion: 'Se quitarán todos los productos del ticket. ¿Continuar?',
+                    boton: 'Vaciar',
+                });
+                if (! ok) return;
+            }
+            this.clearCart();
+        },
+
         // Un solo canal para hablar con el servidor desde el mostrador.
         // Antes, cualquier fallo se resumia en "Error al registrar la venta" o
         // "No se pudo generar la cotizacion": el cajero no podia distinguir una
         // sesion caducada (419, se arregla recargando) de una falta de permiso
         // (403) o de un limite de stock (422). Ahora el motivo se dice.
-        async postJson(url, payload) {
+        async postJson(url, payload, huella) {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
                     'Accept': 'application/json',
+                    // Huella del intento: el servidor devuelve la MISMA venta
+                    // si la peticion se repite, en vez de cobrar dos veces.
+                    ...(huella ? { 'X-Idempotencia': huella } : {}),
                 },
                 body: JSON.stringify(payload),
             });
@@ -1397,15 +1574,42 @@ function posApp() {
         async charge() {
             if (this.cart.length === 0 || !this.paymentForm.method || this.processing) return;
             if (this.splitPayment && Math.abs((this.paymentForm.amount1 + this.paymentForm.amount2) - this.cartTotal) >= 0.01) return;
+
+            /* En efectivo, el dinero tiene que alcanzar. La pantalla ya pintaba
+               "Falta S/ X" en rojo, pero el boton cobraba igual: la venta se
+               registraba como pagada con menos dinero del debido y la caja
+               cuadraba mal al cierre. Venta Express ya lo bloqueaba. */
+            if (!this.splitPayment && this.paymentForm.method === 'Efectivo'
+                && (Number(this.paymentForm.received) || 0) + 0.005 < this.cartTotal) {
+                const falta = (this.cartTotal - (Number(this.paymentForm.received) || 0)).toFixed(2);
+                bxAviso('El efectivo recibido no cubre el total: faltan S/ ' + falta + '.', 'error');
+                return;
+            }
+            // Una huella POR VENTA: se conserva mientras el cobro se reintenta
+            // y se renueva al vaciar el carrito.
+            if (!this.huellaVenta) this.huellaVenta = 'v' + Date.now() + Math.random().toString(36).slice(2, 8);
             this.processing = true;
             const payMethod = this.splitPayment
                 ? `${this.paymentForm.method} (S/${this.paymentForm.amount1.toFixed(2)}) + ${this.paymentForm.method2} (S/${this.paymentForm.amount2.toFixed(2)})`
                 : this.paymentForm.method;
             try {
-                const data = await this.postJson('{{ route("pos.store", $project) }}', {
+                /* La ruta la decide el controlador segun la cara por la que se
+                   entro (Ventas, panel o portal): escrita a mano aqui, el POS
+                   de Ventas cobraba contra la ruta del panel, que resuelve el
+                   negocio por otra clave de sesion. */
+                const data = await this.postJson(@js($posStoreRoute ?? route('pos.store')), {
+                        client_id:      this.paymentForm.client_id || null,
                         client_name:    this.paymentForm.client_name || null,
                         client_phone:   this.paymentForm.client_phone || null,
                         payment_method: payMethod,
+                        /* COBRAR ES COBRAR. Sin este dato el servidor guardaba
+                           TODA venta de mostrador como `pending`: aparecia en
+                           Cuentas por Cobrar como deuda aunque el cliente
+                           hubiera pagado en efectivo y se le hubiera dado
+                           vuelto, y el asiento del libro —que solo se escribe
+                           si viene `paid`— no llegaba a registrarse nunca.
+                           Venta Express ya lo mandaba bien. */
+                        paid:           true,
                         notes:          this.paymentForm.notes || null,
                         table_number:   this.paymentForm.table_number || null,
                         order_type:     this.paymentForm.table_number ? 'mesa' : null,
@@ -1416,7 +1620,7 @@ function posApp() {
                             price:      this.itemTotal(i) / i.qty,
                             quantity:   i.qty,
                         })),
-                });
+                }, this.huellaVenta);
                 {
                     this.lastTotal  = parseFloat(data.total);
                     this.lastChange = (!this.splitPayment && this.paymentForm.method === 'Efectivo')
@@ -1438,6 +1642,9 @@ function posApp() {
                         created_at:     new Date().toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit'}),
                     });
                     this.successModal = true;
+                    this.olvidarCarrito();
+                    this.huellaVenta = '';   // la siguiente venta, huella nueva
+                    this.paymentForm.client_id     = null;
                     this.paymentForm.client_name   = '';
                     this.paymentForm.client_phone  = '';
                     this.paymentForm.notes         = '';
@@ -1454,6 +1661,57 @@ function posApp() {
             this.processing = false;
         },
 
+        /* ── Cliente registrado ───────────────────────────────────────────
+           La venta se ata al cliente (`client_id`), no a un texto suelto: asi
+           entra en su historial y en su cuenta por cobrar. Si no existe, el
+           nombre tecleado se guarda igual y no estorba. */
+        async buscarCliente() {
+            const q = (this.paymentForm.client_name || '').trim();
+            this.paymentForm.client_id = null;   // al reescribir, deja de ser el elegido
+            if (q.length < 2 || !RUTA_CLIENTES) { this.clientesSug = []; return; }
+            try {
+                const res = await fetch(RUTA_CLIENTES + '?q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } });
+                const data = await res.json();
+                this.clientesSug = (data.clientes || []).slice(0, 6);
+            } catch (e) { this.clientesSug = []; }
+        },
+
+        elegirCliente(c) {
+            this.paymentForm.client_id    = c.id;
+            this.paymentForm.client_name  = c.nombre;
+            this.paymentForm.client_phone = c.telefono || this.paymentForm.client_phone;
+            this.clientesSug = [];
+        },
+
+        /* ── Respaldo del carrito ─────────────────────────────────────────
+           No es un pedido guardado: es una red para que nada se pierda entre
+           que se arma la venta y se cobra. Se limpia al cobrar y caduca a las
+           12 horas (un carrito de ayer ya no sirve). */
+        claveCarrito() { return 'pos_carrito_' + @json($project->id ?? 0); },
+
+        guardarCarrito() {
+            try {
+                if (!this.cart.length) return localStorage.removeItem(this.claveCarrito());
+                localStorage.setItem(this.claveCarrito(), JSON.stringify({ cart: this.cart, cuando: Date.now() }));
+            } catch (e) { /* modo privado o sin espacio: se sigue sin red */ }
+        },
+
+        recuperarCarrito() {
+            try {
+                const crudo = localStorage.getItem(this.claveCarrito());
+                if (!crudo) return;
+                const g = JSON.parse(crudo);
+                if (!g || !Array.isArray(g.cart) || !g.cart.length) return;
+                if ((Date.now() - (g.cuando || 0)) / 3600000 > 12) return this.olvidarCarrito();
+                this.cart = g.cart;
+                bxAviso('Recuperamos la venta que estabas armando.', 'exito');
+            } catch (e) { /* respaldo ilegible: se ignora */ }
+        },
+
+        olvidarCarrito() {
+            try { localStorage.removeItem(this.claveCarrito()); } catch (e) {}
+        },
+
         setVista(v) {
             this.vista = v;
             try { localStorage.setItem('pos_vista', v); } catch (e) {}
@@ -1463,7 +1721,7 @@ function posApp() {
             if (this.cart.length === 0 || this.processing) return;
             this.processing = true;
             try {
-                const data = await this.postJson('{{ route("pos.quote", $project) }}', {
+                const data = await this.postJson(@js($posQuoteRoute ?? route('pos.quote')), {
                         client_name:  this.paymentForm.client_name || null,
                         client_phone: this.paymentForm.client_phone || null,
                         notes:        this.paymentForm.notes || null,

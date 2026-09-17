@@ -167,7 +167,17 @@ function bxAvisosGlobales() {
 
         avisar(msg, tipo) {
             if (!msg) return;
-            tipo = tipo || 'success';
+            /* ALIAS EN CASTELLANO. Medio proyecto llama con 'exito' —y es
+               natural, todo el codigo esta en español— pero las clases y los
+               iconos solo existen para los cuatro nombres en ingles. El aviso
+               mas importante del modulo ("Guia emitida", "Nota emitida",
+               "Aceptada por SUNAT") salia como un rectangulo blanco, sin color
+               ni icono: nadie lo leia como una confirmacion. Se traduce aqui,
+               en un solo sitio, y cubre tambien las vistas que vengan. */
+            tipo = ({ exito: 'success', correcto: 'success', ok: 'success',
+                      aviso: 'warning', advertencia: 'warning',
+                      informacion: 'info', info: 'info' })[tipo] || tipo;
+            tipo = ['success', 'error', 'warning', 'info'].includes(tipo) ? tipo : 'success';
             const id = Date.now() + Math.round(performance.now());
             this.toasts.push({ id: id, msg: String(msg), tipo: tipo });
             /* Un error se queda mas tiempo: suele haber que leerlo dos veces. */

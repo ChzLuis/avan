@@ -1,7 +1,9 @@
 <?php
 namespace App\Models;
+use App\Models\Traits\HasProjectScope;
 use Illuminate\Database\Eloquent\Model;
 class InventoryMovement extends Model {
+    use HasProjectScope;
     protected $fillable = [
         'project_id', 'product_id', 'user_id', 'type', 'reason', 'quantity',
         'unit_cost', 'balance_after', 'reference_type', 'reference_id', 'notes',

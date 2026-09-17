@@ -78,7 +78,7 @@ class ClientController extends Controller
                 'detalle' => ($o->payment_status === 'paid' ? 'Pagado' : 'Pago pendiente'),
                 'monto' => (float) $o->total, 'fecha' => $o->created_at]);
         }
-        foreach (\App\Models\Invoice::where('client_id', $client->id)->latest()->limit(30)->get() as $i) {
+        foreach (\App\Models\Invoice::where('client_id', $client->id)->where('status', '!=', 'draft')->latest()->limit(30)->get() as $i) {
             $eventos->push(['tipo' => 'comprobante', 'etiqueta' => $i->getTypeLabel().' '.$i->numero,
                 'detalle' => $i->sunat_status === 'accepted' ? 'Aceptada SUNAT' : ($i->sunat_status ?: 'Emitida'),
                 'monto' => (float) $i->total, 'fecha' => $i->created_at]);

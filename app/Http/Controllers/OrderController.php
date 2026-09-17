@@ -503,6 +503,14 @@ class OrderController extends Controller
             ];
         })->values()->all();
 
+        /* El tablero se refresca cada 30 s. Antes se descargaba la pagina
+           entera solo para decidir recargarla —dos cargas completas, y se
+           perdia el scroll en una pantalla que esta abierta todo el servicio.
+           Devolviendo los pedidos en JSON, la lista se actualiza en su sitio. */
+        if (request()->expectsJson()) {
+            return response()->json(['orders' => $ordersJson]);
+        }
+
         return view('orders.kitchen', compact('orders', 'ordersJson', 'project'));
     }
 

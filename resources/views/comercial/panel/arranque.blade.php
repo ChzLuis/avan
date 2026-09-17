@@ -1,7 +1,12 @@
 {{-- Checklist de arranque: la guia de dia uno. Solo existe mientras falte
      algo; cada check nace de una consulta, no de una casilla que alguien
      marca. Al completarse los pasos, la tarjeta desaparece sola. --}}
-@if($arranque)
+{{-- `?? null`: la rama de rifa del panel (DashboardController::indexRifa)
+     reutiliza esta misma vista pero no calcula $arranque, y sin el blindaje
+     Laravel convierte la variable indefinida en excepcion: el Inicio entero
+     daba 500 en todo proyecto con ventas de rifa. El resto de variables de la
+     rama estandar ya venian blindadas; esta era la unica suelta. --}}
+@if($arranque ?? null)
 <section class="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" aria-labelledby="tit-arranque">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <div>

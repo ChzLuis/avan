@@ -17,7 +17,14 @@ class QuoteController extends Controller
         // Eager-load de lo que la vista recorre de verdad: items (se serializan
         // todos) y order (la relacion con el pedido). Con solo 'client' cada
         // cotizacion disparaba dos consultas extra al pintar la lista.
-        $quotes            = $project->quotes()->with(['client', 'items', 'order', 'autor:id,name'])->latest()->get();
+        /* TOPE. La lista entera —con todas sus lineas— viaja serializada dentro
+           del atributo x-data del HTML: sin limite, un negocio con cientos de
+           cotizaciones se descarga megas en cada visita y el filtrado en el
+           navegador se arrastra, que se siente como un buscador colgado. 300
+           es mas de lo que nadie repasa a ojo; para buscar una vieja esta el
+           buscador, que ya mira numero, cliente y documento. */
+        $quotes            = $project->quotes()->with(['client', 'items', 'order', 'autor:id,name'])
+                                ->latest()->limit(300)->get();
         $paymentMethods    = $this->catValues($project, 'payment_method');
         $paymentConditions = $this->catValues($project, 'payment_condition');
         $portalLayout      = request()->routeIs('bixosales.*') ? 'comercial' : 'panel';
@@ -661,9 +668,9 @@ class QuoteController extends Controller
     {
         $project   = $this->projectBySlug($slug);
         $clients   = $project->clients()->orderBy('name')->get(['id','name','email','phone']);
-        $productos = $project->products()->orderBy('name')->get(['id','name','description','price'])
+        $productos = $project->products()->where('is_available', true)->orderBy('name')->get(['id','name','description','price'])
                         ->map(fn($p) => ['id'=>$p->id,'name'=>$p->name,'desc'=>$p->description??$p->name,'price'=>(float)$p->price]);
-        $servicios = $project->services()->orderBy('name')->get(['id','name','description','price'])
+        $servicios = $project->services()->where('is_available', true)->orderBy('name')->get(['id','name','description','price'])
                         ->map(fn($s) => ['id'=>$s->id,'name'=>$s->name,'desc'=>$s->description??$s->name,'price'=>(float)$s->price]);
         $catalogo  = $productos->merge($servicios)->values();
         $rucUrl    = route('facturacion.ruc.lookup', $slug);
@@ -675,6 +682,7 @@ class QuoteController extends Controller
         $project = $this->projectBySlug($slug);
         $quote   = Quote::where('id', $id)->where('project_id', $project->id)->firstOrFail();
         $quote->load('items');
+
         return response()->json($quote);
     }
 
@@ -706,9 +714,9 @@ class QuoteController extends Controller
         $project   = $this->projectBySlug($slug);
         $quote     = Quote::where('id', $id)->where('project_id', $project->id)->with('items')->firstOrFail();
         $clients   = $project->clients()->orderBy('name')->get(['id','name','email','phone']);
-        $productos = $project->products()->orderBy('name')->get(['id','name','description','price'])
+        $productos = $project->products()->where('is_available', true)->orderBy('name')->get(['id','name','description','price'])
                         ->map(fn($p) => ['id'=>$p->id,'name'=>$p->name,'desc'=>$p->description??$p->name,'price'=>(float)$p->price]);
-        $servicios = $project->services()->orderBy('name')->get(['id','name','description','price'])
+        $servicios = $project->services()->where('is_available', true)->orderBy('name')->get(['id','name','description','price'])
                         ->map(fn($s) => ['id'=>$s->id,'name'=>$s->name,'desc'=>$s->description??$s->name,'price'=>(float)$s->price]);
         $catalogo         = $productos->merge($servicios)->values();
         $boletaCreateUrl  = route('facturacion.boletas.create', $slug);
@@ -779,6 +787,32 @@ class QuoteController extends Controller
         $project = $this->projectBySlug($slug);
         $quote   = Quote::where('id', $id)->where('project_id', $project->id)->firstOrFail();
         $quote->load('items');
+
+        /* UNA COTIZACION SE FACTURA UNA VEZ. Esta funcion nacio como copia de
+           `convert()` y se quedo sin sus defensas: doble clic en "Convertir a
+           boleta" emitia DOS comprobantes, quemaba dos correlativos y
+           declaraba el mismo importe dos veces a SUNAT. Corregirlo despues
+           obliga a una nota de credito. */
+        /* `allProjects()` porque el portal resuelve el negocio por slug, no
+           por sesion: con el scope de tenant puesto, esta consulta no veia
+           nada y la guarda no servia de nada. El filtro de proyecto es
+           explicito, asi que el aislamiento se mantiene. */
+        $yaFacturada = Invoice::allProjects()
+            ->where('project_id', $project->id)
+            ->where('quote_id', $quote->id)
+            ->first();
+
+        if ($yaFacturada) {
+            return response()->json([
+                'ok'      => true,
+                'already' => true,
+                'invoice' => $yaFacturada->only(['id', 'numero', 'type', 'total']),
+                'message' => "Esta cotización ya se facturó: {$yaFacturada->numero}.",
+                'redirect' => $request->input('type', 'boleta') === 'factura'
+                    ? route('facturacion.facturas', $slug)
+                    : route('facturacion.boletas', $slug),
+            ]);
+        }
 
         // El gate de F1b se retira aqui: `invoice_items` ya guarda `discount`
         // y la linea fiscal se calcula en centavos enteros, asi que
@@ -870,7 +904,12 @@ class QuoteController extends Controller
                 return $invoice;
             });
 
-        $quote->update(['status' => 'accepted']);
+        /* El estado solo avanza. Ponerlo en "accepted" hacia RETROCEDER una
+           cotizacion ya convertida en pedido, reabriendo el boton de
+           convertir y rompiendo la trazabilidad. */
+        if ($quote->status !== 'converted') {
+            $quote->update(['status' => 'accepted']);
+        }
 
         $redirectUrl = $docType === 'factura'
             ? route('facturacion.facturas', $slug)

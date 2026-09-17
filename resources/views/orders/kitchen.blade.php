@@ -333,6 +333,10 @@ function kitchenBoard() {
         },
 
         timeAgo(iso) {
+            /* Leer `ticker` hace que Alpine repinte el texto cada vez que
+               avanza: se incrementaba cada 30 s pero no se usaba en ninguna
+               expresion, asi que los minutos solo cambiaban al recargar. */
+            this.ticker;
             const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
             if (diff < 1) return 'Ahora';
             if (diff === 1) return 'Hace 1 min';
@@ -365,16 +369,33 @@ function kitchenBoard() {
                     if (newStatus === 'ready')   this.orders[idx].ready_at   = new Date().toISOString();
                     if (newStatus === 'served')  this.orders.splice(idx, 1);
                 }
+            } else {
+                /* Sin este aviso, un 403 dejaba el plato en su columna y el
+                   cocinero volvia a pulsar creyendo que no habia registrado. */
+                const d = await res.json().catch(() => ({}));
+                bxAviso(d.message || 'No se pudo cambiar el estado del pedido.', 'error');
             }
         },
 
+        /* Antes esto descargaba la PAGINA ENTERA solo para decidir hacer
+           `location.reload()`, es decir dos cargas completas cada 30 segundos:
+           se perdia el scroll y cualquier interaccion a medias, en una pantalla
+           que esta abierta todo el servicio. Ahora se traen solo los pedidos y
+           se actualiza la lista en su sitio. */
         async reload() {
             try {
                 const res = await fetch(window.location.href, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                // Solo recargamos si la página sigue disponible
-                if (res.ok) window.location.reload();
+                if (! res.ok) return;
+                const data = await res.json().catch(() => null);
+                if (data && Array.isArray(data.orders)) {
+                    this.orders = data.orders;
+                    return;
+                }
+                /* Si esta ruta todavia no responde JSON, se recarga como antes:
+                   vale mas una recarga molesta que una cocina desactualizada. */
+                window.location.reload();
             } catch(e) {}
         },
     }

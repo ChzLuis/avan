@@ -78,7 +78,11 @@ class ReservaController extends Controller
         $data = $request->validate([
             'client_name'  => 'sometimes|required|string|max:100',
             'client_phone' => 'nullable|string|max:30',
-            'date'         => 'sometimes|required|date',
+            /* Mismo criterio que al crear: `store` exige `after_or_equal:today`
+               y esto no, asi que una reserva se podia mover al PASADO
+               editandola — y entonces desaparece del tablero, que solo mira
+               desde ayer. Se admite la de hoy para poder corregir una hora. */
+            'date'         => 'sometimes|required|date|after_or_equal:today',
             'start_time'   => 'sometimes|required|date_format:H:i',
             'end_time'     => 'nullable|date_format:H:i',
             'guests'       => 'nullable|integer|min:1|max:99',

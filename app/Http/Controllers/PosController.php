@@ -14,7 +14,7 @@ class PosController extends Controller
         /** @var \App\Models\Project $project */
         $project = $this->proyectoActivo();
         $products = $project->products()
-            ->with(['images' => fn($q) => $q->where('is_main', true)])
+            ->with(['images' => fn($q) => $q->where('is_main', true), 'marca:id,label'])
             ->orderBy('name')
             ->get();
 
@@ -54,6 +54,8 @@ class PosController extends Controller
             'max'       => $p->price_max !== null ? (float) $p->price_max : null,
             'cost'      => $p->cost !== null ? (float) $p->cost : null,
             'cat_id'    => $p->category_id,
+            'brand'    => (string) ($p->marca?->label ?? ''),
+            'sku'    => (string) ($p->sku ?? ''),
             'stock'     => $p->stock,
             'image'     => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null,
         ])->values();
@@ -68,7 +70,7 @@ class PosController extends Controller
             'duration_min' => $s->duration_min,
         ])->values();
 
-        $categoriesJs = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values();
+        $categoriesJs = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'parent_id' => $c->parent_id])->values();
 
         $transactionsJs = $transactions->map(fn($t) => [
             'id'             => $t->id,
@@ -78,13 +80,52 @@ class PosController extends Controller
             'created_at'     => $t->created_at->format('H:i'),
         ])->values();
 
-        return view('pos.index', compact('project', 'paymentMethods', 'productsJs', 'servicesJs', 'categoriesJs', 'transactionsJs'));
+        /* La vista tiene que cobrar contra la ruta de SU cara. Escrita a mano
+           dentro del Blade, el POS de Ventas posteaba a `/pos` (la del panel),
+           y esa ruta resuelve el negocio por `active_project_id` en vez de por
+           `comercial_project_id`: con Configuracion abierta en otro negocio la
+           venta se registraba ALLI, y sin sesion de panel daba 500. */
+        $posStoreRoute = route('pos.store');
+        $posQuoteRoute = route('pos.quote');
+
+        return view('pos.index', compact('project', 'paymentMethods', 'productsJs', 'servicesJs', 'categoriesJs', 'transactionsJs', 'posStoreRoute', 'posQuoteRoute'));
     }
 
     public function store(Request $request)
     {
         /** @var \App\Models\Project $project */
         $project = $this->proyectoActivo();
+
+        /* DOBLE COBRO. Con el cliente delante y la red lenta, el cajero toca
+           "Cobrar" otra vez, o recarga: salian DOS ventas y el stock se
+           descontaba dos veces. La huella la manda el navegador; el segundo
+           envio recibe la venta ya creada en vez de crear otra. */
+        $huella = trim((string) $request->header('X-Idempotencia'));
+        $candado = null;
+        if ($huella !== '') {
+            $candado = 'pos:'.$project->id.':'.substr(preg_replace('/[^A-Za-z0-9\-]/', '', $huella), 0, 64);
+
+            if ($yaCobrada = \Illuminate\Support\Facades\Cache::get($candado)) {
+                $previa = Order::where('project_id', $project->id)->with('items')->find($yaCobrada);
+                if ($previa) {
+                    return response()->json([
+                        'ok' => true, 'repetida' => true,
+                        'order' => $previa, 'total' => $previa->total, 'stock_update' => [],
+                    ]);
+                }
+            }
+            // `add` es atomico: si otra peticion ya lo puso, esta no entra.
+            if (! \Illuminate\Support\Facades\Cache::add($candado.':curso', 1, 30)) {
+                return response()->json([
+                    'ok' => false,
+                    'error' => 'Esa venta ya se está cobrando. Espera un momento.',
+                ], 409);
+            }
+            // Se suelta pase lo que pase: si el cobro falla, el cajero tiene
+            // que poder reintentar en el acto, no esperar 30 segundos a ciegas.
+            app()->terminating(fn () => \Illuminate\Support\Facades\Cache::forget($candado.':curso'));
+        }
+
         $data = $request->validate([
             'client_name'    => 'nullable|string|max:100',
             'client_phone'   => 'nullable|string|max:30',
@@ -245,6 +286,12 @@ class PosController extends Controller
                 'stock'      => Product::where('id', $i['product_id'])->value('stock'),
             ])->values();
 
+        // Con la venta ya creada, el reintento devuelve esta misma.
+        if ($candado) {
+            \Illuminate\Support\Facades\Cache::put($candado, $order->id, 30);
+            \Illuminate\Support\Facades\Cache::forget($candado.':curso');
+        }
+
         return response()->json([
             'ok'           => true,
             'order'        => $order->load('items'),
@@ -259,20 +306,23 @@ class PosController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project        = app('active_project');
-        $products       = $project->products()->with(['images' => fn($q) => $q->where('is_main', true)])->orderBy('name')->get();
+        $products       = $project->products()->with(['images' => fn($q) => $q->where('is_main', true), 'marca:id,label'])->orderBy('name')->get();
         $services       = $project->services()->where('is_available', true)->orderBy('name')->get();
         $categories     = $project->categories()->where('is_active', true)->orderBy('sort_order')->get();
         $paymentMethods = $this->catValues($project, 'payment_method');
         $transactions   = $project->orders()->where('sales_channel', 'pos')->whereDate('created_at', today())->latest()->limit(50)->get();
 
-        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'suggested' => (float) ($p->price_suggested ?? $p->price), 'min' => $p->price_min !== null ? (float) $p->price_min : null, 'max' => $p->price_max !== null ? (float) $p->price_max : null, 'cost' => $p->cost !== null ? (float) $p->cost : null, 'cat_id' => $p->category_id, 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
+        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'suggested' => (float) ($p->price_suggested ?? $p->price), 'min' => $p->price_min !== null ? (float) $p->price_min : null, 'max' => $p->price_max !== null ? (float) $p->price_max : null, 'cost' => $p->cost !== null ? (float) $p->cost : null, 'cat_id' => $p->category_id,
+            'brand' => (string) ($p->marca?->label ?? ''),
+            'sku' => (string) ($p->sku ?? ''), 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
         $servicesJs     = $services->map(fn($s) => ['id' => $s->id, 'type' => 'service', 'name' => $s->name, 'price' => (float) $s->price, 'cat_id' => $s->category_id, 'image' => null, 'duration_min' => $s->duration_min])->values();
-        $categoriesJs   = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values();
+        $categoriesJs   = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'parent_id' => $c->parent_id])->values();
         $transactionsJs = $transactions->map(fn($t) => ['id' => $t->id, 'client_name' => $t->client_name, 'payment_method' => $t->payment_method ?? '—', 'total' => $t->total, 'created_at' => $t->created_at->format('H:i')])->values();
 
         $posStoreRoute  = route('bixosales.pos.store');
+        $posQuoteRoute  = route('bixosales.pos.quote');
         $portalLayout   = 'comercial';
-        return view('pos.index', compact('project', 'paymentMethods', 'productsJs', 'servicesJs', 'categoriesJs', 'transactionsJs', 'posStoreRoute', 'portalLayout'));
+        return view('pos.index', compact('project', 'paymentMethods', 'productsJs', 'servicesJs', 'categoriesJs', 'transactionsJs', 'posStoreRoute', 'posQuoteRoute', 'portalLayout'));
     }
 
     // ── Portal Facturación ────────────────────────────────────────────────────
@@ -280,19 +330,23 @@ class PosController extends Controller
     public function indexPortal(string $slug)
     {
         $project        = Project::where('slug', $slug)->firstOrFail();
-        $products       = $project->products()->with(['images' => fn($q) => $q->where('is_main', true)])->orderBy('name')->get();
+        $products       = $project->products()->with(['images' => fn($q) => $q->where('is_main', true), 'marca:id,label'])->orderBy('name')->get();
         $services       = $project->services()->where('is_available', true)->orderBy('name')->get();
         $categories     = $project->categories()->where('is_active', true)->orderBy('sort_order')->get();
         $paymentMethods = $this->catValues($project, 'payment_method');
         $transactions   = $project->orders()->where('sales_channel', 'pos')->whereDate('created_at', today())->latest()->limit(50)->get();
 
-        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'suggested' => (float) ($p->price_suggested ?? $p->price), 'min' => $p->price_min !== null ? (float) $p->price_min : null, 'max' => $p->price_max !== null ? (float) $p->price_max : null, 'cost' => $p->cost !== null ? (float) $p->cost : null, 'cat_id' => $p->category_id, 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
+        $productsJs     = $products->map(fn($p) => ['id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => (float) $p->price, 'suggested' => (float) ($p->price_suggested ?? $p->price), 'min' => $p->price_min !== null ? (float) $p->price_min : null, 'max' => $p->price_max !== null ? (float) $p->price_max : null, 'cost' => $p->cost !== null ? (float) $p->cost : null, 'cat_id' => $p->category_id,
+            'brand' => (string) ($p->marca?->label ?? ''),
+            'sku' => (string) ($p->sku ?? ''), 'stock' => $p->stock, 'image' => $p->images->first() ? $this->resolveImageUrl($p->images->first()->url) : null])->values();
         $servicesJs     = $services->map(fn($s) => ['id' => $s->id, 'type' => 'service', 'name' => $s->name, 'price' => (float) $s->price, 'cat_id' => $s->category_id, 'image' => null, 'duration_min' => $s->duration_min])->values();
-        $categoriesJs   = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values();
+        $categoriesJs   = $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'parent_id' => $c->parent_id])->values();
         $transactionsJs = $transactions->map(fn($t) => ['id' => $t->id, 'client_name' => $t->client_name, 'payment_method' => $t->payment_method ?? '—', 'total' => $t->total, 'created_at' => $t->created_at->format('H:i')])->values();
 
         $posStoreRoute = route('facturacion.pos.store', $slug);
-        return view('pos.index', compact('project', 'paymentMethods', 'productsJs', 'servicesJs', 'categoriesJs', 'transactionsJs', 'posStoreRoute'));
+        // Esta cara no expone `cotizar`: la vista oculta el boton si viene vacia.
+        $posQuoteRoute = null;
+        return view('pos.index', compact('project', 'paymentMethods', 'productsJs', 'servicesJs', 'categoriesJs', 'transactionsJs', 'posStoreRoute', 'posQuoteRoute'));
     }
 
     public function storePortal(\Illuminate\Http\Request $request, string $slug)

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasProjectScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Payment extends Model
 {
+    use HasProjectScope;
+
     protected $fillable = [
         'project_id', 'payable_type', 'payable_id', 'amount_cents',
         'method', 'reference', 'received_at', 'source', 'user_id',

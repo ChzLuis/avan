@@ -94,6 +94,15 @@
     // y numeracion: van como entradas INDEPENDIENTES, no bajo un solo enlace.
     // El listado se filtra con `?tipo=` (InvoiceController::index).
     $_facturacion = array_filter([
+        // La portada del modulo: pendientes ante SUNAT y una tarjeta por accion.
+        // La portada de Facturacion es de movil; en escritorio el menu va
+        // directo a Facturas, asi que la entrada se oculta (indice 6 = clase).
+        $_mod['facturas'] ? ['Facturación', 'bixosales.facturacion', 'factura', ['invoices.ver'], null, [], 'nav-solo-movil'] : null,
+        /* Cada comprobante es un tramite DISTINTO ante SUNAT, con su serie y
+           su numeracion: el menu los ofrece por separado a proposito, y hay un
+           test que lo vigila (`facturas_boletas_y_notas_son_entradas_independientes`).
+           Se intento unificarlos en un solo "Emitir comprobante" y se revirtio:
+           parecia ruido y en realidad es la separacion fiscal. */
         $_mod['facturas'] ? ['Facturas', 'bixosales.facturas', 'factura', ['invoices.ver'], null, ['tipo' => 'factura']] : null,
         $_mod['facturas'] ? ['Boletas', 'bixosales.facturas', 'factura', ['invoices.ver'], null, ['tipo' => 'boleta']] : null,
         $_mod['facturas'] ? ['Notas de crédito y débito', 'bixosales.facturas', 'cotizacion', ['invoices.ver'], null, ['tipo' => 'nota']] : null,
@@ -131,11 +140,18 @@
     // REPORTES: consultar y cuadrar. Emitir es otro trabajo y vive arriba.
     $_analisis = array_filter([
         ['Reportes', 'bixosales.reportes.ventas.general', 'reportes', ['reports.ver']],
+        /* Rentabilidad y Top de productos NO tenian ni un solo enlace en toda
+           la interfaz: solo se llegaba escribiendo la URL a mano. Rentabilidad
+           es justo la que cruza costos y margenes, la mas util para decidir
+           precios. */
+        ['Rentabilidad', 'bixosales.reportes.rentabilidad', 'reportes', ['reports.ver']],
+        ['Productos más vendidos', 'bixosales.reportes.top.productos', 'reportes', ['reports.ver']],
         // Buscar un comprobante ya emitido no es emitir: su buscador estaba
         // dentro de la pantalla de emisión, disputándole el sitio al formulario.
         $_mod['facturas'] ? ['Comprobantes emitidos', 'bixosales.facturas.consulta', 'factura', ['invoices.ver']] : null,
+        $_mod['facturas'] ? ['Histórico de guías', 'bixosales.guias.consulta', 'delivery', ['invoices.ver']] : null,
         // El Registro de Ventas es el cierre mensual para el contador.
-        $_mod['facturas'] ? ['Registro de ventas', 'invoices.registro', 'cobranza', ['invoices.ver']] : null,
+        $_mod['facturas'] ? ['Registro de ventas', 'bixosales.facturas.registro', 'cobranza', ['invoices.ver']] : null,
     ], fn ($i) => $i && $_puede($i[3]));
     if ($_analisis) $_grupos[] = ['titulo' => 'Reportes', 'items' => array_values($_analisis)];
 
@@ -170,7 +186,28 @@
         </span>
     </a>
 
+    {{-- Solo en el cajon movil: ajustes y salir arriba a la derecha, como en
+         la referencia. En escritorio no se pintan (ya estan en el menu y en la
+         barra superior). --}}
+    <div class="nav-acciones" aria-label="Cuenta">
+        @if(\Illuminate\Support\Facades\Route::has('settings') && $_puede(['settings.negocio', 'settings.diseno', 'manage-settings']))
+        <a href="{{ route('settings') }}" title="Configuración" aria-label="Configuración">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7.4-3a7.4 7.4 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L14.8 3H9.2l-.4 2.6a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L4.7 11a7.4 7.4 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.6h5.6l.4-2.6a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6c.1-.3.1-.7.1-1z"/></svg>
+        </a>
+        @endif
+        @if(\Illuminate\Support\Facades\Route::has('bixosales.logout'))
+        <form method="POST" action="{{ route('bixosales.logout') }}">@csrf
+            <button type="submit" title="Salir" aria-label="Salir">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H4m0 0 4-4m-4 4 4 4M13 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/></svg>
+            </button>
+        </form>
+        @endif
+    </div>
+
     <div class="nav-scroll">
+        <style>
+            @media (min-width: 768px) { .nav-item.nav-solo-movil { display: none; } }
+        </style>
         @foreach($_grupos as $g)
             @if(count($g['items']))
                 @if($g['titulo'])
@@ -193,7 +230,7 @@
                     @endphp
                     @if(\Illuminate\Support\Facades\Route::has($ruta))
                     <a href="{{ route($ruta, $_params) }}"
-                       class="nav-item {{ $activo ? 'active' : '' }}"
+                       class="nav-item {{ $activo ? 'active' : '' }} {{ $_it[6] ?? '' }}"
                        @if($activo) aria-current="page" @endif
                        data-tip="{{ $etiqueta }}" aria-label="{{ $etiqueta }}" title="{{ $etiqueta }}">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

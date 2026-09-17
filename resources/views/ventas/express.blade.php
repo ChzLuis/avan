@@ -281,6 +281,8 @@
 function ventaExpress() {
     return {
         done: null, sending: false, error: '', copied: false, mode: null, cartOpen: false, flash: false,
+        // Huella POR VENTA: identifica el intento ante el servidor.
+        huellaVenta: '',
         saved: true, draftAvailable: false, _saveTimer: null,
         clients: {{ Js::from($clientsLite) }},
         products: {{ Js::from($productsLite) }},
@@ -399,7 +401,16 @@ function ventaExpress() {
                 if (this.promisedAt) payload.promised_at = this.promisedAt;
                 if (this.advance) payload.advance_amount = Number(this.advance);
             }
-            const hdr = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content };
+            /* HUELLA ANTI DOBLE COBRO. El candado `sending` cubre el doble
+               toque, pero NO el reintento tras un timeout ni la recarga con
+               reenvio: ahi se cobraba dos veces. El servidor ya tiene la
+               proteccion (PosController::store), pero solo se activa si llega
+               esta cabecera; el POS la mandaba y Express no. Se conserva
+               mientras se reintenta la MISMA venta y se renueva al vaciar. */
+            if (!this.huellaVenta) this.huellaVenta = 'e' + Date.now() + Math.random().toString(36).slice(2, 8);
+            const hdr = { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                          'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                          'X-Idempotencia': this.huellaVenta };
             try {
                 if (mode === 'quote') {
                     const r = await fetch(@js($quoteUrl), { method: 'POST', headers: hdr, body: JSON.stringify(payload) });
@@ -433,7 +444,9 @@ function ventaExpress() {
             } catch (e) { this.error = e.message; }
             this.sending = false;
         },
-        reset() { this.done = null; this.mode = null; this.client = null; this.clientOpen = false; this.cName = ''; this.cPhone = ''; this.cart = []; this.payMethod = ''; this.payRef = ''; this.received = null; this.notes = ''; this.cartOpen = false; this.cSearch = ''; this.pSearch = ''; this.deliveryType = ''; this.deliveryAddress = ''; this.promisedAt = ''; this.advance = null; this.mixOn = false; this.mix = []; },
+        /* Venta nueva, huella nueva: si no se renovara, el servidor
+           devolveria la venta anterior en vez de registrar esta. */
+        reset() { this.huellaVenta = ''; this.done = null; this.mode = null; this.client = null; this.clientOpen = false; this.cName = ''; this.cPhone = ''; this.cart = []; this.payMethod = ''; this.payRef = ''; this.received = null; this.notes = ''; this.cartOpen = false; this.cSearch = ''; this.pSearch = ''; this.deliveryType = ''; this.deliveryAddress = ''; this.promisedAt = ''; this.advance = null; this.mixOn = false; this.mix = []; },
     };
 }
 </script>

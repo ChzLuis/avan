@@ -4,7 +4,10 @@
     sub="POS, pedidos, cotizaciones y cobros en un solo lugar. Rápido y sin complicaciones."
     :caps="['Punto de venta', 'Pedidos y cotizaciones', 'Cuentas por cobrar']"
     accent="#F0A63C" ink="#3A2606"
-    title="Iniciar sesión">
+    {{-- Sin encabezado del componente: este login tiene dos pasos y cada uno
+         pinta el suyo ("Iniciar sesión" y "¿Dónde vas a trabajar?"). Con el del
+         componente encima salia "Iniciar sesión" dos veces seguidas. --}}
+    :title="''" page-title="Iniciar sesión — BIXO">
 
     <div x-data="{
             step: 1,

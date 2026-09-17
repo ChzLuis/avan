@@ -100,7 +100,7 @@ $stStyle = [
                 Buscar
             </button>
             @if($buscar || $status)
-            <a href="{{ route('woo.orders',['desde'=>$desde,'hasta'=>$hasta]) }}"
+            <a href="{{ route('bixosales.woo.orders',['desde'=>$desde,'hasta'=>$hasta]) }}"
                style="font-size:11px;color:#9CA3AF;text-decoration:none;">✕ Limpiar</a>
             @endif
         </form>

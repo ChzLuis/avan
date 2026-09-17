@@ -34,7 +34,12 @@ class ReporteController extends Controller
 
         $totales = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            ->selectRaw("COUNT(*) as total, SUM(monto) as ingresos,
+            /* INGRESO es lo COBRADO, no lo vendido. `SUM(monto)` a secas sumaba
+               tambien lo pendiente y lo CANCELADO, asi que el reporte daba una
+               cifra inflada y distinta de la del panel de Inicio —que si filtra
+               por estado— para el mismo periodo. Dos pantallas, dos verdades. */
+            ->selectRaw("COUNT(*) as total,
+                SUM(CASE WHEN status IN ('pagado','enviado') THEN monto ELSE 0 END) as ingresos,
                 COUNT(CASE WHEN status='pendiente' THEN 1 END) as pendientes,
                 COUNT(CASE WHEN status='pagado' THEN 1 END) as pagados,
                 COUNT(CASE WHEN status='enviado' THEN 1 END) as enviados,
@@ -42,7 +47,7 @@ class ReporteController extends Controller
 
         $porPlan = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            ->selectRaw("plan_nombre, COUNT(*) as total, SUM(monto) as ingresos,
+            ->selectRaw("plan_nombre, COUNT(*) as total, SUM(CASE WHEN status IN ('pagado','enviado') THEN monto ELSE 0 END) as ingresos,
                 COUNT(CASE WHEN status='pendiente' THEN 1 END) as pendientes,
                 COUNT(CASE WHEN status='pagado' THEN 1 END) as pagados,
                 COUNT(CASE WHEN status='enviado' THEN 1 END) as enviados")
@@ -50,7 +55,7 @@ class ReporteController extends Controller
 
         $porDia = RifaVenta::allProjects()->whereIn('project_id', $ids)
             ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            ->selectRaw("DATE(created_at) as fecha, COUNT(*) as total, SUM(monto) as ingresos")
+            ->selectRaw("DATE(created_at) as fecha, COUNT(*) as total, SUM(CASE WHEN status IN ('pagado','enviado') THEN monto ELSE 0 END) as ingresos")
             ->groupBy('fecha')->orderBy('fecha')->get();
 
         return view('comercial.reportes.ventas-bot', compact('project', 'totales', 'porPlan', 'porDia', 'desde', 'hasta'));

@@ -311,6 +311,9 @@ function cajaPage() {
         caja: @json($cajaJson),
         historial: @json($historialJson),
         modalAbrir: false, modalMovimiento: false, modalCerrar: false,
+        // Candados anti doble toque: sin ellos, dos pulsaciones seguidas
+        // registraban dos veces el mismo movimiento o el mismo cierre.
+        enviandoMov: false, cerrando: false, abriendo: false,
         abrirForm: { monto: 0, notas: '' },
         movForm: { tipo: 'ingreso', concepto: '', monto: null, metodo_pago: '' },
         cerrarForm: { monto: null, notas: '' },
@@ -331,6 +334,10 @@ function cajaPage() {
 
         async registrarMovimiento() {
             if (!this.movForm.concepto || !this.movForm.monto) { this.showToast('Completa los campos','error'); return; }
+            /* Candado: sin el, dos toques seguidos registraban DOS egresos. */
+            if (this.enviandoMov) return;
+            this.enviandoMov = true;
+            try {
             const resp = await fetch(`/bixosales/caja/${this.caja.id}/movimiento`, {
                 method: 'POST',
                 headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
@@ -346,12 +353,25 @@ function cajaPage() {
                 this.modalMovimiento = false;
                 this.movForm = { tipo:'ingreso', concepto:'', monto:null, metodo_pago:'' };
                 this.showToast('Movimiento registrado');
+            } else {
+                /* Sin este aviso, un egreso rechazado —la caja ya cerrada da
+                   403— no mostraba NADA: el cajero lo repetia creyendo que no
+                   se habia enviado, y podia acabar duplicandolo. */
+                this.showToast(data.message || 'No se pudo registrar el movimiento.', 'error');
+            }
+            } catch (e) {
+                this.showToast('Sin conexión: el movimiento no se registró.', 'error');
+            } finally {
+                this.enviandoMov = false;
             }
         },
 
         async cerrarCaja() {
             if (this.cerrarForm.monto===null) { this.showToast('Ingresa el monto contado','error'); return; }
             if (! await bxConfirmar({ descripcion: '¿Confirmar cierre de caja?' })) return;
+            if (this.cerrando) return;
+            this.cerrando = true;
+            try {
             const resp = await fetch(`/bixosales/caja/${this.caja.id}/cerrar`, {
                 method: 'POST',
                 headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
@@ -359,6 +379,16 @@ function cajaPage() {
             });
             const data = await resp.json();
             if (data.ok) { this.caja=null; this.modalCerrar=false; this.showToast('Caja cerrada'); setTimeout(()=>location.reload(),1500); }
+            else {
+                /* Un cierre fallido en silencio es lo peor de todo: el cajero
+                   se va convencido de haber cerrado y la caja sigue abierta. */
+                this.showToast(data.message || 'No se pudo cerrar la caja. Vuelve a intentarlo.', 'error');
+                this.cerrando = false;
+            }
+            } catch (e) {
+                this.showToast('Sin conexión: la caja NO se cerró.', 'error');
+                this.cerrando = false;
+            }
         },
 
         showToast(msg, type='ok') {

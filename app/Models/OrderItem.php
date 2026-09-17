@@ -2,10 +2,11 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 class OrderItem extends Model {
-    protected $fillable = ['order_id', 'product_id', 'service_id', 'name', 'price', 'discount', 'quantity'];
+    protected $fillable = ['order_id', 'product_id', 'product_variant_id', 'service_id', 'name', 'variant_snapshot', 'price', 'discount', 'quantity'];
     protected $casts = [
-        'discount' => 'decimal:2','price' => 'decimal:2'];
+        'discount' => 'decimal:2', 'price' => 'decimal:2', 'variant_snapshot' => 'array'];
     public function order()   { return $this->belongsTo(Order::class); }
     public function product() { return $this->belongsTo(Product::class); }
+    public function productVariant() { return $this->belongsTo(ProductVariant::class); }
     public function service() { return $this->belongsTo(Service::class); }
 }

@@ -1,8 +1,10 @@
 <?php
 namespace App\Models;
+use App\Models\Traits\HasProjectScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Proveedor extends Model {
+    use HasProjectScope;
     protected $table = 'proveedores';
     protected $fillable = [
         'project_id','name','contact_name','phone','email',

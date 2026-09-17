@@ -31,7 +31,8 @@
 </form>
 
 {{-- KPIs --}}
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;flex-shrink:0;">
+{{-- `auto-fit` con ancho minimo: con `repeat(4,1fr)` fijo, en un movil de 390 px las tarjetas quedaban en columnas de ~70 px, con las cifras partidas. Ahora bajan a 2 o a 1 segun quepan. --}}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:16px;flex-shrink:0;">
     <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;padding:14px;">
         <p style="font-size:11px;color:#9CA3AF;margin:0 0 6px;">Ingresos brutos</p>
         <p style="font-size:24px;font-weight:800;color:#111827;margin:0;">S/ {{ number_format($totalIngresos, 2) }}</p>
@@ -94,13 +95,17 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
         </svg>
         <span>Algunos productos no tienen costo registrado — su ganancia aparece igual a los ingresos.
-            <a href="{{ route('bixosales.catalog.products.index') }}" style="text-decoration:underline;font-weight:600;">Actualizar costos en Catálogo</a>
+            <a href="{{ route('products.index') }}" style="text-decoration:underline;font-weight:600;">Actualizar costos en Catálogo</a>
         </span>
     </div>
     @endif
 
-    <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;overflow:hidden;">
-        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+    {{-- `overflow:hidden` CORTABA la tabla en movil: 6-8 columnas en una
+         pantalla de 390 px se salian y no habia forma de ver el resto. Con
+         scroll horizontal y un ancho minimo, se desplaza dentro de su caja
+         sin descuadrar la pagina. --}}
+    <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;overflow-x:auto;">
+        <table style="width:100%;min-width:560px;font-size:12px;border-collapse:collapse;">
             <thead>
                 <tr style="background:#F8F9FB;border-bottom:1px solid #E5E8EF;">
                     <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Producto</th>

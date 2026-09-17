@@ -849,7 +849,7 @@ function avanMapa() {
             if (!this.mapId) return;
             this.loading = true;
             try {
-                const r = await fetch(`/bixoadmin/mapa/maps/${this.mapId}/objects`);
+                const r = await fetch(`/bixosales/mapa/maps/${this.mapId}/objects`);
                 const d = await r.json();
                 this.objs  = d.objects;
                 this.sum   = d.summary;
@@ -957,7 +957,7 @@ function avanMapa() {
                 document.removeEventListener('mousemove',mv);
                 document.removeEventListener('mouseup',up);
                 this.dragId = null;
-                await this.patch(`/bixoadmin/mapa/objects/${o.id}/move`, {pos_x:o.pos_x, pos_y:o.pos_y});
+                await this.patch(`/bixosales/mapa/objects/${o.id}/move`, {pos_x:o.pos_x, pos_y:o.pos_y});
             };
             document.addEventListener('mousemove',mv);
             document.addEventListener('mouseup',up);
@@ -973,7 +973,7 @@ function avanMapa() {
             const up = async () => {
                 document.removeEventListener('mousemove',mv);
                 document.removeEventListener('mouseup',up);
-                await this.put(`/bixoadmin/mapa/objects/${o.id}`, {width:o.width, height:o.height});
+                await this.put(`/bixosales/mapa/objects/${o.id}`, {width:o.width, height:o.height});
             };
             document.addEventListener('mousemove',mv);
             document.addEventListener('mouseup',up);
@@ -1000,7 +1000,7 @@ function avanMapa() {
         async confirmObj() {
             if (!this.newObjLbl.trim() || !this.mapId) return;
             const t = this.newObjTipo;
-            const r = await this.post(`/bixoadmin/mapa/maps/${this.mapId}/objects`, {
+            const r = await this.post(`/bixosales/mapa/maps/${this.mapId}/objects`, {
                 type:     t.type,
                 label:    this.newObjLbl.trim(),
                 zone:     this.newObjZone || null,
@@ -1023,7 +1023,7 @@ function avanMapa() {
         async saveProp() {
             if (!this.sel) return;
             const cfg = { ...(this.sel.config||{}), color: this.propColor, shape: this.propShape };
-            const r = await this.put(`/bixoadmin/mapa/objects/${this.sel.id}`, {
+            const r = await this.put(`/bixosales/mapa/objects/${this.sel.id}`, {
                 label:    this.propLabel || this.sel.label,
                 capacity: this.propCap   || null,
                 zone:     this.propZone  || null,
@@ -1044,7 +1044,7 @@ function avanMapa() {
             this.sel.width  = w;
             this.sel.height = h;
             const cfg = { ...(this.sel.config||{}), shape: this.propShape };
-            await this.put(`/bixoadmin/mapa/objects/${this.sel.id}`, {
+            await this.put(`/bixosales/mapa/objects/${this.sel.id}`, {
                 shape: this.propShape, width: w, height: h, config: cfg,
             });
             this.sel.shape = this.propShape;
@@ -1055,13 +1055,13 @@ function avanMapa() {
             const [w, h] = [this.sel.height, this.sel.width]; // intercambiar
             this.sel.width  = w;
             this.sel.height = h;
-            await this.put(`/bixoadmin/mapa/objects/${this.sel.id}`, {width:w, height:h});
+            await this.put(`/bixosales/mapa/objects/${this.sel.id}`, {width:w, height:h});
             this.toast('Rotado','ok');
         },
 
         async duplicateObj() {
             if (!this.sel || !this.mapId) return;
-            const r = await this.post(`/bixoadmin/mapa/maps/${this.mapId}/objects`, {
+            const r = await this.post(`/bixosales/mapa/maps/${this.mapId}/objects`, {
                 type:     this.sel.type,
                 label:    this.sel.label + ' (copia)',
                 zone:     this.sel.zone,
@@ -1095,7 +1095,7 @@ function avanMapa() {
             const cfg = { ...(this.mergeSource.config||{}),
                 merged_with: [...(this.mergeSource.config?.merged_with||[]), o.label]
             };
-            const r = await this.put(`/bixoadmin/mapa/objects/${this.mergeSource.id}`, { config: cfg });
+            const r = await this.put(`/bixosales/mapa/objects/${this.mergeSource.id}`, { config: cfg });
             if (r?.ok) {
                 this.updList(r.object);
                 this.toast(this.mergeSource.label+' + '+o.label+' unidas','ok');
@@ -1108,64 +1108,64 @@ function avanMapa() {
         async splitSelected() {
             if (!this.sel) return;
             const cfg = { ...(this.sel.config||{}), merged_with: [] };
-            const r = await this.put(`/bixoadmin/mapa/objects/${this.sel.id}`, { config: cfg });
+            const r = await this.put(`/bixosales/mapa/objects/${this.sel.id}`, { config: cfg });
             if (r?.ok) { this.updList(r.object); this.toast('Mesas separadas','ok'); }
         },
 
         // ─── Acciones operativas ───────────────────────────────
         async chgStatus(status) {
             if (!this.sel) return;
-            const r = await this.patch(`/bixoadmin/mapa/objects/${this.sel.id}/status`, {status});
+            const r = await this.patch(`/bixosales/mapa/objects/${this.sel.id}/status`, {status});
             if (r?.ok) { this.updList(r.object); this.toast('Estado actualizado','ok'); }
         },
 
         async asgnResp(eid) {
             if (!this.sel) return;
-            const r = await this.patch(`/bixoadmin/mapa/objects/${this.sel.id}/responsible`, {employee_id:eid||null});
+            const r = await this.patch(`/bixosales/mapa/objects/${this.sel.id}/responsible`, {employee_id:eid||null});
             if (r?.ok) this.updList(r.object);
         },
 
         async updAmt() {
             if (!this.sel || this.amtInput==='') return;
-            const r = await this.patch(`/bixoadmin/mapa/objects/${this.sel.id}/amount`, {amount:parseFloat(this.amtInput)});
+            const r = await this.patch(`/bixosales/mapa/objects/${this.sel.id}/amount`, {amount:parseFloat(this.amtInput)});
             if (r?.ok) { this.sel.current_amount=parseFloat(this.amtInput); this.toast('Consumo actualizado','ok'); }
         },
 
         async addAlert() {
             if (!this.sel || !this.alrtInput.trim()) return;
-            const r = await this.post(`/bixoadmin/mapa/objects/${this.sel.id}/alerts`, {text:this.alrtInput.trim()});
+            const r = await this.post(`/bixosales/mapa/objects/${this.sel.id}/alerts`, {text:this.alrtInput.trim()});
             if (r?.ok) { this.sel.alerts=r.alerts; this.sel.alerts_count=r.alerts.length; this.alrtInput=''; this.toast('Alerta agregada','ok'); await this.load(); }
         },
 
         async clearAlerts() {
             if (!this.sel) return;
-            const r = await this.del(`/bixoadmin/mapa/objects/${this.sel.id}/alerts`);
+            const r = await this.del(`/bixosales/mapa/objects/${this.sel.id}/alerts`);
             if (r?.ok) { this.sel.alerts=[]; this.sel.alerts_count=0; this.toast('Alertas limpiadas','ok'); await this.load(); }
         },
 
         async crtReq(type, title) {
             if (!this.sel) return;
-            const r = await this.post(`/bixoadmin/mapa/objects/${this.sel.id}/requests`, {type,title,priority:2});
+            const r = await this.post(`/bixosales/mapa/objects/${this.sel.id}/requests`, {type,title,priority:2});
             if (r?.ok) { this.toast(title+' solicitado','ok'); }
         },
 
         async loadHist() {
             if (!this.sel) return;
-            const d = await (await fetch(`/bixoadmin/mapa/objects/${this.sel.id}/history`)).json();
+            const d = await (await fetch(`/bixosales/mapa/objects/${this.sel.id}/history`)).json();
             this.hist = d.events||[];
         },
 
         async delObj() {
             if (!this.sel) return;
             if (! await bxConfirmar({ descripcion: '¿Eliminar ' + this.sel.label + '?' })) return;
-            const r = await this.del(`/bixoadmin/mapa/objects/${this.sel.id}`);
+            const r = await this.del(`/bixosales/mapa/objects/${this.sel.id}`);
             if (r?.ok) { this.objs=this.objs.filter(o=>o.id!==this.sel.id); this.closePanel(); this.toast('Eliminado','ok'); }
         },
 
         // ─── Mapas ─────────────────────────────────────────────
         async createMap() {
             if (!this.newMapName.trim()) return;
-            const r = await this.post('/bixoadmin/mapa/maps', {name:this.newMapName.trim()});
+            const r = await this.post('/bixosales/mapa/maps', {name:this.newMapName.trim()});
             if (r?.ok) { this.showMapModal=false; this.toast('Mapa creado','ok'); window.location.reload(); }
         },
 

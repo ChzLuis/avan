@@ -160,8 +160,18 @@
                         this.creating = false;
                         this.form     = { ...c };
                     }
+                    /* Guardar no producia ningun cambio visible —los datos ya
+                       estaban en pantalla— asi que no habia forma de saber si
+                       se habia guardado. El error si avisaba; el exito no. */
+                    bxAviso((c.name || 'El cliente') + ' se guardó.', 'success');
                 } else {
-                    bxAviso(json.message || 'Error al guardar', 'error');
+                    /* El 422 trae `errors` con el campo concreto; leyendo solo
+                       `message` salia el texto generico de Laravel y el usuario
+                       no sabia QUE corregir. */
+                    const detalle = json.errors
+                        ? Object.values(json.errors).flat().join(' ')
+                        : (json.message || 'Error al guardar');
+                    bxAviso(detalle, 'error');
                 }
             } catch(err) {
                 bxAviso('Error de red', 'error');

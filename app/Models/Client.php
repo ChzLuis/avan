@@ -6,6 +6,9 @@ class Client extends Model {
     use HasProjectScope;
     protected $fillable = [
         'project_id', 'name', 'phone', 'email', 'notes', 'portal_token',
+        // Documento fiscal: vive en la ficha y no solo dentro de cada
+        // comprobante, para poder buscar al cliente por su RUC o DNI.
+        'doc_type', 'doc_number',
         // Campos del Copilot / CRM de ventas
         'lead_temp', 'lead_score', 'lead_source', 'etapa', 'empresa',
         'producto_interes', 'monto_estimado', 'intencion', 'objeciones',
