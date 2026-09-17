@@ -189,9 +189,52 @@ publico, sincronizacion de catalogo e importacion masiva escriben stock por
 tocaron. Linea base 97 → 97; `InventarioModuloTest` (3). Rutas: 10 a
 `Modules\Inventario`, 0 viejas.
 
-**Siguiente paso del plan:** modulo 4/8, `Finanzas/` (Payment, ReceivableTerm,
-Invoice, GuiaRemision, Certificado, LecturaComprobante, SUNAT, caja). Es el
-primero grande: `Facturacion/` ya esta medio agrupado. Un modulo por sesion.
+### Modulo 4/8 — `Finanzas/`: INVENTARIO HECHO, mudanza pendiente (sesion propia)
+
+Es otra liga y es codigo fiscal: **10 controladores, 90 rutas** (38 de
+`Invoice`, 16 de guias, 9 de notas, 5 caja, 5 certificados, 4 lector, 4 pagos
+publicos, 2 CxC, 7 del portal `bixofact`), **10 modelos**, 42 archivos de
+tests. `Invoice` la referencian 47 archivos. Se hace en sesion aparte, con la
+cabeza fresca, y con este inventario delante.
+
+Que va: `Facturacion/{Auth,Dashboard,GuiaRemision,Nota}Controller`,
+`InvoiceController`, `PaymentController`, `CajaController`, `CxcController`,
+`CertificadoController`, `LectorComprobanteController`; modelos `Invoice`,
+`InvoiceItem`, `Payment`, `ReceivableTerm`, `Caja`, `CajaMovimiento`,
+`Certificado`, `LecturaComprobante`, `GuiaRemision`, `GuiaRemisionItem`;
+soporte `Sunat/`, `Lector/`, `ApisPeruService`, `NubefactService`,
+`CatalogoDocumentos`, `Ledger` (el de pagos); jobs `SendInvoiceToSunat`,
+`DarDeBajaEnSunat`, `EnviarGuiaASunat` (pasan IDs enteros, no modelos: mover
+los modelos NO rompe la cola; ademas la cola de ARIN esta vacia, 0/0);
+comandos `ArchivarComprobantes`, `ReintentarComprobantes`; vistas
+`invoices/` (6), `cxc/` (1), `certificados/` (2).
+
+Decisiones ya tomadas con datos:
+- **`components/doc/*` (hoja, encabezado, tarjeta) se queda en Core**: lo usan
+  tambien `orders/pdf` y `quotes/pdf`. Igual **`LineMath`**: 12 usuarios entre
+  POS, cotizaciones, cobranza, clientes y tienda publica.
+- **`Caja`/`CajaMovimiento` y `Cxc` son de Finanzas**, no de Ventas
+  (MODULE_OWNERSHIP: Finance = pagos/CxC, invoices, SUNAT, caja). Los README
+  de Ventas y Finanzas se corrigieron. Sus rutas siguen en `/bixosales/`: el
+  portal es una cara, no un dominio.
+- **`resources/views/facturacion/` (17 archivos) NO se mueve entera**: mezcla
+  el portal fiscal (`portada`, `facturas/`, `guias/`, `layouts/app` via
+  `App\View\Components\FacturacionLayout`) con pantallas de clientes, pedidos
+  y cotizaciones que renderizan `ClientController`, `OrderController` y
+  `QuoteController` dentro de ese portal. Se mueven solo las fiscales; las
+  otras tres esperan a `Ventas/`.
+- `FacturacionAuth` (middleware) se queda en Middleware, como los demas.
+- El `Ledger` de pagos lo consumen POS, pedidos, clientes y el API del bot:
+  cambian 5 `use`/FQCN fuera del modulo. Es uso legitimo de una entidad
+  publica del propietario.
+
+Metodo: el mismo script con conteo exacto; por el tamaño, hacerlo en DOS
+commits verificados (1: modelos + soporte + jobs + comandos; 2: controladores
++ vistas + rutas), corriendo entre ambos los 42 tests del dominio (linea base
+por medir al empezar).
+
+**Siguiente paso del plan:** ejecutar Finanzas con este inventario. Despues:
+Crm+Bots, Tienda, Catalogo, Ventas.
 
 Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
 `getContent()`); los bloques del FlowRunner van indexados por id y necesitan
