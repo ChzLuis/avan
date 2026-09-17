@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Support;
+namespace App\Modules\Inventario\Support;
 
-use App\Models\InventoryMovement;
+use App\Modules\Inventario\Models\InventoryMovement;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 

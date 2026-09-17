@@ -1,8 +1,10 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Modules\Inventario\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Project;
-use App\Models\Proveedor;
+use App\Modules\Inventario\Models\Proveedor;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -17,7 +19,7 @@ class ProveedorController extends Controller
         /** @var \App\Models\Project $project */
         $project = app('active_project');
         $proveedores = $project->proveedores()->orderBy('name')->get();
-        return view('company.proveedores', compact('project', 'proveedores'));
+        return view('inventario::company.proveedores', compact('project', 'proveedores'));
     }
 
     private function rules(): array

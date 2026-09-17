@@ -28,7 +28,7 @@ class PanelAuthorizationTest extends TestCase
     private Project $project;
     private Role $rolVictima;
     private \App\Models\Appointment $cita;
-    private \App\Models\Proveedor $proveedor;
+    private \App\Modules\Inventario\Models\Proveedor $proveedor;
 
     protected function setUp(): void
     {
@@ -66,7 +66,7 @@ class PanelAuthorizationTest extends TestCase
             'project_id' => $this->project->id, 'client_name' => 'Cliente',
             'date' => now()->toDateString(), 'start_time' => '10:00', 'end_time' => '11:00', 'status' => 'pending',
         ]);
-        $this->proveedor = \App\Models\Proveedor::create([
+        $this->proveedor = \App\Modules\Inventario\Models\Proveedor::create([
             'project_id' => $this->project->id, 'name' => 'Proveedor SA', 'is_active' => true,
         ]);
     }

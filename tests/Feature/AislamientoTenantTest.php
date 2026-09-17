@@ -131,10 +131,10 @@ class AislamientoTenantTest extends TestCase
         $modelos = [
             \App\Models\Caja::class, \App\Models\CatalogIntegration::class,
             \App\Models\Client::class, \App\Models\Combo::class,
-            \App\Models\GuiaRemision::class, \App\Models\InventoryMovement::class,
+            \App\Models\GuiaRemision::class, \App\Modules\Inventario\Models\InventoryMovement::class,
             \App\Models\Invoice::class, \App\Models\Order::class,
             \App\Models\Payment::class, \App\Models\Product::class,
-            \App\Models\Promotion::class, \App\Models\Proveedor::class,
+            \App\Models\Promotion::class, \App\Modules\Inventario\Models\Proveedor::class,
             \App\Models\Quote::class, \App\Models\RifaVenta::class,
         ];
 

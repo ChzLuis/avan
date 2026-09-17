@@ -175,8 +175,23 @@ tampoco tiene ruta.
 **NO DESPLEGADO** (ni Personas ni Control). Van juntos: Personas ya importa
 `Control\Models\AccessEvent`.
 
-**Siguiente paso del plan:** modulo 3/8, `Inventario/` (InventoryMovement,
-InventoryLedger, Proveedor, ImportLog). Un modulo por sesion.
+### Modulo 3/8 — `Inventario/` MOVIDO (2026-09-17, misma sesion)
+
+`InventoryController`, `ProveedorController`, `InventoryMovement`, `Proveedor`,
+`InventoryLedger` y las vistas `inventory/{index,kardex}` y
+`company/proveedores` pasan a `app/Modules/Inventario/`. **`ImportLog` NO**:
+lo usan solo los controladores de catalogo (importacion de productos y
+servicios), asi que va con `Catalogo/`; el README de Inventario lo decia mal y
+se corrigio. Aqui el acoplamiento es mayor: POS, pedidos, productos, checkout
+publico, sincronizacion de catalogo e importacion masiva escriben stock por
+`InventoryLedger` (10 referencias FQCN actualizadas). Varias "referencias" a
+`Proveedor` eran comentarios sobre "proveedor de IA/fiscal/vision": no se
+tocaron. Linea base 97 → 97; `InventarioModuloTest` (3). Rutas: 10 a
+`Modules\Inventario`, 0 viejas.
+
+**Siguiente paso del plan:** modulo 4/8, `Finanzas/` (Payment, ReceivableTerm,
+Invoice, GuiaRemision, Certificado, LecturaComprobante, SUNAT, caja). Es el
+primero grande: `Facturacion/` ya esta medio agrupado. Un modulo por sesion.
 
 Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
 `getContent()`); los bloques del FlowRunner van indexados por id y necesitan

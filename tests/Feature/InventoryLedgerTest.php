@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\InventoryMovement;
+use App\Modules\Inventario\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\InventoryLedger;
+use App\Modules\Inventario\Support\InventoryLedger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

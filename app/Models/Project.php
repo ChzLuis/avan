@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Modules\Inventario\Models\Proveedor;
+
 use App\Modules\Personas\Models\UserGroup;
 
 use Illuminate\Database\Eloquent\Model;

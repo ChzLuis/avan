@@ -270,7 +270,7 @@ class PosController extends Controller
             if (!empty($item['product_id'])) {
                 $prod = Product::where('id', $item['product_id'])->where('project_id', $project->id)->first();
                 if ($prod) {
-                    \App\Support\InventoryLedger::registrar(
+                    \App\Modules\Inventario\Support\InventoryLedger::registrar(
                         $prod, -abs((int) $item['quantity']), 'venta',
                         null, 'Venta en punto de venta', 'order', $order->id
                     );

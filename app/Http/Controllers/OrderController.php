@@ -250,13 +250,13 @@ class OrderController extends Controller
      */
     private function devolverStockAlInventario(Order $order): void
     {
-        $yaDevuelto = \App\Models\InventoryMovement::where('reference_type', 'order_cancel')
+        $yaDevuelto = \App\Modules\Inventario\Models\InventoryMovement::where('reference_type', 'order_cancel')
             ->where('reference_id', $order->id)->exists();
         if ($yaDevuelto) {
             return;
         }
 
-        $salidas = \App\Models\InventoryMovement::where('reference_type', 'order')
+        $salidas = \App\Modules\Inventario\Models\InventoryMovement::where('reference_type', 'order')
             ->where('reference_id', $order->id)
             ->where('quantity', '<', 0)
             ->get();
@@ -266,7 +266,7 @@ class OrderController extends Controller
             if (!$producto) {
                 continue;
             }
-            \App\Support\InventoryLedger::registrar(
+            \App\Modules\Inventario\Support\InventoryLedger::registrar(
                 $producto, abs((int) $mov->quantity), 'anulacion',
                 null, 'Devolución por anulación del pedido #' . $order->id,
                 'order_cancel', $order->id

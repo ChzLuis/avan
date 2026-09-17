@@ -11,7 +11,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Proveedor;
+use App\Modules\Inventario\Models\Proveedor;
 use App\Models\Quote;
 use App\Models\Service;
 use App\Models\User;

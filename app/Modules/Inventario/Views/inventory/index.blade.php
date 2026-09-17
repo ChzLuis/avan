@@ -201,12 +201,12 @@
                             class="w-full border border-gray-200 rounded-lg px-3 h-10 text-sm outline-none focus:border-indigo-400">
                         <optgroup label="Entra mercadería">
                             @foreach($motivosEntrada as $r)
-                            <option value="{{ $r }}">{{ \App\Support\InventoryLedger::etiqueta($r) }}</option>
+                            <option value="{{ $r }}">{{ \App\Modules\Inventario\Support\InventoryLedger::etiqueta($r) }}</option>
                             @endforeach
                         </optgroup>
                         <optgroup label="Sale mercadería">
                             @foreach($motivosSalida as $r)
-                            <option value="{{ $r }}">{{ \App\Support\InventoryLedger::etiqueta($r) }}</option>
+                            <option value="{{ $r }}">{{ \App\Modules\Inventario\Support\InventoryLedger::etiqueta($r) }}</option>
                             @endforeach
                         </optgroup>
                         <optgroup label="Corrección">

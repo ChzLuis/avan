@@ -54,7 +54,7 @@ class AdminImportController extends Controller
                 ]);
 
                 if ($stockInicial > 0) {
-                    \App\Support\InventoryLedger::registrar(
+                    \App\Modules\Inventario\Support\InventoryLedger::registrar(
                         $product, $stockInicial, 'importacion', null,
                         'Importación masiva desde CSV', 'import', null, auth()->id()
                     );

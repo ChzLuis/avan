@@ -221,7 +221,7 @@ class CatalogSyncManager
             $product->save();
 
             if ($stockDelErp !== null) {
-                \App\Support\InventoryLedger::ajustarA(
+                \App\Modules\Inventario\Support\InventoryLedger::ajustarA(
                     $product, (int) $stockDelErp, 'sincronizacion',
                     'Stock informado por ' . $integration->provider
                 );

@@ -1,5 +1,7 @@
 <?php
-namespace App\Models;
+namespace App\Modules\Inventario\Models;
+
+use App\Models\Project;
 use App\Models\Traits\HasProjectScope;
 use Illuminate\Database\Eloquent\Model;
 

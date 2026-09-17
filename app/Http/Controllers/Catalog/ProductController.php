@@ -415,7 +415,7 @@ class ProductController extends Controller
         $product = Product::create($data);
 
         if ($stockInicial !== null && (int) $stockInicial !== 0) {
-            \App\Support\InventoryLedger::registrar(
+            \App\Modules\Inventario\Support\InventoryLedger::registrar(
                 $product, (int) $stockInicial, 'inicial',
                 $data['cost'] ?? null, 'Stock inicial al crear el producto'
             );
@@ -452,11 +452,11 @@ class ProductController extends Controller
         $product->update($data);
 
         if ($stockPedido !== null && $stockPrevio !== null && (int) $stockPedido !== (int) $stockPrevio) {
-            \App\Support\InventoryLedger::ajustarA($product, (int) $stockPedido, 'conteo', 'Ajuste manual desde el editor de producto');
+            \App\Modules\Inventario\Support\InventoryLedger::ajustarA($product, (int) $stockPedido, 'conteo', 'Ajuste manual desde el editor de producto');
         } elseif ($stockPrevio === null && $stockPedido !== null) {
             // Producto que empieza a llevar inventario: se asienta el stock inicial.
             $product->update(['stock' => (int) $stockPedido]);
-            \App\Models\InventoryMovement::create([
+            \App\Modules\Inventario\Models\InventoryMovement::create([
                 'project_id' => $product->project_id, 'product_id' => $product->id,
                 'user_id' => auth()->id(), 'type' => 'in', 'reason' => 'inicial',
                 'quantity' => (int) $stockPedido, 'unit_cost' => $product->cost,
@@ -639,7 +639,7 @@ class ProductController extends Controller
     private function bulkStockOff($query): int
     {
         foreach ((clone $query)->whereNotNull('stock')->where('stock', '!=', 0)->get() as $p) {
-            \App\Support\InventoryLedger::ajustarA($p, 0, 'ajuste_negativo', 'Dejó de llevar control de inventario');
+            \App\Modules\Inventario\Support\InventoryLedger::ajustarA($p, 0, 'ajuste_negativo', 'Dejó de llevar control de inventario');
         }
         return $query->update(['stock' => null]);
     }
@@ -1097,7 +1097,7 @@ class ProductController extends Controller
                     $prodImp = Product::create($payload + ['stock' => 0]);
                     $created++;
                 }
-                \App\Support\InventoryLedger::ajustarA(
+                \App\Modules\Inventario\Support\InventoryLedger::ajustarA(
                     $prodImp, $stockImportado, 'conteo',
                     'Stock fijado por importación de Excel'
                 );

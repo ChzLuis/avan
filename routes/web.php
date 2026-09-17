@@ -19,7 +19,7 @@ use App\Modules\Personas\Controllers\RolePermissionController;
 use App\Modules\Personas\Controllers\HRController;
 use App\Http\Controllers\SedeController;
 use App\Modules\Personas\Controllers\UserGroupController;
-use App\Http\Controllers\ProveedorController;
+use App\Modules\Inventario\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\PortalController;
@@ -375,9 +375,9 @@ Route::middleware(['auth'])->group(function () {
         // 3 roles que solo tienen `catalog.ver` y el negocio que aun no
         // activo el modulo `inventory` conservan el acceso, y el permiso
         // propio empieza a valer desde ya.
-        Route::get('/inventario',                  [\App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
-        Route::post('/inventario/movimiento',      [\App\Http\Controllers\InventoryController::class, 'store'])->name('inventory.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
-        Route::get('/inventario/{product}/kardex', [\App\Http\Controllers\InventoryController::class, 'kardex'])->name('inventory.kardex')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::get('/inventario',                  [\App\Modules\Inventario\Controllers\InventoryController::class, 'index'])->name('inventory.index')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/movimiento',      [\App\Modules\Inventario\Controllers\InventoryController::class, 'store'])->name('inventory.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::get('/inventario/{product}/kardex', [\App\Modules\Inventario\Controllers\InventoryController::class, 'kardex'])->name('inventory.kardex')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
 
         // Proveedores
         // proveedores.ver / proveedores.editar ya existian en la tabla de permisos

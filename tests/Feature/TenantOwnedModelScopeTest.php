@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\InventoryMovement;
+use App\Modules\Inventario\Models\InventoryMovement;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Project;
-use App\Models\Proveedor;
+use App\Modules\Inventario\Models\Proveedor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

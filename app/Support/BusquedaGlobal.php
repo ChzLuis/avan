@@ -157,7 +157,7 @@ class BusquedaGlobal
             return null;
         }
 
-        $filas = \App\Models\Proveedor::where('project_id', $project->id)
+        $filas = \App\Modules\Inventario\Models\Proveedor::where('project_id', $project->id)
             ->where(fn ($w) => $w->where('name', 'like', $like)
                 ->orWhere('contact_name', 'like', $like)
                 ->orWhere('phone', 'like', $like))

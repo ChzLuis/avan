@@ -1140,7 +1140,7 @@ class PublicController extends Controller
                 } elseif ($pid) {
                     $prodStock = Product::allProjects()->where('id', $pid)->where('project_id', $project->id)->first();
                     if ($prodStock) {
-                        \App\Support\InventoryLedger::registrar(
+                        \App\Modules\Inventario\Support\InventoryLedger::registrar(
                             $prodStock, -abs((int) $item['quantity']), 'venta',
                             null, 'Venta en tienda online', 'order', $order->id, null
                         );

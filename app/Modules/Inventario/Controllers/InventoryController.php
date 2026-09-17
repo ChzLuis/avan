@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Inventario\Controllers;
 
-use App\Models\InventoryMovement;
+use App\Http\Controllers\Controller;
+
+use App\Modules\Inventario\Models\InventoryMovement;
 use App\Models\Product;
-use App\Support\InventoryLedger;
+use App\Modules\Inventario\Support\InventoryLedger;
 use Illuminate\Http\Request;
 
 /**
@@ -53,7 +55,7 @@ class InventoryController extends Controller
         $motivosEntrada = InventoryLedger::ENTRADAS;
         $motivosSalida  = InventoryLedger::SALIDAS;
 
-        return view('inventory.index', compact(
+        return view('inventario::inventory.index', compact(
             'project', 'productos', 'resumen', 'ultimos', 'motivosEntrada', 'motivosSalida'
         ));
     }
@@ -72,7 +74,7 @@ class InventoryController extends Controller
         $entradas = $movimientos->where('quantity', '>', 0)->sum('quantity');
         $salidas  = abs($movimientos->where('quantity', '<', 0)->sum('quantity'));
 
-        return view('inventory.kardex', compact('project', 'product', 'movimientos', 'entradas', 'salidas'));
+        return view('inventario::inventory.kardex', compact('project', 'product', 'movimientos', 'entradas', 'salidas'));
     }
 
     /** Registra un movimiento manual (compra, merma, devolución, conteo…). */

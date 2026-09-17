@@ -1,5 +1,7 @@
 <?php
 namespace App\Models;
+
+use App\Modules\Inventario\Models\InventoryMovement;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasProjectScope;
 class Product extends Model {
