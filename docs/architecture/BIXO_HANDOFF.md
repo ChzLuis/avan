@@ -2,9 +2,59 @@
 
 > Este archivo es el punto de entrada de cada sesion. Leelo antes de tocar codigo.
 
-Ultima actualizacion: 2026-08-30 (noche)
+Ultima actualizacion: 2026-09-17
 Branch: `refactor/store-builder-canonical-context`
-Ultimo commit revisado: `5211f7e`
+Ultimo commit revisado: `151f47f`
+
+## Sesion 2026-09-16/17 — WhatsApp oficial (Meta) + plan de modularizacion
+
+Objetivo: conectar el bot de Eskala a la WhatsApp Cloud API de Meta. Solo en
+local; **nada desplegado a ARIN**. Commit `151f47f` (18 archivos, por ruta
+explicita).
+
+- **`WaCanal` es el propietario unico de las credenciales** (MODULE_OWNERSHIP:
+  `Wa*` → Automation). Primero se creo una tabla duplicada por no consultar
+  ese documento; se retiro. `wa_canales` gana `app_secret`, `api_version`,
+  `ultimo_ok_at`, `ultimo_error`; token y secreto cifrados (la migracion
+  `2026_09_16_140000` cifra los que estaban en claro, idempotente, probada);
+  `phone_number_id` unico.
+- **`ClienteCloud`** (`app/Support/WhatsappCloud/`) traduce las respuestas del
+  FlowRunner al JSON de la Graph API y lo usan el bot y la bandeja: un solo
+  envio. La bandeja tenia `catch (\Throwable) {}` vacio: el asesor veia su
+  mensaje "enviado" cuando Meta lo habia rechazado. Ahora devuelve 502 con el
+  motivo y la vista lo muestra en rojo.
+- **HALLAZGO DE SEGURIDAD:** `/whatsapp/webhook` y `/wa/webhook/{slug}`
+  (`WaWebhookController`, ya existian) no verificaban la firma de Meta:
+  cualquiera con la URL podia hacer hablar al bot en nombre de un cliente.
+  Trait `VerificaFirmaMeta` aplicado a ambos. Un canal SIN `app_secret` pasa
+  avisando en el log (`wa_webhook.sin_firmar`) para no dejar mudas las lineas
+  de produccion: el agujero se cierra canal por canal al configurar el
+  secreto. El `verify_token` deja de ser global y ya no se escribe en el log.
+- Webhook nuevo `api/whatsapp/webhook` que reusa `BotWebhookController` (motor
+  de Baileys) para que los flujos del constructor sirvan en los dos canales.
+  **Conviven TRES webhooks** (ver memoria `project_webhooks_whatsapp_sin_firma`);
+  la consolidacion va en la mudanza de modulos.
+- Credenciales se pegan en CRM → Canales de WhatsApp (campo App Secret
+  nuevo, conserva secretos al editar, no devuelve el token al navegador,
+  muestra el ultimo error de Meta). Guia: `docs/guias/CONECTAR_WHATSAPP_META.md`.
+- 30 pruebas nuevas (4 clases), todas en verde.
+
+**Decisiones de producto (usuario):** bots/IA/automatizaciones viven SOLO en
+el CRM (hoy hay 116 rutas fuera); el codigo de sorteos sale de BIXO (no es
+parte del producto, vive aparte en `htdocs/sorteos`) y la palabra no queda en
+ningun lado; los nombres dicen QUE HACE la cosa. Plan escrito en
+`BIXO_MODULARIZACION_PLAN.md` (`app/Modules/` por dominio, un repo).
+
+**Bloqueo para seguir:** el plan NO se ejecuta hasta cumplir sus 3
+precondiciones. La primera falla: hay **334 archivos ajenos sin commitear**
+en el arbol (constructor, facturacion, tests, migraciones). Ademas la suite
+tiene 27–35 rojos, todos preexistentes (verificado con stash: ninguno es de
+esta sesion; p. ej. `module:clients` en `bots-flow` rompe el test del QR, y
+un `alert()` en `catalogs/index.blade.php` rompe `SinDialogosDelNavegador`).
+
+Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
+`getContent()`); los bloques del FlowRunner van indexados por id y necesitan
+`inicio`; `where()->update()` salta el cast `encrypted` y corrompe el token.
 
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
