@@ -22,7 +22,7 @@ class OpenAiProvider implements IaProvider
     public function chat(array $mensajes, array $opciones = []): string
     {
         $res = Http::withToken($this->apiKey)
-            ->timeout(60)
+            ->timeout((int) ($opciones['timeout'] ?? 60))
             ->post('https://api.openai.com/v1/chat/completions', [
                 'model' => $this->model,
                 'messages' => $mensajes, // OpenAI acepta system/user/assistant tal cual

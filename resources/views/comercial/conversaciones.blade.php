@@ -1,9 +1,29 @@
 <x-portal-layout layout="comercial" :project="$project" pageTitle="Conversaciones Bot">
 
-<div style="display:flex;height:100%;overflow:hidden;">
+{{-- MOVIL: LISTA O DETALLE, NO LAS DOS.
+     El panel de la izquierda era de 340 px fijos y el detalle iba al lado, sin
+     una sola media query: en un movil de 390 px la lista se comia la pantalla
+     y la conversacion quedaba en una franja inservible. Ahora se ve la lista,
+     y al tocar una conversacion se ve solo esa, con boton de volver. --}}
+<style>
+@media (max-width: 767px) {
+    .cv-wrap { position: relative; }
+    .cv-lista { width: 100% !important; border-right: 0 !important; }
+    .cv-detalle { display: none !important; }
+    /* Con una conversacion abierta se invierte: manda el detalle. */
+    .cv-wrap.cv-viendo .cv-lista   { display: none !important; }
+    .cv-wrap.cv-viendo .cv-detalle { display: flex !important; }
+    .cv-volver { display: inline-flex !important; }
+}
+.cv-volver { display: none; align-items: center; gap: 6px; background: none; border: 0;
+             color: #4F46E5; font-size: 13px; font-weight: 600; cursor: pointer;
+             padding: 4px 8px 4px 0; font-family: inherit; }
+</style>
+
+<div class="cv-wrap" style="display:flex;height:100%;overflow:hidden;">
 
 {{-- ── Lista sesiones ── --}}
-<div style="width:340px;flex-shrink:0;border-right:1px solid #E5E8EF;display:flex;flex-direction:column;background:#fff;">
+<div class="cv-lista" style="width:340px;flex-shrink:0;border-right:1px solid #E5E8EF;display:flex;flex-direction:column;background:#fff;">
 
     {{-- Header --}}
     <div style="padding:12px 14px;border-bottom:1px solid #E5E8EF;flex-shrink:0;">
@@ -112,7 +132,7 @@
 </div>
 
 {{-- ── Panel detalle ── --}}
-<div style="flex:1;display:flex;flex-direction:column;background:#F0F2F5;min-width:0;">
+<div class="cv-detalle" style="flex:1;display:flex;flex-direction:column;background:#F0F2F5;min-width:0;">
 
     {{-- Estado vacío --}}
     <div id="ses-vacia" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9CA3AF;">
@@ -122,6 +142,14 @@
 
     {{-- Header detalle --}}
     <div id="det-header" style="display:none;padding:10px 16px;background:#fff;border-bottom:1px solid #E5E8EF;flex-shrink:0;align-items:center;gap:10px;">
+        {{-- Solo en movil: sin el, con el detalle a pantalla completa no habria
+             forma de volver a la lista. --}}
+        <button type="button" class="cv-volver" onclick="volverALista()" aria-label="Volver a la lista">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver
+        </button>
         <div id="det-avatar" style="width:36px;height:36px;border-radius:50%;background:#EDE9FE;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <span id="det-iniciales" style="font-size:12px;font-weight:700;color:#7C3AED;"></span>
         </div>
@@ -177,7 +205,13 @@
 <script>
 let sesActiva = null;
 
+function volverALista() {
+    document.querySelector('.cv-wrap')?.classList.remove('cv-viendo');
+}
+
 async function abrirSesion(id, nombre, waNumber) {
+    // En movil el detalle ocupa la pantalla: la clase decide cual se ve.
+    document.querySelector('.cv-wrap')?.classList.add('cv-viendo');
     sesActiva = id;
 
     document.querySelectorAll('[id^="ses-"]').forEach(el => el.style.background = '#fff');

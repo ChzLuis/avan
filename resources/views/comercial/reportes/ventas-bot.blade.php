@@ -20,7 +20,8 @@
 <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px;">
 
     {{-- KPIs --}}
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+    {{-- `auto-fit` con ancho minimo: con `repeat(4,1fr)` fijo, en un movil de 390 px las tarjetas quedaban en columnas de ~70 px, con las cifras partidas. Ahora bajan a 2 o a 1 segun quepan. --}}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
         <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;padding:14px;text-align:center;">
             <p style="font-size:22px;font-weight:800;color:#111827;margin:0;">{{ $totales->total ?? 0 }}</p>
             <p style="font-size:10px;color:#9CA3AF;margin:4px 0 0;">Total pedidos</p>

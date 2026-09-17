@@ -51,7 +51,7 @@ class GeminiProvider implements IaProvider
         }
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
-        $res = Http::timeout(60)->post($url, $body);
+        $res = Http::timeout((int) ($opciones['timeout'] ?? 60))->post($url, $body);
 
         if (!$res->successful()) {
             throw new RuntimeException('Gemini error: ' . $res->status() . ' ' . $res->body());

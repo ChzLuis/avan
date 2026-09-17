@@ -46,8 +46,9 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'No tienes ningún negocio asignado.'])->withInput();
         }
 
+        // Solo la clave de ESTE portal: escribir tambien `active_project_id`
+        // arrastraba el proyecto de Admin al cambiar de negocio aqui.
         session(['comunicaciones_project_id' => $project->id]);
-        session(['active_project_id'         => $project->id]);
 
         return redirect()->route('bixocrm.bandeja');
     }
@@ -72,7 +73,6 @@ class AuthController extends Controller
         $ok = self::proyectosDelUsuario()->contains('id', $id);
         if ($ok) {
             session(['comunicaciones_project_id' => $id]);
-            session(['active_project_id'         => $id]);
         }
         return redirect()->route('bixocrm.bandeja');
     }

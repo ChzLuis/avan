@@ -13,10 +13,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Interprete del Bot Comercial
+    |--------------------------------------------------------------------------
+    | Timeout corto a proposito: un cliente de WhatsApp no espera 60 segundos
+    | para acabar igual en el motor estandar. Si el proveedor no responde a
+    | tiempo, el mensaje sigue por reglas como si la IA no existiera.
+    */
+    'interprete' => [
+        'timeout'    => (int) env('IA_INTERPRETE_TIMEOUT', 8),
+        'max_tokens' => 200,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuración por proveedor
     |--------------------------------------------------------------------------
     | Cada uno con su API key (en .env) y su modelo por defecto (override en .env).
     */
+    /*
+    | Lector de comprobantes (imagen/PDF -> datos). El motor por defecto
+    | cuando el negocio no elige uno; la clave sale del ajuste del proyecto
+    | (`lector_api_key`) y, si no la tiene, de la global de su motor.
+    */
+    'lector' => [
+        'motor' => env('LECTOR_MOTOR', 'anthropic'),
+    ],
+
     'providers' => [
 
         'anthropic' => [

@@ -7,7 +7,11 @@
     definicion: @json($flow->definicion ?? ['inicio'=>null,'bloques'=>[]]),
     saveUrl: @json(route('bot-flows.save', $flow)),
     testUrl: @json(route('bot-flows.test', $flow)),
+    restoreUrl: @json(route('bot-flows.restaurar', $flow)),
     csrf: @json(csrf_token()),
+    activo: @json((bool) $flow->activo),
+    esComercial: @json($flow->plantilla === \App\Models\BotFlow::COMERCIAL),
+    siguePlantilla: @json($flow->sigueLaPlantilla()),
   };
 </script>
 
@@ -15,9 +19,29 @@
 
     {{-- ═══ PALETA DE BLOQUES (izquierda) ═══ --}}
     <div class="w-52 flex-shrink-0 border-r border-gray-200 bg-gray-50 overflow-y-auto p-3">
-        <input x-model="nombre" @input.debounce.600ms="save()"
-               class="w-full text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1.5 mb-3"
+        <input x-model="nombre" @input.debounce.600ms="saveMeta()"
+               class="w-full text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1.5"
                placeholder="Nombre del bot">
+        <div class="h-4 mt-0.5 mb-1.5 text-[10px]"
+             :class="guardado==='ok' ? 'text-emerald-500' : 'text-gray-400'"
+             x-text="guardado==='saving' ? 'Guardando…' : (guardado==='ok' ? 'Guardado ✓' : '')"></div>
+
+        <label class="flex items-center justify-between px-2.5 py-2 mb-2 rounded-lg border cursor-pointer transition"
+               :class="activo ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 bg-white'">
+            <span class="text-xs font-semibold" :class="activo ? 'text-emerald-700' : 'text-gray-500'"
+                  x-text="activo ? 'Bot encendido' : 'Bot apagado'"></span>
+            <input type="checkbox" x-model="activo" @change="saveMeta()" class="accent-emerald-600 w-4 h-4">
+        </label>
+
+        <template x-if="esComercial && siguePlantilla">
+            <div class="text-[10px] leading-snug bg-emerald-50 text-emerald-700 rounded-lg px-2 py-1.5 mb-2">✨ Sigue la plantilla estándar: recibe mejoras automáticamente. Si editas algo, se guarda tu propia versión.</div>
+        </template>
+        <template x-if="esComercial && !siguePlantilla">
+            <div class="mb-2">
+                <div class="text-[10px] leading-snug bg-amber-50 text-amber-700 rounded-lg px-2 py-1.5">✏️ Versión propia: ya no recibe las mejoras automáticas de la plantilla.</div>
+                <button @click="restaurarPlantilla()" class="w-full mt-1.5 text-[11px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg py-1.5">↺ Volver a la plantilla estándar</button>
+            </div>
+        </template>
         <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Bloques</div>
         <template x-for="b in paleta" :key="b.tipo">
             <button @click="addBlock(b.tipo)"
@@ -33,10 +57,11 @@
         </div>
     </div>
 
-    {{-- ═══ CANVAS (centro) ═══ --}}
-    <div class="relative overflow-hidden bg-gray-50 flex-1" style="min-width:0"
-         x-ref="canvas" @mousemove="onMove($event)" @mouseup="onUp()"
-         style="background-image:radial-gradient(#d1d5db 1px, transparent 1px); background-size:20px 20px;">
+    {{-- ═══ CANVAS (centro, con scroll en ambos ejes) ═══ --}}
+    <div class="relative overflow-auto bg-gray-50 flex-1" style="min-width:0"
+         x-ref="canvas" @mousemove="onMove($event)" @mouseup="onUp()">
+      <div class="relative" x-ref="lienzo"
+           style="width:1700px; height:1250px; background-image:radial-gradient(#d1d5db 1px, transparent 1px); background-size:20px 20px;">
 
         <svg class="absolute inset-0 w-full h-full" style="pointer-events:none" x-html="edgesSvg()"></svg>
 
@@ -49,7 +74,7 @@
                     <div class="px-2.5 py-2">
                         <div class="flex items-center gap-1.5">
                             <span class="text-xs" x-text="meta(b.tipo).icon"></span>
-                            <span class="text-[11px] font-bold text-gray-700" x-text="meta(b.tipo).label"></span>
+                            <span class="text-[11px] font-bold text-gray-700 truncate" x-text="meta(b.tipo).label"></span>
                         </div>
                         <div class="text-[11px] text-gray-500 mt-1 line-clamp-2" x-text="resumen(b)"></div>
                     </div>
@@ -62,8 +87,9 @@
             </div>
         </template>
 
-        <div class="absolute bottom-3 left-4 text-[11px] text-gray-400 bg-white/90 border border-gray-100 rounded px-2 py-1">
-            Agrega bloques desde la izquierda · Arrastra para mover · Jala del punto derecho para conectar
+      </div>
+        <div class="sticky bottom-3 left-4 inline-block ml-4 text-[11px] text-gray-400 bg-white/90 border border-gray-100 rounded px-2 py-1" style="pointer-events:none">
+            Agrega bloques desde la izquierda · Arrastra para mover · Jala del punto derecho para conectar · Desplázate para ver todo el flujo
         </div>
     </div>
 
@@ -284,13 +310,100 @@
                         <input x-model="bloques[selected].texto" @input.debounce.600ms="save()" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5">
                     </div>
                 </template>
+
+                {{-- ═══ Bloques del Bot Comercial ═══ --}}
+
+                <template x-if="bloques[selected].tipo==='info_negocio'">
+                    <div>
+                        <div class="text-[11px] bg-teal-50 text-teal-700 rounded-lg px-2 py-1.5 mb-2">🏪 Responde con un dato de la ficha de tu negocio. Si el dato está vacío, el bot lo dice en vez de inventarlo.</div>
+                        <label class="text-xs font-semibold text-gray-600">¿Qué dato responde?</label>
+                        <select x-model="bloques[selected].dato" @change="save()" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5">
+                            <template x-for="d in datosNegocio" :key="d.v">
+                                <option :value="d.v" x-text="d.t"></option>
+                            </template>
+                        </select>
+                        <p class="text-[11px] text-gray-500 mt-2">Se edita en <b>Ajustes → Datos del negocio</b>, no aquí: así un mismo dato sirve para la tienda y para el bot.</p>
+                    </div>
+                </template>
+
+                <template x-if="bloques[selected].tipo==='metodos_pago'">
+                    <div>
+                        <div class="text-[11px] bg-teal-50 text-teal-700 rounded-lg px-2 py-1.5 mb-2">💳 Lista los métodos de pago que tengas activos (Yape, Plin, transferencia, contra entrega…).</div>
+                        <p class="text-[11px] text-gray-500">No hay nada que escribir aquí: los métodos salen de <b>Ajustes → Pagos</b>. Si activas uno nuevo, el bot lo menciona solo.</p>
+                    </div>
+                </template>
+
+                <template x-if="bloques[selected].tipo==='promociones'">
+                    <div>
+                        <div class="text-[11px] bg-red-50 text-red-700 rounded-lg px-2 py-1.5 mb-2">🔥 Muestra los productos con precio de oferta vigente hoy.</div>
+                        <label class="text-xs font-semibold text-gray-600">Cuántas mostrar</label>
+                        <input type="number" min="1" max="15" x-model.number="bloques[selected].limite" @input.debounce.600ms="save()" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5">
+                        <label class="text-xs font-semibold text-gray-600 mt-3 block">Si no hay promociones</label>
+                        <textarea x-model="bloques[selected].vacio" @input.debounce.600ms="save()" rows="2" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5"></textarea>
+                    </div>
+                </template>
+
+                <template x-if="bloques[selected].tipo==='consultar_producto'">
+                    <div>
+                        <div class="text-[11px] bg-amber-50 text-amber-700 rounded-lg px-2 py-1.5 mb-2">🔎 Busca en tu catálogo real y responde precio y stock. Si no encuentra algo igual, ofrece alternativas y lo aclara.</div>
+                        <label class="text-xs font-semibold text-gray-600">Encabezado de los resultados</label>
+                        <input x-model="bloques[selected].texto" @input.debounce.600ms="save()" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5">
+                        <label class="text-xs font-semibold text-gray-600 mt-3 block">Buscar siempre esto <span class="font-normal text-gray-400">(opcional)</span></label>
+                        <input x-model="bloques[selected].consulta" @input.debounce.600ms="save()" placeholder="Vacío = lo que escriba el cliente" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5">
+                    </div>
+                </template>
+
+                <template x-if="bloques[selected].tipo==='recomendar'">
+                    <div>
+                        <div class="text-[11px] bg-amber-50 text-amber-700 rounded-lg px-2 py-1.5 mb-2">⭐ Entiende frases como “hasta 500 soles” y recomienda solo productos de tu catálogo dentro de ese presupuesto.</div>
+                        <label class="text-xs font-semibold text-gray-600">Recomendar siempre de <span class="font-normal text-gray-400">(opcional)</span></label>
+                        <input x-model="bloques[selected].consulta" @input.debounce.600ms="save()" placeholder="ej: laptops — vacío = lo que pida el cliente" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5">
+                        <p class="text-[11px] text-gray-500 mt-2">Si nada entra en el presupuesto, lo dice y ofrece un asesor. Nunca sube el precio para poder vender.</p>
+                    </div>
+                </template>
+
+                <template x-if="bloques[selected].tipo==='faq'">
+                    <div>
+                        <div class="text-[11px] bg-indigo-50 text-indigo-700 rounded-lg px-2 py-1.5 mb-2">💬 Responde con las preguntas frecuentes de tu tienda, tal como las escribiste.</div>
+                        <label class="text-xs font-semibold text-gray-600">Si aún no tienes preguntas cargadas</label>
+                        <textarea x-model="bloques[selected].vacio" @input.debounce.600ms="save()" rows="3" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5"></textarea>
+                        <p class="text-[11px] text-gray-500 mt-2">Las preguntas se escriben en <b>Constructor → sección Preguntas frecuentes</b>. Lo que ve el cliente en tu web es exactamente lo que responde el bot.</p>
+                    </div>
+                </template>
+
+                <template x-if="bloques[selected].tipo==='intencion'">
+                    <div>
+                        <div class="text-[11px] bg-violet-50 text-violet-700 rounded-lg px-2 py-1.5 mb-2">🧭 Lee lo que escribe el cliente y lo lleva al bloque que corresponda.</div>
+                        <label class="text-xs font-semibold text-gray-600">Mensaje antes de escuchar</label>
+                        <textarea x-model="bloques[selected].texto" @input.debounce.600ms="save()" rows="2" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5"></textarea>
+                        <label class="flex items-center gap-2 mt-3 text-xs font-semibold text-gray-600">
+                            <input type="checkbox" x-model="bloques[selected].esperar" @change="save()" class="rounded border-gray-300">
+                            Quedarse escuchando la respuesta
+                        </label>
+                        <div class="mt-3 pt-3 border-t border-gray-100">
+                            <label class="text-xs font-semibold text-gray-600">¿A dónde va cada consulta?</label>
+                            <template x-for="i in intenciones" :key="i.v">
+                                <div class="flex items-center gap-2 mt-1.5">
+                                    <span class="text-[11px] text-gray-600 flex-1 min-w-0 truncate" x-text="i.t"></span>
+                                    <select :value="(bloques[selected].rutas||{})[i.v]||''" @change="rutaSet(i.v,$event.target.value)"
+                                            class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1" style="width:110px">
+                                        <option value="">— nada —</option>
+                                        <template x-for="(b2,id2) in bloques" :key="id2">
+                                            <option :value="id2" x-text="meta(b2.tipo).label+' · '+id2"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
             </div>
         </template>
     </div>
 
     {{-- ═══ SIMULADOR DE CHAT (modal) ═══ --}}
     <div x-show="openTest" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="openTest=false">
-        <div class="bg-white rounded-2xl shadow-xl w-96 flex flex-col" style="height:70vh">
+        <div class="bg-white rounded-2xl shadow-xl w-[460px] max-w-[95vw] flex flex-col" style="height:80vh">
             <div class="px-4 py-3 border-b flex items-center justify-between">
                 <span class="font-semibold text-gray-700">Probar bot</span>
                 <div class="flex gap-2">
@@ -299,10 +412,43 @@
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50" x-ref="chatBox">
+                <template x-if="!chat.length && !thinking">
+                    <div class="text-center mt-6">
+                        <div class="text-[11px] text-gray-400 mb-2">Escribe como si fueras un cliente, o toca una sugerencia 👇</div>
+                        <div class="flex flex-wrap gap-1.5 justify-center">
+                            <template x-for="sug in ['hola','¿qué promociones tienen?','¿cómo puedo pagar?','¿dónde están ubicados?','quiero hablar con un asesor']" :key="sug">
+                                <button @click="chatInput=sug; sendTest()"
+                                        class="text-[11px] bg-white border border-gray-200 hover:border-emerald-400 text-gray-600 rounded-full px-2.5 py-1"
+                                        x-text="sug"></button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
                 <template x-for="(m,i) in chat" :key="i">
                     <div :class="m.from==='bot' ? 'flex' : 'flex justify-end'">
                         <div :class="m.from==='bot' ? 'bg-white border' : 'bg-emerald-500 text-white'"
-                             class="max-w-[75%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap" x-text="m.texto"></div>
+                             class="max-w-[80%] rounded-2xl px-3 py-2 text-sm">
+                            <div class="whitespace-pre-wrap" x-text="m.texto"></div>
+                            {{-- Lista nativa de WhatsApp: en el telefono es el desplegable
+                                 "Ver opciones"; aqui se pinta con sus filas tocables. --}}
+                            <template x-if="m.lista">
+                                <div class="mt-2 -mx-1 border-t border-gray-100 pt-1.5">
+                                    <template x-for="sec in m.lista" :key="sec.titulo">
+                                        <div>
+                                            <div class="text-[10px] font-bold text-gray-400 uppercase px-1 mb-1" x-text="sec.titulo" x-show="sec.titulo"></div>
+                                            <template x-for="f in (sec.filas||[])" :key="f.titulo">
+                                                <button @click="chatInput=(f.id||f.titulo); sendTest()"
+                                                        class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-emerald-50 transition">
+                                                    <div class="text-[13px] text-gray-800" x-text="f.titulo"></div>
+                                                    <div class="text-[11px] text-gray-400" x-text="f.descripcion" x-show="f.descripcion"></div>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <div class="text-[10px] text-gray-300 px-1 mt-1">📱 En WhatsApp esto llega como lista nativa “Ver opciones”</div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </template>
                 <div x-show="thinking" class="text-xs text-gray-400">escribiendo…</div>
@@ -392,6 +538,7 @@ function botEditor(cfg){
     selected: null, dragId: null, dragOff:{x:0,y:0},
     linking:false, linkFrom:null, mouse:{x:0,y:0},
     openTest:false, chat:[], chatInput:'', chatEstado:null, thinking:false,
+    activo: cfg.activo, esComercial: cfg.esComercial, siguePlantilla: cfg.siguePlantilla, guardado:'',
     openReglas:false,
     // disparos: se editan como texto y se guardan como {palabras:[]}
     disparos: (cfg.definicion.disparos||[]).map(d=>({palabras_txt:(d.palabras||[]).join(', ')})),
@@ -420,15 +567,61 @@ function botEditor(cfg){
       {tipo:'cotizar',label:'Cotizar auto',icon:'🧾',color:'#eab308'},
       {tipo:'registrar_crm',label:'Registrar en CRM',icon:'🎯',color:'#d946ef'},
       {tipo:'agendar',label:'Agendar',icon:'📅',color:'#f97316'},
+      // ── Bot Comercial: informan con datos de la ficha del negocio ──
+      {tipo:'info_negocio',label:'Dato del negocio',icon:'🏪',color:'#0d9488'},
+      {tipo:'metodos_pago',label:'Métodos de pago',icon:'💳',color:'#0d9488'},
+      {tipo:'promociones',label:'Promociones',icon:'🔥',color:'#dc2626'},
+      {tipo:'consultar_producto',label:'Consultar producto',icon:'🔎',color:'#f59e0b'},
+      {tipo:'recomendar',label:'Recomendar',icon:'⭐',color:'#f59e0b'},
+      {tipo:'faq',label:'Preguntas frecuentes',icon:'💬',color:'#6366f1'},
+      {tipo:'intencion',label:'Entender consulta',icon:'🧭',color:'#8b5cf6'},
       {tipo:'fin',label:'Fin',icon:'■',color:'#64748b'},
     ],
     meta(t){ return this.paleta.find(p=>p.tipo===t) || {label:t,icon:'?',color:'#999'}; },
+    // Datos que el bloque "Dato del negocio" puede leer de la ficha.
+    datosNegocio:[
+      {v:'direccion',t:'Dirección y mapa'},
+      {v:'horario',  t:'Horario de atención'},
+      {v:'contacto', t:'Teléfono y correo'},
+      {v:'empresa',  t:'Quiénes somos'},
+      {v:'web',      t:'Enlace a la tienda'},
+    ],
+    // Intenciones que el bot sabe reconocer (mismas del clasificador).
+    intenciones:[
+      {v:'producto',     t:'Pregunta por un producto'},
+      {v:'promociones',  t:'Pregunta por promociones'},
+      {v:'pagos',        t:'Pregunta cómo pagar'},
+      {v:'direccion',    t:'Pregunta dónde están'},
+      {v:'horario',      t:'Pregunta el horario'},
+      {v:'contacto',     t:'Pide teléfono o correo'},
+      {v:'empresa',      t:'Pregunta quiénes son'},
+      {v:'web',          t:'Pide el enlace de la tienda'},
+      {v:'guia',         t:'Pregunta cómo comprar'},
+      {v:'faq',          t:'Envíos, garantía, devoluciones'},
+      {v:'recomendacion',t:'Pide una recomendación'},
+      {v:'comparacion',  t:'Quiere comparar productos'},
+      {v:'asesor',       t:'Quiere hablar con una persona'},
+      {v:'fallback',     t:'No se entendió (por defecto)'},
+    ],
+    rutaSet(intent, destino){
+      if(!this.bloques[this.selected].rutas) this.bloques[this.selected].rutas={};
+      if(destino) this.bloques[this.selected].rutas[intent]=destino;
+      else delete this.bloques[this.selected].rutas[intent];
+      this.save();
+    },
     resumen(b){
       if(b.tipo==='buscar_producto') return 'Busca: '+(b.consulta||'—');
       if(b.tipo==='ia') return b.instruccion ? b.instruccion.slice(0,50) : 'Responde con IA';
       if(b.tipo==='opciones') return (b.opciones||[]).length+' opciones';
       if(b.tipo==='lista') return 'Lista: '+((b.secciones||[]).reduce((n,s)=>n+(s.filas||[]).length,0))+' opciones';
       if(b.tipo==='categorias') return 'Muestra categorías del catálogo';
+      if(b.tipo==='info_negocio') return 'Dato: '+(this.datosNegocio.find(d=>d.v===b.dato)?.t||b.dato||'—');
+      if(b.tipo==='metodos_pago') return 'Pagos configurados del negocio';
+      if(b.tipo==='promociones') return 'Promos vigentes (hasta '+(b.limite||5)+')';
+      if(b.tipo==='consultar_producto') return 'Busca en tu catálogo real';
+      if(b.tipo==='recomendar') return 'Recomienda según presupuesto';
+      if(b.tipo==='faq') return 'Responde tus preguntas frecuentes';
+      if(b.tipo==='intencion') return Object.keys(b.rutas||{}).length+' intenciones enrutadas';
       if(b.tipo==='buscar_agregar') return 'Busca y agrega al carrito';
       if(b.tipo==='ver_carrito') return 'Ver carrito + finalizar';
       if(b.tipo==='pago_qr') return 'Envía QR Yape/Plin y espera comprobante';
@@ -468,6 +661,12 @@ function botEditor(cfg){
       if(tipo==='estado_pedido'){ base.sin_pedido='No encontré pedidos asociados a tu número.'; }
       if(tipo==='cotizar'){ base.consulta='{'+'{mensaje}'+'}'; base.no_encontrado='No encontré eso para cotizar.'; }
       if(tipo==='registrar_crm'){ base.etapa=''; base.etiqueta=''; base.texto=''; }
+      if(tipo==='info_negocio'){ base.dato='direccion'; }
+      if(tipo==='promociones'){ base.limite=5; base.vacio='Ahora mismo no tenemos promociones activas.'; }
+      if(tipo==='consultar_producto'){ base.consulta=''; base.texto='Esto encontré:'; }
+      if(tipo==='recomendar'){ base.consulta=''; }
+      if(tipo==='faq'){ base.consulta=''; base.vacio='Todavía no tengo preguntas frecuentes registradas 🙂. Escribe *asesor* y una persona te ayuda.'; }
+      if(tipo==='intencion'){ base.texto='¿Te ayudo con algo más?'; base.esperar=true; base.rutas={}; }
       if(tipo==='agendar'){ base.nota='Cita solicitada por bot'; base.texto='✅ ¡Listo! Registré tu solicitud, te contactaremos pronto.'; }
       this.bloques[id]=base;
       if(!this.inicio) this.inicio=id;
@@ -494,34 +693,74 @@ function botEditor(cfg){
       if(this.dragId) this.save();
       this.dragId=null; this.linking=false; this.linkFrom=null;
     },
-    pt(e){ const r=this.$refs.canvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; },
+    pt(e){ const r=this.$refs.lienzo.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; },
     blockAt(p){ for(const[id,b]of Object.entries(this.bloques)){ const x=b.x||60,y=b.y||60; if(p.x>=x&&p.x<=x+180&&p.y>=y&&p.y<=y+70) return id; } return null; },
 
     // conexiones SVG
     edgesSvg(){
-      let s='<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker></defs>';
+      let s='<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker><marker id="ar2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c7d2fe"/></marker></defs>';
+      const linea=(b,to,fuerte)=>{
+        const t=this.bloques[to]; if(!t) return '';
+        const x1=(b.x||60)+180, y1=(b.y||60)+35, x2=(t.x||60), y2=(t.y||60)+35;
+        const mx=(x1+x2)/2;
+        return fuerte
+          ? `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#ar)"/>`
+          : `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="#c7d2fe" stroke-width="1.5" stroke-dasharray="5 4" fill="none" marker-end="url(#ar2)"/>`;
+      };
       for(const[id,b]of Object.entries(this.bloques)){
-        const conns=[]; if(b.siguiente) conns.push(b.siguiente); (b.opciones||[]).forEach(o=>{if(o.siguiente)conns.push(o.siguiente);});
-        for(const to of conns){ const t=this.bloques[to]; if(!t) continue;
-          const x1=(b.x||60)+180, y1=(b.y||60)+35, x2=(t.x||60), y2=(t.y||60)+35;
-          const mx=(x1+x2)/2;
-          s+=`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#ar)"/>`;
-        }
+        // Salida principal: linea solida.
+        if(b.siguiente) s+=linea(b,b.siguiente,true);
+        (b.opciones||[]).forEach(o=>{ if(o.siguiente) s+=linea(b,o.siguiente,true); });
+        // Ramas estructurales: punteadas (el mapa completo, sin ruido).
+        (b.secciones||[]).forEach(sec=>(sec.filas||[]).forEach(f=>{ if(f.siguiente) s+=linea(b,f.siguiente,false); }));
+        Object.values(b.rutas||{}).forEach(to=>{ if(to) s+=linea(b,to,false); });
+        (b.reglas||[]).forEach(r=>{ if(r.siguiente) s+=linea(b,r.siguiente,false); });
+        for(const k of ['si_no','no_coincide','libre_siguiente','asesor_siguiente']){ if(b[k]) s+=linea(b,b[k],false); }
       }
       return s;
     },
 
-    // guardar
+    // guardar (edicion REAL del flujo: envia la definicion y, si el bot
+    // seguía la plantilla, desde aquí pasa a ser versión propia)
     save(){
       clearTimeout(this._timer);
-      this._timer=setTimeout(()=>{
+      this.guardado='saving';
+      this._timer=setTimeout(async()=>{
         // Convertir disparos de texto a {palabras:[]}, descartando vacíos.
         const disparos=this.disparos
           .map(d=>({palabras:(d.palabras_txt||'').split(',').map(s=>s.trim()).filter(Boolean)}))
           .filter(d=>d.palabras.length);
-        fetch(cfg.saveUrl,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':cfg.csrf},
-          body:JSON.stringify({nombre:this.nombre, definicion:{inicio:this.inicio,bloques:this.bloques,disparos,reglas:this.reglas}})});
+        try{
+          await fetch(cfg.saveUrl,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':cfg.csrf},
+            body:JSON.stringify({nombre:this.nombre, activo:this.activo, definicion:{inicio:this.inicio,bloques:this.bloques,disparos,reglas:this.reglas}})});
+          this.siguePlantilla=false;
+          this.guardado='ok'; setTimeout(()=>{ if(this.guardado==='ok') this.guardado=''; },2500);
+        }catch(e){ this.guardado=''; }
       },300);
+    },
+
+    // nombre y encendido: SIN definicion, para no congelar la plantilla
+    saveMeta(){
+      clearTimeout(this._timerMeta);
+      this.guardado='saving';
+      this._timerMeta=setTimeout(async()=>{
+        try{
+          await fetch(cfg.saveUrl,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':cfg.csrf},
+            body:JSON.stringify({nombre:this.nombre, activo:this.activo})});
+          this.guardado='ok'; setTimeout(()=>{ if(this.guardado==='ok') this.guardado=''; },2500);
+        }catch(e){ this.guardado=''; }
+      },300);
+    },
+
+    async restaurarPlantilla(){
+      const seguro = await bxConfirmar({
+        titulo: 'Volver a la plantilla',
+        descripcion: 'Se descartan tus cambios y el bot vuelve a la plantilla estándar, que recibe mejoras automáticas.',
+        boton: 'Volver a la plantilla',
+      });
+      if(!seguro) return;
+      await fetch(cfg.restoreUrl,{method:'POST',headers:{'X-CSRF-TOKEN':cfg.csrf,'Accept':'application/json'}});
+      location.reload();
     },
 
     // simulador
@@ -535,6 +774,11 @@ function botEditor(cfg){
           body:JSON.stringify({mensaje:msg, estado:this.chatEstado})});
         const d=await r.json();
         (d.respuestas||[]).forEach(t=>{
+          if(typeof t==='object' && t!==null && (t.secciones||[]).length){
+            // Lista nativa: cuerpo + filas tocables (como la vera el cliente).
+            this.chat.push({from:'bot', texto:(t.titulo?t.titulo+'\n':'')+(t.cuerpo||t.texto||''), lista:t.secciones});
+            return;
+          }
           const texto = (typeof t==='object' && t!==null) ? (t.fallback||t.cuerpo||t.caption||'[lista]') : t;
           this.chat.push({from:'bot',texto});
         });

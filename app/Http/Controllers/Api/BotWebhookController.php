@@ -41,8 +41,32 @@ class BotWebhookController extends Controller
             'telefono' => 'required|string',
             'mensaje'  => 'required|string',
             'nombre'   => 'nullable|string',
+            'tipo'     => 'nullable|string|max:20',   // imagen | audio | video | documento | ubicacion | contacto
+            'wa_message_id' => 'nullable|string|max:80',
+            'lid'      => 'nullable|string|max:40',   // id tecnico @lid de WhatsApp, si lo hubo
         ]);
         $telefono = preg_replace('/[^\d]/', '', $data['telefono']);
+
+        // IDENTIDAD WHATSAPP: el conector manda `telefono` = numero real (PN)
+        // cuando lo conoce, y `lid` = id tecnico si el mensaje llego como @lid.
+        // Cuando conocemos AMBOS, la conversacion que se abrio bajo el lid se
+        // FUSIONA con la del numero real: un solo cliente, un solo historial,
+        // y los recordatorios pueden contactarlo. Nunca se inventa un numero:
+        // si solo hay lid, esa es la identidad (limitacion documentada).
+        $lid = preg_replace('/[^\d]/', '', (string) ($data['lid'] ?? ''));
+        if ($lid !== '' && $telefono !== '' && $lid !== $telefono) {
+            $this->fusionarIdentidadLid($project, $lid, $telefono);
+        }
+
+        // IDEMPOTENCIA: WhatsApp puede reentregar el MISMO mensaje (replay tras
+        // reconexion, reintentos del conector). Cache::add es atomico: la
+        // segunda entrega del mismo id no procesa, no responde y no duplica CRM.
+        if (! empty($data['wa_message_id'])) {
+            $clave = "bot_in_{$project->id}_{$telefono}_" . $data['wa_message_id'];
+            if (! \Illuminate\Support\Facades\Cache::add($clave, 1, 300)) {
+                return response()->json(['respuestas' => [], 'duplicado' => true]);
+            }
+        }
 
         // 1) SIEMPRE guardar la conversación en el CRM (el bot alimenta el CRM 24/7,
         //    como los CRM profesionales: acumula historial hacia adelante).
@@ -54,6 +78,29 @@ class BotWebhookController extends Controller
             return response()->json(['respuestas' => [], 'sin_bot' => true]);
         }
 
+        // 1.b) ADJUNTOS: el motor entiende texto. Un audio o una foto no se
+        //      ignoran en silencio (el cliente quedaba sin respuesta) ni se
+        //      "buscan" como producto: respuesta honesta + registro en el CRM
+        //      para que el asesor los vea. El flujo del cliente queda intacto.
+        $tipo = $data['tipo'] ?? 'texto';
+        if (! in_array($tipo, ['texto', ''], true)) {
+            if ($this->reglaSilencia($project, $telefono, $flow->definicion['reglas'] ?? [])) {
+                return response()->json(['respuestas' => [], 'silenciado' => true]);
+            }
+            $texto = match ($tipo) {
+                'imagen'    => "📷 ¡Recibí tu imagen! Aún no puedo verla, pero un *asesor* la revisará. Mientras tanto cuéntame en texto qué necesitas 🙂",
+                'audio'     => "🎧 Recibí tu audio. Por ahora solo puedo leer *texto*: ¿me lo escribes? O escribe *asesor* y te atiende una persona.",
+                'video'     => "🎬 ¡Recibí tu video! Un *asesor* lo revisará. Cuéntame en texto en qué te ayudo 🙂",
+                'documento' => "📄 Recibí tu archivo, un *asesor* lo revisará. ¿En qué te puedo ayudar mientras tanto?",
+                'ubicacion' => "📍 ¡Gracias por tu ubicación! Un *asesor* la tomará en cuenta. ¿En qué te ayudo?",
+                default     => "Recibí tu mensaje 🙂. Por ahora entiendo mejor el *texto*: cuéntame qué necesitas o escribe *asesor*.",
+            };
+            $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $texto, 'out');
+
+            return response()->json(['respuestas' => [$texto], 'adjunto' => $tipo]);
+        }
+
+        try {
         $session = BotSession::firstOrNew([
             'project_id' => $project->id,
             'telefono'   => $telefono,
@@ -73,8 +120,12 @@ class BotWebhookController extends Controller
             }
 
             // 2.b) DISPAROS: si hay disparos definidos, solo arrancar el bot cuando alguno coincida.
+            //      El filtro protege el PRIMER contacto (no meterse en chats privados).
+            //      Un cliente que YA conversó con el bot no es un chat privado: si su
+            //      flujo murió y escribe "3" (respondiendo a un menú viejo), el bot
+            //      debe retomar, no quedarse mudo.
             $disparos = $definicion['disparos'] ?? [];
-            if (!empty($disparos) && !$this->disparoCoincide($disparos, $data['mensaje'])) {
+            if (!$session->exists && !empty($disparos) && !$this->disparoCoincide($disparos, $data['mensaje'])) {
                 return response()->json(['respuestas' => [], 'sin_disparo' => true]);
             }
         }
@@ -107,6 +158,71 @@ class BotWebhookController extends Controller
             'respuestas' => $res['respuestas'],
             'fin' => $res['fin'],
         ]);
+        } catch (\Throwable $e) {
+            // Limite de manejo: aqui adentro ya hay proyecto y mensaje validos;
+            // cualquier fallo posterior (BD caida, query rota, estado corrupto)
+            // es NUESTRO, no del cliente. Al canal va una disculpa breve; el
+            // detalle tecnico, SOLO al log.
+            \Illuminate\Support\Facades\Log::error('bot_inbound.fallo', [
+                'proyecto' => $project->id,
+                'error'    => class_basename($e),
+                'detalle'  => mb_substr($e->getMessage(), 0, 200),
+            ]);
+
+            return response()->json([
+                'respuestas' => ['Ups, tuvimos un inconveniente técnico 😅. Inténtalo de nuevo en un momento o escribe *asesor* para que te atienda una persona.'],
+                'error_interno' => true,
+            ]);
+        }
+    }
+
+    /**
+     * Fusiona la identidad tecnica @lid con el numero real cuando WhatsApp
+     * entrega ambos: la sesion del bot y la conversacion del CRM abiertas bajo
+     * el lid pasan al numero, sin duplicar cliente ni perder el hilo.
+     */
+    private function fusionarIdentidadLid(Project $project, string $lid, string $telefono): void
+    {
+        try {
+            // Sesion del bot: el estado del flujo sobrevive al cambio de identidad.
+            $delLid = BotSession::where('project_id', $project->id)->where('telefono', $lid)->first();
+            if ($delLid) {
+                $delPn = BotSession::where('project_id', $project->id)->where('telefono', $telefono)->first();
+                if ($delPn) {
+                    // Ambas existen: gana la mas reciente; la otra se retira.
+                    if (($delLid->ultima_at ?? $delLid->updated_at) > ($delPn->ultima_at ?? $delPn->updated_at)) {
+                        $delPn->delete();
+                        $delLid->update(['telefono' => $telefono]);
+                    } else {
+                        $delLid->delete();
+                    }
+                } else {
+                    $delLid->update(['telefono' => $telefono]);
+                }
+            }
+
+            // CRM: los mensajes registrados bajo el lid se mueven a la
+            // conversacion del numero real (o esta se renombra si no existia).
+            $canales = \App\Models\WaCanal::where('project_id', $project->id)->pluck('id');
+            $convLid = \App\Models\WaConversacion::whereIn('wa_canal_id', $canales)
+                ->where('cliente_telefono', $lid)->first();
+            if ($convLid) {
+                $convPn = \App\Models\WaConversacion::whereIn('wa_canal_id', $canales)
+                    ->where('cliente_telefono', $telefono)->first();
+                if ($convPn) {
+                    $convLid->mensajes()->update(['wa_conversacion_id' => $convPn->id]);
+                    $convLid->delete();
+                } else {
+                    $convLid->update(['cliente_telefono' => substr($telefono, 0, 20)]);
+                }
+            }
+        } catch (\Throwable $e) {
+            // La fusion es mantenimiento de identidad: si falla, se atiende
+            // igual con la identidad entrante y se deja rastro para revisarlo.
+            \Illuminate\Support\Facades\Log::warning('bot_inbound.fusion_lid_fallo', [
+                'proyecto' => $project->id, 'error' => class_basename($e),
+            ]);
+        }
     }
 
     /**

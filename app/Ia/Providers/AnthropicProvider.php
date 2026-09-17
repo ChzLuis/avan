@@ -36,7 +36,7 @@ class AnthropicProvider implements IaProvider
             'x-api-key' => $this->apiKey,
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+        ])->timeout((int) ($opciones['timeout'] ?? 60))->post('https://api.anthropic.com/v1/messages', [
             'model' => $this->model,
             'max_tokens' => $opciones['max_tokens'] ?? 1024,
             'temperature' => $opciones['temperature'] ?? 0.4,

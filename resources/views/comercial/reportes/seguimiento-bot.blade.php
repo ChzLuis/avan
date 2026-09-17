@@ -50,8 +50,12 @@
         <p style="font-size:13px;">No hay pedidos con esos filtros</p>
     </div>
     @else
-    <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;overflow:hidden;">
-        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+    {{-- `overflow:hidden` CORTABA la tabla en movil: 6-8 columnas en una
+         pantalla de 390 px se salian y no habia forma de ver el resto. Con
+         scroll horizontal y un ancho minimo, se desplaza dentro de su caja
+         sin descuadrar la pagina. --}}
+    <div style="background:#fff;border:1px solid #E5E8EF;border-radius:12px;overflow-x:auto;">
+        <table style="width:100%;min-width:560px;font-size:12px;border-collapse:collapse;">
             <thead>
                 <tr style="background:#F8F9FB;border-bottom:1px solid #E5E8EF;">
                     <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Participante</th>

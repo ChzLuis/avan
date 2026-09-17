@@ -108,9 +108,15 @@ class SeguimientoConversaciones extends Command
     /** Envía el mensaje por el conector de WhatsApp del proyecto. */
     private function enviar(Project $project, string $telefono, string $texto): bool
     {
-        $url = config('services.wa_connector.url') ?? env('WA_CONNECTOR_URL');
+        // Cada proyecto puede tener su PROPIA linea de WhatsApp (conector con
+        // puerto propio). El setting `wa_connector_url` manda; el global queda
+        // como respaldo para instalaciones de una sola linea. Sin ninguno de
+        // los dos, NO se envia por una linea ajena: el conector rechazaria el
+        // token (401) o, peor, saldria por el numero de otra empresa.
+        $url = trim((string) $project->setting('wa_connector_url', ''))
+            ?: (config('services.wa_connector.url') ?? env('WA_CONNECTOR_URL'));
         if (!$url) {
-            $this->warn('Falta WA_CONNECTOR_URL: no se puede enviar (usa --dry para simular).');
+            $this->warn("Proyecto {$project->id} sin wa_connector_url (ni global): recordatorio no enviado.");
             return false;
         }
         try {
