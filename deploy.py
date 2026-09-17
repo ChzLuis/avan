@@ -119,6 +119,15 @@ for f in args:
         f"mv -f {TMP}/{f} {BASE}/{f} 2>&1")
 run(f"rm -rf {TMP} 2>&1")
 run(f"rm -f {BASE}/storage/framework/views/*.php 2>&1; cd {BASE} && php artisan view:clear 2>&1")
+# Rutas y config viven CACHEADAS en ARIN (bootstrap/cache). Subir routes/web.php
+# sin regenerar el cache deja la ruta nueva "not defined" y la vista que la usa
+# devuelve 500 (paso el 2026-08-28 con bot-flows.wa-status). Solo se regenera
+# si ese cache existe: no se cambia el modo de la instalacion.
+if any(f.startswith("routes/") for f in args):
+    print("rutas:", run(f"cd {BASE} && php artisan route:clear >/dev/null 2>&1; "
+                        f"ls bootstrap/cache/routes-*.php >/dev/null 2>&1 && php artisan route:cache 2>&1 | tail -1 || echo 'sin cache de rutas (ok)'").strip())
+if any(f.startswith("config/") for f in args):
+    print("config:", run(f"cd {BASE} && [ -f bootstrap/cache/config.php ] && php artisan config:cache 2>&1 | tail -1 || echo 'sin cache de config (ok)'").strip())
 # Chequeo de salud. Antes apuntaba a tecsist.net, un dominio muerto: devolvia
 # 000 en cada despliegue, asi que el gate llevaba tiempo ciego. Ahora mide el
 # panel y la portada de ARIN, y AVISA si alguna no responde 200.

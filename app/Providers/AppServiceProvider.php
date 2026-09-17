@@ -14,6 +14,9 @@ class AppServiceProvider extends ServiceProvider
     {
         RedirectIfAuthenticated::redirectUsing(fn () => route('workspace'));
 
+        // Toda empresa nueva nace con su Bot Comercial predeterminado.
+        \App\Models\Project::observe(\App\Observers\ProjectObserver::class);
+
         // Equipo por defecto = 0, «sin proyecto».
         //
         // Con los teams de Spatie activos, `team_id` forma parte de la clave

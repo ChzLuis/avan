@@ -165,6 +165,7 @@
     var LIMIT_S = 30 * 60, WARN_S = 3 * 60, WARN_AT = LIMIT_S - WARN_S;
     var LOGOUT  = {!! json_encode(route('admin.logout')) !!};
     var TOKEN   = function() { return document.querySelector('meta[name="csrf-token"]').content; };
+
     var elapsed = 0, phase = 'idle', tick = null, autoOut = null;
     var elWarn, elExpired, elCd, elBar;
 

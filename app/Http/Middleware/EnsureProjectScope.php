@@ -14,7 +14,7 @@ class EnsureProjectScope
 {
     public function handle(Request $request, Closure $next, string $modelClass = ''): Response
     {
-        $projectId = session('active_project_id') ?? session('comercial_project_id');
+        $projectId = \App\Support\ContextoProyecto::id();
 
         if (!$projectId) {
             abort(403, 'Sin proyecto activo.');

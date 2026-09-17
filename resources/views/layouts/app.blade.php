@@ -4,6 +4,57 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Token CSRF fresco para los formularios de POST clásico.
+         El panel refrescaba el token solo para su JavaScript; los formularios
+         que envían POST de toda la vida (Páginas, Nosotros, Pagos, SEO…)
+         mandan el <input> que se imprimió al CARGAR la página. Con la pestaña
+         abierta un rato ese token caduca y al guardar sale 419 PAGE EXPIRED.
+         Lo engañoso es que el guardado SÍ entra: el 419 llega después, así que
+         parecía un fallo aleatorio.
+         Se renueva cada 10 min, al volver a la pestaña y —lo que de verdad lo
+         cierra— justo ANTES de enviar. --}}
+    <script>
+    (function () {
+        function aplicar(t) {
+            if (!t) return;
+            var m = document.querySelector('meta[name="csrf-token"]');
+            if (m) m.setAttribute('content', t);
+            document.querySelectorAll('input[name="_token"]').forEach(function (i) { i.value = t; });
+        }
+        function refrescar() {
+            return fetch('/csrf-token', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) { aplicar(d && d.token); return d && d.token; })
+                .catch(function () { return null; });
+        }
+        setInterval(refrescar, 10 * 60 * 1000);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) refrescar();
+        });
+        /* El token se renueva ANTES de que el usuario llegue a enviar, no
+           durante el envío.
+
+           Interceptar el `submit` para relanzarlo con `f.submit()` PIERDE los
+           archivos de los formularios `multipart/form-data`: el envío se corta,
+           el `<input type=file>` no viaja y la página vuelve sin guardar nada.
+           Justo lo que pasaba al subir la imagen de Nosotros.
+
+           Así que se refresca al primer gesto sobre el formulario (foco, clic o
+           escritura). Para cuando se pulsa Guardar el token ya está fresco y el
+           envío sale intacto, con su archivo. */
+        var pendiente = false;
+        function refrescarUnaVez() {
+            if (pendiente) return;
+            pendiente = true;
+            refrescar().then(function () { setTimeout(function () { pendiente = false; }, 60000); });
+        }
+        ['focusin', 'change', 'input'].forEach(function (ev) {
+            document.addEventListener(ev, function (e) {
+                if (e.target && e.target.closest && e.target.closest('form')) refrescarUnaVez();
+            }, true);
+        });
+    })();
+    </script>
     {{-- El guion estaba mal codificado (se veía "â€"" en la pestaña) y el
          título decía BIXO, que es interno y no debe llegar al cliente. --}}
     <title>{{ isset($activeProject) ? $activeProject->name . ' — ' : '' }}ESKALA</title>
@@ -15,7 +66,12 @@
             ? $activeProject->settings()->where('key', 'favicon_url')->value('value')
             : null;
     @endphp
-    <link rel="icon" href="{{ $panelIcono ? asset('storage/'.ltrim($panelIcono, '/')) : asset('favicon.ico') }}">
+    {{-- El respaldo apunta al PNG y no al .ico: el .ico de la raiz estuvo VACIO
+         (0 bytes) desde marzo, asi que el navegador lo descartaba y se quedaba
+         con el ultimo icono que hubiera visto para este dominio — el de otra
+         tienda. El sintoma era abrir el Constructor de un negocio y ver en la
+         pestaña el logo de otro. --}}
+    <link rel="icon" type="image/png" href="{{ $panelIcono ? asset('storage/'.ltrim($panelIcono, '/')) : asset('favicon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -471,7 +527,29 @@
 
         @media (max-width:767px) {
             .admin-menu-trigger { display:flex; }
-            .bx-header { gap:6px; padding:0 10px; }
+            /* El encabezado NO puede desbordar. Cuando lo hace, Chrome de
+               Android ensancha el area de maquetado de TODA la pagina: el panel
+               entero se dibuja mas ancho que la pantalla y el lado derecho queda
+               inalcanzable, porque el body no tiene desplazamiento horizontal.
+               Arrastraba tambien al Constructor, que al ser una pantalla fija
+               toma ese mismo ancho. Medido: 514 px de contenido en 397 de
+               pantalla, y el culpable era el nombre del negocio repetido junto
+               al logo mas el selector de negocio sin margen para encoger. */
+            .bx-header { gap:6px; padding:0 10px; overflow:hidden; }
+            .bx-header > * { min-width:0; }
+            .bx-hdr-logo { min-width:0; flex-shrink:1; }
+            .bx-hdr-proj-inline { display:none; }
+            .bx-hdr-action-item { min-width:0; flex-shrink:1; }
+            .bx-hdr-project-btn { min-width:0; max-width:100%; }
+            .bx-hdr-project-name { max-width:96px; }
+            .bx-hdr-user { flex-shrink:0; }
+
+            /* Todo campo por debajo de 16px hace que Chrome de Android amplie
+               la pagina al enfocarlo. Esa ampliacion se arrastra de pantalla en
+               pantalla dentro del mismo sitio, asi que un buscador de 13px en
+               una lista dejaba descuadrada la pantalla siguiente. */
+            input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]):not([type=file]),
+            select, textarea { font-size:16px !important; }
             .bx-hdr-logo-txt,
             .bx-hdr-sep,
             .bx-hdr-pagetitle,
@@ -609,7 +687,7 @@
             <div class="bx-hdr-logo-mark">B</div>
             <span class="bx-hdr-logo-txt">BIXO</span>
             @isset($activeProject)
-            <span style="font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">
+            <span class="bx-hdr-proj-inline" style="font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">
                 {{ \Illuminate\Support\Str::limit($activeProject->name, 22) }}
             </span>
             @endisset
@@ -806,6 +884,9 @@
         $pid            = $activeProject->id ?? null;
         $authUser       = auth()->user();
         $isOwnerOrSuper = $authUser?->is_superadmin || ($activeProject && $activeProject->owner_id === $authUser?->id);
+        $canBotQr       = $activeProject
+            && $activeProject->hasModule('clients')
+            && $activeProject->hasModule('bots');
         $sCfgActivo     = request()->routeIs('settings*') || request()->routeIs('roles.*') || request()->routeIs('catalogs*') || request()->routeIs('projects.panel*');
         $sEmpActivo     = request()->routeIs('agenda*') || request()->routeIs('hr.*') || request()->routeIs('sedes.*') || request()->routeIs('proveedores.*') || request()->routeIs('groups.*');
         $sCatActivo     = request()->routeIs('catalog') || request()->routeIs('products.*') || request()->routeIs('services.*') || request()->routeIs('categories.*') || request()->routeIs('reviews.*');
@@ -995,6 +1076,7 @@
             ['l'=>'Catálogos', 'h'=>$pid?route('catalogs.index'):'#',     'r'=>'catalogs.index',   'i'=>'M4 6h16M4 10h16M4 14h16M4 18h16', 'perm'=>'settings.catalogos'],
             ['l'=>'Roles',     'h'=>$pid?route('roles.index'):'#',        'r'=>'roles.index',      'i'=>'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', 'perm'=>null],
             ['l'=>'Módulos',   'h'=>$pid?route('settings.modules'):'#',   'r'=>'settings.modules', 'i'=>'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', 'perm'=>null],
+            ['l'=>'Reclamaciones', 'h'=>$pid?route('complaints.index'):'#', 'r'=>'complaints.index', 'i'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', 'perm'=>null],
         ];
         // Flujo de estados: para rubros que lo soportan (lavandería, restaurante, taller, etc.)
         $activeProj = app()->bound('active_project') ? app('active_project') : null;
@@ -1113,8 +1195,8 @@
         </div>
         @endif
 
-        {{-- ══ BLOQUE: CRM — solo owner/superadmin ══ --}}
-        @if($isOwnerOrSuper)
+        {{-- CRM: los miembros de una tienda con CRM + Bots pueden escanear el QR. --}}
+        @if($isOwnerOrSuper || $canBotQr)
         <div class="sb-module {{ $sCrmActivo ? 'is-active is-open' : '' }}" :class="sec.crm ? 'is-open' : ''">
             <button @click="toggle('crm')" class="sb-module-head">
                 <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1128,6 +1210,7 @@
             </button>
             <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.crm" x-collapse>
                 @if($pid)
+                    @if($isOwnerOrSuper)
                     <a href="{{ route('dashboard.comercial') }}" class="sb-sub-item {{ request()->routeIs('dashboard.comercial') ? 'active' : '' }}" style="display:flex;align-items:center;gap:6px;">
                         📊 Dashboard
                     </a>
@@ -1138,7 +1221,10 @@
                     <a href="{{ route('bixocrm.bandeja') }}" class="sb-sub-item {{ request()->routeIs('bixocrm.bandeja') ? 'active' : '' }}">Conversaciones</a>
                     <a href="{{ route('clients') }}" class="sb-sub-item {{ request()->routeIs('clients') ? 'active' : '' }}">Clientes / Leads</a>
                     <a href="{{ route('clients.pipeline') }}" class="sb-sub-item {{ request()->routeIs('clients.pipeline') ? 'active' : '' }}">Pipeline de ventas</a>
+                    @endif
+                    @if($canBotQr)
                     <a href="{{ route('bot-flows.index') }}" class="sb-sub-item {{ request()->routeIs('bot-flows.*') ? 'active' : '' }}">Bots</a>
+                    @endif
                 @endif
             </div>
         </div>
@@ -1179,6 +1265,7 @@
                 @endif
             @endif
             @if(auth()->user()?->is_superadmin || $activeProject?->owner_id===auth()->id() || auth()->user()?->can('invoices.ver'))
+                <a href="{{ $pid?route('bixosales.facturacion'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.facturacion') ? 'active' : '' }}">Facturación</a>
                 <a href="{{ $pid?route('bixosales.facturas'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.facturas*') ? 'active' : '' }}">Facturas</a>
                 {{-- La guia acompana a la mercaderia; va al lado de la factura
                      porque casi siempre se emiten una detras de otra. --}}
@@ -1357,26 +1444,26 @@
             'z-index:2147483646;background:rgba(0,0,0,.5);' +
             'align-items:center;justify-content:center;');
         elWarn.innerHTML =
-            '<div style=”background:#fff;border-radius:16px;padding:28px 32px;width:380px;max-width:92vw;' +
-            'box-shadow:0 20px 60px rgba(0,0,0,.3);”>' +
-              '<div style=”display:flex;align-items:center;gap:12px;margin-bottom:16px;”>' +
-                '<div style=”width:40px;height:40px;min-width:40px;border-radius:50%;background:#FEF3C7;' +
-                'display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;”>⏰</div>' +
+            '<div style="margin:auto;background:#fff;border-radius:16px;padding:28px 32px;width:380px;max-width:92vw;' +
+            'box-shadow:0 20px 60px rgba(0,0,0,.3);">' +
+              '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+                '<div style="width:40px;height:40px;min-width:40px;border-radius:50%;background:#FEF3C7;' +
+                'display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;">⏰</div>' +
                 '<div>' +
-                  '<p style=”font-size:14px;font-weight:700;color:#111827;margin:0;”>Sesión por expirar</p>' +
-                  '<p style=”font-size:12px;color:#9CA3AF;margin:2px 0 0;”>Tu sesión cerrará en ' +
-                    '<strong id=”sw-cd” style=”color:#D97706;”></strong>' +
+                  '<p style="font-size:14px;font-weight:700;color:#111827;margin:0;">Sesión por expirar</p>' +
+                  '<p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">Tu sesión cerrará en ' +
+                    '<strong id="sw-cd" style="color:#D97706;"></strong>' +
                   '</p>' +
                 '</div>' +
               '</div>' +
-              '<div style=”background:#F3F4F6;border-radius:99px;height:4px;margin-bottom:20px;overflow:hidden;”>' +
-                '<div id=”sw-bar” style=”width:100%;background:#F59E0B;height:100%;border-radius:99px;transition:width 1s linear;”></div>' +
+              '<div style="background:#F3F4F6;border-radius:99px;height:4px;margin-bottom:20px;overflow:hidden;">' +
+                '<div id="sw-bar" style="width:100%;background:#F59E0B;height:100%;border-radius:99px;transition:width 1s linear;"></div>' +
               '</div>' +
-              '<div style=”display:flex;gap:8px;”>' +
-                '<button onclick=”swLogout()” style=”flex:1;padding:9px;border-radius:9px;border:1px solid #E5E7EB;' +
-                'background:#fff;color:#6B7280;font-size:13px;font-weight:600;cursor:pointer;”>Cerrar sesión</button>' +
-                '<button onclick=”swKeep()” style=”flex:2;padding:9px;border-radius:9px;border:none;' +
-                'background:#2563EB;color:#fff;font-size:13px;font-weight:600;cursor:pointer;”>Continuar trabajando</button>' +
+              '<div style="display:flex;gap:8px;">' +
+                '<button onclick="swLogout()" style="flex:1;padding:9px;border-radius:9px;border:1px solid #E5E7EB;' +
+                'background:#fff;color:#6B7280;font-size:13px;font-weight:600;cursor:pointer;">Cerrar sesión</button>' +
+                '<button onclick="swKeep()" style="flex:2;padding:9px;border-radius:9px;border:none;' +
+                'background:#2563EB;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Continuar trabajando</button>' +
               '</div>' +
             '</div>';
         document.body.appendChild(elWarn);
@@ -1391,14 +1478,14 @@
             'z-index:2147483647;background:rgba(0,0,0,.7);' +
             'align-items:center;justify-content:center;');
         elExpired.innerHTML =
-            '<div style=”background:#fff;border-radius:16px;padding:32px;width:360px;max-width:92vw;' +
-            'text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);”>' +
-              '<div style=”width:52px;height:52px;min-width:52px;border-radius:50%;background:#FEE2E2;' +
-              'display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;line-height:1;”>🔒</div>' +
-              '<p style=”font-size:16px;font-weight:700;color:#111827;margin:0 0 8px;”>Sesión cerrada</p>' +
-              '<p style=”font-size:13px;color:#6B7280;margin:0 0 24px;”>Tu sesión expiró por inactividad.</p>' +
-              '<button onclick=”swLogout()” style=”width:100%;padding:10px;border-radius:10px;border:none;' +
-              'background:#2563EB;color:#fff;font-size:14px;font-weight:600;cursor:pointer;”>Iniciar sesión</button>' +
+            '<div style="background:#fff;border-radius:16px;padding:32px;width:360px;max-width:92vw;' +
+            'text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);">' +
+              '<div style="width:52px;height:52px;min-width:52px;border-radius:50%;background:#FEE2E2;' +
+              'display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;line-height:1;">🔒</div>' +
+              '<p style="font-size:16px;font-weight:700;color:#111827;margin:0 0 8px;">Sesión cerrada</p>' +
+              '<p style="font-size:13px;color:#6B7280;margin:0 0 24px;">Tu sesión expiró por inactividad.</p>' +
+              '<button onclick="swLogout()" style="width:100%;padding:10px;border-radius:10px;border:none;' +
+              'background:#2563EB;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Iniciar sesión</button>' +
             '</div>';
         document.body.appendChild(elExpired);
     }

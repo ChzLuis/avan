@@ -75,6 +75,32 @@ class DetectCustomDomain
                 $view = app(\App\Http\Controllers\StorePageController::class)->about($project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
+            if ($path === '/catalogo') {
+                $view = app(PublicController::class)->catalogo($request, $project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            if ($path === '/catalogo.pdf') {
+                $view = app(PublicController::class)->catalogoPdfPublico($request, $project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            if ($path === '/promociones') {
+                $view = app(PublicController::class)->promociones($request, $project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            // /buscar → resultados de busqueda (tienda filtrada + marcas y categorias).
+            if ($path === '/buscar') {
+                $view = app(PublicController::class)->buscar($request, $project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            // /marcas y /marca/{slug} → marcas que distribuye la tienda.
+            if ($path === '/marcas') {
+                $view = app(PublicController::class)->marcas($request, $project->slug);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
+            if (preg_match('#^/marca/([a-z0-9-]+)$#', $path, $mp)) {
+                $view = app(PublicController::class)->marca($request, $project->slug, $mp[1]);
+                return $view instanceof Response ? $view : response()->make($view);
+            }
             if ($path === '/contacto' && $request->isMethod('get')) {
                 $view = app(\App\Http\Controllers\StorePageController::class)->contact($project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
@@ -150,7 +176,7 @@ class DetectCustomDomain
 
             // Rutas sin slug (custom domain directo): /tienda, /nosotros, /p/{id}, etc.
             // Anteponemos el slug para que el router de Laravel las encuentre
-            $slugRoutes = ['/tienda', '/nosotros', '/contacto', '/blog', '/producto/', '/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher', '/reclamaciones', '/libro-reclamaciones', '/privacidad', '/terminos'];
+            $slugRoutes = ['/tienda', '/nosotros', '/contacto', '/marcas', '/marca/', '/buscar', '/promociones', '/catalogo', '/blog', '/producto/', '/p/', '/thanks/', '/book', '/order', '/cart', '/coupon', '/quote', '/upload-voucher', '/reclamaciones', '/libro-reclamaciones', '/privacidad', '/terminos'];
             $needsSlug = collect($slugRoutes)->contains(fn($r) => str_starts_with($path, $r) || $path === $r);
             if ($needsSlug || $path === '') {
                 $newPath = '/' . $project->slug . ($path ?: '/');

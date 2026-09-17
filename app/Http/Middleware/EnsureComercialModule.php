@@ -38,6 +38,11 @@ class EnsureComercialModule
         'facturas'     => 'invoices',
         'boletas'      => 'invoices',
         'comprobantes' => 'invoices',
+        // La guia de remision es parte de facturacion y el menu ya la muestra
+        // bajo el mismo modulo. Sin esta linea la ruta de Ventas quedaba abierta
+        // a cualquier tenant que la escribiera a mano: ocultar el menu no es
+        // control de acceso.
+        'guias'        => 'invoices',
         'cotizaciones' => 'quotes',
         'productos'    => 'catalog',
         'delivery'     => 'logistics',
@@ -59,7 +64,7 @@ class EnsureComercialModule
         }
 
         if ($modulo !== null) {
-            $projectId = session('comercial_project_id') ?? session('active_project_id');
+            $projectId = \App\Support\ContextoProyecto::id();
             $project   = $projectId ? Project::find($projectId) : null;
             abort_unless($project && $project->hasModule($modulo), 403,
                 'Tu plan no incluye este módulo.');

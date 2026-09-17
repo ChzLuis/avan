@@ -16,6 +16,9 @@ class Project extends Model
 
     protected $casts = ['is_active' => 'boolean'];
 
+    // Secretos de integración: nunca se serializan hacia el cliente.
+    protected $hidden = ['wa_bot_token', 'copilot_token'];
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
@@ -40,6 +43,9 @@ class Project extends Model
     public function catalogLists(): HasMany  { return $this->hasMany(\App\Models\CatalogList::class); }
     public function categories(): HasMany   { return $this->hasMany(Category::class); }
     public function products(): HasMany     { return $this->hasMany(Product::class); }
+    public function productAttributes(): HasMany { return $this->hasMany(ProductAttribute::class); }
+    public function productAttributeValues(): HasMany { return $this->hasMany(ProductAttributeValue::class); }
+    public function productVariants(): HasMany { return $this->hasMany(ProductVariant::class); }
     public function catalogIntegrations(): HasMany { return $this->hasMany(CatalogIntegration::class); }
     public function services(): HasMany     { return $this->hasMany(Service::class); }
     public function clients(): HasMany      { return $this->hasMany(Client::class); }

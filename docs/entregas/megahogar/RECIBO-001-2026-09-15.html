@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recibo 001 MegaHogar</title>
+<style>
+  /* ────────────────────────────────────────────────────────────────────────
+     RECIBO DE PAGO · Eskala Group
+     Documento financiero: acredita cuanto se recibio y cuanto queda. No es
+     una cotizacion, asi que no lleva lista de funcionalidades ni argumentos
+     de venta — eso ya se vendio. Sin emojis, sin verde de marca en las
+     cifras: la unica tinta de color es el ambar del saldo por cobrar, que es
+     el unico dato que exige una accion del cliente.
+     Paleta tomada de components/doc/hoja.blade.php (la hoja de toda factura
+     y guia de BIXO) para que los documentos del negocio sean una familia.
+     ──────────────────────────────────────────────────────────────────────── */
+  *, *::before, *::after {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  :root {
+    --tinta:      #0F172A;
+    --texto:      #334155;
+    --apoyo:      #64748B;
+    --tenue:      #94A3B8;
+    --linea:      #E2E8F0;
+    --linea-sutil:#EDF2F7;
+    --papel:      #FFFFFF;
+    --realce:     #F8FAFC;
+    --mesa:       #E7EBF0;
+    --saldo:      #92400E;
+    --saldo-cifra:#B45309;
+    --saldo-fondo:#FFFBEB;
+    --saldo-linea:#FCD9A0;
+  }
+
+  body {
+    font-family: 'Segoe UI', Roboto, Arial, Helvetica, sans-serif;
+    background: var(--mesa);
+    color: var(--texto);
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 28px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .hoja {
+    width: 100%;
+    max-width: 210mm;
+    background: var(--papel);
+    margin: 0 auto;
+    box-shadow: 0 1px 3px rgba(15,23,42,.08), 0 18px 48px -20px rgba(15,23,42,.28);
+  }
+
+  /* ── Membrete ─────────────────────────────────────────────────────────── */
+  .membrete {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    justify-content: space-between; align-items: flex-start;
+    padding: 30px 40px 22px;
+    border-bottom: 2px solid var(--tinta);
+  }
+  .emisor .nombre {
+    font-size: 25px; font-weight: 700; color: var(--tinta);
+    letter-spacing: -.015em; line-height: 1.1;
+  }
+  .emisor .giro {
+    font-size: 11px; color: var(--apoyo); margin-top: 5px;
+    letter-spacing: .04em;
+  }
+  .emisor .contacto { font-size: 11.5px; color: var(--tenue); margin-top: 9px; }
+
+  .folio { text-align: right; flex-shrink: 0; }
+  .folio .clase {
+    font-size: 10px; font-weight: 700; color: var(--apoyo);
+    letter-spacing: .18em; text-transform: uppercase;
+  }
+  .folio .numero {
+    font-size: 27px; font-weight: 700; color: var(--tinta);
+    font-variant-numeric: tabular-nums; line-height: 1.15; margin-top: 2px;
+  }
+  .folio .fecha { font-size: 11.5px; color: var(--apoyo); margin-top: 5px; }
+
+  /* ── Datos del pagador ────────────────────────────────────────────────── */
+  .pagador {
+    padding: 20px 40px;
+    background: var(--realce);
+    border-bottom: 1px solid var(--linea);
+    display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px 32px;
+  }
+  .campo .rotulo {
+    font-size: 9.5px; font-weight: 700; color: var(--tenue);
+    letter-spacing: .13em; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .campo .dato { font-size: 14px; color: var(--tinta); }
+  .campo .dato strong { font-weight: 700; }
+  .ancho { grid-column: 1 / -1; }
+
+  .cuerpo { padding: 28px 40px 32px; }
+
+  .titulo-seccion {
+    font-size: 10px; font-weight: 700; color: var(--tenue);
+    letter-spacing: .15em; text-transform: uppercase;
+    padding-bottom: 7px; border-bottom: 1px solid var(--linea);
+    margin-bottom: 14px;
+  }
+
+  /* ── Importe recibido: el dato principal del documento ────────────────── */
+  .recibido {
+    border: 1px solid var(--linea);
+    border-top: 3px solid var(--tinta);
+    padding: 22px 28px;
+    display: flex; flex-wrap: wrap; gap: 20px;
+    align-items: center; justify-content: space-between;
+  }
+  .recibido .concepto { min-width: 0; }
+  .recibido .glosa { font-size: 10px; font-weight: 700; color: var(--tenue);
+    letter-spacing: .15em; text-transform: uppercase; }
+  .recibido .detalle {
+    font-size: 15px; color: var(--tinta); margin-top: 5px; font-weight: 600;
+  }
+  .recibido .letras {
+    font-size: 12.5px; color: var(--apoyo); font-style: italic; margin-top: 3px;
+  }
+  .recibido .cifra {
+    font-size: clamp(34px, 8vw, 44px); font-weight: 700;
+    color: var(--tinta); font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em; white-space: nowrap; line-height: 1;
+  }
+  .recibido .cifra .moneda {
+    font-size: .52em; font-weight: 600; color: var(--apoyo);
+    margin-right: 6px; letter-spacing: 0;
+  }
+
+  /* ── Estado de cuenta ─────────────────────────────────────────────────── */
+  .bloque { margin-top: 26px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 9px 0; }
+  th {
+    font-size: 9.5px; font-weight: 700; color: var(--tenue);
+    letter-spacing: .12em; text-transform: uppercase;
+    border-bottom: 1px solid var(--linea);
+  }
+  td { border-bottom: 1px solid var(--linea-sutil); font-size: 14px; }
+  .num { text-align: right; white-space: nowrap; }
+
+  .cuenta td { color: var(--texto); }
+  .cuenta .principal td { color: var(--tinta); }
+  .cuenta .fila-saldo td {
+    border-top: 2px solid var(--tinta); border-bottom: none;
+    padding-top: 13px; padding-bottom: 0;
+  }
+  .cuenta .fila-saldo .glosa {
+    font-weight: 700; color: var(--saldo); font-size: 15px;
+  }
+  .cuenta .fila-saldo .num {
+    font-size: 24px; font-weight: 700; color: var(--saldo-cifra);
+    line-height: 1.1;
+  }
+
+  .condicion {
+    margin-top: 16px;
+    background: var(--saldo-fondo);
+    border: 1px solid var(--saldo-linea);
+    border-left: 3px solid var(--saldo-cifra);
+    padding: 13px 17px;
+    font-size: 13px; color: var(--saldo);
+  }
+  .condicion strong { font-weight: 700; }
+  .por-definir {
+    color: var(--apoyo); font-style: italic;
+    border-bottom: 1px dotted var(--tenue);
+  }
+
+  .alcance { font-size: 13.5px; color: var(--texto); }
+  .alcance p + p { margin-top: 9px; }
+  .alcance a { color: var(--tinta); }
+
+  /* ── Conformidad y firmas ─────────────────────────────────────────────── */
+  .constancia {
+    margin-top: 26px; padding: 17px 20px;
+    background: var(--realce); border: 1px solid var(--linea);
+    font-size: 13.5px; color: var(--texto);
+  }
+  .constancia strong { color: var(--tinta); font-weight: 700; }
+
+  .firmas {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 46px;
+    margin-top: 46px;
+  }
+  .firma .raya { border-top: 1px solid var(--tinta); }
+  .firma .cargo {
+    font-size: 10px; font-weight: 700; color: var(--apoyo);
+    letter-spacing: .1em; text-transform: uppercase;
+    margin-top: 7px; text-align: center;
+  }
+  .firma .quien {
+    font-size: 12.5px; color: var(--tinta); margin-top: 3px; text-align: center;
+  }
+
+  /* ── Pie ──────────────────────────────────────────────────────────────── */
+  .pie {
+    border-top: 1px solid var(--linea);
+    padding: 15px 40px 20px;
+    display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between;
+    font-size: 10.5px; color: var(--tenue); line-height: 1.55;
+  }
+  .pie .marca { color: var(--apoyo); font-weight: 600; }
+  .pie .legal { text-align: right; max-width: 62ch; }
+
+  @media (max-width: 620px) {
+    body { padding: 14px 12px; }
+    .membrete, .pagador, .cuerpo, .pie { padding-left: 22px; padding-right: 22px; }
+    .pagador { grid-template-columns: 1fr; gap: 15px; }
+    .recibido { padding: 18px 20px; }
+    .firmas { grid-template-columns: 1fr; gap: 40px; }
+    .pie { flex-direction: column; }
+    .pie .legal { text-align: left; }
+  }
+
+  /* IMPRESION EN A4.
+     Sin esta regla Chrome imprime en Carta (215.9 x 279.4 mm), que es su
+     defecto, y el recibo se partia en dos hojas. El margen va aqui, en la
+     pagina, y la hoja pierde su propio relleno lateral para no sumarlos.
+     Ningun bloque de cierre (constancia y firmas) puede quedar partido. */
+  @page { size: A4 portrait; margin: 14mm 13mm; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .hoja {
+      box-shadow: none; max-width: none; width: 100%;
+    }
+    .membrete, .pagador, .cuerpo, .pie {
+      padding-left: 0; padding-right: 0;
+    }
+    .membrete { padding-top: 0; padding-bottom: 14px; }
+    .pagador { padding-top: 14px; padding-bottom: 14px; }
+    .cuerpo { padding-top: 18px; padding-bottom: 8px; }
+    .bloque { margin-top: 16px; }
+    .recibido { padding: 16px 22px; }
+    .constancia { margin-top: 16px; padding: 13px 16px; }
+    .condicion { margin-top: 12px; padding: 10px 14px; }
+    .firmas { margin-top: 26px; gap: 40px; }
+    .titulo-seccion { margin-bottom: 10px; }
+    th, td { padding: 7px 0; }
+    .constancia, .firmas, .recibido, .condicion { break-inside: avoid; }
+    .pie { padding-top: 12px; padding-bottom: 0; }
+  }
+</style>
+</head>
+<body>
+
+<article class="hoja">
+
+  <header class="membrete">
+    <div class="emisor">
+      <div class="nombre">Eskala Group</div>
+      <div class="giro">Plataforma BIXO® · Desarrollo de software comercial</div>
+      <div class="contacto">Huancavelica, Perú</div>
+    </div>
+    <div class="folio">
+      <div class="clase">Recibo de pago</div>
+      <div class="numero">N.º 001-2026</div>
+      <div class="fecha">15 de setiembre de 2026</div>
+    </div>
+  </header>
+
+  <section class="pagador">
+    <div class="campo">
+      <div class="rotulo">Recibí de</div>
+      <div class="dato"><strong>CORPORACIÓN MEGA HOGAR S.A.C.</strong></div>
+    </div>
+    <div class="campo">
+      <div class="rotulo">RUC</div>
+      <div class="dato">20616190220</div>
+    </div>
+    <div class="campo ancho">
+      <div class="rotulo">Domicilio fiscal</div>
+      <div class="dato">Jr. Odonovan 174, Cercado, Huancavelica</div>
+    </div>
+  </section>
+
+  <div class="cuerpo">
+
+    <section class="recibido">
+      <div class="concepto">
+        <div class="glosa">Importe recibido</div>
+        <div class="detalle">Pago a cuenta · Tienda virtual sobre plataforma BIXO®</div>
+        <div class="letras">Doscientos cincuenta con 00/100 soles</div>
+      </div>
+      <div class="cifra"><span class="moneda">S/</span>250.00</div>
+    </section>
+
+    <section class="bloque">
+      <h2 class="titulo-seccion">Estado de cuenta del proyecto</h2>
+      <table class="cuenta">
+        <tbody>
+          <tr class="principal">
+            <td>Valor total acordado</td>
+            <td class="num">S/ 490.00</td>
+          </tr>
+          <tr>
+            <td>Pagos recibidos a la fecha, incluido el presente recibo</td>
+            <td class="num">S/ 250.00</td>
+          </tr>
+          <tr class="fila-saldo">
+            <td class="glosa">Saldo pendiente de pago</td>
+            <td class="num">S/ 240.00</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="condicion">
+        Saldo de <strong>S/ 240.00</strong> — doscientos cuarenta con 00/100
+        soles. Medio de pago del presente abono:
+        <span class="por-definir">por indicar</span>.
+        Fecha acordada de cancelación del saldo:
+        <span class="por-definir">por acordar</span>.
+      </p>
+    </section>
+
+    <section class="bloque alcance">
+      <h2 class="titulo-seccion">Concepto</h2>
+      <p>
+        Tienda virtual en línea con panel de administración propio sobre la
+        plataforma BIXO®, entregada y operativa según el acta de entrega
+        suscrita el 5 de setiembre de 2026, que forma parte de este documento.
+      </p>
+      <p>
+        El saldo pendiente comprende un mes de soporte técnico y funcional
+        contado desde la fecha de entrega, para cambios solicitados,
+        requerimientos adicionales y explicaciones de uso del sistema.
+      </p>
+    </section>
+
+    <section class="constancia">
+      Eskala Group declara haber recibido de CORPORACIÓN MEGA HOGAR S.A.C. la
+      suma de <strong>S/ 250.00 (doscientos cincuenta con 00/100 soles)</strong>
+      por el concepto indicado, quedando un saldo pendiente de
+      <strong>S/ 240.00</strong> sobre el valor total acordado de
+      <strong>S/ 490.00</strong>.
+    </section>
+
+    <section class="firmas">
+      <div class="firma">
+        <div class="raya"></div>
+        <div class="cargo">Recibí conforme</div>
+        <div class="quien">Eskala Group · BIXO®</div>
+      </div>
+      <div class="firma">
+        <div class="raya"></div>
+        <div class="cargo">Conformidad del cliente</div>
+        <div class="quien">Corporación Mega Hogar S.A.C.</div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="pie">
+    <div class="marca">Eskala Group · BIXO®</div>
+    <div class="legal">
+      Documento de constancia entre las partes. No constituye comprobante de
+      pago electrónico ante SUNAT.
+    </div>
+  </footer>
+
+</article>
+
+</body>
+</html>

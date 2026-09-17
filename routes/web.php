@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LectorComprobanteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\ProjectController;
@@ -145,6 +146,10 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/{product}/images',               [ProductController::class, 'uploadImage'])->name('products.images.upload');
                 Route::delete('/{product}/images/{image}',     [ProductController::class, 'deleteImage'])->name('products.images.delete');
                 Route::patch('/{product}/images/{image}/main', [ProductController::class, 'setMainImage'])->name('products.images.main');
+                // Ficha tecnica: va por su propia ruta porque el editor guarda
+                // el producto como JSON y ahi no cabe un archivo.
+                Route::post('/{product}/ficha-tecnica',        [ProductController::class, 'subirFichaTecnica'])->name('products.ficha.upload');
+                Route::delete('/{product}/ficha-tecnica',      [ProductController::class, 'quitarFichaTecnica'])->name('products.ficha.delete');
             });
             // Borrado
             Route::middleware('can:catalog.eliminar')->group(function () {
@@ -245,18 +250,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/copilot',  [\App\Http\Controllers\CopilotEmpresarialController::class, 'index'])->name('copilot.index');
         Route::post('/copilot', [\App\Http\Controllers\CopilotEmpresarialController::class, 'preguntar'])->name('copilot.preguntar')->middleware('can:reports.ver');
 
-        // Constructor visual de bots
-        Route::get('/bots-flow',            [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
-        Route::get('/bots-flow/nuevo',      [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
-        Route::get('/bots-flow/wa-status',  [\App\Http\Controllers\BotFlowController::class, 'waStatus'])->name('bot-flows.wa-status');
-        Route::post('/bots-flow/plantilla-tienda', [\App\Http\Controllers\BotFlowController::class, 'desdePlantilla'])->name('bot-flows.plantilla')->middleware('can:settings.negocio');
-        Route::post('/bots-flow/plantilla-comercial', [\App\Http\Controllers\BotFlowController::class, 'desdePlantillaComercial'])->name('bot-flows.plantilla-comercial');
-        Route::post('/bots-flow/ia', [\App\Http\Controllers\BotFlowController::class, 'toggleIa'])->name('bot-flows.ia');
-        Route::get('/bots-flow/{flow}',     [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
-        Route::post('/bots-flow/{flow}',    [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save')->middleware('can:settings.negocio');
-        Route::post('/bots-flow/{flow}/test',[\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test')->middleware('can:settings.negocio');
-        Route::post('/bots-flow/{flow}/restaurar',[\App\Http\Controllers\BotFlowController::class, 'restaurarPlantilla'])->name('bot-flows.restaurar')->middleware('can:settings.negocio');
-        Route::delete('/bots-flow/{flow}',  [\App\Http\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy')->middleware('can:settings.negocio');
+        // Constructor visual de bots. Cualquier miembro del negocio puede ver
+        // el estado y escanear el QR cuando CRM + Bots estan contratados. Las
+        // acciones que cambian el bot siguen siendo solo de configuracion.
+        Route::prefix('bots-flow')->middleware(['module:clients', 'module:bots'])->group(function () {
+            Route::get('/',          [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
+            Route::get('/wa-status', [\App\Http\Controllers\BotFlowController::class, 'waStatus'])->name('bot-flows.wa-status');
+
+
+            Route::middleware('can:settings.negocio')->group(function () {
+                Route::get('/nuevo', [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
+                Route::post('/plantilla-tienda', [\App\Http\Controllers\BotFlowController::class, 'desdePlantilla'])->name('bot-flows.plantilla');
+                Route::post('/plantilla-comercial', [\App\Http\Controllers\BotFlowController::class, 'desdePlantillaComercial'])->name('bot-flows.plantilla-comercial');
+                Route::post('/ia', [\App\Http\Controllers\BotFlowController::class, 'toggleIa'])->name('bot-flows.ia');
+                Route::get('/{flow}', [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
+                Route::post('/{flow}', [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save');
+                Route::post('/{flow}/test', [\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test');
+                Route::post('/{flow}/restaurar', [\App\Http\Controllers\BotFlowController::class, 'restaurarPlantilla'])->name('bot-flows.restaurar');
+                Route::delete('/{flow}', [\App\Http\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy');
+            });
+        });
 
         // Agenda
         // Un permiso por verbo: agenda.ver autorizaba tambien crear, mover y
@@ -297,6 +310,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/catalogs/{catalog}/values',           [CatalogListController::class, 'storeValue'])->name('catalogs.values.store')->middleware('can:settings.catalogos');
         Route::put('/catalogs/{catalog}/values/{value}',    [CatalogListController::class, 'updateValue'])->name('catalogs.values.update')->middleware('can:settings.catalogos');
         Route::delete('/catalogs/{catalog}/values/{value}', [CatalogListController::class, 'destroyValue'])->name('catalogs.values.destroy')->middleware('can:settings.catalogos');
+        Route::post('/catalogs/{catalog}/values/{value}/image', [CatalogListController::class, 'imagenValor'])->name('catalogs.values.image')->middleware('can:settings.catalogos');
 
         // Proyectos (panel 3 columnas) — rutas movidas fuera del grupo project.member
 
@@ -424,6 +438,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/builder/image-template', [\App\Http\Controllers\ProductImageTemplateController::class, 'save'])->name('builder.image-template.save')->middleware('can:settings.diseno');
         Route::post('/settings/builder/image-template/toggle', [\App\Http\Controllers\ProductImageTemplateController::class, 'toggle'])->name('builder.image-template.toggle')->middleware('can:settings.diseno');
         Route::post('/settings/builder/image-template/reset', [\App\Http\Controllers\ProductImageTemplateController::class, 'reset'])->name('builder.image-template.reset')->middleware('can:settings.diseno');
+        // Descargar la marca de agua ya aplanada con su transparencia, para
+        // usarla fuera del catalogo (fichas, cotizaciones, redes).
+        Route::get('/settings/builder/image-template/watermark.png', [\App\Http\Controllers\ProductImageTemplateController::class, 'descargarMarca'])->name('builder.image-template.watermark')->middleware('can:catalog.ver');
         Route::post('/settings/builder/image-template/upload', [\App\Http\Controllers\ProductImageTemplateController::class, 'upload'])->name('builder.image-template.upload')->middleware('can:settings.diseno');
         Route::post('/settings/builder/image-template/preview', [\App\Http\Controllers\ProductImageTemplateController::class, 'preview'])->name('builder.image-template.preview')->middleware('can:settings.diseno');
         Route::post('/settings/builder/image-template/apply', [\App\Http\Controllers\ProductImageTemplateController::class, 'apply'])->name('builder.image-template.apply')->middleware('can:settings.diseno');
@@ -450,6 +467,10 @@ Route::middleware(['auth'])->group(function () {
         // Descartar el borrador y volver a lo publicado. Hasta ahora la única
         // salida de un borrador con cambios no deseados era publicarlos.
         Route::post('/settings/builder/descartar-borrador', [\App\Http\Controllers\StoreBuilderController::class, 'discardDraft'])->name('settings.builder.discard')->middleware('can:settings.diseno');
+        // Historial de publicaciones: consultarlo es leer; volver atras reescribe
+        // la tienda publicada y exige el mismo permiso que publicar.
+        Route::get('/settings/builder/versiones', [\App\Http\Controllers\StoreBuilderController::class, 'versions'])->name('settings.builder.versions');
+        Route::post('/settings/builder/restaurar', [\App\Http\Controllers\StoreBuilderController::class, 'rollback'])->name('settings.builder.rollback')->middleware('can:settings.diseno');
         Route::get('/settings/builder/preview', [\App\Http\Controllers\StoreBuilderController::class, 'preview'])->name('settings.builder.preview');
         Route::get('/settings/builder/catalog/products', [\App\Http\Controllers\StoreBuilderController::class, 'catalogList'])->name('settings.builder.catalog.list');
         Route::post('/settings/builder/catalog/bulk', [\App\Http\Controllers\StoreBuilderController::class, 'catalogBulk'])->name('settings.builder.catalog.bulk')->middleware('can:settings.diseno');
@@ -491,6 +512,10 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'destroy'])->name('settings.catalog-profiles.destroy')->where('id', '[0-9]+')->middleware('can:settings.catalogos');
         Route::post('/settings/catalog-profiles/reorder', [\App\Http\Controllers\CatalogProfileController::class, 'reorder'])->name('settings.catalog-profiles.reorder')->middleware('can:settings.catalogos');
         Route::patch('/settings/experience/complaints/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'complaintStatus'])->name('settings.experience.complaint.status')->middleware('can:settings.negocio');
+        // Libro de Reclamaciones: verlo basta con `settings.ver`; cambiar el
+        // estado de un reclamo ya es escribir y exige `settings.negocio`.
+        Route::get('/complaints', [\App\Http\Controllers\ComplaintController::class, 'index'])->name('complaints.index');
+        Route::patch('/complaints/{complaint}', [\App\Http\Controllers\ComplaintController::class, 'updateStatus'])->name('complaints.status')->middleware('can:settings.negocio');
         Route::post('/settings/flow', [SettingsController::class, 'updateFlow'])->name('settings.flow.update')->middleware('can:settings.negocio');
         Route::post('/settings/flow/diagram', [SettingsController::class, 'updateDiagram'])->name('settings.flow.diagram')->middleware('can:settings.negocio');
         Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo')->middleware('can:settings.diseno');
@@ -547,10 +572,13 @@ Route::middleware(['auth'])->group(function () {
         // modificaba y borraba comprobantes fiscales. Se igualan a sus gemelas.
         Route::get('/invoices',               [InvoiceController::class, 'index'])->name('invoices.index')->middleware('can:invoices.ver');
         Route::post('/invoices',              [InvoiceController::class, 'store'])->name('invoices.store')->middleware('can:invoices.crear');
+        Route::post('/invoices/previsualizar', [InvoiceController::class, 'previsualizar'])->name('invoices.previsualizar')->middleware('can:invoices.crear');
         Route::get('/invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show')->middleware('can:invoices.ver');
         Route::put('/invoices/{invoice}',     [InvoiceController::class, 'update'])->name('invoices.update')->middleware('can:invoices.editar');
         Route::delete('/invoices/{invoice}',  [InvoiceController::class, 'destroy'])->name('invoices.destroy')->middleware('can:invoices.anular');
         Route::get('/invoices/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('invoices.pdf')->middleware('can:invoices.ver');
+        Route::get('/invoices/{invoice}/xml',    [InvoiceController::class, 'xml'])->name('invoices.xml')->middleware('can:invoices.ver');
+        Route::get('/invoices/{invoice}/cdr',    [InvoiceController::class, 'cdr'])->name('invoices.cdr')->middleware('can:invoices.ver');
         Route::post('/invoices/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('invoices.sunat')->middleware('can:invoices.crear');
 
         // Corregir un comprobante que SUNAT ya acepto. Borrar la fila lo dejaba
@@ -562,6 +590,15 @@ Route::middleware(['auth'])->group(function () {
         // Consulta RUC: rellena razon social y direccion desde el padron. El
         // portal ya la tenia; el panel obligaba a teclearlo a mano.
         Route::get('/invoices-ruc', [InvoiceController::class, 'lookupRucPanel'])->name('invoices.ruc')->middleware('can:invoices.ver');
+        // Buscador del formulario: un solo cajon para nombre, RUC y DNI.
+        Route::get('/invoices-clientes', [InvoiceController::class, 'buscarClientes'])->name('invoices.clientes')->middleware('can:invoices.ver');
+
+        // LECTOR DE COMPROBANTES: de una foto o un PDF a los datos del
+        // formulario. Solo lee y precarga; emitir sigue siendo el flujo de
+        // siempre, con su revision humana. Exige `invoices.crear` porque su
+        // salida acaba en un comprobante.
+        Route::post('/invoices-lector',         [LectorComprobanteController::class, 'analizar'])->name('invoices.lector')->middleware('can:invoices.crear');
+        Route::post('/invoices-lector/aplicar', [LectorComprobanteController::class, 'aplicar'])->name('invoices.lector.aplicar')->middleware('can:invoices.crear');
         // El Registro de Ventas del periodo: lo que pide el contador cada mes.
         Route::get('/invoices-registro', [InvoiceController::class, 'registroVentas'])->name('invoices.registro')->middleware('can:invoices.ver');
 
@@ -569,6 +606,7 @@ Route::middleware(['auth'])->group(function () {
         // factura dice que se vendio; en un control de carretera piden esta.
         Route::get('/guias',                 [GuiaRemisionController::class, 'index'])->name('guias.index')->middleware('can:invoices.ver');
         Route::get('/guias/opciones',        [GuiaRemisionController::class, 'opciones'])->name('guias.opciones')->middleware('can:invoices.ver');
+        Route::get('/guias/historico',       [GuiaRemisionController::class, 'consulta'])->name('guias.consulta')->middleware('can:invoices.ver');
         Route::post('/guias',                [GuiaRemisionController::class, 'store'])->name('guias.store')->middleware('can:invoices.crear');
         Route::get('/guias/{guia}',          [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
         Route::get('/guias/{guia}/pdf',      [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');
@@ -673,6 +711,17 @@ Route::get('/p/{id}', function (int $id) {
     return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
 })->where('id', '[0-9]+')->name('public.product.domain.legacy');
 
+// Catalogo PDF en dominio propio. El comodin /{slug} no admite el punto, asi
+// que /catalogo.pdf no coincidia con NINGUNA ruta y Laravel devolvia 404 antes
+// de que DetectCustomDomain pudiera atenderlo (el middleware si lo contempla).
+Route::get('/catalogo.pdf', function (\Illuminate\Http\Request $request) {
+    $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
+    if (! $project) {
+        abort(404);
+    }
+    return app(\App\Http\Controllers\PublicController::class)->catalogoPdfPublico($request, $project->slug);
+})->name('public.catalog_pdf_domain');
+
 // El carrito vive dentro de la tienda; un enlace directo no debe dar error.
 Route::get('/carrito', function () {
     $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
@@ -767,14 +816,21 @@ Route::get('/{slug}/sitemap.xml', [PublicController::class, 'sitemap'])->name('p
 Route::get('/{slug}/robots.txt',  [PublicController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/nosotros', [\App\Http\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+// Marcas: pagina de todas y pagina de una (la tienda filtrada, con cabecera).
+Route::get('/{slug}/marcas',         [PublicController::class, 'marcas'])->name('public.brands')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/marca/{marca}',  [PublicController::class, 'marca'])->name('public.brand')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('marca', '[a-z0-9-]+');
+Route::get('/{slug}/buscar',         [PublicController::class, 'buscar'])->name('public.search')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/promociones',    [PublicController::class, 'promociones'])->name('public.promotions')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/catalogo',       [PublicController::class, 'catalogo'])->name('public.catalog_page')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/catalogo.pdf',   [PublicController::class, 'catalogoPdfPublico'])->name('public.catalog_pdf')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/blog', [\App\Http\Controllers\StorePageController::class, 'blog'])->name('public.blog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/blog/{key}', [\App\Http\Controllers\StorePageController::class, 'blogPost'])->name('public.blog.show')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-zA-Z0-9_-]+');
-Route::post('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 // Alias corto usado por los footers de las plantillas + páginas legales.
 Route::get('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints.short')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.short.store')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.short.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/privacidad', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'privacidad')->name('public.privacy')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/terminos', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'terminos')->name('public.terms')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-z0-9-]+');
@@ -818,15 +874,15 @@ Route::get('/{slug}/p/{id}', function (string $slug, int $id) {
     return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
 })->name('public.product.legacy')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('id', '[0-9]+');
 Route::post('/{slug}/order-proof',    [PublicController::class, 'uploadOrderProof'])->name('public.order.proof')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->middleware('throttle:60,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->middleware('throttle:30,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/thanks/{order}', [PublicController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('order', '[0-9]+');
-Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('product', '[0-9]+');
-Route::post('/{slug}/quote',   [PublicController::class, 'storeQuote'])->name('public.quote')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('product', '[0-9]+');
+Route::post('/{slug}/quote',   [PublicController::class, 'storeQuote'])->name('public.quote')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 Route::get('/{slug}/book',     [PublicController::class, 'book'])->name('public.book')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/book',    [PublicController::class, 'storeBook'])->name('public.book.store')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::post('/{slug}/book',    [PublicController::class, 'storeBook'])->name('public.book.store')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
 
 // ─── WhatsApp Bot API (sin auth, validada por token interno) ─────────────────
 Route::get('/wa/config',                        [WaBotController::class, 'getConfig'])->name('wa.config');
@@ -924,10 +980,10 @@ Route::middleware(['auth', \App\Http\Middleware\SetActiveProject::class])->group
 });
 
 // ─── Pagos del catálogo ───────────────────────────────────────────────────────
-Route::post('/{slug}/pay/{order}/manual', [PaymentController::class, 'confirmManual'])->name('public.pay.manual')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::post('/{slug}/pay/{order}/culqi',  [PaymentController::class, 'chargeCulqi'])->name('public.pay.culqi')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::post('/{slug}/pay/{order}/mp',     [PaymentController::class, 'createMpPreference'])->name('public.pay.mp')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
-Route::post('/{slug}/mp-webhook',         [PaymentController::class, 'mpWebhook'])->name('public.mp.webhook')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/{slug}/pay/{order}/manual', [PaymentController::class, 'confirmManual'])->name('public.pay.manual')->middleware('throttle:20,1')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
+Route::post('/{slug}/pay/{order}/culqi',  [PaymentController::class, 'chargeCulqi'])->name('public.pay.culqi')->middleware('throttle:20,1')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
+Route::post('/{slug}/pay/{order}/mp',     [PaymentController::class, 'createMpPreference'])->name('public.pay.mp')->middleware('throttle:20,1')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
+Route::post('/{slug}/mp-webhook',         [PaymentController::class, 'mpWebhook'])->name('public.mp.webhook')->middleware('throttle:120,1')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // ─── Portal comercial del cliente ─────────────────────────────────────────────
 Route::get('/b/{slug}',           [PortalController::class, 'home'])->name('portal.home');
@@ -1160,6 +1216,11 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/cocina',                       [OrderController::class, 'kitchen'])->name('cocina')->middleware('project.can:orders.ver|view-orders');
         Route::get('/mesas',                        [MesaController::class, 'index'])->name('mesas')->middleware('project.can:orders.ver|view-orders');
         Route::get('/mesas/data',                   [MesaController::class, 'data'])->name('mesas.data')->middleware('project.can:orders.ver|view-orders');
+        /* Estado del salon (mozo por mesa, uniones, lista de espera). Vivia en
+           localStorage y no se veia entre la tablet de la puerta y la de la
+           barra. Escribe, asi que va con permiso de edicion: `orders.ver`
+           jamas autoriza guardar. */
+        Route::post('/mesas/estado',                [MesaController::class, 'guardarEstado'])->name('mesas.estado')->middleware('project.can:orders.editar|edit-orders');
 
         // ── MAPA OPERATIVO ────────────────────────────────────────────────────
         Route::prefix('mapa')->name('mapa.')->group(function () {
@@ -1233,16 +1294,28 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/cotizaciones/{quote}/convertir-pedido', [QuoteController::class, 'convert'])->name('cotizaciones.convertir_pedido')->middleware('project.can:quotes.editar|manage-quotes');
 
         // Solo se añade middleware: NO se toca logica fiscal ni SUNAT.
+        // Portada del modulo: pendientes ante SUNAT arriba, una tarjeta por accion debajo.
+        Route::get('/facturacion',            [FacDashController::class, 'portada'])->name('facturacion')->middleware('can:invoices.ver');
+        Route::get('/registro-ventas',        [InvoiceController::class, 'registroVentas'])->name('facturas.registro')->middleware('can:invoices.ver');
         Route::get('/facturas',               [InvoiceController::class, 'index'])->name('facturas')->middleware('can:invoices.ver');
         // EMITIR y CONSULTAR son trabajos distintos, de personas distintas:
         // el cajero emite todos los días; buscar un comprobante pasado o sacar
         // el registro del mes es del contador. Estaban en la misma pantalla.
         Route::get('/comprobantes-emitidos', [InvoiceController::class, 'consulta'])->name('facturas.consulta')->middleware('can:invoices.ver');
         Route::post('/facturas',              [InvoiceController::class, 'store'])->name('facturas.store')->middleware('can:invoices.crear');
+        Route::post('/facturas/previsualizar', [InvoiceController::class, 'previsualizar'])->name('facturas.previsualizar')->middleware('can:invoices.crear');
+        // El lector tambien en Operacion: es el cajero quien fotografia el
+        // papel, no el administrador.
+        Route::post('/facturas-lector',         [LectorComprobanteController::class, 'analizar'])->name('facturas.lector')->middleware('can:invoices.crear');
+        Route::post('/facturas-lector/aplicar', [LectorComprobanteController::class, 'aplicar'])->name('facturas.lector.aplicar')->middleware('can:invoices.crear');
+        Route::get('/facturas-clientes', [InvoiceController::class, 'buscarClientes'])->name('facturas.clientes')->middleware('can:invoices.ver');
+        Route::get('/facturas-ruc',      [InvoiceController::class, 'lookupRucPanel'])->name('facturas.ruc')->middleware('can:invoices.ver');
         Route::get('/facturas/{invoice}',     [InvoiceController::class, 'show'])->name('facturas.show')->middleware('can:invoices.ver');
         Route::put('/facturas/{invoice}',     [InvoiceController::class, 'update'])->name('facturas.update')->middleware('can:invoices.editar');
         Route::delete('/facturas/{invoice}',  [InvoiceController::class, 'destroy'])->name('facturas.destroy')->middleware('can:invoices.anular');
         Route::get('/facturas/{invoice}/pdf',    [InvoiceController::class, 'pdf'])->name('facturas.pdf')->middleware('can:invoices.ver');
+        Route::get('/facturas/{invoice}/xml',    [InvoiceController::class, 'xml'])->name('facturas.xml')->middleware('can:invoices.ver');
+        Route::get('/facturas/{invoice}/cdr',    [InvoiceController::class, 'cdr'])->name('facturas.cdr')->middleware('can:invoices.ver');
         Route::post('/facturas/{invoice}/sunat', [InvoiceController::class, 'sendSunat'])->name('facturas.sunat')->middleware('can:invoices.crear');
 
         Route::get('/facturas/{invoice}/nota',  [NotaController::class, 'opciones'])->name('facturas.nota.opciones')->middleware('can:invoices.ver');
@@ -1255,6 +1328,7 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         // una sola capacidad, lo unico que cambia es la puerta por la que entra.
         Route::get('/guias',                [GuiaRemisionController::class, 'index'])->name('guias.index')->middleware('can:invoices.ver');
         Route::get('/guias/opciones',       [GuiaRemisionController::class, 'opciones'])->name('guias.opciones')->middleware('can:invoices.ver');
+        Route::get('/guias/historico',       [GuiaRemisionController::class, 'consulta'])->name('guias.consulta')->middleware('can:invoices.ver');
         Route::post('/guias',               [GuiaRemisionController::class, 'store'])->name('guias.store')->middleware('can:invoices.crear');
         Route::get('/guias/{guia}',         [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
         Route::get('/guias/{guia}/pdf',     [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');

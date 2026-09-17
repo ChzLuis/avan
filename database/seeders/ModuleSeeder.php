@@ -26,6 +26,7 @@ class ModuleSeeder extends Seeder
             ['key' => 'agenda',      'name' => 'Agenda y citas',          'category' => 'clientes',    'sort_order' => 21],
             ['key' => 'groups',      'name' => 'Grupos de clientes',      'category' => 'clientes',    'sort_order' => 22],
             ['key' => 'loyalty',     'name' => 'Fidelización y puntos',   'category' => 'clientes',    'sort_order' => 23],
+            ['key' => 'bots',        'name' => 'Bots de WhatsApp',        'category' => 'clientes',    'sort_order' => 24],
 
             // ── Empresa ──────────────────────────────────
             ['key' => 'hr',          'name' => 'Empleados',               'category' => 'empresa',     'sort_order' => 30],

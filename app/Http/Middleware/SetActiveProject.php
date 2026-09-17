@@ -11,14 +11,33 @@ use Spatie\Permission\Models\Role;
 
 class SetActiveProject
 {
+    /**
+     * Clave de sesion del proyecto activo SEGUN EL PORTAL.
+     *
+     * Los portales son independientes: estar en Sales sobre un negocio no puede
+     * mover el negocio de Admin. Antes los tres escribian `active_project_id`,
+     * asi que cambiar de proyecto en cualquiera lo cambiaba en TODOS — y quien
+     * tenia las dos pestanas abiertas se encontraba el otro portal movido.
+     *
+     * Facturacion no entra aqui: lleva el proyecto en la URL (`f/{slug}`), asi
+     * que ya era independiente por construccion.
+     */
+    private function claveSesion(Request $request): string
+    {
+        if ($request->is('bixosales', 'bixosales/*')) return 'comercial_project_id';
+        if ($request->is('bixocrm', 'bixocrm/*'))     return 'comunicaciones_project_id';
+        return 'active_project_id';
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         $routeProject = $request->route('project');
+        $clave = $this->claveSesion($request);
 
         if ($routeProject instanceof Project) {
             $project = $routeProject;
         } else {
-            $projectId = $routeProject ?? session('active_project_id');
+            $projectId = $routeProject ?? session($clave);
             $project   = $projectId ? Project::find($projectId) : null;
         }
 
@@ -37,7 +56,7 @@ class SetActiveProject
         }
 
         if ($project) {
-            session(['active_project_id' => $project->id]);
+            session([$clave => $project->id]);
             view()->share('activeProject', $project);
             app()->instance('active_project', $project);
 

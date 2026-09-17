@@ -3,6 +3,9 @@
 .env
 .env.backup
 .env.production
+# Credenciales de entrega a clientes: el acta se versiona, las claves NUNCA.
+# Ver docs/entregas/README.md.
+docs/entregas/*/privado/
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -51,3 +54,6 @@ whatsbot/node_modules/
 # Copias locales: duplican archivos reales del repo
 _local_backup_*/
 NUL
+
+# Scratch local (scripts sueltos, paquetes Python de pruebas): nunca al repo.
+tmp/

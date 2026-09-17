@@ -9,7 +9,10 @@ trait HasProjectScope
     public static function bootHasProjectScope(): void
     {
         static::addGlobalScope('project', function (Builder $builder) {
-            $projectId = session('active_project_id') ?? session('comercial_project_id');
+            // La cara la decide la ruta: ver `ContextoProyecto`. Con `??`
+            // entre las dos claves, cambiar de negocio en Configuracion
+            // arrastraba a Operacion.
+            $projectId = \App\Support\ContextoProyecto::id();
             if (! $projectId && app()->bound('active_project')) {
                 $projectId = app('active_project')?->id;
             }
