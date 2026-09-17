@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 
 class WaWebhookController extends Controller
 {
+    use \App\Support\WhatsappCloud\VerificaFirmaMeta;
+
     // ── Verificación directa Meta (/whatsapp/webhook GET) ────────────────────
     public function verifyMeta(Request $request)
     {
@@ -22,14 +24,36 @@ class WaWebhookController extends Controller
         $token     = $request->query('hub_verify_token') ?: $request->query('hub.verify_token');
         $challenge = $request->query('hub_challenge') ?: $request->query('hub.challenge');
 
-        $verifyToken = config('services.meta.verify_token', env('META_VERIFY_TOKEN', 'meta-bot-suerte-2024'));
+        if ($mode !== 'subscribe' || ! is_string($token) || $token === '') {
+            Log::warning('Meta webhook verificación fallida', ['motivo' => 'solicitud incompleta']);
 
-        if ($mode === 'subscribe' && $token === $verifyToken) {
+            return response('Forbidden', 403);
+        }
+
+        // Token global heredado: lo usa la linea que se dio de alta antes de
+        // que cada canal tuviera el suyo. Se mantiene para no romperla.
+        $tokenGlobal = config('services.meta.verify_token', env('META_VERIFY_TOKEN', 'meta-bot-suerte-2024'));
+        $valido = is_string($tokenGlobal) && $tokenGlobal !== ''
+            && hash_equals($tokenGlobal, $token);
+
+        // Y ademas el verify_token propio de cada canal, que es como se dan de
+        // alta las lineas nuevas: asi cada negocio tiene el suyo en vez de
+        // compartir uno solo para toda la plataforma.
+        if (! $valido) {
+            $valido = WaCanal::whereNotNull('verify_token')
+                ->get(['verify_token'])
+                ->contains(fn ($c) => hash_equals((string) $c->verify_token, $token));
+        }
+
+        if ($valido) {
             Log::info('Meta webhook verificado OK');
+
             return response($challenge, 200);
         }
 
-        Log::warning('Meta webhook verificación fallida', ['token' => $token]);
+        // El token NO se registra: es un secreto y el log no es sitio para el.
+        Log::warning('Meta webhook verificación fallida', ['ip' => $request->ip()]);
+
         return response('Forbidden', 403);
     }
 
@@ -57,6 +81,16 @@ class WaWebhookController extends Controller
 
                     // Buscar canal en BD usando el phone_number_id del payload
                     $canal = WaCanal::where('phone_number_id', $phoneNumberId)->first();
+
+                    // AUTENTICACION: esta URL es publica y sin la firma de Meta
+                    // cualquiera podria mandar un phone_number_id real y hacer
+                    // hablar al bot en nombre de un cliente. Un canal sin
+                    // app_secret configurado pasa (y queda avisado en el log)
+                    // para no tumbar las lineas que ya estaban en marcha.
+                    if (! $this->firmaMetaValida($request, $canal)) {
+                        continue;
+                    }
+
                     $accessToken = $canal ? $canal->makeVisible('access_token')->access_token : '';
                     $projectId   = $canal?->project_id;
 
@@ -159,6 +193,13 @@ class WaWebhookController extends Controller
     {
         $canal = $this->canalPorSlug($slug);
         if (!$canal) return response('OK', 200);
+
+        // Aqui el slug de la URL ya es el verify_token, pero un token en la URL
+        // se filtra con facilidad (historiales, logs de proxy): la firma es lo
+        // que prueba de verdad que el mensaje viene de Meta.
+        if (! $this->firmaMetaValida($request, $canal)) {
+            return response('OK', 200);
+        }
 
         try {
             $body = json_decode($request->getContent(), true) ?? [];

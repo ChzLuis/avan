@@ -45,6 +45,7 @@ class CanalesController extends Controller
             'telefono'           => 'nullable|string|max:30',
             'phone_number_id'    => 'nullable|string|max:80',
             'access_token'       => 'nullable|string',
+            'app_secret'         => 'nullable|string|max:255',
             'verify_token'       => 'nullable|string|max:100',
             'color'              => 'nullable|string|max:20',
             'mensaje_bienvenida' => 'nullable|string',
@@ -53,7 +54,10 @@ class CanalesController extends Controller
 
         if (!empty($data['id'])) {
             $canal = WaCanal::where('project_id', $project->id)->findOrFail($data['id']);
+            // Los secretos nunca se muestran en el formulario, asi que un campo
+            // vacio significa "conserva el que ya tenias", no "borralo".
             if (empty($data['access_token'])) unset($data['access_token']);
+            if (empty($data['app_secret']))   unset($data['app_secret']);
             if (empty($data['verify_token']))  unset($data['verify_token']);
             $canal->update($data);
         } else {
@@ -63,7 +67,10 @@ class CanalesController extends Controller
             }
         }
 
-        return response()->json(['ok' => true, 'canal' => $canal->makeVisible(['access_token', 'verify_token'])]);
+        // El formulario no necesita el token de vuelta (al editar lo deja en
+        // blanco para conservarlo): devolverlo entero al navegador era exponer
+        // un secreto sin motivo. El verify_token si se muestra, va en la URL.
+        return response()->json(['ok' => true, 'canal' => $canal->makeVisible(['verify_token'])]);
     }
 
     public function eliminar(WaCanal $canal)

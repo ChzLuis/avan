@@ -39,6 +39,15 @@
                         {{ $canal->telefono ?? 'Sin teléfono' }}
                         @if($canal->phone_number_id) · Phone ID: <span class="font-mono">{{ $canal->phone_number_id }}</span>@endif
                     </p>
+                    {{-- Lo que Meta contestó la última vez que algo falló: casi
+                         siempre es accionable (token vencido, ventana de 24 h). --}}
+                    @if($canal->ultimo_error)
+                    <p class="text-[11px] text-red-700 mt-1">
+                        <span class="font-semibold">Último error de Meta:</span> {{ $canal->ultimo_error }}
+                    </p>
+                    @elseif($canal->ultimo_ok_at)
+                    <p class="text-[11px] text-green-700 mt-1">Último envío correcto {{ $canal->ultimo_ok_at->diffForHumans() }}</p>
+                    @endif
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button @click="abrirModal({{ $canal->id }})"
@@ -153,6 +162,19 @@
                           class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 font-mono resize-none"></textarea>
             </div>
 
+            {{-- Firma los mensajes que entran: sin ella el webhook acepta a
+                 cualquiera que conozca la URL. --}}
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">
+                    App Secret
+                    <span x-show="form.id" class="text-gray-400 font-normal">(dejar vacío para no cambiar)</span>
+                </label>
+                <input x-model="form.app_secret" type="password" autocomplete="new-password"
+                       placeholder="Clave secreta de la app"
+                       class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 font-mono">
+                <p class="text-[10px] text-gray-400 mt-1">Meta → Configuración de la app → Básica → Clave secreta. Verifica que cada mensaje venga de Meta y no de un tercero.</p>
+            </div>
+
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Verify Token</label>
                 <div class="flex gap-2">
@@ -202,9 +224,9 @@ function configuracion() {
         abrirModal(id) {
             if (id) {
                 const c = CANALES_INIT.find(x => x.id === id);
-                this.form = { ...c, access_token: '' };
+                this.form = { ...c, access_token: '', app_secret: '' };
             } else {
-                this.form = { id: null, nombre: '', tipo: 'bixo', telefono: '', phone_number_id: '', access_token: '', verify_token: '', color: '#25d366' };
+                this.form = { id: null, nombre: '', tipo: 'bixo', telefono: '', phone_number_id: '', access_token: '', app_secret: '', verify_token: '', color: '#25d366' };
             }
             this.modal = true;
         },

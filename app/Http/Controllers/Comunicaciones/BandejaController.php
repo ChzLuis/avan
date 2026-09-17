@@ -124,22 +124,20 @@ class BandejaController extends Controller
         $this->autorizar($conversacion);
         $data = $request->validate(['contenido' => 'required|string|max:4096']);
 
-        $project = $this->project();
-        $canal   = $conversacion->canal;
+        $canal = $conversacion->canal;
         $waMessageId = null;
+        $fallo = null;
 
-        if ($canal->phone_number_id && $canal->access_token) {
-            try {
-                $res = \Illuminate\Support\Facades\Http::withToken($canal->access_token)
-                    ->post("https://graph.facebook.com/v18.0/{$canal->phone_number_id}/messages", [
-                        'messaging_product' => 'whatsapp',
-                        'recipient_type'    => 'individual',
-                        'to'                => $conversacion->cliente_telefono,
-                        'type'              => 'text',
-                        'text'              => ['body' => $data['contenido']],
-                    ]);
-                $waMessageId = $res->json('messages.0.id');
-            } catch (\Throwable) {}
+        // El envio pasa por ClienteCloud, el mismo que usa el bot: una sola
+        // implementacion de la Graph API para el canal automatico y el humano.
+        if ($canal->conectadoAMeta()) {
+            $res = (new \App\Support\WhatsappCloud\ClienteCloud($canal))
+                ->enviarUna($conversacion->cliente_telefono, $data['contenido']);
+
+            $waMessageId = $res['id'] ?? null;
+            $fallo = ($res['ok'] ?? false) ? null : ($res['error'] ?? 'No se pudo enviar.');
+        } else {
+            $fallo = 'Este canal aún no está conectado con WhatsApp.';
         }
 
         $mensaje = $conversacion->mensajes()->create([
@@ -155,7 +153,15 @@ class BandejaController extends Controller
             'estado' => $conversacion->estado === 'nuevo' ? 'contactado' : $conversacion->estado,
         ]);
 
-        return response()->json(['ok' => true, 'mensaje' => $mensaje]);
+        // Un fallo de envio NO puede pasar desapercibido: antes se tragaba la
+        // excepcion y el asesor veia su mensaje en pantalla creyendo que habia
+        // llegado, cuando WhatsApp nunca lo entrego. El motivo de Meta suele
+        // ser accionable (token vencido, ventana de 24 h cerrada).
+        return response()->json([
+            'ok'      => $fallo === null,
+            'mensaje' => $mensaje,
+            'error'   => $fallo,
+        ], $fallo === null ? 200 : 502);
     }
 
     public function actualizar(Request $request, WaConversacion $conversacion)

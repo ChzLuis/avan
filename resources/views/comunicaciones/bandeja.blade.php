@@ -204,6 +204,18 @@ $estadoColores = [
 
     {{-- Input --}}
     <div class="flex-shrink-0 bg-white border-t border-gray-200 px-3 py-2">
+        {{-- WhatsApp rechazó el envío: hay que decirlo, no dejar que el asesor
+             crea que el cliente lo recibió. El texto vuelve al campo. --}}
+        <div x-show="errorEnvio" x-cloak
+             class="flex items-start gap-2 mb-2 px-2 py-1.5 rounded-lg bg-red-50 border border-red-200">
+            <span class="text-red-500 text-xs leading-4">⚠</span>
+            <p class="flex-1 min-w-0 text-[11px] text-red-700 leading-4">
+                <span class="font-semibold">No se entregó:</span>
+                <span x-text="errorEnvio"></span>
+            </p>
+            <button @click="errorEnvio = null"
+                    class="text-red-400 hover:text-red-600 text-xs leading-4">✕</button>
+        </div>
         <template x-if="textoMensaje.includes('[')">
             <p class="text-[10px] text-amber-600 mb-1 px-1">Recuerda reemplazar [nombre], [FECHA], [LINK]</p>
         </template>
@@ -440,6 +452,7 @@ function bandeja() {
         cargandoMensajes: false,
         enviando: false,
         textoMensaje: '',
+        errorEnvio: null,
         busqueda: '',
         filtroCanal: 'todos',
         filtroEstado: 'todos',
@@ -554,12 +567,23 @@ function bandeja() {
                 },
                 body: JSON.stringify({ contenido, tipo: 'texto' }),
             });
-            const data = await res.json();
-            if (data.ok) {
+            const data = await res.json().catch(() => ({}));
+
+            // El mensaje se pinta igual (quedó guardado en el historial), pero
+            // si WhatsApp no lo entregó hay que DECIRLO: antes desaparecía del
+            // campo y el asesor daba por hecho que el cliente lo había
+            // recibido. Se devuelve el texto al campo para poder reintentar.
+            if (data.mensaje) {
                 this.mensajes.push(data.mensaje);
                 this.convActiva.ultimo_mensaje = contenido;
                 this.convActiva.ultimo_mensaje_at = new Date().toISOString();
                 this.$nextTick(() => this.scrollBottom());
+            }
+            if (!data.ok) {
+                this.errorEnvio = data.error || 'No se pudo enviar el mensaje a WhatsApp.';
+                this.textoMensaje = contenido;
+            } else {
+                this.errorEnvio = null;
             }
             this.enviando = false;
             this.$refs.inputMensaje?.focus();

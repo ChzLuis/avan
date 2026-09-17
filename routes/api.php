@@ -41,6 +41,13 @@ Route::post('/bot/inbound', [\App\Http\Controllers\Api\BotWebhookController::cla
 // El conector Baileys reporta su estado + QR (para mostrarlo en el constructor)
 Route::post('/bot/wa-status', [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'waPush']);
 
+// WhatsApp Cloud API (Meta) → motor de bots. La URL es publica por diseño
+// (Meta la llama sin token); lo que autentica cada evento es la firma HMAC
+// con el App Secret, que se valida dentro del controlador.
+Route::get('/whatsapp/webhook',  [\App\Http\Controllers\Api\WhatsappCloudWebhookController::class, 'verificar']);
+Route::post('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsappCloudWebhookController::class, 'recibir'])
+    ->middleware('throttle:300,1');
+
 // Aprobación de pagos Yape/Plin reportados por el bot (extensión y panel)
 Route::prefix('pagos')->group(function () {
     Route::post('/pendientes', [\App\Http\Controllers\Api\PagoController::class, 'pendientes']);

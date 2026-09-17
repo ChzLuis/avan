@@ -2,6 +2,9 @@
 
 Estado: arquitectura objetivo incremental. Los nombres físicos actuales se conservan hasta que exista una migración probada.
 
+> La traslación de este mapa a carpetas físicas (`app/Modules/`) está
+> planificada en [BIXO_MODULARIZACION_PLAN.md](BIXO_MODULARIZACION_PLAN.md).
+
 ## Regla de diseño
 
 Cada entidad tiene un único propietario. Otros módulos pueden consultar o ejecutar casos de uso públicos del propietario, pero no crear un segundo modelo, tabla, CRUD o vocabulario de estados.
