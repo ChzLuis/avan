@@ -225,7 +225,9 @@ class BixoSalesAuthorizationTest extends TestCase
         // +1 con la vista previa del comprobante (POST porque viaja el
         // formulario entero). No escribe nada, pero es el paso previo a
         // emitir: va con `invoices.crear`, nunca con un permiso de lectura.
-        $this->assertSame(71, $mutadoras, 'El portal deberia tener 71 rutas con verbo mutador');
+        // 2026-09-17: 72 tras revisar el barrido completo (75 mutadoras, y las
+        // 3 sin can: son login, logout y get.projects, que este test exime).
+        $this->assertSame(72, $mutadoras, 'El portal deberia tener 72 rutas con verbo mutador');
         $this->assertSame([], $abiertas, 'Rutas mutadoras sin permiso: ' . implode(', ', $abiertas));
     }
 

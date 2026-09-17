@@ -45,12 +45,80 @@ parte del producto, vive aparte en `htdocs/sorteos`) y la palabra no queda en
 ningun lado; los nombres dicen QUE HACE la cosa. Plan escrito en
 `BIXO_MODULARIZACION_PLAN.md` (`app/Modules/` por dominio, un repo).
 
-**Bloqueo para seguir:** el plan NO se ejecuta hasta cumplir sus 3
-precondiciones. La primera falla: hay **334 archivos ajenos sin commitear**
-en el arbol (constructor, facturacion, tests, migraciones). Ademas la suite
-tiene 27–35 rojos, todos preexistentes (verificado con stash: ninguno es de
-esta sesion; p. ej. `module:clients` en `bots-flow` rompe el test del QR, y
-un `alert()` en `catalogs/index.blade.php` rompe `SinDialogosDelNavegador`).
+### Precondiciones del plan: 1 y 2 cumplidas (2026-09-17, tarde)
+
+**1. Arbol limpio — HECHO.** Los 334 archivos "ajenos" eran ~3 semanas de
+funciones (21/08 → 15/09) ya desplegadas a ARIN con `deploy.py` y nunca
+commiteadas. Se compararon contra ARIN por md5 (226 iguales, 8 solo CRLF, 73
+nunca subidos —tests y docs—, 32 distintos); **solo 2 tenian contenido que
+local no tenia** (5 lineas de criterios del clasificador en `FlowRunner`, 1
+linea de claves GABDE en `SettingsController`): se fusionaron. Se commiteo
+todo en 6 temas (`58b09ca` facturacion, `b413227` catalogo, `8dda304`
+tienda, `b75047f` bots, `736b71f` comercial, `480ffa9` infra). Basura fuera:
+`tmp/` (paquete Python compilado) ignorado, `public/diag-viewport.html`
+borrado en local (**puede seguir en ARIN, publico**), stash del menu
+comercial guardado como parche y eliminado. Estructura `app/Modules/` con 11
+README creada (`c208724`).
+
+**2. Suite explicada — HECHO.** Corrida limpia: 147 clases verdes, 20 rojas
+(27 tests). OJO: la corrida anterior daba 35 porque un `git stash` de
+verificacion sobre `routes/web.php` corrio MIENTRAS la suite iba en segundo
+plano y dejo sin rutas a POS, portada de facturacion y busqueda: nunca hacer
+stash con una suite corriendo. Dos tests comparan paginas HTML completas
+(`PiesDePaginaVariantes`, `MenuLateralComercial`) y PHPUnit tarda >10 min en
+calcular el diff: excluirlos del filtro o hacer que comparen fragmentos.
+
+Corregidos hoy (2 clases, 5 tests):
+- `EdicionEnSitioTest` ×4 — **bug real, tambien en produccion**: la busqueda
+  global `/bixosales/buscar` daba 404 porque el comodin publico
+  `/{slug}/buscar` la capturaba. `$reserved` ya incluia `bixosales`, pero el
+  patron `(?!(?:...)$)` solo protegia la raiz `/{slug}`: en `/{slug}/x` el
+  `$` nunca casa. Cambiado a `(?!(?:...)(?:/|$))` en las 37 rutas publicas;
+  139 tests de tienda publica siguen verdes. **Pendiente de desplegar**
+  (`routes/` → deploy.py regenera el cache de rutas).
+- `BixoSalesAuthorizationTest` — conteo 71→72 tras revisar el barrido: 75
+  mutadoras, solo login/logout/get.projects sin `can:` (eximidas).
+
+Explicados, por causa (18 clases, 22 tests):
+- **Consolidacion de motores de tienda en curso** (trabajo del commit
+  `8dda304`; el dueño es quien la lleve): `PublicTemplateRuntimeTest`
+  (`promo_cards` no es componente canonico), `BloquesInicioTest` (tiene editor
+  pero el renderizador no lo pinta), `AdminResponsiveLayoutTest` (espera 3
+  plantillas soportadas, `SUPPORTED_KEYS` tiene 2), `MenuTiendaTest`
+  (ecommerce deja el menu sin efecto), `StorefrontEngineConsolidationTest` ×2,
+  `SettingsAuthorizationTest` (preset `tech-dark` no se guarda),
+  `CapacidadesRestringidasTest` (Diseño clasico responde 200 en vez de exigir
+  permiso), `AdminGlobalConfirmModalTest` (contrato del shell del diseñador),
+  `ConstructorCapacidadesRescatadasTest` (`updatePayments` no debe escribir
+  whatsapp), `PiesDePaginaVariantesTest` (mapa de "visitanos"). Accion:
+  cerrar la consolidacion y actualizar o retirar los tests de Diseño clasico.
+- **Gate `module:clients|bots` en `bots-flow` sin modulos en las fixtures**:
+  `BotWebhookTest` (QR 403), `BotPredeterminadoTest` ×3 (403), 
+  `BotEditorBloquesTest` (302). Accion: dar de alta `clients` y `bots` en los
+  7 `Project::create` de esos tests. 10 minutos.
+- **Tests desactualizados frente a decisiones o vistas nuevas**:
+  `FusionPortalesTest` (espera sesion unificada; la decision vigente es
+  portales con sesion independiente → retirar), `MenuLateralComercialTest` ×2
+  (HTML del menu plegable; la version final calcula el default en servidor →
+  actualizar aserciones), `ComercialDashboardTest` (HTML del dashboard).
+- **REVISAR, puede ser bug fiscal**: `NotasYBajaTest` espera 422 al dar de
+  baja una boleta individual y el codigo responde 200. La regla documentada
+  es "baja de boletas por resumen": si el test tiene razon, hoy se puede dar
+  de baja una boleta por el camino equivocado.
+- **Trivial**: `SinDialogosDelNavegadorTest` — `alert()` en
+  `catalogs/index.blade.php:151` → `bxAviso()`. 2 minutos.
+
+**3. Meta** — hecho en lo que toca al canal (`151f47f`); los 3 webhooks se
+consolidan dentro de la mudanza de `Bots/`.
+
+**Pendiente de desplegar a ARIN** (local lo tiene, produccion no): el fix del
+comodin (`routes/web.php`), `HasProjectScope` en InventoryMovement/Payment/
+Proveedor, `OrderItem` con variante, `headers/banda.blade.php` con el boton
+de categorias. El bloque de consolidacion de tienda diverge a proposito: al
+desplegarlo saltara la puerta de deriva; revisar, no forzar.
+
+**Siguiente paso del plan:** mover `Personas/` (HR, Attendance, WorkSchedule,
+UserGroup, RolePermission) a `app/Modules/Personas/`, un modulo por sesion.
 
 Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
 `getContent()`); los bloques del FlowRunner van indexados por id y necesitan

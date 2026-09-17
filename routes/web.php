@@ -812,28 +812,28 @@ Route::get('/storefront-preview/{project}', function (\App\Models\Project $proje
     }
     return app(\App\Http\Controllers\PublicController::class)->previewStorefront($project);
 })->middleware('signed')->name('public.storefront.preview');
-Route::get('/{slug}/sitemap.xml', [PublicController::class, 'sitemap'])->name('public.sitemap')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/robots.txt',  [PublicController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/nosotros', [\App\Http\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/sitemap.xml', [PublicController::class, 'sitemap'])->name('public.sitemap')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/robots.txt',  [PublicController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/nosotros', [\App\Http\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 // Marcas: pagina de todas y pagina de una (la tienda filtrada, con cabecera).
-Route::get('/{slug}/marcas',         [PublicController::class, 'marcas'])->name('public.brands')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/marca/{marca}',  [PublicController::class, 'marca'])->name('public.brand')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('marca', '[a-z0-9-]+');
-Route::get('/{slug}/buscar',         [PublicController::class, 'buscar'])->name('public.search')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/promociones',    [PublicController::class, 'promociones'])->name('public.promotions')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/catalogo',       [PublicController::class, 'catalogo'])->name('public.catalog_page')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/catalogo.pdf',   [PublicController::class, 'catalogoPdfPublico'])->name('public.catalog_pdf')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/blog', [\App\Http\Controllers\StorePageController::class, 'blog'])->name('public.blog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/blog/{key}', [\App\Http\Controllers\StorePageController::class, 'blogPost'])->name('public.blog.show')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-zA-Z0-9_-]+');
-Route::post('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/marcas',         [PublicController::class, 'marcas'])->name('public.brands')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/marca/{marca}',  [PublicController::class, 'marca'])->name('public.brand')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('marca', '[a-z0-9-]+');
+Route::get('/{slug}/buscar',         [PublicController::class, 'buscar'])->name('public.search')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/promociones',    [PublicController::class, 'promociones'])->name('public.promotions')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/catalogo',       [PublicController::class, 'catalogo'])->name('public.catalog_page')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/catalogo.pdf',   [PublicController::class, 'catalogoPdfPublico'])->name('public.catalog_pdf')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/blog', [\App\Http\Controllers\StorePageController::class, 'blog'])->name('public.blog')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/blog/{key}', [\App\Http\Controllers\StorePageController::class, 'blogPost'])->name('public.blog.show')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('key', '[a-zA-Z0-9_-]+');
+Route::post('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 // Alias corto usado por los footers de las plantillas + páginas legales.
-Route::get('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints.short')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.short.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/privacidad', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'privacidad')->name('public.privacy')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/terminos', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'terminos')->name('public.terms')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('key', '[a-z0-9-]+');
+Route::get('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints.short')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.short.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/privacidad', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'privacidad')->name('public.privacy')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/terminos', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'terminos')->name('public.terms')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('key', '[a-z0-9-]+');
 // ═══ Categoría con URL legible: /{slug}/tienda/c/computadoras ═══
 // El prefijo `c/` es deliberado: sin él chocaría con /tienda/{profile}, que ya
 // existe para los perfiles (nino, nina...). La categoría se resuelve por slug y
@@ -841,18 +841,18 @@ Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::c
 // Catalogo PDF por categoria (enlace FIRMADO que emite el bot).
 Route::get('/{slug}/catalogo-pdf/{categoria}', [PublicController::class, 'catalogoPdf'])
     ->name('publico.catalogo.pdf')
-    ->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')
+    ->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')
     ->where('categoria', '[a-z0-9-]+');
 
 Route::get('/{slug}/tienda/c/{categoria}', function (string $slug, string $categoria, \Illuminate\Http\Request $request) {
     return app(PublicController::class)->shopPorCategoria($request, $slug, $categoria);
 })->name('public.shop.category')
-  ->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')
+  ->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')
   ->where('categoria', '[a-z0-9-]+');
 
-Route::get('/{slug}/tienda', [PublicController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/tienda/{profile}', [PublicController::class, 'shop'])->name('public.shop.profile')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('profile', '[a-z0-9-]+');
-Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+Route::get('/{slug}/tienda', [PublicController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/tienda/{profile}', [PublicController::class, 'shop'])->name('public.shop.profile')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('profile', '[a-z0-9-]+');
+Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 Route::get('/{slug}/producto/{clave}', function (string $slug, string $clave) {
     $id = \App\Support\ImageVariants::idDeClave($clave);
     if ($id <= 0) {
@@ -865,24 +865,24 @@ Route::get('/{slug}/producto/{clave}', function (string $slug, string $clave) {
     }
 
     return app(PublicController::class)->product($slug, $id);
-})->name('public.product')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('clave', '[A-Za-z0-9-]*[0-9]+');
+})->name('public.product')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('clave', '[A-Za-z0-9-]*[0-9]+');
 // Enlaces antiguos (/tienda-x/p/460): 301 al nombre.
 Route::get('/{slug}/p/{id}', function (string $slug, int $id) {
     $project = \App\Models\Project::where('slug', $slug)->firstOrFail();
     $producto = $project->products()->where('is_available', true)->findOrFail($id);
 
     return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
-})->name('public.product.legacy')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('id', '[0-9]+');
-Route::post('/{slug}/order-proof',    [PublicController::class, 'uploadOrderProof'])->name('public.order.proof')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->middleware('throttle:60,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->middleware('throttle:30,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/thanks/{order}', [PublicController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('order', '[0-9]+');
-Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+')->where('product', '[0-9]+');
-Route::post('/{slug}/quote',   [PublicController::class, 'storeQuote'])->name('public.quote')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::get('/{slug}/book',     [PublicController::class, 'book'])->name('public.book')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
-Route::post('/{slug}/book',    [PublicController::class, 'storeBook'])->name('public.book.store')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')$)[a-z0-9-]+');
+})->name('public.product.legacy')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('id', '[0-9]+');
+Route::post('/{slug}/order-proof',    [PublicController::class, 'uploadOrderProof'])->name('public.order.proof')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->middleware('throttle:60,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->middleware('throttle:30,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/thanks/{order}', [PublicController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('order', '[0-9]+');
+Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('product', '[0-9]+');
+Route::post('/{slug}/quote',   [PublicController::class, 'storeQuote'])->name('public.quote')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/book',     [PublicController::class, 'book'])->name('public.book')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/book',    [PublicController::class, 'storeBook'])->name('public.book.store')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 
 // ─── WhatsApp Bot API (sin auth, validada por token interno) ─────────────────
 Route::get('/wa/config',                        [WaBotController::class, 'getConfig'])->name('wa.config');
