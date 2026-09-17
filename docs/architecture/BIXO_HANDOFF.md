@@ -101,21 +101,27 @@ Explicados, por causa (18 clases, 22 tests):
   portales con sesion independiente → retirar), `MenuLateralComercialTest` ×2
   (HTML del menu plegable; la version final calcula el default en servidor →
   actualizar aserciones), `ComercialDashboardTest` (HTML del dashboard).
-- **REVISAR, puede ser bug fiscal**: `NotasYBajaTest` espera 422 al dar de
-  baja una boleta individual y el codigo responde 200. La regla documentada
-  es "baja de boletas por resumen": si el test tiene razon, hoy se puede dar
-  de baja una boleta por el camino equivocado.
+- **`NotasYBajaTest` — revisado, NO es bug**: el codigo da de baja la boleta
+  a proposito via RESUMEN DIARIO (`darDeBaja` lo dice en el mensaje y
+  despacha `DarDeBajaEnSunat`), que es la regla vigente. El test exigia la
+  regla anterior (422, solo nota de credito): actualizado a la vigente.
 - **Trivial**: `SinDialogosDelNavegadorTest` — `alert()` en
   `catalogs/index.blade.php:151` → `bxAviso()`. 2 minutos.
 
 **3. Meta** — hecho en lo que toca al canal (`151f47f`); los 3 webhooks se
 consolidan dentro de la mudanza de `Bots/`.
 
-**Pendiente de desplegar a ARIN** (local lo tiene, produccion no): el fix del
-comodin (`routes/web.php`), `HasProjectScope` en InventoryMovement/Payment/
-Proveedor, `OrderItem` con variante, `headers/banda.blade.php` con el boton
-de categorias. El bloque de consolidacion de tienda diverge a proposito: al
-desplegarlo saltara la puerta de deriva; revisar, no forzar.
+**Desplegado a ARIN (2026-09-17 14:17, backup `20260917_141744`):** el fix
+del comodin. Verificado en produccion: `/bixosales/buscar` responde 302 al
+login (antes 404), portada y panel 200. Y `public/diag-viewport.html`
+(pagina de diagnostico expuesta, sin referencias) se movio a
+`_deploy_backups/retirados/` en ARIN: ahora da 404.
+
+**Pendiente de desplegar a ARIN** (local lo tiene, produccion no):
+`HasProjectScope` en InventoryMovement/Payment/Proveedor, `OrderItem` con
+variante, `headers/banda.blade.php` con el boton de categorias. El bloque de
+consolidacion de tienda diverge a proposito: al desplegarlo saltara la
+puerta de deriva; revisar, no forzar.
 
 **Siguiente paso del plan:** mover `Personas/` (HR, Attendance, WorkSchedule,
 UserGroup, RolePermission) a `app/Modules/Personas/`, un modulo por sesion.

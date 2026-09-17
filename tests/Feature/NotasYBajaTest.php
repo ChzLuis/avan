@@ -332,7 +332,14 @@ class NotasYBajaTest extends TestCase
      * Una boleta no se da de baja de una en una: va en el resumen diario de
      * bajas. Ofrecer el boton garantizaria el rechazo.
      */
-    public function test_una_boleta_no_se_da_de_baja_individualmente(): void
+    /**
+     * Una boleta SI se da de baja, pero no con una comunicacion individual
+     * como la factura: SUNAT la anula dentro del RESUMEN DIARIO. El sistema
+     * la acepta, la deja pendiente y el job DarDeBajaEnSunat arma el resumen.
+     * (Antes este test exigia 422 y obligaba a la nota de credito; esa regla
+     * quedo superada al implementar el resumen de bajas, 2026-09.)
+     */
+    public function test_una_boleta_se_da_de_baja_por_resumen_diario(): void
     {
         $boleta = $this->facturaAceptada([
             'type' => 'boleta', 'serie' => 'B001', 'correlativo' => 4,
@@ -340,10 +347,12 @@ class NotasYBajaTest extends TestCase
         ]);
 
         $this->postJson('/invoices/'.$boleta->id.'/baja', ['motivo' => 'error del cajero'])
-            ->assertStatus(422);
+            ->assertOk()
+            ->assertJson(['ok' => true])
+            ->assertJsonFragment(['message' => 'Enviando a SUNAT el resumen diario que anula '.$boleta->numero.'. El resultado llega en unos minutos.']);
 
-        $this->assertNull($boleta->fresh()->baja_estado);
-        // Pero si admite nota de credito, que es la salida correcta.
+        $this->assertSame('pending', $boleta->fresh()->baja_estado);
+        // La nota de credito sigue siendo una salida valida para una boleta.
         $this->assertTrue($boleta->admiteNota());
     }
 
