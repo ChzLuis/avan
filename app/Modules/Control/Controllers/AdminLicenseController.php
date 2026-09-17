@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
 use App\Models\User;
-use App\Support\LicenseManager;
+use App\Modules\Control\Support\LicenseManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -47,7 +47,7 @@ class AdminLicenseController extends Controller
 
         $sesionesAnonimas = $sesiones->filter(fn ($s) => $s->anonima)->count();
 
-        return view('admin.licenses.index', compact(
+        return view('control::admin.licenses.index', compact(
             'resumen', 'conectados', 'desconectados', 'sesionesAnonimas'
         ));
     }

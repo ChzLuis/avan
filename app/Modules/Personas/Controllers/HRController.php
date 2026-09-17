@@ -145,7 +145,7 @@ class HRController extends Controller
         }
 
         if ($employee->spatie_role) {
-            \App\Models\AccessEvent::registrar(
+            \App\Modules\Control\Models\AccessEvent::registrar(
                 'profile_assigned',
                 $project->id,
                 $employee->spatie_role,
@@ -248,7 +248,7 @@ class HRController extends Controller
         // Auditoría de accesos: cambiar el perfil de una persona es un cambio de
         // acceso, y hasta ahora no dejaba rastro en ninguna parte.
         if ($perfilAnterior !== $employee->spatie_role) {
-            \App\Models\AccessEvent::registrar(
+            \App\Modules\Control\Models\AccessEvent::registrar(
                 $employee->spatie_role ? 'profile_assigned' : 'profile_removed',
                 $project->id,
                 $employee->spatie_role ?: $perfilAnterior,

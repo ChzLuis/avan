@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Modules\Control\Support;
 
 use App\Models\AppSetting;
 use App\Models\User;

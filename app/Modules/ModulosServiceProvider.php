@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -24,6 +25,17 @@ class ModulosServiceProvider extends ServiceProvider
         foreach (glob(app_path('Modules/*/Views'), GLOB_ONLYDIR) ?: [] as $dir) {
             $modulo = strtolower(basename(dirname($dir)));
             $this->loadViewsFrom($dir, $modulo);
+
+            // Componentes anonimos del modulo (`Views/components/*.blade.php`).
+            // Se registran SIN prefijo para que `<x-admin-layout>` siga
+            // escribiendose igual que cuando vivia en resources/views/components:
+            // mover un layout no obliga a reescribir las vistas que lo usan.
+            // El precio es que los nombres de componente son globales entre
+            // modulos, asi que cada uno debe ser inequivoco (admin-layout, no
+            // layout).
+            if (is_dir($dir . '/components')) {
+                Blade::anonymousComponentPath($dir . '/components');
+            }
         }
     }
 }

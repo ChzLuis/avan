@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
@@ -15,7 +15,7 @@ class AdminImportController extends Controller
     public function index()
     {
         $projects = Project::where('is_active', true)->orderBy('name')->get();
-        return view('admin.imports.index', compact('projects'));
+        return view('control::admin.imports.index', compact('projects'));
     }
 
     // ── Productos ────────────────────────────────────────────────────────────

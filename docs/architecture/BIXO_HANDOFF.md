@@ -146,8 +146,37 @@ en produccion desde antes. Escribirlas o retirar las rutas.
 optimizado; local no) + cache de rutas (esa si la hace deploy.py). Conviene
 un modo `--modulo` en deploy.py antes de desplegar el segundo.
 
-**Siguiente paso del plan:** modulo 2/8, `Control/` (superadmin: AccessEvent,
-licencias, DemoRequest, plantillas de proyecto). Un modulo por sesion.
+### Modulo 2/8 — `Control/` MOVIDO (2026-09-17, misma sesion)
+
+8 controladores de `Admin/` + `DemoController`, `AccessEvent`, `DemoRequest`,
+`LicenseManager`, 12 vistas (`admin/`, `demo/`) y el layout `admin-layout`
+pasan a `app/Modules/Control/`. Se quedan fuera: `Access` (permisos
+canonicos → Core), `ProjectTemplate` (→ Tienda), `IsSuperAdmin`
+(middleware), y `Jobs/ExpireDemos` + `Mail/DemoCreada` (solo cambian su `use`:
+los jobs viajan serializados por nombre de clase). El provider generico ahora
+registra tambien `Views/components/` de cada modulo como componentes anonimos
+SIN prefijo, asi `<x-admin-layout>` no cambia en las 10 vistas que lo usan.
+Linea base 32 (+1 rojo previo de FusionPortales) → igual tras mover;
+`ControlModuloTest` (6). Referencias externas: `routes/admin.php`,
+`routes/web.php` (impersonacion), Personas (auditoria), `ProjectOwnership`,
+`LoginRequest`, 4 tests.
+
+Lecciones del ensayo: (1) el script se detuvo solo porque una vista tenia 3
+apariciones de `LicenseManager` y el inventario decia 2 — para vistas usar
+"al menos una", el numero exacto no protege nada ahi; (2) `git mv` deja el
+directorio vacio y el guardian lo detecta: borrarlo; (3) un provider que
+falla al arrancar deja la suite muda, sin un solo rojo: si `route:list`
+revienta, mirar el provider antes que nada.
+
+Deuda anotada, no tocada: `AdminTurnosController` edita turnos de un tenant
+desde Control (contra MODULE_OWNERSHIP); `demo.success` no existe pero
+tampoco tiene ruta.
+
+**NO DESPLEGADO** (ni Personas ni Control). Van juntos: Personas ya importa
+`Control\Models\AccessEvent`.
+
+**Siguiente paso del plan:** modulo 3/8, `Inventario/` (InventoryMovement,
+InventoryLedger, Proveedor, ImportLog). Un modulo por sesion.
 
 Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
 `getContent()`); los bloques del FlowRunner van indexados por id y necesitan

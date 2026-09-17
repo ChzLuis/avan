@@ -53,7 +53,7 @@ class RolePermissionController extends Controller
         $role->save();
         $role->syncPermissions($data['permissions'] ?? []);
 
-        \App\Models\AccessEvent::registrar(
+        \App\Modules\Control\Models\AccessEvent::registrar(
             $esNuevo ? 'role_created' : 'permissions_changed',
             $project->id,
             $role->name,
@@ -100,14 +100,14 @@ class RolePermissionController extends Controller
         // Auditoría: qué se amplió y qué se recortó, no la lista completa.
         $permisosDespues = $data['permissions'] ?? [];
         if ($nombreAnterior !== $role->name) {
-            \App\Models\AccessEvent::registrar('role_renamed', $project->id, $role->name, null, [
+            \App\Modules\Control\Models\AccessEvent::registrar('role_renamed', $project->id, $role->name, null, [
                 'from' => $nombreAnterior, 'to' => $role->name,
             ]);
         }
         $anadidos = array_values(array_diff($permisosDespues, $permisosAntes));
         $quitados = array_values(array_diff($permisosAntes, $permisosDespues));
         if ($anadidos || $quitados) {
-            \App\Models\AccessEvent::registrar('permissions_changed', $project->id, $role->name, null, [
+            \App\Modules\Control\Models\AccessEvent::registrar('permissions_changed', $project->id, $role->name, null, [
                 'added' => $anadidos, 'removed' => $quitados,
             ]);
         }
@@ -130,7 +130,7 @@ class RolePermissionController extends Controller
         $nombre = $role->name;
         $role->delete();
 
-        \App\Models\AccessEvent::registrar('role_deleted', $project->id, $nombre);
+        \App\Modules\Control\Models\AccessEvent::registrar('role_deleted', $project->id, $nombre);
 
         return response()->json(['ok' => true]);
     }

@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\DemoRequest;
+use App\Modules\Control\Models\DemoRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;

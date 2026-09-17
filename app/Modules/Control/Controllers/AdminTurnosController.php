@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
@@ -28,7 +28,7 @@ class AdminTurnosController extends Controller
 
         $days = WorkSchedule::$days;
 
-        return view('admin.turnos.index', compact('project', 'employees', 'scheduleMap', 'days'));
+        return view('control::admin.turnos.index', compact('project', 'employees', 'scheduleMap', 'days'));
     }
 
     public function saveEmployee(Request $request, Project $project, Employee $employee)

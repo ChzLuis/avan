@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Module;
@@ -16,7 +16,7 @@ class AdminProjectController extends Controller
             ->latest()
             ->get();
 
-        return view('admin.projects.index', compact('projects'));
+        return view('control::admin.projects.index', compact('projects'));
     }
 
     public function show(Project $project)
@@ -26,7 +26,7 @@ class AdminProjectController extends Controller
         $activeModuleIds = $project->modules()->wherePivot('is_active', true)->pluck('modules.id');
         $candidatosDueno = \App\Support\ProjectOwnership::candidatos($project);
 
-        return view('admin.projects.show', compact(
+        return view('control::admin.projects.show', compact(
             'project', 'allModules', 'activeModuleIds', 'candidatosDueno'
         ));
     }

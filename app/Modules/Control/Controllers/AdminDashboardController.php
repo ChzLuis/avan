@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
@@ -28,6 +28,6 @@ class AdminDashboardController extends Controller
 
         $recentUsers = User::latest()->take(5)->get();
 
-        return view('admin.dashboard.index', compact('stats', 'recentProjects', 'recentUsers'));
+        return view('control::admin.dashboard.index', compact('stats', 'recentProjects', 'recentUsers'));
     }
 }

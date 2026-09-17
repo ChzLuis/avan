@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Control\Controllers;
 
-use App\Models\DemoRequest;
+use App\Http\Controllers\Controller;
+
+use App\Modules\Control\Models\DemoRequest;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\User;
@@ -30,7 +32,7 @@ class DemoController extends Controller
                 'detail_modules' => $cfg['detail_modules'] ?? [],
             ]];
         });
-        return view('demo.index', compact('rubros'));
+        return view('control::demo.index', compact('rubros'));
     }
 
     // GET /demo/features?rubro=restaurante
@@ -150,7 +152,7 @@ class DemoController extends Controller
     // GET /demo/success
     public function success(Request $request)
     {
-        return view('demo.success', [
+        return view('control::demo.success', [
             'email'       => $request->get('email', ''),
             'password'    => $request->get('password', ''),
             'login_url'   => route('login'),
@@ -165,7 +167,7 @@ class DemoController extends Controller
         $demos = DemoRequest::with(['project', 'user'])
             ->latest()
             ->paginate(30);
-        return view('admin.demos.index', compact('demos'));
+        return view('control::admin.demos.index', compact('demos'));
     }
 
     // POST /admin/demos/{demo}/cancel

@@ -1,14 +1,14 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminAuthController;
-use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\AdminProjectController;
-use App\Http\Controllers\Admin\AdminUserController;
-use App\Http\Controllers\Admin\AdminImportController;
-use App\Http\Controllers\Admin\AdminLicenseController;
-use App\Http\Controllers\Admin\AdminSettingsController;
-use App\Http\Controllers\Admin\AdminTurnosController;
-use App\Http\Controllers\DemoController;
+use App\Modules\Control\Controllers\AdminAuthController;
+use App\Modules\Control\Controllers\AdminDashboardController;
+use App\Modules\Control\Controllers\AdminProjectController;
+use App\Modules\Control\Controllers\AdminUserController;
+use App\Modules\Control\Controllers\AdminImportController;
+use App\Modules\Control\Controllers\AdminLicenseController;
+use App\Modules\Control\Controllers\AdminSettingsController;
+use App\Modules\Control\Controllers\AdminTurnosController;
+use App\Modules\Control\Controllers\DemoController;
 use Illuminate\Support\Facades\Route;
 
 // ── Login admin (sin auth) ────────────────────────────────────────────────────
@@ -69,13 +69,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Auditoría (SOLO LECTURA): accesos, impersonaciones y cambios de
         // perfiles. El Control observa, no edita datos del tenant (ADR-002).
         Route::get('/auditoria', function () {
-            $eventos = \App\Models\AccessEvent::with(['actor', 'afectado'])
+            $eventos = \App\Modules\Control\Models\AccessEvent::with(['actor', 'afectado'])
                 ->when(request('accion'), fn ($q, $a) => $q->where('action', $a))
                 ->orderByDesc('created_at')
                 ->paginate(50)
                 ->withQueryString();
 
-            return view('admin.audit.index', ['eventos' => $eventos]);
+            return view('control::admin.audit.index', ['eventos' => $eventos]);
         })->name('audit');
 
         // Demos

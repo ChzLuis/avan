@@ -42,7 +42,7 @@ use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\BotStatusController;
 use App\Http\Controllers\OperationalMapController;
-use App\Http\Controllers\DemoController;
+use App\Modules\Control\Controllers\DemoController;
 use App\Http\Controllers\Comunicaciones\AuthController as ComWaAuthController;
 use App\Http\Controllers\Comunicaciones\BandejaController;
 use App\Http\Controllers\Comunicaciones\ClientesCrmController;
@@ -765,7 +765,7 @@ Route::post('/c/{token}/repetir/{orderId}', [\App\Http\Controllers\PortalCliente
 // sustituto de operar tenants desde el plano de control (ADR-002 / ADR-008).
 Route::post('/bixoadmin/entrar-como/{project}', function (\App\Models\Project $project) {
     abort_unless(auth()->user()?->is_superadmin, 403);
-    \App\Models\AccessEvent::create([
+    \App\Modules\Control\Models\AccessEvent::create([
         'project_id' => $project->id,
         'actor_id'   => auth()->id(),
         'action'     => 'impersonate',
@@ -789,7 +789,7 @@ Route::post('/bixoadmin/salir-de-impersonacion', function () {
     abort_unless(auth()->user()?->is_superadmin, 403);
     $pid = session('active_project_id') ?? session('comercial_project_id');
     if ($pid) {
-        \App\Models\AccessEvent::create([
+        \App\Modules\Control\Models\AccessEvent::create([
             'project_id' => $pid,
             'actor_id'   => auth()->id(),
             'action'     => 'impersonate_end',

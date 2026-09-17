@@ -14,7 +14,7 @@
     </div>
     @if($resumen['sesiones_huerfanas'] > 0)
     <form method="POST" action="{{ route('admin.licenses.revoke-idle') }}"
-          data-bx-confirmar="Se cerrarán {{ $resumen['sesiones_huerfanas'] }} sesión(es) sin actividad en los últimos {{ \App\Support\LicenseManager::MINUTOS_PARA_INACTIVO }} minutos. Quien esté trabajando ahora no se ve afectado. ¿Continuar?">
+          data-bx-confirmar="Se cerrarán {{ $resumen['sesiones_huerfanas'] }} sesión(es) sin actividad en los últimos {{ \App\Modules\Control\Support\LicenseManager::MINUTOS_PARA_INACTIVO }} minutos. Quien esté trabajando ahora no se ve afectado. ¿Continuar?">
         @csrf
         <button class="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25">
             Liberar {{ $resumen['sesiones_huerfanas'] }} sesión(es) inactivas
@@ -28,7 +28,7 @@
     <div class="rounded-2xl border p-4" style="{{ $panel }}">
         <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Trabajando ahora</p>
         <p class="text-2xl font-black text-white mt-1">{{ $resumen['personas_activas'] }}</p>
-        <p class="text-[11px] text-gray-500 mt-0.5">activos en los últimos {{ \App\Support\LicenseManager::MINUTOS_PARA_INACTIVO }} min</p>
+        <p class="text-[11px] text-gray-500 mt-0.5">activos en los últimos {{ \App\Modules\Control\Support\LicenseManager::MINUTOS_PARA_INACTIVO }} min</p>
     </div>
     <div class="rounded-2xl border p-4" style="{{ $panel }}">
         <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Sesiones abiertas</p>
@@ -109,7 +109,7 @@
                     </p>
                     <p class="text-[11px] text-gray-500 truncate">
                         @if($c['email']){{ $c['email'] }} · @endif
-                        {{ $c['activo'] ? 'activo ahora' : 'sin actividad ' . \App\Support\LicenseManager::desdeHace($c['ultimo_visto']) }}
+                        {{ $c['activo'] ? 'activo ahora' : 'sin actividad ' . \App\Modules\Control\Support\LicenseManager::desdeHace($c['ultimo_visto']) }}
                     </p>
                 </div>
             </div>

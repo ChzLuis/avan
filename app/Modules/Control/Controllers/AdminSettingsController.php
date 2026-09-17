@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -10,7 +10,7 @@ class AdminSettingsController extends Controller
 {
     public function index()
     {
-        return view('admin.settings.index');
+        return view('control::admin.settings.index');
     }
 
     public function update(Request $request)

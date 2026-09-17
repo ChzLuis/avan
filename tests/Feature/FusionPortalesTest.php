@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\AccessEvent;
+use App\Modules\Control\Models\AccessEvent;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\ProjectMember;

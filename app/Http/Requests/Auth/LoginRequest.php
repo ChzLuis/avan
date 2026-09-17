@@ -45,7 +45,7 @@ class LoginRequest extends FormRequest
         // Control de licencias concurrentes. Solo actúa si el superadmin lo activó
         // en Licencias; apagado (por defecto) nadie queda fuera. Se comprueba
         // DESPUÉS de validar la contraseña para no revelar qué usuarios existen.
-        if (! \App\Support\LicenseManager::puedeEntrar(Auth::user())) {
+        if (! \App\Modules\Control\Support\LicenseManager::puedeEntrar(Auth::user())) {
             Auth::logout();
 
             throw ValidationException::withMessages([

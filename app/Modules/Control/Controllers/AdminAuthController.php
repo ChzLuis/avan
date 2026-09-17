@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -13,7 +13,7 @@ class AdminAuthController extends Controller
         if (Auth::check() && Auth::user()->is_superadmin) {
             return redirect()->route('admin.dashboard');
         }
-        return view('admin.auth.login');
+        return view('control::admin.auth.login');
     }
 
     public function login(Request $request)

@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\AccessEvent;
+use App\Modules\Control\Models\AccessEvent;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;

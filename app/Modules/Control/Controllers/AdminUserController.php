@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -15,7 +15,7 @@ class AdminUserController extends Controller
             ->latest()
             ->get();
 
-        return view('admin.users.index', compact('users'));
+        return view('control::admin.users.index', compact('users'));
     }
 
     public function resetPassword(Request $request, User $user)
