@@ -47,6 +47,20 @@ return [
             'report' => false,
         ],
 
+        // Las fotos de producto viven bajo public/uploads desde el principio,
+        // servidas por el servidor web sin pasar por el enlace simbólico de
+        // storage. Se declara como disco para que el procesador de imágenes
+        // escriba ahí igual que en cualquier otro sitio, sin mover nada de
+        // lo ya publicado.
+        'uploads' => [
+            'driver' => 'local',
+            'root' => public_path('uploads'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/uploads',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

@@ -72,8 +72,16 @@ class ProductController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $prices  = in_array($request->query('prices'), ['retail', 'wholesale', 'none'], true)
-            ? $request->query('prices') : 'retail';
+        /* En una tienda POR COTIZACION los precios no se publican: el
+           catalogo salia con "PEN 0.00" en cada producto, que es peor que
+           no poner nada. El parametro `prices` sigue mandando si se pide
+           explicitamente, para quien quiera un catalogo interno. */
+        $porCotizacion = (string) ($project->setting('store_mode') ?? 'direct') === 'quote'
+            && (string) ($project->setting('quote_price_display') ?? 'show') === 'hide';
+
+        $prices = in_array($request->query('prices'), ['retail', 'wholesale', 'none'], true)
+            ? $request->query('prices')
+            : ($porCotizacion ? 'none' : 'retail');
 
         // Contenido: main (solo la foto principal por modelo) o full (cada
         // color desplegado como producto propio, con su tarjeta y su foto en
@@ -85,7 +93,7 @@ class ProductController extends Controller
             ? $request->query('content') : 'full';
 
         $query = $project->products()->where('is_available', true)
-            ->with(['images' => fn ($q) => $q->where('is_main', true), 'category.parent']);
+            ->with(['images' => fn ($q) => $q->where('is_main', true), 'category.parent', 'marca']);
 
         $profile  = null;
         $category = null;
@@ -123,13 +131,26 @@ class ProductController extends Controller
 
         $products = $query->orderBy('sort_order')->orderBy('name')->get();
 
-        // Secciones por categoría raíz (las subcategorías cuelgan de su padre).
-        // El prefijo "~" manda "Sin categoría" al final del orden alfabético.
-        $groups = $products->groupBy(function ($p) {
+        // Agrupacion del catalogo: por rubro (lo normal, el cliente busca "cables")
+        // o por marca, para cuando pide "que tienes de Bticino". Es el mismo
+        // catalogo visto de dos maneras; se elige al exportar, no se duplica.
+        $agrupar = $request->query('agrupar') === 'marca' ? 'marca' : 'categoria';
+
+        // El prefijo "~" manda "Sin categoria"/"Sin marca" al final del orden.
+        $groups = $products->groupBy(function ($p) use ($agrupar) {
+            if ($agrupar === 'marca') {
+                return $p->marca?->label ?: '~Otras marcas';
+            }
             $c = $p->category;
             if (!$c) return '~Sin categoría';
             return $c->parent ? $c->parent->name : $c->name;
         })->sortKeys()->mapWithKeys(fn ($items, $key) => [ltrim($key, '~') => $items]);
+
+        // Marcas del catalogo exportado, para la portada: es lo que comunica que
+        // la distribuidora no trabaja una sola marca.
+        $marcasCatalogo = $products->map(fn ($p) => $p->marca?->label)
+            ->filter()->unique()->sort()->values();
+
 
         $settings = $project->settings()->pluck('value', 'key');
 
@@ -145,7 +166,7 @@ class ProductController extends Controller
 
         return view('catalog.products.catalog-pdf', compact(
             'project', 'groups', 'prices', 'profile', 'category', 'settings',
-            'layout', 'cover', 'storeUrl', 'content'
+            'layout', 'cover', 'storeUrl', 'content', 'agrupar', 'marcasCatalogo'
         ));
     }
 
@@ -154,13 +175,175 @@ class ProductController extends Controller
     {
         if (!array_key_exists('sizes', $data)) return $data;
         $sizes = array_values(array_filter(array_map('trim', preg_split('/[,;]+/', (string) ($data['sizes'] ?? '')))));
-        $options = (array) ($product?->options ?? []);
+        // Parte de lo que ya se acumulo en `$data['options']` (p. ej. las
+        // etiquetas) y no del producto: si se releyera del modelo, el ultimo
+        // en escribir borraria lo que puso el anterior.
+        $options = (array) ($data['options'] ?? $product?->options ?? []);
         if ($sizes) $options['sizes'] = array_slice($sizes, 0, 20);
         else unset($options['sizes']);
         $data['options'] = $options ?: null;
         unset($data['sizes']);
 
         return $data;
+    }
+
+    /**
+     * Etiquetas del producto → options.etiquetas.
+     *
+     * Llega como JSON en un campo oculto porque el formulario es una lista de
+     * casillas mas una etiqueta personalizada con sus propios campos: mandarlo
+     * como estructura evita inventar veinte nombres de input. El saneo lo hace
+     * `EtiquetasProducto`, que descarta claves inventadas y colores que no sean
+     * hexadecimales.
+     */
+    private function applyEtiquetas(array $data, ?Product $product = null): array
+    {
+        if (!array_key_exists('etiquetas', $data)) return $data;
+
+        $entrada = json_decode((string) ($data['etiquetas'] ?? ''), true);
+        $options = (array) ($data['options'] ?? $product?->options ?? []);
+
+        $limpias = is_array($entrada) ? \App\Support\EtiquetasProducto::normaliza($entrada) : null;
+        if ($limpias) $options['etiquetas'] = $limpias;
+        else unset($options['etiquetas']);
+
+        $data['options'] = $options ?: null;
+        unset($data['etiquetas']);
+
+        return $data;
+    }
+
+    /**
+     * Guarda (o retira) la ficha tecnica del producto.
+     *
+     * El PDF se guarda bajo `fichas/<project_id>/` para que un tenant no pueda
+     * pisar el archivo de otro aunque coincida el nombre. Al reemplazarlo se
+     * borra el anterior: si no, cada cambio de ficha dejaria un huerfano en el
+     * disco que nadie vuelve a mirar.
+     */
+    /**
+     * Sube la ficha tecnica (PDF) de un producto.
+     *
+     * Va aparte del guardado normal porque el editor manda el producto como
+     * JSON y un archivo no viaja ahi. El enlace externo si viaja en el JSON:
+     * es solo texto.
+     */
+    public function subirFichaTecnica(Request $request, Product $product)
+    {
+        $project = app('active_project');
+        abort_unless($product->project_id === $project->id, 403);
+
+        $request->validate([
+            'ficha' => 'required|file|extensions:pdf|mimetypes:application/pdf|max:10240',
+        ]);
+
+        $anterior = $product->ficha_tecnica_archivo;
+        $ruta = $request->file('ficha')->store('fichas/'.$project->id, 'public');
+        $product->update(['ficha_tecnica_archivo' => $ruta]);
+        // Al reemplazar se borra el anterior: cada cambio dejaria si no un
+        // huerfano en disco que nadie vuelve a mirar.
+        if ($anterior && $anterior !== $ruta) Storage::disk('public')->delete($anterior);
+
+        return response()->json([
+            'ficha_tecnica_archivo' => $ruta,
+            'url'    => asset('storage/'.$ruta),
+            'nombre' => basename($ruta),
+        ]);
+    }
+
+    /** Retira la ficha tecnica y borra el PDF del disco. */
+    public function quitarFichaTecnica(Product $product)
+    {
+        abort_unless($product->project_id === app('active_project')->id, 403);
+
+        if ($product->ficha_tecnica_archivo) {
+            Storage::disk('public')->delete($product->ficha_tecnica_archivo);
+        }
+        $product->update(['ficha_tecnica_archivo' => null]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function applyFichaTecnica(Request $request, array $data, ?Product $product = null): array
+    {
+        $anterior = $product?->ficha_tecnica_archivo;
+
+        if ($request->boolean('ficha_tecnica_quitar')) {
+            if ($anterior) Storage::disk('public')->delete($anterior);
+            $data['ficha_tecnica_archivo'] = null;
+            $data['ficha_tecnica_url'] = null;
+        } elseif ($request->hasFile('ficha_tecnica_pdf')) {
+            $project = app('active_project');
+            $data['ficha_tecnica_archivo'] = $request->file('ficha_tecnica_pdf')
+                ->store('fichas/'.$project->id, 'public');
+            if ($anterior) Storage::disk('public')->delete($anterior);
+        }
+
+        // El campo del formulario no existe en la tabla; no debe llegar al save.
+        unset($data['ficha_tecnica_pdf'], $data['ficha_tecnica_quitar']);
+
+        return $data;
+    }
+
+    /**
+     * Destacados de la ficha: hasta 3 pares titulo/detalle con icono.
+     *
+     * Viven dentro de `options` como las etiquetas, no en columnas propias: son
+     * datos de presentacion, varian por rubro y no se consultan por SQL.
+     */
+    private function applyDestacados(array $data, ?Product $product = null): array
+    {
+        if (!array_key_exists('destacados', $data)) return $data;
+
+        $iconos = ['escudo', 'sol', 'sensor', 'hoja', 'rayo', 'reloj'];
+        $options = (array) ($data['options'] ?? $product?->options ?? []);
+
+        $limpios = collect((array) $data['destacados'])
+            ->map(fn ($d) => [
+                'i' => in_array($d['i'] ?? '', $iconos, true) ? $d['i'] : 'escudo',
+                't' => mb_substr(trim(strip_tags((string) ($d['t'] ?? ''))), 0, 30),
+                'd' => mb_substr(trim(strip_tags((string) ($d['d'] ?? ''))), 0, 45),
+            ])
+            ->filter(fn ($d) => $d['t'] !== '')
+            ->take(3)
+            ->values()
+            ->all();
+
+        if ($limpios) $options['destacados'] = $limpios;
+        else unset($options['destacados']);
+
+        $data['options'] = $options ?: null;
+        unset($data['destacados']);
+
+        return $data;
+    }
+
+    /**
+     * Mensajes de validacion en castellano. Sin esto el editor mostraba
+     * "The price field is required." al cliente.
+     */
+    private function mensajes(): array
+    {
+        return [
+            'name.required'      => 'El nombre del producto es obligatorio.',
+            'name.max'           => 'El nombre no puede pasar de :max caracteres.',
+            'sku.max'            => 'El SKU no puede pasar de :max caracteres.',
+            'barcode.max'        => 'El codigo de barras no puede pasar de :max caracteres.',
+            'ficha_tecnica_url.url' => 'El enlace de la ficha tecnica debe empezar con http:// o https://.',
+            'ficha_tecnica_url.max' => 'El enlace de la ficha tecnica es demasiado largo.',
+            'destacados.max'     => 'Como maximo :max destacados por producto.',
+            'destacados.*.t.max' => 'El titulo de un destacado no puede pasar de :max caracteres.',
+            'destacados.*.d.max' => 'El detalle de un destacado no puede pasar de :max caracteres.',
+            'sizes.max'          => 'La lista de tallas es demasiado larga (maximo :max caracteres).',
+            'unit.max'           => 'La unidad no puede pasar de :max caracteres.',
+            'wholesale_unit.max' => 'La unidad mayorista no puede pasar de :max caracteres.',
+            'wholesale_min_qty.min' => 'La cantidad minima mayorista debe ser al menos :min.',
+            'tax_rate.max'       => 'El impuesto no puede pasar de :max %.',
+            'numeric'            => 'El campo :attribute debe ser un numero.',
+            'integer'            => 'El campo :attribute debe ser un numero entero.',
+            'min'                => 'El campo :attribute no puede ser negativo.',
+            'max'                => 'El campo :attribute es demasiado largo.',
+        ];
     }
 
     private function rules(): array
@@ -173,7 +356,19 @@ class ProductController extends Controller
             'barcode'          => 'nullable|string|max:80',
             'description'      => 'nullable|string',
             'notes'            => 'nullable|string',
-            'price'             => 'required|numeric|min:0',
+            // Ficha tecnica: el PDF que manda el proveedor, o el enlace a su
+            // web. `extensions` valida el contenido, no solo el nombre.
+            'ficha_tecnica_pdf'    => 'nullable|file|extensions:pdf|mimetypes:application/pdf|max:10240',
+            'ficha_tecnica_url'    => 'nullable|url|max:500',
+            'ficha_tecnica_quitar' => 'nullable|boolean',
+            'destacados'           => 'nullable|array|max:3',
+            'destacados.*.i'       => 'nullable|string|max:20',
+            'destacados.*.t'       => 'nullable|string|max:30',
+            'destacados.*.d'       => 'nullable|string|max:45',
+            // El precio puede venir vacio: una distribuidora que trabaja por
+            // cotizacion no publica precios y no tiene por que inventar uno.
+            // Vacio se guarda como 0 (la columna no admite nulos).
+            'price'             => 'nullable|numeric|min:0',
             'price_suggested'  => 'nullable|numeric|min:0',
             'price_min'        => 'nullable|numeric|min:0',
             'price_max'        => 'nullable|numeric|min:0',
@@ -190,6 +385,8 @@ class ProductController extends Controller
             'stock_max'        => 'nullable|integer|min:0',
             'is_available'     => 'boolean',
             'sizes'            => 'nullable|string|max:300',
+            // Estructura JSON; el saneo real lo hace EtiquetasProducto.
+            'etiquetas'        => 'nullable|string|max:4000',
         ];
     }
 
@@ -197,10 +394,16 @@ class ProductController extends Controller
     {
         /** @var \App\Models\Project $project */
         $project = app('active_project');
-        $data = $request->validate($this->rules());
+        $data = $request->validate($this->rules(), $this->mensajes());
+        $data['price']        = $data['price'] ?? 0;
         $data['project_id']   = $project->id;
         $data['is_available'] = $request->boolean('is_available', true);
+        // Las etiquetas ANTES que las tallas: `applySizes` parte de
+        // `$data['options']`, asi que al reves borraria lo que escriba esta.
+        $data = $this->applyEtiquetas($data);
         $data = $this->applySizes($data);
+        $data = $this->applyDestacados($data);
+        $data = $this->applyFichaTecnica($request, $data);
         // La descripción admite formato básico: se limpia antes de guardar.
         $data['description'] = \App\Support\RichText::clean($data['description'] ?? null);
 
@@ -230,8 +433,12 @@ class ProductController extends Controller
         $project = app('active_project');
         abort_unless($product->project_id === $project->id, 403);
 
-        $data = $request->validate($this->rules());
+        $data = $request->validate($this->rules(), $this->mensajes());
+        $data['price']        = $data['price'] ?? 0;
         $data['is_available'] = $request->boolean('is_available');
+        $data = $this->applyEtiquetas($data, $product);
+        $data = $this->applyDestacados($data, $product);
+        $data = $this->applyFichaTecnica($request, $data, $product);
         $data = $this->applySizes($data, $product);
         $data['description'] = \App\Support\RichText::clean($data['description'] ?? null);
 
@@ -333,11 +540,18 @@ class ProductController extends Controller
         $data = $request->validate([
             'ids'         => 'required|array|min:1',
             'ids.*'       => 'integer',
-            'action'      => 'required|string|in:available,unavailable,stock_on,stock_off,tax_on,tax_off,delete,set_category,price_adjust',
+            'action'      => 'required|string|in:available,unavailable,stock_on,stock_off,tax_on,tax_off,delete,set_category,price_adjust,etiquetas',
             'tax_rate'    => 'nullable|numeric|min:0|max:100',
             'category_id' => 'nullable|integer',
             'price_mode'  => 'nullable|string|in:pct,fixed',
             'price_delta' => 'nullable|numeric',
+            // Etiquetas en masa. Las claves se validan de verdad en
+            // EtiquetasProducto: aqui solo se acota la forma.
+            'etq_mode'    => 'nullable|string|in:agregar,quitar,reemplazar',
+            'etq_claves'  => 'nullable|array|max:50',
+            'etq_claves.*'=> 'string|max:40',
+            'etq_card'    => 'nullable|boolean',
+            'etq_ficha'   => 'nullable|boolean',
         ]);
         // La ruta exige catalog.editar, pero 'delete' borra de verdad: ese permiso
         // no se puede resolver en la ruta porque depende del payload.
@@ -362,9 +576,60 @@ class ProductController extends Controller
             'delete'      => $this->bulkDelete($query),
             'set_category' => $this->bulkSetCategory($query, $project, $data['category_id'] ?? null),
             'price_adjust' => $this->bulkPriceAdjust($query, $data['price_mode'] ?? null, $data['price_delta'] ?? null),
+            'etiquetas'   => $this->bulkEtiquetas($query, $data),
         };
 
         return response()->json(['ok' => true, 'count' => $count]);
+    }
+
+    /**
+     * Etiquetas en masa sobre la seleccion.
+     *
+     * Va producto a producto y no con un UPDATE unico porque las etiquetas
+     * viven dentro de `options`, un JSON que ademas guarda las tallas y otras
+     * claves: hay que fusionar, no pisar. El saneo (claves inventadas, colores)
+     * lo hace EtiquetasProducto, el mismo que usa la ficha, para que etiquetar
+     * en masa y etiquetar uno a uno produzcan exactamente lo mismo.
+     *
+     *   agregar    -> suma las claves a las que ya tenga
+     *   quitar     -> le resta esas claves
+     *   reemplazar -> deja exactamente estas (vacio = sin etiquetas)
+     *
+     * La etiqueta personalizada de cada producto se conserva siempre: es suya.
+     */
+    private function bulkEtiquetas($query, array $data): int
+    {
+        $modo   = $data['etq_mode'] ?? 'agregar';
+        $claves = array_values(array_filter(array_map('strval', (array) ($data['etq_claves'] ?? []))));
+        $n = 0;
+
+        foreach ($query->get() as $producto) {
+            $actual = \App\Support\EtiquetasProducto::config($producto);
+
+            $nuevas = match ($modo) {
+                'quitar'     => array_values(array_diff($actual['claves'], $claves)),
+                'reemplazar' => $claves,
+                default      => array_values(array_unique(array_merge($actual['claves'], $claves))),
+            };
+
+            $entrada = [
+                'card'  => array_key_exists('etq_card', $data) && $data['etq_card'] !== null ? (bool) $data['etq_card'] : $actual['card'],
+                'ficha' => array_key_exists('etq_ficha', $data) && $data['etq_ficha'] !== null ? (bool) $data['etq_ficha'] : $actual['ficha'],
+                'claves' => $nuevas,
+                'personalizada' => $actual['personalizada'],
+            ];
+
+            $options = (array) ($producto->options ?? []);
+            $limpias = \App\Support\EtiquetasProducto::normaliza($entrada);
+            if ($limpias) $options['etiquetas'] = $limpias;
+            else unset($options['etiquetas']);
+
+            $producto->options = $options ?: null;
+            $producto->save();
+            $n++;
+        }
+
+        return $n;
     }
 
     /**

@@ -4,6 +4,11 @@ $primaryColor= $settings['primary_color'] ?? '#4f46e5';
 $projectName = $project->name;
 $waRaw       = preg_replace('/\D/', '', $settings['quote_whatsapp'] ?? $project->whatsapp ?? '');
 $wholesale   = ($settings['wholesale_enabled'] ?? '0') === '1';
+/* Tienda por cotizacion: los precios no se publican. Es el mismo criterio
+   que la tienda web; aqui faltaba y el catalogo salia con "PEN 0.00". */
+$modoCotiza  = ($settings['store_mode'] ?? 'direct') === 'quote';
+$ocultaPrecio = $modoCotiza && ($settings['quote_price_display'] ?? 'show') === 'hide';
+$txtSinPrecio = $settings['price_on_request_text'] ?? 'Precio a solicitud';
 $logoUrl     = $project->logo_url ? asset('storage/'.$project->logo_url) : null;
 
 $allProducts = $categories->flatMap(fn($cat) => $cat->products->map(fn($p) => [
@@ -207,7 +212,13 @@ $cats = $categories->map(fn($c) => ['id'=>(string)$c->id, 'name'=>$c->name])->va
                       <div class="px-2.5 pt-1.5 pb-1 bg-gray-50 border-b border-gray-100">
                         <span class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Minorista</span>
                         <div class="flex items-baseline gap-1">
-                          <span class="price-p font-black text-base leading-none" x-text="'{{ $currency }} '+p.price.toFixed(2)"></span>
+                          @if($ocultaPrecio)
+                          <span class="price-p font-black text-xs leading-none">{{ $txtSinPrecio }}</span>
+                          @else
+                          {{-- Sin precio cargado tampoco se pinta un cero. --}}
+                          <span class="price-p font-black text-base leading-none" x-show="p.price > 0" x-text="'{{ $currency }} '+p.price.toFixed(2)"></span>
+                          <span class="price-p font-black text-xs leading-none" x-show="!(p.price > 0)">{{ $txtSinPrecio }}</span>
+                          @endif
                           <span x-show="p.unit" class="text-[10px] text-gray-400 font-medium" x-text="p.unit"></span>
                         </div>
                       </div>
@@ -254,8 +265,13 @@ $cats = $categories->map(fn($c) => ['id'=>(string)$c->id, 'name'=>$c->name])->va
                 <template x-if="!(p.wp && p.wq)">
                   <div x-data="{ qty:1 }">
                     <div class="flex items-baseline gap-2 mb-0.5">
-                      <span class="price-p font-black text-lg" x-text="'{{ $currency }} '+p.price.toFixed(2)"></span>
+                      @if($ocultaPrecio)
+                      <span class="price-p font-black text-base">{{ $txtSinPrecio }}</span>
+                      @else
+                      <span class="price-p font-black text-lg" x-show="p.price > 0" x-text="'{{ $currency }} '+p.price.toFixed(2)"></span>
+                      <span class="price-p font-black text-base" x-show="!(p.price > 0)">{{ $txtSinPrecio }}</span>
                       <span x-show="p.cp && p.cp>p.price" class="text-xs text-gray-400 line-through" x-text="'{{ $currency }} '+p.cp?.toFixed(2)"></span>
+                      @endif
                     </div>
                     <p x-show="p.cp && p.cp > p.price"
                        class="text-[11px] text-green-600 font-bold mb-1.5 leading-none"
@@ -319,7 +335,9 @@ $cats = $categories->map(fn($c) => ['id'=>(string)$c->id, 'name'=>$c->name])->va
             <p class="text-sm font-semibold text-gray-900 leading-tight" x-text="item.name"></p>
             <p x-show="item.unit" class="text-[10px] text-gray-400 mt-0.5" x-text="item.qty+' '+item.unit+' × {{ $currency }} '+item.price.toFixed(2)"></p>
             <p x-show="!item.unit" class="text-[10px] text-gray-400 mt-0.5" x-text="item.qty+' und × {{ $currency }} '+item.price.toFixed(2)"></p>
-            <p class="text-sm font-black price-p mt-0.5" x-text="'{{ $currency }} '+(item.price*item.qty).toFixed(2)"></p>
+            @unless($ocultaPrecio)
+            <p class="text-sm font-black price-p mt-0.5" x-show="item.price > 0" x-text="'{{ $currency }} '+(item.price*item.qty).toFixed(2)"></p>
+            @endunless
             <div class="flex items-center gap-1.5 mt-1.5">
               <div class="flex items-center rounded-lg border border-gray-200 overflow-hidden bg-white">
                 <button @click="changeQty(i,-1)" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-100 font-bold">−</button>
@@ -336,7 +354,11 @@ $cats = $categories->map(fn($c) => ['id'=>(string)$c->id, 'name'=>$c->name])->va
     <div x-show="cart.length>0" class="px-5 py-4 border-t border-gray-200 space-y-3 bg-white">
       <div class="flex items-center justify-between">
         <span class="font-bold text-gray-700">Total</span>
+        @if($ocultaPrecio)
+        <span class="font-black text-base price-p">A cotizar</span>
+        @else
         <span class="font-black text-xl price-p" x-text="'{{ $currency }} '+cartTotal.toFixed(2)"></span>
+        @endif
       </div>
       <div>
         <label class="text-xs text-gray-500 font-medium">Tu nombre (opcional)</label>
@@ -377,7 +399,11 @@ $cats = $categories->map(fn($c) => ['id'=>(string)$c->id, 'name'=>$c->name])->va
           x-text="cart.reduce((s,i)=>s+i.qty,0)"></span>
     <div class="min-w-0">
       <p class="text-[10px] text-gray-400 leading-none mb-0.5">Total del pedido</p>
+      @if($ocultaPrecio)
+      <p class="font-black text-sm leading-none price-p">A cotizar</p>
+      @else
       <p class="font-black text-base leading-none price-p" x-text="'{{ $currency }} '+cart.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2)"></p>
+      @endif
     </div>
   </div>
   <button @click="cartOpen=true"

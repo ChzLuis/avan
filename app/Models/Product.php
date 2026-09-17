@@ -7,6 +7,7 @@ class Product extends Model {
     protected $fillable = [
         'project_id','category_id','brand_catalog_id',
         'name','sku','barcode','description','notes',
+        'ficha_tecnica_archivo','ficha_tecnica_url',
         'price','price_suggested','price_min','price_max','compare_price','wholesale_price','wholesale_min_qty','wholesale_unit','cost','unit',
         'has_tax','tax_rate',
         'stock','stock_min','stock_max','is_available','sort_order','options',
@@ -15,6 +16,11 @@ class Product extends Model {
     protected $casts = ['is_available' => 'boolean', 'has_tax' => 'boolean', 'tax_rate' => 'decimal:2', 'price' => 'decimal:2', 'price_suggested' => 'decimal:2', 'price_min' => 'decimal:2', 'price_max' => 'decimal:2', 'compare_price' => 'decimal:2', 'wholesale_price' => 'decimal:2', 'cost' => 'decimal:2', 'options' => 'array', 'owner_scope' => 'array'];
     public function project()   { return $this->belongsTo(Project::class); }
     public function category()  { return $this->belongsTo(Category::class); }
+    /**
+     * Marca del producto. Vive en `catalog_values` (lista de tipo `brand`),
+     * no en una tabla propia: asi cada tienda define las suyas sin migracion.
+     */
+    public function marca()     { return $this->belongsTo(CatalogValue::class, 'brand_catalog_id'); }
     public function images()    { return $this->hasMany(ProductImage::class)->orderBy('sort_order'); }
     /** Kardex del producto: cada entrada y salida, de la mas reciente atras. */
     public function movimientos() { return $this->hasMany(InventoryMovement::class)->latest('id'); }
@@ -37,6 +43,38 @@ class Product extends Model {
     public function getSizesAttribute(): array
     {
         return array_values(array_filter(array_map('trim', (array) data_get($this->options, 'sizes', []))));
+    }
+
+    /**
+     * Etiquetas listas para pintar (options.etiquetas).
+     *
+     * El color y el orden los resuelve `EtiquetasProducto`, no la vista: asi
+     * una etiqueta se ve igual en la tarjeta, en la ficha y en cualquier
+     * plantilla.
+     *
+     * @param  string  $donde  'card' (maximo 2) | 'ficha' (todas)
+     */
+    public function etiquetas(string $donde = 'card'): array
+    {
+        return \App\Support\EtiquetasProducto::para($this, $donde);
+    }
+
+    /**
+     * Ficha tecnica lista para enlazar, o null si el producto no tiene.
+     *
+     * El archivo subido gana al enlace externo: si el proveedor rehace su web,
+     * su URL se cae y la nuestra no. Guardamos ruta relativa, no URL completa,
+     * porque el dominio de la tienda cambia (subdominio, dominio propio) y las
+     * absolutas guardadas quedarian apuntando al sitio viejo.
+     */
+    public function getFichaTecnicaUrlResueltaAttribute(): ?string
+    {
+        $archivo = trim((string) $this->ficha_tecnica_archivo);
+        if ($archivo !== '') {
+            return str_starts_with($archivo, 'http') ? $archivo : asset('storage/'.ltrim($archivo, '/'));
+        }
+        $enlace = trim((string) $this->ficha_tecnica_url);
+        return $enlace !== '' ? $enlace : null;
     }
 
     public function getMainImageUrlAttribute(): ?string

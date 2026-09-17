@@ -129,6 +129,7 @@ class CatalogAuthorizationTest extends TestCase
     {
         return [
             'listado productos'  => ['/products'],
+            'variantes producto' => ['/products/{product}/variants'],
             'listado categorias' => ['/categories'],
             'listado servicios'  => ['/services'],
             'exportar productos' => ['/products/export'],
@@ -149,6 +150,7 @@ class CatalogAuthorizationTest extends TestCase
         return [
             'crear producto'       => ['POST',   '/products'],
             'editar producto'      => ['PUT',    '/products/{product}'],
+            'editar variantes'     => ['PUT',    '/products/{product}/variants'],
             'borrar producto'      => ['DELETE', '/products/{product}'],
             'duplicar producto'    => ['POST',   '/products/{product}/duplicate'],
             'importar productos'   => ['POST',   '/products/import'],

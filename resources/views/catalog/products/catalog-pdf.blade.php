@@ -13,6 +13,11 @@
     // Identidad: si se exporta por perfil y el perfil tiene logo/color propios, mandan.
     $accent  = $profile?->primary_color ?: ($settings['primary_color'] ?? '#4f46e5');
     $logoUrl = $assetUrl($profile?->logo_path ?: ($settings['logo_url'] ?? $project->logo_url));
+    /* Marca de agua: el MISMO interruptor y la misma opacidad que la tienda
+       (constructor -> Catalogo -> "Marca de agua en las fotos"). Usa el logo
+       del negocio; sin logo no se pinta nada. */
+    $marcaAgua     = (($settings['catalog_watermark'] ?? '') === '1') ? $logoUrl : null;
+    $marcaOpacidad = max(5, min(100, (int) ($settings['catalog_watermark_opacity'] ?? 42))) / 100;
     $heroUrl = $assetUrl($profile?->hero_desktop_path ?: ($settings['hero_image'] ?? null));
 
     $scopeLabel = $profile?->name ?? $category?->name ?? null;
@@ -85,10 +90,28 @@
     .grid { display: grid; grid-template-columns: repeat({{ $cols }}, 1fr); gap: {{ $cols >= 4 ? 10 : 13 }}px; }
     .card { position: relative; border: 1px solid #e5e7eb; border-radius: 11px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; background: #fff; }
     .card .ph { position: relative; width: 100%; aspect-ratio: 1/1; background: #f8fafc; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #f3f4f6; }
-    .card .ph img { width: 100%; height: 100%; object-fit: contain; }
+    .card .ph img { width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1; }
+    /* Marca de agua al PIE de la foto (22% de margen a cada lado, 14% de alto):
+       el producto ocupa el centro, asi que abajo cae sobre fondo limpio y se
+       lee entera. print-color-adjust para que sobreviva al Guardar como PDF. */
+    .card .ph::before { content: ""; position: absolute; z-index: 2; left: 22%; right: 22%; bottom: 2%; height: 14%;
+        background-image: var(--card-marca); background-repeat: no-repeat; background-position: center bottom;
+        background-size: contain; opacity: var(--card-marca-op, .42); pointer-events: none;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .card .ph:not([style*="--card-marca"])::before { display: none; }
     .card .ph .noimg { font-size: 10px; color: #cbd5e1; }
     .off { position: absolute; top: 7px; left: 7px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; }
     .card .body { padding: {{ $cols >= 4 ? '7px 9px 9px' : '9px 11px 11px' }}; }
+    .marcas-portada { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+    .marcas-portada h3 { margin: 0 0 9px; font-size: 10px; font-weight: 800;
+        letter-spacing: .1em; text-transform: uppercase; color: #6b7280; }
+    .marcas-lista { font-size: 0; }
+    .marcas-lista span { display: inline-block; margin: 0 6px 6px 0; padding: 4px 10px;
+        border: 1px solid #e5e7eb; border-radius: 999px; background: #fff;
+        font-size: 10.5px; font-weight: 700; color: #1f2937; }
+    .card .marca { font-size: {{ $cols >= 4 ? '7.5px' : '8.5px' }}; font-weight: 800;
+        letter-spacing: .06em; text-transform: uppercase; color: {{ $accent }};
+        margin-bottom: 2px; }
     .card .name { font-size: {{ $cols >= 4 ? '11px' : '12.5px' }}; font-weight: 700; line-height: 1.3; min-height: 2.6em; }
     .card .desc { font-size: 10.5px; color: #6b7280; line-height: 1.45; margin-top: 4px; }
     .card .sku { font-size: 9.5px; color: #9ca3af; margin-top: 3px; font-family: 'Courier New', monospace; }
@@ -151,7 +174,7 @@
             @if($scopeLabel)<div><span class="cover-scope">{{ $scopeLabel }}</span></div>@endif
             <div class="cover-meta">
                 {{ now()->translatedFormat('F Y') }} · {{ $total }} producto{{ $total === 1 ? '' : 's' }}
-                @if($groups->count() > 1) · {{ $groups->count() }} categorías @endif
+                @if($groups->count() > 1) · {{ $groups->count() }} {{ ($agrupar ?? 'categoria') === 'marca' ? 'marcas' : 'categorías' }} @endif
             </div>
 
             @if($groups->count() > 1)
@@ -163,6 +186,20 @@
                     @endforeach
                 </ul>
             </div>
+            {{-- Portafolio de marcas en la portada. Es lo que responde de un
+                 vistazo a "¿solo venden Indeco?": el cliente ve en la primera
+                 pagina que la distribuidora trabaja varias marcas. --}}
+            @if(($marcasCatalogo ?? collect())->count() > 1)
+            <div class="marcas-portada">
+                <h3>Marcas que distribuimos</h3>
+                <div class="marcas-lista">
+                    @foreach($marcasCatalogo as $mk)
+                    <span>{{ $mk }}</span>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             @endif
         </div>
 
@@ -206,20 +243,44 @@
         </div>
         <div class="grid">
             @foreach($items as $p)
-            @php $onSale = $prices === 'retail' && $p->compare_price && $p->compare_price > $p->price; @endphp
+            @php
+                $onSale = $prices === 'retail' && $p->compare_price && $p->compare_price > $p->price;
+                // Colores del modelo (fusion): mapa color => foto.
+                $pColores = ($content ?? 'variants') !== 'main'
+                    ? array_filter((array) data_get($p->options, 'color_images', []))
+                    : [];
+                $pColores = count($pColores) > 1 ? $pColores : [];
+                ksort($pColores);
+                // Cada color se DESPLIEGA como un producto propio, con su
+                // tarjeta y su foto grande — en variants y en full por igual.
+                // La fusion sigue intacta en el panel y la tienda; aqui solo se
+                // expande la presentacion, porque un catalogo vende con fotos,
+                // no con muestrarios de miniaturas.
+                $unidades = $pColores ?: [null => null];
+            @endphp
+            @foreach($unidades as $uColor => $uFoto)
+            @php
+                $cardImg  = $uFoto ? \App\Support\Imagen\Img::deAncho((string) $uFoto, 800) : $p->main_image_url;
+                $cardName = $uColor ? $p->name.' — '.$uColor : $p->name;
+            @endphp
             <div class="card">
-                <div class="ph">
+                <div class="ph" @if($marcaAgua) style="--card-marca:url('{{ $marcaAgua }}');--card-marca-op:{{ $marcaOpacidad }}"@endif>
                     @if($onSale)
                     <span class="off">-{{ (int) round((1 - $p->price / $p->compare_price) * 100) }}%</span>
                     @endif
-                    @if($p->main_image_url)
-                        <img src="{{ $p->main_image_url }}" alt="{{ $p->name }}">
+                    @if($cardImg)
+                        <img src="{{ $cardImg }}" alt="{{ $cardName }}" onerror="this.remove()">
                     @else
                         <span class="noimg">Sin foto</span>
                     @endif
                 </div>
                 <div class="body">
-                    <div class="name">{{ $p->name }}</div>
+                    {{-- Marca sobre el nombre. Si el catalogo ya viene agrupado
+                         POR marca, repetirla en cada ficha es ruido. --}}
+                    @if(($agrupar ?? 'categoria') !== 'marca' && $p->marca?->label)
+                        <div class="marca">{{ $p->marca->label }}</div>
+                    @endif
+                    <div class="name">{{ $cardName }}</div>
 
                     @if($showDesc && filled($p->description))
                     <div class="desc">{{ \Illuminate\Support\Str::limit(strip_tags($p->description), 110) }}</div>
@@ -239,6 +300,7 @@
                     @endif
                 </div>
             </div>
+            @endforeach
             @endforeach
         </div>
     @empty

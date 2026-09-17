@@ -203,7 +203,14 @@
 </div>
 
 {{-- Modal: Catálogo PDF (alcance + precios) --}}
-<div x-data="{ show: false, scope: 'all', prices: 'retail', layout: 'grid3', cover: true,
+@php
+    /* Una tienda por cotizacion con precios ocultos genera el catalogo sin
+       precios de entrada. El usuario puede cambiarlo en el selector si
+       quiere un catalogo interno con precios. */
+    $preciosPorDefecto = ((string) ($project->setting('store_mode') ?? 'direct') === 'quote'
+        && (string) ($project->setting('quote_price_display') ?? 'show') === 'hide') ? 'none' : 'retail';
+@endphp
+<div x-data="{ show: false, scope: 'all', prices: @js($preciosPorDefecto), layout: 'grid3', cover: true, content: 'full', agrupar: 'categoria',
      /* Cuántos productos entran en el PDF. Para perfiles el alcance lo resuelve
         el servidor (incluye asignaciones directas), así que ahí no se estima. */
      get pdfCount() {
@@ -288,12 +295,55 @@
             </div>
         </div>
         <div>
+            <label class="pe-label">Contenido del catálogo</label>
+            <div class="space-y-2">
+                @foreach([
+                    'main' => ['Principal', 'Una fotografía principal por modelo.'],
+                    'full' => ['Completo — Recomendado', 'Cada color aparece como un producto propio, con su foto en grande.'],
+                ] as $cKey => [$cTitulo, $cDesc])
+                <button type="button" @click="content='{{ $cKey }}'"
+                        class="w-full text-left rounded-xl border px-3.5 py-2.5 transition-all"
+                        :class="content==='{{ $cKey }}' ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50/50' : 'border-gray-200 hover:border-indigo-300'">
+                    <span class="flex items-center gap-2.5">
+                        <span class="w-4 h-4 rounded-full border flex-shrink-0 grid place-items-center"
+                              :class="content==='{{ $cKey }}' ? 'border-indigo-600' : 'border-gray-300'">
+                            <span class="w-2 h-2 rounded-full bg-indigo-600" x-show="content==='{{ $cKey }}'"></span>
+                        </span>
+                        <span>
+                            <span class="block text-sm font-semibold" :class="content==='{{ $cKey }}' ? 'text-indigo-700' : 'text-gray-700'">{{ $cTitulo }}</span>
+                            <span class="block text-[11px] text-gray-500">{{ $cDesc }}</span>
+                        </span>
+                    </span>
+                </button>
+                @endforeach
+            </div>
+            <div x-show="content==='full' && layout==='grid4'" x-cloak
+                 class="mt-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] text-amber-800 leading-relaxed">
+                ⚠️ El modo Completo puede generar más páginas en presentación Compacta.
+            </div>
+        </div>
+        <div>
             <label class="pe-label">Precios a mostrar</label>
             <select x-model="prices" class="pe-input">
                 <option value="retail">Precio de venta (minorista)</option>
                 <option value="wholesale">Precio mayorista</option>
                 <option value="none">Sin precios</option>
             </select>
+        </div>
+        <div>
+            <label class="pe-label">Cómo se ordena</label>
+            {{-- Mismo catálogo, dos lecturas. "Por marca" es el que se manda
+                 cuando el cliente pregunta qué tienes de una marca concreta. --}}
+            <div class="grid grid-cols-2 gap-2">
+                @foreach([['categoria','Por categoría','Cables, protección, iluminación…'],['marca','Por marca','Indeco, 3M, Bticino…']] as [$key,$label,$hint])
+                <button type="button" @click="agrupar='{{ $key }}'"
+                        :class="agrupar==='{{ $key }}' ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'"
+                        class="rounded-xl border p-3 text-left transition">
+                    <span class="block text-[12.5px] font-semibold text-gray-800">{{ $label }}</span>
+                    <span class="block text-[11px] text-gray-500 mt-0.5">{{ $hint }}</span>
+                </button>
+                @endforeach
+            </div>
         </div>
         <div>
             <label class="pe-label">Presentación</label>
@@ -333,7 +383,7 @@
         <div class="px-5 py-4 bg-gray-50 border-t border-gray-100 flex gap-2">
             <button type="button" @click="show=false" class="pe-btn pe-btn-secondary flex-1">Cancelar</button>
             <button type="button" class="pe-btn pe-btn-primary flex-1"
-                    @click="let u = '{{ route('products.catalog.pdf') }}?prices=' + prices + '&layout=' + layout + '&cover=' + (cover ? 1 : 0);
+                    @click="let u = '{{ route('products.catalog.pdf') }}?prices=' + prices + '&layout=' + layout + '&cover=' + (cover ? 1 : 0) + '&content=' + content + '&agrupar=' + agrupar;
                             if (scope.startsWith('c:')) u += '&category_id=' + scope.slice(2);
                             if (scope.startsWith('p:')) u += '&profile_id=' + scope.slice(2);
                             window.open(u, '_blank'); show = false;">
@@ -349,6 +399,74 @@
 
 {{-- BODY --}}
 <script>
+/**
+ * Etiquetas del producto.
+ *
+ * Vive dentro del formulario (hereda `form` por scope de Alpine) y mantiene
+ * `form.etiquetas` como JSON, que es lo que viaja al servidor. El catalogo y
+ * la prioridad se replican aqui SOLO para la vista previa; la verdad la tiene
+ * `App\Support\EtiquetasProducto`, que vuelve a sanearlo todo al guardar.
+ */
+function etiquetasProducto() {
+    return {
+        catalogo: {!! Illuminate\Support\Js::from(collect(\App\Support\EtiquetasProducto::catalogo())->map(fn ($e) => [
+            'etiqueta' => $e['texto'], 'fondo' => $e['fondo'], 'texto' => $e['texto_color'], 'prioridad' => $e['prioridad'],
+        ])) !!},
+        maxCard: {{ \App\Support\EtiquetasProducto::MAX_EN_CARD }},
+        etq: { card: true, ficha: true, claves: [], personalizada: { texto: '', fondo: '#1F2937', texto_color: '#FFFFFF', posicion: 'izquierda', card: true, ficha: true, prioridad: 95 } },
+
+        init() {
+            this.cargar();
+            // Al cambiar de producto en la lista, recargar lo suyo.
+            this.$watch('form.etiquetas', () => { if (!this._propio) this.cargar(); });
+        },
+
+        cargar() {
+            let d = {};
+            try { d = JSON.parse(this.form.etiquetas || '{}') || {}; } catch (e) { d = {}; }
+            this.etq = {
+                card: d.card !== false,
+                ficha: d.ficha !== false,
+                claves: Array.isArray(d.claves) ? d.claves.slice() : [],
+                personalizada: Object.assign(
+                    { texto: '', fondo: '#1F2937', texto_color: '#FFFFFF', posicion: 'izquierda', card: true, ficha: true, prioridad: 95 },
+                    d.personalizada || {}
+                ),
+            };
+        },
+
+        toggle(clave) {
+            const i = this.etq.claves.indexOf(clave);
+            if (i >= 0) this.etq.claves.splice(i, 1); else this.etq.claves.push(clave);
+            this.sync();
+        },
+
+        /** Vuelca el estado a `form.etiquetas`, que es lo que se envia. */
+        sync() {
+            this._propio = true;
+            const p = this.etq.personalizada;
+            this.form.etiquetas = JSON.stringify({
+                card: this.etq.card, ficha: this.etq.ficha, claves: this.etq.claves,
+                personalizada: (p.texto || '').trim() ? p : null,
+            });
+            this.$nextTick(() => { this._propio = false; });
+        },
+
+        /** Las que de verdad se veran en la tarjeta, ya ordenadas por prioridad. */
+        get vistaPrevia() {
+            if (!this.etq.card) return [];
+            const lista = this.etq.claves
+                .filter(c => this.catalogo[c])
+                .map(c => Object.assign({ clave: c }, this.catalogo[c]));
+            const p = this.etq.personalizada;
+            if ((p.texto || '').trim() && p.card) {
+                lista.push({ clave: '__propia', etiqueta: p.texto, fondo: p.fondo, texto: p.texto_color, prioridad: p.prioridad });
+            }
+            lista.sort((a, b) => a.prioridad - b.prioridad);
+            return lista.slice(0, this.maxCard);
+        },
+    };
+}
 window.__productPageData = {
     products:   {!! Illuminate\Support\Js::from($products->map(fn($p) => [
         'id'               => $p->id,
@@ -357,10 +475,15 @@ window.__productPageData = {
         'barcode'          => $p->barcode ?? '',
         'description'      => $p->description ?? '',
         'notes'            => $p->notes ?? '',
+        'ficha_tecnica_archivo' => $p->ficha_tecnica_archivo,
+        'ficha_tecnica_url'     => $p->ficha_tecnica_url ?? '',
+        'destacados'            => array_values((array) ($p->options['destacados'] ?? [])),
         'price'            => (float)$p->price,
         'compare_price'    => $p->compare_price !== null ? (float)$p->compare_price : null,
         'wholesale_price'  => $p->wholesale_price !== null ? (float)$p->wholesale_price : null,
         'sizes'            => implode(', ', $p->sizes),
+        // Se manda como JSON: lo lee el componente `etiquetasProducto()`.
+        'etiquetas'        => json_encode(\App\Support\EtiquetasProducto::config($p), JSON_UNESCAPED_UNICODE),
         'wholesale_min_qty'=> $p->wholesale_min_qty ?? null,
         'wholesale_unit'   => $p->wholesale_unit ?? '',
         'cost'             => $p->cost !== null ? (float)$p->cost : null,
@@ -387,6 +510,7 @@ window.__productPageData = {
     taxes:      {!! Illuminate\Support\Js::from($taxes->map(fn($t) => ['label'=>$t->label,'rate'=>18])) !!},
     hasCatalogs: {{ $allCatalogs > 0 ? 'true' : 'false' }},
     baseUrl:    '{{ $base }}',
+    storageBase:'{{ asset('storage') }}/',
     csrf:       '{{ $csrf }}',
 };
 document.addEventListener('alpine:init', () => {
@@ -430,6 +554,7 @@ document.addEventListener('alpine:init', () => {
         taxes:      window.__productPageData.taxes,
         hasCatalogs: window.__productPageData.hasCatalogs,
         baseUrl:    window.__productPageData.baseUrl,
+        storageBase:window.__productPageData.storageBase,
         csrf:       window.__productPageData.csrf,
         search: '',
         filterCat: null,
@@ -448,6 +573,8 @@ document.addEventListener('alpine:init', () => {
         importLog: { show: false, created: 0, updated: 0, skipped: 0, errors: [], warnings: [], reloadOnClose: false },
         bulkIds: [],
         bulkRunning: false,
+        variantState: { loading:false, saving:false, loadedProductId:null, attributes:[], variants:[], error:'' },
+        variantDirty: false,
 
         get bulkActive() { return this.bulkIds.length > 0; },
 
@@ -485,6 +612,8 @@ document.addEventListener('alpine:init', () => {
                                 efecto: 'Se recalcula el precio de venta de cada producto. Ningún precio quedará por debajo de 0.01.' },
                 delete:       { verbo: 'ELIMINAR',                        titulo: 'Eliminar productos',
                                 efecto: 'Se borrarán junto con sus fotos. Esta acción NO se puede deshacer.' },
+                etiquetas:    { verbo: 'cambiar las etiquetas',           titulo: 'Etiquetas del producto',
+                                efecto: 'En el catálogo se muestran como máximo las 2 de mayor prioridad; en la ficha, todas. La etiqueta personalizada de cada producto se conserva.' },
             };
             const a = acciones[action] || { verbo: action, titulo: 'Confirmar acción masiva', efecto: '' };
             const linea = customMsg || `Vas a ${a.verbo} en ${this.bulkIds.length} producto(s).`;
@@ -599,8 +728,125 @@ document.addEventListener('alpine:init', () => {
             this.search = ''; this.filterCat = null; this.filterNoCat = false; this.filterStatus = ''; this.filterStock = false; this.filterLowStock = false;
         },
 
+        async openVariants() {
+            if (this.creating || !this.selected) return;
+            this.tab = 'variants';
+            if (this.variantState.loadedProductId === this.selected.id) return;
+            this.variantState = { loading:true, saving:false, loadedProductId:this.selected.id, attributes:[], variants:[], error:'' };
+            const res = await fetch(this.baseUrl + '/products/' + this.selected.id + '/variants', {
+                headers: { 'Accept':'application/json' },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                this.variantState.loading = false;
+                this.variantState.error = data.message || 'No se pudieron cargar las variantes.';
+                return;
+            }
+            this.variantState.attributes = data.attributes || [];
+            this.variantState.variants = data.variants || [];
+            this.variantState.loading = false;
+            this.variantDirty = false;
+        },
+
+        variantKey(prefix) {
+            return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+        },
+
+        addVariantAttribute() {
+            if (this.variantState.attributes.length >= 3) return;
+            this.variantState.attributes.push({
+                id:null, key:this.variantKey('attribute'), name:'', type:'select',
+                is_variant:true, is_filterable:true, values:[],
+            });
+            this.variantDirty = true;
+        },
+
+        removeVariantAttribute(index) {
+            this.variantState.attributes.splice(index, 1);
+            this.generateVariantCombinations();
+        },
+
+        addVariantValue(attribute) {
+            if (attribute.values.length >= 30) return;
+            attribute.values.push({ id:null, key:this.variantKey('value'), label:'', color_hex:null });
+            this.variantDirty = true;
+        },
+
+        removeVariantValue(attribute, index) {
+            attribute.values.splice(index, 1);
+            this.generateVariantCombinations();
+        },
+
+        generateVariantCombinations() {
+            const attrs = this.variantState.attributes.filter(a => a.name.trim() && a.values.some(v => v.label.trim()));
+            if (!attrs.length || attrs.some(a => !a.values.some(v => v.label.trim()))) {
+                this.variantState.variants = [];
+                this.variantDirty = true;
+                return;
+            }
+            const groups = attrs.map(a => a.values.filter(v => v.label.trim()));
+            const total = groups.reduce((n, values) => n * values.length, 1);
+            if (total > 100) {
+                this.variantState.error = 'La combinación genera ' + total + ' variantes. El máximo es 100.';
+                return;
+            }
+            const previous = new Map(this.variantState.variants.map(v => [
+                [...v.value_keys].sort().join('|'), v,
+            ]));
+            let combinations = [[]];
+            groups.forEach(values => {
+                combinations = combinations.flatMap(combo => values.map(value => [...combo, value.key]));
+            });
+            this.variantState.variants = combinations.map((valueKeys, index) => {
+                const old = previous.get([...valueKeys].sort().join('|'));
+                return old || {
+                    id:null, value_keys:valueKeys, sku:'', barcode:'', price:'', compare_price:'',
+                    wholesale_price:'', stock:'', product_image_id:null, is_active:true, sort_order:index,
+                };
+            });
+            this.variantState.error = '';
+            this.variantDirty = true;
+        },
+
+        variantLabel(variant) {
+            const labels = [];
+            this.variantState.attributes.forEach(attribute => {
+                const value = attribute.values.find(v => variant.value_keys.includes(v.key));
+                if (value) labels.push(value.label || 'Sin nombre');
+            });
+            return labels.join(' / ');
+        },
+
+        async saveVariantMatrix() {
+            if (!this.selected || this.variantState.saving) return;
+            this.generateVariantCombinations();
+            if (this.variantState.error) return;
+            if (this.variantState.attributes.some(a => !a.name.trim() || !a.values.length || a.values.some(v => !v.label.trim()))) {
+                this.variantState.error = 'Completa el nombre de cada atributo y de todos sus valores.';
+                return;
+            }
+            this.variantState.saving = true;
+            const res = await fetch(this.baseUrl + '/products/' + this.selected.id + '/variants', {
+                method:'PUT',
+                headers:{ 'Content-Type':'application/json', 'X-CSRF-TOKEN':this.csrf, 'Accept':'application/json' },
+                body:JSON.stringify({ attributes:this.variantState.attributes, variants:this.variantState.variants }),
+            });
+            const data = await res.json().catch(() => ({}));
+            this.variantState.saving = false;
+            if (!res.ok) {
+                const errors = data.errors ? Object.values(data.errors).flat() : [];
+                this.variantState.error = errors[0] || data.message || 'No se pudieron guardar las variantes.';
+                return;
+            }
+            this.variantState.attributes = data.attributes || [];
+            this.variantState.variants = data.variants || [];
+            this.variantDirty = false;
+            window.dispatchEvent(new CustomEvent('app-toast', { detail:{ msg:'Variantes guardadas', type:'success' } }));
+        },
+
         select(p) {
             this.selected = p; this.creating = false; this.tab = 'info';
+            this.variantState.loadedProductId = null; this.variantDirty = false;
             this.form = { ...p, category_id: p.category_id ? String(p.category_id) : '' };
             this.originalForm = JSON.stringify(this.form);
         },
@@ -609,7 +855,8 @@ document.addEventListener('alpine:init', () => {
             this.selected = null; this.creating = true; this.tab = 'info';
             this.form = {
                 name:'', sku:'', barcode:'', description:'', notes:'',
-                price:'', price_suggested:'', price_min:'', price_max:'', compare_price:'', wholesale_price:'', wholesale_min_qty:'', wholesale_unit:'', cost:'', unit:'', sizes:'',
+                ficha_tecnica_archivo:null, ficha_tecnica_url:'', destacados:[],
+                price:'', price_suggested:'', price_min:'', price_max:'', compare_price:'', wholesale_price:'', wholesale_min_qty:'', wholesale_unit:'', cost:'', unit:'', sizes:'', etiquetas:'',
                 stock:0, stock_min:0, stock_max:0,
                 location:'', supplier:'',
                 has_tax:false, tax_rate:18,
@@ -622,12 +869,31 @@ document.addEventListener('alpine:init', () => {
             this.saving = true;
             const url    = this.creating ? this.baseUrl + '/products' : this.baseUrl + '/products/' + this.selected.id;
             const method = this.creating ? 'POST' : 'PUT';
-            const res    = await fetch(url, {
-                method,
-                headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': this.csrf, 'Accept':'application/json' },
-                body: JSON.stringify(this.form)
-            });
-            const data = await res.json();
+            let res, data;
+            try {
+                res  = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': this.csrf, 'Accept':'application/json' },
+                    body: JSON.stringify(this.form)
+                });
+                data = await res.json().catch(() => ({}));
+            } catch (e) {
+                this.saving = false;
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Sin conexion: no se pudo guardar. Revisa tu internet e intentalo de nuevo.', type: 'error' } }));
+                return;
+            }
+            // Antes, un 422 (p. ej. sin precio) dejaba el boton en "Guardando..."
+            // para siempre y sin ningun aviso: el cliente creia que "no guardaba".
+            if (!res.ok || !data.product) {
+                this.saving = false;
+                const detalle = data.errors ? Object.values(data.errors).flat()[0] : null;
+                const msg = res.status === 422 ? (detalle || data.message || 'Revisa los campos marcados.')
+                          : res.status === 419 ? 'La sesion expiro. Recarga la pagina e inicia sesion de nuevo.'
+                          : res.status === 403 ? 'No tienes permiso para guardar productos.'
+                          : 'No se pudo guardar (error ' + res.status + '). Intentalo de nuevo.';
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg, type: 'error' } }));
+                return;
+            }
             const wasCreating = this.creating;
             if (this.creating) {
                 this.products.push(data.product);
@@ -658,6 +924,52 @@ document.addEventListener('alpine:init', () => {
             window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Producto eliminado', type: 'warning' } }));
             this.products = this.products.filter(p => p.id !== this.selected.id);
             this.selected = null; this.creating = false;
+        },
+
+        /* ── Ficha tecnica ────────────────────────────────────────────────
+           El archivo viaja por su propia ruta: el guardado del producto manda
+           JSON y ahi no cabe un binario. El enlace externo si va en el JSON. */
+        subiendoFicha: false,
+        get fichaUrl()    { return this.form.ficha_tecnica_archivo ? this.storageBase + this.form.ficha_tecnica_archivo : ''; },
+        get fichaNombre() { return (this.form.ficha_tecnica_archivo || '').split('/').pop(); },
+
+        async subirFicha(ev) {
+            const file = ev.target.files[0];
+            if (!file || !this.selected) return;
+            this.subiendoFicha = true;
+            const fd = new FormData();
+            fd.append('ficha', file);
+            try {
+                const res = await fetch(this.baseUrl + '/products/' + this.selected.id + '/ficha-tecnica', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                    body: fd
+                });
+                if (!res.ok) throw new Error('http ' + res.status);
+                const data = await res.json();
+                this.form.ficha_tecnica_archivo = data.ficha_tecnica_archivo;
+                // El original tambien, o el boton "Guardar" se creeria que hay
+                // cambios sin guardar solo por haber subido el PDF.
+                this.originalForm = JSON.stringify(this.form);
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'Ficha técnica subida', type: 'success' } }));
+            } catch (e) {
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { msg: 'No se pudo subir el PDF', type: 'error' } }));
+            }
+            this.subiendoFicha = false;
+            ev.target.value = '';
+        },
+
+        async quitarFicha() {
+            if (!this.selected || this.subiendoFicha) return;
+            this.subiendoFicha = true;
+            try {
+                await fetch(this.baseUrl + '/products/' + this.selected.id + '/ficha-tecnica', {
+                    method: 'DELETE', headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' }
+                });
+                this.form.ficha_tecnica_archivo = null;
+                this.originalForm = JSON.stringify(this.form);
+            } catch (e) {}
+            this.subiendoFicha = false;
         },
 
         duplicating: false,
@@ -910,7 +1222,7 @@ document.addEventListener('alpine:init', () => {
     <div x-show="bulkActive" x-cloak class="px-3 py-2 bg-indigo-50 border-b border-indigo-100 flex-shrink-0 flex items-center justify-between gap-2">
         <span class="text-xs font-semibold text-indigo-700 flex-shrink-0" x-text="bulkIds.length + ' seleccionado' + (bulkIds.length!==1?'s':'')"></span>
         <div class="flex items-center gap-1.5">
-            <div class="relative" x-data="{ openBulk: false, view: 'menu', catPick: '', priceMode: 'pct', priceDelta: '' }"
+            <div class="relative" x-data="{ openBulk: false, view: 'menu', catPick: '', priceMode: 'pct', priceDelta: '', etqMode: 'agregar', etqPick: [] }"
                  @click.outside="openBulk=false">
                 <button type="button" @click="openBulk=!openBulk; view='menu'" :disabled="bulkRunning"
                         class="pe-btn pe-btn-sm pe-btn-secondary">
@@ -948,6 +1260,10 @@ document.addEventListener('alpine:init', () => {
                         <span>Ajustar precio</span>
                         <svg class="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </button>
+                    <button type="button" @click="view='etiquetas'; etqPick=[]; etqMode='agregar'" class="w-full flex items-center justify-between gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left">
+                        <span>Etiquetas</span>
+                        <svg class="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
                     <a :href="baseUrl + '/products/export?' + bulkIds.map(id => 'ids[]=' + id).join('&')" @click="openBulk=false"
                        class="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left">Exportar seleccionados (Excel)</a>
                     <div class="border-t border-gray-100 my-1.5"></div>
@@ -964,18 +1280,52 @@ document.addEventListener('alpine:init', () => {
                     <label class="pe-label text-xs">Nueva categoría</label>
                     <select x-model="catPick" class="pe-input text-sm">
                         <option value="">Sin categoría</option>
-                        <template x-for="cat in categories" :key="cat.id">
-                            <optgroup :label="cat.name">
-                                <option :value="cat.id" x-text="cat.name"></option>
-                                <template x-for="sub in (cat.children||[])" :key="sub.id">
-                                    <option :value="sub.id" x-text="'— ' + sub.name"></option>
-                                </template>
+                        @foreach($categories as $c)
+                            <optgroup label="{{ $c->name }}">
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                @foreach($c->children as $s)
+                                    <option value="{{ $s->id }}">— {{ $s->name }}</option>
+                                @endforeach
                             </optgroup>
-                        </template>
+                        @endforeach
                     </select>
                     <button type="button"
                             @click="runBulk('set_category', { category_id: catPick || null }, `Vas a cambiar la categoría de ${bulkIds.length} producto(s).`); openBulk=false"
                             class="pe-btn pe-btn-sm pe-btn-primary w-full mt-3">Aplicar</button>
+                </div>
+
+                {{-- Sub-panel: etiquetas en masa.
+                     Mismo catalogo y mismos colores que la ficha del producto:
+                     lo que se marca aqui es exactamente lo que se marcaria alli. --}}
+                <div x-show="openBulk && view==='etiquetas'" x-cloak
+                     class="absolute right-0 mt-1.5 w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-3 z-50">
+                    <button type="button" @click="view='menu'" class="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-2">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        Volver
+                    </button>
+                    <label class="pe-label text-xs">Qué hacer con las etiquetas</label>
+                    <div class="flex gap-1 mb-2">
+                        <button type="button" @click="etqMode='agregar'" :class="etqMode==='agregar' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-md px-2 py-1 text-xs font-semibold">Añadir</button>
+                        <button type="button" @click="etqMode='quitar'" :class="etqMode==='quitar' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-md px-2 py-1 text-xs font-semibold">Quitar</button>
+                        <button type="button" @click="etqMode='reemplazar'" :class="etqMode==='reemplazar' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-md px-2 py-1 text-xs font-semibold">Reemplazar</button>
+                    </div>
+                    <div class="max-h-56 overflow-y-auto rounded-lg border border-gray-200 p-2">
+                        <div class="grid grid-cols-2 gap-x-2 gap-y-1">
+                            @foreach(\App\Support\EtiquetasProducto::catalogo() as $bk => $be)
+                            <label class="flex items-center gap-1.5 text-[11px] text-gray-700 cursor-pointer">
+                                <input type="checkbox" value="{{ $bk }}" x-model="etqPick" class="rounded">
+                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold truncate"
+                                      style="background:{{ $be['fondo'] }};color:{{ $be['texto_color'] }}">{{ $be['texto'] }}</span>
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-2" x-show="etqMode==='reemplazar' && !etqPick.length">Reemplazar sin marcar ninguna <strong>quita todas</strong> las etiquetas.</p>
+                    <p class="text-[11px] text-gray-400 mt-2" x-show="etqMode!=='reemplazar' && !etqPick.length">Marca al menos una etiqueta.</p>
+                    <button type="button"
+                            :disabled="etqMode!=='reemplazar' && !etqPick.length"
+                            @click="runBulk('etiquetas', { etq_mode: etqMode, etq_claves: etqPick }, `Vas a ${etqMode==='agregar'?'añadir':(etqMode==='quitar'?'quitar':'reemplazar')} etiquetas en ${bulkIds.length} producto(s).`); openBulk=false"
+                            class="pe-btn pe-btn-sm pe-btn-primary w-full mt-3 disabled:opacity-50">Aplicar</button>
                 </div>
 
                 {{-- Sub-panel: ajustar precio --}}
@@ -1207,6 +1557,11 @@ document.addEventListener('alpine:init', () => {
                     @endphp
                     {{ $invTabLabel }}
                 </button>
+                <button @click="openVariants()" x-show="!creating"
+                        :class="tab==='variants' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'"
+                        class="px-3.5 py-3 text-sm whitespace-nowrap transition">
+                    Variantes
+                </button>
                 <button @click="tab='imagenes'" x-show="!creating"
                         :class="tab==='imagenes' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'"
                         class="px-3.5 py-3 text-sm whitespace-nowrap transition">
@@ -1385,21 +1740,23 @@ document.addEventListener('alpine:init', () => {
                                     {{ $infoExtra['cat_lbl'] }}
                                     <a href="{{ route('categories.index') }}" class="text-indigo-500 text-[10px] hover:underline font-normal">+ gestionar</a>
                                 </label>
+                                {{-- Las opciones van pintadas por Blade: con plantillas de Alpine
+                                     dentro del <select>, x-model fijaba el valor antes de que
+                                     existieran las opciones y el campo salia en blanco. --}}
                                 <select class="pe-input" x-model="form.category_id">
                                     <option value="">Sin categoría</option>
-                                    <template x-for="c in categories" :key="c.id">
-                                        <template x-if="c.children && c.children.length > 0">
-                                            <optgroup :label="c.name">
-                                                <option :value="String(c.id)" x-text="c.name"></option>
-                                                <template x-for="s in c.children" :key="s.id">
-                                                    <option :value="String(s.id)" x-text="'  └ ' + s.name"></option>
-                                                </template>
+                                    @foreach($categories as $c)
+                                        @if($c->children->isNotEmpty())
+                                            <optgroup label="{{ $c->name }}">
+                                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                                @foreach($c->children as $s)
+                                                    <option value="{{ $s->id }}">&nbsp;&nbsp;└ {{ $s->name }}</option>
+                                                @endforeach
                                             </optgroup>
-                                        </template>
-                                        <template x-if="!c.children || c.children.length === 0">
-                                            <option :value="String(c.id)" x-text="c.name"></option>
-                                        </template>
-                                    </template>
+                                        @else
+                                            <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                        @endif
+                                    @endforeach
                                 </select>
                                 <p class="pe-hint-ok">&#10003; Viene del módulo de categorías</p>
                             </div>
@@ -1465,6 +1822,92 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     </div>
 
+                    {{-- ETIQUETAS DEL PRODUCTO
+                         Se guardan como JSON en un campo oculto (`form.etiquetas`)
+                         porque son una lista de casillas MAS una etiqueta propia con
+                         sus colores: mandarlo como estructura evita inventar veinte
+                         nombres de input. El servidor lo sanea con EtiquetasProducto. --}}
+                    <div class="pe-card p-5" x-data="etiquetasProducto()">
+                        <p class="pe-section-title mb-1">Etiquetas del producto</p>
+                        <p class="pe-hint mb-3">Distintivos comerciales que aparecen sobre la foto. En el catálogo se muestran <strong>máximo {{ \App\Support\EtiquetasProducto::MAX_EN_CARD }}</strong> (las de mayor prioridad); en la ficha se ven todas.</p>
+
+                        <div class="flex flex-wrap gap-4 mb-3">
+                            <label class="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                                <input type="checkbox" x-model="etq.card" @change="sync()"> Mostrar en el catálogo
+                            </label>
+                            <label class="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                                <input type="checkbox" x-model="etq.ficha" @change="sync()"> Mostrar en la ficha
+                            </label>
+                        </div>
+
+                        {{-- Vista previa: lo que se vera en la tarjeta, ya con la
+                             prioridad aplicada. Sin esto el negocio no sabe cual de
+                             sus etiquetas gana hasta que abre la tienda. --}}
+                        <div class="mb-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Así se verá en el catálogo</p>
+                            <div class="flex flex-wrap gap-1.5 min-h-[26px] items-center">
+                                <template x-for="e in vistaPrevia" :key="e.clave">
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                          :style="'background:'+e.fondo+';color:'+e.texto"
+                                          x-text="e.etiqueta"></span>
+                                </template>
+                                <span x-show="!vistaPrevia.length" class="text-xs text-gray-400">Sin etiquetas: no se mostrará nada.</span>
+                            </div>
+                        </div>
+
+                        <div class="max-h-56 overflow-y-auto rounded-lg border border-gray-200 p-3">
+                            <div class="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+                                @foreach(\App\Support\EtiquetasProducto::catalogo() as $clave => $e)
+                                <label class="flex items-center gap-2 text-xs text-gray-700">
+                                    <input type="checkbox" value="{{ $clave }}"
+                                           :checked="etq.claves.includes('{{ $clave }}')"
+                                           @change="toggle('{{ $clave }}')">
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold"
+                                          style="background:{{ $e['fondo'] }};color:{{ $e['texto_color'] }}">{{ $e['texto'] }}</span>
+                                </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Etiqueta propia: para lo que no cubre el catálogo. --}}
+                        <details class="mt-3 rounded-lg border border-gray-200 p-3">
+                            <summary class="cursor-pointer text-xs font-semibold text-gray-600">Etiqueta personalizada</summary>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                <label class="text-xs font-semibold text-gray-600">Texto
+                                    <input type="text" maxlength="28" x-model="etq.personalizada.texto" @input="sync()"
+                                           placeholder="Ej. Pago en cuotas" class="mt-1 w-full rounded border-gray-300 text-sm">
+                                </label>
+                                <label class="text-xs font-semibold text-gray-600">Posición
+                                    <select x-model="etq.personalizada.posicion" @change="sync()" class="mt-1 w-full rounded border-gray-300 text-sm">
+                                        @foreach(\App\Support\EtiquetasProducto::POSICIONES as $pk => $pl)
+                                        <option value="{{ $pk }}">{{ $pl }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label class="text-xs font-semibold text-gray-600">Color de fondo
+                                    <input type="color" x-model="etq.personalizada.fondo" @input="sync()" class="mt-1 h-9 w-full rounded border-gray-300">
+                                </label>
+                                <label class="text-xs font-semibold text-gray-600">Color del texto
+                                    <input type="color" x-model="etq.personalizada.texto_color" @input="sync()" class="mt-1 h-9 w-full rounded border-gray-300">
+                                </label>
+                                <div class="flex flex-wrap items-center gap-4 sm:col-span-2">
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                                        <input type="checkbox" x-model="etq.personalizada.card" @change="sync()"> En catálogo
+                                    </label>
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                                        <input type="checkbox" x-model="etq.personalizada.ficha" @change="sync()"> En ficha
+                                    </label>
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                                        Prioridad
+                                        <input type="number" min="1" max="999" x-model.number="etq.personalizada.prioridad" @input="sync()"
+                                               class="w-20 rounded border-gray-300 text-sm" title="Menor número = se muestra antes">
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="pe-hint mt-2">Sin texto no se crea ninguna etiqueta. La prioridad decide cuál gana cuando hay más de {{ \App\Support\EtiquetasProducto::MAX_EN_CARD }}.</p>
+                        </details>
+                    </div>
+
                     {{-- DESCRIPCIÓN PÚBLICA --}}
                     <div class="pe-card p-5">
                         <p class="pe-section-title mb-3">{{ $infoExtra['desc_lbl'] }}</p>
@@ -1494,6 +1937,79 @@ document.addEventListener('alpine:init', () => {
                                  @paste.prevent="pegarSinFormato($event)"></div>
                         </div>
                         <p class="pe-hint">Aparece en la página pública del catálogo. Puedes resaltar texto y usar listas.</p>
+                    </div>
+
+                    {{-- DESTACADOS — hasta 3 razones de compra en la ficha --}}
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                            Destacados en la ficha
+                        </p>
+                        <template x-for="(d, i) in form.destacados" :key="i">
+                            <div class="flex gap-2 mb-2">
+                                <select x-model="d.i" class="pe-input w-[104px] flex-none">
+                                    <option value="escudo">Garantía</option>
+                                    <option value="sol">Solar</option>
+                                    <option value="sensor">Sensor</option>
+                                    <option value="hoja">Ahorro</option>
+                                    <option value="rayo">Potencia</option>
+                                    <option value="reloj">Duración</option>
+                                </select>
+                                <div class="flex-1 min-w-0 space-y-1.5">
+                                    <input type="text" x-model="d.t" class="pe-input" maxlength="30" placeholder="Luz tricolor">
+                                    <input type="text" x-model="d.d" class="pe-input" maxlength="45" placeholder="3000K / 4000K / 7200K">
+                                </div>
+                                <button type="button" class="pe-btn pe-btn-ghost flex-none self-start" @click="form.destacados.splice(i,1)" aria-label="Quitar">×</button>
+                            </div>
+                        </template>
+                        <button type="button" class="pe-btn pe-btn-soft w-full"
+                                x-show="form.destacados.length < 3"
+                                @click="form.destacados.push({i:'escudo',t:'',d:''})">+ Agregar destacado</button>
+                        <p class="pe-hint">Salen bajo el título del producto, con su icono. Máximo 3.</p>
+                    </div>
+
+                    {{-- FICHA TECNICA — PDF propio o enlace del proveedor --}}
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            Ficha técnica
+                        </p>
+
+                        {{-- Con ficha cargada: se enseña cual es y como quitarla.
+                             Sin ella: el boton de subir. --}}
+                        <template x-if="form.ficha_tecnica_archivo">
+                            <div class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                <svg class="w-4 h-4 flex-none text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6.414A1 1 0 0017.707 6L14 2.293A1 1 0 0013.293 2H4z"/></svg>
+                                <a :href="fichaUrl" target="_blank" rel="noopener"
+                                   class="flex-1 min-w-0 truncate text-[12.5px] text-gray-700 hover:underline"
+                                   x-text="fichaNombre">PDF</a>
+                                <button type="button" class="text-[11.5px] text-red-600 hover:underline"
+                                        @click="quitarFicha()" :disabled="subiendoFicha">Quitar</button>
+                            </div>
+                        </template>
+
+                        <template x-if="!form.ficha_tecnica_archivo">
+                            <div>
+                                <input type="file" accept="application/pdf" class="hidden" x-ref="fichaInput"
+                                       @change="subirFicha($event)">
+                                {{-- El producto se crea primero: sin id no hay a
+                                     donde subir el archivo. --}}
+                                <button type="button" class="pe-btn pe-btn-soft w-full"
+                                        @click="$refs.fichaInput.click()"
+                                        :disabled="subiendoFicha || creating">
+                                    <span x-show="!subiendoFicha">Subir PDF</span>
+                                    <span x-show="subiendoFicha" x-cloak>Subiendo...</span>
+                                </button>
+                                <p class="pe-hint" x-show="creating" x-cloak>Guarda el producto para poder adjuntar el PDF.</p>
+                            </div>
+                        </template>
+
+                        <label class="block mt-3">
+                            <span class="pe-label">O enlace a la ficha del proveedor</span>
+                            <input type="url" x-model="form.ficha_tecnica_url" class="pe-input"
+                                   placeholder="https://proveedor.com/ficha.pdf">
+                        </label>
+                        <p class="pe-hint">Aparece como botón en la página del producto. Si subes un PDF, manda ese.</p>
                     </div>
 
                     {{-- NOTAS INTERNAS — menor peso visual --}}
@@ -2252,6 +2768,9 @@ document.addEventListener('alpine:init', () => {
 
                 </div>
 
+                {{-- TAB: VARIANTES REALES --}}
+                @include('catalog.products.partials.variants')
+
                 {{-- TAB: IMAGENES --}}
                 <div x-show="tab==='imagenes'" x-cloak class="p-6 max-w-5xl space-y-4"
                      x-data="{
@@ -2450,7 +2969,7 @@ document.addEventListener('alpine:init', () => {
                         </svg>
                         <span x-text="duplicating ? 'Duplicando...' : 'Duplicar'"></span>
                     </button>
-                    <span x-show="hasChanges" x-cloak class="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                    <span x-show="tab==='variants' ? variantDirty : hasChanges" x-cloak class="flex items-center gap-1.5 text-xs font-medium text-amber-600">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                         Cambios sin guardar
                     </span>
@@ -2459,17 +2978,17 @@ document.addEventListener('alpine:init', () => {
                     <button @click="selected=null; creating=false" class="pe-btn pe-btn-secondary">
                         Cancelar
                     </button>
-                    <button @click="save()"
-                            :disabled="saving || !form.name || !form.price"
+                    <button @click="tab==='variants' ? saveVariantMatrix() : save()"
+                            :disabled="tab==='variants' ? variantState.saving : (saving || !String(form.name || '').trim())"
                             class="pe-btn pe-btn-primary">
-                        <svg x-show="saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <svg x-show="tab==='variants' ? variantState.saving : saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                         </svg>
-                        <svg x-show="!saving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg x-show="tab==='variants' ? !variantState.saving : !saving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span x-text="saving ? 'Guardando...' : (creating ? 'Crear producto' : 'Guardar cambios')"></span>
+                        <span x-text="tab==='variants' ? (variantState.saving ? 'Guardando variantes...' : 'Guardar variantes') : (saving ? 'Guardando...' : (creating ? 'Crear producto' : 'Guardar cambios'))"></span>
                     </button>
                 </div>
             </div>

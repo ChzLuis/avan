@@ -132,7 +132,30 @@
 
          startEditValue(v) {
              this.editingValue = v.id;
-             this.editValueForm = { label: v.label, code: v.code, is_active: v.is_active };
+             this.editValueForm = { label: v.label, code: v.code, description: v.description || '', is_active: v.is_active };
+         },
+
+         // Imagen del valor (logo de marca). Ruta relativa a storage.
+         subiendo: null,
+         imgUrl(p) { return p && !/^(https?:)?\/\//.test(p) ? '{{ asset('storage') }}/' + p.replace(/^storage\//, '') : p; },
+         async subirImagenValor(v, ev) {
+             const file = ev.target.files && ev.target.files[0];
+             if (!file) return;
+             const fd = new FormData(); fd.append('image', file);
+             this.subiendo = v.id;
+             const res = await fetch(this.baseUrl + '/' + this.selected.id + '/values/' + v.id + '/image', {
+                 method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ $csrf }}', 'Accept': 'application/json' }, body: fd
+             });
+             this.subiendo = null; ev.target.value = '';
+             if (res.ok) { const d = await res.json(); v.image_url = d.image_url; }
+             else { const d = await res.json().catch(() => ({})); alert(d.message || 'No se pudo subir la imagen'); }
+         },
+         async quitarImagenValor(v) {
+             const fd = new FormData(); fd.append('remove', '1');
+             const res = await fetch(this.baseUrl + '/' + this.selected.id + '/values/' + v.id + '/image', {
+                 method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ $csrf }}', 'Accept': 'application/json' }, body: fd
+             });
+             if (res.ok) v.image_url = null;
          },
 
          async saveEditValue(v) {
@@ -444,6 +467,7 @@
                             <div>
                                 <p class="text-sm font-semibold text-gray-700">Valores del catálogo</p>
                                 <p class="text-xs text-gray-400" x-text="values.length + ' valores registrados'"></p>
+                                <p class="text-xs text-indigo-500 mt-1" x-show="selected?.type === 'brand'">Las marcas con logo salen en el megamenú, en la banda de marcas de la portada, en la ficha del producto y en la página Marcas. Edita un valor (lápiz) para subir su logo.</p>
                             </div>
                             <button @click="addingValue=true; editingValue=null"
                                     x-show="!addingValue"
@@ -486,11 +510,14 @@
                                     {{-- Vista normal --}}
                                     <div x-show="editingValue !== v.id"
                                          class="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all group">
-                                        <div class="w-2 h-2 rounded-full flex-shrink-0"
-                                             :style="'background:' + (selected?.color || '#6366f1')"></div>
+                                        <div class="w-10 h-10 rounded-lg border border-gray-200 bg-white grid place-items-center overflow-hidden flex-shrink-0">
+                                            <img x-show="v.image_url" :src="imgUrl(v.image_url)" :alt="v.label" class="max-w-full max-h-full object-contain p-0.5">
+                                            <span x-show="!v.image_url" class="w-2 h-2 rounded-full" :style="'background:' + (selected?.color || '#6366f1')"></span>
+                                        </div>
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-gray-800" x-text="v.label"></p>
                                             <p class="text-xs text-gray-400 font-mono" x-show="v.code" x-text="v.code"></p>
+                                            <p class="text-xs text-gray-400 truncate" x-show="v.description" x-text="v.description"></p>
                                         </div>
                                         <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button @click="startEditValue(v)"
@@ -520,6 +547,20 @@
                                         <div class="grid grid-cols-2 gap-2">
                                             <input type="text" x-model="editValueForm.label" class="input text-sm" placeholder="Nombre">
                                             <input type="text" x-model="editValueForm.code" class="input text-sm" placeholder="Código">
+                                            <input type="text" x-model="editValueForm.description" maxlength="300" class="input text-sm col-span-2" placeholder="Descripción corta (se muestra en la página de marcas)">
+                                        </div>
+                                        <div class="flex items-center gap-3 text-xs">
+                                            <div class="w-12 h-12 rounded-lg border border-gray-200 bg-white grid place-items-center overflow-hidden flex-shrink-0">
+                                                <img x-show="v.image_url" :src="imgUrl(v.image_url)" class="max-w-full max-h-full object-contain p-0.5">
+                                                <span x-show="!v.image_url" class="text-gray-300">Sin logo</span>
+                                            </div>
+                                            <label class="btn-secondary text-xs px-3 py-1.5 cursor-pointer">
+                                                <span x-text="v.image_url ? 'Cambiar logo' : 'Subir logo'"></span>
+                                                <input type="file" accept="image/*" class="hidden" @change="subirImagenValor(v, $event)">
+                                            </label>
+                                            <button type="button" x-show="v.image_url" @click="quitarImagenValor(v)" class="text-red-500 hover:underline">Quitar</button>
+                                            <span x-show="subiendo === v.id" class="text-gray-400">Subiendo…</span>
+                                            <span class="text-gray-400">PNG con fondo transparente o blanco, máx. 4 MB.</span>
                                         </div>
                                         <div class="flex gap-2">
                                             <button @click="saveEditValue(v)" class="btn-primary text-xs px-3 py-1.5">Guardar</button>

@@ -91,6 +91,32 @@ class CatalogListController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * Logo o imagen de un valor (marcas, sobre todo). Se procesa con el perfil
+     * `logo` y se guarda en marcas/{proyecto}. Con `remove=1` se quita.
+     */
+    public function imagenValor(Request $request, CatalogList $catalog, CatalogValue $value)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+        $this->authorizeForProject($catalog, $project);
+        abort_unless($value->catalog_list_id === $catalog->id, 404);
+
+        if ($request->boolean('remove')) {
+            $value->update(['image_url' => null]);
+            return response()->json(['ok' => true, 'image_url' => null]);
+        }
+        $request->validate(['image' => 'required|image|max:4096']);
+        try {
+            $resultado = app(\App\Support\Imagen\ProcesadorImagenes::class)
+                ->procesar($request->file('image'), "marcas/{$project->id}", 'logo');
+        } catch (\App\Support\Imagen\ImagenNoProcesable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+        $value->update(['image_url' => $resultado->principal]);
+        return response()->json(['ok' => true, 'image_url' => $resultado->principal, 'url' => $resultado->urlPrincipal()]);
+    }
+
     private function catalogRules(): array
     {
         return [
@@ -105,9 +131,10 @@ class CatalogListController extends Controller
     private function valueRules(): array
     {
         return [
-            'label'     => 'required|string|max:100',
-            'code'      => 'nullable|string|max:50',
-            'is_active' => 'boolean',
+            'label'       => 'required|string|max:100',
+            'code'        => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:300',
+            'is_active'   => 'boolean',
         ];
     }
 

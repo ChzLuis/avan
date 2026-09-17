@@ -52,7 +52,9 @@ class ImageVariants
         }
 
         $origen  = public_path(ltrim($ruta, '/'));
-        $destino = preg_replace('/\.(png|jpe?g)$/i', '-fav128.png', $origen);
+        // Sufijo propio de esta generacion: cambiarlo invalida los favicons
+        // viejos sin tener que borrarlos a mano.
+        $destino = preg_replace('/\.(png|jpe?g)$/i', '-favicon128.png', $origen);
 
         if (! is_file($origen)) {
             return $url;
@@ -75,6 +77,18 @@ class ImageVariants
             // escale sea solo el dibujo.
             [$ox, $oy, $w, $h] = self::recorteUtil($im);
 
+            // Un logo "icono + texto" (muy apaisado o muy vertical) es ilegible
+            // a 16 px: el texto se vuelve ruido y encoge el icono. Se parte por
+            // los huecos en blanco y se queda el trozo mas cuadrado, que es la
+            // marca.
+            [$ox, $oy, $w, $h] = self::soloLaMarca($im, $ox, $oy, $w, $h);
+
+            // A 16 px el detalle fino no existe: un sello con texto alrededor o
+            // una ilustracion con aire se quedan en una mancha. Si el nucleo
+            // central concentra la tinta, se hace zoom ahi; si la tinta esta
+            // repartida (un disco lleno, una M compacta), se deja entera.
+            [$ox, $oy, $w, $h] = self::nucleo($im, $ox, $oy, $w, $h);
+
             $lado = max($w, $h) ?: 1;
             $lienzo = 128;
             // 4% de aire: pegado al borde el icono se ve apretado y algunos
@@ -96,7 +110,173 @@ class ImageVariants
             imagedestroy($out);
         }
 
-        return preg_replace('/\.(png|jpe?g)$/i', '-fav128.png', $url);
+        return preg_replace('/\.(png|jpe?g)$/i', '-favicon128.png', $url);
+    }
+
+    /**
+     * Si el logo es claramente apaisado o vertical, busca el trozo mas cuadrado
+     * separado por huecos de fondo: la marca. Si no hay huecos claros o el
+     * trozo es minusculo, devuelve la caja tal cual.
+     *
+     * @return array{0:int,1:int,2:int,3:int}
+     */
+    private static function soloLaMarca($im, int $ox, int $oy, int $w, int $h): array
+    {
+        $proporcion = $w / max(1, $h);
+        if ($proporcion < 1.45 && $proporcion > 0.69) {
+            return [$ox, $oy, $w, $h]; // ya es razonablemente cuadrado
+        }
+
+        $horizontal = $proporcion >= 1.45;
+        $largo = $horizontal ? $w : $h;
+        $paso = max(1, (int) floor($largo / 400));
+
+        // Ocupacion por columna (o por fila): que franjas tienen dibujo.
+        $ocupada = [];
+        for ($i = 0; $i < $largo; $i += $paso) {
+            $hay = false;
+            $corto = $horizontal ? $h : $w;
+            for ($j = 0; $j < $corto; $j += max(1, (int) floor($corto / 80))) {
+                $c = imagecolorat($im, $horizontal ? $ox + $i : $ox + $j, $horizontal ? $oy + $j : $oy + $i);
+                if ((($c >> 24) & 0x7F) > 100) continue;
+                $r = ($c >> 16) & 0xFF; $g = ($c >> 8) & 0xFF; $b = $c & 0xFF;
+                if ($r > 244 && $g > 244 && $b > 244) continue;
+                $hay = true; break;
+            }
+            $ocupada[$i] = $hay;
+        }
+
+        // Segmentos separados por huecos de al menos el 2.5% del largo.
+        $hueco = max(2, (int) round($largo * 0.025 / $paso));
+        $segmentos = [];
+        $inicio = null; $vacias = 0;
+        foreach ($ocupada as $i => $hay) {
+            if ($hay) {
+                if ($inicio === null) $inicio = $i;
+                $fin = $i; $vacias = 0;
+            } elseif ($inicio !== null && ++$vacias >= $hueco) {
+                $segmentos[] = [$inicio, $fin]; $inicio = null;
+            }
+        }
+        if ($inicio !== null) $segmentos[] = [$inicio, $fin];
+
+        if (count($segmentos) < 2) {
+            return [$ox, $oy, $w, $h]; // no hay icono separable
+        }
+
+        // Candidatos: trozos de tamano digno y forma razonable. Entre ellos
+        // manda la DENSIDAD de tinta: un icono es un bloque solido, un parrafo
+        // de texto es casi todo aire, aunque su caja tambien salga cuadrada
+        // (fue exactamente lo que paso con "Market / Huacho / Express").
+        $corto = $horizontal ? $h : $w;
+        $mejor = null; $mejorDensidad = -1;
+        foreach ($segmentos as [$a, $b]) {
+            $tam = $b - $a + $paso;
+            if ($tam < $largo * 0.10) continue; // una tilde o un punto no es la marca
+            if ($tam / $corto > 3.5 || $corto / $tam > 3.5) continue; // franja: no es un icono
+
+            $caja = $horizontal ? [$ox + $a, $oy, $tam, $h] : [$ox, $oy + $a, $w, $tam];
+            $caja = self::recorteUtilEn($im, ...$caja);
+            $densidad = self::densidad($im, ...$caja);
+            if ($densidad > $mejorDensidad) { $mejorDensidad = $densidad; $mejor = $caja; }
+        }
+        if (! $mejor) {
+            return [$ox, $oy, $w, $h];
+        }
+
+        return $mejor;
+
+    }
+
+    /**
+     * Zoom al nucleo del logo: la ventana central (62% del lado) alrededor del
+     * centroide de tinta. Solo se aplica si esa ventana concentra al menos el
+     * 45% de la tinta total: asi un sello con anillo de texto se acerca a su
+     * emblema, pero un logo compacto no pierde nada.
+     *
+     * @return array{0:int,1:int,2:int,3:int}
+     */
+    private static function nucleo($im, int $ox, int $oy, int $w, int $h): array
+    {
+        $paso = max(1, (int) floor(min($w, $h) / 90));
+        $puntos = [];
+        $sx = 0; $sy = 0;
+        for ($y = $oy; $y < $oy + $h; $y += $paso) {
+            for ($x = $ox; $x < $ox + $w; $x += $paso) {
+                $c = imagecolorat($im, $x, $y);
+                if ((($c >> 24) & 0x7F) > 100) continue;
+                $r = ($c >> 16) & 0xFF; $g = ($c >> 8) & 0xFF; $b = $c & 0xFF;
+                if ($r > 244 && $g > 244 && $b > 244) continue;
+                $puntos[] = [$x, $y];
+                $sx += $x; $sy += $y;
+            }
+        }
+        if (count($puntos) < 40) {
+            return [$ox, $oy, $w, $h];
+        }
+
+        $cx = (int) round($sx / count($puntos));
+        $cy = (int) round($sy / count($puntos));
+        $vw = (int) round($w * 0.62);
+        $vh = (int) round($h * 0.62);
+        $vx = max($ox, min($ox + $w - $vw, $cx - intdiv($vw, 2)));
+        $vy = max($oy, min($oy + $h - $vh, $cy - intdiv($vh, 2)));
+
+        $dentro = 0;
+        foreach ($puntos as [$x, $y]) {
+            if ($x >= $vx && $x < $vx + $vw && $y >= $vy && $y < $vy + $vh) $dentro++;
+        }
+
+        if ($dentro / count($puntos) < 0.45) {
+            return [$ox, $oy, $w, $h]; // la tinta esta repartida: el logo ES asi
+        }
+
+        return self::recorteUtilEn($im, $vx, $vy, $vw, $vh);
+    }
+
+    /** Parte de pixeles con tinta dentro de una caja, muestreada. */
+    private static function densidad($im, int $ox, int $oy, int $w, int $h): float
+    {
+        $paso = max(1, (int) floor(min($w, $h) / 60));
+        $tinta = 0; $total = 0;
+        for ($y = $oy; $y < $oy + $h; $y += $paso) {
+            for ($x = $ox; $x < $ox + $w; $x += $paso) {
+                $total++;
+                $c = imagecolorat($im, $x, $y);
+                if ((($c >> 24) & 0x7F) > 100) continue;
+                $r = ($c >> 16) & 0xFF; $g = ($c >> 8) & 0xFF; $b = $c & 0xFF;
+                if ($r > 244 && $g > 244 && $b > 244) continue;
+                $tinta++;
+            }
+        }
+
+        return $total ? $tinta / $total : 0.0;
+    }
+
+    /** recorteUtil acotado a una subregion de la imagen. */
+    private static function recorteUtilEn($im, int $ox, int $oy, int $w, int $h): array
+    {
+        $paso = max(1, (int) floor(min($w, $h) / 150));
+        $x1 = $ox + $w; $y1 = $oy + $h; $x2 = -1; $y2 = -1;
+
+        for ($y = $oy; $y < $oy + $h; $y += $paso) {
+            for ($x = $ox; $x < $ox + $w; $x += $paso) {
+                $c = imagecolorat($im, $x, $y);
+                if ((($c >> 24) & 0x7F) > 100) continue;
+                $r = ($c >> 16) & 0xFF; $g = ($c >> 8) & 0xFF; $b = $c & 0xFF;
+                if ($r > 244 && $g > 244 && $b > 244) continue;
+                if ($x < $x1) { $x1 = $x; }
+                if ($y < $y1) { $y1 = $y; }
+                if ($x > $x2) { $x2 = $x; }
+                if ($y > $y2) { $y2 = $y; }
+            }
+        }
+
+        if ($x2 < 0) {
+            return [$ox, $oy, $w, $h];
+        }
+
+        return [$x1, $y1, $x2 - $x1 + 1, $y2 - $y1 + 1];
     }
 
     /**
