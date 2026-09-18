@@ -473,6 +473,29 @@ de los botones de WhatsApp en pedidos; (4) retirar `ExternalRequest`/
 `InternalRequest`, `projects/create.blade.php` (extends roto) y el Diseño
 clasico; (5) `CouponController` propio de Tienda (hoy en SettingsController).
 
+### DESPLEGADO A ARIN (2026-09-17, 21:43 hora local del VPS) — ventana de 11 s
+
+`scripts/deploy_modulos.py --aplicar --acepto-deriva --excluir resources/views/auth/portal-forgot-password.blade.php`.
+Respaldo completo en `_deploy_backups/20260917_214320` (21 MB; la orden de
+revertir la imprime el script). 750 archivos subidos (664 nuevos), 514
+borrados, `composer dump-autoload -o` (6311 → 6026 clases), 5 migraciones
+(entre ellas credenciales Meta y retiro de tablas de sorteos), sin cache de
+rutas ni de config en ARIN. Salud: portada, 8 tiendas por slug, 5 dominios
+propios, Constructor, bixosales, bixocrm = 200; webhook de Meta = 403 (sin
+token, correcto); `/c/x` = 404 (token invalido, correcto); 0 errores nuevos
+en el log. Las 2 migraciones "pendientes" desde el 5 y 6 de septiembre se
+marcaron como corridas: sus columnas ya existian (creadas a mano).
+
+**Lo que ARIN tiene y el repo no (decision del usuario, 2026-09-17):** la rama
+`redesign/mega-hogar` (worktree `avan-mega`, 29 commits, ultimo 28-ago) trae
+Cobros (cuotas), el estudio de QR y el rediseño de logins. En ARIN estan sus
+archivos de Cobros **sin rutas y con 0 cuotas** (no en uso) y la pantalla
+`auth/portal-forgot-password` redisenada (se dejo la de ARIN). Fusionar
+`redesign/mega-hogar` da 13 conflictos (11 en `layouts/app.blade.php`):
+es el siguiente paso, y Cobros debe entrar en `Modules/Finanzas`. Hasta
+entonces, `deploy_modulos.py --preflight` seguira listando 20 archivos "solo
+en ARIN" (los de Cobros + migraciones que solo corrieron alla): no tocarlos.
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia
