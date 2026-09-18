@@ -261,4 +261,23 @@ class BotEskalaMetaTest extends TestCase
         $this->assertStringContainsString('https://arindg.com/ferreteria-demo', $todo[0]['caption']);
         $this->assertStringNotContainsString('btn:', json_encode($todo));
     }
+    public function test_una_duda_en_medio_de_la_pregunta_se_atiende_y_se_retoma_la_pregunta(): void
+    {
+        $this->meta($this->texto('hola'));
+        $this->meta($this->toque('btn:quiero'));
+        $n = count($this->enviados());
+        // Pregunta por el dominio en vez de responder que negocio tiene.
+        $this->meta($this->texto('ya tengo un dominio, lo puedo usar? es de cpanel'));
+        $env = $this->nuevos($n);
+
+        $this->assertGreaterThanOrEqual(2, count($env));
+        $this->assertStringContainsString('asesor te la responde', $this->cuerpo($env[0]), 'Sin IA licenciada, la duda va al asesor (no se ignora)');
+        $this->assertStringContainsString('fotos listas', $this->cuerpo(end($env)), 'Y se retoma la pregunta pendiente');
+
+        // Ahora si responde: sigue el cierre.
+        $n = count($this->enviados());
+        $this->meta($this->texto('sí, tengo todo listo'));
+        $env = $this->nuevos($n);
+        $this->assertStringContainsString('nombre de tu negocio', $this->cuerpo($env[0]));
+    }
 }

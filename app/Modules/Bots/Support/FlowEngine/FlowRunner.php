@@ -534,8 +534,15 @@ class FlowRunner
                         $vars['_estado_ia'] ?? 'MENU', $vars['_datos_ia'] ?? []);
 
                 if (!empty($r['sin_ia'])) {
-                    // Sin IA disponible: no dejamos al cliente sin respuesta.
+                    // Sin IA disponible: no dejamos al cliente sin respuesta, y si el
+                    // bloque tiene `siguiente` se continua (retomar la pregunta pendiente)
+                    // en vez de quedarse esperando una charla que la IA no va a dar.
                     $out['respuestas'][] = $bloque['fallback'] ?? 'En un momento te atiende un asesor. 🙏';
+                    if (! empty($bloque['siguiente'])) {
+                        $out['siguiente'] = $bloque['siguiente'];
+                        $out['consumir_mensaje'] = true;
+                        break;
+                    }
                 } else {
                     // La IA responde en VARIOS globos cortos (como una persona en
                     // WhatsApp). Se envían por separado; la lista va con el último.
@@ -838,7 +845,10 @@ class FlowRunner
                         $vars['_ultima_pregunta_bot'] = mb_substr($this->interpolar($bloque['texto'], $vars), 0, 200);
                     }
                     $out['esperar'] = true;
-                    if (! empty($bloque['confirmacion']) || ! empty($bloque['negacion'])) {
+                    // Queda anotado que la pregunta YA se hizo: el resolutor la
+                    // vuelve a hacer si el turno llega sin ese aviso (p. ej. tras
+                    // desviarse a una duda) en vez de tomar el mensaje como respuesta.
+                    if (! empty($bloque['texto'])) {
                         $vars['_pregunta_' . ($bloque['_id'] ?? '')] = true;
                     }
                     // El bloque hizo una pregunta de si/no: el proximo turno se
@@ -1972,10 +1982,19 @@ class FlowRunner
 
         // INTENCION en modo escucha: clasificar el mensaje y saltar a su rama.
         if ($tipo === 'intencion') {
+            $idBloque = $bloque['_id'] ?? '';
             if ($btn = $this->destinoBoton($mensaje)) {
+                unset($vars['_pregunta_' . $idBloque]);
                 $vars['_msj_consumido'] = true;
                 return $btn;
             }
+            // Llego el turno pero la pregunta nunca se hizo (se volvio aqui tras una
+            // duda o un desvio): primero se pregunta; el mensaje NO es la respuesta.
+            if (! empty($bloque['esperar']) && ! empty($bloque['texto']) && empty($vars['_pregunta_' . $idBloque])
+                && empty($bloque['confirmacion']) && empty($bloque['negacion'])) {
+                return $idBloque;
+            }
+            unset($vars['_pregunta_' . $idBloque]);
             return $this->enrutarIntencion($mensaje, $bloque['rutas'] ?? [], $vars, $bloque['siguiente'] ?? null);
         }
 
