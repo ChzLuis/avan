@@ -821,7 +821,9 @@ class FlowRunner
                         }
                     }
                     if (! empty($bloque['texto'])) {
-                        $out['respuestas'][] = $this->interpolar($bloque['texto'], $vars);
+                        foreach ($this->preguntaIntencion($bloque, $vars) as $r) {
+                            $out['respuestas'][] = $r;
+                        }
                         $vars['_ultima_pregunta_bot'] = mb_substr($this->interpolar($bloque['texto'], $vars), 0, 200);
                     }
                     $out['esperar'] = true;
@@ -839,6 +841,10 @@ class FlowRunner
                 // Turno de vuelta de una pregunta si/no.
                 if (! empty($bloque['confirmacion']) || ! empty($bloque['negacion'])) {
                     unset($vars['_pregunta_' . ($bloque['_id'] ?? '')]);
+                    if ($btn = $this->destinoBoton($mensaje)) {
+                        $out['siguiente'] = $btn;
+                        break;
+                    }
                     $resp = $this->siONo($mensaje);
                     if ($resp === true && ! empty($bloque['confirmacion'])) {
                         $out['siguiente'] = $bloque['confirmacion'];
@@ -1955,6 +1961,10 @@ class FlowRunner
 
         // INTENCION en modo escucha: clasificar el mensaje y saltar a su rama.
         if ($tipo === 'intencion') {
+            if ($btn = $this->destinoBoton($mensaje)) {
+                $vars['_msj_consumido'] = true;
+                return $btn;
+            }
             return $this->enrutarIntencion($mensaje, $bloque['rutas'] ?? [], $vars, $bloque['siguiente'] ?? null);
         }
 
@@ -2432,6 +2442,63 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
             if (!empty($bloque['fallback'])) return [$bloque['fallback']];
         }
         return [];
+    }
+
+    /**
+     * Pregunta de un bloque `intencion` aprovechando Meta: si trae `enlace`
+     * sale un boton que abre la URL; si trae `botones` (hasta 3, con
+     * `siguiente`) salen atajos nativos. El cliente sigue pudiendo escribir
+     * libremente: el texto lo clasifica la IA como siempre. Por Baileys todo
+     * vuelve a texto plano (ver `fallback`).
+     */
+    private function preguntaIntencion(array $bloque, array $vars): array
+    {
+        $texto = $this->interpolar($bloque['texto'], $vars);
+        $botones = [];
+        foreach (array_slice(array_values($bloque['botones'] ?? []), 0, 3) as $b) {
+            $titulo = mb_substr(trim((string) ($b['titulo'] ?? '')), 0, 20);
+            $destino = (string) ($b['siguiente'] ?? '');
+            if ($titulo === '' || ! isset($this->flow['bloques'][$destino])) {
+                continue;
+            }
+            $botones[] = ['id' => 'btn:' . $destino, 'titulo' => $titulo];
+        }
+        $enlace = $bloque['enlace'] ?? null;
+        $salida = [];
+        if (! empty($enlace['url'])) {
+            $url = $this->interpolar($enlace['url'], $vars);
+            $salida[] = [
+                'tipo'     => 'cta_url',
+                'cuerpo'   => $texto,
+                'url'      => $url,
+                'boton'    => $enlace['boton'] ?? 'Abrir',
+                'titulo'   => $enlace['titulo'] ?? null,
+                'fallback' => $texto . "\n\n" . $url,
+            ];
+            if ($botones === []) {
+                return $salida;
+            }
+            // Con enlace Y botones, los botones van en un segundo mensaje corto.
+            $texto = $this->interpolar($bloque['botones_texto'] ?? '¿Cómo seguimos?', $vars);
+            $salida[] = ['tipo' => 'botones', 'cuerpo' => $texto, 'botones' => $botones, 'fallback' => $texto];
+            return $salida;
+        }
+        if ($botones === []) {
+            return [$texto];
+        }
+        return [['tipo' => 'botones', 'cuerpo' => $texto, 'botones' => $botones, 'fallback' => $texto]];
+    }
+
+    /** Si el mensaje es el id de un boton de atajo (`btn:<bloque>`) devuelve ese bloque. */
+    private function destinoBoton(string $mensaje): ?string
+    {
+        $m = trim($mensaje);
+        if (! str_starts_with($m, 'btn:')) {
+            return null;
+        }
+        $destino = substr($m, 4);
+
+        return isset($this->flow['bloques'][$destino]) ? $destino : null;
     }
 
     /** Opciones como botones nativos (<= 3) con el texto numerado de respaldo. */

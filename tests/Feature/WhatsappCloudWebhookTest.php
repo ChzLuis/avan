@@ -306,6 +306,44 @@ class WhatsappCloudWebhookTest extends TestCase
         Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Te atiende una persona');
     }
 
+    /** Un bloque `intencion` con `botones` y `enlace` sale como cta_url + botones; tocar uno salta a su bloque sin IA. */
+    public function test_intencion_con_botones_y_enlace_usa_lo_nativo_de_meta(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode([
+            'disparos' => [], 'inicio' => 'demo',
+            'bloques'  => [
+                'demo'   => ['tipo' => 'intencion', 'esperar' => true, 'texto' => 'Mira la demo', 'confirmacion' => 'asesor', 'negacion' => 'luego',
+                    'enlace' => ['url' => 'https://arindg.com/ferreteria-demo', 'boton' => 'Abrir la demo'],
+                    'botones' => [['titulo' => 'Sí, quiero', 'siguiente' => 'asesor'], ['titulo' => 'Ahora no', 'siguiente' => 'luego'], ['titulo' => 'Roto', 'siguiente' => 'no_existe']]],
+                'asesor' => ['tipo' => 'mensaje', 'texto' => 'Te atiende una persona'],
+                'luego'  => ['tipo' => 'mensaje', 'texto' => 'Cuando quieras'],
+            ],
+        ])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        Http::assertSent(fn ($req) => ($req->data()['interactive']['type'] ?? '') === 'cta_url'
+            && $req->data()['interactive']['action']['parameters']['url'] === 'https://arindg.com/ferreteria-demo'
+            && $req->data()['interactive']['body']['text'] === 'Mira la demo');
+        Http::assertSent(function ($req) {
+            $b = $req->data()['interactive']['action']['buttons'] ?? null;
+            return ($req->data()['interactive']['type'] ?? '') === 'button' && count($b) === 2
+                && $b[0]['reply'] === ['id' => 'btn:asesor', 'title' => 'Sí, quiero'];
+        });
+
+        $toque = json_encode(['object' => 'whatsapp_business_account', 'entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'messaging_product' => 'whatsapp', 'metadata' => ['phone_number_id' => '111'],
+            'contacts' => [['profile' => ['name' => 'Cliente'], 'wa_id' => '51900000001']],
+            'messages' => [['from' => '51900000001', 'id' => 'wamid.' . uniqid(), 'type' => 'interactive',
+                'interactive' => ['type' => 'button_reply', 'button_reply' => ['id' => 'btn:luego', 'title' => 'Ahora no']]]],
+        ]]]]]]);
+        $this->enviar($toque, 'secreto-a')->assertOk();
+
+        Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Cuando quieras');
+    }
+
     public function test_atiende_aunque_falte_el_content_type(): void
     {
         $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');
