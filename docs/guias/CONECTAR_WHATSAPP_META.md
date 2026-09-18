@@ -118,3 +118,12 @@ verificación sea idéntico en las dos pantallas.
   (10 filas por lista, 24 caracteres por título).
 - El motor es el mismo `BotWebhookController` que usa Baileys, así que CRM,
   reglas de silencio y disparos se comportan igual en los dos canales.
+
+## Atajo: el asistente del CRM
+
+Desde el 2026-09-17 el portal tiene un asistente en **CRM → Canales → Asistente**
+(`/bixocrm/conectar`): pegas Phone number ID, token y app secret, pulsas
+"Probar conexion" (consulta a Meta y te muestra el numero reconocido), copias
+la URL del webhook y el token de verificacion que te genera, los pegas en
+Meta y guardas. Los pasos de developers.facebook.com de arriba siguen siendo
+los mismos; el asistente solo evita equivocarse al copiar.

@@ -45,3 +45,8 @@ contra la regla de `MODULE_OWNERSHIP`; se movió tal cual, decidir su destino
 `components/admin-layout.blade.php`) + `composer dump-autoload -o` + caché de
 rutas. Desplegar junto con Personas, nunca uno sin el otro: Personas ya apunta
 a `Control\Models\AccessEvent`.
+
+**Productos (2026-09-17):** la ficha del negocio muestra los productos
+(`App\Support\Productos`: CRM, Sales, Commerce, Operations) y los activa con
+un clic; "Nuevo negocio" crea el negocio con su producto inicial y su dueno.
+Los productos son agrupaciones de modulos: activar uno nunca apaga otro.

@@ -496,6 +496,34 @@ es el siguiente paso, y Cobros debe entrar en `Modules/Finanzas`. Hasta
 entonces, `deploy_modulos.py --preflight` seguira listando 20 archivos "solo
 en ARIN" (los de Cobros + migraciones que solo corrieron alla): no tocarlos.
 
+### El CRM como producto propio (2026-09-17, tras el despliegue) — bloque 1 HECHO
+
+Decision del usuario: NO crear otro sistema para el CRM; los productos son
+agrupaciones de modulos sobre la misma plataforma y BIXO Control es la
+central. Tres commits:
+
+1. **Productos** (`App\Support\Productos`, `4be613e`): CRM = clients+bots,
+   Sales, Commerce, Operations, cada uno con sus modulos y su puerta de
+   entrada. `activar()` solo suma (nunca apaga lo de otro producto);
+   `contratado()` exige todos sus modulos. En Control: bloque "Productos
+   contratados" en la ficha del negocio y el boton "Nuevo negocio" (antes no
+   hacia nada) abre el alta con producto inicial; dueno por correo existente
+   o usuario nuevo con contrasena mostrada una vez. `ProductosControlTest` (7).
+2. **Alta publica del CRM** (`/bixocrm/registro`, throttle 5/min): usuario +
+   negocio + Employee + producto crm; entra y va directo al asistente.
+3. **Puerta de entitlement** en `ComunicacionesAuth`: negocio activo con
+   modulo `clients`, si no, fuera con aviso (los 8 negocios de ARIN lo tienen).
+4. **Asistente de Meta** (`/bixocrm/conectar`): prueba Phone ID + token con
+   la Graph API antes de guardar (`ClienteCloud::probarCredenciales`), da la
+   URL del webhook y un verify token generado, guarda por `canales.guardar`.
+   La bandeja avisa si no hay linea; Canales y el login enlazan.
+   `CrmProductoTest` (7).
+
+Sin precios ni cobro todavia: `Productos` define QUE enciende cada producto,
+no cuanto cuesta. Siguiente del plan del CRM: pipeline de oportunidades,
+asignacion de conversaciones a asesores, tareas/notas/etiquetas, plantillas
+de Meta para la ventana de 24 h, panel de metricas.
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia

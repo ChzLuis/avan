@@ -28,6 +28,13 @@ layout del portal comercial, y `Bots/` para resolver el canal de un webhook);
 `ClienteCloud` (`Bots/` responde por Meta). Es la relación esperada: Bots
 decide, Crm guarda y envía.
 
+**El CRM como producto (2026-09-17):** `Productos::activar($p, 'crm')` enciende
+`clients` + `bots`. `/bixocrm/registro` da de alta un negocio "solo CRM" y lo
+manda al asistente `/bixocrm/conectar` (prueba las credenciales contra Meta
+con `ClienteCloud::probarCredenciales` antes de guardar). El middleware
+`ComunicacionesAuth` (Core) solo abre el portal a negocios activos con el
+modulo `clients`. Guia para el cliente: `docs/guias/CONECTAR_WHATSAPP_META.md`.
+
 **Deudas conocidas:**
 - `ComunicacionesController` no tiene rutas: solo `web.php` lo importa para
   pintar `comunicaciones.index`. Confirmar si está muerto y retirarlo.
