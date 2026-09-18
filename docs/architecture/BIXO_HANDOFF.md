@@ -2,9 +2,39 @@
 
 > Este archivo es el punto de entrada de cada sesion. Leelo antes de tocar codigo.
 
-Ultima actualizacion: 2026-09-17
+Ultima actualizacion: 2026-09-18
 Branch: `refactor/store-builder-canonical-context`
 Ultimo commit revisado: `151f47f`
+
+## Sesion 2026-09-18 — CRM producto, bandeja tipo WhatsApp, Tratos y funciones nativas de Meta en el bot
+
+Todo en ARIN. Commits `ff7a8c9` (botones nativos), `815bb64` (intencion con botones/enlace), siguiente (editor).
+
+**CRM como producto** (`App\Support\Productos`): crm = clients+bots; se activa desde Control
+(`admin.projects.producto`). Solo Eskala (proyecto 16) tiene CRM; el elegidor `/bixocrm/elegir`
+solo lista negocios con el producto completo. MegaHogar lo perdio a proposito.
+
+**Bandeja** (`crm::comunicaciones.bandeja`): imagen/PDF/audio (webm→ogg con ffmpeg instalado en
+ARIN), pegar imagen, reenviar, fijar, archivar, eliminar chat/mensaje, pestañas Todas/No leidas/
+Mias/Sin asignar/Cerradas/Archivadas, ficha del cliente, movil con cajon. Orden: `created_at` + `id`.
+
+**Tratos** (tablas `crm_etapas`, `crm_tratos`, `TratosController`): embudo por negocio sembrado al
+entrar, alta desde el chat, ganado/perdido con motivo, etapas editables.
+
+**Meta en el bot** (FlowRunner + ClienteCloud):
+- `opciones` con <= 3 -> botones nativos (id = numero). `marcarLeido` manda "escribiendo...".
+- `intencion` acepta `botones: [{titulo, siguiente}]` (id `btn:<bloque>`; tocarlo salta directo,
+  sin IA, tambien en el turno si/no) y `enlace: {url, boton, titulo}` (cta_url; con botones ademas,
+  el 2.º mensaje usa `botones_texto`). Por Baileys (`!canalEntradaId`) todo cae a `fallback` texto.
+- Editor de flujos: los dos controles estan en el panel del bloque intencion.
+- Flujo de Eskala (bot_builder_flows 17) actualizado por SQL: botones en `pregunta_negocio`,
+  `recomendar_cierre` (texto nuevo "¿Como seguimos?"), `mas_ej_cierre`, `pdf_cierre`, `audio_cierre`
+  y `demo` (enlace a ferreteria-demo). Respaldo previo en el scratchpad de la sesion
+  (`flujo_17_respaldo_20260918_130955.txt`).
+
+**Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
+al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
+ventana de 24 h.
 
 ## Sesion 2026-09-16/17 — WhatsApp oficial (Meta) + plan de modularizacion
 

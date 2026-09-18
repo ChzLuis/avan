@@ -43,3 +43,12 @@ panel lee el qr" (1): las fixtures no activan el módulo `clients` que gatea
 habitual (nuevos + borrar viejos + `composer dump-autoload -o` + caché de
 rutas), el conector Baileys (`/home/arindg/bixo-baileys`) llama por URL, no
 por clase: no necesita cambios.
+
+## Funciones nativas de Meta (WhatsApp oficial)
+
+- Bloque `opciones` con 3 o menos: botones de respuesta; el id es el numero de la opcion.
+- Bloque `intencion`: `botones: [{titulo (<=20), siguiente}]` -> botones con id `btn:<bloque>`
+  (salto directo sin IA); `enlace: {url, boton, titulo}` -> boton que abre la URL (`cta_url`);
+  si hay ambos, los botones van en un segundo mensaje con `botones_texto`.
+- `ClienteCloud::marcarLeido` envia el indicador "escribiendo...".
+- Por Baileys (sin `wa_canal_id`) `BotWebhookController` aplana todo al `fallback` de texto.
