@@ -59,6 +59,15 @@
                 </div>
             </div>
 
+            <!-- Productos contratados (Productos::contratados) -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 12px;">
+                @forelse($contratados[$project->id] ?? [] as $clave)
+                    <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,.15);color:#6ee7b7;">{{ $productos[$clave]['nombre'] }}</span>
+                @empty
+                    <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.06);color:#9ca3af;">Sin producto completo</span>
+                @endforelse
+            </div>
+
             <!-- Card Footer: Owner -->
             <div class="card-footer">
                 <div class="owner-info">

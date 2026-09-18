@@ -86,6 +86,18 @@ class ProductosControlTest extends TestCase
             ->assertSessionHasErrors('producto');
     }
 
+    public function test_la_lista_de_negocios_dice_que_producto_tiene_cada_uno(): void
+    {
+        $this->comoSuperadmin();
+        $con = $this->negocio(['clients', 'bots']);
+        $sin = $this->negocio([]);
+
+        $html = $this->get(route('admin.projects'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('BIXO CRM', $html);
+        $this->assertStringContainsString('Sin producto completo', $html);
+    }
+
     public function test_la_ficha_del_negocio_muestra_los_productos(): void
     {
         $this->comoSuperadmin();

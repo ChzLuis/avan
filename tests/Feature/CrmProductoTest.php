@@ -91,6 +91,40 @@ class CrmProductoTest extends TestCase
         $this->get('/bixoadmin/products')->assertRedirect(route('bixoadmin.login'));
     }
 
+    /** Con varios negocios, el login pregunta a cual entrar; solo abren los que tienen CRM. */
+    public function test_con_varios_negocios_el_login_pregunta_y_solo_deja_elegir_los_que_tienen_crm(): void
+    {
+        $user = User::factory()->create(['password' => \Illuminate\Support\Facades\Hash::make('clave123')]);
+        $a = Project::create(['owner_id' => $user->id, 'name' => 'Con CRM A', 'slug' => 'crm-a-' . uniqid(), 'is_active' => true]);
+        $b = Project::create(['owner_id' => $user->id, 'name' => 'Con CRM B', 'slug' => 'crm-b-' . uniqid(), 'is_active' => true]);
+        $sin = Project::create(['owner_id' => $user->id, 'name' => 'Sin CRM', 'slug' => 'sin-' . uniqid(), 'is_active' => true]);
+        Productos::activar($a, 'crm'); Productos::activar($b, 'crm');
+
+        $this->post('/bixocrm/login', ['email' => $user->email, 'password' => 'clave123'])
+            ->assertRedirect(route('bixocrm.elegir'));
+        $this->assertNull(session('comunicaciones_project_id'));
+
+        $this->get('/bixocrm/elegir')->assertOk()->assertViewIs('crm::comunicaciones.auth.elegir')
+            ->assertSee('Con CRM A')->assertSee('Sin CRM')->assertSee('Sin CRM contratado');
+
+        $this->post('/bixocrm/elegir', ['project_id' => $sin->id])->assertForbidden();
+        $this->post('/bixocrm/elegir', ['project_id' => $b->id])->assertRedirect(route('bixocrm.bandeja'));
+        $this->assertSame($b->id, session('comunicaciones_project_id'));
+    }
+
+    /** Con un solo negocio con CRM, se entra directo. */
+    public function test_con_un_solo_negocio_con_crm_el_login_entra_directo(): void
+    {
+        $user = User::factory()->create(['password' => \Illuminate\Support\Facades\Hash::make('clave123')]);
+        $a = Project::create(['owner_id' => $user->id, 'name' => 'Unico', 'slug' => 'unico-' . uniqid(), 'is_active' => true]);
+        Productos::activar($a, 'crm');
+        Project::create(['owner_id' => $user->id, 'name' => 'Sin CRM', 'slug' => 'sin-' . uniqid(), 'is_active' => true]);
+
+        $this->post('/bixocrm/login', ['email' => $user->email, 'password' => 'clave123'])
+            ->assertRedirect(route('bixocrm.bandeja'));
+        $this->assertSame($a->id, session('comunicaciones_project_id'));
+    }
+
     private function negocioCrm(): array
     {
         $user = User::factory()->create();

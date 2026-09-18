@@ -21,9 +21,10 @@ class AdminProjectController extends Controller
             ->latest()
             ->get();
 
-        $productos = Productos::todos();
+        $productos   = Productos::todos();
+        $contratados = $projects->mapWithKeys(fn ($p) => [$p->id => Productos::contratados($p)]);
 
-        return view('control::admin.projects.index', compact('projects', 'productos'));
+        return view('control::admin.projects.index', compact('projects', 'productos', 'contratados'));
     }
 
     public function show(Project $project)

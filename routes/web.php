@@ -1006,6 +1006,9 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
     // Alta publica del producto CRM: usuario + negocio + modulos clients/bots
     Route::get('/registro',  [ComWaAuthController::class, 'showRegistro'])->name('registro');
     Route::post('/registro', [ComWaAuthController::class, 'registrar'])->middleware('throttle:5,1')->name('registro.post');
+    // Con varios negocios, el usuario elige a cual entra (solo auth: aun no hay negocio en sesion)
+    Route::get('/elegir',  [ComWaAuthController::class, 'elegir'])->middleware('auth')->name('elegir');
+    Route::post('/elegir', [ComWaAuthController::class, 'elegirPost'])->middleware('auth')->name('elegir.post');
 
     Route::middleware(['auth', 'comunicaciones.auth'])->group(function () {
         Route::get('/',                              [BandejaController::class, 'index'])->name('bandeja');

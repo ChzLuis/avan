@@ -40,22 +40,52 @@ class CrmAuthController extends Controller
 
         $user = Auth::user();
 
-        // Todos los negocios del usuario (propios + donde es miembro).
-        $project = Project::where('owner_id', $user->id)->where('is_active', true)->first();
-        if (! $project) {
-            $project = Project::whereHas('members', fn($q) => $q->where('user_id', $user->id))
-                ->where('is_active', true)->first();
-        }
-        if (! $project) {
+        // Solo abren el CRM los negocios que lo tienen contratado (modulo
+        // clients). Con uno, se entra directo; con varios, se pregunta.
+        $negocios = self::negociosDelUsuario();
+        $conCrm = $negocios->where('crm', true)->values();
+        if ($conCrm->isEmpty()) {
             Auth::logout();
-            return back()->withErrors(['email' => 'No tienes ningún negocio asignado.'])->withInput();
+            return back()->withErrors(['email' => $negocios->isEmpty()
+                ? 'No tienes ningún negocio asignado.'
+                : 'Ninguno de tus negocios tiene contratado BIXO CRM. Actívalo desde BIXO Control.'])->withInput();
         }
-
+        if ($conCrm->count() > 1) {
+            return redirect()->route('bixocrm.elegir');
+        }
         // Solo la clave de ESTE portal: escribir tambien `active_project_id`
         // arrastraba el proyecto de Admin al cambiar de negocio aqui.
-        session(['comunicaciones_project_id' => $project->id]);
-
+        session(['comunicaciones_project_id' => $conCrm->first()['id']]);
         return redirect()->route('bixocrm.bandeja');
+    }
+
+    /** Pantalla previa: a que negocio entrar (cuando el usuario tiene varios). */
+    public function elegir()
+    {
+        $negocios = self::negociosDelUsuario();
+        if ($negocios->where('crm', true)->count() === 1) {
+            session(['comunicaciones_project_id' => $negocios->firstWhere('crm', true)['id']]);
+            return redirect()->route('bixocrm.bandeja');
+        }
+        return view('crm::comunicaciones.auth.elegir', ['negocios' => $negocios]);
+    }
+
+    public function elegirPost(Request $request)
+    {
+        $id = (int) $request->input('project_id');
+        $negocio = self::negociosDelUsuario()->firstWhere('id', $id);
+        abort_unless($negocio && $negocio['crm'], 403, 'Ese negocio no tiene BIXO CRM o no es tuyo.');
+        session(['comunicaciones_project_id' => $id]);
+        return redirect()->route('bixocrm.bandeja');
+    }
+
+    /** Negocios del usuario con la marca de si tienen el CRM contratado. */
+    public static function negociosDelUsuario(): \Illuminate\Support\Collection
+    {
+        return self::proyectosDelUsuario()->map(fn ($p) => [
+            'id' => $p->id, 'name' => $p->name, 'slug' => $p->slug,
+            'crm' => $p->hasModule('clients'),
+        ])->values();
     }
 
     /** Alta publica del producto CRM. */
