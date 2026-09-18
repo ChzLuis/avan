@@ -140,6 +140,33 @@
             @endif
         </div>
 
+        {{-- Productos: agrupaciones de modulos (Productos::DEFINICIONES) --}}
+        <div class="lg:col-span-2 rounded-2xl border p-6" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.08);">
+            <h3 class="text-sm font-semibold text-white mb-1">Productos contratados</h3>
+            <p class="text-xs text-gray-500 mb-4">Un producto enciende todos sus módulos de una vez. Activar uno nunca apaga lo que otro ya encendió.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @foreach($productos as $clave => $producto)
+                @php $tiene = in_array($clave, $contratados, true); @endphp
+                <div class="flex items-start justify-between gap-3 p-3 rounded-xl border {{ $tiene ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-gray-700' }}">
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium {{ $tiene ? 'text-emerald-300' : 'text-gray-300' }}">{{ $producto['nombre'] }}</p>
+                        <p class="text-xs text-gray-500">{{ $producto['descripcion'] }}</p>
+                        <p class="text-[11px] text-gray-600 mt-1 font-mono">{{ implode(' · ', $producto['modulos']) }}</p>
+                    </div>
+                    @if($tiene)
+                        <span class="text-xs font-semibold text-emerald-300 whitespace-nowrap">Contratado</span>
+                    @else
+                        <form method="POST" action="{{ route('admin.projects.producto', $project) }}">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="producto" value="{{ $clave }}">
+                            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-medium text-white whitespace-nowrap" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">Activar</button>
+                        </form>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+        </div>
+
         {{-- Módulos --}}
         <div class="lg:col-span-2 rounded-2xl border p-6" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.08);">
             <h3 class="text-sm font-semibold text-white mb-4">Módulos activos</h3>

@@ -30,6 +30,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Proyectos
         Route::get('/projects',                        [AdminProjectController::class, 'index'])->name('projects');
+        Route::post('/projects',                       [AdminProjectController::class, 'crear'])->name('projects.crear');
+        Route::patch('/projects/{project}/producto',   [AdminProjectController::class, 'activarProducto'])->name('projects.producto');
         Route::patch('/projects/{project}/toggle',     [AdminProjectController::class, 'toggle'])->name('projects.toggle');
         Route::patch('/projects/{project}/modules',    [AdminProjectController::class, 'updateModules'])->name('projects.modules');
         Route::patch('/projects/{project}/subdomain',  [AdminProjectController::class, 'updateSubdomain'])->name('projects.subdomain');

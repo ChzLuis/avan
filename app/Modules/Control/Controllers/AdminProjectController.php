@@ -5,6 +5,11 @@ namespace App\Modules\Control\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Module;
 use App\Models\Project;
+use App\Models\Employee;
+use App\Models\User;
+use App\Support\Productos;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 class AdminProjectController extends Controller
@@ -16,7 +21,9 @@ class AdminProjectController extends Controller
             ->latest()
             ->get();
 
-        return view('control::admin.projects.index', compact('projects'));
+        $productos = Productos::todos();
+
+        return view('control::admin.projects.index', compact('projects', 'productos'));
     }
 
     public function show(Project $project)
@@ -26,8 +33,11 @@ class AdminProjectController extends Controller
         $activeModuleIds = $project->modules()->wherePivot('is_active', true)->pluck('modules.id');
         $candidatosDueno = \App\Support\ProjectOwnership::candidatos($project);
 
+        $productos   = Productos::todos();
+        $contratados = Productos::contratados($project);
+
         return view('control::admin.projects.show', compact(
-            'project', 'allModules', 'activeModuleIds', 'candidatosDueno'
+            'project', 'allModules', 'activeModuleIds', 'candidatosDueno', 'productos', 'contratados'
         ));
     }
 
@@ -73,5 +83,69 @@ class AdminProjectController extends Controller
         }
 
         return back()->with('success', 'Módulos actualizados.');
+    }
+
+    /**
+     * Enciende un producto completo (todos sus modulos) con un clic.
+     * Solo suma: no apaga lo que otro producto ya encendio.
+     */
+    public function activarProducto(Request $request, Project $project)
+    {
+        $data = $request->validate(['producto' => 'required|string|in:' . implode(',', array_keys(Productos::todos()))]);
+
+        Productos::activar($project, $data['producto']);
+
+        $nombre = Productos::todos()[$data['producto']]['nombre'];
+
+        return back()->with('success', "{$nombre} activado en «{$project->name}».");
+    }
+
+    /**
+     * Alta de un negocio desde Control con su producto inicial. El dueno puede
+     * ser un usuario existente (por correo) o uno nuevo, al que se le genera
+     * una contrasena que se muestra UNA vez.
+     */
+    public function crear(Request $request)
+    {
+        $data = $request->validate([
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|email|max:150',
+            'contacto' => 'required|string|max:100',
+            'producto' => 'required|string|in:' . implode(',', array_keys(Productos::todos())),
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+        $password = null;
+        if (! $user) {
+            $password = Str::upper(Str::random(3)) . rand(100, 999) . Str::lower(Str::random(3));
+            $user = User::create([
+                'name'              => $data['contacto'],
+                'email'             => $data['email'],
+                'username'          => Str::slug(Str::before($data['email'], '@')) . '_' . Str::lower(Str::random(4)),
+                'password'          => Hash::make($password),
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        $project = Project::create([
+            'owner_id'  => $user->id,
+            'name'      => $data['name'],
+            'slug'      => Str::slug($data['name']) . '-' . Str::lower(Str::random(4)),
+            'is_active' => true,
+        ]);
+        Productos::activar($project, $data['producto']);
+        Employee::create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'name' => $data['contacto'], 'email' => $data['email'],
+            'role' => 'Administrador', 'is_active' => true, 'hire_date' => now(),
+        ]);
+
+        $nombre = Productos::todos()[$data['producto']]['nombre'];
+        $aviso  = "Negocio «{$project->name}» creado con {$nombre}.";
+        if ($password) {
+            $aviso .= " Usuario: {$user->email} · Contrasena: {$password} (se muestra solo esta vez).";
+        }
+
+        return redirect()->route('admin.projects.show', $project)->with('success', $aviso);
     }
 }

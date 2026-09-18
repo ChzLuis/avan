@@ -1,13 +1,13 @@
 <x-admin-layout title="Negocios">
 
-<div class="projects-container">
+<div class="projects-container" x-data="{ nuevo: {{ $errors->any() ? 'true' : 'false' }} }">
     <!-- Header -->
     <div class="projects-header">
         <div class="header-content">
             <h1 class="header-title">Negocios</h1>
             <p class="header-subtitle">{{ $projects->count() }} negocio{{ $projects->count() !== 1 ? 's' : '' }} en tu organización</p>
         </div>
-        <button class="btn-create-project">
+        <button type="button" class="btn-create-project" @click="nuevo = true">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
             </svg>
@@ -101,7 +101,7 @@
             <div class="empty-icon">📭</div>
             <h3 class="empty-title">Sin negocios aún</h3>
             <p class="empty-text">Crea tu primer negocio para comenzar</p>
-            <button class="btn-empty-create">
+            <button type="button" class="btn-empty-create" @click="nuevo = true">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -479,4 +479,51 @@
     }
 </style>
 
+
+    {{-- Alta de negocio con su producto inicial (Productos::DEFINICIONES) --}}
+    <div x-show="nuevo" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.6)" @keydown.escape.window="nuevo=false">
+        <div class="w-full max-w-lg rounded-2xl border p-6" style="background:#0f172a; border-color:rgba(255,255,255,0.1);" @click.outside="nuevo=false">
+            <h3 class="text-base font-semibold text-white mb-1">Nuevo negocio</h3>
+            <p class="text-xs text-gray-500 mb-4">Elige con qué producto nace. Después puedes activarle más desde su ficha.</p>
+            @if($errors->any())
+                <div class="mb-3 p-3 rounded-xl text-xs" style="background:rgba(239,68,68,.12);color:#fca5a5;">{{ $errors->first() }}</div>
+            @endif
+            <form method="POST" action="{{ route('admin.projects.crear') }}" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Nombre del negocio</label>
+                    <input name="name" value="{{ old('name') }}" required maxlength="100" class="w-full px-3 py-2 rounded-xl text-sm text-white border" style="background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Contacto</label>
+                        <input name="contacto" value="{{ old('contacto') }}" required maxlength="100" class="w-full px-3 py-2 rounded-xl text-sm text-white border" style="background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Correo del dueño</label>
+                        <input name="email" type="email" value="{{ old('email') }}" required maxlength="150" class="w-full px-3 py-2 rounded-xl text-sm text-white border" style="background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Producto inicial</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach($productos as $clave => $producto)
+                        <label class="flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer" style="border-color:rgba(255,255,255,.12);">
+                            <input type="radio" name="producto" value="{{ $clave }}" {{ old('producto', 'crm') === $clave ? 'checked' : '' }} class="mt-0.5 accent-indigo-500">
+                            <span>
+                                <span class="block text-sm text-white">{{ $producto['nombre'] }}</span>
+                                <span class="block text-[11px] text-gray-500">{{ $producto['descripcion'] }}</span>
+                            </span>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+                <p class="text-[11px] text-gray-500">Si el correo ya tiene usuario, el negocio se le asigna. Si no, se crea y la contraseña se muestra una sola vez.</p>
+                <div class="flex justify-end gap-2 pt-1">
+                    <button type="button" @click="nuevo=false" class="px-4 py-2 rounded-xl text-sm text-gray-300">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-sm font-medium text-white" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">Crear negocio</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </x-admin-layout>
