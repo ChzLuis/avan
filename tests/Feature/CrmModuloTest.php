@@ -37,6 +37,8 @@ class CrmModuloTest extends TestCase
             'owner_id'  => $this->usuario->id,
             'is_active' => true,
         ]);
+        // El portal exige el producto CRM contratado (modulo clients).
+        \App\Support\Productos::activar($this->proyecto, 'crm');
     }
 
     /** Entra al portal de Comunicaciones como lo hace el login real. */

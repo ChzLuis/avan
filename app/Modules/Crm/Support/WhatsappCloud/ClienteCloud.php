@@ -27,6 +27,35 @@ class ClienteCloud
 {
     public function __construct(private WaCanal $canal) {}
 
+    /**
+     * Comprueba unas credenciales ANTES de guardarlas: pide a Meta los datos
+     * del numero. Si el token o el Phone ID estan mal, Meta lo dice aqui y no
+     * en el primer mensaje de un cliente. Nunca lanza.
+     *
+     * @return array{ok:bool, numero?:string, nombre?:string, error?:string}
+     */
+    public static function probarCredenciales(string $phoneNumberId, string $token, ?string $version = null): array
+    {
+        $v = $version ?: 'v21.0';
+        try {
+            $res = Http::withToken($token)->timeout(15)
+                ->get("https://graph.facebook.com/{$v}/{$phoneNumberId}", [
+                    'fields' => 'display_phone_number,verified_name,quality_rating',
+                ]);
+            if ($res->successful()) {
+                return [
+                    'ok'     => true,
+                    'numero' => (string) data_get($res->json(), 'display_phone_number', ''),
+                    'nombre' => (string) data_get($res->json(), 'verified_name', ''),
+                ];
+            }
+
+            return ['ok' => false, 'error' => (string) data_get($res->json(), 'error.message', 'HTTP ' . $res->status())];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => 'No se pudo llegar a Meta: ' . class_basename($e)];
+        }
+    }
+
     /** Envia todas las respuestas de un turno del bot, en orden. */
     public function enviarRespuestas(string $telefono, array $respuestas): array
     {

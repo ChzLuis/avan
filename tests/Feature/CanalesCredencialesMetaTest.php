@@ -33,6 +33,8 @@ class CanalesCredencialesMetaTest extends TestCase
             'slug'     => 'negocio-crm-' . uniqid(),
             'owner_id' => $this->usuario->id,
         ]);
+        // El portal exige el producto CRM contratado (modulo clients).
+        \App\Support\Productos::activar($this->proyecto, 'crm');
     }
 
     /** Entra al portal de Comunicaciones como lo hace el login real. */

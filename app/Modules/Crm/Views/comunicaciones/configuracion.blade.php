@@ -3,6 +3,9 @@
 @section('content')
 <div class="flex-1 overflow-y-auto bg-gray-50 p-6">
 <div class="max-w-3xl mx-auto py-8 px-4" x-data="configuracion()" x-init="init()">
+    <a href="{{ route('bixocrm.conectar') }}" class="inline-flex items-center gap-2 mb-4 text-xs font-semibold text-green-700 hover:text-green-800">
+        <span>&rarr;</span> Asistente para conectar WhatsApp con Meta (paso a paso)
+    </a>
 
     <div class="flex items-center justify-between mb-6">
         <div>

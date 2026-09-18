@@ -3,7 +3,12 @@
 namespace App\Modules\Crm\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Employee;
 use App\Models\Project;
+use App\Models\User;
+use App\Support\Productos;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,6 +56,59 @@ class CrmAuthController extends Controller
         session(['comunicaciones_project_id' => $project->id]);
 
         return redirect()->route('bixocrm.bandeja');
+    }
+
+    /** Alta publica del producto CRM. */
+    public function showRegistro()
+    {
+        if (session('comunicaciones_project_id')) {
+            return redirect()->route('bixocrm.bandeja');
+        }
+        return view('crm::comunicaciones.auth.registro');
+    }
+
+    /**
+     * Crea usuario + negocio y enciende SOLO el producto CRM (clients, bots).
+     * Deja al usuario dentro del portal y lo manda al asistente de Meta: un
+     * CRM sin WhatsApp conectado no sirve de nada, asi que ese es el paso 1.
+     */
+    public function registrar(Request $request)
+    {
+        $data = $request->validate([
+            'negocio'  => 'required|string|max:100',
+            'nombre'   => 'required|string|max:100',
+            'email'    => 'required|email|max:150|unique:users,email',
+            'whatsapp' => 'nullable|string|max:30',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name'              => $data['nombre'],
+            'email'             => $data['email'],
+            'username'          => Str::slug(Str::before($data['email'], '@')) . '_' . Str::lower(Str::random(4)),
+            'password'          => Hash::make($data['password']),
+            'email_verified_at' => now(),
+        ]);
+
+        $project = Project::create([
+            'owner_id'  => $user->id,
+            'name'      => $data['negocio'],
+            'slug'      => Str::slug($data['negocio']) . '-' . Str::lower(Str::random(4)),
+            'whatsapp'  => $data['whatsapp'] ?? null,
+            'phone'     => $data['whatsapp'] ?? null,
+            'is_active' => true,
+        ]);
+        Productos::activar($project, 'crm');
+        Employee::create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'name' => $data['nombre'], 'email' => $data['email'],
+            'role' => 'Administrador', 'is_active' => true, 'hire_date' => now(),
+        ]);
+
+        Auth::login($user);
+        session(['comunicaciones_project_id' => $project->id]);
+
+        return redirect()->route('bixocrm.conectar')->with('bienvenida', true);
     }
 
     /** Proyectos a los que el usuario tiene acceso (para el selector "Cambiar de negocio"). */

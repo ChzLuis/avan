@@ -23,6 +23,14 @@ $estadoColores = [
 ══════════════════════ --}}
 <div class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0" style="width:300px;">
 
+    @if($canales->isEmpty())
+    {{-- Sin linea de WhatsApp: la bandeja no puede recibir nada. Es el primer paso. --}}
+    <a href="{{ route('bixocrm.conectar') }}" class="block m-3 p-3 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 transition">
+        <p class="text-xs font-bold text-green-800">Conecta tu WhatsApp</p>
+        <p class="text-[11px] text-green-700 mt-0.5">Aún no hay ninguna línea conectada. El asistente te guía en 3 pasos.</p>
+    </a>
+    @endif
+
     {{-- Header bandeja --}}
     <div class="px-3 py-3 border-b border-gray-100">
         <div class="flex items-center justify-between mb-2">

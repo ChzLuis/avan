@@ -7,6 +7,7 @@ use App\Modules\Crm\Models\WaConversacion;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Modules\Crm\Models\WaCanal;
+use App\Modules\Crm\Support\WhatsappCloud\ClienteCloud;
 use App\Modules\Crm\Models\WaChatbotFlow;
 use Database\Seeders\WaRespuestasRapidasSeeder;
 use Illuminate\Http\Request;
@@ -35,6 +36,33 @@ class CanalesController extends Controller
             'mensaje_ausencia'   => $c->mensaje_ausencia,
         ])->values();
         return view('crm::comunicaciones.configuracion', compact('project', 'canales', 'canalesJs'));
+    }
+
+    /** Asistente paso a paso para conectar la linea de WhatsApp con Meta. */
+    public function conectar()
+    {
+        $project = $this->project();
+        $canal   = WaCanal::where('project_id', $project->id)->orderBy('id')->first();
+
+        return view('crm::comunicaciones.conectar', [
+            'project'    => $project,
+            'canal'      => $canal?->makeVisible(['verify_token']),
+            'webhookUrl' => url('/api/whatsapp/webhook'),
+        ]);
+    }
+
+    /** Paso 1 del asistente: valida Phone ID + token contra Meta sin guardar nada. */
+    public function probar(Request $request)
+    {
+        $data = $request->validate([
+            'phone_number_id' => 'required|string|max:80',
+            'access_token'    => 'required|string',
+            'api_version'     => 'nullable|string|max:12',
+        ]);
+
+        $r = ClienteCloud::probarCredenciales($data['phone_number_id'], $data['access_token'], $data['api_version'] ?? null);
+
+        return response()->json($r, $r['ok'] ? 200 : 422);
     }
 
     public function guardar(Request $request)

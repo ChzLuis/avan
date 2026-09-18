@@ -38,6 +38,8 @@ class BotsModuloTest extends TestCase
             'owner_id'  => $this->usuario->id,
             'is_active' => true,
         ]);
+        // El portal CRM exige el producto contratado (modulo clients).
+        \App\Support\Productos::activar($this->proyecto, 'crm');
     }
 
     /** El constructor de bots dentro del portal CRM (portal de Comunicaciones). */

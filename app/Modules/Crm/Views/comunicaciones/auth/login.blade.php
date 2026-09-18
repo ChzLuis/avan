@@ -152,6 +152,10 @@
                     ¿Olvidaste tu contraseña?
                 </a>
             </p>
+            <p class="mt-6 text-center text-sm text-gray-600">
+                ¿Aún no tienes cuenta?
+                <a href="{{ route('bixocrm.registro') }}" class="font-semibold underline" style="color:#128c4b">Crea tu BIXO CRM</a>
+            </p>
         </div>
     </div>
 </div>

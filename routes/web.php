@@ -1003,6 +1003,9 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
     Route::get('/login',  [ComWaAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [ComWaAuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
     Route::post('/logout',[ComWaAuthController::class, 'logout'])->name('logout');
+    // Alta publica del producto CRM: usuario + negocio + modulos clients/bots
+    Route::get('/registro',  [ComWaAuthController::class, 'showRegistro'])->name('registro');
+    Route::post('/registro', [ComWaAuthController::class, 'registrar'])->middleware('throttle:5,1')->name('registro.post');
 
     Route::middleware(['auth', 'comunicaciones.auth'])->group(function () {
         Route::get('/',                              [BandejaController::class, 'index'])->name('bandeja');
@@ -1021,6 +1024,9 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::get('/clientes',                      [ClientesCrmController::class, 'index'])->name('clientes');
 
         Route::get('/configuracion',                 [CanalesController::class, 'index'])->name('configuracion');
+        // Asistente de conexion con Meta (WhatsApp Cloud API)
+        Route::get('/conectar',                      [CanalesController::class, 'conectar'])->name('conectar');
+        Route::post('/conectar/probar',              [CanalesController::class, 'probar'])->middleware('throttle:20,1')->name('conectar.probar');
         Route::post('/canales',                      [CanalesController::class, 'guardar'])->name('canales.guardar');
         Route::delete('/canales/{canal}',            [CanalesController::class, 'eliminar'])->name('canales.eliminar');
 
