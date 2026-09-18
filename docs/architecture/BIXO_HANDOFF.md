@@ -70,6 +70,13 @@ saldo al entregar: lo propuso el usuario. La IA (modulo bot_ia + feature_bot_ia)
 para Eskala: solo afecta a `dudas`. Pendiente: metricas por etapa para A/B y apertura distinta si
 viene de anuncio (referral, migracion ajena sin correr en ARIN).
 
+**Embudo de Eskala v4 (VIGENTE, guion del usuario)**: ¿que vendes? (👕/💻/🛍️) -> ¿cuantos productos?
+(hasta 50 / 50-150 / +150) -> "te recomendaria empezar con PLAN" + boton demo -> "la tuya por S/ X,
+pago unico y sin mensualidades. ¿Que quieres hacer?" (🚀 Quiero empezar / 📋 Ver planes / 💬 Duda)
+-> cierre con trato. Textos de una linea: el usuario rechazo la v3 por "mucho floro". Generador
+`flujo_eskala_v4.py` (scratchpad); v1-v3 en git. Rango 50-150 cae en PRO (tope 100): lo ajusta el
+asesor. La v3 queda documentada arriba solo como historia.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
