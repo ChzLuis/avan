@@ -48,7 +48,9 @@ class BotWebhookController extends Controller
             'tipo'     => 'nullable|string|max:20',   // imagen | audio | video | documento | ubicacion | contacto
             'wa_message_id' => 'nullable|string|max:80',
             'lid'      => 'nullable|string|max:40',   // id tecnico @lid de WhatsApp, si lo hubo
+            'wa_canal_id' => 'nullable|integer',      // canal por el que entro (Meta); si falta, el canal Bot
         ]);
+        $this->canalEntradaId = isset($data['wa_canal_id']) ? (int) $data['wa_canal_id'] : null;
         $telefono = preg_replace('/[^\d]/', '', $data['telefono']);
 
         // IDENTIDAD WHATSAPP: el conector manda `telefono` = numero real (PN)
@@ -364,10 +366,16 @@ class BotWebhookController extends Controller
      * Guarda un mensaje en el CRM: conversación (crea/actualiza) + mensaje + lead.
      * Es lo que hace que el bot 24/7 alimente el CRM automáticamente.
      */
+    /** Canal por el que entro el mensaje en curso (lo fija inbound() cuando viene de Meta). */
+    private ?int $canalEntradaId = null;
+
     private function guardarEnCrm(\App\Models\Project $project, string $telefono, string $nombre, string $texto, string $dir): void
     {
-        // Canal "Bot" del proyecto.
-        $canal = \App\Modules\Crm\Models\WaCanal::firstOrCreate(
+        // La linea por la que entro (Meta) o, si no, el canal "Bot" de Baileys.
+        $canal = $this->canalEntradaId
+            ? \App\Modules\Crm\Models\WaCanal::where('project_id', $project->id)->find($this->canalEntradaId)
+            : null;
+        $canal ??= \App\Modules\Crm\Models\WaCanal::firstOrCreate(
             ['project_id' => $project->id, 'tipo' => 'bot'],
             ['nombre' => 'Bot WhatsApp', 'activo' => true, 'bot_type' => 'baileys', 'color' => '#22c55e']
         );
@@ -389,6 +397,10 @@ class BotWebhookController extends Controller
         } else {
             $conv->ultimo_mensaje_at = now();
             if ($dir === 'in') $conv->no_leidos++;
+            // Si el cliente ya existia en el canal Bot y ahora escribe por la
+            // linea de Meta, la conversacion pasa a esa linea: es por donde se
+            // le puede responder.
+            if ($canal->conectadoAMeta() && $conv->wa_canal_id !== $canal->id) $conv->wa_canal_id = $canal->id;
             $conv->save();
         }
 

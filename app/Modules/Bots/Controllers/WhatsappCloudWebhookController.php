@@ -267,6 +267,10 @@ class WhatsappCloudWebhookController extends Controller
             // El id ya se consumio en la idempotencia de este webhook; pasarlo
             // otra vez haria que el motor lo tomara por duplicado y callara.
             'wa_message_id' => null,
+            // El canal por el que entro: el CRM debe archivar la conversacion
+            // en la linea de Meta, no en el canal 'Bot WhatsApp' de Baileys,
+            // o la bandeja no podra responder ('no esta conectado').
+            'wa_canal_id'   => $canal->id,
         ]);
         $peticion->headers->set('X-Copilot-Token', (string) $proyecto->copilot_token);
 

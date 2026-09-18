@@ -109,6 +109,13 @@ class WhatsappCloudWebhookTest extends TestCase
         $this->enviar($this->evento('111'), 'secreto-a')->assertOk();
 
         Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Hola desde A');
+
+        // La conversacion queda en la LINEA DE META por la que entro, no en el
+        // canal 'Bot WhatsApp' de Baileys: si no, la bandeja no podia responder
+        // ("este canal aun no esta conectado"). Visto en produccion 2026-09-18.
+        $conv = \App\Modules\Crm\Models\WaConversacion::firstOrFail();
+        $this->assertSame('111', $conv->canal->phone_number_id, 'La conversacion no quedo en la linea de Meta.');
+        $this->assertSame(0, \App\Modules\Crm\Models\WaCanal::where('tipo', 'bot')->count(), 'No debe nacer un canal Bot de Baileys al entrar por Meta.');
     }
 
     /** Un negocio no puede hacer hablar al bot de otro con SU propia firma. */
