@@ -380,6 +380,36 @@
                             <input type="checkbox" x-model="bloques[selected].esperar" @change="save()" class="rounded border-gray-300">
                             Quedarse escuchando la respuesta
                         </label>
+
+                        <div class="mt-3 pt-3 border-t border-gray-100">
+                            <label class="text-xs font-semibold text-gray-600">Botones de atajo <span class="font-normal text-gray-400">(WhatsApp oficial · máx. 3)</span></label>
+                            <p class="text-[11px] text-gray-500 mt-0.5">El cliente puede tocar un botón o escribir libre. Por el conector QR salen como texto.</p>
+                            <template x-for="(bt,bi) in (bloques[selected].botones||[])" :key="bi">
+                                <div class="flex items-center gap-1.5 mt-1.5">
+                                    <input type="text" x-model="bt.titulo" maxlength="20" placeholder="Título (20)" @input.debounce.600ms="save()" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1 flex-1 min-w-0">
+                                    <select x-model="bt.siguiente" @change="save()" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1" style="width:110px">
+                                        <option value="">— bloque —</option>
+                                        <template x-for="(b2,id2) in bloques" :key="id2">
+                                            <option :value="id2" x-text="meta(b2.tipo).label+' · '+id2"></option>
+                                        </template>
+                                    </select>
+                                    <button type="button" @click="bloques[selected].botones.splice(bi,1); save()" class="text-gray-400 hover:text-red-500 text-sm" title="Quitar">✕</button>
+                                </div>
+                            </template>
+                            <button type="button" x-show="(bloques[selected].botones||[]).length < 3"
+                                    @click="bloques[selected].botones = (bloques[selected].botones||[]); bloques[selected].botones.push({titulo:'',siguiente:''}); save()"
+                                    class="mt-1.5 text-[11px] font-semibold text-violet-700 hover:underline">+ Añadir botón</button>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-t border-gray-100">
+                            <label class="text-xs font-semibold text-gray-600">Botón con enlace <span class="font-normal text-gray-400">(abre una web)</span></label>
+                            <input type="url" :value="(bloques[selected].enlace||{}).url||''" @input.debounce.600ms="enlaceSet('url',$event.target.value)" placeholder="https://…" class="w-full mt-1 text-[11px] border border-gray-200 rounded-lg px-1.5 py-1">
+                            <input type="text" :value="(bloques[selected].enlace||{}).boton||''" @input.debounce.600ms="enlaceSet('boton',$event.target.value)" maxlength="20" placeholder="Texto del botón (20)" class="w-full mt-1 text-[11px] border border-gray-200 rounded-lg px-1.5 py-1">
+                            <template x-if="(bloques[selected].enlace||{}).url && (bloques[selected].botones||[]).length">
+                                <input type="text" x-model="bloques[selected].botones_texto" @input.debounce.600ms="save()" placeholder="Texto del 2.º mensaje con los botones (¿Cómo seguimos?)" class="w-full mt-1 text-[11px] border border-gray-200 rounded-lg px-1.5 py-1">
+                            </template>
+                        </div>
+
                         <div class="mt-3 pt-3 border-t border-gray-100">
                             <label class="text-xs font-semibold text-gray-600">¿A dónde va cada consulta?</label>
                             <template x-for="i in intenciones" :key="i.v">
@@ -603,6 +633,7 @@ function botEditor(cfg){
       {v:'asesor',       t:'Quiere hablar con una persona'},
       {v:'fallback',     t:'No se entendió (por defecto)'},
     ],
+    enlaceSet(k,v){ const b=this.bloques[this.selected]; b.enlace=Object.assign({},b.enlace||{}); b.enlace[k]=v; if(!b.enlace.url){ delete b.enlace; } this.save(); },
     rutaSet(intent, destino){
       if(!this.bloques[this.selected].rutas) this.bloques[this.selected].rutas={};
       if(destino) this.bloques[this.selected].rutas[intent]=destino;
