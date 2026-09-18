@@ -16,10 +16,11 @@ class ComunicacionesAuth
         }
 
         // Entitlement del producto CRM: el portal solo se abre a negocios
-        // activos con el modulo `clients`. Ocultar el menu no es seguridad;
+        // activos con el producto COMPLETO (clients + bots). Solo `clients` no
+        // basta: lo tienen todos los negocios por su panel de clientes. Ocultar el menu no es seguridad;
         // esta es la puerta (ACCESS = TENANT_ENTITLEMENT AND USER).
         $project = Project::find(session('comunicaciones_project_id'));
-        if (! $project || ! $project->is_active || ! $project->hasModule('clients')) {
+        if (! $project || ! $project->is_active || ! \App\Support\Productos::contratado($project, 'crm')) {
             session()->forget('comunicaciones_project_id');
 
             return redirect()->route('bixocrm.login')

@@ -84,7 +84,7 @@ class CrmAuthController extends Controller
     {
         return self::proyectosDelUsuario()->map(fn ($p) => [
             'id' => $p->id, 'name' => $p->name, 'slug' => $p->slug,
-            'crm' => $p->hasModule('clients'),
+            'crm' => Productos::contratado($p, 'crm'),
         ])->values();
     }
 

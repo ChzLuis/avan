@@ -9,7 +9,7 @@
 </head>
 <body class="font-sans antialiased bg-gray-50">
 <div class="min-h-screen flex items-center justify-center px-6 py-12">
-    <div class="w-full max-w-2xl">
+    <div class="w-full max-w-6xl">
         <div class="flex items-center gap-3 mb-8">
             <div class="w-10 h-10 rounded-2xl flex items-center justify-center" style="background:#25d366;">
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -22,7 +22,8 @@
 
         <p class="text-sm text-gray-500 mb-4">Tienes acceso a varios negocios. Solo abren el CRM los que lo tienen contratado; los demás se activan desde BIXO Control.</p>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {{-- Rejilla en CSS propio: las clases responsive de Tailwind no estan todas en el build --}}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
             @foreach($negocios as $n)
                 @if($n['crm'])
                 <form method="POST" action="{{ route('bixocrm.elegir.post') }}">

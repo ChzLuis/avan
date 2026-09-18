@@ -70,6 +70,9 @@ class CrmProductoTest extends TestCase
     {
         $user = User::factory()->create();
         $sinCrm = Project::create(['owner_id' => $user->id, 'name' => 'Sin CRM', 'slug' => 'sin-crm-' . uniqid(), 'is_active' => true]);
+        // Solo `clients` (lo tiene todo negocio por su panel de clientes) NO es el CRM.
+        $m = Module::firstOrCreate(['key' => 'clients'], ['name' => 'clients', 'is_active' => true]);
+        $sinCrm->modules()->syncWithoutDetaching([$m->id => ['is_active' => true]]);
 
         $this->actingAs($user)->withSession(['comunicaciones_project_id' => $sinCrm->id])
             ->get('/bixocrm')
