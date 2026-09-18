@@ -48,6 +48,16 @@ guardar un canal con WABA). Bandeja: `mensajes()` devuelve `ventana` {es_meta, a
 `bixocrm.plantillas` (GET) y `bixocrm.plantilla` (POST). El canal 7 de Eskala aun NO tiene waba_id:
 ponerlo en Configuracion del CRM (o el asistente) para que aparezcan las plantillas.
 
+**Embudo de Eskala v2** (`b7a8d0a`, flujo 17 en ARIN; v1 respaldada en el scratchpad de la sesion
+y en git como fixture anterior): primer contacto en 2 burbujas (flyer con saludo de pie + foto de
+tienda de cabecera con la pregunta y 3 botones). Motor: `intencion.imagen` = cabecera de imagen en
+botones (Meta `interactive.header`); Baileys recibe imagen con la pregunta de pie; la bandeja la
+guarda como imagen. `trato: {titulo, valor, etapa}` en cualquier bloque abre un CrmTrato (origen
+`bot`, enlazado al chat, sin duplicar mientras haya uno abierto) solo si el negocio tiene el
+producto CRM. `pdf` ya no promete un PDF que nadie manda: lo envia el asesor. `mas_ejemplos` sin
+texto de relleno. Un segundo entre mensajes seguidos (`ClienteCloud::PAUSA_ENTRE_MENSAJES_MS`).
+Rechazos de Meta 190/131005/131047 explicados en castellano. Boton "Probar conexion" por canal.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
