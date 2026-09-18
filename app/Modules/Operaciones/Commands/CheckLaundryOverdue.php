@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Modules\Operaciones\Commands;
 
 use App\Models\Project;
 use App\Modules\Bots\Models\BotInstance;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Http;
  * Sin bot, las alertas siguen visibles en el sistema (tablero + contador);
  * este comando simplemente no envía nada.
  *
- * Programar (ej. cada 15 min) en app/Console/Kernel.php o el scheduler.
+ * Programar (ej. cada 15 min) en routes/console.php (el provider de modulos lo registra).
  */
 class CheckLaundryOverdue extends Command
 {

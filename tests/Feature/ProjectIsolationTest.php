@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Appointment;
+use App\Modules\Operaciones\Models\Appointment;
 use App\Modules\Catalogo\Models\Category;
 use App\Modules\Crm\Models\Client;
 use App\Models\Employee;

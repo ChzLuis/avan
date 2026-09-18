@@ -1,7 +1,9 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Modules\Operaciones\Controllers;
 
-use App\Models\Appointment;
+use App\Http\Controllers\Controller;
+
+use App\Modules\Operaciones\Models\Appointment;
 use App\Modules\Crm\Models\Client;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -43,7 +45,7 @@ class ReservaController extends Controller
         $tableCount = (int) ($project->settings()->where('key','qr_table_count')->value('value') ?? 10);
         $zones      = json_decode($project->settings()->where('key','qr_sectores')->value('value') ?? '["Salón"]', true) ?? ['Salón'];
 
-        return view('comercial.reservas', compact('project', 'reservasJson', 'tableCount', 'zones', 'today'));
+        return view('operaciones::comercial.reservas', compact('project', 'reservasJson', 'tableCount', 'zones', 'today'));
     }
 
     public function store(Request $request)

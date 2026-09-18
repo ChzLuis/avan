@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Crm\Models;
 
-use App\Models\Appointment;
+use App\Modules\Operaciones\Models\Appointment;
 use App\Models\Project;
 
 use App\Modules\Ventas\Models\Order;

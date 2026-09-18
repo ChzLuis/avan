@@ -1,6 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Modules\Operaciones\Models;
+
+use App\Models\Employee;
+use App\Models\Project;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;

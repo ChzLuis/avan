@@ -27,7 +27,7 @@ class PanelAuthorizationTest extends TestCase
 
     private Project $project;
     private Role $rolVictima;
-    private \App\Models\Appointment $cita;
+    private \App\Modules\Operaciones\Models\Appointment $cita;
     private \App\Modules\Inventario\Models\Proveedor $proveedor;
 
     protected function setUp(): void
@@ -62,7 +62,7 @@ class PanelAuthorizationTest extends TestCase
 
         // Registros reales: con ids inexistentes el route model binding responde
         // 404 antes de que llegue a evaluarse el permiso, y el test no probaria nada.
-        $this->cita = \App\Models\Appointment::create([
+        $this->cita = \App\Modules\Operaciones\Models\Appointment::create([
             'project_id' => $this->project->id, 'client_name' => 'Cliente',
             'date' => now()->toDateString(), 'start_time' => '10:00', 'end_time' => '11:00', 'status' => 'pending',
         ]);

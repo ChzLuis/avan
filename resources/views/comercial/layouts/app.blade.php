@@ -1025,13 +1025,13 @@ $_nav = match(true) {
 
                 if ($_esLavAlert) {
                     // Lavandería: alertas basadas en el SLA por estado (no umbral genérico).
-                    $_lavStatesA = \App\Support\LaundryFlow::activeStates($_projAlert);
+                    $_lavStatesA = \App\Modules\Operaciones\Support\LaundryFlow::activeStates($_projAlert);
                     $__orders = \App\Modules\Ventas\Models\Order::where('project_id', $_pid_alert)
                         ->whereNotIn('laundry_status', ['entregado','anulado'])
                         ->whereNotNull('laundry_status')
                         ->orderBy('laundry_status_at')->limit(20)->get();
                     foreach ($__orders as $__o) {
-                        $_sla = \App\Support\LaundryFlow::slaStatus($_projAlert, $__o);
+                        $_sla = \App\Modules\Operaciones\Support\LaundryFlow::slaStatus($_projAlert, $__o);
                         // Solo alertar si el estado tiene SLA y está en warn/over
                         if (!$_sla['sla'] || $_sla['level'] === 'ok') continue;
                         $_lbl = $_lavStatesA[$__o->laundry_status]['label'] ?? ucfirst($__o->laundry_status);

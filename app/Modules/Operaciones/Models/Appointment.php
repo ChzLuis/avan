@@ -1,5 +1,7 @@
 <?php
-namespace App\Models;
+namespace App\Modules\Operaciones\Models;
+
+use App\Models\Project;
 
 use App\Modules\Crm\Models\Client;
 

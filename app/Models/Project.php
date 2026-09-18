@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Modules\Operaciones\Models\Appointment;
+use App\Modules\Operaciones\Models\OperationalMap;
+use App\Modules\Operaciones\Models\OperationalObject;
+
 use App\Modules\Crm\Models\Client;
 
 use App\Modules\Ventas\Models\Order;

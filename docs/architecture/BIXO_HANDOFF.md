@@ -440,6 +440,33 @@ Guardian `VentasModuloTest` (4).
 3. **Desplegar 1–8 juntos a ARIN** (ver receta en `app/Modules/README.md`).
 4. Inversion de dependencia de los botones de WhatsApp en pedidos (eventos).
 
+### Pasos finales: `Client` → `Crm/` (`7a4e610`) y `Operaciones/` — MUDANZA COMPLETA
+
+- **Client al CRM**: MODULE_OWNERSHIP manda (el README de Ventas lo decia mal).
+  ClientController + Client + `clients/` + `facturacion/clientes` → `crm::`.
+  4 movimientos, 38 reemplazos; bateria 1 rojo antes y despues.
+- **Operaciones**: Agenda/Appointment/Availability/BlockedDate, Mesa, Reserva,
+  Delivery, OperationalMap/Object/Event/Request, `LaundryFlow`,
+  `CheckLaundryOverdue`, vistas `agenda/ mapa/ comercial/{delivery,mesas,
+  reservas}` (`operaciones::`). 19 movimientos, 30 rutas. `Sede` es Core.
+  `app/Console` desaparece: todos los comandos viven en `Modules/*/Commands`
+  y los registra el provider generico.
+- Generadores: los `use` de los pasos 3 y 3b se deduplican (un `use` doble es
+  fatal en PHP). Hueco visto y evitado: un guardian que concatena el prefijo
+  (`'operaciones::' . $vista`) haria que el generador renombrara el literal y
+  quedara doble; los guardianes llevan el nombre completo.
+
+**Estado final:** 66 rutas quedan en Core (auth, workspace, ajustes, proyectos,
+perfil, sedes, cara del portal comercial); el resto en 10 modulos. Ver
+`app/Modules/README.md` (tabla y receta de despliegue). **Nada desplegado.**
+
+**Lo siguiente, en orden:** (1) modo `--modulos` en `deploy.py` (subir nuevos,
+borrar viejos, dump-autoload, view:clear, route:cache, curl de salud);
+(2) desplegar TODO junto en una ventana vigilada; (3) inversion de dependencia
+de los botones de WhatsApp en pedidos; (4) retirar `ExternalRequest`/
+`InternalRequest`, `projects/create.blade.php` (extends roto) y el Diseño
+clasico; (5) `CouponController` propio de Tienda (hoy en SettingsController).
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia

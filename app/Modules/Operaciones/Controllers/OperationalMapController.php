@@ -1,11 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Operaciones\Controllers;
 
-use App\Models\OperationalMap;
-use App\Models\OperationalObject;
-use App\Models\OperationalEvent;
-use App\Models\OperationalRequest;
+use App\Http\Controllers\Controller;
+
+use App\Modules\Operaciones\Models\OperationalMap;
+use App\Modules\Operaciones\Models\OperationalObject;
+use App\Modules\Operaciones\Models\OperationalEvent;
+use App\Modules\Operaciones\Models\OperationalRequest;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +32,7 @@ class OperationalMapController extends Controller
         $maps      = $project->operationalMaps()->orderBy('sort_order')->get();
         $employees = $project->employees()->where('is_active', true)->orderBy('name')->get();
 
-        return view('mapa.index', compact('project', 'map', 'maps', 'employees'));
+        return view('operaciones::mapa.index', compact('project', 'map', 'maps', 'employees'));
     }
 
     // ── API: obtener objetos del mapa ─────────────────────────────────────────

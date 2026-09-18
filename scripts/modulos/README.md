@@ -53,3 +53,17 @@ para los `@include` por nombre; solo se renombran literales con punto (un
 `'promotions'` suelto es una tabla, no una vista). Tras aplicar, correr
 `python scripts/modulos/limpiar_imports.py scripts/modulos/plan_X.json` para quitar los
 `use` que sobran de clases usadas solo por FQCN.
+
+## Estado final (2026-09-17): mudanza completa
+
+Generadores en orden de madurez: `plan_ventas.py` es la versión de
+referencia (incluye el paso 3b: archivos de Core que comparten el namespace
+viejo del movido y lo usan por nombre corto sin `use`; y la reescritura
+automática de `resource_path('views/...')` en tests). `plan_client.py` y
+`plan_operaciones.py` derivan de él. Los `use` de los pasos 3 y 3b se
+deduplican (un `use` doble es fatal). Un guardián que concatene el prefijo
+(`'mod::' . $vista`) hace que el generador doble el prefijo: los guardianes
+llevan el nombre completo.
+
+Los planes `plan_*.json` quedan como registro de qué se movió y qué se
+reemplazó en cada paso; no se reaplican.

@@ -1,5 +1,7 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Modules\Operaciones\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
@@ -63,7 +65,7 @@ class DeliveryController extends Controller
             ->map(fn($e) => ['id' => $e->id, 'name' => $e->name])
             ->values()->all();
 
-        return view('comercial.delivery', compact('project', 'ordersJson', 'repartidores'));
+        return view('operaciones::comercial.delivery', compact('project', 'ordersJson', 'repartidores'));
     }
 
     public function updateStatus(Request $request, Order $order)

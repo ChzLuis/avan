@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Catalogo\Models;
 
-use App\Models\Appointment;
+use App\Modules\Operaciones\Models\Appointment;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Model;
 class Service extends Model {

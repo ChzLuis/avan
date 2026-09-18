@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Operaciones\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Project;
-use App\Models\Appointment;
+use App\Modules\Operaciones\Models\Appointment;
 use Illuminate\Http\Request;
 
 class AgendaController extends Controller
@@ -16,7 +18,7 @@ class AgendaController extends Controller
         $services        = $project->services()->where('is_available', true)->get();
         $appointmentTypes = $this->catValues($project, 'appointment_type');
         $priorities      = $this->catValues($project, 'priority');
-        return view('agenda.index', compact('project', 'appointments', 'services', 'appointmentTypes', 'priorities'));
+        return view('operaciones::agenda.index', compact('project', 'appointments', 'services', 'appointmentTypes', 'priorities'));
     }
 
     private function catValues(Project $project, string $type): \Illuminate\Support\Collection

@@ -1,0 +1,742 @@
+{
+ "moves": [
+  [
+   "app/Http/Controllers/AgendaController.php",
+   "app/Modules/Operaciones/Controllers/AgendaController.php"
+  ],
+  [
+   "app/Http/Controllers/DeliveryController.php",
+   "app/Modules/Operaciones/Controllers/DeliveryController.php"
+  ],
+  [
+   "app/Http/Controllers/MesaController.php",
+   "app/Modules/Operaciones/Controllers/MesaController.php"
+  ],
+  [
+   "app/Http/Controllers/OperationalMapController.php",
+   "app/Modules/Operaciones/Controllers/OperationalMapController.php"
+  ],
+  [
+   "app/Http/Controllers/ReservaController.php",
+   "app/Modules/Operaciones/Controllers/ReservaController.php"
+  ],
+  [
+   "app/Models/Appointment.php",
+   "app/Modules/Operaciones/Models/Appointment.php"
+  ],
+  [
+   "app/Models/Availability.php",
+   "app/Modules/Operaciones/Models/Availability.php"
+  ],
+  [
+   "app/Models/BlockedDate.php",
+   "app/Modules/Operaciones/Models/BlockedDate.php"
+  ],
+  [
+   "app/Models/OperationalEvent.php",
+   "app/Modules/Operaciones/Models/OperationalEvent.php"
+  ],
+  [
+   "app/Models/OperationalMap.php",
+   "app/Modules/Operaciones/Models/OperationalMap.php"
+  ],
+  [
+   "app/Models/OperationalObject.php",
+   "app/Modules/Operaciones/Models/OperationalObject.php"
+  ],
+  [
+   "app/Models/OperationalRequest.php",
+   "app/Modules/Operaciones/Models/OperationalRequest.php"
+  ],
+  [
+   "app/Support/LaundryFlow.php",
+   "app/Modules/Operaciones/Support/LaundryFlow.php"
+  ],
+  [
+   "app/Console/Commands/CheckLaundryOverdue.php",
+   "app/Modules/Operaciones/Commands/CheckLaundryOverdue.php"
+  ],
+  [
+   "resources/views/agenda",
+   "app/Modules/Operaciones/Views/agenda"
+  ],
+  [
+   "resources/views/mapa",
+   "app/Modules/Operaciones/Views/mapa"
+  ],
+  [
+   "resources/views/comercial/delivery.blade.php",
+   "app/Modules/Operaciones/Views/comercial/delivery.blade.php"
+  ],
+  [
+   "resources/views/comercial/mesas.blade.php",
+   "app/Modules/Operaciones/Views/comercial/mesas.blade.php"
+  ],
+  [
+   "resources/views/comercial/reservas.blade.php",
+   "app/Modules/Operaciones/Views/comercial/reservas.blade.php"
+  ]
+ ],
+ "edits": {
+  "app/Modules/Operaciones/Controllers/AgendaController.php": [
+   {
+    "old": "App\\Models\\Appointment",
+    "new": "App\\Modules\\Operaciones\\Models\\Appointment",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Operaciones\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('agenda.index'",
+    "new": "view('operaciones::agenda.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Controllers/OperationalMapController.php": [
+   {
+    "old": "App\\Models\\OperationalRequest",
+    "new": "App\\Modules\\Operaciones\\Models\\OperationalRequest",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\OperationalObject",
+    "new": "App\\Modules\\Operaciones\\Models\\OperationalObject",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\OperationalEvent",
+    "new": "App\\Modules\\Operaciones\\Models\\OperationalEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\OperationalMap",
+    "new": "App\\Modules\\Operaciones\\Models\\OperationalMap",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Operaciones\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('mapa.index'",
+    "new": "view('operaciones::mapa.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Controllers/ReservaController.php": [
+   {
+    "old": "App\\Models\\Appointment",
+    "new": "App\\Modules\\Operaciones\\Models\\Appointment",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Operaciones\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.reservas'",
+    "new": "view('operaciones::comercial.reservas'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/Service.php": [
+   {
+    "old": "App\\Models\\Appointment",
+    "new": "App\\Modules\\Operaciones\\Models\\Appointment",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Models/Client.php": [
+   {
+    "old": "App\\Models\\Appointment",
+    "new": "App\\Modules\\Operaciones\\Models\\Appointment",
+    "n": 1
+   }
+  ],
+  "app/Support/ModulosPortal.php": [
+   {
+    "old": "App\\Models\\Appointment",
+    "new": "App\\Modules\\Operaciones\\Models\\Appointment",
+    "n": 1
+   }
+  ],
+  "routes/web.php": [
+   {
+    "old": "App\\Http\\Controllers\\OperationalMapController",
+    "new": "App\\Modules\\Operaciones\\Controllers\\OperationalMapController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\DeliveryController",
+    "new": "App\\Modules\\Operaciones\\Controllers\\DeliveryController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\ReservaController",
+    "new": "App\\Modules\\Operaciones\\Controllers\\ReservaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\AgendaController",
+    "new": "App\\Modules\\Operaciones\\Controllers\\AgendaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\MesaController",
+    "new": "App\\Modules\\Operaciones\\Controllers\\MesaController",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PanelAuthorizationTest.php": [
+   {
+    "old": "App\\Models\\Appointment",
+    "new": "App\\Modules\\Operaciones\\Models\\Appointment",
+    "n": 2
+   }
+  ],
+  "tests/Feature/ProjectIsolationTest.php": [
+   {
+    "old": "App\\Models\\Appointment",
+    "new": "App\\Modules\\Operaciones\\Models\\Appointment",
+    "n": 1
+   }
+  ],
+  "resources/views/comercial/layouts/app.blade.php": [
+   {
+    "old": "App\\Support\\LaundryFlow",
+    "new": "App\\Modules\\Operaciones\\Support\\LaundryFlow",
+    "n": 2
+   }
+  ],
+  "app/Modules/Operaciones/Controllers/DeliveryController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Operaciones\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.delivery'",
+    "new": "view('operaciones::comercial.delivery'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Controllers/MesaController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Operaciones\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.mesas'",
+    "new": "view('operaciones::comercial.mesas'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Models/Appointment.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Operaciones\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Models/Availability.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Operaciones\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Models/BlockedDate.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Operaciones\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Models/OperationalEvent.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Operaciones\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Models/OperationalMap.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Operaciones\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Models/OperationalObject.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Operaciones\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Models/OperationalRequest.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Operaciones\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Support/LaundryFlow.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Operaciones\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Operaciones/Commands/CheckLaundryOverdue.php": [
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Operaciones\\Commands;",
+    "n": 1
+   }
+  ]
+ },
+ "inserts": {
+  "app/Modules/Operaciones/Controllers/AgendaController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Operaciones/Controllers/DeliveryController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Operaciones/Controllers/MesaController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Operaciones/Controllers/OperationalMapController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Operaciones/Controllers/ReservaController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Operaciones/Models/Appointment.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Operaciones/Models/Availability.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Operaciones/Models/BlockedDate.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Operaciones/Models/OperationalEvent.php": [
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Operaciones/Models/OperationalMap.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Operaciones/Models/OperationalObject.php": [
+   "use App\\Models\\Employee;",
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Operaciones/Models/OperationalRequest.php": [
+   "use App\\Models\\Employee;",
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Models/Project.php": [
+   "use App\\Modules\\Operaciones\\Models\\Appointment;",
+   "use App\\Modules\\Operaciones\\Models\\OperationalMap;",
+   "use App\\Modules\\Operaciones\\Models\\OperationalObject;"
+  ]
+ },
+ "decisiones": [
+  [
+   "no-vista",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   293,
+   "agenda.ver",
+   "t->owner_id===auth()->id() || "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   193,
+   "mapa.ver",
+   "> 'pedidos.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   194,
+   "mapa.editar",
+   "    => 'pedidos.ver',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   234,
+   "agenda.ver",
+   "      // ── Agenda ──         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   234,
+   "agenda.ver",
+   " ──         'agenda.ver'      "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   235,
+   "agenda.crear",
+   "     => 'agenda.ver',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   235,
+   "agenda.trabajar",
+   "r',         'agenda.crear'    "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   236,
+   "agenda.editar",
+   "=> 'agenda.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   236,
+   "agenda.trabajar",
+   "r',         'agenda.editar'   "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   237,
+   "agenda.eliminar",
+   "=> 'agenda.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   237,
+   "agenda.administrar",
+   "r',         'agenda.eliminar' "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   238,
+   "agenda.ver",
+   "r',         'view-agenda'     "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   239,
+   "agenda.administrar",
+   "r',         'manage-agenda'   "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   1124,
+   "mapa.",
+   "─────────────────────         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   43,
+   "agenda.crear",
+   "invoices.anular',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   43,
+   "agenda.editar",
+   "  'agenda.ver', 'agenda.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   43,
+   "agenda.eliminar",
+   "agenda.crear', 'agenda.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   45,
+   "mapa.editar",
+   "caja.movimiento',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   121,
+   "agenda.crear",
+   "invoices.anular',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   121,
+   "agenda.editar",
+   "  'agenda.ver', 'agenda.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   121,
+   "agenda.eliminar",
+   "agenda.crear', 'agenda.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   123,
+   "mapa.editar",
+   "caja.movimiento',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   24,
+   "agenda.editar",
+   "vate const LEGACY = [         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   24,
+   "agenda.eliminar",
+   "agenda.crear', 'agenda.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   24,
+   "agenda.ver",
+   "nda.editar', 'agenda.eliminar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   39,
+   "mapa.ver",
+   "', 'manage-settings',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   180,
+   "agenda.ver",
+   "'vendedor', [                 "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   187,
+   "mapa.ver",
+   "inventory.ver', 'invoices.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   202,
+   "agenda.ver",
+   "= [             'vendedor' => "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   36,
+   "agenda.ver",
+   "        'caja.ver', 'pos.usar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   192,
+   "agenda.ver",
+   ", 'invoices.ver',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OperacionesModuloTest.php",
+   33,
+   "mapa.ver",
+   "['orders.ver', 'logistics.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OperacionesModuloTest.php",
+   33,
+   "agenda.ver",
+   "', 'logistics.ver', 'mapa.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OperacionesModuloTest.php",
+   48,
+   "mapa.ver",
+   "['orders.ver', 'logistics.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OperacionesModuloTest.php",
+   48,
+   "agenda.ver",
+   "', 'logistics.ver', 'mapa.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   39,
+   "agenda.crear",
+   "roles.gestionar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   39,
+   "agenda.editar",
+   "  'agenda.ver', 'agenda.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   131,
+   "agenda.ver",
+   "             'permissions' => "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   135,
+   "agenda.ver",
+   "lsCanonicalizing(             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   157,
+   "agenda.ver",
+   "r cita'         => ['POST',   "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   158,
+   "agenda.ver",
+   "ar cita'        => ['PUT',    "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   159,
+   "agenda.ver",
+   "ar cita'        => ['DELETE', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   43,
+   "agenda.crear",
+   ", 'clients.eliminar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   43,
+   "agenda.editar",
+   "  'agenda.ver', 'agenda.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   40,
+   "agenda.crear",
+   "    // Agenda y citas         "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   40,
+   "agenda.editar",
+   "  'agenda.ver', 'agenda.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   40,
+   "agenda.eliminar",
+   "agenda.crear', 'agenda.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   87,
+   "agenda.crear",
+   "lients.eliminar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   87,
+   "agenda.editar",
+   " 'agenda.ver',  'agenda.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   87,
+   "agenda.eliminar",
+   "genda.crear',  'agenda.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   110,
+   "agenda.crear",
+   "'clients.editar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   179,
+   "agenda.ver",
+   "   'clients.ver',             "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/app.blade.php",
+   1142,
+   "agenda.ver",
+   "         </a>                 "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/_sidebar.blade.php",
+   130,
+   "agenda.ver",
+   "ixosales.reservas', 'agenda', "
+  ],
+  [
+   "no-vista",
+   "resources/views/layouts/app.blade.php",
+   1139,
+   "agenda.ver",
+   "t->owner_id===auth()->id() || "
+  ]
+ ],
+ "avisos": [
+  "tests/Feature/CrmModuloTest.php: menciona vistas de ventas por ruta sin resource_path",
+  "tests/Feature/OperacionesModuloTest.php: menciona vistas de ventas por ruta sin resource_path"
+ ]
+}

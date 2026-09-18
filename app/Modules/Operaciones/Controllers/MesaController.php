@@ -1,5 +1,7 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Modules\Operaciones\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Modules\Ventas\Models\Order;
 use Illuminate\Http\Request;
@@ -94,7 +96,7 @@ class MesaController extends Controller
             'espera'  => json_decode((string) $project->setting('salon_espera', '[]'), true)  ?: [],
         ];
 
-        return view('comercial.mesas', compact('project', 'mesasData', 'catalogUrl', 'salon'));
+        return view('operaciones::comercial.mesas', compact('project', 'mesasData', 'catalogUrl', 'salon'));
     }
 
     // GET /bixosales/mesas/data — polling JSON

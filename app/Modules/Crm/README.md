@@ -2,7 +2,7 @@
 
 **Qué va aquí:** el portal de Comunicaciones (`/bixocrm`: login, bandeja, canales de WhatsApp, clientes con puntaje), las conversaciones que se ven desde el portal comercial, el Copilot (panel y API), los pagos que llegan por la extensión de venta, la sincronización de WhatsApp y los recordatorios de carrito abandonado. `WaCanal` es el **propietario único** de las credenciales de WhatsApp (token, app secret, verify token, cifrados) y `ClienteCloud` el único que habla con la Graph API de Meta para enviar.
 
-**Qué NO va aquí:** el motor que decide qué contesta un bot (eso es `Bots/`). `ComunicacionesAuth` (middleware) se queda en Core. `OrderFlow`/`LaundryFlow` (flujos de pedido y lavandería) se quedan donde están hasta que les toque a Ventas/Operaciones.
+**Qué NO va aquí:** el motor que decide qué contesta un bot (eso es `Bots/`). `ComunicacionesAuth` (middleware) se queda en Core. `OrderFlow` es de Ventas y `LaundryFlow` de Operaciones.
 
 **Estado:** movido el 2026-09-17 (módulo 5/8, junto con `Bots/`). El mismo día, tras los 8 módulos, llegó **`Client`** (MODULE_OWNERSHIP: el cliente es del CRM): `ClientController` (panel `bixoadmin/clients`, pipeline y la pantalla de clientes dentro del portal fiscal), el modelo y las vistas `clients/` y `facturacion/clientes` (`crm::`). Lo consumen Ventas, Finanzas, Bots y Operaciones por `App\Modules\Crm\Models\Client`.
 

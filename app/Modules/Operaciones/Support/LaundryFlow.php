@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Modules\Operaciones\Support;
 
 use App\Modules\Ventas\Support\OrderFlow;
 
