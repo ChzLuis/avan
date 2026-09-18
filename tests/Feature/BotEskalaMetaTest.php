@@ -141,8 +141,8 @@ class BotEskalaMetaTest extends TestCase
         $env = $this->nuevos($n);
 
         $this->assertSame('button:btn:quiero|btn:tienda|btn:dudas', $this->resumen($env[0]), 'El flyer ya se vio en precios');
-        $this->assertStringContainsString('Pro: hasta 100', $this->cuerpo($env[0]));
-        $this->assertStringContainsString('Business: hasta 200', $this->cuerpo($env[0]));
+        $this->assertStringContainsString('Hasta 100 productos', $this->cuerpo($env[0]));
+        $this->assertStringContainsString('catálogo PDF', $this->cuerpo($env[0]));
     }
 
     public function test_ver_una_tienda_muestra_la_demo_y_luego_el_desde_con_cta(): void
