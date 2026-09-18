@@ -519,6 +519,8 @@ central. Tres commits:
    La bandeja avisa si no hay linea; Canales y el login enlazan.
    `CrmProductoTest` (7).
 
+**Desplegado en ARIN el 2026-09-18 00:03** (`deploy_modulos.py`, respaldo `20260918_000303`, 23 archivos, sin migraciones; registro, asistente, Control y tiendas en 200). El unico ERROR del log es el `tinker` de la comprobacion de tiendas del propio script (psysh no acepta el FQCN): arreglar ese comando, no es de la app.
+
 Sin precios ni cobro todavia: `Productos` define QUE enciende cada producto,
 no cuanto cuesta. Siguiente del plan del CRM: pipeline de oportunidades,
 asignacion de conversaciones a asesores, tareas/notas/etiquetas, plantillas
