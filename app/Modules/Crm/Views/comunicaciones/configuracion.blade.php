@@ -1,8 +1,9 @@
 @extends('crm::comunicaciones.layouts.app')
 @section('pageTitle', 'Canales')
 @section('content')
-<div class="flex-1 overflow-y-auto bg-gray-50 p-6">
-<div class="max-w-3xl mx-auto py-8 px-4" x-data="configuracion()" x-init="init()">
+{{-- El x-data va en el contenedor EXTERIOR: el modal de editar/crear vive fuera del bloque interno y quedaba sin alcance ("guardando is not defined"; Editar no reaccionaba). --}}
+<div class="flex-1 overflow-y-auto bg-gray-50 p-6" x-data="configuracion()" x-init="init()">
+<div class="max-w-3xl mx-auto py-8 px-4">
     <a href="{{ route('bixocrm.conectar') }}" class="inline-flex items-center gap-2 mb-4 text-xs font-semibold text-green-700 hover:text-green-800">
         <span>&rarr;</span> Asistente para conectar WhatsApp con Meta (paso a paso)
     </a>
