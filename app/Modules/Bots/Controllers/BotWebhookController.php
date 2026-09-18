@@ -237,7 +237,7 @@ class BotWebhookController extends Controller
     {
         if (empty($reglas)) return null;
 
-        $client = \App\Models\Client::allProjects()
+        $client = \App\Modules\Crm\Models\Client::allProjects()
             ->where('project_id', $project->id)->where('phone', $telefono)->first();
 
         foreach ($reglas as $regla) {
@@ -285,10 +285,10 @@ class BotWebhookController extends Controller
     /** Aplica las acciones CRM (registrar etapa/etiqueta, agendar seguimiento) que pidió el flujo. */
     private function aplicarAcciones(Project $project, string $telefono, string $nombre, array $acciones): void
     {
-        $client = \App\Models\Client::allProjects()
+        $client = \App\Modules\Crm\Models\Client::allProjects()
             ->where('project_id', $project->id)->where('phone', $telefono)->first();
         if (!$client) {
-            $client = new \App\Models\Client([
+            $client = new \App\Modules\Crm\Models\Client([
                 'project_id' => $project->id, 'name' => $nombre ?: $telefono,
                 'phone' => $telefono, 'etapa' => 'prospecto',
             ]);
@@ -405,10 +405,10 @@ class BotWebhookController extends Controller
             $textos = \App\Modules\Crm\Models\WaMensaje::where('wa_conversacion_id', $conv->id)
                 ->where('direccion', 'in')->orderBy('created_at')->pluck('contenido')->implode("\n");
             $clasif = LeadScoring::clasificar($textos);
-            $client = \App\Models\Client::allProjects()
+            $client = \App\Modules\Crm\Models\Client::allProjects()
                 ->where('project_id', $project->id)->where('phone', $telefono)->first();
             if (!$client) {
-                $client = new \App\Models\Client([
+                $client = new \App\Modules\Crm\Models\Client([
                     'project_id' => $project->id, 'name' => $nombre ?: $telefono,
                     'phone' => $telefono, 'etapa' => 'prospecto',
                 ]);

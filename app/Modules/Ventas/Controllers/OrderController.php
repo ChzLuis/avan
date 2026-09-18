@@ -7,7 +7,7 @@ use App\Modules\Ventas\Support\OrderStatus;
 
 use App\Models\Project;
 use App\Modules\Ventas\Models\Order;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller

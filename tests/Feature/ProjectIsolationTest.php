@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Appointment;
 use App\Modules\Catalogo\Models\Category;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Models\Employee;
 use App\Models\Module;
 use App\Modules\Ventas\Models\Order;

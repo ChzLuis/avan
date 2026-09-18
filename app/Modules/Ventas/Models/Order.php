@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Ventas\Models;
 
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;

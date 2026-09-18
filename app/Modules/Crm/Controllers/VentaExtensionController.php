@@ -3,7 +3,7 @@
 namespace App\Modules\Crm\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Modules\Ventas\Models\Order;
 use App\Modules\Ventas\Models\OrderItem;
 use App\Modules\Catalogo\Models\Product;

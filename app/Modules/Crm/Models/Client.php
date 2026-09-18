@@ -1,5 +1,8 @@
 <?php
-namespace App\Models;
+namespace App\Modules\Crm\Models;
+
+use App\Models\Appointment;
+use App\Models\Project;
 
 use App\Modules\Ventas\Models\Order;
 use App\Modules\Ventas\Models\Quote;

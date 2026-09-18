@@ -119,13 +119,13 @@ class WhatsappSyncController extends Controller
             // Clasificar el lead con lo conversado (reglas o IA) y guardarlo en clients.
             if (trim($textos) !== '') {
                 $clasif = LeadScoring::clasificar($textos);
-                $client = \App\Models\Client::allProjects()
+                $client = \App\Modules\Crm\Models\Client::allProjects()
                     ->where('project_id', $project->id)
                     ->when($telefono !== '', fn ($q) => $q->where('phone', $telefono))
                     ->when($telefono === '', fn ($q) => $q->where('name', $nombre))
                     ->first();
                 if (!$client) {
-                    $client = new \App\Models\Client([
+                    $client = new \App\Modules\Crm\Models\Client([
                         'project_id' => $project->id, 'name' => $nombre,
                         'phone' => $telefono ?: null, 'etapa' => 'prospecto',
                     ]);

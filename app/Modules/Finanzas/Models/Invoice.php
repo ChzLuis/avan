@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Finanzas\Models;
 
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 use App\Modules\Ventas\Models\Quote;

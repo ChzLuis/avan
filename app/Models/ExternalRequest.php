@@ -1,5 +1,7 @@
 <?php
 namespace App\Models;
+
+use App\Modules\Crm\Models\Client;
 use Illuminate\Database\Eloquent\Model;
 class ExternalRequest extends Model {
     protected $fillable = ['project_id', 'client_id', 'client_name', 'client_phone', 'client_email', 'type', 'title', 'description', 'status', 'response'];

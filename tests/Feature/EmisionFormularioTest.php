@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Project;
 use App\Models\User;

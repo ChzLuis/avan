@@ -120,7 +120,7 @@ class BotFase2CierreTest extends TestCase
     /** LID-007: el handoff (vendedor asignado) también aplica tras la fusión. */
     public function test_lid_007_handoff_sobrevive_a_la_fusion(): void
     {
-        \App\Models\Client::create([
+        \App\Modules\Crm\Models\Client::create([
             'project_id' => $this->project->id, 'name' => 'VIP',
             'phone' => '51955354646', 'responsable' => 'Vendedora Ana',
         ]);

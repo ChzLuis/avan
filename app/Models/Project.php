@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Modules\Crm\Models\Client;
+
 use App\Modules\Ventas\Models\Order;
 use App\Modules\Ventas\Models\Proposal;
 use App\Modules\Ventas\Models\Quote;

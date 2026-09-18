@@ -4,17 +4,17 @@
 
 **Qué NO va aquí:** el motor que decide qué contesta un bot (eso es `Bots/`). `ComunicacionesAuth` (middleware) se queda en Core. `OrderFlow`/`LaundryFlow` (flujos de pedido y lavandería) se quedan donde están hasta que les toque a Ventas/Operaciones.
 
-**Estado:** movido el 2026-09-17 (módulo 5/8, junto con `Bots/`).
+**Estado:** movido el 2026-09-17 (módulo 5/8, junto con `Bots/`). El mismo día, tras los 8 módulos, llegó **`Client`** (MODULE_OWNERSHIP: el cliente es del CRM): `ClientController` (panel `bixoadmin/clients`, pipeline y la pantalla de clientes dentro del portal fiscal), el modelo y las vistas `clients/` y `facturacion/clientes` (`crm::`). Lo consumen Ventas, Finanzas, Bots y Operaciones por `App\Modules\Crm\Models\Client`.
 
 ```
-Controllers/   CrmAuthController, BandejaController, CanalesController, ClientesCrmController,
+Controllers/   CrmAuthController, BandejaController, CanalesController, ClientesCrmController, ClientController,
                ConversacionesController, ComunicacionesController, CopilotEmpresarialController,
                CopilotController, VentaExtensionController, WhatsappSyncController, PagoController
-Models/        WaCanal, WaChatbotFlow, WaConversacion, WaMensaje, WaRespuestaRapida
+Models/        Client, WaCanal, WaChatbotFlow, WaConversacion, WaMensaje, WaRespuestaRapida
 Support/       WhatsappCloud/ClienteCloud
 Jobs/          SendAbandonedCartReminder
 Commands/      SeguimientoConversaciones (bot:seguimiento), SendAbandonedCartReminders (carts:remind)
-Views/         comunicaciones/{auth,bandeja,chatbot,clientes,configuracion,index,layouts},
+Views/         clients/, facturacion/clientes/, comunicaciones/{auth,bandeja,chatbot,clientes,configuracion,index,layouts},
                copilot/, comercial/conversaciones
 ```
 

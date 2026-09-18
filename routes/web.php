@@ -11,7 +11,7 @@ use App\Modules\Catalogo\Controllers\ServiceController;
 use App\Modules\Catalogo\Controllers\CategoryController;
 use App\Modules\Ventas\Controllers\OrderController;
 use App\Modules\Ventas\Controllers\QuoteController;
-use App\Http\Controllers\ClientController;
+use App\Modules\Crm\Controllers\ClientController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\SettingsController;
 use App\Modules\Catalogo\Controllers\CatalogListController;

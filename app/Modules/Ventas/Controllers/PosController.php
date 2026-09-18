@@ -254,7 +254,7 @@ class PosController extends Controller
 
         // CRM automático: venta pagada con cliente identificado → etapa "ganado".
         if (!empty($data['paid']) && !empty($data['client_id'])) {
-            \App\Models\Client::allProjects()->where('project_id', $project->id)
+            \App\Modules\Crm\Models\Client::allProjects()->where('project_id', $project->id)
                 ->where('id', $data['client_id'])
                 ->update(['etapa' => 'ganado', 'ultima_actividad' => now()]);
         }
@@ -393,7 +393,7 @@ class PosController extends Controller
 
         // CRM automático: cotización creada con cliente → etapa "propuesta".
         if ($request->filled('client_id')) {
-            \App\Models\Client::allProjects()->where('project_id', $project->id)
+            \App\Modules\Crm\Models\Client::allProjects()->where('project_id', $project->id)
                 ->where('id', $request->input('client_id'))
                 ->update(['etapa' => 'propuesta', 'ultima_actividad' => now()]);
         }
@@ -467,7 +467,7 @@ class PosController extends Controller
         // precargamos ese cliente para no volver a registrarlo.
         $preload = null;
         if ($request->filled('client_id')) {
-            $c = \App\Models\Client::allProjects()->where('project_id', $project->id)->find($request->integer('client_id'));
+            $c = \App\Modules\Crm\Models\Client::allProjects()->where('project_id', $project->id)->find($request->integer('client_id'));
             if ($c) $preload = ['id' => $c->id, 'name' => $c->name, 'phone' => (string) $c->phone];
         } elseif ($request->filled('from_order')) {
             $o = Order::allProjects()->where('project_id', $project->id)->find($request->integer('from_order'));
@@ -477,12 +477,12 @@ class PosController extends Controller
             if ($q) $preload = ['id' => $q->client_id, 'name' => $q->client_name, 'phone' => (string) $q->client_phone];
         } elseif ($request->filled('phone')) {
             $normalized = preg_replace('/\D/', '', (string) $request->input('phone'));
-            $c = \App\Models\Client::allProjects()->where('project_id', $project->id)
+            $c = \App\Modules\Crm\Models\Client::allProjects()->where('project_id', $project->id)
                 ->where('phone', 'like', '%'.$normalized.'%')->first();
             $preload = $c ? ['id' => $c->id, 'name' => $c->name, 'phone' => (string) $c->phone] : ['id' => null, 'name' => null, 'phone' => $normalized];
         }
 
-        $clientsLite = \App\Models\Client::allProjects()->where('project_id', $project->id)
+        $clientsLite = \App\Modules\Crm\Models\Client::allProjects()->where('project_id', $project->id)
             ->orderByDesc('updated_at')->limit(300)
             ->get(['id', 'name', 'phone', 'email'])
             ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'phone' => (string) $c->phone])->values();

@@ -1,0 +1,896 @@
+{
+ "moves": [
+  [
+   "app/Http/Controllers/ClientController.php",
+   "app/Modules/Crm/Controllers/ClientController.php"
+  ],
+  [
+   "app/Models/Client.php",
+   "app/Modules/Crm/Models/Client.php"
+  ],
+  [
+   "resources/views/clients",
+   "app/Modules/Crm/Views/clients"
+  ],
+  [
+   "resources/views/facturacion/clientes",
+   "app/Modules/Crm/Views/facturacion/clientes"
+  ]
+ ],
+ "edits": {
+  "app/Modules/Crm/Controllers/ClientController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('clients.index'",
+    "new": "view('crm::clients.index'",
+    "n": 1
+   },
+   {
+    "old": "view('clients.pipeline'",
+    "new": "view('crm::clients.pipeline'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.clientes.index'",
+    "new": "view('crm::facturacion.clientes.index'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/ReservaController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/BotWebhookController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 5
+   }
+  ],
+  "app/Modules/Control/Controllers/AdminImportController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/ClientesCrmController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/CopilotController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/VentaExtensionController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/WhatsappSyncController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 2
+   }
+  ],
+  "app/Modules/Crm/Models/WaConversacion.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/InvoiceController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/GuiaRemision.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/Invoice.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/DashboardComercialController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/OrderController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/PortalClienteController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/PosController.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 5
+   }
+  ],
+  "app/Modules/Ventas/Models/Order.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/Quote.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/SalesInteraction.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Support/ProjectContext.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "routes/web.php": [
+   {
+    "old": "App\\Http\\Controllers\\ClientController",
+    "new": "App\\Modules\\Crm\\Controllers\\ClientController",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotClientesRealesTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotFase2CierreTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ClienteEnlazadoTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ClientRoutesAuthorizationTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/Customer360Test.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/EdicionEnSitioTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/EmisionFormularioTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/InvoiceClientLinkTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PortalClienteTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PortalFacturacionRbacTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PosUsabilidadTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProjectIsolationTest.php": [
+   {
+    "old": "App\\Models\\Client",
+    "new": "App\\Modules\\Crm\\Models\\Client",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Models/Client.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Crm\\Models;",
+    "n": 1
+   }
+  ]
+ },
+ "inserts": {
+  "app/Modules/Crm/Controllers/ClientController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Crm/Models/Client.php": [
+   "use App\\Models\\Appointment;",
+   "use App\\Models\\Project;"
+  ],
+  "app/Models/Appointment.php": [
+   "use App\\Modules\\Crm\\Models\\Client;"
+  ],
+  "app/Models/ExternalRequest.php": [
+   "use App\\Modules\\Crm\\Models\\Client;"
+  ],
+  "app/Models/Project.php": [
+   "use App\\Modules\\Crm\\Models\\Client;"
+  ]
+ },
+ "decisiones": [
+  [
+   "no-vista",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   274,
+   "clients.ver",
+   "t->owner_id===auth()->id() || "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Finanzas/Views/facturacion/layouts/app.blade.php",
+   128,
+   "facturacion.clientes",
+   "</p>              <a href=\"{{ "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   205,
+   "clients.ver",
+   "    // ── Clientes ──         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   206,
+   "clients.crear",
+   "   => 'clientes.ver',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   207,
+   "clients.editar",
+   " 'clientes.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   208,
+   "clients.eliminar",
+   " 'clientes.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   222,
+   "clients.create",
+   "entController::class, 'create'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   223,
+   "clients.store",
+   "ientController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   224,
+   "clients.show",
+   "lientController::class, 'show'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   225,
+   "clients.edit",
+   "lientController::class, 'edit'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   226,
+   "clients.update",
+   "entController::class, 'update'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   227,
+   "clients.destroy",
+   "ntController::class, 'destroy'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   229,
+   "clients.portal",
+   "rtalClienteController::class, "
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   233,
+   "clients.pipeline",
+   "s', 'can:clients.ver'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   236,
+   "clients.stage",
+   "middleware(['module:clients', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   41,
+   "clients.crear",
+   "quotes.eliminar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   41,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   41,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   119,
+   "clients.crear",
+   "quotes.eliminar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   119,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   119,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClienteEnlazadoTest.php",
+   36,
+   "clients.ver",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClienteEnlazadoTest.php",
+   50,
+   "clients.ver",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   32,
+   "clients.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   32,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   32,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   67,
+   "clients.ver",
+   "scribir(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   86,
+   "clients.crear",
+   " = $this->cliente();          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   93,
+   "clients.editar",
+   "        // borrar no          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   98,
+   "clients.eliminar",
+   "->assertStatus(403);          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   107,
+   "clients.ver",
+   "        // retroceda.         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   121,
+   "clients.ver",
+   "evienta(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   132,
+   "clients.ver",
+   "cliente(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClientRoutesAuthorizationTest.php",
+   148,
+   "clients.ver",
+   "royecto(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComercialEntitlementTest.php",
+   59,
+   "clients.ver",
+   "  $this->usuarioCon($project, "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComercialEntitlementTest.php",
+   68,
+   "clients.ver",
+   "  $this->usuarioCon($project, "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   35,
+   "clients.ver",
+   ".eliminar',                   "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   163,
+   "clients.ver",
+   "cciones(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   183,
+   "clients.ver",
+   "seccion(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   203,
+   "clients.ver",
+   "erretería Molina']);          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   213,
+   "clients.ver",
+   "a_letra(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   31,
+   "clients.editar",
+   "enas', 'catalog.ver',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   31,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   31,
+   "clients.ver",
+   "ts.editar', 'clients.eliminar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   175,
+   "clients.crear",
+   "evendedor', [                 "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   175,
+   "clients.editar",
+   "'catalog.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   175,
+   "clients.ver",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   181,
+   "clients.editar",
+   "catalog.ver',                 "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   181,
+   "clients.ver",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   186,
+   "clients.ver",
+   "er', 'caja.ver', 'catalog.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   203,
+   "clients.crear",
+   "',                            "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   203,
+   "clients.editar",
+   "'catalog.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   203,
+   "clients.ver",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   211,
+   "clients.ver",
+   "'],             'contador' => "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   35,
+   "clients.ver",
+   "    'orders.ver', 'quotes.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   78,
+   "clients.ver",
+   "    'orders.ver', 'quotes.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   102,
+   "clients.ver",
+   "    'orders.ver', 'quotes.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   121,
+   "clients.ver",
+   "    'orders.ver', 'quotes.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   131,
+   "clients.ver",
+   "    'orders.ver', 'quotes.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PortalClienteTest.php",
+   128,
+   "clients.editar",
+   "indOrCreate('portal_qa', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PortalFacturacionRbacTest.php",
+   30,
+   "clients.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PortalFacturacionRbacTest.php",
+   30,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PortalFacturacionRbacTest.php",
+   30,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PortalFacturacionRbacTest.php",
+   61,
+   "clients.ver",
+   ".crear: antes pasaba.         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PortalFacturacionRbacTest.php",
+   71,
+   "clients.ver",
+   "_legado(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   42,
+   "clients.crear",
+   "', 'quotes.eliminar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   42,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   42,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ShellUnicoWorkspaceTest.php",
+   49,
+   "clients.ver",
+   ", 'view-orders', 'reports.ver'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   37,
+   "clients.crear",
+   "          // Clientes         "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   37,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   37,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   86,
+   "clients.crear",
+   "invoices.anular',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   86,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   86,
+   "clients.eliminar",
+   "ients.crear', 'clients.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   109,
+   "clients.crear",
+   "'invoices.crear',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   109,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   127,
+   "clients.crear",
+   " 'quotes.editar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   127,
+   "clients.editar",
+   "'clients.ver', 'clients.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   164,
+   "clients.ver",
+   "    'quotes.ver',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   178,
+   "clients.ver",
+   "  'invoices.ver',             "
+  ],
+  [
+   "ruta ",
+   "resources/views/clients/index.blade.php",
+   28,
+   "clients.pipeline",
+   "disset         @if(Route::has("
+  ],
+  [
+   "ruta ",
+   "resources/views/clients/index.blade.php",
+   29,
+   "clients.pipeline",
+   "'))         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/layouts/app.blade.php",
+   1213,
+   "clients.pipeline",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/layouts/app.blade.php",
+   1213,
+   "clients.pipeline",
+   "ub-item {{ request()->routeIs("
+  ]
+ ],
+ "avisos": []
+}

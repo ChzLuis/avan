@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Finanzas\Models\Invoice;
 use App\Modules\Finanzas\Models\InvoiceItem;
 use App\Models\Project;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Modules\Finanzas\Jobs\SendInvoiceToSunat;
 use App\Modules\Finanzas\Support\NubefactService;
 use App\Support\LineMath;

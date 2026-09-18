@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Modules\Bots\Models\BotFlow;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Modules\Tienda\Models\StoreSection;

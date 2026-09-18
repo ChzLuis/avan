@@ -4,7 +4,7 @@ namespace App\Modules\Ventas\Controllers;
 
 use App\Http\Controllers\Controller;
 
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Modules\Ventas\Models\Order;
 use App\Modules\Catalogo\Models\Product;
 use Illuminate\Http\Request;

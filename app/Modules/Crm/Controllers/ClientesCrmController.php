@@ -6,7 +6,7 @@ use App\Modules\Bots\Ia\IA;
 use App\Modules\Crm\Models\WaMensaje;
 
 use App\Http\Controllers\Controller;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Models\Project;
 use App\Modules\Crm\Models\WaConversacion;
 use App\Modules\Crm\Models\WaCanal;

@@ -4,7 +4,7 @@ namespace App\Modules\Crm\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Bots\Ia\IA;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Models\Project;
 use App\Modules\Bots\Support\LeadScoring;
 use App\Support\ProjectContext;

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Module;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,6 +71,20 @@ class CrmModuloTest extends TestCase
             ->assertViewIs('crm::comunicaciones.clientes');
     }
 
+    /** Los clientes del panel (bixoadmin/clients) son del CRM: MODULE_OWNERSHIP manda. */
+    public function test_los_clientes_del_panel_se_pintan_con_la_vista_del_modulo(): void
+    {
+        $this->usuario->forceFill(['is_superadmin' => true])->save();
+        $m = Module::firstOrCreate(['key' => 'clients'], ['name' => 'clients', 'is_active' => true]);
+        $this->proyecto->modules()->syncWithoutDetaching([$m->id => ['is_active' => true]]);
+
+        $this->actingAs($this->usuario)
+            ->withSession(['active_project_id' => $this->proyecto->id])
+            ->get('/bixoadmin/clients')
+            ->assertOk()
+            ->assertViewIs('crm::clients.index');
+    }
+
     /** Los comandos programados siguen registrados tras mudar sus clases. */
     public function test_los_comandos_del_modulo_siguen_registrados(): void
     {
@@ -87,6 +102,8 @@ class CrmModuloTest extends TestCase
     {
         $viejas = [
             'app/Http/Controllers/Comunicaciones',
+            'app/Http/Controllers/ClientController.php', 'app/Models/Client.php',
+            'resources/views/clients', 'resources/views/facturacion/clientes',
             'app/Http/Controllers/ComunicacionesController.php',
             'app/Http/Controllers/CopilotEmpresarialController.php',
             'app/Http/Controllers/Comercial/ConversacionesController.php',
@@ -113,10 +130,11 @@ class CrmModuloTest extends TestCase
 
         $patron = '/\\bApp\\\\('
             . 'Models\\\\(WaCanal|WaChatbotFlow|WaConversacion|WaMensaje|WaRespuestaRapida)\\b'
+            . '|Models\\\\Client\\b'
             . '|Support\\\\WhatsappCloud\\\\'
             . '|Jobs\\\\SendAbandonedCartReminder\\b'
             . '|Console\\\\Commands\\\\(SeguimientoConversaciones|SendAbandonedCartReminders)\\b'
-            . '|Http\\\\Controllers\\\\(Comunicaciones\\\\(?!BotBuilderPortalController)|(ComunicacionesController|CopilotEmpresarialController)\\b|Comercial\\\\ConversacionesController\\b|Api\\\\(Copilot|VentaExtension|WhatsappSync|Pago)Controller\\b)'
+            . '|Http\\\\Controllers\\\\(Comunicaciones\\\\(?!BotBuilderPortalController)|(ComunicacionesController|CopilotEmpresarialController|ClientController)\\b|Comercial\\\\ConversacionesController\\b|Api\\\\(Copilot|VentaExtension|WhatsappSync|Pago)Controller\\b)'
             . ')/';
         $infractores = [];
         foreach ([base_path('app'), base_path('routes'), base_path('tests'), base_path('database'), base_path('config'), base_path('bootstrap'), base_path('resources/views')] as $raiz) {

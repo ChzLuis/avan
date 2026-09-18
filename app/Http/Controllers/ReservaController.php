@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use App\Models\Project;
 use Illuminate\Http\Request;
 

@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Crm\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Project;
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 use Illuminate\Http\Request;
 
 class ClientController extends Controller
@@ -25,7 +27,7 @@ class ClientController extends Controller
             'total'    => $clients->count(),
         ];
 
-        return view('clients.index', compact('project', 'clients', 'clientTypes', 'leadSources', 'portalLayout', 'leadStats'));
+        return view('crm::clients.index', compact('project', 'clients', 'clientTypes', 'leadSources', 'portalLayout', 'leadStats'));
     }
 
     /**
@@ -169,7 +171,7 @@ class ClientController extends Controller
                 ->values();
         }
 
-        return view('clients.pipeline', compact('project', 'etapas', 'porEtapa'));
+        return view('crm::clients.pipeline', compact('project', 'etapas', 'porEtapa'));
     }
 
     /** Mover un lead de etapa (drag & drop del pipeline). */
@@ -248,7 +250,7 @@ class ClientController extends Controller
         $clients     = $project->clients()->withCount(['orders','appointments'])->latest()->get();
         $clientTypes = $this->catValues($project, 'client_type');
         $leadSources = $this->catValues($project, 'lead_source');
-        return view('facturacion.clientes.index', compact('project', 'clients', 'clientTypes', 'leadSources'));
+        return view('crm::facturacion.clientes.index', compact('project', 'clients', 'clientTypes', 'leadSources'));
     }
 
     public function storePortal(Request $request, string $slug)

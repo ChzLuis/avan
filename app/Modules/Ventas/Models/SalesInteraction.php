@@ -2,7 +2,7 @@
 
 namespace App\Modules\Ventas\Models;
 
-use App\Models\Client;
+use App\Modules\Crm\Models\Client;
 
 use Illuminate\Database\Eloquent\Model;
 
