@@ -77,6 +77,16 @@ pago unico y sin mensualidades. ¿Que quieres hacer?" (🚀 Quiero empezar / �
 `flujo_eskala_v4.py` (scratchpad); v1-v3 en git. Rango 50-150 cae en PRO (tope 100): lo ajusta el
 asesor. La v3 queda documentada arriba solo como historia.
 
+**Embudo de Eskala v5 (VIGENTE, guion del usuario, reemplaza v4)**: menu comercial primero
+("¿Que te gustaria ver?" 💰 Ver precios / 👀 Ver una tienda / 💬 Hablar con asesor). Precios -> 3
+planes + (Comparar / Ver tienda / Quiero empezar). Tienda -> demo con foto + "desde S/ 490" +
+(Ver planes / Quiero una / Duda). Asesor -> "Te paso con un asesor" + trato, sin mas bot. "Quiero"
+-> abre trato, pregunta tipo de negocio -> ¿fotos listas? -> cierre (nombre + Instagram). Cada
+intencion escrita va directo (precio, ejemplos, que incluye, quiero comprar); lo no entendido
+vuelve al menu. Trampa: un `mensaje` seguido de una `condicion` la ejecuta en seco (mandaba
+"Anotado" sin que el cliente hablara): entre medio va un `intencion` vacio (`escucha`). Generador
+`flujo_eskala_v5.py`; v1-v4 en git.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
