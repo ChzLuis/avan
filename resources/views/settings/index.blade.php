@@ -1370,9 +1370,9 @@
                     <p class="font-semibold text-gray-700 mb-2">URL de Webhook para Meta</p>
                     <div class="flex items-center gap-2">
                         <code class="flex-1 bg-white border border-gray-200 rounded px-3 py-2 font-mono text-xs text-gray-800 break-all">
-                            {{ url('/wa/webhook/'.$selP->slug) }}
+                            {{ url('/api/whatsapp/webhook') }}
                         </code>
-                        <button type="button" onclick="navigator.clipboard.writeText('{{ url('/wa/webhook/'.$selP->slug) }}')"
+                        <button type="button" onclick="navigator.clipboard.writeText('{{ url('/api/whatsapp/webhook') }}')"
                                 class="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-xs whitespace-nowrap">
                             Copiar
                         </button>

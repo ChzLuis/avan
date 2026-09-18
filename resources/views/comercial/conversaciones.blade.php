@@ -97,9 +97,6 @@
                     <span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:99px;background:{{ $estadoColor }};color:#374151;">
                         {{ $estadoTexto }}
                     </span>
-                    @if($s->rifa)
-                    <span style="font-size:9px;color:#9CA3AF;margin-left:4px;">{{ $s->rifa }}</span>
-                    @endif
                 </div>
             </div>
         </div>
@@ -248,9 +245,6 @@ async function abrirSesion(id, nombre, waNumber) {
         ['Celular',  d.celular],
         ['Email',    d.email],
         ['Ciudad',   d.ciudad],
-        ['Rifa',     d.rifaNombre],
-        ['Total',    d.rifaTotal ? 'S/ ' + d.rifaTotal : null],
-        ['Tickets',  d.rifaTickets],
         ['Estado',   data.sesion?.current_state?.replace(/_/g,' ')],
     ];
     info.forEach(([label, val]) => {

@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\RifaVenta;
 use App\Models\Project;
-use App\Models\BotInstance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -15,83 +13,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReporteController extends Controller
 {
-    private function getProjectIds(): array
-    {
-        $project = Project::findOrFail(session('comercial_project_id'));
-        // El bot de rifa debe pertenecer a ESTE negocio; sin el filtro se
-        // colaba el project_id del primer bot de rifa global (fuga de lectura).
-        $botProject = BotInstance::where('bot_type', 'rifa')
-            ->where('project_id', $project->id)->value('project_id');
-        return array_unique(array_filter([$project->id, $botProject]));
-    }
-
-    public function ventasBot(Request $request)
-    {
-        $project = Project::findOrFail(session('comercial_project_id'));
-        $ids = $this->getProjectIds();
-        $desde = $request->get('desde', now()->startOfMonth()->format('Y-m-d'));
-        $hasta = $request->get('hasta', now()->format('Y-m-d'));
-
-        $totales = RifaVenta::allProjects()->whereIn('project_id', $ids)
-            ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            /* INGRESO es lo COBRADO, no lo vendido. `SUM(monto)` a secas sumaba
-               tambien lo pendiente y lo CANCELADO, asi que el reporte daba una
-               cifra inflada y distinta de la del panel de Inicio —que si filtra
-               por estado— para el mismo periodo. Dos pantallas, dos verdades. */
-            ->selectRaw("COUNT(*) as total,
-                SUM(CASE WHEN status IN ('pagado','enviado') THEN monto ELSE 0 END) as ingresos,
-                COUNT(CASE WHEN status='pendiente' THEN 1 END) as pendientes,
-                COUNT(CASE WHEN status='pagado' THEN 1 END) as pagados,
-                COUNT(CASE WHEN status='enviado' THEN 1 END) as enviados,
-                COUNT(CASE WHEN status='cancelado' THEN 1 END) as cancelados")->first();
-
-        $porPlan = RifaVenta::allProjects()->whereIn('project_id', $ids)
-            ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            ->selectRaw("plan_nombre, COUNT(*) as total, SUM(CASE WHEN status IN ('pagado','enviado') THEN monto ELSE 0 END) as ingresos,
-                COUNT(CASE WHEN status='pendiente' THEN 1 END) as pendientes,
-                COUNT(CASE WHEN status='pagado' THEN 1 END) as pagados,
-                COUNT(CASE WHEN status='enviado' THEN 1 END) as enviados")
-            ->groupBy('plan_nombre')->orderByDesc('ingresos')->get();
-
-        $porDia = RifaVenta::allProjects()->whereIn('project_id', $ids)
-            ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            ->selectRaw("DATE(created_at) as fecha, COUNT(*) as total, SUM(CASE WHEN status IN ('pagado','enviado') THEN monto ELSE 0 END) as ingresos")
-            ->groupBy('fecha')->orderBy('fecha')->get();
-
-        return view('comercial.reportes.ventas-bot', compact('project', 'totales', 'porPlan', 'porDia', 'desde', 'hasta'));
-    }
-
-    public function seguimientoBot(Request $request)
-    {
-        $project = Project::findOrFail(session('comercial_project_id'));
-        $ids = $this->getProjectIds();
-        $desde  = $request->get('desde', now()->startOfMonth()->format('Y-m-d'));
-        $hasta  = $request->get('hasta', now()->format('Y-m-d'));
-        $status = $request->get('status', '');
-        $buscar = $request->get('buscar', '');
-
-        $query = RifaVenta::allProjects()->whereIn('project_id', $ids)
-            ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            ->orderByDesc('created_at');
-
-        if ($status) $query->where('status', $status);
-        if ($buscar) $query->where(function($q) use ($buscar) {
-            $q->where('nombre', 'like', "%$buscar%")
-              ->orWhere('dni', 'like', "%$buscar%")
-              ->orWhere('wa_number', 'like', "%$buscar%");
-        });
-
-        $ventas = $query->get();
-
-        $tiempoPromedio = RifaVenta::allProjects()->whereIn('project_id', $ids)
-            ->whereIn('status', ['pagado','enviado'])
-            ->whereBetween(DB::raw('DATE(created_at)'), [$desde, $hasta])
-            ->selectRaw("AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as horas")
-            ->value('horas');
-
-        return view('comercial.reportes.seguimiento-bot', compact('project', 'ventas', 'desde', 'hasta', 'status', 'buscar', 'tiempoPromedio'));
-    }
-
     /** 7.3 — Top productos más vendidos */
     public function topProductos(Request $request)
     {

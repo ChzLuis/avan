@@ -65,8 +65,8 @@
             <div class="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">URL Webhook para Meta</p>
                 <div class="flex items-center gap-2">
-                    <code class="text-xs text-gray-700 flex-1 truncate">{{ url('/wa/webhook/' . $canal->verify_token) }}</code>
-                    <button onclick="navigator.clipboard.writeText('{{ url('/wa/webhook/' . $canal->verify_token) }}').then(()=>this.textContent='✓').catch(()=>{})"
+                    <code class="text-xs text-gray-700 flex-1 truncate">{{ url('/api/whatsapp/webhook') }}</code>
+                    <button onclick="navigator.clipboard.writeText('{{ url('/api/whatsapp/webhook') }}').then(()=>this.textContent='✓').catch(()=>{})"
                             class="text-xs font-medium flex-shrink-0" style="color:#25d366">Copiar</button>
                 </div>
                 <p class="text-[10px] text-gray-400 mt-1">Verify token: <span class="font-mono">{{ $canal->verify_token }}</span></p>
@@ -190,7 +190,7 @@
             <template x-if="form.verify_token">
                 <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">URL Webhook</p>
-                    <code class="text-xs text-gray-700 break-all" x-text="`{{ url('/wa/webhook/') }}` + form.verify_token"></code>
+                    <code class="text-xs text-gray-700 break-all" x-text="`{{ url('/api/whatsapp/webhook') }}`"></code>
                 </div>
             </template>
         </div>

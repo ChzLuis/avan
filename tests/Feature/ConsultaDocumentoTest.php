@@ -15,7 +15,7 @@ use Tests\TestCase;
  *
  * Nace de una auditoría que encontró la integración ROTA: el RUC exigía un
  * ajuste (`apiperu_token`) que ningún proyecto tenía, y el DNI vivía en
- * `RifaController` tras el permiso `rifas.ver` — un cajero no podía usarlo.
+ * un controlador ya retirado, tras un permiso ajeno — un cajero no podía usarlo.
  *
  * La regla que se protege aquí: pase lo que pase con la API, la respuesta es
  * una estructura estable con un mensaje entendible, y el usuario SIEMPRE

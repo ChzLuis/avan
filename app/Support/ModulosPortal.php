@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
  *
  * Por que por dato y no por opinion: un menu lleno de modulos vacios no es
  * funcionalidad, es ruido con el que tropezar — y "Pedidos del bot" ademas
- * devuelve 500 fuera de un proyecto de rifas, asi que ofrecerlo era mandar al
+ * devolvia 500 fuera del proyecto que lo usaba, asi que ofrecerlo era mandar al
  * usuario a un error.
  *
  * Vive aqui porque la misma pregunta se hace en tres sitios (menu lateral,

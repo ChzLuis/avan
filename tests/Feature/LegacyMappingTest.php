@@ -43,7 +43,6 @@ class LegacyMappingTest extends TestCase
         'pos.usar', 'proveedores.editar', 'proveedores.ver',
         'quotes.crear', 'quotes.editar', 'quotes.eliminar', 'quotes.ver',
         'reports.exportar', 'reports.ver',
-        'rifas.cancelar', 'rifas.validar', 'rifas.ver',
         'roles.gestionar', 'roles.ver',
         'settings.catalogos', 'settings.diseno', 'settings.editar',
         'settings.negocio', 'settings.pagos', 'settings.qr', 'settings.ver',
@@ -60,7 +59,6 @@ class LegacyMappingTest extends TestCase
      */
     private const SIN_EQUIVALENTE = [
         // Módulos sin uso o inexistentes
-        'rifas.ver', 'rifas.validar', 'rifas.cancelar',
         'tickets.ver', 'tickets.eliminar',
         'view-requests', 'manage-requests',
         // Transversal: se ve lo que ya puedes ver por el área del dato
@@ -82,9 +80,10 @@ class LegacyMappingTest extends TestCase
         }
     }
 
-    public function test_los_noventa_permisos_tienen_decision(): void
+    /** Eran 90; al retirar el sorteo y sus tres permisos quedan 87. */
+    public function test_todos_los_permisos_de_referencia_tienen_decision(): void
     {
-        $this->assertCount(90, self::LEGACY, 'La lista de referencia ya no son 90 permisos.');
+        $this->assertCount(87, self::LEGACY, 'La lista de referencia ya no son 87 permisos.');
 
         $sinDecision = array_filter(
             self::LEGACY,

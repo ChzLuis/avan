@@ -165,7 +165,7 @@
         $pid            = $activeProject->id ?? null;
         $authUser       = auth()->user();
         $isOwnerOrSuper = $authUser?->is_superadmin || ($activeProject && $activeProject->owner_id === $authUser?->id);
-        $sComActivo     = request()->routeIs('pos*') || request()->routeIs('orders*') || request()->routeIs('quotes*') || request()->routeIs('invoices*') || request()->routeIs('rifas.index');
+        $sComActivo     = request()->routeIs('pos*') || request()->routeIs('orders*') || request()->routeIs('quotes*') || request()->routeIs('invoices*');
         $sCatActivo     = request()->routeIs('catalog') || request()->routeIs('products.*') || request()->routeIs('services.*') || request()->routeIs('categories.*') || request()->routeIs('reviews.*');
         $sEmpActivo     = request()->routeIs('clients*') || request()->routeIs('agenda*') || request()->routeIs('hr.*') || request()->routeIs('sedes.*') || request()->routeIs('proveedores.*') || request()->routeIs('groups.*');
         $sCfgActivo     = request()->routeIs('settings*') || request()->routeIs('roles.*') || request()->routeIs('catalogs*') || request()->routeIs('projects.panel*') || request()->routeIs('settings.seo*');

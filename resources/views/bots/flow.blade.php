@@ -3,7 +3,7 @@
 
 @php
     $csrf    = csrf_token();
-    $botLabel = $botType === 'rifa' ? 'Bot Rifa' : 'Bot Principal';
+    $botLabel = 'Bot Principal';
     $inputTypes = ['text'=>'Texto libre','number'=>'Número','image'=>'Imagen','location'=>'Ubicación','option'=>'Opción de menú'];
     $actions = [
         'none'                => 'Sin acción',

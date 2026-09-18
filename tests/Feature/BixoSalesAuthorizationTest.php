@@ -41,7 +41,6 @@ class BixoSalesAuthorizationTest extends TestCase
             'clients.ver', 'clients.crear', 'clients.editar', 'clients.eliminar',
             'invoices.ver', 'invoices.crear', 'invoices.editar', 'invoices.anular',
             'agenda.ver', 'agenda.crear', 'agenda.editar', 'agenda.eliminar',
-            'rifas.ver', 'rifas.validar', 'rifas.cancelar',
             'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimiento',
             'mapa.ver', 'mapa.editar', 'tickets.ver', 'tickets.eliminar',
             'payments.ver', 'payments.aprobar', 'payments.rechazar',
@@ -120,7 +119,6 @@ class BixoSalesAuthorizationTest extends TestCase
             'clients.ver', 'clients.crear', 'clients.editar', 'clients.eliminar',
             'invoices.ver', 'invoices.crear', 'invoices.editar', 'invoices.anular',
             'agenda.ver', 'agenda.crear', 'agenda.editar', 'agenda.eliminar',
-            'rifas.ver', 'rifas.validar', 'rifas.cancelar',
             'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimiento',
             'mapa.ver', 'mapa.editar', 'tickets.ver', 'tickets.eliminar',
             'payments.ver', 'payments.aprobar', 'payments.rechazar',
@@ -225,9 +223,9 @@ class BixoSalesAuthorizationTest extends TestCase
         // +1 con la vista previa del comprobante (POST porque viaja el
         // formulario entero). No escribe nada, pero es el paso previo a
         // emitir: va con `invoices.crear`, nunca con un permiso de lectura.
-        // 2026-09-17: 72 tras revisar el barrido completo (75 mutadoras, y las
-        // 3 sin can: son login, logout y get.projects, que este test exime).
-        $this->assertSame(72, $mutadoras, 'El portal deberia tener 72 rutas con verbo mutador');
+        // 2026-09-17: 64 tras retirar las 8 rutas del sorteo. Antes 72:
+        // 75 mutadoras, y las 3 sin can: son login, logout y get.projects.
+        $this->assertSame(64, $mutadoras, 'El portal deberia tener 64 rutas con verbo mutador');
         $this->assertSame([], $abiertas, 'Rutas mutadoras sin permiso: ' . implode(', ', $abiertas));
     }
 
@@ -280,8 +278,6 @@ class BixoSalesAuthorizationTest extends TestCase
             'borrar reserva'      => ['DELETE', '/bixosales/reservas/1'],
             'delivery alta'       => ['POST',   '/bixosales/delivery'],
             'delivery estado'     => ['PUT',    '/bixosales/delivery/1/status'],
-            'validar rifa'        => ['POST',   '/bixosales/pedidos-bot/1/validar'],
-            'cancelar rifa'       => ['POST',   '/bixosales/pedidos-bot/1/cancelar'],
             'venta POS'           => ['POST',   '/bixosales/pos'],
             'sincronizar woo'     => ['POST',   '/bixosales/woo/sync'],
             'precio revendedor'   => ['POST',   '/bixosales/revendedor/precio'],

@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Log;
  * Antes vivía partida en dos sitios, con dos proveedores y dos criterios:
  *   · RUC en `InvoiceController::consultarRuc` (curl crudo, token
  *     `apiperu_token` que NINGÚN proyecto tenía configurado → siempre fallaba)
- *   · DNI en `RifaController::consultarDni`, cuya ruta exige `can:rifas.ver`,
- *     así que un cajero sin permiso de rifas no podía consultar un documento.
+ *   · DNI en un controlador ya retirado, tras un permiso ajeno a la caja,
+ *     así que un cajero no podía consultar un documento.
  *
  * Medido contra los proveedores el 2026-09-03:
  *   · RUC  → `api.apis.net.pe/v1/ruc` responde SIN token, con razón social,

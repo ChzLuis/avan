@@ -31,11 +31,9 @@ use App\Modules\Finanzas\Controllers\GuiaRemisionController;
 use App\Http\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
 use App\Modules\Finanzas\Controllers\CertificadoController;
-use App\Http\Controllers\WaWebhookController;
 use App\Http\Controllers\ComboController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\WaBotController;
-use App\Http\Controllers\RifaController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\DeliveryController;
@@ -897,87 +895,9 @@ Route::post('/wa/find-order',                   [WaBotController::class, 'findOr
 Route::post('/wa/order/{order}/delivery',       [WaBotController::class, 'updateDelivery'])->name('wa.order.delivery')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // ─── QR público para conectar bot ────────────────────────────────────────────
-Route::get('/bot-qr/{bot?}', function ($bot = 'rifa') {
-    $file = base_path("whatsbot/{$bot}-status.json");
-    $css  = '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;padding:12px;}.wrap{text-align:center;width:100%;}p.hint{color:#6b7280;font-size:12px;margin-bottom:10px;line-height:1.4;}img.qr{width:100%;max-width:260px;border-radius:10px;border:2px solid #e5e7eb;}.connected{color:#16a34a;font-weight:600;font-size:15px;}.wait{color:#9ca3af;font-size:13px;}</style>';
-    // Recarga cada 3 seg para mostrar QR nuevo cuando el bot lo genere
-    $head = '<head><meta charset="utf-8"><meta http-equiv="refresh" content="3"><title>Bot QR</title>'.$css.'</head>';
-
-    $data   = file_exists($file) ? (json_decode(file_get_contents($file), true) ?? []) : [];
-    $status = $data['status'] ?? '';
-    $qr     = $data['qr'] ?? null;
-
-    if ($status === 'connected') {
-        $html = '<!DOCTYPE html><html>'.$head.'<body><div class="wrap"><p class="connected">&#10003; Bot Conectado</p></div></body></html>';
-        return response($html)->header('Content-Type', 'text/html; charset=utf-8');
-    }
-
-    if ($qr) {
-        $qrSafe = htmlspecialchars($qr, ENT_QUOTES);
-        $html   = '<!DOCTYPE html><html>'.$head.'<body><div class="wrap"><p class="hint">Abre WhatsApp &rarr; Dispositivos vinculados &rarr; Vincular dispositivo</p><img class="qr" src="'.$qrSafe.'"></div></body></html>';
-        return response($html)->header('Content-Type', 'text/html; charset=utf-8');
-    }
-
-    $html = '<!DOCTYPE html><html>'.$head.'<body><div class="wrap"><p class="wait">Bot iniciando... espera unos segundos</p></div></body></html>';
-    return response($html)->header('Content-Type', 'text/html; charset=utf-8');
-})->name('bot.qr');
-
-// ─── Bot status JSON público (para polling desde cualquier panel) ─────────────
-Route::get('/bot-status/meta', function () {
-    $canal = \App\Models\WaCanal::where('bot_type', 'rifa')
-        ->whereNotNull('phone_number_id')
-        ->where('phone_number_id', '!=', '')
-        ->first();
-    if (!$canal) return response()->json(['connected' => false]);
-    $row = \Illuminate\Support\Facades\DB::table('wa_canales')->where('id', $canal->id)->first();
-    if (!$row->access_token || !$row->phone_number_id) return response()->json(['connected' => false]);
-    try {
-        $r = \Illuminate\Support\Facades\Http::withToken($row->access_token)
-            ->timeout(5)
-            ->get("https://graph.facebook.com/v19.0/{$row->phone_number_id}");
-        return response()->json(['connected' => $r->successful()]);
-    } catch (\Throwable $e) {
-        return response()->json(['connected' => false]);
-    }
-})->name('bot.status.meta');
-
-Route::get('/bot-status/{bot?}', function ($bot = 'rifa') {
-    $file = base_path("whatsbot/{$bot}-status.json");
-    $data = file_exists($file) ? (json_decode(file_get_contents($file), true) ?? []) : [];
-    return response()->json([
-        'status' => $data['status'] ?? 'disconnected',
-        'qr'     => $data['qr']     ?? null,
-    ]);
-})->name('bot.status.json');
-
-// ─── WooCommerce Webhook (sin CSRF) ──────────────────────────────────────────
 Route::post('/api/woo-webhook', [\App\Http\Controllers\WooSyncController::class, 'webhook'])
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
     ->name('woo.webhook');
-
-// ─── Rifa Bot API ─────────────────────────────────────────────────────────────
-$nocsrf = [\App\Http\Middleware\VerifyCsrfToken::class];
-Route::get('/rifas/ticket-design',             [RifaController::class, 'ticketDesign'])->name('rifas.ticket.design');
-Route::get('/rifas/{venta}/ticket-preview',    [RifaController::class, 'ticketPreview'])->name('rifas.ticket.preview');
-Route::get('/wa/rifas',                        [RifaController::class, 'botList'])->withoutMiddleware($nocsrf);
-Route::post('/wa/rifa-order',                  [RifaController::class, 'botCreateOrder'])->withoutMiddleware($nocsrf);
-Route::post('/wa/rifa/save',                   [RifaController::class, 'botSave'])->withoutMiddleware($nocsrf);
-Route::post('/wa/rifa/{venta}/payment-proof',  [RifaController::class, 'botPaymentProof'])->withoutMiddleware($nocsrf);
-Route::post('/wa/rifa/{venta}/data',           [RifaController::class, 'botUpdateData'])->withoutMiddleware($nocsrf);
-
-// ─── Rifa Panel Admin ─────────────────────────────────────────────────────────
-Route::middleware(['auth', \App\Http\Middleware\SetActiveProject::class])->group(function () {
-    Route::get('/rifas/ventas-json',             [RifaController::class, 'ventasJson'])->name('rifas.ventas-json');
-    Route::get('/rifas',                         [RifaController::class, 'index'])->name('rifas.index');
-    Route::post('/rifas/catalog',                [RifaController::class, 'rifaStore'])->name('rifas.store');
-    Route::put('/rifas/catalog/{rifa}',          [RifaController::class, 'rifaUpdate'])->name('rifas.update');
-    Route::delete('/rifas/catalog/{rifa}',       [RifaController::class, 'rifaDestroy'])->name('rifas.destroy');
-    Route::post('/rifas/{venta}/confirmar',      [RifaController::class, 'confirmarPago'])->name('rifas.confirmar');
-    Route::post('/rifas/{venta}/enviar',         [RifaController::class, 'enviarTicket'])->name('rifas.enviar');
-    Route::post('/rifas/{venta}/cancelar',       [RifaController::class, 'cancelar'])->name('rifas.cancelar');
-    // Compatibilidad
-    Route::post('/rifas/{venta}/validar',        [RifaController::class, 'validar'])->name('rifas.validar');
-});
 
 // ─── Pagos del catálogo ───────────────────────────────────────────────────────
 Route::post('/{slug}/pay/{order}/manual', [PaymentController::class, 'confirmManual'])->name('public.pay.manual')->middleware('throttle:20,1')->where('slug', '(?!' . $reserved . '$)[a-z0-9-]+');
@@ -1078,16 +998,6 @@ Route::prefix('f/{slug}')->name('facturacion.')->group(function () {
     });
 });
 
-// ─── WhatsApp Webhooks (públicos, sin auth) ───────────────────────────────────
-Route::get('/wa/webhook/{slug}',  [WaWebhookController::class, 'verify'])->name('wa.webhook.verify');
-Route::post('/wa/webhook/{slug}', [WaWebhookController::class, 'receive'])->name('wa.webhook.receive')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-
-// ─── Meta WhatsApp webhook directo ───────────────────────────────────────────
-Route::get('/whatsapp/webhook',  [WaWebhookController::class, 'verifyMeta'])->name('wa.meta.verify');
-Route::post('/whatsapp/webhook', [WaWebhookController::class, 'receiveMeta'])->name('wa.meta.receive')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-
 // ─── Portal Comunicaciones ────────────────────────────────────────────────────
 Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
     Route::get('/login',  [ComWaAuthController::class, 'showLogin'])->name('login');
@@ -1166,18 +1076,6 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/revendedor/precio',   [\App\Http\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar')->middleware('can:pos.usar');
         Route::post('/revendedor/catalogo', [\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
 
-        Route::get('/pedidos-bot',                  [RifaController::class, 'indexComercial'])->name('rifas')->middleware('can:rifas.ver');
-        Route::get('/pedidos-bot/monitoreo',         [RifaController::class, 'monitoreo'])->name('rifas.monitoreo')->middleware('can:rifas.ver');
-        Route::get('/pedidos-bot/exportar',          [RifaController::class, 'exportarComercial'])->name('rifas.exportar')->middleware('can:rifas.ver');
-        Route::post('/pedidos-bot/{venta}/validar', [RifaController::class, 'confirmarPago'])->name('rifas.validar')->middleware('can:rifas.validar');
-        Route::post('/pedidos-bot/{venta}/enviar',  [RifaController::class, 'enviarTicket'])->name('rifas.enviar')->middleware('can:rifas.validar');
-        Route::post('/pedidos-bot/{venta}/cancelar',[RifaController::class, 'cancelar'])->name('rifas.cancelar')->middleware('can:rifas.cancelar');
-        Route::post('/pedidos-bot/{venta}/editar',   [RifaController::class, 'editarComercial'])->name('rifas.editar')->middleware('can:rifas.validar');
-        Route::post('/pedidos-bot/{venta}/eliminar',  [RifaController::class, 'eliminarComercial'])->name('rifas.eliminar')->middleware('can:rifas.cancelar');
-        Route::post('/pedidos-bot/{venta}/recordar',  [RifaController::class, 'recordar'])->name('rifas.recordar')->middleware('can:rifas.validar');
-        Route::post('/pedidos-bot/{venta}/enviar-membresia', [RifaController::class, 'enviarConMembresia'])->name('rifas.enviar.membresia')->middleware('can:rifas.validar');
-        Route::post('/pedidos-bot/nuevo-manual', [RifaController::class, 'nuevoManual'])->name('rifas.nuevo-manual')->middleware('can:rifas.validar');
-        Route::get('/consultar-dni/{dni}', [RifaController::class, 'consultarDni'])->name('rifas.consultar-dni')->middleware('can:rifas.ver');
 
         // WooCommerce
         Route::get('/woo/orders',  [\App\Http\Controllers\WooSyncController::class, 'index'])->name('woo.orders')->middleware('can:catalog.ver');
@@ -1353,8 +1251,6 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         // lo segundo exige settings.pagos, no reports.ver.
         Route::post('/cuentas/condiciones',   [\App\Modules\Finanzas\Controllers\CxcController::class, 'guardarCondiciones'])->name('cuentas.condiciones')->middleware('project.can:settings.pagos|manage-settings');
 
-        Route::get('/reportes/ventas-bot',    [ReporteController::class, 'ventasBot'])->name('reportes.ventas')->middleware('can:reports.ver');
-        Route::get('/reportes/seguimiento',   [ReporteController::class, 'seguimientoBot'])->name('reportes.seguimiento')->middleware('can:reports.ver');
         Route::get('/reportes/ventas',        [ReporteController::class, 'ventas'])->name('reportes.ventas.general')->middleware('can:reports.ver');
         Route::get('/reportes/top-productos', [ReporteController::class, 'topProductos'])->name('reportes.top.productos')->middleware('can:reports.ver');
         Route::get('/reportes/rentabilidad',  [ReporteController::class, 'rentabilidad'])->name('reportes.rentabilidad')->middleware('can:reports.ver');

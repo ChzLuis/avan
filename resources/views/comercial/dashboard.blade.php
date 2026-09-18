@@ -13,7 +13,7 @@ $kpi = match(true) {
     $cat==='clinica'    => ['v'=>'Facturación hoy','p'=>'Atenciones hoy','pend'=>'Por atender','acc'=>'Cobrar atención','acc_route'=>'bixosales.pos'],
     $cat==='gimnasio'   => ['v'=>'Cobros hoy','p'=>'Membresías hoy','pend'=>'Por cobrar','acc'=>'Cobrar membresía','acc_route'=>'bixosales.pos'],
     $cat==='taller'     => ['v'=>'Facturación hoy','p'=>'Órdenes hoy','pend'=>'En taller','acc'=>'Vender','acc_route'=>'bixosales.pos'],
-    in_array($cat, ['comercial','rifa','sorteo']) => ['v'=>'Cobrado hoy','p'=>'Ventas hoy','pend'=>'Por confirmar','acc'=>'Ver ventas','acc_route'=>'bixosales.rifas'],
+    in_array($cat, ['comercial']) => ['v'=>'Cobrado hoy','p'=>'Ventas hoy','pend'=>'Por confirmar','acc'=>'Ver ventas','acc_route'=>'bixosales.pedidos'],
     default             => ['v'=>'Ventas hoy','p'=>'Pedidos hoy','pend'=>'Por atender','acc'=>'Nueva venta','acc_route'=>'bixosales.pos'],
 };
 

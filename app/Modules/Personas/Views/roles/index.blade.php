@@ -148,7 +148,7 @@
                 catalog:    '#f97316', orders:  '#34d399', quotes:    '#fbbf24',
                 invoices:   '#818cf8', clients: '#fb7185', agenda:    '#a78bfa',
                 reports:    '#22d3ee', hr:      '#38bdf8', attendance:'#6ee7b7',
-                inventory:  '#fb923c', proveedores:'#94a3b8', rifas:  '#25d366',
+                inventory:  '#fb923c', proveedores:'#94a3b8',
                 settings:   '#64748b', roles:   '#fbbf24', pos:       '#10b981',
             };
             return colors[group] || '#6366f1';
@@ -270,7 +270,7 @@
                                          'catalog'=>'#f97316','orders'=>'#34d399','quotes'=>'#fbbf24',
                                          'invoices'=>'#818cf8','clients'=>'#fb7185','agenda'=>'#a78bfa',
                                          'reports'=>'#22d3ee','hr'=>'#38bdf8','attendance'=>'#6ee7b7',
-                                         'inventory'=>'#fb923c','proveedores'=>'#94a3b8','rifas'=>'#25d366',
+                                         'inventory'=>'#fb923c','proveedores'=>'#94a3b8',
                                          'settings'=>'#64748b','roles'=>'#fbbf24','pos'=>'#10b981',
                                          default=>'#6366f1'
                                      } }}"></div>

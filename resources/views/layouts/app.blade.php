@@ -891,7 +891,7 @@
         $sEmpActivo     = request()->routeIs('agenda*') || request()->routeIs('hr.*') || request()->routeIs('sedes.*') || request()->routeIs('proveedores.*') || request()->routeIs('groups.*');
         $sCatActivo     = request()->routeIs('catalog') || request()->routeIs('products.*') || request()->routeIs('services.*') || request()->routeIs('categories.*') || request()->routeIs('reviews.*');
         $sCrmActivo     = request()->routeIs('clients') || request()->routeIs('clients.*') || request()->routeIs('bot-flows.*') || request()->routeIs('bixocrm.*');
-        $sComActivo     = request()->routeIs('bixosales.pos*') || request()->routeIs('bixosales.pedidos*') || request()->routeIs('bixosales.cotizaciones*') || request()->routeIs('bixosales.facturas*') || request()->routeIs('bixosales.rifas*') || request()->routeIs('proposals*');
+        $sComActivo     = request()->routeIs('bixosales.pos*') || request()->routeIs('bixosales.pedidos*') || request()->routeIs('bixosales.cotizaciones*') || request()->routeIs('bixosales.facturas*') || request()->routeIs('proposals*');
         $sLogActivo     = request()->routeIs('bixosales.reportes*') || request()->routeIs('bots*');
 
         $negCat  = $activeProject->category ?? 'default';
@@ -908,7 +908,6 @@
                 'empleados'  => 'Personal',
                 'empresa'    => 'Mi Restaurante',
                 'cotizaciones' => null,         // ocultar
-                'rifas'      => null,           // ocultar
             ],
             in_array($negCat, ['peluqueria','salon_belleza']) => [
                 'catalogo'   => 'Servicios',
@@ -922,7 +921,6 @@
                 'empleados'  => 'Estilistas',
                 'empresa'    => 'Mi Salón',
                 'cotizaciones' => null,
-                'rifas'      => null,
             ],
             $negCat === 'clinica' => [
                 'catalogo'   => 'Servicios',
@@ -936,7 +934,6 @@
                 'empleados'  => 'Médicos',
                 'empresa'    => 'Mi Clínica',
                 'cotizaciones' => 'Presupuestos',
-                'rifas'      => null,
             ],
             $negCat === 'veterinaria' => [
                 'catalogo'   => 'Catálogo',
@@ -950,7 +947,6 @@
                 'empleados'  => 'Veterinarios',
                 'empresa'    => 'Mi Veterinaria',
                 'cotizaciones' => null,
-                'rifas'      => null,
             ],
             $negCat === 'gimnasio' => [
                 'catalogo'   => 'Planes',
@@ -964,7 +960,6 @@
                 'empleados'  => 'Instructores',
                 'empresa'    => 'Mi Gimnasio',
                 'cotizaciones' => null,
-                'rifas'      => null,
             ],
             $negCat === 'taller' => [
                 'catalogo'   => 'Catálogo',
@@ -978,7 +973,6 @@
                 'empleados'  => 'Técnicos',
                 'empresa'    => 'Mi Taller',
                 'cotizaciones' => 'Presupuestos',
-                'rifas'      => null,
             ],
             $negCat === 'farmacia' => [
                 'catalogo'   => 'Catálogo',
@@ -992,7 +986,6 @@
                 'empleados'  => 'Personal',
                 'empresa'    => 'Mi Farmacia',
                 'cotizaciones' => null,
-                'rifas'      => null,
             ],
             $negCat === 'retail' => [
                 'catalogo'   => 'Catálogo',
@@ -1006,7 +999,6 @@
                 'empleados'  => 'Usuarios',
                 'empresa'    => 'Mi Tienda',
                 'cotizaciones' => 'Cotizaciones',
-                'rifas'      => null,
             ],
             $negCat === 'educacion' => [
                 'catalogo'   => 'Cursos',
@@ -1020,7 +1012,6 @@
                 'empleados'  => 'Docentes',
                 'empresa'    => 'Mi Academia',
                 'cotizaciones' => 'Proformas',
-                'rifas'      => null,
             ],
             default => [
                 'catalogo'   => 'Catálogo',
@@ -1034,7 +1025,6 @@
                 'empleados'  => 'Usuarios',
                 'empresa'    => 'Mi Empresa',
                 'cotizaciones' => 'Cotizaciones',
-                'rifas'      => 'Rifas',
             ],
         };
     @endphp
@@ -1273,9 +1263,6 @@
                 @if($sbLabels['cotizaciones'] !== null)
                 <a href="{{ $pid?route('bixosales.cotizaciones'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.cotizaciones*') ? 'active' : '' }}">{{ $sbLabels['cotizaciones'] }}</a>
                 @endif
-            @endif
-            @if($activeProject && $activeProject->hasModule('rifas') && $isOwnerOrSuper && $sbLabels['rifas'] !== null)
-                <a href="{{ $pid?route('bixosales.rifas'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.rifas*') ? 'active' : '' }}">{{ $sbLabels['rifas'] }}</a>
             @endif
             </div>
         </div>

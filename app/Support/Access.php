@@ -142,7 +142,6 @@ class Access
      *
      *   reports.ver · reports.exportar   Reportes es transversal: se ve lo que ya
      *                                    puedes ver por el área del dato.
-     *   rifas.*                          Módulo sin una sola fila en producción.
      *   tickets.*                        No existe ni la tabla.
      *   view-requests · manage-requests   Solicitudes: tablas vacías, y además
      *                                    nomenclatura inglesa.

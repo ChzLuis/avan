@@ -20,7 +20,6 @@ $actions = [
     'save_solo_ciudad'    => 'Guardar ciudad',
     'save_delivery'       => 'Guardar dirección de entrega',
     'save_payment'        => 'Guardar comprobante de pago',
-    'save_rifa_payment'   => 'Guardar comprobante (rifa)',
     'confirmar_datos_correctos' => 'Confirmar datos correctos',
     'reiniciar_datos'     => 'Reiniciar datos',
     'complete'            => 'Finalizar flujo',
@@ -881,7 +880,7 @@ function botBuilder() {
             const el = document.getElementById('bb-espera-list');
             if (!el) return;
             try {
-                const r = await fetch(`/bixoadmin/bots/espera-asesor?bot=${this.activeBotType || 'rifa'}`);
+                const r = await fetch(`/bixoadmin/bots/espera-asesor?bot=${this.activeBotType || 'principal'}`);
                 const d = await r.json();
                 if (!d.sessions || d.sessions.length === 0) {
                     el.innerHTML = '<p class="text-xs text-gray-400">Sin usuarios esperando asesor.</p>';

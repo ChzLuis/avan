@@ -55,8 +55,6 @@ class ConversacionesController extends Controller
             $s->celular  = $data['celular']  ?? $s->wa_number;
             $s->email    = $data['email']    ?? null;
             $s->ciudad   = $data['ciudad']   ?? null;
-            $s->rifa     = $data['rifaNombre'] ?? null;
-            $s->total    = $data['rifaTotal']  ?? null;
             return $s;
         });
 

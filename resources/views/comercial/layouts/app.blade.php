@@ -101,7 +101,7 @@ $_nav = match(true) {
         'mapaLabel'   => false,
         'mapaRoute'   => false,
     ],
-    in_array($_cat, ['rifa','sorteo','comercial']) => [
+    in_array($_cat, ['comercial']) => [
         'pos'         => 'Nueva Venta',
         'pedidos'     => 'Ventas',
         'cotizaciones'=> false,
@@ -901,7 +901,7 @@ $_nav = match(true) {
 
     {{-- Conversaciones (solo superadmin) --}}
     @if($_hasBot && auth()->user()->is_superadmin)
-    <a href="{{ route('bixosales.rifas') }}" class="top-btn top-conv" title="Conversaciones">
+    <a href="{{ route('bixosales.conversaciones') }}" class="top-btn top-conv" title="Conversaciones">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
                   d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -1019,24 +1019,6 @@ $_nav = match(true) {
 
             @php
             $_pid_alert = session('comercial_project_id');
-            $_usaRifas  = $_pid_alert && \Illuminate\Support\Facades\DB::table('rifa_ventas')->where('project_id',$_pid_alert)->exists();
-
-            if ($_usaRifas) {
-                // Alertas rifa: comprobantes sin validar + pagados sin ticket
-                $_rv_comp = \Illuminate\Support\Facades\DB::table('rifa_ventas')
-                    ->where('project_id', $_pid_alert)->where('status','comprobante')
-                    ->orderBy('created_at')->limit(6)->get();
-                $_rv_pago = \Illuminate\Support\Facades\DB::table('rifa_ventas')
-                    ->where('project_id', $_pid_alert)->where('status','pagado')
-                    ->orderBy('created_at')->get();
-                $_rv_sinpago_cnt  = \Illuminate\Support\Facades\DB::table('rifa_ventas')
-                    ->where('project_id', $_pid_alert)->where('status','pendiente')->count();
-                $_rv_sinpago_monto = \Illuminate\Support\Facades\DB::table('rifa_ventas')
-                    ->where('project_id', $_pid_alert)->where('status','pendiente')->sum('monto');
-                $_rv_recientes = \Illuminate\Support\Facades\DB::table('rifa_ventas')
-                    ->where('project_id', $_pid_alert)
-                    ->orderByDesc('updated_at')->limit(8)->get();
-            } else {
                 $_alertas = [];
                 $_projAlert = $_pid_alert ? \App\Models\Project::find($_pid_alert) : null;
                 $_esLavAlert = $_projAlert && \App\Support\OrderFlow::supportsFlow($_projAlert->category);
@@ -1071,52 +1053,11 @@ $_nav = match(true) {
                             'desc'   => 'Sin atender' . ($__o->client_name ? ' · ' . $__o->client_name : '')];
                     }
                 }
-            }
             @endphp
 
             {{-- ALERTAS --}}
             <div x-show="panelTab==='alertas'">
                 <p class="section-title">Alertas activas</p>
-                @if($_usaRifas)
-                    @if($_rv_comp->isEmpty() && $_rv_pago->isEmpty())
-                        <div style="text-align:center; padding:32px 16px; color:var(--muted);">
-                            <div style="font-size:28px; margin-bottom:8px;">✅</div>
-                            <p style="font-size:12px; font-weight:600;">Sin alertas activas</p>
-                            <p style="font-size:11px; margin-top:4px;">Todo al día</p>
-                        </div>
-                    @endif
-                    @foreach($_rv_comp as $_c)
-                    <a href="{{ route('bixosales.rifas') }}?estado=comprobante" style="text-decoration:none;display:block;">
-                    <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:box-shadow .1s;"
-                         onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.08)'" onmouseout="this.style.boxShadow='none'">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <span style="width:7px;height:7px;border-radius:50%;background:#F59E0B;flex-shrink:0;display:inline-block;"></span>
-                                <span style="font-size:11px;font-weight:700;color:#B45309;">Por validar</span>
-                            </div>
-                            <span style="font-size:10px;color:#D97706;">›</span>
-                        </div>
-                        <p style="font-size:12px;color:#92400E;margin:0;">{{ $_c->nombre ?? $_c->wa_number }} — S/ {{ number_format($_c->monto,2) }}</p>
-                        <p style="font-size:10px;color:#B45309;margin:2px 0 0;">{{ $_c->plan_nombre }}</p>
-                    </div>
-                    </a>
-                    @endforeach
-                    @foreach($_rv_pago as $_p)
-                    <a href="{{ route('bixosales.rifas') }}?estado=pagado" style="text-decoration:none;display:block;">
-                    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:box-shadow .1s;"
-                         onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.08)'" onmouseout="this.style.boxShadow='none'">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <span style="width:7px;height:7px;border-radius:50%;background:#3B82F6;flex-shrink:0;display:inline-block;"></span>
-                                <span style="font-size:11px;font-weight:700;color:#1D4ED8;">Falta enviar ticket</span>
-                            </div>
-                            <span style="font-size:10px;color:#3B82F6;">›</span>
-                        </div>
-                        <p style="font-size:12px;color:#1E40AF;margin:0;">{{ $_p->nombre ?? $_p->wa_number }}</p>
-                    </div>
-                    </a>
-                    @endforeach
-                @else
                     {{-- Los avisos salen de App\Support\AvisosPortal: cobro
                          vencido, pedidos parados, stock bajo minimo y pagos
                          por validar. Antes esta rama solo miraba el SLA de
@@ -1147,72 +1088,21 @@ $_nav = match(true) {
                         </div>
                     </a>
                     @endforeach
-                @endif
             </div>
 
             {{-- PENDIENTES --}}
             <div x-show="panelTab==='pendientes'" x-cloak>
                 <p class="section-title">Por atender</p>
-                @if($_usaRifas)
-                    {{-- KPIs rifa --}}
-                    <div style="background:#F8F9FB;border-radius:10px;padding:10px;margin-bottom:8px;">
-                        <p style="font-size:10px;color:#9CA3AF;margin:0 0 2px;text-transform:uppercase;letter-spacing:.04em;">Sin pago</p>
-                        <p style="font-size:18px;font-weight:800;color:#D97706;margin:0;">{{ $_rv_sinpago_cnt }}</p>
-                        <p style="font-size:11px;color:#9CA3AF;margin:2px 0 0;">S/ {{ number_format($_rv_sinpago_monto,2) }} potencial</p>
-                    </div>
-                    <div style="background:#FEF3C7;border-radius:10px;padding:10px;margin-bottom:8px;">
-                        <p style="font-size:10px;color:#B45309;margin:0 0 2px;text-transform:uppercase;letter-spacing:.04em;">Comprobantes sin validar</p>
-                        <p style="font-size:18px;font-weight:800;color:#B45309;margin:0;">{{ $_rv_comp->count() }}</p>
-                        <p style="font-size:11px;color:#B45309;margin:2px 0 0;">Requieren tu confirmación</p>
-                    </div>
-                    <div style="background:#EFF6FF;border-radius:10px;padding:10px;">
-                        <p style="font-size:10px;color:#1D4ED8;margin:0 0 2px;text-transform:uppercase;letter-spacing:.04em;">Pagados sin ticket</p>
-                        <p style="font-size:18px;font-weight:800;color:#1D4ED8;margin:0;">{{ $_rv_pago->count() }}</p>
-                        <p style="font-size:11px;color:#1D4ED8;margin:2px 0 0;">Pendiente enviar números</p>
-                    </div>
-                @else
                     <div style="text-align:center; padding:32px 16px; color:var(--muted);">
                         <div style="font-size:28px; margin-bottom:8px;">🎉</div>
                         <p style="font-size:12px; font-weight:600;">Sin pendientes</p>
                     </div>
-                @endif
             </div>
 
             {{-- ACTIVIDAD --}}
             <div x-show="panelTab==='actividad'" x-cloak>
                 <p class="section-title">Reciente</p>
-                @if($_usaRifas && isset($_rv_recientes))
-                    @forelse($_rv_recientes as $_r)
-                    @php
-                    $_r_color = match($_r->status) {
-                        'enviado'     => '#22C55E',
-                        'pagado'      => '#3B82F6',
-                        'comprobante' => '#F59E0B',
-                        'cancelado'   => '#EF4444',
-                        default       => '#D1D5DB',
-                    };
-                    $_r_label = match($_r->status) {
-                        'enviado'     => 'Completado',
-                        'pagado'      => 'Pago conf.',
-                        'comprobante' => 'Por validar',
-                        'cancelado'   => 'Cancelado',
-                        default       => 'Sin pago',
-                    };
-                    @endphp
-                    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
-                        <span style="width:6px;height:6px;border-radius:50%;background:{{ $_r_color }};flex-shrink:0;"></span>
-                        <div style="flex:1;min-width:0;">
-                            <p style="font-size:11px;font-weight:600;color:var(--text);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $_r->nombre ?? $_r->wa_number }}</p>
-                            <p style="font-size:10px;color:var(--muted);margin:0;">{{ $_r_label }} · S/ {{ number_format($_r->monto,2) }}</p>
-                        </div>
-                        <span style="font-size:10px;color:var(--muted);flex-shrink:0;">{{ \Carbon\Carbon::parse($_r->updated_at)->timezone('America/Lima')->format('d/m H:i') }}</span>
-                    </div>
-                    @empty
                     <p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;">Sin actividad reciente</p>
-                    @endforelse
-                @else
-                    <p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;">Sin actividad reciente</p>
-                @endif
             </div>
         </div>
 
@@ -1264,7 +1154,7 @@ $_nav = match(true) {
                 </a>
                 @endif
                 @endif
-                @if(!$_usaRifas && $_can('caja.ver') && $_mod['caja'])
+                @if($_can('caja.ver') && $_mod['caja'])
                 <a href="{{ route('bixosales.caja') }}"
                    style="display:flex; flex-direction:column; align-items:center; gap:4px;
                           padding:8px 4px; border-radius:8px; border:1px solid var(--border);

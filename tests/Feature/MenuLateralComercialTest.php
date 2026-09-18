@@ -33,7 +33,7 @@ class MenuLateralComercialTest extends TestCase
         parent::setUp();
         foreach ([
             'orders.ver', 'quotes.ver', 'clients.ver', 'reports.ver', 'invoices.ver',
-            'caja.ver', 'pos.usar', 'agenda.ver', 'rifas.ver', 'tickets.ver',
+            'caja.ver', 'pos.usar', 'agenda.ver', 'tickets.ver',
             'view-orders', 'view-quotes', 'view-clients', 'view-logistics',
         ] as $p) {
             Permission::findOrCreate($p, 'web');
@@ -186,11 +186,10 @@ class MenuLateralComercialTest extends TestCase
     {
         // Un negocio recien creado no tiene caja, ni facturas, ni reservas,
         // ni reparto, ni bot: ofrecerlos es dar a elegir entre pantallas
-        // vacias. "Pedidos del bot" ademas revienta con 500 fuera de un
-        // proyecto de rifas, asi que enseñarlo era mandar a un error.
+        // vacias.
         $this->entrar('menu_nuevo', [
             'orders.ver', 'quotes.ver', 'reports.ver', 'invoices.ver',
-            'caja.ver', 'agenda.ver', 'rifas.ver', 'pos.usar', 'view-logistics',
+            'caja.ver', 'agenda.ver', 'pos.usar', 'view-logistics',
         ]);
 
         $res = $this->get('/bixosales')->assertOk();
@@ -202,8 +201,7 @@ class MenuLateralComercialTest extends TestCase
         $res->assertDontSee(route('bixosales.facturas'), false)
             ->assertDontSee(route('bixosales.caja'), false)
             ->assertDontSee(route('bixosales.reservas'), false)
-            ->assertDontSee(route('bixosales.delivery'), false)
-            ->assertDontSee(route('bixosales.rifas'), false);
+            ->assertDontSee(route('bixosales.delivery'), false);
     }
 
     public function test_un_modulo_se_libera_con_su_ajuste_sin_tocar_codigo(): void

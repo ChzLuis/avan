@@ -54,8 +54,6 @@ class PermissionsSeeder extends Seeder
         // Proveedores
         'proveedores.ver', 'proveedores.editar',
 
-        // Rifas / Bot
-        'rifas.ver', 'rifas.validar', 'rifas.cancelar',
 
         // Configuración del proyecto (general — solo owner/superadmin)
         'settings.ver', 'settings.editar',
@@ -92,7 +90,6 @@ class PermissionsSeeder extends Seeder
             'attendance.fichar', 'attendance.ver', 'attendance.editar',
             'inventory.ver', 'inventory.editar',
             'proveedores.ver', 'proveedores.editar',
-            'rifas.ver',   'rifas.validar', 'rifas.cancelar',
             'settings.ver', 'settings.negocio', 'settings.diseno', 'settings.pagos', 'settings.catalogos', 'settings.qr',
             'roles.ver',
             'catalog-integrations.view', 'catalog-integrations.manage', 'catalog-integrations.sync', 'catalog-integrations.view-history',

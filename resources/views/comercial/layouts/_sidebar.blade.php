@@ -127,7 +127,6 @@
 
     // CANALES: lo que llega por el bot o por agenda, con su propia bandeja.
     $_canales = array_filter([
-        $_mod['bot'] ? ['Pedidos del bot', 'bixosales.rifas', 'bot', ['rifas.ver']] : null,
         $_mod['reservas'] ? ['Reservas', 'bixosales.reservas', 'agenda', ['agenda.ver']] : null,
     ], fn ($i) => $i && $_puede($i[3]));
     if ($_canales) $_grupos[] = ['titulo' => 'Canales', 'items' => array_values($_canales)];
