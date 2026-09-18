@@ -7,8 +7,8 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\StoreSection;
 use App\Models\User;
-use App\Support\FlowEngine\FlowRunner;
-use App\Support\FlowEngine\PlantillaComercial;
+use App\Modules\Bots\Support\FlowEngine\FlowRunner;
+use App\Modules\Bots\Support\FlowEngine\PlantillaComercial;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

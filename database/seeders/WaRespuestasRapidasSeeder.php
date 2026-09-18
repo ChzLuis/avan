@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\WaRespuestaRapida;
+use App\Modules\Crm\Models\WaRespuestaRapida;
 use App\Models\Project;
 use Illuminate\Database\Seeder;
 

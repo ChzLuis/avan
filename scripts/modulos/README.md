@@ -21,3 +21,25 @@ y vigile la frontera (ver `tests/Feature/PersonasModuloTest.php`).
 Para desplegar un módulo movido a ARIN hace falta, además de subir los archivos:
 borrar los viejos y `composer dump-autoload -o` (ARIN tiene el classmap
 optimizado). `deploy.py` no hace ninguna de las dos todavía.
+
+## Desde Finanzas: plan generado + aplicador genérico
+
+Para módulos grandes el script a mano no escala. El método actual:
+
+1. `python scripts/modulos/plan_<modulo>.py` **lee el código** y escribe
+   `plan_<modulo>.json`: movimientos, reemplazos con su conteo exacto (acotado
+   por carácter de identificador), `use` que hay que insertar, renombrados de
+   clase y una lista de "sospechosos" (nombres de vista sueltos) para revisar a
+   ojo. `plan_crmbots.py` es la versión más completa (dos destinos a la vez, el
+   namespace se deriva de la ruta destino de cada movimiento).
+2. `python scripts/modulos/mover_modulo.py scripts/modulos/plan_<modulo>.json --dry`
+   verifica TODOS los conteos sin tocar nada; sin `--dry` aplica (git mv,
+   reemplazos, inserts, borra carpetas vacías).
+3. `php -l`, `route:list` (0 rutas viejas), misma batería de tests que antes,
+   guardián del módulo, quitar imports que el generador insertó para clases
+   que solo se usan por FQCN.
+
+Huecos que ya tiene resueltos el generador (no volver a caer): vistas elegidas
+por ternario, `extends Controller` sin importar, renombrar la declaración
+`class X extends` al renombrar el archivo (el ancla `class X ` falla con el
+conteo acotado), tests que leen una vista **por ruta de disco**.

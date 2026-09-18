@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\Api\BotWebhookController;
+use App\Modules\Bots\Controllers\BotWebhookController;
 use App\Models\Employee;
 use App\Models\Order;
 use App\Models\OrderEvent;

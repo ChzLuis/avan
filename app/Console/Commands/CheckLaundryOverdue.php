@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Project;
-use App\Models\BotInstance;
+use App\Modules\Bots\Models\BotInstance;
 use App\Support\OrderFlow;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;

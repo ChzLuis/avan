@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Ia\RouterComercial;
+use App\Modules\Bots\Ia\RouterComercial;
 use Tests\TestCase;
 
 class RouterComercialTest extends TestCase

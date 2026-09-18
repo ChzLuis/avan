@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\BotFlow;
+use App\Modules\Bots\Models\BotFlow;
 use App\Models\Project;
 use App\Models\User;
-use App\Models\WaCanal;
+use App\Modules\Crm\Models\WaCanal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;

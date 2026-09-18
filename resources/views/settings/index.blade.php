@@ -1252,7 +1252,7 @@
 
             {{-- TAB: WHATSAPP --}}
             @if($s === 'whatsapp')
-            @php $waCanales = \App\Models\WaCanal::where('project_id', $selP->id)->get(); @endphp
+            @php $waCanales = \App\Modules\Crm\Models\WaCanal::where('project_id', $selP->id)->get(); @endphp
             <div x-data="{
                 canales: {{ Illuminate\Support\Js::from($waCanales->map(fn($c) => [
                     'id'                 => $c->id,

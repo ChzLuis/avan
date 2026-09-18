@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\BotFlow;
-use App\Models\BotSession;
+use App\Modules\Bots\Models\BotFlow;
+use App\Modules\Bots\Models\BotSession;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Models\WaCanal;
-use App\Models\WaConversacion;
+use App\Modules\Crm\Models\WaCanal;
+use App\Modules\Crm\Models\WaConversacion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -225,7 +225,7 @@ class BotFase2CierreTest extends TestCase
 
     private function enviarRecordatorio(Project $p, string $tel = '51955000500'): bool
     {
-        $cmd = new \App\Console\Commands\SeguimientoConversaciones();
+        $cmd = new \App\Modules\Crm\Commands\SeguimientoConversaciones();
         $cmd->setLaravel(app());
         $cmd->setOutput(new \Illuminate\Console\OutputStyle(
             new \Symfony\Component\Console\Input\ArrayInput([]),

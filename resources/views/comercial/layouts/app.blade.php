@@ -2,7 +2,7 @@
 $_pid  = session('comercial_project_id');
 $_mods = $_pid ? \App\Models\Project::find($_pid)?->modules()->wherePivot('is_active', true)->pluck('modules.key')->toArray() : [];
 $_has  = fn(string $key) => in_array($key, $_mods);
-$_hasBot    = $_pid ? \App\Models\WaCanal::where('project_id', $_pid)->exists() : false;
+$_hasBot    = $_pid ? \App\Modules\Crm\Models\WaCanal::where('project_id', $_pid)->exists() : false;
 $_isGerente = auth()->user()?->hasRole('gerente');
 
 // ¿Puede el usuario abrir esto? Mismo criterio que el middleware de la ruta:

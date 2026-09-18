@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\User;
-use App\Support\FlowEngine\PlantillaComercial;
+use App\Modules\Bots\Support\FlowEngine\PlantillaComercial;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,7 +22,7 @@ class BotEditorBloquesTest extends TestCase
 
     private function editor(): string
     {
-        return file_get_contents(resource_path('views/bot-flows/editor.blade.php'));
+        return file_get_contents(app_path('Modules/Bots/Views/bot-flows/editor.blade.php'));
     }
 
     /** Tipos declarados en la paleta de la barra lateral. */
@@ -108,7 +108,7 @@ class BotEditorBloquesTest extends TestCase
             'owner_id' => $user->id, 'name' => 'Tienda Editor 2',
             'slug' => 'tienda-editor-2', 'is_active' => true,
         ]);
-        $flow = \App\Models\BotFlow::create([
+        $flow = \App\Modules\Bots\Models\BotFlow::create([
             'project_id' => $project->id,
             'nombre'     => PlantillaComercial::NOMBRE,
             'activo'     => false,

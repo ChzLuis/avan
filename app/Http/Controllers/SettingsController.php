@@ -6,7 +6,7 @@ use App\Models\ImportLog;
 use App\Models\Project;
 use App\Models\Module;
 use App\Models\Coupon;
-use App\Models\WaCanal;
+use App\Modules\Crm\Models\WaCanal;
 use App\Support\CatalogTemplates;
 use App\Support\StorefrontSections;
 use App\Support\StorefrontNavigation;

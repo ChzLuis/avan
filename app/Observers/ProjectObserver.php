@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Models\BotFlow;
+use App\Modules\Bots\Models\BotFlow;
 use App\Models\Project;
 use Illuminate\Support\Facades\Log;
 

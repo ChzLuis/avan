@@ -37,7 +37,7 @@ final class ModulosPortal
             // con el ajuste `modulo_reparto` del proyecto, igual que el resto,
             // asi que el negocio que lo pruebe no pierde el acceso.
             'reparto'  => false,
-            'bot'      => \App\Models\WaCanal::where('project_id', $project->id)->exists(),
+            'bot'      => \App\Modules\Crm\Models\WaCanal::where('project_id', $project->id)->exists(),
         ]);
 
         // Los precios propios son del usuario, no del negocio: no se cachean

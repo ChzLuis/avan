@@ -291,6 +291,51 @@ Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
 `getContent()`); los bloques del FlowRunner van indexados por id y necesitan
 `inicio`; `where()->update()` salta el cast `encrypted` y corrompe el token.
 
+### Modulo 5/8 — `Crm/` + `Bots/` MOVIDOS (2026-09-17, misma sesion)
+
+Los dos a la vez porque se usan mutuamente (Bots decide, Crm guarda y envia).
+57 movimientos, 214 reemplazos en 85 archivos, 20 archivos con `use` nuevos;
+**108 rutas** (51 a `Modules\Crm`, 57 a `Modules\Bots`, 0 viejas). Linea base
+del dominio 5 rojos / 292 verdes → 5 / 316 con los guardianes nuevos (los
+mismos 5 de antes: fixtures sin modulo `clients`). Un test leia la vista del
+editor por ruta de disco (`BotEditorBloquesTest`): apuntado a `Modules/Bots/Views`.
+
+Reparto. **Bots/**: BotFlow/BotStatus/WaBot/BotBuilderPortal + los 2 webhooks
+(Meta con HMAC, Baileys), modelos `Bot*`, `Support/FlowEngine/*`, `LeadScoring`,
+todo `app/Ia` → `App\Modules\Bots\Ia` (mismos nombres de clase), comando
+`bot:comercial-todos`, vistas `bot-builder/ bot-flows/ bots/ comunicaciones/bots/`
+(`bots::`). **Crm/**: `Comunicaciones\AuthController` → **`CrmAuthController`**,
+Bandeja, Canales, ClientesCrm, Conversaciones (del portal comercial),
+ComunicacionesController, CopilotEmpresarial, `Api\{Copilot,VentaExtension,
+WhatsappSync,Pago}Controller`, modelos `Wa*`, `WhatsappCloud/ClienteCloud`,
+comandos `bot:seguimiento` y `carts:remind`, job del carrito, vistas
+`comunicaciones/ copilot/ comercial/conversaciones` (`crm::`). Se quedan en
+Core: `ComunicacionesAuth` (middleware), `OrderFlow`/`LaundryFlow`.
+
+Herramientas: `scripts/modulos/plan_crmbots.py` (generador con DOS destinos:
+el namespace se deriva de la ruta destino de cada movimiento) y
+`scripts/modulos/mover_modulo.py` (aplicador **generico**: recibe el
+`plan_*.json` por argumento; `mover_finanzas.py` queda como historia). Hueco
+nuevo del generador: el ancla del renombrado `class X ` fallaba con el
+conteo acotado (le sigue una letra): ahora ancla en `class X extends`.
+Tambien inserta `use` para clases que solo se usan por FQCN (`\App\...`):
+quedan imports sin uso; se quitaron a mano los 2 que sobraban.
+
+Acoplamientos que salieron a la luz (documentados en los README):
+- **Finanzas usa los proveedores de VISION de `Bots/Ia`** (`LectorComprobantes`
+  → `OpenAiVision`/`GeminiVision`/`AnthropicVision`). No es un bot, es
+  infraestructura de IA. Deuda: al tercer consumidor, `Ia/Providers` +
+  `VisionProvider`/`IaProvider` pasan a Core.
+- `ProjectObserver` crea el `BotFlow` comercial al nacer una empresa;
+  `CheckLaundryOverdue` lee `BotInstance` (ira a Operaciones).
+- `ComunicacionesController` no tiene rutas (solo lo importa `web.php`):
+  comprobar si esta muerto. `WaChatbotFlow` + pantalla `chatbot` sin motor.
+
+Guardianes: `CrmModuloTest` (5) y `BotsModuloTest` (5). Quedan **Tienda (6),
+Catalogo (7, con ImportLog) y Ventas (8)**; y desplegar 1–5 juntos a ARIN
+(nuevos + borrar viejos + `composer dump-autoload -o` + cache de rutas + cola
+vacia; el conector Baileys llama por URL y no cambia).
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia

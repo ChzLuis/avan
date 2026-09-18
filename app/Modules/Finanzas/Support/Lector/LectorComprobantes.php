@@ -2,10 +2,10 @@
 
 namespace App\Modules\Finanzas\Support\Lector;
 
-use App\Ia\Providers\AnthropicVision;
-use App\Ia\Providers\GeminiVision;
-use App\Ia\Providers\OpenAiVision;
-use App\Ia\VisionProvider;
+use App\Modules\Bots\Ia\Providers\AnthropicVision;
+use App\Modules\Bots\Ia\Providers\GeminiVision;
+use App\Modules\Bots\Ia\Providers\OpenAiVision;
+use App\Modules\Bots\Ia\VisionProvider;
 use App\Models\Project;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;

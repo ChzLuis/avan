@@ -1,0 +1,1585 @@
+{
+ "moves": [
+  [
+   "app/Http/Controllers/BotFlowController.php",
+   "app/Modules/Bots/Controllers/BotFlowController.php"
+  ],
+  [
+   "app/Http/Controllers/BotStatusController.php",
+   "app/Modules/Bots/Controllers/BotStatusController.php"
+  ],
+  [
+   "app/Http/Controllers/WaBotController.php",
+   "app/Modules/Bots/Controllers/WaBotController.php"
+  ],
+  [
+   "app/Http/Controllers/Comunicaciones/BotBuilderPortalController.php",
+   "app/Modules/Bots/Controllers/BotBuilderPortalController.php"
+  ],
+  [
+   "app/Http/Controllers/Api/BotWebhookController.php",
+   "app/Modules/Bots/Controllers/BotWebhookController.php"
+  ],
+  [
+   "app/Http/Controllers/Api/WhatsappCloudWebhookController.php",
+   "app/Modules/Bots/Controllers/WhatsappCloudWebhookController.php"
+  ],
+  [
+   "app/Models/BotConfig.php",
+   "app/Modules/Bots/Models/BotConfig.php"
+  ],
+  [
+   "app/Models/BotFlow.php",
+   "app/Modules/Bots/Models/BotFlow.php"
+  ],
+  [
+   "app/Models/BotInstance.php",
+   "app/Modules/Bots/Models/BotInstance.php"
+  ],
+  [
+   "app/Models/BotSession.php",
+   "app/Modules/Bots/Models/BotSession.php"
+  ],
+  [
+   "app/Models/BotState.php",
+   "app/Modules/Bots/Models/BotState.php"
+  ],
+  [
+   "app/Models/BotTransition.php",
+   "app/Modules/Bots/Models/BotTransition.php"
+  ],
+  [
+   "app/Support/FlowEngine/Carrito.php",
+   "app/Modules/Bots/Support/FlowEngine/Carrito.php"
+  ],
+  [
+   "app/Support/FlowEngine/FlowRunner.php",
+   "app/Modules/Bots/Support/FlowEngine/FlowRunner.php"
+  ],
+  [
+   "app/Support/FlowEngine/PlantillaComercial.php",
+   "app/Modules/Bots/Support/FlowEngine/PlantillaComercial.php"
+  ],
+  [
+   "app/Support/FlowEngine/PlantillaTienda.php",
+   "app/Modules/Bots/Support/FlowEngine/PlantillaTienda.php"
+  ],
+  [
+   "app/Support/LeadScoring.php",
+   "app/Modules/Bots/Support/LeadScoring.php"
+  ],
+  [
+   "app/Ia/IA.php",
+   "app/Modules/Bots/Ia/IA.php"
+  ],
+  [
+   "app/Ia/IaProvider.php",
+   "app/Modules/Bots/Ia/IaProvider.php"
+  ],
+  [
+   "app/Ia/InterpreteComercial.php",
+   "app/Modules/Bots/Ia/InterpreteComercial.php"
+  ],
+  [
+   "app/Ia/RouterComercial.php",
+   "app/Modules/Bots/Ia/RouterComercial.php"
+  ],
+  [
+   "app/Ia/VisionProvider.php",
+   "app/Modules/Bots/Ia/VisionProvider.php"
+  ],
+  [
+   "app/Ia/Providers/AnthropicProvider.php",
+   "app/Modules/Bots/Ia/Providers/AnthropicProvider.php"
+  ],
+  [
+   "app/Ia/Providers/AnthropicVision.php",
+   "app/Modules/Bots/Ia/Providers/AnthropicVision.php"
+  ],
+  [
+   "app/Ia/Providers/DeepSeekProvider.php",
+   "app/Modules/Bots/Ia/Providers/DeepSeekProvider.php"
+  ],
+  [
+   "app/Ia/Providers/GeminiProvider.php",
+   "app/Modules/Bots/Ia/Providers/GeminiProvider.php"
+  ],
+  [
+   "app/Ia/Providers/GeminiVision.php",
+   "app/Modules/Bots/Ia/Providers/GeminiVision.php"
+  ],
+  [
+   "app/Ia/Providers/OpenAiProvider.php",
+   "app/Modules/Bots/Ia/Providers/OpenAiProvider.php"
+  ],
+  [
+   "app/Ia/Providers/OpenAiVision.php",
+   "app/Modules/Bots/Ia/Providers/OpenAiVision.php"
+  ],
+  [
+   "app/Console/Commands/BotComercialParaTodos.php",
+   "app/Modules/Bots/Commands/BotComercialParaTodos.php"
+  ],
+  [
+   "app/Http/Controllers/Comunicaciones/AuthController.php",
+   "app/Modules/Crm/Controllers/CrmAuthController.php"
+  ],
+  [
+   "app/Http/Controllers/Comunicaciones/BandejaController.php",
+   "app/Modules/Crm/Controllers/BandejaController.php"
+  ],
+  [
+   "app/Http/Controllers/Comunicaciones/CanalesController.php",
+   "app/Modules/Crm/Controllers/CanalesController.php"
+  ],
+  [
+   "app/Http/Controllers/Comunicaciones/ClientesCrmController.php",
+   "app/Modules/Crm/Controllers/ClientesCrmController.php"
+  ],
+  [
+   "app/Http/Controllers/Comercial/ConversacionesController.php",
+   "app/Modules/Crm/Controllers/ConversacionesController.php"
+  ],
+  [
+   "app/Http/Controllers/ComunicacionesController.php",
+   "app/Modules/Crm/Controllers/ComunicacionesController.php"
+  ],
+  [
+   "app/Http/Controllers/CopilotEmpresarialController.php",
+   "app/Modules/Crm/Controllers/CopilotEmpresarialController.php"
+  ],
+  [
+   "app/Http/Controllers/Api/CopilotController.php",
+   "app/Modules/Crm/Controllers/CopilotController.php"
+  ],
+  [
+   "app/Http/Controllers/Api/VentaExtensionController.php",
+   "app/Modules/Crm/Controllers/VentaExtensionController.php"
+  ],
+  [
+   "app/Http/Controllers/Api/WhatsappSyncController.php",
+   "app/Modules/Crm/Controllers/WhatsappSyncController.php"
+  ],
+  [
+   "app/Http/Controllers/Api/PagoController.php",
+   "app/Modules/Crm/Controllers/PagoController.php"
+  ],
+  [
+   "app/Models/WaCanal.php",
+   "app/Modules/Crm/Models/WaCanal.php"
+  ],
+  [
+   "app/Models/WaChatbotFlow.php",
+   "app/Modules/Crm/Models/WaChatbotFlow.php"
+  ],
+  [
+   "app/Models/WaConversacion.php",
+   "app/Modules/Crm/Models/WaConversacion.php"
+  ],
+  [
+   "app/Models/WaMensaje.php",
+   "app/Modules/Crm/Models/WaMensaje.php"
+  ],
+  [
+   "app/Models/WaRespuestaRapida.php",
+   "app/Modules/Crm/Models/WaRespuestaRapida.php"
+  ],
+  [
+   "app/Support/WhatsappCloud/ClienteCloud.php",
+   "app/Modules/Crm/Support/WhatsappCloud/ClienteCloud.php"
+  ],
+  [
+   "app/Console/Commands/SeguimientoConversaciones.php",
+   "app/Modules/Crm/Commands/SeguimientoConversaciones.php"
+  ],
+  [
+   "app/Console/Commands/SendAbandonedCartReminders.php",
+   "app/Modules/Crm/Commands/SendAbandonedCartReminders.php"
+  ],
+  [
+   "app/Jobs/SendAbandonedCartReminder.php",
+   "app/Modules/Crm/Jobs/SendAbandonedCartReminder.php"
+  ],
+  [
+   "resources/views/comunicaciones/bots",
+   "app/Modules/Bots/Views/comunicaciones/bots"
+  ],
+  [
+   "resources/views/bot-builder",
+   "app/Modules/Bots/Views/bot-builder"
+  ],
+  [
+   "resources/views/bot-flows",
+   "app/Modules/Bots/Views/bot-flows"
+  ],
+  [
+   "resources/views/bots",
+   "app/Modules/Bots/Views/bots"
+  ],
+  [
+   "resources/views/comunicaciones",
+   "app/Modules/Crm/Views/comunicaciones"
+  ],
+  [
+   "resources/views/copilot",
+   "app/Modules/Crm/Views/copilot"
+  ],
+  [
+   "resources/views/comercial/conversaciones.blade.php",
+   "app/Modules/Crm/Views/comercial/conversaciones.blade.php"
+  ]
+ ],
+ "edits": {
+  "app/Modules/Bots/Commands/BotComercialParaTodos.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Bots\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Console/Commands/CheckLaundryOverdue.php": [
+   {
+    "old": "App\\Models\\BotInstance",
+    "new": "App\\Modules\\Bots\\Models\\BotInstance",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Commands/SeguimientoConversaciones.php": [
+   {
+    "old": "App\\Models\\BotSession",
+    "new": "App\\Modules\\Bots\\Models\\BotSession",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Crm\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Commands/SendAbandonedCartReminders.php": [
+   {
+    "old": "App\\Jobs\\SendAbandonedCartReminder",
+    "new": "App\\Modules\\Crm\\Jobs\\SendAbandonedCartReminder",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Crm\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/BotFlowController.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaTienda",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaTienda",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\InterpreteComercial",
+    "new": "App\\Modules\\Bots\\Ia\\InterpreteComercial",
+    "n": 4
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Bots\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('bot-flows.index'",
+    "new": "view('bots::bot-flows.index'",
+    "n": 1
+   },
+   {
+    "old": "view('bot-flows.editor'",
+    "new": "view('bots::bot-flows.editor'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/BotStatusController.php": [
+   {
+    "old": "App\\Http\\Controllers\\WaBotController",
+    "new": "App\\Modules\\Bots\\Controllers\\WaBotController",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotTransition",
+    "new": "App\\Modules\\Bots\\Models\\BotTransition",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotInstance",
+    "new": "App\\Modules\\Bots\\Models\\BotInstance",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotSession",
+    "new": "App\\Modules\\Bots\\Models\\BotSession",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotConfig",
+    "new": "App\\Modules\\Bots\\Models\\BotConfig",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotState",
+    "new": "App\\Modules\\Bots\\Models\\BotState",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Bots\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('bots.index'",
+    "new": "view('bots::bots.index'",
+    "n": 1
+   },
+   {
+    "old": "view('bots.flow'",
+    "new": "view('bots::bots.flow'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/ComunicacionesController.php": [
+   {
+    "old": "App\\Models\\WaRespuestaRapida",
+    "new": "App\\Modules\\Crm\\Models\\WaRespuestaRapida",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaMensaje",
+    "new": "App\\Modules\\Crm\\Models\\WaMensaje",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.index'",
+    "new": "view('crm::comunicaciones.index'",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.configuracion'",
+    "new": "view('crm::comunicaciones.configuracion'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/CopilotEmpresarialController.php": [
+   {
+    "old": "App\\Support\\LeadScoring",
+    "new": "App\\Modules\\Bots\\Support\\LeadScoring",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\IA",
+    "new": "App\\Modules\\Bots\\Ia\\IA",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('copilot.index'",
+    "new": "view('crm::copilot.index'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/SettingsController.php": [
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/WaBotController.php": [
+   {
+    "old": "App\\Models\\BotInstance",
+    "new": "App\\Modules\\Bots\\Models\\BotInstance",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotSession",
+    "new": "App\\Modules\\Bots\\Models\\BotSession",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Bots\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/BotWebhookController.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 4
+   },
+   {
+    "old": "App\\Support\\LeadScoring",
+    "new": "App\\Modules\\Bots\\Support\\LeadScoring",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotSession",
+    "new": "App\\Modules\\Bots\\Models\\BotSession",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaMensaje",
+    "new": "App\\Modules\\Crm\\Models\\WaMensaje",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 3
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Api;",
+    "new": "namespace App\\Modules\\Bots\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/CopilotController.php": [
+   {
+    "old": "App\\Support\\LeadScoring",
+    "new": "App\\Modules\\Bots\\Support\\LeadScoring",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\IA",
+    "new": "App\\Modules\\Bots\\Ia\\IA",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Api;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/WhatsappCloudWebhookController.php": [
+   {
+    "old": "App\\Support\\WhatsappCloud\\ClienteCloud",
+    "new": "App\\Modules\\Crm\\Support\\WhatsappCloud\\ClienteCloud",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Api;",
+    "new": "namespace App\\Modules\\Bots\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/WhatsappSyncController.php": [
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\LeadScoring",
+    "new": "App\\Modules\\Bots\\Support\\LeadScoring",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaMensaje",
+    "new": "App\\Modules\\Crm\\Models\\WaMensaje",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Api;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/BandejaController.php": [
+   {
+    "old": "App\\Http\\Controllers\\ComunicacionesController",
+    "new": "App\\Modules\\Crm\\Controllers\\ComunicacionesController",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\WhatsappCloud\\ClienteCloud",
+    "new": "App\\Modules\\Crm\\Support\\WhatsappCloud\\ClienteCloud",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaRespuestaRapida",
+    "new": "App\\Modules\\Crm\\Models\\WaRespuestaRapida",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Comunicaciones;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.bandeja'",
+    "new": "view('crm::comunicaciones.bandeja'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/BotBuilderPortalController.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Comunicaciones;",
+    "new": "namespace App\\Modules\\Bots\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.bots.index'",
+    "new": "view('bots::comunicaciones.bots.index'",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.bots.editor'",
+    "new": "view('bots::comunicaciones.bots.editor'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/CanalesController.php": [
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaChatbotFlow",
+    "new": "App\\Modules\\Crm\\Models\\WaChatbotFlow",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Comunicaciones;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.configuracion'",
+    "new": "view('crm::comunicaciones.configuracion'",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.chatbot'",
+    "new": "view('crm::comunicaciones.chatbot'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/ClientesCrmController.php": [
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\LeadScoring",
+    "new": "App\\Modules\\Bots\\Support\\LeadScoring",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaMensaje",
+    "new": "App\\Modules\\Crm\\Models\\WaMensaje",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Comunicaciones;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.clientes'",
+    "new": "view('crm::comunicaciones.clientes'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/IA.php": [
+   {
+    "old": "App\\Ia\\Providers\\AnthropicProvider",
+    "new": "App\\Modules\\Bots\\Ia\\Providers\\AnthropicProvider",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\Providers\\DeepSeekProvider",
+    "new": "App\\Modules\\Bots\\Ia\\Providers\\DeepSeekProvider",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\Providers\\GeminiProvider",
+    "new": "App\\Modules\\Bots\\Ia\\Providers\\GeminiProvider",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\Providers\\OpenAiProvider",
+    "new": "App\\Modules\\Bots\\Ia\\Providers\\OpenAiProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia;",
+    "new": "namespace App\\Modules\\Bots\\Ia;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/IaProvider.php": [
+   {
+    "old": "App\\Ia\\IA",
+    "new": "App\\Modules\\Bots\\Ia\\IA",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia;",
+    "new": "namespace App\\Modules\\Bots\\Ia;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/InterpreteComercial.php": [
+   {
+    "old": "App\\Ia\\IA",
+    "new": "App\\Modules\\Bots\\Ia\\IA",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia;",
+    "new": "namespace App\\Modules\\Bots\\Ia;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/Providers/AnthropicProvider.php": [
+   {
+    "old": "App\\Ia\\IaProvider",
+    "new": "App\\Modules\\Bots\\Ia\\IaProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia\\Providers;",
+    "new": "namespace App\\Modules\\Bots\\Ia\\Providers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/Providers/AnthropicVision.php": [
+   {
+    "old": "App\\Ia\\VisionProvider",
+    "new": "App\\Modules\\Bots\\Ia\\VisionProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia\\Providers;",
+    "new": "namespace App\\Modules\\Bots\\Ia\\Providers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/Providers/DeepSeekProvider.php": [
+   {
+    "old": "App\\Ia\\IaProvider",
+    "new": "App\\Modules\\Bots\\Ia\\IaProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia\\Providers;",
+    "new": "namespace App\\Modules\\Bots\\Ia\\Providers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/Providers/GeminiProvider.php": [
+   {
+    "old": "App\\Ia\\IaProvider",
+    "new": "App\\Modules\\Bots\\Ia\\IaProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia\\Providers;",
+    "new": "namespace App\\Modules\\Bots\\Ia\\Providers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/Providers/GeminiVision.php": [
+   {
+    "old": "App\\Ia\\VisionProvider",
+    "new": "App\\Modules\\Bots\\Ia\\VisionProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia\\Providers;",
+    "new": "namespace App\\Modules\\Bots\\Ia\\Providers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/Providers/OpenAiProvider.php": [
+   {
+    "old": "App\\Ia\\IaProvider",
+    "new": "App\\Modules\\Bots\\Ia\\IaProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia\\Providers;",
+    "new": "namespace App\\Modules\\Bots\\Ia\\Providers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/Providers/OpenAiVision.php": [
+   {
+    "old": "App\\Ia\\VisionProvider",
+    "new": "App\\Modules\\Bots\\Ia\\VisionProvider",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Ia\\Providers;",
+    "new": "namespace App\\Modules\\Bots\\Ia\\Providers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Models/BotFlow.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Bots\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Lector/LectorComprobantes.php": [
+   {
+    "old": "App\\Ia\\Providers\\AnthropicVision",
+    "new": "App\\Modules\\Bots\\Ia\\Providers\\AnthropicVision",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\Providers\\GeminiVision",
+    "new": "App\\Modules\\Bots\\Ia\\Providers\\GeminiVision",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\Providers\\OpenAiVision",
+    "new": "App\\Modules\\Bots\\Ia\\Providers\\OpenAiVision",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\VisionProvider",
+    "new": "App\\Modules\\Bots\\Ia\\VisionProvider",
+    "n": 1
+   }
+  ],
+  "app/Observers/ProjectObserver.php": [
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Support/LeadScoring.php": [
+   {
+    "old": "App\\Ia\\IA",
+    "new": "App\\Modules\\Bots\\Ia\\IA",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Bots\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Support/ModulosPortal.php": [
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Support/FlowEngine/FlowRunner.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\Carrito",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\Carrito",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\InterpreteComercial",
+    "new": "App\\Modules\\Bots\\Ia\\InterpreteComercial",
+    "n": 2
+   },
+   {
+    "old": "App\\Ia\\IA",
+    "new": "App\\Modules\\Bots\\Ia\\IA",
+    "n": 2
+   },
+   {
+    "old": "namespace App\\Support\\FlowEngine;",
+    "new": "namespace App\\Modules\\Bots\\Support\\FlowEngine;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Support/WhatsappCloud/ClienteCloud.php": [
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support\\WhatsappCloud;",
+    "new": "namespace App\\Modules\\Crm\\Support\\WhatsappCloud;",
+    "n": 1
+   }
+  ],
+  "routes/api.php": [
+   {
+    "old": "App\\Http\\Controllers\\Comunicaciones\\BotBuilderPortalController",
+    "new": "App\\Modules\\Bots\\Controllers\\BotBuilderPortalController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Api\\WhatsappCloudWebhookController",
+    "new": "App\\Modules\\Bots\\Controllers\\WhatsappCloudWebhookController",
+    "n": 2
+   },
+   {
+    "old": "App\\Http\\Controllers\\Api\\VentaExtensionController",
+    "new": "App\\Modules\\Crm\\Controllers\\VentaExtensionController",
+    "n": 3
+   },
+   {
+    "old": "App\\Http\\Controllers\\Api\\WhatsappSyncController",
+    "new": "App\\Modules\\Crm\\Controllers\\WhatsappSyncController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Api\\BotWebhookController",
+    "new": "App\\Modules\\Bots\\Controllers\\BotWebhookController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Api\\CopilotController",
+    "new": "App\\Modules\\Crm\\Controllers\\CopilotController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Api\\PagoController",
+    "new": "App\\Modules\\Crm\\Controllers\\PagoController",
+    "n": 3
+   }
+  ],
+  "routes/web.php": [
+   {
+    "old": "App\\Http\\Controllers\\Comunicaciones\\BotBuilderPortalController",
+    "new": "App\\Modules\\Bots\\Controllers\\BotBuilderPortalController",
+    "n": 7
+   },
+   {
+    "old": "App\\Http\\Controllers\\Comunicaciones\\ClientesCrmController",
+    "new": "App\\Modules\\Crm\\Controllers\\ClientesCrmController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Comercial\\ConversacionesController",
+    "new": "App\\Modules\\Crm\\Controllers\\ConversacionesController",
+    "n": 2
+   },
+   {
+    "old": "App\\Http\\Controllers\\Comunicaciones\\BandejaController",
+    "new": "App\\Modules\\Crm\\Controllers\\BandejaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Comunicaciones\\CanalesController",
+    "new": "App\\Modules\\Crm\\Controllers\\CanalesController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Comunicaciones\\AuthController",
+    "new": "App\\Modules\\Crm\\Controllers\\CrmAuthController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\CopilotEmpresarialController",
+    "new": "App\\Modules\\Crm\\Controllers\\CopilotEmpresarialController",
+    "n": 2
+   },
+   {
+    "old": "App\\Http\\Controllers\\ComunicacionesController",
+    "new": "App\\Modules\\Crm\\Controllers\\ComunicacionesController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\BotStatusController",
+    "new": "App\\Modules\\Bots\\Controllers\\BotStatusController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Api\\PagoController",
+    "new": "App\\Modules\\Crm\\Controllers\\PagoController",
+    "n": 3
+   },
+   {
+    "old": "App\\Http\\Controllers\\BotFlowController",
+    "new": "App\\Modules\\Bots\\Controllers\\BotFlowController",
+    "n": 11
+   },
+   {
+    "old": "App\\Http\\Controllers\\WaBotController",
+    "new": "App\\Modules\\Bots\\Controllers\\WaBotController",
+    "n": 1
+   },
+   {
+    "old": "view('bot-builder.index'",
+    "new": "view('bots::bot-builder.index'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotAsesoriaTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotBusquedaTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotClientesRealesTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotComercialTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotEditorBloquesTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotFase2CierreTest.php": [
+   {
+    "old": "App\\Console\\Commands\\SeguimientoConversaciones",
+    "new": "App\\Modules\\Crm\\Commands\\SeguimientoConversaciones",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotSession",
+    "new": "App\\Modules\\Bots\\Models\\BotSession",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotIaTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   },
+   {
+    "old": "App\\Ia\\InterpreteComercial",
+    "new": "App\\Modules\\Bots\\Ia\\InterpreteComercial",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotMenuContextoTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaComercial",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotPredeterminadoTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotWebhookTest.php": [
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CanalesCredencialesMetaTest.php": [
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PaymentsStabilizationTest.php": [
+   {
+    "old": "App\\Http\\Controllers\\Api\\BotWebhookController",
+    "new": "App\\Modules\\Bots\\Controllers\\BotWebhookController",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PlantillaTiendaTest.php": [
+   {
+    "old": "App\\Support\\FlowEngine\\PlantillaTienda",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaTienda",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\FlowEngine\\FlowRunner",
+    "new": "App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner",
+    "n": 1
+   }
+  ],
+  "tests/Feature/WaCanalCredencialesTest.php": [
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "tests/Feature/WhatsappCloudWebhookTest.php": [
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "tests/Unit/RouterComercialTest.php": [
+   {
+    "old": "App\\Ia\\RouterComercial",
+    "new": "App\\Modules\\Bots\\Ia\\RouterComercial",
+    "n": 1
+   }
+  ],
+  "database/seeders/WaRespuestasRapidasSeeder.php": [
+   {
+    "old": "App\\Models\\WaRespuestaRapida",
+    "new": "App\\Modules\\Crm\\Models\\WaRespuestaRapida",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Views/bot-builder/index.blade.php": [
+   {
+    "old": "App\\Models\\BotInstance",
+    "new": "App\\Modules\\Bots\\Models\\BotInstance",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\BotSession",
+    "new": "App\\Modules\\Bots\\Models\\BotSession",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Views/bot-flows/editor.blade.php": [
+   {
+    "old": "App\\Models\\BotFlow",
+    "new": "App\\Modules\\Bots\\Models\\BotFlow",
+    "n": 1
+   }
+  ],
+  "resources/views/comercial/layouts/app.blade.php": [
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Views/comunicaciones/layouts/app.blade.php": [
+   {
+    "old": "App\\Http\\Controllers\\Comunicaciones\\AuthController",
+    "new": "App\\Modules\\Crm\\Controllers\\CrmAuthController",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaConversacion",
+    "new": "App\\Modules\\Crm\\Models\\WaConversacion",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/index.blade.php": [
+   {
+    "old": "App\\Models\\WaCanal",
+    "new": "App\\Modules\\Crm\\Models\\WaCanal",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Models/BotConfig.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Bots\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Models/BotInstance.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Bots\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Models/BotSession.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Bots\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Models/BotState.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Bots\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Models/BotTransition.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Bots\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Support/FlowEngine/Carrito.php": [
+   {
+    "old": "namespace App\\Support\\FlowEngine;",
+    "new": "namespace App\\Modules\\Bots\\Support\\FlowEngine;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Support/FlowEngine/PlantillaComercial.php": [
+   {
+    "old": "namespace App\\Support\\FlowEngine;",
+    "new": "namespace App\\Modules\\Bots\\Support\\FlowEngine;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Support/FlowEngine/PlantillaTienda.php": [
+   {
+    "old": "namespace App\\Support\\FlowEngine;",
+    "new": "namespace App\\Modules\\Bots\\Support\\FlowEngine;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/RouterComercial.php": [
+   {
+    "old": "namespace App\\Ia;",
+    "new": "namespace App\\Modules\\Bots\\Ia;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Ia/VisionProvider.php": [
+   {
+    "old": "namespace App\\Ia;",
+    "new": "namespace App\\Modules\\Bots\\Ia;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/CrmAuthController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers\\Comunicaciones;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "class AuthController extends",
+    "new": "class CrmAuthController extends",
+    "n": 1
+   },
+   {
+    "old": "view('comunicaciones.auth.login'",
+    "new": "view('crm::comunicaciones.auth.login'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/ConversacionesController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers\\Comercial;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.conversaciones'",
+    "new": "view('crm::comercial.conversaciones'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/VentaExtensionController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers\\Api;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/PagoController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers\\Api;",
+    "new": "namespace App\\Modules\\Crm\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Models/WaCanal.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Crm\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Models/WaChatbotFlow.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Crm\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Models/WaConversacion.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Crm\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Models/WaMensaje.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Crm\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Models/WaRespuestaRapida.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Crm\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Jobs/SendAbandonedCartReminder.php": [
+   {
+    "old": "namespace App\\Jobs;",
+    "new": "namespace App\\Modules\\Crm\\Jobs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Views/comunicaciones/bandeja.blade.php": [
+   {
+    "old": "@extends('comunicaciones.layouts.app'",
+    "new": "@extends('crm::comunicaciones.layouts.app'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Views/comunicaciones/chatbot.blade.php": [
+   {
+    "old": "@extends('comunicaciones.layouts.app'",
+    "new": "@extends('crm::comunicaciones.layouts.app'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Views/comunicaciones/clientes.blade.php": [
+   {
+    "old": "@extends('comunicaciones.layouts.app'",
+    "new": "@extends('crm::comunicaciones.layouts.app'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Views/comunicaciones/configuracion.blade.php": [
+   {
+    "old": "@extends('comunicaciones.layouts.app'",
+    "new": "@extends('crm::comunicaciones.layouts.app'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Views/comunicaciones/bots/editor.blade.php": [
+   {
+    "old": "@extends('comunicaciones.layouts.app'",
+    "new": "@extends('crm::comunicaciones.layouts.app'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Views/comunicaciones/bots/index.blade.php": [
+   {
+    "old": "@extends('comunicaciones.layouts.app'",
+    "new": "@extends('crm::comunicaciones.layouts.app'",
+    "n": 1
+   }
+  ]
+ },
+ "inserts": {
+  "app/Modules/Bots/Controllers/BotFlowController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Bots\\Ia\\InterpreteComercial;",
+   "use App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaComercial;",
+   "use App\\Modules\\Bots\\Support\\FlowEngine\\PlantillaTienda;"
+  ],
+  "app/Modules/Bots/Controllers/BotStatusController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Bots/Controllers/WaBotController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Bots\\Models\\BotInstance;"
+  ],
+  "app/Modules/Bots/Controllers/BotWebhookController.php": [
+   "use App\\Modules\\Crm\\Models\\WaCanal;",
+   "use App\\Modules\\Crm\\Models\\WaConversacion;",
+   "use App\\Modules\\Crm\\Models\\WaMensaje;"
+  ],
+  "app/Modules/Bots/Controllers/WhatsappCloudWebhookController.php": [
+   "use App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner;"
+  ],
+  "app/Modules/Bots/Models/BotFlow.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Bots/Models/BotInstance.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Bots/Support/FlowEngine/Carrito.php": [
+   "use App\\Modules\\Bots\\Ia\\IA;"
+  ],
+  "app/Modules/Bots/Support/FlowEngine/FlowRunner.php": [
+   "use App\\Modules\\Bots\\Ia\\InterpreteComercial;",
+   "use App\\Support\\StorefrontNavigation;"
+  ],
+  "app/Modules/Bots/Support/FlowEngine/PlantillaComercial.php": [
+   "use App\\Modules\\Bots\\Ia\\IA;"
+  ],
+  "app/Modules/Crm/Controllers/BandejaController.php": [
+   "use App\\Modules\\Crm\\Support\\WhatsappCloud\\ClienteCloud;"
+  ],
+  "app/Modules/Crm/Controllers/CanalesController.php": [
+   "use App\\Modules\\Crm\\Models\\WaConversacion;"
+  ],
+  "app/Modules/Crm/Controllers/ClientesCrmController.php": [
+   "use App\\Modules\\Bots\\Ia\\IA;",
+   "use App\\Modules\\Crm\\Models\\WaMensaje;"
+  ],
+  "app/Modules/Crm/Controllers/ComunicacionesController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Crm/Controllers/CopilotEmpresarialController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Crm/Controllers/WhatsappSyncController.php": [
+   "use App\\Modules\\Bots\\Ia\\IA;"
+  ],
+  "app/Modules/Crm/Models/WaCanal.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Crm/Models/WaConversacion.php": [
+   "use App\\Models\\Client;"
+  ],
+  "app/Modules/Crm/Models/WaRespuestaRapida.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Crm/Support/WhatsappCloud/ClienteCloud.php": [
+   "use App\\Modules\\Bots\\Support\\FlowEngine\\FlowRunner;"
+  ]
+ },
+ "sospechosos": {
+  "app/Http/Controllers/PasswordResetPortalController.php": [
+   "'label' => 'Portal Comercial'],         'comunicaciones'=> ['"
+  ],
+  "routes/api.php": [
+   "ca y persiste el lead. */ Route::prefix('copilot')->gr"
+  ],
+  "tests/Feature/BixoSalesAuthorizationTest.php": [
+   "sulta por POST, documentada             'copilot',"
+  ],
+  "tests/Feature/BotQrAccessTest.php": [
+   "= $this->projectWithModules(['clients', 'bots']);",
+   "= $this->projectWithModules(['clients', 'bots']);"
+  ],
+  "tests/Feature/ShellUnicoWorkspaceTest.php": [
+   "nvoices', 'quotes', 'catalog', 'store', 'bots'] as"
+  ],
+  "database/migrations/2026_09_03_200000_register_bots_module.php": [
+   "'icon' => '',             'route' => 'bot-flows.index',",
+   "le('modules')->updateOrInsert(['key' => 'bots'], $v",
+   "DB::table('modules')->where('key', 'bots')->de"
+  ],
+  "database/seeders/ModuleSeeder.php": [
+   "rt_order' => 23],             ['key' => 'bots',"
+  ],
+  "bootstrap/app.php": [
+   "sureComercialModule::class,             'comunicaciones.auth' => \\"
+  ],
+  "resources/views/auth/portal-forgot-password.blade.php": [
+   "=> 'bixosales.login',                 'comunicaciones' => '"
+  ],
+  "resources/views/bot-builder/index.blade.php": [
+   "-100 rounded-lg p-1\">         @foreach(['bots'=>'Mi",
+   "═════════ --}} <div x-show=\"activeTab==='bots'\" cla",
+   ") {     return {         activeTab:     'bots',"
+  ],
+  "resources/views/layouts/app.blade.php": [
+   "&& $activeProject->hasModule('bots');",
+   "iveProject && $activeProject->hasModule('bots') &&"
+  ]
+ }
+}

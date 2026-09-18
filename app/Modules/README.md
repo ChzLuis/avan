@@ -26,10 +26,23 @@ Cómo y en qué orden se mueve el código: `docs/architecture/BIXO_MODULARIZACIO
 
 ## Estado
 
-Estructura creada 2026-09-17. **Las carpetas están vacías a propósito**: el
-código se muda módulo a módulo, en el orden del plan, y solo con el árbol de
-git limpio y la suite explicada. Hasta entonces el código sigue en
-`app/Http/Controllers/`, `app/Models/`, etc.
+Estructura creada 2026-09-17. Mudanza en curso, un módulo por commit, en el
+orden del plan y solo con el árbol de git limpio y la suite explicada:
+
+| # | Módulo | Estado | Guardián |
+|---|--------|--------|----------|
+| 1 | Personas | movido 2026-09-17 | `PersonasModuloTest` |
+| 2 | Control | movido 2026-09-17 | `ControlModuloTest` |
+| 3 | Inventario | movido 2026-09-17 | `InventarioModuloTest` |
+| 4 | Finanzas | movido 2026-09-17 | `FinanzasModuloTest` |
+| 5 | Crm + Bots | movidos 2026-09-17 | `CrmModuloTest`, `BotsModuloTest` |
+| 6 | Tienda | pendiente | |
+| 7 | Catalogo | pendiente (incluye `ImportLog`) | |
+| 8 | Ventas | pendiente | |
+
+Lo movido **no está desplegado**: ARIN tiene el classmap optimizado, así que
+subir un módulo exige borrar los archivos viejos y `composer dump-autoload -o`
+(ver el README de cada módulo, apartado "Para desplegar").
 
 El namespace ya resuelve: `App\Modules\Crm\Controllers\...` carga sin tocar
 `composer.json` (PSR-4 `App\` → `app/`).

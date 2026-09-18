@@ -28,23 +28,23 @@ use App\Modules\Finanzas\Controllers\PaymentController;
 use App\Modules\Finanzas\Controllers\InvoiceController;
 use App\Modules\Finanzas\Controllers\NotaController;
 use App\Modules\Finanzas\Controllers\GuiaRemisionController;
-use App\Http\Controllers\ComunicacionesController;
+use App\Modules\Crm\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
 use App\Modules\Finanzas\Controllers\CertificadoController;
 use App\Http\Controllers\ComboController;
 use App\Http\Controllers\PromotionController;
-use App\Http\Controllers\WaBotController;
+use App\Modules\Bots\Controllers\WaBotController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\DeliveryController;
 use App\Modules\Finanzas\Controllers\CajaController;
-use App\Http\Controllers\BotStatusController;
+use App\Modules\Bots\Controllers\BotStatusController;
 use App\Http\Controllers\OperationalMapController;
 use App\Modules\Control\Controllers\DemoController;
-use App\Http\Controllers\Comunicaciones\AuthController as ComWaAuthController;
-use App\Http\Controllers\Comunicaciones\BandejaController;
-use App\Http\Controllers\Comunicaciones\ClientesCrmController;
-use App\Http\Controllers\Comunicaciones\CanalesController;
+use App\Modules\Crm\Controllers\CrmAuthController as ComWaAuthController;
+use App\Modules\Crm\Controllers\BandejaController;
+use App\Modules\Crm\Controllers\ClientesCrmController;
+use App\Modules\Crm\Controllers\CanalesController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Redirect raíz ───────────────────────────────────────────────────────────
@@ -245,27 +245,27 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/dashboard-comercial/meta', [\App\Http\Controllers\DashboardComercialController::class, 'saveMeta'])->name('dashboard.comercial.meta')->middleware('can:settings.negocio');
 
         // Copilot Empresarial (pregúntale a tu negocio en español)
-        Route::get('/copilot',  [\App\Http\Controllers\CopilotEmpresarialController::class, 'index'])->name('copilot.index');
-        Route::post('/copilot', [\App\Http\Controllers\CopilotEmpresarialController::class, 'preguntar'])->name('copilot.preguntar')->middleware('can:reports.ver');
+        Route::get('/copilot',  [\App\Modules\Crm\Controllers\CopilotEmpresarialController::class, 'index'])->name('copilot.index');
+        Route::post('/copilot', [\App\Modules\Crm\Controllers\CopilotEmpresarialController::class, 'preguntar'])->name('copilot.preguntar')->middleware('can:reports.ver');
 
         // Constructor visual de bots. Cualquier miembro del negocio puede ver
         // el estado y escanear el QR cuando CRM + Bots estan contratados. Las
         // acciones que cambian el bot siguen siendo solo de configuracion.
         Route::prefix('bots-flow')->middleware(['module:clients', 'module:bots'])->group(function () {
-            Route::get('/',          [\App\Http\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
-            Route::get('/wa-status', [\App\Http\Controllers\BotFlowController::class, 'waStatus'])->name('bot-flows.wa-status');
+            Route::get('/',          [\App\Modules\Bots\Controllers\BotFlowController::class, 'index'])->name('bot-flows.index');
+            Route::get('/wa-status', [\App\Modules\Bots\Controllers\BotFlowController::class, 'waStatus'])->name('bot-flows.wa-status');
 
 
             Route::middleware('can:settings.negocio')->group(function () {
-                Route::get('/nuevo', [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
-                Route::post('/plantilla-tienda', [\App\Http\Controllers\BotFlowController::class, 'desdePlantilla'])->name('bot-flows.plantilla');
-                Route::post('/plantilla-comercial', [\App\Http\Controllers\BotFlowController::class, 'desdePlantillaComercial'])->name('bot-flows.plantilla-comercial');
-                Route::post('/ia', [\App\Http\Controllers\BotFlowController::class, 'toggleIa'])->name('bot-flows.ia');
-                Route::get('/{flow}', [\App\Http\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
-                Route::post('/{flow}', [\App\Http\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save');
-                Route::post('/{flow}/test', [\App\Http\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test');
-                Route::post('/{flow}/restaurar', [\App\Http\Controllers\BotFlowController::class, 'restaurarPlantilla'])->name('bot-flows.restaurar');
-                Route::delete('/{flow}', [\App\Http\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy');
+                Route::get('/nuevo', [\App\Modules\Bots\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor.new');
+                Route::post('/plantilla-tienda', [\App\Modules\Bots\Controllers\BotFlowController::class, 'desdePlantilla'])->name('bot-flows.plantilla');
+                Route::post('/plantilla-comercial', [\App\Modules\Bots\Controllers\BotFlowController::class, 'desdePlantillaComercial'])->name('bot-flows.plantilla-comercial');
+                Route::post('/ia', [\App\Modules\Bots\Controllers\BotFlowController::class, 'toggleIa'])->name('bot-flows.ia');
+                Route::get('/{flow}', [\App\Modules\Bots\Controllers\BotFlowController::class, 'editor'])->name('bot-flows.editor');
+                Route::post('/{flow}', [\App\Modules\Bots\Controllers\BotFlowController::class, 'save'])->name('bot-flows.save');
+                Route::post('/{flow}/test', [\App\Modules\Bots\Controllers\BotFlowController::class, 'test'])->name('bot-flows.test');
+                Route::post('/{flow}/restaurar', [\App\Modules\Bots\Controllers\BotFlowController::class, 'restaurarPlantilla'])->name('bot-flows.restaurar');
+                Route::delete('/{flow}', [\App\Modules\Bots\Controllers\BotFlowController::class, 'destroy'])->name('bot-flows.destroy');
             });
         });
 
@@ -313,7 +313,7 @@ Route::middleware(['auth'])->group(function () {
         // Proyectos (panel 3 columnas) — rutas movidas fuera del grupo project.member
 
         // Constructor Bot
-        Route::get('/bot-builder',                      fn() => view('bot-builder.index'))->name('bot-builder.index');
+        Route::get('/bot-builder',                      fn() => view('bots::bot-builder.index'))->name('bot-builder.index');
 
         // Bots WhatsApp
         Route::get('/bots',                             [BotStatusController::class, 'index'])->name('bots.index');
@@ -1010,7 +1010,7 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         // Cambiar de negocio activo dentro del CRM (selector)
         Route::post('/cambiar-negocio',              [ComWaAuthController::class, 'cambiarProyecto'])->name('cambiar.negocio');
         // Estado + QR del bot WhatsApp (Baileys) — el frontend hace polling
-        Route::get('/bots/wa-status',                [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'waStatus'])->name('bots.wa.status');
+        Route::get('/bots/wa-status',                [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'waStatus'])->name('bots.wa.status');
         // Ficha CRM del lead (columna derecha de la bandeja) — antes de {conversacion}
         Route::post('/lead',                         [ClientesCrmController::class, 'lead'])->name('lead');
         Route::post('/lead/{id}/etapa',              [ClientesCrmController::class, 'leadEtapa'])->name('lead.etapa');
@@ -1028,12 +1028,12 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::get('/chatbot',                       [CanalesController::class, 'chatbot'])->name('chatbot');
 
         // Constructor visual de bots (nuevo) dentro del portal CRM
-        Route::get('/bots',            [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'index'])->name('bots.index');
-        Route::get('/bots/nuevo',      [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'editor'])->name('bots.editor.new');
-        Route::get('/bots/{id}',       [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'editor'])->name('bots.editor');
-        Route::post('/bots/{id}',      [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'save'])->name('bots.save');
-        Route::post('/bots/{id}/test', [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'test'])->name('bots.test');
-        Route::delete('/bots/{id}',    [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'destroy'])->name('bots.destroy');
+        Route::get('/bots',            [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'index'])->name('bots.index');
+        Route::get('/bots/nuevo',      [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'editor'])->name('bots.editor.new');
+        Route::get('/bots/{id}',       [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'editor'])->name('bots.editor');
+        Route::post('/bots/{id}',      [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'save'])->name('bots.save');
+        Route::post('/bots/{id}/test', [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'test'])->name('bots.test');
+        Route::delete('/bots/{id}',    [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'destroy'])->name('bots.destroy');
         Route::post('/chatbot/flows',                [CanalesController::class, 'guardarFlow'])->name('chatbot.guardar');
         Route::delete('/chatbot/flows/{flow}',       [CanalesController::class, 'eliminarFlow'])->name('chatbot.eliminar');
         Route::patch('/chatbot/toggle/{id}',         [CanalesController::class, 'toggleBot'])->name('chatbot.toggle');
@@ -1067,9 +1067,9 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         // Aprobación de pagos Yape/Plin (pedidos del bot en revisión)
         // "pendientes" usa POST pero es una CONSULTA: lista los pagos en revision
         // y no escribe nada. Es la unica excepcion verbo/semantica del portal.
-        Route::post('/pagos/pendientes', [\App\Http\Controllers\Api\PagoController::class, 'pendientes'])->name('pagos.pendientes')->middleware('can:payments.ver');
-        Route::post('/pagos/aprobar',    [\App\Http\Controllers\Api\PagoController::class, 'aprobar'])->name('pagos.aprobar')->middleware('can:payments.aprobar');
-        Route::post('/pagos/rechazar',   [\App\Http\Controllers\Api\PagoController::class, 'rechazar'])->name('pagos.rechazar')->middleware('can:payments.rechazar');
+        Route::post('/pagos/pendientes', [\App\Modules\Crm\Controllers\PagoController::class, 'pendientes'])->name('pagos.pendientes')->middleware('can:payments.ver');
+        Route::post('/pagos/aprobar',    [\App\Modules\Crm\Controllers\PagoController::class, 'aprobar'])->name('pagos.aprobar')->middleware('can:payments.aprobar');
+        Route::post('/pagos/rechazar',   [\App\Modules\Crm\Controllers\PagoController::class, 'rechazar'])->name('pagos.rechazar')->middleware('can:payments.rechazar');
 
         // Revendedor: sus precios propios + su catálogo compartible
         Route::get('/revendedor/precios',   [\App\Http\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios')->middleware('can:pos.usar');
@@ -1083,8 +1083,8 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/woo/stats',   [\App\Http\Controllers\WooSyncController::class, 'stats'])->name('woo.stats')->middleware('can:catalog.ver');
 
         // Tickets manuales WordPress
-        Route::get('/conversaciones', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'index'])->name('conversaciones')->middleware('can:tickets.ver');
-        Route::get('/conversaciones/{id}/mensajes', [\App\Http\Controllers\Comercial\ConversacionesController::class, 'mensajes'])->name('conversaciones.mensajes')->middleware('can:tickets.ver');
+        Route::get('/conversaciones', [\App\Modules\Crm\Controllers\ConversacionesController::class, 'index'])->name('conversaciones')->middleware('can:tickets.ver');
+        Route::get('/conversaciones/{id}/mensajes', [\App\Modules\Crm\Controllers\ConversacionesController::class, 'mensajes'])->name('conversaciones.mensajes')->middleware('can:tickets.ver');
         Route::get('/tickets-manuales', [\App\Http\Controllers\TicketsWpController::class, 'index'])->name('tickets.wp')->middleware('can:tickets.ver');
         Route::get('/tickets-manuales/buscar', [\App\Http\Controllers\TicketsWpController::class, 'buscar'])->name('tickets.wp.buscar')->middleware('can:tickets.ver');
         Route::post('/tickets-manuales/eliminar', [\App\Http\Controllers\TicketsWpController::class, 'eliminar'])->name('tickets.wp.eliminar')->middleware('can:tickets.eliminar');

@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Ia\InterpreteComercial;
+use App\Modules\Bots\Ia\InterpreteComercial;
 use App\Models\Category;
 use App\Models\Module;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\FlowEngine\FlowRunner;
-use App\Support\FlowEngine\PlantillaComercial;
+use App\Modules\Bots\Support\FlowEngine\FlowRunner;
+use App\Modules\Bots\Support\FlowEngine\PlantillaComercial;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;

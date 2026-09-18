@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\CopilotController;
+use App\Modules\Crm\Controllers\CopilotController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,30 +30,30 @@ Route::prefix('copilot')->group(function () {
     Route::post('/cliente/ficha', [CopilotController::class, 'fichaContacto']);
     Route::post('/cliente/ficha/guardar', [CopilotController::class, 'guardarFicha']);
     // Vender desde el chat (pedido / cotización reales)
-    Route::post('/venta/pedido', [\App\Http\Controllers\Api\VentaExtensionController::class, 'crearPedido']);
-    Route::post('/venta/cotizacion', [\App\Http\Controllers\Api\VentaExtensionController::class, 'crearCotizacion']);
-    Route::post('/venta/encuesta', [\App\Http\Controllers\Api\VentaExtensionController::class, 'encuestaPostventa']);
+    Route::post('/venta/pedido', [\App\Modules\Crm\Controllers\VentaExtensionController::class, 'crearPedido']);
+    Route::post('/venta/cotizacion', [\App\Modules\Crm\Controllers\VentaExtensionController::class, 'crearCotizacion']);
+    Route::post('/venta/encuesta', [\App\Modules\Crm\Controllers\VentaExtensionController::class, 'encuestaPostventa']);
 });
 
 // Puente WhatsApp → motor de bots (lo llama Baileys por cada mensaje entrante)
-Route::post('/bot/inbound', [\App\Http\Controllers\Api\BotWebhookController::class, 'inbound']);
+Route::post('/bot/inbound', [\App\Modules\Bots\Controllers\BotWebhookController::class, 'inbound']);
 
 // El conector Baileys reporta su estado + QR (para mostrarlo en el constructor)
-Route::post('/bot/wa-status', [\App\Http\Controllers\Comunicaciones\BotBuilderPortalController::class, 'waPush']);
+Route::post('/bot/wa-status', [\App\Modules\Bots\Controllers\BotBuilderPortalController::class, 'waPush']);
 
 // WhatsApp Cloud API (Meta) → motor de bots. La URL es publica por diseño
 // (Meta la llama sin token); lo que autentica cada evento es la firma HMAC
 // con el App Secret, que se valida dentro del controlador.
-Route::get('/whatsapp/webhook',  [\App\Http\Controllers\Api\WhatsappCloudWebhookController::class, 'verificar']);
-Route::post('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsappCloudWebhookController::class, 'recibir'])
+Route::get('/whatsapp/webhook',  [\App\Modules\Bots\Controllers\WhatsappCloudWebhookController::class, 'verificar']);
+Route::post('/whatsapp/webhook', [\App\Modules\Bots\Controllers\WhatsappCloudWebhookController::class, 'recibir'])
     ->middleware('throttle:300,1');
 
 // Aprobación de pagos Yape/Plin reportados por el bot (extensión y panel)
 Route::prefix('pagos')->group(function () {
-    Route::post('/pendientes', [\App\Http\Controllers\Api\PagoController::class, 'pendientes']);
-    Route::post('/aprobar',    [\App\Http\Controllers\Api\PagoController::class, 'aprobar']);
-    Route::post('/rechazar',   [\App\Http\Controllers\Api\PagoController::class, 'rechazar']);
+    Route::post('/pendientes', [\App\Modules\Crm\Controllers\PagoController::class, 'pendientes']);
+    Route::post('/aprobar',    [\App\Modules\Crm\Controllers\PagoController::class, 'aprobar']);
+    Route::post('/rechazar',   [\App\Modules\Crm\Controllers\PagoController::class, 'rechazar']);
 });
 
 // Sincronización de chats desde la extensión (WhatsApp Web → CRM de BIXO)
-Route::post('/wa/sync', [\App\Http\Controllers\Api\WhatsappSyncController::class, 'sync']);
+Route::post('/wa/sync', [\App\Modules\Crm\Controllers\WhatsappSyncController::class, 'sync']);
