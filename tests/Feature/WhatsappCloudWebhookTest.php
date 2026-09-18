@@ -6,6 +6,7 @@ use App\Modules\Bots\Models\BotFlow;
 use App\Models\Project;
 use App\Models\User;
 use App\Modules\Crm\Models\WaCanal;
+use App\Modules\Crm\Models\WaMensaje;
 use App\Modules\Crm\Models\WaConversacion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -342,6 +343,138 @@ class WhatsappCloudWebhookTest extends TestCase
         $this->enviar($toque, 'secreto-a')->assertOk();
 
         Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Cuando quieras');
+    }
+
+    private function acuse(string $phoneNumberId, string $waId, string $status, array $error = []): string
+    {
+        $st = ['id' => $waId, 'status' => $status, 'timestamp' => (string) time(), 'recipient_id' => '51900000001'];
+        if ($error !== []) $st['errors'] = [$error];
+        return json_encode(['object' => 'whatsapp_business_account', 'entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'messaging_product' => 'whatsapp', 'metadata' => ['phone_number_id' => $phoneNumberId], 'statuses' => [$st],
+        ]]]]]]);
+    }
+
+    /** Cada respuesta del bot guarda el id que le dio Meta; los acuses lo suben a entregado/leido sin retroceder. */
+    public function test_los_acuses_de_meta_actualizan_los_checks_del_mensaje(): void
+    {
+        $this->negocio('Negocio A', '111', 'secreto-a', 'Hola, soy el bot');
+        $n = 0;
+        Http::fake(['graph.facebook.com/*' => fn () => Http::response(['messages' => [['id' => 'wamid.out.' . (++$n)]]], 200)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+        $m = WaMensaje::where('contenido', 'Hola, soy el bot')->firstOrFail();
+        $this->assertStringStartsWith('wamid.out.', (string) $m->wa_message_id, 'Guarda el id que devolvio Meta');
+        $this->assertSame('enviado', $m->estado);
+        $id = $m->wa_message_id;
+
+        $this->enviar($this->acuse('111', $id, 'read'), 'secreto-a')->assertOk();
+        $this->assertSame('leido', $m->fresh()->estado);
+        $this->assertNotNull($m->fresh()->leido_at);
+
+        $this->enviar($this->acuse('111', $id, 'delivered'), 'secreto-a')->assertOk();
+        $this->assertSame('leido', $m->fresh()->estado, 'Un delivered tardio no retrocede el leido');
+    }
+
+    public function test_un_acuse_failed_deja_el_mensaje_en_fallido_con_el_motivo_en_castellano(): void
+    {
+        [, $canal] = $this->negocio('Negocio A', '111', 'secreto-a', 'Hola, soy el bot');
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.x']]], 200)]);
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        $this->enviar($this->acuse('111', 'wamid.x', 'failed', ['code' => 131047, 'title' => 'Re-engagement message']), 'secreto-a')->assertOk();
+
+        $m = WaMensaje::where('contenido', 'Hola, soy el bot')->firstOrFail();
+        $this->assertSame('fallido', $m->estado);
+        $this->assertStringContainsString('24 h', $m->error);
+        $this->assertStringContainsString('24 h', $canal->fresh()->ultimo_error);
+    }
+
+    public function test_si_meta_rechaza_el_envio_el_mensaje_queda_fallido(): void
+    {
+        $this->negocio('Negocio A', '111', 'secreto-a', 'Hola, soy el bot');
+        Http::fake(['graph.facebook.com/*' => Http::response(['error' => ['message' => '(#131030) Recipient phone number not in allowed list', 'code' => 131030]], 400)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        $m = WaMensaje::where('contenido', 'Hola, soy el bot')->firstOrFail();
+        $this->assertSame('fallido', $m->estado);
+        $this->assertStringContainsString('131030', $m->error);
+    }
+
+    /** En la bandeja se ve el titulo del boton tocado, no el id tecnico que lee el motor. */
+    public function test_el_toque_de_un_boton_se_guarda_con_su_titulo_en_la_bandeja(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode([
+            'disparos' => [], 'inicio' => 'menu',
+            'bloques'  => [
+                'menu'   => ['tipo' => 'opciones', 'texto' => '¿Qué necesitas?', 'opciones' => [['texto' => 'Planes', 'siguiente' => 'planes'], ['texto' => 'Asesor', 'siguiente' => 'asesor']]],
+                'planes' => ['tipo' => 'mensaje', 'texto' => 'Desde S/ 490'],
+                'asesor' => ['tipo' => 'mensaje', 'texto' => 'Te atiende una persona'],
+            ],
+        ])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        $toque = json_encode(['object' => 'whatsapp_business_account', 'entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'messaging_product' => 'whatsapp', 'metadata' => ['phone_number_id' => '111'],
+            'contacts' => [['profile' => ['name' => 'Cliente'], 'wa_id' => '51900000001']],
+            'messages' => [['from' => '51900000001', 'id' => 'wamid.' . uniqid(), 'type' => 'interactive',
+                'interactive' => ['type' => 'button_reply', 'button_reply' => ['id' => '2', 'title' => 'Asesor']]]],
+        ]]]]]]);
+        $this->enviar($toque, 'secreto-a')->assertOk();
+
+        Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Te atiende una persona');
+        $this->assertDatabaseHas('wa_mensajes', ['direccion' => 'in', 'contenido' => '👆 Asesor']);
+        $this->assertDatabaseMissing('wa_mensajes', ['direccion' => 'in', 'contenido' => '2']);
+    }
+
+    /** De 4 a 10 opciones: lista desplegable nativa; la fila elegida vuelve como numero. */
+    public function test_de_cuatro_a_diez_opciones_salen_como_lista_nativa(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        $ops = [];
+        foreach (['Ropa', 'Hogar', 'Ferretería', 'Tecnología', 'Minimarket'] as $t) $ops[] = ['texto' => $t, 'siguiente' => 'fin'];
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode([
+            'disparos' => [], 'inicio' => 'menu',
+            'bloques'  => ['menu' => ['tipo' => 'opciones', 'texto' => '¿Qué rubro?', 'opciones' => $ops], 'fin' => ['tipo' => 'mensaje', 'texto' => 'Listo']],
+        ])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        Http::assertSent(function ($req) {
+            $i = $req->data()['interactive'] ?? [];
+            return ($i['type'] ?? '') === 'list' && count($i['action']['sections'][0]['rows']) === 5
+                && $i['action']['sections'][0]['rows'][2]['id'] === '3' && $i['action']['sections'][0]['rows'][2]['title'] === 'Ferretería';
+        });
+        $eleccion = json_encode(['object' => 'whatsapp_business_account', 'entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'messaging_product' => 'whatsapp', 'metadata' => ['phone_number_id' => '111'],
+            'contacts' => [['profile' => ['name' => 'Cliente'], 'wa_id' => '51900000001']],
+            'messages' => [['from' => '51900000001', 'id' => 'wamid.' . uniqid(), 'type' => 'interactive',
+                'interactive' => ['type' => 'list_reply', 'list_reply' => ['id' => '3', 'title' => 'Ferretería']]]],
+        ]]]]]]);
+        $this->enviar($eleccion, 'secreto-a')->assertOk();
+        Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Listo');
+    }
+
+    public function test_una_ubicacion_compartida_queda_con_enlace_al_mapa(): void
+    {
+        $this->negocio('Negocio A', '111', 'secreto-a', 'Hola');
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+        $ubic = json_encode(['object' => 'whatsapp_business_account', 'entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'messaging_product' => 'whatsapp', 'metadata' => ['phone_number_id' => '111'],
+            'contacts' => [['profile' => ['name' => 'Cliente'], 'wa_id' => '51900000001']],
+            'messages' => [['from' => '51900000001', 'id' => 'wamid.' . uniqid(), 'type' => 'location',
+                'location' => ['latitude' => -11.1, 'longitude' => -77.6, 'name' => 'Mi tienda', 'address' => 'Av. Grau 123']]],
+        ]]]]]]);
+
+        $this->enviar($ubic, 'secreto-a')->assertOk();
+
+        $m = WaMensaje::where('direccion', 'in')->firstOrFail();
+        $this->assertSame('ubicacion', $m->tipo);
+        $this->assertSame('📍 Mi tienda Av. Grau 123', $m->contenido);
+        $this->assertSame('https://www.google.com/maps?q=-11.1,-77.6', $m->media_url);
     }
 
     public function test_atiende_aunque_falte_el_content_type(): void

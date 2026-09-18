@@ -47,6 +47,7 @@ class BotWebhookController extends Controller
             'nombre'   => 'nullable|string',
             'tipo'     => 'nullable|string|max:20',   // imagen | audio | video | documento | ubicacion | contacto
             'wa_message_id' => 'nullable|string|max:80',
+            'texto_visible' => 'nullable|string|max:2000', // lo que ve el asesor (titulo del boton tocado, ubicacion...)
             'lid'      => 'nullable|string|max:40',   // id tecnico @lid de WhatsApp, si lo hubo
             'wa_canal_id' => 'nullable|integer',      // canal por el que entro (Meta); si falta, el canal Bot
             'media_url'   => 'nullable|string|max:500', // foto/audio/documento ya descargado por el webhook
@@ -80,7 +81,7 @@ class BotWebhookController extends Controller
 
         // 1) SIEMPRE guardar la conversación en el CRM (el bot alimenta el CRM 24/7,
         //    como los CRM profesionales: acumula historial hacia adelante).
-        $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $data['mensaje'], 'in');
+        $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $data['texto_visible'] ?? $data['mensaje'], 'in');
 
         // 2) Ejecutar el bot activo (si hay).
         $flow = BotFlow::where('project_id', $project->id)->where('activo', true)->latest()->first();

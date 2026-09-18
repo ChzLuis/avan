@@ -244,16 +244,24 @@ $estadoColores = [
                         <template x-if="msg.tipo === 'video' && msg.media_url">
                             <video controls preload="none" :src="msg.media_url" class="rounded-lg max-h-64 mb-1"></video>
                         </template>
-                        <template x-if="!(['documento','audio','video'].includes(msg.tipo) && msg.media_url)">
+                        <template x-if="msg.tipo === 'ubicacion' && msg.media_url">
+                            <a :href="msg.media_url" target="_blank" class="flex items-center gap-2 mb-1 underline">
+                                <span x-text="msg.contenido || '📍 Ubicación'"></span><span class="text-[11px] opacity-70">· ver en el mapa</span>
+                            </a>
+                        </template>
+                        <template x-if="!(['documento','audio','video','ubicacion'].includes(msg.tipo) && msg.media_url)">
                             <p class="whitespace-pre-wrap break-words" x-text="msg.contenido"></p>
                         </template>
                         <div class="flex items-center justify-end gap-1 mt-0.5 text-gray-400">
                             <span class="text-[10px]" x-text="formatearHora(msg.created_at)"></span>
                             <template x-if="esSaliente(msg)">
                                 <span class="text-[10px]"
-                                      :class="msg.estado === 'leido' ? 'text-sky-500' : ''"
-                                      :title="msg.estado === 'pendiente' ? 'No se entregó' : msg.estado"
-                                      x-text="msg.estado === 'leido' || msg.estado === 'entregado' ? '✓✓' : msg.estado === 'pendiente' ? '⚠' : '✓'"></span>
+                                      :class="msg.estado === 'leido' ? 'text-sky-500' : (msg.estado === 'fallido' || msg.estado === 'pendiente') ? 'text-red-500 font-semibold' : ''"
+                                      :title="msg.estado === 'fallido' ? (msg.error || 'Meta rechazó el envío') : msg.estado === 'pendiente' ? 'No se entregó' : msg.estado === 'leido' ? 'Leído' : msg.estado === 'entregado' ? 'Entregado' : 'Enviado'"
+                                      x-text="msg.estado === 'leido' || msg.estado === 'entregado' ? '✓✓' : (msg.estado === 'pendiente' || msg.estado === 'fallido') ? '⚠' : '✓'"></span>
+                            </template>
+                            <template x-if="esSaliente(msg) && msg.estado === 'fallido'">
+                                <span class="text-[10px] text-red-500 truncate max-w-[220px]" x-text="msg.error || 'No se pudo enviar'"></span>
                             </template>
                         </div>
                     </div>
@@ -901,6 +909,10 @@ function bandeja() {
                     else this.conversaciones.push(updated);
                 });
 
+                (data.estados || []).forEach(e => {
+                    const m = this.mensajes.find(x => x.id === e.id);
+                    if (m) Object.assign(m, e);
+                });
                 if (data.mensajes_nuevos?.length > 0) {
                     const existingIds = new Set(this.mensajes.map(m => m.id));
                     data.mensajes_nuevos.forEach(m => {

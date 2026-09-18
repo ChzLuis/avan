@@ -10,7 +10,7 @@ class WaMensaje extends Model
 
     protected $fillable = [
         'wa_conversacion_id', 'wa_message_id', 'direccion',
-        'tipo', 'contenido', 'media_url', 'estado',
+        'tipo', 'contenido', 'media_url', 'estado', 'error',
         'leido_at', 'entregado_at',
     ];
 

@@ -119,16 +119,21 @@ class BandejaController extends Controller
             ]);
 
         $mensajesNuevos = [];
+        $estados = [];
         if ($request->conversacion_id) {
             $conv = WaConversacion::find($request->conversacion_id);
             if ($conv && $canales->contains($conv->wa_canal_id)) {
                 $mensajesNuevos = $conv->mensajes()->where('created_at', '>=', $since)->orderBy('id')->get();
+                // Acuses de Meta sobre mensajes que ya estaban en pantalla (✓ -> ✓✓ -> azul, o fallo).
+                $estados = $conv->mensajes()->whereIn('direccion', ['out', 'saliente'])->where('updated_at', '>=', $since)
+                    ->get(['id', 'estado', 'error', 'leido_at', 'entregado_at']);
             }
         }
 
         return response()->json([
             'conversaciones_actualizadas' => $actualizadas,
             'mensajes_nuevos'             => $mensajesNuevos,
+            'estados'                     => $estados,
             'server_time'                 => now()->timestamp,
         ]);
     }

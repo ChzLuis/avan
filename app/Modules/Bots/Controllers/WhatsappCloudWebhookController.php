@@ -6,6 +6,8 @@ use App\Modules\Bots\Support\FlowEngine\FlowRunner;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Crm\Models\WaCanal;
+use App\Modules\Crm\Models\WaConversacion;
+use App\Modules\Crm\Models\WaMensaje;
 use App\Modules\Crm\Support\WhatsappCloud\ClienteCloud;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -108,8 +110,9 @@ class WhatsappCloudWebhookController extends Controller
                     continue;
                 }
 
-                // Acuses de entrega/lectura: utiles para el CRM, no son mensajes.
+                // Acuses de entrega/lectura/fallo: actualizan los checks de la bandeja.
                 if (! empty($valor['statuses'])) {
+                    $this->procesarAcuses($canal, $valor['statuses']);
                     continue;
                 }
 
@@ -170,6 +173,14 @@ class WhatsappCloudWebhookController extends Controller
 
         $nombre = (string) data_get($valor, 'contacts.0.profile.name', $telefono);
         [$texto, $tipo] = $this->extraerTexto($mensaje);
+        // Lo que el asesor ve en la bandeja: el titulo del boton tocado, no su id.
+        $textoVisible = $this->textoVisible($mensaje, $texto);
+
+        // ANUNCIOS click-to-WhatsApp: cuando el cliente abre el chat desde un
+        // anuncio, Meta adjunta AQUI el `referral` con el anuncio que lo trajo.
+        // Viaja solo en el primer mensaje de esa ventana, asi que si no se lee
+        // ahora se pierde y la conversacion queda sin atribucion para siempre.
+        $referral = is_array($mensaje['referral'] ?? null) ? $mensaje['referral'] : null;
 
         // Una reaccion (un 👍 sobre un mensaje anterior) no abre conversacion.
         // Un texto vacio tampoco es nada que responder.
@@ -194,8 +205,25 @@ class WhatsappCloudWebhookController extends Controller
             }
         }
 
+        // Ubicacion y contacto compartidos: quedan legibles y con enlace al mapa.
+        if ($tipo === 'ubicacion') {
+            $lat = data_get($mensaje, 'location.latitude');
+            $lng = data_get($mensaje, 'location.longitude');
+            $textoVisible = trim('📍 ' . (data_get($mensaje, 'location.name') ?: 'Ubicación compartida') . ' ' . (data_get($mensaje, 'location.address') ?: ''));
+            if ($lat !== null && $lng !== null) {
+                $mediaUrl = "https://www.google.com/maps?q={$lat},{$lng}";
+            }
+        } elseif ($tipo === 'contacto') {
+            $partes = [];
+            foreach ((array) ($mensaje['contacts'] ?? []) as $c) {
+                $tel = data_get($c, 'phones.0.wa_id') ?: data_get($c, 'phones.0.phone', '');
+                $partes[] = trim((string) data_get($c, 'name.formatted_name', '') . ($tel ? ' · +' . ltrim((string) $tel, '+') : ''));
+            }
+            $textoVisible = '👤 ' . (implode(', ', array_filter($partes)) ?: 'Contacto compartido');
+        }
+
         try {
-            $respuestas = $this->ejecutarMotor($canal, $telefono, $nombre, $texto, $tipo, $mediaUrl);
+            $respuestas = $this->ejecutarMotor($canal, $telefono, $nombre, $texto, $tipo, $mediaUrl, $referral, $textoVisible);
         } catch (\Throwable $e) {
             Log::error('wa_cloud.motor_fallo', [
                 'proyecto' => $canal->project_id,
@@ -214,7 +242,91 @@ class WhatsappCloudWebhookController extends Controller
         if ($waId !== '') {
             $cliente->marcarLeido($waId);
         }
-        $cliente->enviarRespuestas($telefono, $respuestas);
+        $resultados = $cliente->enviarRespuestas($telefono, $respuestas);
+        $this->anotarEnvios($canal, $telefono, $resultados);
+    }
+
+    /**
+     * Guarda en cada mensaje saliente del bot el id que le dio Meta (para que
+     * los acuses lo encuentren) o el motivo si Meta lo rechazo.
+     */
+    private function anotarEnvios(WaCanal $canal, string $telefono, array $resultados): void
+    {
+        if ($resultados === []) {
+            return;
+        }
+        $canales = WaCanal::where('project_id', $canal->project_id)->pluck('id');
+        $conv = WaConversacion::whereIn('wa_canal_id', $canales)->where('cliente_telefono', $telefono)->first();
+        if (! $conv) {
+            return;
+        }
+        $salientes = WaMensaje::where('wa_conversacion_id', $conv->id)->whereIn('direccion', ['out', 'saliente'])
+            ->whereNull('wa_message_id')->where('estado', 'enviado')
+            ->orderByDesc('id')->limit(count($resultados))->get()->reverse()->values();
+        foreach ($salientes as $i => $m) {
+            $r = $resultados[$i] ?? null;
+            if (! $r) {
+                continue;
+            }
+            if (! empty($r['ok'])) {
+                $idMeta = (string) ($r['id'] ?? '');
+                // El id es unico en la tabla: si ya existe (reenvio o fake), se deja sin anotar.
+                if ($idMeta === '' || WaMensaje::where('wa_message_id', $idMeta)->exists()) {
+                    continue;
+                }
+                $m->forceFill(['wa_message_id' => $idMeta])->save();
+            } else {
+                $m->forceFill(['estado' => 'fallido', 'error' => mb_substr((string) ($r['error'] ?? 'Meta rechazó el envío'), 0, 255)])->save();
+            }
+        }
+    }
+
+    /** Acuses de Meta: sent -> delivered -> read, o failed con su motivo. */
+    private function procesarAcuses(WaCanal $canal, array $acuses): void
+    {
+        $orden = ['enviado' => 1, 'entregado' => 2, 'leido' => 3];
+        foreach ($acuses as $a) {
+            $id = (string) ($a['id'] ?? '');
+            $estado = ['sent' => 'enviado', 'delivered' => 'entregado', 'read' => 'leido', 'failed' => 'fallido'][$a['status'] ?? ''] ?? null;
+            if ($id === '' || $estado === null) {
+                continue;
+            }
+            $m = WaMensaje::where('wa_message_id', $id)->first();
+            if (! $m) {
+                continue;
+            }
+            $datos = [];
+            if ($estado === 'fallido') {
+                $codigo = (int) data_get($a, 'errors.0.code');
+                $motivo = match ($codigo) {
+                    131047  => 'Pasaron más de 24 h desde el último mensaje del cliente: solo se puede escribir con una plantilla aprobada',
+                    131026  => 'El número no tiene WhatsApp o bloqueó la línea',
+                    131049, 131048 => 'Meta limitó los envíos a este número por ahora',
+                    default => (string) (data_get($a, 'errors.0.error_data.details') ?: data_get($a, 'errors.0.title') ?: 'Meta rechazó el envío'),
+                };
+                $datos = ['estado' => 'fallido', 'error' => mb_substr($motivo, 0, 255)];
+                $canal->forceFill(['ultimo_error' => mb_substr($motivo, 0, 255)])->saveQuietly();
+            } elseif (($orden[$estado] ?? 0) > ($orden[$m->estado] ?? 0)) {
+                // Nunca retroceder: un "delivered" tardio no pisa un "read".
+                $datos = ['estado' => $estado];
+                if ($estado === 'entregado') $datos['entregado_at'] = now();
+                if ($estado === 'leido') $datos['leido_at'] = now();
+            }
+            if ($datos !== []) {
+                $m->forceFill($datos)->save();
+            }
+        }
+    }
+
+    /** Titulo del boton o fila elegida; para todo lo demas, el texto tal cual. */
+    private function textoVisible(array $m, string $texto): string
+    {
+        if (($m['type'] ?? '') !== 'interactive') {
+            return $texto;
+        }
+        $titulo = (string) (data_get($m, 'interactive.button_reply.title') ?? data_get($m, 'interactive.list_reply.title') ?? '');
+
+        return $titulo !== '' ? '👆 ' . $titulo : $texto;
     }
 
     /**
@@ -271,6 +383,8 @@ class WhatsappCloudWebhookController extends Controller
         string $texto,
         string $tipo,
         ?string $mediaUrl = null,
+        ?array $referral = null,
+        ?string $textoVisible = null,
     ): array {
         $proyecto = $canal->project;
         if (! $proyecto) {
@@ -290,6 +404,11 @@ class WhatsappCloudWebhookController extends Controller
             // o la bandeja no podra responder ('no esta conectado').
             'wa_canal_id'   => $canal->id,
             'media_url'     => $mediaUrl,
+            // Lo que se guarda en la bandeja cuando difiere de lo que lee el motor.
+            ...($textoVisible !== null && $textoVisible !== $texto ? ['texto_visible' => $textoVisible] : []),
+            // Solo se manda cuando existe: una clave en null ensuciaria la
+            // validacion y quedaria guardada como atribucion vacia.
+            ...($referral !== null ? ['referral' => $referral] : []),
         ]);
         $peticion->headers->set('X-Copilot-Token', (string) $proyecto->copilot_token);
 

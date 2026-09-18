@@ -2506,8 +2506,24 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
     {
         $opciones = array_values($bloque['opciones'] ?? []);
         $fallback = $this->textoOpciones($bloque, $vars);
-        if (count($opciones) === 0 || count($opciones) > 3) {
+        if (count($opciones) === 0 || count($opciones) > 10) {
             return $fallback;
+        }
+        if (count($opciones) > 3) {
+            // De 4 a 10: menu desplegable nativo. El id de la fila es el numero.
+            return [
+                'tipo'      => 'lista',
+                'titulo'    => '',
+                'cuerpo'    => $this->interpolar($bloque['texto'] ?? 'Elige una opción:', $vars),
+                'pie'       => '',
+                'boton'     => 'Ver opciones',
+                'secciones' => [['titulo' => 'Opciones', 'filas' => array_map(fn ($op, $i) => [
+                    'id'          => (string) ($i + 1),
+                    'titulo'      => mb_substr(trim((string) ($op['texto'] ?? 'Opción ' . ($i + 1))), 0, 24),
+                    'descripcion' => '',
+                ], $opciones, array_keys($opciones))]],
+                'fallback'  => $fallback,
+            ];
         }
         return [
             'tipo'     => 'botones',
