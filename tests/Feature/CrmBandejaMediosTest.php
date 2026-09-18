@@ -86,6 +86,19 @@ class CrmBandejaMediosTest extends TestCase
         Http::assertSent(fn ($r) => $r['type'] === 'document' && $r['document']['filename'] === 'cotizacion.pdf');
     }
 
+    public function test_un_audio_mp3_se_envia_como_audio_sin_pie(): void
+    {
+        $conv = $this->conversacion();
+
+        $this->enElCrm()->post("/bixocrm/{$conv->id}/enviar", [
+            'archivo' => UploadedFile::fake()->create('nota.mp3', 80, 'audio/mpeg'),
+        ], ['Accept' => 'application/json'])->assertOk();
+
+        $m = $conv->mensajes()->firstOrFail();
+        $this->assertSame('audio', $m->tipo);
+        Http::assertSent(fn ($r) => $r['type'] === 'audio' && str_ends_with($r['audio']['link'], '.mp3') && ! isset($r['audio']['caption']));
+    }
+
     public function test_solo_imagenes_y_pdf_y_nunca_un_envio_vacio(): void
     {
         $conv = $this->conversacion();

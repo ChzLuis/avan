@@ -49,8 +49,10 @@ class BotWebhookController extends Controller
             'wa_message_id' => 'nullable|string|max:80',
             'lid'      => 'nullable|string|max:40',   // id tecnico @lid de WhatsApp, si lo hubo
             'wa_canal_id' => 'nullable|integer',      // canal por el que entro (Meta); si falta, el canal Bot
+            'media_url'   => 'nullable|string|max:500', // foto/audio/documento ya descargado por el webhook
         ]);
         $this->canalEntradaId = isset($data['wa_canal_id']) ? (int) $data['wa_canal_id'] : null;
+        $this->medioEntrada = ['tipo' => $data['tipo'] ?? 'texto', 'url' => $data['media_url'] ?? null];
         $telefono = preg_replace('/[^\d]/', '', $data['telefono']);
 
         // IDENTIDAD WHATSAPP: el conector manda `telefono` = numero real (PN)
@@ -368,6 +370,8 @@ class BotWebhookController extends Controller
      */
     /** Canal por el que entro el mensaje en curso (lo fija inbound() cuando viene de Meta). */
     private ?int $canalEntradaId = null;
+    /** Tipo y archivo del mensaje entrante en curso (imagen/audio/documento descargado). */
+    private array $medioEntrada = ['tipo' => 'texto', 'url' => null];
 
     private function guardarEnCrm(\App\Models\Project $project, string $telefono, string $nombre, string $texto, string $dir): void
     {
@@ -407,7 +411,8 @@ class BotWebhookController extends Controller
         \App\Modules\Crm\Models\WaMensaje::create([
             'wa_conversacion_id' => $conv->id,
             'direccion' => $dir,
-            'tipo' => 'texto',
+            'tipo' => $dir === 'in' && ! empty($this->medioEntrada['url']) ? $this->medioEntrada['tipo'] : 'texto',
+            'media_url' => $dir === 'in' ? $this->medioEntrada['url'] : null,
             'contenido' => $texto,
             'estado' => $dir === 'in' ? 'recibido' : 'enviado',
         ]);

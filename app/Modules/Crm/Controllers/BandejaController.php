@@ -132,7 +132,7 @@ class BandejaController extends Controller
         $this->autorizar($conversacion);
         $data = $request->validate([
             'contenido' => 'nullable|string|max:4096',
-            'archivo'   => 'nullable|file|max:20480|mimes:jpg,jpeg,png,webp,pdf',
+            'archivo'   => 'nullable|file|max:20480|mimes:jpg,jpeg,png,webp,pdf,mp3,ogg,oga,opus,m4a,aac,amr,webm',
         ]);
         if (! $request->hasFile('archivo') && trim((string) ($data['contenido'] ?? '')) === '') {
             return response()->json(['ok' => false, 'error' => 'Escribe un mensaje o adjunta un archivo.'], 422);
@@ -142,18 +142,49 @@ class BandejaController extends Controller
         $tipo = 'texto'; $mediaUrl = null; $contenido = $respuesta;
         if ($request->hasFile('archivo')) {
             $archivo = $request->file('archivo');
-            $esImagen = str_starts_with((string) $archivo->getMimeType(), 'image/');
-            $ruta = $archivo->store('wa/' . $conversacion->canal->project_id, 'public');
+            $mime = (string) $archivo->getMimeType();
+            $esImagen = str_starts_with($mime, 'image/');
+            $esAudio  = str_starts_with($mime, 'audio/') || str_starts_with($mime, 'video/webm');
+            // Nota de voz grabada en el navegador: llega como webm/opus, que
+            // WhatsApp no acepta. Se convierte a ogg/opus con ffmpeg si el
+            // servidor lo tiene; si no, se avisa en vez de mandar algo que
+            // Meta rechazaria.
+            if ($esAudio && str_contains($mime, 'webm')) {
+                $convertido = $this->convertirAOgg($archivo->getRealPath());
+                if ($convertido === null) {
+                    return response()->json(['ok' => false, 'error' => 'Este servidor no puede convertir la grabación (falta ffmpeg). Adjunta un mp3 u ogg.'], 422);
+                }
+                $ruta = 'wa/' . $conversacion->canal->project_id . '/nota-' . uniqid() . '.ogg';
+                Storage::disk('public')->put($ruta, file_get_contents($convertido));
+                @unlink($convertido);
+            } else {
+                $ruta = $archivo->store('wa/' . $conversacion->canal->project_id, 'public');
+            }
             $mediaUrl = Storage::disk('public')->url($ruta);
-            $tipo = $esImagen ? 'imagen' : 'documento';
+            $tipo = $esImagen ? 'imagen' : ($esAudio ? 'audio' : 'documento');
             $nombre = $archivo->getClientOriginalName();
-            $contenido = $respuesta !== '' ? $respuesta : $nombre;
-            $respuesta = $esImagen
-                ? ['tipo' => 'imagen', 'url' => $mediaUrl, 'caption' => $data['contenido'] ?? '']
-                : ['tipo' => 'archivo', 'url' => $mediaUrl, 'caption' => $data['contenido'] ?? '', 'nombre' => $nombre];
+            $contenido = $respuesta !== '' ? $respuesta : ($esAudio ? '🎤 Nota de voz' : $nombre);
+            $respuesta = match ($tipo) {
+                'imagen' => ['tipo' => 'imagen', 'url' => $mediaUrl, 'caption' => $data['contenido'] ?? ''],
+                'audio'  => ['tipo' => 'audio', 'url' => $mediaUrl],
+                default  => ['tipo' => 'archivo', 'url' => $mediaUrl, 'caption' => $data['contenido'] ?? '', 'nombre' => $nombre],
+            };
         }
 
         return $this->despachar($conversacion, $respuesta, $tipo, $contenido, $mediaUrl);
+    }
+
+    /** webm/opus -> ogg/opus con ffmpeg. Devuelve la ruta temporal o null si no hay ffmpeg o fallo. */
+    private function convertirAOgg(string $origen): ?string
+    {
+        $ffmpeg = trim((string) shell_exec('command -v ffmpeg 2>/dev/null'));
+        if ($ffmpeg === '') {
+            return null;
+        }
+        $destino = sys_get_temp_dir() . '/bixo-nota-' . uniqid() . '.ogg';
+        shell_exec(escapeshellcmd($ffmpeg) . ' -y -i ' . escapeshellarg($origen) . ' -vn -c:a libopus -b:a 32k ' . escapeshellarg($destino) . ' 2>/dev/null');
+
+        return is_file($destino) && filesize($destino) > 0 ? $destino : null;
     }
 
     /** Reenvia un mensaje de esta conversacion (texto o adjunto) a otra del mismo negocio. */
@@ -170,10 +201,11 @@ class BandejaController extends Controller
 
         $respuesta = match ($mensaje->tipo) {
             'imagen'    => ['tipo' => 'imagen', 'url' => $mensaje->media_url, 'caption' => ''],
+            'audio'     => ['tipo' => 'audio', 'url' => $mensaje->media_url],
             'documento' => ['tipo' => 'archivo', 'url' => $mensaje->media_url, 'caption' => '', 'nombre' => basename((string) $mensaje->media_url)],
             default     => (string) $mensaje->contenido,
         };
-        if (in_array($mensaje->tipo, ['imagen', 'documento'], true) && ! $mensaje->media_url) {
+        if (in_array($mensaje->tipo, ['imagen', 'documento', 'audio'], true) && ! $mensaje->media_url) {
             return response()->json(['ok' => false, 'error' => 'Este adjunto no tiene archivo descargado para reenviar.'], 422);
         }
 

@@ -204,7 +204,13 @@ $estadoColores = [
                                 <span>📄</span><span class="truncate max-w-[220px]" x-text="msg.contenido || 'Documento'"></span>
                             </a>
                         </template>
-                        <template x-if="!(msg.tipo === 'documento' && msg.media_url)">
+                        <template x-if="msg.tipo === 'audio' && msg.media_url">
+                            <audio controls preload="none" :src="msg.media_url" class="max-w-full mb-1" style="height:36px"></audio>
+                        </template>
+                        <template x-if="msg.tipo === 'video' && msg.media_url">
+                            <video controls preload="none" :src="msg.media_url" class="rounded-lg max-h-64 mb-1"></video>
+                        </template>
+                        <template x-if="!(['documento','audio','video'].includes(msg.tipo) && msg.media_url)">
                             <p class="whitespace-pre-wrap break-words" x-text="msg.contenido"></p>
                         </template>
                         <div :class="msg.direccion === 'saliente' ? 'text-green-200' : 'text-gray-400'"
@@ -246,7 +252,14 @@ $estadoColores = [
             <button @click="adjunto = null; $refs.inputArchivo.value = ''" class="ml-auto text-green-600 hover:text-green-800">✕</button>
         </div>
         <div class="flex items-end gap-2">
-            <input type="file" x-ref="inputArchivo" class="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf" @change="adjunto = $event.target.files[0] || null">
+            <input type="file" x-ref="inputArchivo" class="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf,.mp3,.ogg,.m4a,.aac" @change="adjunto = $event.target.files[0] || null">
+            <button @click="grabando ? pararGrabacion() : grabarNota()"
+                    :class="grabando ? 'text-red-600 animate-pulse' : 'text-gray-400 hover:text-green-600'"
+                    class="p-2 transition-colors flex-shrink-0" :title="grabando ? 'Detener y adjuntar la nota de voz' : 'Grabar nota de voz'">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+            </button>
             <button @click="$refs.inputArchivo.click()"
                     class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
                     title="Adjuntar imagen o PDF (hasta 20 MB)">
@@ -512,6 +525,8 @@ function bandeja() {
         textoMensaje: '',
         errorEnvio: null,
         adjunto: null,
+        grabando: false,
+        grabador: null,
         reenvio: null,
         buscadorReenvio: '',
         errorReenvio: null,
@@ -670,6 +685,28 @@ function bandeja() {
             const ext = f.type === 'application/pdf' ? 'pdf' : (f.type.split('/')[1] || 'png');
             this.adjunto = f.name && f.name !== 'image.png' ? f : new File([f], 'pegado-' + Date.now() + '.' + ext, { type: f.type });
         },
+
+        // Nota de voz: el navegador graba webm/opus; el servidor la convierte a
+        // ogg/opus (lo unico que WhatsApp acepta como nota de voz).
+        async grabarNota() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const trozos = [];
+                this.grabador = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+                this.grabador.ondataavailable = e => { if (e.data.size) trozos.push(e.data); };
+                this.grabador.onstop = () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    this.adjunto = new File(trozos, 'nota-' + Date.now() + '.webm', { type: 'audio/webm' });
+                    this.grabando = false;
+                    this.enviarMensaje();
+                };
+                this.grabador.start();
+                this.grabando = true;
+            } catch (e) {
+                this.errorEnvio = 'No se pudo acceder al micrófono.';
+            }
+        },
+        pararGrabacion() { this.grabador?.stop(); },
 
         abrirReenvio(msg) { this.reenvio = msg; this.errorReenvio = null; this.buscadorReenvio = ''; },
 

@@ -177,8 +177,25 @@ class WhatsappCloudWebhookController extends Controller
             return;
         }
 
+        // Fotos, audios, videos y documentos del cliente: se descargan al disco
+        // del negocio para que la bandeja los muestre (y el asesor los oiga).
+        $mediaUrl = null;
+        $claveMeta = ['imagen' => 'image', 'audio' => 'audio', 'video' => 'video', 'documento' => 'document'][$tipo] ?? null;
+        if ($claveMeta !== null) {
+            $nombreArchivo = (string) data_get($mensaje, 'document.filename', '');
+            $mediaUrl = ClienteCloud::descargarMedio($canal, (string) data_get($mensaje, "{$claveMeta}.id", ''), $nombreArchivo ?: null);
+            if ($texto === '') {
+                $texto = match ($tipo) {
+                    'imagen'    => '📷 Imagen',
+                    'audio'     => '🎤 Audio',
+                    'video'     => '🎬 Video',
+                    default     => '📄 ' . ($nombreArchivo ?: 'Documento'),
+                };
+            }
+        }
+
         try {
-            $respuestas = $this->ejecutarMotor($canal, $telefono, $nombre, $texto, $tipo);
+            $respuestas = $this->ejecutarMotor($canal, $telefono, $nombre, $texto, $tipo, $mediaUrl);
         } catch (\Throwable $e) {
             Log::error('wa_cloud.motor_fallo', [
                 'proyecto' => $canal->project_id,
@@ -252,7 +269,8 @@ class WhatsappCloudWebhookController extends Controller
         string $telefono,
         string $nombre,
         string $texto,
-        string $tipo
+        string $tipo,
+        ?string $mediaUrl = null,
     ): array {
         $proyecto = $canal->project;
         if (! $proyecto) {
@@ -271,6 +289,7 @@ class WhatsappCloudWebhookController extends Controller
             // en la linea de Meta, no en el canal 'Bot WhatsApp' de Baileys,
             // o la bandeja no podra responder ('no esta conectado').
             'wa_canal_id'   => $canal->id,
+            'media_url'     => $mediaUrl,
         ]);
         $peticion->headers->set('X-Copilot-Token', (string) $proyecto->copilot_token);
 

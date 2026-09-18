@@ -94,6 +94,7 @@ class ClienteCloud
         return match ($r['tipo'] ?? 'texto') {
             'lista'   => $this->armarLista($to, $r),
             'imagen'  => $this->armarMedia($to, $r, 'image'),
+            'audio'   => $this->armarMedia($to, ['url' => $r['url'] ?? ''], 'audio'),
             'archivo' => $this->armarMedia($to, $r, 'document'),
             default   => $this->armarTexto($to, $r['fallback'] ?? $r['cuerpo'] ?? ''),
         };
@@ -178,6 +179,52 @@ class ClienteCloud
             'type'              => $tipo,
             $tipo               => $media,
         ];
+    }
+
+    /**
+     * Descarga un medio que envio el cliente (foto, audio, PDF) y lo deja en el
+     * disco publico del negocio. Meta no da la URL en el webhook, solo un id:
+     * hay que pedir la URL (caduca en minutos) y bajar el archivo con el token.
+     * Nunca lanza: un medio que no se pudo bajar no debe tumbar el webhook.
+     */
+    public static function descargarMedio(WaCanal $canal, string $mediaId, ?string $nombre = null): ?string
+    {
+        if ($mediaId === '' || ! $canal->conectadoAMeta()) {
+            return null;
+        }
+        $v = $canal->api_version ?: 'v21.0';
+        try {
+            $meta = Http::withToken($canal->access_token)->timeout(15)->get("https://graph.facebook.com/{$v}/{$mediaId}");
+            $url = (string) data_get($meta->json(), 'url', '');
+            if (! $meta->successful() || $url === '') {
+                return null;
+            }
+            $archivo = Http::withToken($canal->access_token)->timeout(60)->get($url);
+            if (! $archivo->successful()) {
+                return null;
+            }
+            $mime = (string) ($archivo->header('Content-Type') ?: data_get($meta->json(), 'mime_type', ''));
+            $ext = match (true) {
+                str_contains($mime, 'jpeg')   => 'jpg',
+                str_contains($mime, 'png')    => 'png',
+                str_contains($mime, 'webp')   => 'webp',
+                str_contains($mime, 'ogg')    => 'ogg',
+                str_contains($mime, 'mpeg')   => 'mp3',
+                str_contains($mime, 'mp4')    => 'mp4',
+                str_contains($mime, 'aac')    => 'aac',
+                str_contains($mime, 'amr')    => 'amr',
+                str_contains($mime, 'pdf')    => 'pdf',
+                default => ($nombre && str_contains($nombre, '.')) ? pathinfo($nombre, PATHINFO_EXTENSION) : 'bin',
+            };
+            $ruta = 'wa/' . $canal->project_id . '/in/' . preg_replace('/[^A-Za-z0-9_.-]/', '', $mediaId) . '.' . $ext;
+            \Illuminate\Support\Facades\Storage::disk('public')->put($ruta, $archivo->body());
+
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($ruta);
+        } catch (\Throwable $e) {
+            Log::warning('wa_cloud.medio_no_descargado', ['proyecto' => $canal->project_id, 'media' => $mediaId, 'error' => class_basename($e)]);
+
+            return null;
+        }
     }
 
     /** Marca el mensaje como leido (los dos checks azules). */

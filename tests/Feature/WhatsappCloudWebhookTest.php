@@ -224,6 +224,31 @@ class WhatsappCloudWebhookTest extends TestCase
     }
 
     /** El cuerpo se lee crudo: sin Content-Type el evento tambien se atiende. */
+    /** La foto que manda el cliente se descarga al disco del negocio y queda en el historial. */
+    public function test_una_imagen_del_cliente_se_descarga_y_queda_en_la_conversacion(): void
+    {
+        $this->negocio('Negocio A', '111', 'secreto-a', 'Recibido');
+        \Illuminate\Support\Facades\Storage::fake('public');
+        Http::fake([
+            'graph.facebook.com/*/MEDIA1' => Http::response(['url' => 'https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=1', 'mime_type' => 'image/jpeg'], 200),
+            'lookaside.fbsbx.com/*'       => Http::response('FOTO', 200, ['Content-Type' => 'image/jpeg']),
+            'graph.facebook.com/*'        => Http::response(['messages' => [['id' => 'x']]], 200),
+        ]);
+        $cuerpo = json_encode(['object' => 'whatsapp_business_account', 'entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'messaging_product' => 'whatsapp', 'metadata' => ['phone_number_id' => '111'],
+            'contacts' => [['profile' => ['name' => 'Cliente'], 'wa_id' => '51900000001']],
+            'messages' => [['from' => '51900000001', 'id' => 'wamid.' . uniqid(), 'type' => 'image', 'image' => ['id' => 'MEDIA1', 'mime_type' => 'image/jpeg', 'caption' => 'mi foto']]],
+        ]]]]]]);
+
+        $this->enviar($cuerpo, 'secreto-a')->assertOk();
+
+        $m = \App\Modules\Crm\Models\WaMensaje::where('direccion', 'in')->firstOrFail();
+        $this->assertSame('imagen', $m->tipo);
+        $this->assertSame('mi foto', $m->contenido);
+        $this->assertStringContainsString('/storage/wa/', $m->media_url);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists('wa/' . $m->conversacion->canal->project_id . '/in/MEDIA1.jpg');
+    }
+
     public function test_atiende_aunque_falte_el_content_type(): void
     {
         $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');
