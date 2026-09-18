@@ -477,6 +477,26 @@ class WhatsappCloudWebhookTest extends TestCase
         $this->assertSame('https://www.google.com/maps?q=-11.1,-77.6', $m->media_url);
     }
 
+    /** El flyer que manda el bot se ve como imagen en la bandeja, no como una URL en texto. */
+    public function test_la_imagen_que_manda_el_bot_queda_como_adjunto_en_la_bandeja(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode([
+            'disparos' => [], 'inicio' => 'flyer',
+            'bloques'  => [
+                'flyer' => ['tipo' => 'imagen', 'url' => 'https://arindg.com/img/planes.jpg', 'caption' => 'Nuestros planes', 'siguiente' => 'pdf'],
+                'pdf'   => ['tipo' => 'archivo', 'url' => 'https://arindg.com/docs/propuesta.pdf', 'nombre' => 'propuesta.pdf'],
+            ],
+        ])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        $this->assertDatabaseHas('wa_mensajes', ['direccion' => 'out', 'tipo' => 'imagen', 'media_url' => 'https://arindg.com/img/planes.jpg', 'contenido' => 'Nuestros planes']);
+        $this->assertDatabaseHas('wa_mensajes', ['direccion' => 'out', 'tipo' => 'documento', 'media_url' => 'https://arindg.com/docs/propuesta.pdf', 'contenido' => '📄 propuesta.pdf']);
+        $this->assertDatabaseMissing('wa_mensajes', ['direccion' => 'out', 'tipo' => 'texto', 'contenido' => 'https://arindg.com/img/planes.jpg']);
+    }
+
     public function test_atiende_aunque_falte_el_content_type(): void
     {
         $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');

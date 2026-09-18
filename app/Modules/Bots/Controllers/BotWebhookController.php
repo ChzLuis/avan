@@ -165,7 +165,22 @@ class BotWebhookController extends Controller
         }
         foreach ($res['respuestas'] as $resp) {
             if (is_array($resp)) {
-                // Lista, imagen o archivo: tomar el texto representativo para el historial.
+                $tipoResp = (string) ($resp['tipo'] ?? '');
+                // Imagen, archivo o audio del bot: en la bandeja se ve el adjunto, no su URL.
+                if (in_array($tipoResp, ['imagen', 'archivo', 'audio'], true) && ! empty($resp['url'])) {
+                    $tipoCrm = $tipoResp === 'archivo' ? 'documento' : $tipoResp;
+                    $texto = (string) ($resp['caption'] ?? '');
+                    if ($texto === '') {
+                        $texto = match ($tipoCrm) {
+                            'imagen'    => '📷 Imagen',
+                            'audio'     => '🎤 Audio',
+                            default     => '📄 ' . ($resp['nombre'] ?? 'Documento'),
+                        };
+                    }
+                    $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $texto, 'out', $tipoCrm, (string) $resp['url']);
+                    continue;
+                }
+                // Lista, botones o enlace: el texto representativo para el historial.
                 $texto = $resp['fallback'] ?? $resp['cuerpo'] ?? $resp['caption'] ?? $resp['url'] ?? '';
             } else {
                 $texto = $resp;
@@ -419,7 +434,7 @@ class BotWebhookController extends Controller
         return $campos;
     }
 
-    private function guardarEnCrm(\App\Models\Project $project, string $telefono, string $nombre, string $texto, string $dir): void
+    private function guardarEnCrm(\App\Models\Project $project, string $telefono, string $nombre, string $texto, string $dir, ?string $tipoSalida = null, ?string $mediaSalida = null): void
     {
         // La linea por la que entro (Meta) o, si no, el canal "Bot" de Baileys.
         $canal = $this->canalEntradaId
@@ -461,8 +476,10 @@ class BotWebhookController extends Controller
         \App\Modules\Crm\Models\WaMensaje::create([
             'wa_conversacion_id' => $conv->id,
             'direccion' => $dir,
-            'tipo' => $dir === 'in' && ! empty($this->medioEntrada['url']) ? $this->medioEntrada['tipo'] : 'texto',
-            'media_url' => $dir === 'in' ? $this->medioEntrada['url'] : null,
+            'tipo' => $dir === 'in'
+                ? (! empty($this->medioEntrada['url']) ? $this->medioEntrada['tipo'] : 'texto')
+                : ($tipoSalida ?: 'texto'),
+            'media_url' => $dir === 'in' ? $this->medioEntrada['url'] : $mediaSalida,
             'contenido' => $texto,
             'estado' => $dir === 'in' ? 'recibido' : 'enviado',
         ]);

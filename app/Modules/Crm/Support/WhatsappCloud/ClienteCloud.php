@@ -57,10 +57,18 @@ class ClienteCloud
     }
 
     /** Envia todas las respuestas de un turno del bot, en orden. */
+    /** Pausa entre mensajes seguidos (ms). Meta no garantiza el orden si se disparan a la vez. */
+    public const PAUSA_ENTRE_MENSAJES_MS = 1000;
+
     public function enviarRespuestas(string $telefono, array $respuestas): array
     {
         $resultados = [];
-        foreach ($respuestas as $r) {
+        foreach (array_values($respuestas) as $i => $r) {
+            // Un segundo entre mensajes: asi el cliente los recibe en el orden
+            // del flujo (texto, imagen, pregunta) y no se le amontonan.
+            if ($i > 0 && ! app()->runningUnitTests()) {
+                usleep(self::PAUSA_ENTRE_MENSAJES_MS * 1000);
+            }
             $resultados[] = $this->enviarUna($telefono, $r);
         }
         return $resultados;
