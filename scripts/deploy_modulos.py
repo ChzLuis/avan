@@ -17,7 +17,7 @@
 #      optimizado de ARIN apunta a rutas viejas), luego borra los viejos, migra,
 #      y regenera view/route/config cache si existen esas caches.
 #   5. `artisan up` y salud: portada, logins, webhook y las 6 primeras tiendas.
-# Credenciales: las lee de deploy.py (una sola fuente).
+# Credenciales: .deploy.env o variables DEPLOY_* (scripts/credenciales_deploy.py), como deploy.py.
 #
 # El preflight ademas avisa de (a) archivos que solo existen en ARIN y NUNCA
 # estuvieron en git (trabajo desplegado sin commitear) y (b) deriva: bloques de
@@ -28,9 +28,9 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 LOCAL = 'C:/xampp/htdocs/avan'
 SCR = 'C:/Users/luich/AppData/Local/Temp/claude/c--xampp-htdocs-avan/500e9f7c-0ad1-4d49-990b-8bb6fb31d7d3/scratchpad'
-src = io.open(os.path.join(LOCAL, 'deploy.py'), encoding='utf-8').read()
-HOST = re.search(r"HOST='([^']+)'", src).group(1); USER = re.search(r"USER='([^']+)'", src).group(1)
-PW = re.search(r"PW='([^']+)'", src).group(1); BASE = re.search(r"BASE='([^']+)'", src).group(1)
+sys.path.insert(0, os.path.join(LOCAL, 'scripts'))
+from credenciales_deploy import obtener
+HOST, USER, PW, BASE = obtener()
 
 # Que se sincroniza: el codigo del producto. NO: .env, storage, vendor, public
 # (build de Vite y uploads), whatsbot, docs, scripts.

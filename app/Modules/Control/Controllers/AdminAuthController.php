@@ -18,10 +18,15 @@ class AdminAuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $datos = $request->validate([
             'email'    => ['required', 'string'],
             'password' => ['required'],
         ]);
+        // El superadmin puede no tener email (la cuenta historica solo tiene
+        // username), asi que se acepta cualquiera de los dos campos. Esto
+        // vivia solo en ARIN y la mudanza lo piso (2026-09-18).
+        $campo = filter_var($datos['email'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $credentials = [$campo => $datos['email'], 'password' => $datos['password']];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             if (! Auth::user()->is_superadmin) {
