@@ -82,6 +82,15 @@ class CrmProductoTest extends TestCase
             ->assertOk();
     }
 
+    /** Sin sesion, cada portal vuelve a SU login, no al del panel (bug previo al producto). */
+    public function test_sin_sesion_cada_portal_vuelve_a_su_propio_login(): void
+    {
+        $this->get('/bixocrm')->assertRedirect(route('bixocrm.login'));
+        $this->get('/bixocrm/conectar')->assertRedirect(route('bixocrm.login'));
+        $this->get('/bixosales/pedidos')->assertRedirect(route('bixosales.login'));
+        $this->get('/bixoadmin/products')->assertRedirect(route('bixoadmin.login'));
+    }
+
     private function negocioCrm(): array
     {
         $user = User::factory()->create();

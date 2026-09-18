@@ -29,9 +29,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // /login. 'admin/*' por si solo NO casa con la raiz '/admin', asi que
         // la portada del Control mandaba al login del Workspace — justo la
         // mezcla de plataformas que el modelo prohibe (hallazgo 2026-08-30).
-        $middleware->redirectGuestsTo(fn ($request) => $request->is('admin', 'admin/*')
-            ? route('admin.login')
-            : route('bixoadmin.login'));
+        // 2026-09-18: lo mismo le pasaba al CRM, al portal comercial y al
+        // fiscal: sin sesion, /bixocrm mandaba al login del panel.
+        $middleware->redirectGuestsTo(fn ($request) => match (true) {
+            $request->is('admin', 'admin/*')         => route('admin.login'),
+            $request->is('bixocrm', 'bixocrm/*')     => route('bixocrm.login'),
+            $request->is('bixosales', 'bixosales/*') => route('bixosales.login'),
+            $request->is('bixofact', 'bixofact/*')   => route('bixofact.login'),
+            default                                  => route('bixoadmin.login'),
+        });
         $middleware->alias([
             // routes/admin.php usa 'superadmin' desde siempre, pero el alias no
             // estaba registrado: toda ruta /admin/* protegida lanzaba
