@@ -87,6 +87,16 @@ vuelve al menu. Trampa: un `mensaje` seguido de una `condicion` la ejecuta en se
 "Anotado" sin que el cliente hablara): entre medio va un `intencion` vacio (`escucha`). Generador
 `flujo_eskala_v5.py`; v1-v4 en git.
 
+**IA del bot de Eskala ENCENDIDA** (2026-09-18, autorizado por el usuario): project_modules
+(16, modulo 19 bot_ia) + project_settings feature_bot_ia=1. Aplica a `dudas`, `dudas_quiero` y
+`dudas_fotos` (asistente con el contexto de precios/reglas). Motor: (1) un `intencion` con texto
+anota `_pregunta_<id>` al preguntar; si el turno llega sin ese aviso (se volvio tras una duda) el
+resolutor vuelve a preguntar en vez de tomar el mensaje como respuesta; (2) `asistente` sin IA
+contesta el `fallback` y SIGUE a `siguiente` (antes se quedaba esperando). Flujo v5: `quiero` ->
+`router_quiero` (duda -> `dudas_quiero` -> `fotos`; si no -> `fotos`); `fotos` -> `router_fotos`
+(duda -> `dudas_fotos` -> `cierre`; si no -> `cierre`). Imagenes: capturas reales montadas
+(`scripts/capturar_movil.py` + `scripts/montar_capturas_eskala.py`), subidas por SFTP.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
