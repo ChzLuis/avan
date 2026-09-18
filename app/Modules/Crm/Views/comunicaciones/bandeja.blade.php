@@ -288,6 +288,15 @@ $estadoColores = [
         <template x-if="textoMensaje.includes('[')">
             <p class="text-[10px] text-amber-600 mb-1 px-1">Recuerda reemplazar [nombre], [FECHA], [LINK]</p>
         </template>
+        {{-- Ventana de 24 h de Meta cerrada: el texto libre no llega; solo una plantilla aprobada. --}}
+        <div x-show="ventana.es_meta && !ventana.abierta" x-cloak
+             class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+            <span class="text-amber-500 text-sm">⏳</span>
+            <p class="flex-1 min-w-0 text-[11px] text-amber-800 leading-4">
+                Pasaron más de 24 h desde el último mensaje del cliente. WhatsApp solo deja escribirle con una <b>plantilla aprobada</b>; cuando él responda, el chat se abre otra vez.
+            </p>
+            <button @click="abrirPlantillas()" class="text-[11px] font-semibold text-white px-2.5 py-1 rounded-lg flex-shrink-0" style="background:#d97706">Elegir plantilla</button>
+        </div>
         <div x-show="adjunto" x-cloak class="flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg bg-green-50 border border-green-200 text-[11px] text-green-800">
             <span>📎</span><span class="truncate" x-text="adjunto?.name"></span>
             <button @click="adjunto = null; $refs.inputArchivo.value = ''" class="ml-auto text-green-600 hover:text-green-800">✕</button>
@@ -307,6 +316,11 @@ $estadoColores = [
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                 </svg>
+            </button>
+            <button x-show="ventana.es_meta" @click="abrirPlantillas()"
+                    class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
+                    title="Plantillas aprobadas por Meta (sirven pasadas las 24 h)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
             </button>
             <button @click="modalRespuestas = true"
                     class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
@@ -525,6 +539,55 @@ $estadoColores = [
 
 </div>
 
+
+{{-- Modal: plantillas aprobadas por Meta --}}
+<div x-show="modalPlantillas" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" @click.self="modalPlantillas = false">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h3 class="text-sm font-semibold text-gray-900">Plantillas aprobadas por Meta</h3>
+            <button @click="modalPlantillas = false" class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <div class="p-4 overflow-y-auto flex-1 space-y-3">
+            <p x-show="cargandoPlantillas" class="text-xs text-gray-500">Consultando a Meta…</p>
+            <p x-show="errorPlantillas" x-cloak class="text-xs text-red-600" x-text="errorPlantillas"></p>
+            <p x-show="!cargandoPlantillas && !errorPlantillas && plantillas.length === 0" x-cloak class="text-xs text-gray-500">
+                No hay plantillas aprobadas. Créalas en Meta: <b>WhatsApp Manager → Herramientas de la cuenta → Plantillas de mensajes</b>; la aprobación suele tardar minutos.
+            </p>
+            <template x-if="!plantillaSel">
+                <div class="space-y-2">
+                    <template x-for="p in plantillas" :key="p.nombre + p.idioma">
+                        <button @click="elegirPlantilla(p)" class="w-full text-left p-3 rounded-xl border border-gray-200 hover:border-green-400 hover:bg-green-50">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-semibold text-gray-800" x-text="p.nombre"></span>
+                                <span class="text-[10px] text-gray-400" x-text="p.idioma + (p.categoria ? ' · ' + p.categoria.toLowerCase() : '')"></span>
+                            </div>
+                            <p class="text-[11px] text-gray-600 mt-1 line-clamp-3 whitespace-pre-wrap" x-text="p.cuerpo"></p>
+                        </button>
+                    </template>
+                </div>
+            </template>
+            <template x-if="plantillaSel">
+                <div class="space-y-3">
+                    <button @click="plantillaSel = null" class="text-[11px] text-gray-500 hover:underline">← Elegir otra</button>
+                    <div class="p-3 rounded-xl bg-[#e7ffdb] text-[13px] text-gray-800 whitespace-pre-wrap" x-text="vistaPreviaPlantilla()"></div>
+                    <template x-for="(v, i) in plantillaParams" :key="i">
+                        <div>
+                            <label class="text-[11px] font-semibold text-gray-600" x-text="'Valor para {{' + (i + 1) + '}}'"></label>
+                            <input x-model="plantillaParams[i]" class="w-full mt-1 text-sm border border-gray-200 rounded-lg px-3 py-2" :placeholder="'Ej: ' + (i === 0 ? (convActiva?.cliente_nombre || 'nombre') : 'dato ' + (i + 1))">
+                        </div>
+                    </template>
+                    <p class="text-[10px] text-gray-400">Meta cobra cada plantilla enviada según su categoría.</p>
+                </div>
+            </template>
+        </div>
+        <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2">
+            <button @click="modalPlantillas = false" class="px-3 py-2 text-xs rounded-lg border border-gray-200 text-gray-600">Cancelar</button>
+            <button x-show="plantillaSel" @click="enviarPlantilla()" :disabled="enviando || plantillaParams.some(v => !String(v || '').trim())"
+                    class="px-3 py-2 text-xs font-semibold rounded-lg text-white disabled:opacity-40" style="background:#25d366">Enviar plantilla</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const CONVERSACIONES_INIT = @json($conversacionesJs);
 const RESPUESTAS_INIT = @json($respuestasRapidas);
@@ -540,6 +603,8 @@ function bandeja() {
         enviando: false,
         textoMensaje: '',
         errorEnvio: null,
+        ventana: { es_meta: false, abierta: true, cierra_at: null },
+        modalPlantillas: false, plantillas: [], plantillaSel: null, plantillaParams: [], cargandoPlantillas: false, errorPlantillas: '',
         adjunto: null,
         vista: 'todas',
         menuConv: null,
@@ -607,6 +672,44 @@ function bandeja() {
             return c.ultimo_mensaje || 'Sin mensajes';
         },
         esSaliente(m) { return m.direccion === 'saliente' || m.direccion === 'out'; },
+
+        // ── Plantillas de Meta (ventana de 24 h) ──
+        async abrirPlantillas() {
+            if (!this.convActiva) return;
+            this.modalPlantillas = true; this.plantillaSel = null; this.errorPlantillas = ''; this.cargandoPlantillas = true;
+            try {
+                const r = await fetch(`/bixocrm/${this.convActiva.id}/plantillas`, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+                const d = await r.json().catch(() => ({}));
+                this.plantillas = d.plantillas || [];
+                if (!d.ok) this.errorPlantillas = d.error || 'No se pudieron leer las plantillas.';
+            } catch (e) { this.errorPlantillas = 'No se pudieron leer las plantillas.'; }
+            this.cargandoPlantillas = false;
+        },
+        elegirPlantilla(p) {
+            this.plantillaSel = p;
+            this.plantillaParams = Array.from({ length: p.parametros || 0 }, (_, i) => i === 0 ? (this.convActiva?.cliente_nombre || '') : '');
+        },
+        vistaPreviaPlantilla() {
+            let t = this.plantillaSel?.cuerpo || '';
+            this.plantillaParams.forEach((v, i) => { t = t.split('{{' + (i + 1) + '}}').join(v || '{{' + (i + 1) + '}}'); });
+            return t;
+        },
+        async enviarPlantilla() {
+            if (!this.plantillaSel || !this.convActiva || this.enviando) return;
+            this.enviando = true;
+            try {
+                const r = await fetch(`/bixocrm/${this.convActiva.id}/plantilla`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                    body: JSON.stringify({ nombre: this.plantillaSel.nombre, idioma: this.plantillaSel.idioma, cuerpo: this.plantillaSel.cuerpo, parametros: this.plantillaParams }),
+                });
+                const d = await r.json().catch(() => ({}));
+                if (d.mensaje) { this.mensajes.push(d.mensaje); this.$nextTick(() => this.scrollBottom()); }
+                if (d.ok) { this.modalPlantillas = false; this.errorEnvio = null; }
+                else this.errorEnvio = d.error || 'Meta no aceptó la plantilla.';
+            } catch (e) { this.errorEnvio = 'No se pudo enviar la plantilla.'; }
+            this.enviando = false;
+        },
 
         // ── Acciones de chat (estilo WhatsApp) ──
         async patchConv(conv, datos) {
@@ -687,6 +790,7 @@ function bandeja() {
             });
             const data = await res.json();
             this.mensajes = data.mensajes;
+            this.ventana = data.ventana || { es_meta: false, abierta: true, cierra_at: null };
             this.cargandoMensajes = false;
             conv.no_leidos = 0;
             this.$nextTick(() => this.scrollBottom());
@@ -918,6 +1022,7 @@ function bandeja() {
                     data.mensajes_nuevos.forEach(m => {
                         if (!existingIds.has(m.id)) {
                             this.mensajes.push(m);
+                            if (!this.esSaliente(m)) { this.ventana.abierta = true; this.ventana.cierra_at = new Date(Date.now() + 86400000).toISOString(); }
                             this.$nextTick(() => this.scrollBottom());
                         }
                     });

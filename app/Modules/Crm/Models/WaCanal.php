@@ -25,7 +25,7 @@ class WaCanal extends Model
 
     protected $fillable = [
         'project_id', 'nombre', 'tipo', 'telefono',
-        'phone_number_id', 'access_token', 'app_secret', 'verify_token',
+        'phone_number_id', 'waba_id', 'access_token', 'app_secret', 'verify_token',
         'api_version', 'color', 'activo', 'bot_type',
         'mensaje_bienvenida', 'mensaje_ausencia',
     ];
@@ -66,6 +66,17 @@ class WaCanal extends Model
         $t = (string) $this->access_token;
 
         return $t === '' ? '—' : str_repeat('•', 12) . substr($t, -6);
+    }
+
+    /** Endpoint de la cuenta de WhatsApp Business (plantillas, suscripcion de la app). */
+    public function urlWaba(string $recurso): ?string
+    {
+        if (! filled($this->waba_id)) {
+            return null;
+        }
+        $v = $this->api_version ?: 'v21.0';
+
+        return "https://graph.facebook.com/{$v}/{$this->waba_id}/{$recurso}";
     }
 
     /** Endpoint de envio de esta linea. */

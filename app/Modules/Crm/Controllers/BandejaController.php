@@ -87,7 +87,64 @@ class BandejaController extends Controller
         $conversacion->update(['no_leidos' => 0]);
         // Varios mensajes en el mismo segundo (el bot manda tres seguidos): el id desempata, si no salian de cabeza.
         $mensajes = $conversacion->mensajes()->orderByDesc('created_at')->orderByDesc('id')->limit(100)->get()->reverse()->values();
-        return response()->json(['mensajes' => $mensajes, 'conversacion' => $conversacion->load('canal')]);
+        return response()->json([
+            'mensajes'     => $mensajes,
+            'conversacion' => $conversacion->load('canal'),
+            'ventana'      => $this->ventana($conversacion),
+        ]);
+    }
+
+    /**
+     * Ventana de servicio de Meta: solo se puede escribir libremente hasta 24 h
+     * despues del ULTIMO mensaje del cliente; luego, solo con plantilla.
+     */
+    private function ventana(WaConversacion $conversacion): array
+    {
+        $esMeta = $conversacion->canal?->conectadoAMeta() ?? false;
+        $ultimoEntrante = $conversacion->mensajes()->whereIn('direccion', ['in', 'entrante'])->max('created_at');
+        $cierra = $ultimoEntrante ? \Carbon\Carbon::parse($ultimoEntrante)->addDay() : null;
+
+        return [
+            'es_meta'   => $esMeta,
+            'abierta'   => ! $esMeta || ($cierra !== null && $cierra->isFuture()),
+            'cierra_at' => $cierra?->toISOString(),
+        ];
+    }
+
+    /** Plantillas aprobadas de la linea de esta conversacion. */
+    public function plantillas(WaConversacion $conversacion)
+    {
+        $this->autorizar($conversacion);
+        $canal = $conversacion->canal;
+        if (! $canal || ! $canal->conectadoAMeta()) {
+            return response()->json(['ok' => false, 'error' => 'Este canal no está conectado con WhatsApp oficial.', 'plantillas' => []], 422);
+        }
+        $r = (new \App\Modules\Crm\Support\WhatsappCloud\ClienteCloud($canal))->plantillas();
+
+        return response()->json($r, $r['ok'] ? 200 : 422);
+    }
+
+    /** Manda una plantilla aprobada (unico envio posible pasadas las 24 h). */
+    public function enviarPlantilla(Request $request, WaConversacion $conversacion)
+    {
+        $this->autorizar($conversacion);
+        $data = $request->validate([
+            'nombre'       => 'required|string|max:120',
+            'idioma'       => 'required|string|max:10',
+            'cuerpo'       => 'nullable|string|max:2000',
+            'parametros'   => 'nullable|array|max:20',
+            'parametros.*' => 'nullable|string|max:500',
+        ]);
+        $parametros = array_values(array_map(fn ($v) => (string) $v, $data['parametros'] ?? []));
+        // Lo que queda en el historial: el cuerpo con los {{n}} ya reemplazados.
+        $texto = (string) ($data['cuerpo'] ?? $data['nombre']);
+        foreach ($parametros as $i => $v) {
+            $texto = str_replace('{{' . ($i + 1) . '}}', $v, $texto);
+        }
+
+        return $this->despachar($conversacion, [
+            'tipo' => 'plantilla', 'nombre' => $data['nombre'], 'idioma' => $data['idioma'], 'parametros' => $parametros,
+        ], 'texto', '📋 ' . $texto, null);
     }
 
     public function poll(Request $request)

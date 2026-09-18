@@ -45,6 +45,11 @@
             <input x-model="form.phone_number_id" placeholder="123456789012345" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
         </div>
         <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">ID de la cuenta de WhatsApp Business (WABA)</label>
+            <input x-model="form.waba_id" placeholder="Está justo debajo del Phone number ID" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
+            <p class="text-[11px] text-gray-400 mt-1">Con él BIXO suscribe la app sola y puede usar tus plantillas aprobadas para escribir pasadas las 24 h.</p>
+        </div>
+        <div>
             <label class="block text-xs font-semibold text-gray-700 mb-1">Token de acceso (permanente)</label>
             <textarea x-model="form.access_token" rows="2" placeholder="EAAG..." class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono"></textarea>
         </div>
@@ -72,6 +77,8 @@
 
     {{-- PASO 2: webhook --}}
     <div x-show="paso === 2" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+        <div x-show="suscripcion && suscripcion.ok" x-cloak class="p-3 rounded-xl bg-green-50 border border-green-200 text-xs text-green-800">✓ La app quedó suscrita a tu cuenta de WhatsApp Business: Meta ya puede entregarte los mensajes.</div>
+        <div x-show="suscripcion && !suscripcion.ok" x-cloak class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">No se pudo suscribir la app sola (<span x-text="suscripcion?.error"></span>). Hazlo en Meta: WhatsApp → Configuración → Webhooks → Suscribirse.</div>
         <p class="text-sm text-gray-600">La línea ya está guardada. En <b>WhatsApp → Configuración → Webhook</b> pega estos dos datos, pulsa <b>Verificar y guardar</b> y suscríbete al campo <b>messages</b>.</p>
         <div>
             <label class="block text-xs font-semibold text-gray-700 mb-1">URL de devolución de llamada</label>
@@ -106,12 +113,13 @@
 <script>
 function asistenteMeta() {
     return {
-        paso: 1, cargando: false, error: '', probado: null,
+        paso: 1, cargando: false, error: '', probado: null, suscripcion: null,
         form: {
             id: {{ $canal?->id ?? 'null' }},
             nombre: @json($canal?->nombre ?? 'Línea principal'),
             tipo: 'bixo',
             phone_number_id: @json($canal?->phone_number_id ?? ''),
+            waba_id: @json($canal?->waba_id ?? ''),
             access_token: '', app_secret: '',
             verify_token: @json($canal?->verify_token ?? ''),
             color: '#25d366',
@@ -139,7 +147,7 @@ function asistenteMeta() {
                     body: JSON.stringify(this.form),
                 });
                 const d = await r.json();
-                if (d.ok) { this.form.id = d.canal.id; this.form.access_token = ''; this.form.app_secret = ''; this.paso = 2; } else this.error = d.message || 'No se pudo guardar.';
+                if (d.ok) { this.form.id = d.canal.id; this.form.access_token = ''; this.form.app_secret = ''; this.suscripcion = d.suscripcion; this.paso = 2; } else this.error = d.message || 'No se pudo guardar.';
             } catch (e) { this.error = 'No se pudo guardar.'; }
             this.cargando = false;
         },

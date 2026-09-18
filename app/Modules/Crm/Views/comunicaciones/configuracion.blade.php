@@ -155,6 +155,11 @@
                        class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 font-mono">
                 <p class="text-[10px] text-gray-400 mt-1">Lo encuentras en Meta → WhatsApp → API Setup</p>
             </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">ID de la cuenta de WhatsApp Business (WABA)</label>
+                <input x-model="form.waba_id" placeholder="para plantillas (24 h) y suscripción automática"
+                       class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-green-400">
+            </div>
 
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">
@@ -230,7 +235,7 @@ function configuracion() {
                 const c = CANALES_INIT.find(x => x.id === id);
                 this.form = { ...c, access_token: '', app_secret: '' };
             } else {
-                this.form = { id: null, nombre: '', tipo: 'bixo', telefono: '', phone_number_id: '', access_token: '', app_secret: '', verify_token: '', color: '#25d366' };
+                this.form = { id: null, nombre: '', tipo: 'bixo', telefono: '', phone_number_id: '', waba_id: '', access_token: '', app_secret: '', verify_token: '', color: '#25d366' };
             }
             this.modal = true;
         },

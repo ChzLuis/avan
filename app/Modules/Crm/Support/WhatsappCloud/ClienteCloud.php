@@ -95,6 +95,7 @@ class ClienteCloud
             'lista'   => $this->armarLista($to, $r),
             'botones' => $this->armarBotones($to, $r),
             'cta_url' => $this->armarCtaUrl($to, $r),
+            'plantilla' => $this->armarPlantilla($to, $r),
             'imagen'  => $this->armarMedia($to, $r, 'image'),
             'audio'   => $this->armarMedia($to, ['url' => $r['url'] ?? ''], 'audio'),
             'archivo' => $this->armarMedia($to, $r, 'document'),
@@ -130,6 +131,93 @@ class ClienteCloud
         }
 
         return ['messaging_product' => 'whatsapp', 'to' => $to, 'type' => 'interactive', 'interactive' => $interactive];
+    }
+
+    /**
+     * Plantillas APROBADAS de la cuenta (las unicas que Meta deja mandar
+     * pasadas las 24 h). Se normalizan a lo que la bandeja necesita: nombre,
+     * idioma, cuerpo con sus {{n}} y cuantos parametros pide.
+     */
+    public function plantillas(): array
+    {
+        $url = $this->canal->urlWaba('message_templates');
+        if ($url === null) {
+            return ['ok' => false, 'error' => 'Falta el ID de la cuenta de WhatsApp Business (WABA) en el canal.', 'plantillas' => []];
+        }
+        try {
+            $res = Http::withToken($this->canal->access_token)->timeout(15)
+                ->get($url, ['status' => 'APPROVED', 'limit' => 100, 'fields' => 'name,language,category,components']);
+            if (! $res->successful()) {
+                return ['ok' => false, 'error' => (string) data_get($res->json(), 'error.message', 'HTTP ' . $res->status()), 'plantillas' => []];
+            }
+            $lista = [];
+            foreach ((array) data_get($res->json(), 'data', []) as $t) {
+                $cuerpo = '';
+                $cabecera = null;
+                $botones = [];
+                foreach ((array) ($t['components'] ?? []) as $c) {
+                    $tipo = strtoupper((string) ($c['type'] ?? ''));
+                    if ($tipo === 'BODY') $cuerpo = (string) ($c['text'] ?? '');
+                    if ($tipo === 'HEADER') $cabecera = ['formato' => strtolower((string) ($c['format'] ?? 'text')), 'texto' => (string) ($c['text'] ?? '')];
+                    if ($tipo === 'BUTTONS') $botones = array_map(fn ($b) => (string) ($b['text'] ?? ''), (array) ($c['buttons'] ?? []));
+                }
+                preg_match_all('/\{\{(\d+)\}\}/', $cuerpo, $m);
+                $lista[] = [
+                    'nombre'     => (string) ($t['name'] ?? ''),
+                    'idioma'     => (string) ($t['language'] ?? 'es'),
+                    'categoria'  => (string) ($t['category'] ?? ''),
+                    'cuerpo'     => $cuerpo,
+                    'cabecera'   => $cabecera,
+                    'botones'    => $botones,
+                    'parametros' => $m[1] === [] ? 0 : max(array_map('intval', $m[1])),
+                ];
+            }
+
+            return ['ok' => true, 'plantillas' => $lista];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => 'No se pudo llegar a Meta: ' . class_basename($e), 'plantillas' => []];
+        }
+    }
+
+    /**
+     * Suscribe la app al WABA: sin esto Meta no entrega los mensajes al
+     * webhook aunque todo lo demas este bien (fue la causa real del "no llega
+     * nada" en la primera conexion de Eskala).
+     */
+    public function suscribirApp(): array
+    {
+        $url = $this->canal->urlWaba('subscribed_apps');
+        if ($url === null) {
+            return ['ok' => false, 'error' => 'Falta el ID de la cuenta de WhatsApp Business (WABA).'];
+        }
+        try {
+            $res = Http::withToken($this->canal->access_token)->timeout(15)->post($url);
+            if ($res->successful() && data_get($res->json(), 'success')) {
+                return ['ok' => true];
+            }
+
+            return ['ok' => false, 'error' => (string) data_get($res->json(), 'error.message', 'HTTP ' . $res->status())];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => 'No se pudo llegar a Meta: ' . class_basename($e)];
+        }
+    }
+
+    /** Mensaje de plantilla: `nombre`, `idioma` y `parametros` (valores de {{1}}, {{2}}...). */
+    private function armarPlantilla(string $to, array $r): array
+    {
+        $template = [
+            'name'     => (string) ($r['nombre'] ?? ''),
+            'language' => ['code' => (string) ($r['idioma'] ?? 'es')],
+        ];
+        $parametros = array_values(array_map('strval', (array) ($r['parametros'] ?? [])));
+        if ($parametros !== []) {
+            $template['components'] = [[
+                'type'       => 'body',
+                'parameters' => array_map(fn ($v) => ['type' => 'text', 'text' => $v], $parametros),
+            ]];
+        }
+
+        return ['messaging_product' => 'whatsapp', 'to' => $to, 'type' => 'template', 'template' => $template];
     }
 
     /** Boton que abre un enlace (la tienda, un catalogo, un pago). */

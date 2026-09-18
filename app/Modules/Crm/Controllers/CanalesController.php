@@ -29,6 +29,7 @@ class CanalesController extends Controller
             'tipo'               => $c->tipo,
             'telefono'           => $c->telefono,
             'phone_number_id'    => $c->phone_number_id,
+            'waba_id'            => $c->waba_id,
             'verify_token'       => $c->verify_token,
             'color'              => $c->color,
             'activo'             => $c->activo,
@@ -74,6 +75,7 @@ class CanalesController extends Controller
             'tipo'               => 'required|in:bixo,academy,partners',
             'telefono'           => 'nullable|string|max:30',
             'phone_number_id'    => 'nullable|string|max:80',
+            'waba_id'            => 'nullable|string|max:40',
             'access_token'       => 'nullable|string',
             'app_secret'         => 'nullable|string|max:255',
             'verify_token'       => 'nullable|string|max:100',
@@ -97,10 +99,17 @@ class CanalesController extends Controller
             }
         }
 
+        // Con WABA y token, la app se suscribe sola (sin esto Meta no entrega
+        // nada al webhook). Si falla se informa, pero el canal queda guardado.
+        $suscripcion = null;
+        if ($canal->conectadoAMeta() && filled($canal->waba_id)) {
+            $suscripcion = (new ClienteCloud($canal->fresh()))->suscribirApp();
+        }
+
         // El formulario no necesita el token de vuelta (al editar lo deja en
         // blanco para conservarlo): devolverlo entero al navegador era exponer
         // un secreto sin motivo. El verify_token si se muestra, va en la URL.
-        return response()->json(['ok' => true, 'canal' => $canal->makeVisible(['verify_token'])]);
+        return response()->json(['ok' => true, 'canal' => $canal->makeVisible(['verify_token']), 'suscripcion' => $suscripcion]);
     }
 
     public function eliminar(WaCanal $canal)
