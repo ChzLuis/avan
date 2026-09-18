@@ -37,6 +37,11 @@ PW = re.search(r"PW='([^']+)'", src).group(1); BASE = re.search(r"BASE='([^']+)'
 RAICES = ['app', 'bootstrap/providers.php', 'bootstrap/app.php', 'config', 'database', 'resources/views', 'routes', 'tests', 'composer.json']
 COMMIT_BASE = 'c208724'   # estructura vacia app/Modules: desde aqui se movio todo
 ACEPTO_DERIVA = '--acepto-deriva' in sys.argv
+# --excluir a,b,c : rutas que NO se suben (se deja la version de ARIN). Para
+# archivos donde ARIN va por delante (p. ej. una vista redisenada en otra rama).
+EXCLUIR = set()
+for i, a in enumerate(sys.argv):
+    if a == '--excluir' and i + 1 < len(sys.argv): EXCLUIR = set(sys.argv[i + 1].split(','))
 
 c = paramiko.SSHClient(); c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 c.connect(HOST, port=22, username=USER, password=PW, timeout=25)
@@ -75,6 +80,9 @@ for p in rastreados:
     else:
         iguales += 1
         if r == lf and r != raw: crlf += 1
+if EXCLUIR:
+    print('excluidos (se deja la version de ARIN):', ', '.join(sorted(EXCLUIR & set(subir))))
+    subir = [p for p in subir if p not in EXCLUIR]
 nuevos = [p for p in subir if p not in md5_remoto]
 cambiados = [p for p in subir if p in md5_remoto]
 borrar = [p for p in borrados if p in md5_remoto]
