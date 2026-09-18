@@ -122,7 +122,7 @@ class BandejaController extends Controller
         if ($request->conversacion_id) {
             $conv = WaConversacion::find($request->conversacion_id);
             if ($conv && $canales->contains($conv->wa_canal_id)) {
-                $mensajesNuevos = $conv->mensajes()->where('created_at', '>=', $since)->get();
+                $mensajesNuevos = $conv->mensajes()->where('created_at', '>=', $since)->orderBy('id')->get();
             }
         }
 
