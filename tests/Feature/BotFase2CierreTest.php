@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Modules\Bots\Models\BotFlow;
 use App\Modules\Bots\Models\BotSession;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Modules\Crm\Models\WaCanal;

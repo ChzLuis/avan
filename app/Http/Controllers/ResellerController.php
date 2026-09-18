@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Modules\Tienda\Controllers\TiendaPublicaController;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\ResellerPrice;
 use App\Models\User;

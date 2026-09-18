@@ -5,7 +5,7 @@ namespace App\Modules\Inventario\Controllers;
 use App\Http\Controllers\Controller;
 
 use App\Modules\Inventario\Models\InventoryMovement;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Modules\Inventario\Support\InventoryLedger;
 use Illuminate\Http\Request;
 

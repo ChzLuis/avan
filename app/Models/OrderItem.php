@@ -1,5 +1,9 @@
 <?php
 namespace App\Models;
+
+use App\Modules\Catalogo\Models\Product;
+use App\Modules\Catalogo\Models\ProductVariant;
+use App\Modules\Catalogo\Models\Service;
 use Illuminate\Database\Eloquent\Model;
 class OrderItem extends Model {
     protected $fillable = ['order_id', 'product_id', 'product_variant_id', 'service_id', 'name', 'variant_snapshot', 'price', 'discount', 'quantity'];

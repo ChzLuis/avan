@@ -1,7 +1,7 @@
 <?php
 
 use App\Providers\AppServiceProvider;
-use App\Providers\CatalogServiceProvider;
+use App\Modules\Catalogo\CatalogServiceProvider;
 
 return [
     AppServiceProvider::class,

@@ -553,7 +553,7 @@ JS;
             'icon' => ['required', 'string', 'max:120', 'regex:/^[a-z0-9-]+:[a-z0-9-]+$/'],
         ]);
 
-        $category = \App\Models\Category::where('project_id', $project->id)->where('id', $data['category_id'])->first();
+        $category = \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)->where('id', $data['category_id'])->first();
         abort_unless($category, 404);
 
         [$prefix, $name] = explode(':', $data['icon'], 2);
@@ -593,7 +593,7 @@ JS;
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'remove' => ['nullable', 'boolean'],
         ]);
-        $category = \App\Models\Category::where('project_id', $project->id)->where('id', $data['category_id'])->first();
+        $category = \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)->where('id', $data['category_id'])->first();
         abort_unless($category, 404);
 
         if ($request->boolean('remove')) {
@@ -669,7 +669,7 @@ JS;
         $project = $this->project();
         $filter = $request->query('filter', 'all');
 
-        $q = \App\Models\Product::query()->where('project_id', $project->id)
+        $q = \App\Modules\Catalogo\Models\Product::query()->where('project_id', $project->id)
             ->with('mainImage:id,product_id,url')
             ->select(['id', 'name', 'sku', 'price', 'category_id', 'is_available']);
 
@@ -717,12 +717,12 @@ JS;
 
         $affected = \Illuminate\Support\Facades\DB::transaction(function () use ($project, $data) {
             // Aislamiento: SOLO productos del proyecto activo.
-            $q = \App\Models\Product::where('project_id', $project->id)->whereIn('id', $data['ids']);
+            $q = \App\Modules\Catalogo\Models\Product::where('project_id', $project->id)->whereIn('id', $data['ids']);
 
             return match ($data['action']) {
                 'publish' => $q->update(['is_available' => true]),
                 'unpublish' => $q->update(['is_available' => false]),
-                'set_category' => $q->update(['category_id' => \App\Models\Category::where('project_id', $project->id)->where('id', (int) ($data['category_id'] ?? 0))->value('id')]),
+                'set_category' => $q->update(['category_id' => \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)->where('id', (int) ($data['category_id'] ?? 0))->value('id')]),
                 'price_set' => ($data['value'] ?? null) !== null && $data['value'] >= 0 ? $q->update(['price' => round((float) $data['value'], 2)]) : 0,
                 'price_adjust' => $q->get()->each(fn ($p) => $p->update(['price' => max(0, round((float) $p->price * (1 + ((float) ($data['value'] ?? 0)) / 100), 2))]))->count(),
                 'wholesale_set' => ($data['value'] ?? null) !== null ? $q->update(['wholesale_price' => round((float) $data['value'], 2), 'wholesale_min_qty' => (int) ($data['min_qty'] ?? 6)]) : 0,

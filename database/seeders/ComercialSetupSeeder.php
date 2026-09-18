@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use App\Models\Project;
 use App\Models\Module;
-use App\Models\CatalogList;
+use App\Modules\Catalogo\Models\CatalogList;
 
 class ComercialSetupSeeder extends Seeder
 {

@@ -4,12 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\Product;
-use App\Models\Service;
-use App\Models\Combo;
-use App\Models\ComboItem;
+use App\Modules\Catalogo\Models\Product;
+use App\Modules\Catalogo\Models\Service;
+use App\Modules\Catalogo\Models\Combo;
+use App\Modules\Catalogo\Models\ComboItem;
 use App\Modules\Tienda\Models\Promotion;
-use App\Models\Category;
+use App\Modules\Catalogo\Models\Category;
 
 class TecsistSeeder extends Seeder
 {

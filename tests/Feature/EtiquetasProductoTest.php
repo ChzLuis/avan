@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Category;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\EtiquetasProducto as Etq;
+use App\Modules\Catalogo\Support\EtiquetasProducto as Etq;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

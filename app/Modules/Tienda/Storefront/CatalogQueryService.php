@@ -4,7 +4,7 @@ namespace App\Modules\Tienda\Storefront;
 
 use App\Models\Project;
 use App\Modules\Tienda\Models\StoreCatalogProfile;
-use App\Models\ProductAttribute;
+use App\Modules\Catalogo\Models\ProductAttribute;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
@@ -303,7 +303,7 @@ final class CatalogQueryService
     /**
      * Serializa un producto al shape que consumen las tarjetas del catálogo.
      */
-    public function toCard(\App\Models\Product $p, string $slug): array
+    public function toCard(\App\Modules\Catalogo\Models\Product $p, string $slug): array
     {
         // Las fotos de producto pesaban varios MB en PNG; si existe su .webp
         // se sirve esa, que es ~90% mas ligera.
@@ -335,7 +335,7 @@ final class CatalogQueryService
             // Etiquetas ya resueltas (texto + colores + posicion) y recortadas
             // a las dos de mayor prioridad. Van en el payload canonico para
             // que las pinten igual la tarjeta del servidor y la de Alpine.
-            'etiquetas' => \App\Support\EtiquetasProducto::para($p, 'card'),
+            'etiquetas' => \App\Modules\Catalogo\Support\EtiquetasProducto::para($p, 'card'),
             // Directo ordena "mas nuevos" en el cliente con este sello.
             'ts' => $p->created_at?->timestamp ?? 0,
             // Resumen para la vista rapida: sin el, la tarjeta solo decia nombre
@@ -365,7 +365,7 @@ final class CatalogQueryService
      */
     public function marcas(Project $project): \Illuminate\Support\Collection
     {
-        return \App\Models\CatalogValue::query()
+        return \App\Modules\Catalogo\Models\CatalogValue::query()
             ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
             ->where('catalog_lists.project_id', $project->id)
             ->where('catalog_lists.type', 'brand')

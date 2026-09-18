@@ -2,6 +2,15 @@
 
 namespace App\Models;
 
+use App\Modules\Catalogo\Models\CatalogIntegration;
+use App\Modules\Catalogo\Models\Category;
+use App\Modules\Catalogo\Models\Combo;
+use App\Modules\Catalogo\Models\Product;
+use App\Modules\Catalogo\Models\ProductAttribute;
+use App\Modules\Catalogo\Models\ProductAttributeValue;
+use App\Modules\Catalogo\Models\ProductVariant;
+use App\Modules\Catalogo\Models\Service;
+
 use App\Modules\Tienda\Models\Complaint;
 use App\Modules\Tienda\Models\ContactMessage;
 use App\Modules\Tienda\Models\Coupon;
@@ -58,7 +67,7 @@ class Project extends Model
         return $this->modules()->wherePivot('is_active', true);
     }
 
-    public function catalogLists(): HasMany  { return $this->hasMany(\App\Models\CatalogList::class); }
+    public function catalogLists(): HasMany  { return $this->hasMany(\App\Modules\Catalogo\Models\CatalogList::class); }
     public function categories(): HasMany   { return $this->hasMany(Category::class); }
     public function products(): HasMany     { return $this->hasMany(Product::class); }
     public function productAttributes(): HasMany { return $this->hasMany(ProductAttribute::class); }

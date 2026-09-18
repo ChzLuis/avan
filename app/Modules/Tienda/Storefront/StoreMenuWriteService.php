@@ -2,7 +2,7 @@
 
 namespace App\Modules\Tienda\Storefront;
 
-use App\Models\Category;
+use App\Modules\Catalogo\Models\Category;
 use App\Models\Project;
 use App\Modules\Tienda\Models\StoreMenu;
 use App\Modules\Tienda\Models\StoreMenuItem;

@@ -177,7 +177,7 @@ class CopilotController extends Controller
         $project = $this->project($r);
         $q = trim((string) $r->input('q', ''));
 
-        $productos = \App\Models\Product::where('project_id', $project->id)
+        $productos = \App\Modules\Catalogo\Models\Product::where('project_id', $project->id)
             ->when($q !== '', fn ($x) => $x->where(fn ($w) => $w->where('name', 'like', "%$q%")->orWhere('sku', 'like', "%$q%")))
             ->orderBy('name')->limit(200)
             ->get(['id', 'name', 'sku', 'price', 'stock'])
@@ -186,7 +186,7 @@ class CopilotController extends Controller
                 'sku' => $p->sku, 'precio' => (float) $p->price, 'stock' => $p->stock,
             ]);
 
-        $servicios = \App\Models\Service::where('project_id', $project->id)
+        $servicios = \App\Modules\Catalogo\Models\Service::where('project_id', $project->id)
             ->when($q !== '', fn ($x) => $x->where('name', 'like', "%$q%"))
             ->where('is_available', true)->orderBy('name')->limit(200)
             ->get(['id', 'name', 'price'])

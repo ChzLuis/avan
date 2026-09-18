@@ -2,7 +2,7 @@
 
 namespace App\Support\Imagen;
 
-use App\Models\ProductImageTemplate;
+use App\Modules\Catalogo\Models\ProductImageTemplate;
 use Illuminate\Support\Facades\Storage;
 
 /**

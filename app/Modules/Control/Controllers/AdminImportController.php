@@ -4,7 +4,7 @@ namespace App\Modules\Control\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Client;
 use App\Models\Employee;
 use Illuminate\Http\Request;

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Modules\Catalogo\Models\Category;
 use App\Models\Project;
 use App\Models\User;
 use App\Modules\Tienda\Support\StorefrontLayoutPacks;

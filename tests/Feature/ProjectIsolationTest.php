@@ -3,17 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\Appointment;
-use App\Models\Category;
+use App\Modules\Catalogo\Models\Category;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Module;
 use App\Models\Order;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Modules\Inventario\Models\Proveedor;
 use App\Models\Quote;
-use App\Models\Service;
+use App\Modules\Catalogo\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;

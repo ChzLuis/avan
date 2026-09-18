@@ -573,15 +573,15 @@
             $crId = (int) $crRow['category_id'];
             // Productos de la categoria (incluye sus subcategorias) directo del modelo:
             // el listado del scope solo trae las raices cargadas.
-            $crIds = \App\Models\Category::where('project_id', $project->id)
+            $crIds = \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)
                 ->where(fn ($q) => $q->where('id', $crId)->orWhere('parent_id', $crId))
                 ->pluck('id');
-            $crProds = \App\Models\Product::where('project_id', $project->id)
+            $crProds = \App\Modules\Catalogo\Models\Product::where('project_id', $project->id)
                 ->whereIn('category_id', $crIds)
                 ->where('is_available', true)
                 ->with('category')
                 ->orderByDesc('id')->take($crLimit)->get();
-            $crName = \App\Models\Category::where('id', $crId)->value('name') ?? ($crRow['title'] ?? '');
+            $crName = \App\Modules\Catalogo\Models\Category::where('id', $crId)->value('name') ?? ($crRow['title'] ?? '');
         @endphp
         @if($crProds->isNotEmpty())
         <div class="xs-crow">

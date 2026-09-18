@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Modules\Bots\Models\BotFlow;
 use App\Models\Client;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Modules\Tienda\Models\StoreSection;
 use App\Models\User;
@@ -109,7 +109,7 @@ class BotClientesRealesTest extends TestCase
 
     public function test_los_productos_no_se_cruzan_entre_proyectos(): void
     {
-        \App\Models\Category::create(['project_id' => $this->a->id, 'name' => 'Taladros']);
+        \App\Modules\Catalogo\Models\Category::create(['project_id' => $this->a->id, 'name' => 'Taladros']);
 
         $ra = $this->conversar($this->a, ['hola', 'tienen taladros']);
         $this->assertStringContainsString('*Taladros*', $ra, 'A encuentra SU sección.');
@@ -215,7 +215,7 @@ class BotClientesRealesTest extends TestCase
     /** Cliente 10 — desordenado: el contexto del producto sobrevive al desvío. */
     public function test_cliente_desordenado_conserva_contexto(): void
     {
-        \App\Models\Category::create(['project_id' => $this->a->id, 'name' => 'Taladros']);
+        \App\Modules\Catalogo\Models\Category::create(['project_id' => $this->a->id, 'name' => 'Taladros']);
         $r = $this->conversar($this->a, [
             'hola', 'tienen taladros',       // seccion
             'hacen delivery?',               // se desvia a la FAQ

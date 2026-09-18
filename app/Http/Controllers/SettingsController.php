@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ImportLog;
+use App\Modules\Catalogo\Models\ImportLog;
 use App\Models\Project;
 use App\Models\Module;
 use App\Modules\Tienda\Models\Coupon;

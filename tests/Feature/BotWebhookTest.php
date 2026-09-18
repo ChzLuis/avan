@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Modules\Bots\Models\BotFlow;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -143,8 +143,8 @@ class BotWebhookTest extends TestCase
     public function test_un_adjunto_no_rompe_el_flujo_en_curso(): void
     {
         // Dos SECCIONES afines: la busqueda pregunta cual.
-        \App\Models\Category::create(['project_id' => $this->project->id, 'name' => 'Cocinas']);
-        \App\Models\Category::create(['project_id' => $this->project->id, 'name' => 'Cocinas Industriales']);
+        \App\Modules\Catalogo\Models\Category::create(['project_id' => $this->project->id, 'name' => 'Cocinas']);
+        \App\Modules\Catalogo\Models\Category::create(['project_id' => $this->project->id, 'name' => 'Cocinas Industriales']);
 
         $this->manda('51955000003', 'hola');
         $this->manda('51955000003', 'cocina');

@@ -1658,7 +1658,7 @@ class CatalogTemplates
         $order = $project->categories()->max('sort_order') ?? 0;
 
         foreach ($cats as $catDef) {
-            $parent = \App\Models\Category::firstOrCreate(
+            $parent = \App\Modules\Catalogo\Models\Category::firstOrCreate(
                 ['project_id' => $project->id, 'name' => $catDef['name']],
                 [
                     'type'       => $catDef['type'],
@@ -1670,7 +1670,7 @@ class CatalogTemplates
 
             $subOrder = 0;
             foreach ($catDef['children'] as $childName) {
-                \App\Models\Category::firstOrCreate(
+                \App\Modules\Catalogo\Models\Category::firstOrCreate(
                     ['project_id' => $project->id, 'name' => $childName, 'parent_id' => $parent->id],
                     [
                         'type'       => $catDef['type'],

@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Project;
-use App\Models\CatalogList;
+use App\Modules\Catalogo\Models\CatalogList;
 use Illuminate\Database\Seeder;
 
 class DefaultCatalogsSeeder extends Seeder

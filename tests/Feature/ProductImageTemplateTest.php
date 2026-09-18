@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\GenerarImagenesProducto;
-use App\Models\Product;
-use App\Models\ProductImage;
-use App\Models\ProductImageTemplate;
+use App\Modules\Catalogo\Jobs\GenerarImagenesProducto;
+use App\Modules\Catalogo\Models\Product;
+use App\Modules\Catalogo\Models\ProductImage;
+use App\Modules\Catalogo\Models\ProductImageTemplate;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\Imagen\CompositorProducto;

@@ -1,0 +1,3480 @@
+{
+ "moves": [
+  [
+   "app/Http/Controllers/Catalog/CatalogIntegrationController.php",
+   "app/Modules/Catalogo/Controllers/CatalogIntegrationController.php"
+  ],
+  [
+   "app/Http/Controllers/Catalog/CategoryController.php",
+   "app/Modules/Catalogo/Controllers/CategoryController.php"
+  ],
+  [
+   "app/Http/Controllers/Catalog/ProductController.php",
+   "app/Modules/Catalogo/Controllers/ProductController.php"
+  ],
+  [
+   "app/Http/Controllers/Catalog/ProductVariantController.php",
+   "app/Modules/Catalogo/Controllers/ProductVariantController.php"
+  ],
+  [
+   "app/Http/Controllers/Catalog/ServiceController.php",
+   "app/Modules/Catalogo/Controllers/ServiceController.php"
+  ],
+  [
+   "app/Http/Controllers/CatalogListController.php",
+   "app/Modules/Catalogo/Controllers/CatalogListController.php"
+  ],
+  [
+   "app/Http/Controllers/ComboController.php",
+   "app/Modules/Catalogo/Controllers/ComboController.php"
+  ],
+  [
+   "app/Http/Controllers/ProductImageTemplateController.php",
+   "app/Modules/Catalogo/Controllers/ProductImageTemplateController.php"
+  ],
+  [
+   "app/Models/Product.php",
+   "app/Modules/Catalogo/Models/Product.php"
+  ],
+  [
+   "app/Models/ProductAttribute.php",
+   "app/Modules/Catalogo/Models/ProductAttribute.php"
+  ],
+  [
+   "app/Models/ProductAttributeValue.php",
+   "app/Modules/Catalogo/Models/ProductAttributeValue.php"
+  ],
+  [
+   "app/Models/ProductImage.php",
+   "app/Modules/Catalogo/Models/ProductImage.php"
+  ],
+  [
+   "app/Models/ProductImageTemplate.php",
+   "app/Modules/Catalogo/Models/ProductImageTemplate.php"
+  ],
+  [
+   "app/Models/ProductVariant.php",
+   "app/Modules/Catalogo/Models/ProductVariant.php"
+  ],
+  [
+   "app/Models/Category.php",
+   "app/Modules/Catalogo/Models/Category.php"
+  ],
+  [
+   "app/Models/Service.php",
+   "app/Modules/Catalogo/Models/Service.php"
+  ],
+  [
+   "app/Models/CatalogList.php",
+   "app/Modules/Catalogo/Models/CatalogList.php"
+  ],
+  [
+   "app/Models/CatalogValue.php",
+   "app/Modules/Catalogo/Models/CatalogValue.php"
+  ],
+  [
+   "app/Models/CatalogIntegration.php",
+   "app/Modules/Catalogo/Models/CatalogIntegration.php"
+  ],
+  [
+   "app/Models/CatalogIntegrationItem.php",
+   "app/Modules/Catalogo/Models/CatalogIntegrationItem.php"
+  ],
+  [
+   "app/Models/CatalogSyncRun.php",
+   "app/Modules/Catalogo/Models/CatalogSyncRun.php"
+  ],
+  [
+   "app/Models/ImportLog.php",
+   "app/Modules/Catalogo/Models/ImportLog.php"
+  ],
+  [
+   "app/Models/Combo.php",
+   "app/Modules/Catalogo/Models/Combo.php"
+  ],
+  [
+   "app/Models/ComboItem.php",
+   "app/Modules/Catalogo/Models/ComboItem.php"
+  ],
+  [
+   "app/Support/EtiquetasProducto.php",
+   "app/Modules/Catalogo/Support/EtiquetasProducto.php"
+  ],
+  [
+   "app/Support/UnidadesMedida.php",
+   "app/Modules/Catalogo/Support/UnidadesMedida.php"
+  ],
+  [
+   "app/Support/SquareImage.php",
+   "app/Modules/Catalogo/Support/SquareImage.php"
+  ],
+  [
+   "app/Catalog/Contracts/CatalogProviderInterface.php",
+   "app/Modules/Catalogo/Conectores/Contracts/CatalogProviderInterface.php"
+  ],
+  [
+   "app/Catalog/Contracts/ProvidesCategories.php",
+   "app/Modules/Catalogo/Conectores/Contracts/ProvidesCategories.php"
+  ],
+  [
+   "app/Catalog/Contracts/ProvidesProducts.php",
+   "app/Modules/Catalogo/Conectores/Contracts/ProvidesProducts.php"
+  ],
+  [
+   "app/Catalog/Contracts/ProvidesServices.php",
+   "app/Modules/Catalogo/Conectores/Contracts/ProvidesServices.php"
+  ],
+  [
+   "app/Catalog/Contracts/SupportsWebhooks.php",
+   "app/Modules/Catalogo/Conectores/Contracts/SupportsWebhooks.php"
+  ],
+  [
+   "app/Catalog/DTOs/CategoryPage.php",
+   "app/Modules/Catalogo/Conectores/DTOs/CategoryPage.php"
+  ],
+  [
+   "app/Catalog/DTOs/ConfigField.php",
+   "app/Modules/Catalogo/Conectores/DTOs/ConfigField.php"
+  ],
+  [
+   "app/Catalog/DTOs/ConfigSchema.php",
+   "app/Modules/Catalogo/Conectores/DTOs/ConfigSchema.php"
+  ],
+  [
+   "app/Catalog/DTOs/ConnectionTestResult.php",
+   "app/Modules/Catalogo/Conectores/DTOs/ConnectionTestResult.php"
+  ],
+  [
+   "app/Catalog/DTOs/EntityPage.php",
+   "app/Modules/Catalogo/Conectores/DTOs/EntityPage.php"
+  ],
+  [
+   "app/Catalog/DTOs/NormalizedCategory.php",
+   "app/Modules/Catalogo/Conectores/DTOs/NormalizedCategory.php"
+  ],
+  [
+   "app/Catalog/DTOs/NormalizedProduct.php",
+   "app/Modules/Catalogo/Conectores/DTOs/NormalizedProduct.php"
+  ],
+  [
+   "app/Catalog/DTOs/NormalizedService.php",
+   "app/Modules/Catalogo/Conectores/DTOs/NormalizedService.php"
+  ],
+  [
+   "app/Catalog/DTOs/ProductPage.php",
+   "app/Modules/Catalogo/Conectores/DTOs/ProductPage.php"
+  ],
+  [
+   "app/Catalog/DTOs/ProviderCapabilities.php",
+   "app/Modules/Catalogo/Conectores/DTOs/ProviderCapabilities.php"
+  ],
+  [
+   "app/Catalog/DTOs/ServicePage.php",
+   "app/Modules/Catalogo/Conectores/DTOs/ServicePage.php"
+  ],
+  [
+   "app/Catalog/DTOs/SyncCursor.php",
+   "app/Modules/Catalogo/Conectores/DTOs/SyncCursor.php"
+  ],
+  [
+   "app/Catalog/Enums/FieldOwner.php",
+   "app/Modules/Catalogo/Conectores/Enums/FieldOwner.php"
+  ],
+  [
+   "app/Catalog/Enums/ItemEntityType.php",
+   "app/Modules/Catalogo/Conectores/Enums/ItemEntityType.php"
+  ],
+  [
+   "app/Catalog/Enums/ItemSyncStatus.php",
+   "app/Modules/Catalogo/Conectores/Enums/ItemSyncStatus.php"
+  ],
+  [
+   "app/Catalog/Enums/SyncMode.php",
+   "app/Modules/Catalogo/Conectores/Enums/SyncMode.php"
+  ],
+  [
+   "app/Catalog/Enums/SyncStatus.php",
+   "app/Modules/Catalogo/Conectores/Enums/SyncStatus.php"
+  ],
+  [
+   "app/Catalog/Enums/SyncTrigger.php",
+   "app/Modules/Catalogo/Conectores/Enums/SyncTrigger.php"
+  ],
+  [
+   "app/Catalog/Exceptions/CatalogProviderException.php",
+   "app/Modules/Catalogo/Conectores/Exceptions/CatalogProviderException.php"
+  ],
+  [
+   "app/Catalog/Exceptions/ConnectionFailedException.php",
+   "app/Modules/Catalogo/Conectores/Exceptions/ConnectionFailedException.php"
+  ],
+  [
+   "app/Catalog/Exceptions/ProviderNotFoundException.php",
+   "app/Modules/Catalogo/Conectores/Exceptions/ProviderNotFoundException.php"
+  ],
+  [
+   "app/Catalog/Providers/Fake/FakeCatalogProvider.php",
+   "app/Modules/Catalogo/Conectores/Providers/Fake/FakeCatalogProvider.php"
+  ],
+  [
+   "app/Catalog/Providers/Siskote/SiskoteClient.php",
+   "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteClient.php"
+  ],
+  [
+   "app/Catalog/Providers/Siskote/SiskoteProductMapper.php",
+   "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteProductMapper.php"
+  ],
+  [
+   "app/Catalog/Providers/Siskote/SiskoteProvider.php",
+   "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteProvider.php"
+  ],
+  [
+   "app/Catalog/Providers/Siskote/SiskoteServiceMapper.php",
+   "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteServiceMapper.php"
+  ],
+  [
+   "app/Catalog/Registry/CatalogProviderRegistry.php",
+   "app/Modules/Catalogo/Conectores/Registry/CatalogProviderRegistry.php"
+  ],
+  [
+   "app/Catalog/Sync/CatalogSyncManager.php",
+   "app/Modules/Catalogo/Conectores/Sync/CatalogSyncManager.php"
+  ],
+  [
+   "app/Catalog/Sync/FieldOwnershipPolicy.php",
+   "app/Modules/Catalogo/Conectores/Sync/FieldOwnershipPolicy.php"
+  ],
+  [
+   "app/Catalog/Sync/ItemMatcher.php",
+   "app/Modules/Catalogo/Conectores/Sync/ItemMatcher.php"
+  ],
+  [
+   "app/Providers/CatalogServiceProvider.php",
+   "app/Modules/Catalogo/CatalogServiceProvider.php"
+  ],
+  [
+   "app/Console/Commands/SyncCatalogCommand.php",
+   "app/Modules/Catalogo/Commands/SyncCatalogCommand.php"
+  ],
+  [
+   "app/Console/Commands/GenerarSkuProductos.php",
+   "app/Modules/Catalogo/Commands/GenerarSkuProductos.php"
+  ],
+  [
+   "app/Console/Commands/ImportarImagenesExternas.php",
+   "app/Modules/Catalogo/Commands/ImportarImagenesExternas.php"
+  ],
+  [
+   "app/Console/Commands/RegenerarImagenes.php",
+   "app/Modules/Catalogo/Commands/RegenerarImagenes.php"
+  ],
+  [
+   "app/Jobs/GenerarImagenesProducto.php",
+   "app/Modules/Catalogo/Jobs/GenerarImagenesProducto.php"
+  ],
+  [
+   "app/Jobs/RunCatalogSync.php",
+   "app/Modules/Catalogo/Jobs/RunCatalogSync.php"
+  ],
+  [
+   "resources/views/catalog",
+   "app/Modules/Catalogo/Views/catalog"
+  ],
+  [
+   "resources/views/catalogs",
+   "app/Modules/Catalogo/Views/catalogs"
+  ],
+  [
+   "resources/views/combos",
+   "app/Modules/Catalogo/Views/combos"
+  ],
+  [
+   "resources/views/components/etiquetas-producto.blade.php",
+   "app/Modules/Catalogo/Views/components/etiquetas-producto.blade.php"
+  ]
+ ],
+ "edits": {
+  "app/Modules/Catalogo/Conectores/Contracts/CatalogProviderInterface.php": [
+   {
+    "old": "App\\Catalog\\DTOs\\ConnectionTestResult",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConnectionTestResult",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ProviderCapabilities",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ProviderCapabilities",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ConfigSchema",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConfigSchema",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Contracts;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Contracts;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Contracts/ProvidesCategories.php": [
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\CategoryPage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\CategoryPage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\SyncCursor",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Contracts;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Contracts;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Contracts/ProvidesProducts.php": [
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ProductPage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ProductPage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\SyncCursor",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Contracts;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Contracts;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Contracts/ProvidesServices.php": [
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ServicePage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ServicePage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\SyncCursor",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Contracts;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Contracts;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Contracts/SupportsWebhooks.php": [
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Contracts;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Contracts;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Providers/Fake/FakeCatalogProvider.php": [
+   {
+    "old": "App\\Catalog\\Contracts\\CatalogProviderInterface",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\CatalogProviderInterface",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesCategories",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesCategories",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesProducts",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesProducts",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesServices",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesServices",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ConnectionTestResult",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConnectionTestResult",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ProviderCapabilities",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ProviderCapabilities",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedCategory",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedCategory",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedProduct",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedProduct",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedService",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedService",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\CategoryPage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\CategoryPage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ConfigSchema",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConfigSchema",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ConfigField",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConfigField",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ProductPage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ProductPage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ServicePage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ServicePage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\SyncCursor",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Providers\\Fake;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Providers\\Fake;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteClient.php": [
+   {
+    "old": "App\\Catalog\\Exceptions\\ConnectionFailedException",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Exceptions\\ConnectionFailedException",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Providers\\Siskote;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Providers\\Siskote;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteProductMapper.php": [
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedProduct",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedProduct",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Providers\\Siskote;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Providers\\Siskote;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteProvider.php": [
+   {
+    "old": "App\\Catalog\\Exceptions\\ConnectionFailedException",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Exceptions\\ConnectionFailedException",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\CatalogProviderInterface",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\CatalogProviderInterface",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesProducts",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesProducts",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesServices",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesServices",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ConnectionTestResult",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConnectionTestResult",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ProviderCapabilities",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ProviderCapabilities",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ConfigSchema",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConfigSchema",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ConfigField",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ConfigField",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ProductPage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ProductPage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\ServicePage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\ServicePage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\SyncCursor",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Providers\\Siskote;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Providers\\Siskote;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Providers/Siskote/SiskoteServiceMapper.php": [
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedService",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedService",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Providers\\Siskote;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Providers\\Siskote;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Registry/CatalogProviderRegistry.php": [
+   {
+    "old": "App\\Catalog\\Exceptions\\ProviderNotFoundException",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Exceptions\\ProviderNotFoundException",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\CatalogProviderInterface",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\CatalogProviderInterface",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Registry;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Registry;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Sync/CatalogSyncManager.php": [
+   {
+    "old": "App\\Catalog\\Exceptions\\CatalogProviderException",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Exceptions\\CatalogProviderException",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Registry\\CatalogProviderRegistry",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Registry\\CatalogProviderRegistry",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesProducts",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesProducts",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesServices",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesServices",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedProduct",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedProduct",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedService",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedService",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegrationItem",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegrationItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\ItemEntityType",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\ItemEntityType",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\ItemSyncStatus",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\ItemSyncStatus",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\SyncTrigger",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\SyncTrigger",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\SyncStatus",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\SyncStatus",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\EntityPage",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\EntityPage",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\SyncCursor",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor",
+    "n": 2
+   },
+   {
+    "old": "App\\Catalog\\Enums\\SyncMode",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\SyncMode",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogSyncRun",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogSyncRun",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Sync;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Sync;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Sync/FieldOwnershipPolicy.php": [
+   {
+    "old": "App\\Catalog\\DTOs\\NormalizedProduct",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedProduct",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Sync;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Sync;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Sync/ItemMatcher.php": [
+   {
+    "old": "App\\Models\\CatalogIntegrationItem",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegrationItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\ItemEntityType",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\ItemEntityType",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\ItemSyncStatus",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\ItemSyncStatus",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Catalog\\Sync;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Sync;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Commands/GenerarSkuProductos.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Catalogo\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Commands/ImportarImagenesExternas.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Catalogo\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Commands/SyncCatalogCommand.php": [
+   {
+    "old": "App\\Catalog\\Sync\\CatalogSyncManager",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Sync\\CatalogSyncManager",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\SyncTrigger",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\SyncTrigger",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\RunCatalogSync",
+    "new": "App\\Modules\\Catalogo\\Jobs\\RunCatalogSync",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Catalogo\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/CatalogListController.php": [
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('catalogs.index'",
+    "new": "view('catalogo::catalogs.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/ComboController.php": [
+   {
+    "old": "App\\Models\\ComboItem",
+    "new": "App\\Modules\\Catalogo\\Models\\ComboItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Combo",
+    "new": "App\\Modules\\Catalogo\\Models\\Combo",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('combos.index'",
+    "new": "view('catalogo::combos.index'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/DashboardComercialController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/OrderController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/PortalClienteController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/PosController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/ProductImageTemplateController.php": [
+   {
+    "old": "App\\Jobs\\GenerarImagenesProducto",
+    "new": "App\\Modules\\Catalogo\\Jobs\\GenerarImagenesProducto",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductImageTemplate",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImageTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/ResellerController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/SettingsController.php": [
+   {
+    "old": "App\\Models\\ImportLog",
+    "new": "App\\Modules\\Catalogo\\Models\\ImportLog",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/CatalogIntegrationController.php": [
+   {
+    "old": "App\\Catalog\\Registry\\CatalogProviderRegistry",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Registry\\CatalogProviderRegistry",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Contracts\\ProvidesProducts",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesProducts",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Sync\\CatalogSyncManager",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Sync\\CatalogSyncManager",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\SyncTrigger",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\SyncTrigger",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\DTOs\\SyncCursor",
+    "new": "App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\RunCatalogSync",
+    "new": "App\\Modules\\Catalogo\\Jobs\\RunCatalogSync",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Catalog;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.integrations.index'",
+    "new": "view('catalogo::catalog.integrations.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/CategoryController.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Catalog;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.categories.index'",
+    "new": "view('catalogo::catalog.categories.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/ProductController.php": [
+   {
+    "old": "App\\Models\\CatalogIntegrationItem",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegrationItem",
+    "n": 2
+   },
+   {
+    "old": "App\\Jobs\\GenerarImagenesProducto",
+    "new": "App\\Modules\\Catalogo\\Jobs\\GenerarImagenesProducto",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductImageTemplate",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImageTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\EtiquetasProducto",
+    "new": "App\\Modules\\Catalogo\\Support\\EtiquetasProducto",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ImportLog",
+    "new": "App\\Modules\\Catalogo\\Models\\ImportLog",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Catalog;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.products.index'",
+    "new": "view('catalogo::catalog.products.index'",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.products.catalog-pdf'",
+    "new": "view('catalogo::catalog.products.catalog-pdf'",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.products.export-static'",
+    "new": "view('catalogo::catalog.products.export-static'",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.reviews.index'",
+    "new": "view('catalogo::catalog.reviews.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/ProductVariantController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Catalog;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Controllers/ServiceController.php": [
+   {
+    "old": "App\\Models\\ImportLog",
+    "new": "App\\Modules\\Catalogo\\Models\\ImportLog",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Service",
+    "new": "App\\Modules\\Catalogo\\Models\\Service",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Catalog;",
+    "new": "namespace App\\Modules\\Catalogo\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.services.index'",
+    "new": "view('catalogo::catalog.services.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Jobs/GenerarImagenesProducto.php": [
+   {
+    "old": "App\\Models\\ProductImageTemplate",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImageTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Jobs;",
+    "new": "namespace App\\Modules\\Catalogo\\Jobs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Jobs/RunCatalogSync.php": [
+   {
+    "old": "App\\Catalog\\Sync\\CatalogSyncManager",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Sync\\CatalogSyncManager",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogIntegration",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogIntegration",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Enums\\SyncTrigger",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\SyncTrigger",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Jobs;",
+    "new": "namespace App\\Modules\\Catalogo\\Jobs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/CatalogIntegrationItem.php": [
+   {
+    "old": "App\\Catalog\\Enums\\ItemSyncStatus",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Enums\\ItemSyncStatus",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/Product.php": [
+   {
+    "old": "App\\Support\\EtiquetasProducto",
+    "new": "App\\Modules\\Catalogo\\Support\\EtiquetasProducto",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Models/Project.php": [
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Support/FlowEngine/FlowRunner.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 7
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 2
+   }
+  ],
+  "app/Modules/Bots/Support/FlowEngine/PlantillaComercial.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Control/Controllers/AdminImportController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/CopilotController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Service",
+    "new": "App\\Modules\\Catalogo\\Models\\Service",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/VentaExtensionController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/GuiaRemisionItem.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/InvoiceItem.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Lector/EmparejadorCatalogo.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Inventario/Controllers/InventoryController.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Inventario/Models/InventoryMovement.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Inventario/Support/InventoryLedger.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Commands/FusionarModelos.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/StoreBuilderController.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Controllers/TiendaPublicaController.php": [
+   {
+    "old": "App\\Models\\ProductAttribute",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductAttribute",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductVariant",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductVariant",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 5
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 2
+   },
+   {
+    "old": "view('catalog.products.catalog-pdf'",
+    "new": "view('catalogo::catalog.products.catalog-pdf'",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Models/Promotion.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/Review.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/StoreCatalogProfile.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/AgrupadorModelos.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/CatalogQueryService.php": [
+   {
+    "old": "App\\Support\\EtiquetasProducto",
+    "new": "App\\Modules\\Catalogo\\Support\\EtiquetasProducto",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductAttribute",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductAttribute",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/DatosPie.php": [
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/ProductVariantMatrixService.php": [
+   {
+    "old": "App\\Models\\ProductAttributeValue",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductAttributeValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductAttribute",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductAttribute",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductVariant",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductVariant",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StorefrontContextBuilder.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StoreMenuWriteService.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/VariantPresenter.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/CatalogTemplates.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Support/StorefrontNavigation.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/computienda.blade.php": [
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/partials/computienda-home-extras.blade.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/CatalogServiceProvider.php": [
+   {
+    "old": "App\\Catalog\\Providers\\Fake\\FakeCatalogProvider",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Providers\\Fake\\FakeCatalogProvider",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Providers\\Siskote\\SiskoteProvider",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Providers\\Siskote\\SiskoteProvider",
+    "n": 1
+   },
+   {
+    "old": "App\\Catalog\\Registry\\CatalogProviderRegistry",
+    "new": "App\\Modules\\Catalogo\\Conectores\\Registry\\CatalogProviderRegistry",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Providers;",
+    "new": "namespace App\\Modules\\Catalogo;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Support/EtiquetasProducto.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Catalogo\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Support/ProjectContext.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 6
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Service",
+    "new": "App\\Modules\\Catalogo\\Models\\Service",
+    "n": 1
+   }
+  ],
+  "app/Support/Imagen/CompositorProducto.php": [
+   {
+    "old": "App\\Models\\ProductImageTemplate",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImageTemplate",
+    "n": 1
+   }
+  ],
+  "app/Support/Imagen/GeneradorImagenProducto.php": [
+   {
+    "old": "App\\Models\\ProductImageTemplate",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImageTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 1
+   }
+  ],
+  "app/Support/Imagen/ResolutorImagenProducto.php": [
+   {
+    "old": "App\\Models\\ProductImageTemplate",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImageTemplate",
+    "n": 1
+   }
+  ],
+  "routes/web.php": [
+   {
+    "old": "App\\Http\\Controllers\\Catalog\\CatalogIntegrationController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\CatalogIntegrationController",
+    "n": 9
+   },
+   {
+    "old": "App\\Http\\Controllers\\Catalog\\ProductVariantController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\ProductVariantController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\ProductImageTemplateController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\ProductImageTemplateController",
+    "n": 11
+   },
+   {
+    "old": "App\\Http\\Controllers\\Catalog\\CategoryController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\CategoryController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Catalog\\ProductController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\ProductController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Catalog\\ServiceController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\ServiceController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\CatalogListController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\CatalogListController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\ComboController",
+    "new": "App\\Modules\\Catalogo\\Controllers\\ComboController",
+    "n": 1
+   }
+  ],
+  "tests/Feature/AgrupacionModelosTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotAsesoriaTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotBusquedaTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotClientesRealesTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotComercialTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotFase2CierreTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotIaTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotMenuContextoTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotPredeterminadoTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotWebhookTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BuscadorProductosComprobanteTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CadenaVentaGuiaTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 3
+   }
+  ],
+  "tests/Feature/CatalogAuthorizationTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Service",
+    "new": "App\\Modules\\Catalogo\\Models\\Service",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CatalogoPdfTest.php": [
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "view('catalog.products.catalog-pdf'",
+    "new": "view('catalogo::catalog.products.catalog-pdf'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CatalogoProductosValidacionTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CheckoutPublicoPrecioTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ComercialDashboardTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/EditorProductoGuardadoTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/EtiquetasMasivasTest.php": [
+   {
+    "old": "App\\Support\\EtiquetasProducto",
+    "new": "App\\Modules\\Catalogo\\Support\\EtiquetasProducto",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "resource_path('views/catalog/products/index.blade.php')",
+    "new": "app_path('Modules/Catalogo/Views/catalog/products/index.blade.php')",
+    "n": 1
+   }
+  ],
+  "tests/Feature/EtiquetasProductoTest.php": [
+   {
+    "old": "App\\Support\\EtiquetasProducto",
+    "new": "App\\Modules\\Catalogo\\Support\\EtiquetasProducto",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/FiltrosCatalogoTest.php": [
+   {
+    "old": "App\\Models\\ProductAttributeValue",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductAttributeValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductAttribute",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductAttribute",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/FusionModelosTest.php": [
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/InventarioAuditableTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/InventoryLedgerTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/LectorComprobantesTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/MenuCategoriasTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PiesDePaginaVariantesTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PlantillaTiendaTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PosCobroSeguroTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PosFiltrosTest.php": [
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PosSaleQuoteTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PosUsabilidadTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProductImageTemplateTest.php": [
+   {
+    "old": "App\\Jobs\\GenerarImagenesProducto",
+    "new": "App\\Modules\\Catalogo\\Jobs\\GenerarImagenesProducto",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductImageTemplate",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImageTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProductVariantsTest.php": [
+   {
+    "old": "App\\Models\\ProductAttribute",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductAttribute",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProjectIsolationTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Service",
+    "new": "App\\Modules\\Catalogo\\Models\\Service",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PublicacionBloqueadaTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/StorefrontStructureV2Test.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/TenantOwnedModelScopeTest.php": [
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/TiendaPorCotizacionTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/UnidadesDeMedidaTest.php": [
+   {
+    "old": "App\\Support\\UnidadesMedida",
+    "new": "App\\Modules\\Catalogo\\Support\\UnidadesMedida",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "tests/Feature/VistaTiendaProTest.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "database/migrations/2026_08_05_000004_create_catalog_integration_items_table.php": [
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "database/seeders/ComercialSetupSeeder.php": [
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   }
+  ],
+  "database/seeders/DefaultCatalogsSeeder.php": [
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   }
+  ],
+  "database/seeders/EcommercePocSeeder.php": [
+   {
+    "old": "App\\Models\\ProductImage",
+    "new": "App\\Modules\\Catalogo\\Models\\ProductImage",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "database/seeders/FerreteriaDemoSeeder.php": [
+   {
+    "old": "App\\Models\\CatalogValue",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogValue",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CatalogList",
+    "new": "App\\Modules\\Catalogo\\Models\\CatalogList",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   }
+  ],
+  "database/seeders/TecsistSeeder.php": [
+   {
+    "old": "App\\Models\\ComboItem",
+    "new": "App\\Modules\\Catalogo\\Models\\ComboItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Category",
+    "new": "App\\Modules\\Catalogo\\Models\\Category",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Product",
+    "new": "App\\Modules\\Catalogo\\Models\\Product",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Service",
+    "new": "App\\Modules\\Catalogo\\Models\\Service",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Combo",
+    "new": "App\\Modules\\Catalogo\\Models\\Combo",
+    "n": 1
+   }
+  ],
+  "bootstrap/providers.php": [
+   {
+    "old": "App\\Providers\\CatalogServiceProvider",
+    "new": "App\\Modules\\Catalogo\\CatalogServiceProvider",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Views/catalog/products/index.blade.php": [
+   {
+    "old": "App\\Support\\EtiquetasProducto",
+    "new": "App\\Modules\\Catalogo\\Support\\EtiquetasProducto",
+    "n": 9
+   },
+   {
+    "old": "App\\Support\\UnidadesMedida",
+    "new": "App\\Modules\\Catalogo\\Support\\UnidadesMedida",
+    "n": 2
+   },
+   {
+    "old": "@include('catalog.products.partials.variants'",
+    "new": "@include('catalogo::catalog.products.partials.variants'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/ProductAttribute.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/ProductAttributeValue.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/ProductImage.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/ProductImageTemplate.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/ProductVariant.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/Category.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/Service.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/CatalogList.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/CatalogValue.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/CatalogIntegration.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/CatalogSyncRun.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/ImportLog.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/Combo.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Models/ComboItem.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Catalogo\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Support/UnidadesMedida.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Catalogo\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Support/SquareImage.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Catalogo\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/CategoryPage.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/ConfigField.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/ConfigSchema.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/ConnectionTestResult.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/EntityPage.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/NormalizedCategory.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/NormalizedProduct.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/NormalizedService.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/ProductPage.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/ProviderCapabilities.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/ServicePage.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/DTOs/SyncCursor.php": [
+   {
+    "old": "namespace App\\Catalog\\DTOs;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\DTOs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Enums/FieldOwner.php": [
+   {
+    "old": "namespace App\\Catalog\\Enums;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Enums;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Enums/ItemEntityType.php": [
+   {
+    "old": "namespace App\\Catalog\\Enums;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Enums;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Enums/ItemSyncStatus.php": [
+   {
+    "old": "namespace App\\Catalog\\Enums;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Enums;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Enums/SyncMode.php": [
+   {
+    "old": "namespace App\\Catalog\\Enums;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Enums;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Enums/SyncStatus.php": [
+   {
+    "old": "namespace App\\Catalog\\Enums;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Enums;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Enums/SyncTrigger.php": [
+   {
+    "old": "namespace App\\Catalog\\Enums;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Enums;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Exceptions/CatalogProviderException.php": [
+   {
+    "old": "namespace App\\Catalog\\Exceptions;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Exceptions;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Exceptions/ConnectionFailedException.php": [
+   {
+    "old": "namespace App\\Catalog\\Exceptions;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Exceptions;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Conectores/Exceptions/ProviderNotFoundException.php": [
+   {
+    "old": "namespace App\\Catalog\\Exceptions;",
+    "new": "namespace App\\Modules\\Catalogo\\Conectores\\Exceptions;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Catalogo/Commands/RegenerarImagenes.php": [
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Catalogo\\Commands;",
+    "n": 1
+   }
+  ]
+ },
+ "inserts": {
+  "app/Modules/Catalogo/Controllers/CatalogIntegrationController.php": [
+   "use App\\Modules\\Catalogo\\Conectores\\Contracts\\ProvidesProducts;",
+   "use App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor;"
+  ],
+  "app/Modules/Catalogo/Controllers/ProductController.php": [
+   "use App\\Modules\\Catalogo\\Jobs\\GenerarImagenesProducto;",
+   "use App\\Modules\\Catalogo\\Models\\CatalogIntegrationItem;",
+   "use App\\Modules\\Catalogo\\Models\\Category;",
+   "use App\\Modules\\Catalogo\\Models\\ProductImageTemplate;",
+   "use App\\Modules\\Catalogo\\Support\\EtiquetasProducto;"
+  ],
+  "app/Modules/Catalogo/Controllers/CatalogListController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Catalogo/Controllers/ComboController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Catalogo/Controllers/ProductImageTemplateController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Catalogo\\Models\\Category;"
+  ],
+  "app/Modules/Catalogo/Models/Product.php": [
+   "use App\\Models\\Project;",
+   "use App\\Modules\\Catalogo\\Support\\EtiquetasProducto;"
+  ],
+  "app/Modules/Catalogo/Models/ProductAttribute.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Models/ProductAttributeValue.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Models/ProductImageTemplate.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Models/ProductVariant.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Models/Category.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Models/Service.php": [
+   "use App\\Models\\Appointment;",
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Models/CatalogList.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Models/CatalogIntegration.php": [
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;",
+   "use App\\Modules\\Catalogo\\Conectores\\Registry\\CatalogProviderRegistry;"
+  ],
+  "app/Modules/Catalogo/Models/CatalogSyncRun.php": [
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Catalogo/Models/ImportLog.php": [
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Catalogo/Models/Combo.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Catalogo/Conectores/Providers/Fake/FakeCatalogProvider.php": [
+   "use App\\Modules\\Catalogo\\CatalogServiceProvider;",
+   "use App\\Modules\\Catalogo\\Conectores\\Sync\\CatalogSyncManager;"
+  ],
+  "app/Modules/Catalogo/Conectores/Registry/CatalogProviderRegistry.php": [
+   "use App\\Modules\\Catalogo\\CatalogServiceProvider;"
+  ],
+  "app/Modules/Catalogo/Conectores/Sync/CatalogSyncManager.php": [
+   "use App\\Modules\\Catalogo\\Conectores\\DTOs\\EntityPage;",
+   "use App\\Modules\\Catalogo\\Conectores\\DTOs\\NormalizedService;",
+   "use App\\Modules\\Catalogo\\Conectores\\DTOs\\SyncCursor;"
+  ],
+  "app/Modules/Catalogo/Commands/SyncCatalogCommand.php": [
+   "use App\\Modules\\Catalogo\\Conectores\\Sync\\CatalogSyncManager;"
+  ],
+  "app/Models/Appointment.php": [
+   "use App\\Modules\\Catalogo\\Models\\Service;"
+  ],
+  "app/Models/OrderItem.php": [
+   "use App\\Modules\\Catalogo\\Models\\Product;",
+   "use App\\Modules\\Catalogo\\Models\\ProductVariant;",
+   "use App\\Modules\\Catalogo\\Models\\Service;"
+  ],
+  "app/Models/Project.php": [
+   "use App\\Modules\\Catalogo\\Models\\CatalogIntegration;",
+   "use App\\Modules\\Catalogo\\Models\\CatalogList;",
+   "use App\\Modules\\Catalogo\\Models\\Category;",
+   "use App\\Modules\\Catalogo\\Models\\Combo;",
+   "use App\\Modules\\Catalogo\\Models\\Product;",
+   "use App\\Modules\\Catalogo\\Models\\ProductAttribute;",
+   "use App\\Modules\\Catalogo\\Models\\ProductAttributeValue;",
+   "use App\\Modules\\Catalogo\\Models\\ProductVariant;",
+   "use App\\Modules\\Catalogo\\Models\\Service;"
+  ],
+  "app/Models/ResellerPrice.php": [
+   "use App\\Modules\\Catalogo\\Models\\Product;"
+  ]
+ },
+ "decisiones": [
+  [
+   "no-vista",
+   "app/Http/Controllers/Catalog/ProductController.php",
+   559,
+   "catalog.eliminar",
+   "] === 'delete') {             "
+  ],
+  [
+   "ruta ",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   214,
+   "catalogs.index",
+   "alogs.index'):'#',       'r'=>"
+  ],
+  [
+   "ruta ",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   248,
+   "catalogs.index",
+   "ttings.qr*'),                 "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   359,
+   "catalog.resenas",
+   "x',    'm'=>'catalog',  'perm'"
+  ],
+  [
+   "no-vista",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   363,
+   "catalog.ver",
+   "   @php $catPerm = $c['perm'] "
+  ],
+  [
+   "ruta ",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   557,
+   "catalogs.index",
+   "atalogo web',   url:'{{ route("
+  ],
+  [
+   "ruta ",
+   "app/Modules/Personas/Views/hr/employees.blade.php",
+   7,
+   "catalogs.index",
+   ">id;     $catalogsUrl = route("
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   160,
+   "catalog.no_products",
+   "tálogo ──             ['code' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   161,
+   "catalog.start",
+   "o tiene productos.', 'target' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   164,
+   "catalog.products_without_price",
+   " informa.             ['code' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   167,
+   "catalog.fix-price",
+   "rse directamente).', 'target' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   171,
+   "catalog.products_without_image",
+   "price']],             ['code' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   172,
+   "catalog.fix-image",
+   "ductos sin imagen.', 'target' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   175,
+   "catalog.sku_duplicates",
+   "image']],             ['code' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   176,
+   "catalog.fix-sku",
+   "en SKU duplicados.', 'target' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   179,
+   "catalog.empty_categories",
+   "cates']],             ['code' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php",
+   180,
+   "catalog.categories",
+   "ías sin productos.', 'target' "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Views/settings/builder/script.blade.php",
+   452,
+   "catalog.fix-price",
+   "];             const fixMap = "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Views/settings/builder/script.blade.php",
+   452,
+   "catalog.fix-image",
+   "catalog.fix-price': 'no_price'"
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Views/settings/builder/script.blade.php",
+   452,
+   "catalog.fix-sku",
+   "catalog.fix-image': 'no_image'"
+  ],
+  [
+   "no-vista",
+   "app/Modules/Tienda/Views/settings/builder/script.blade.php",
+   452,
+   "catalog.start",
+   ", 'catalog.fix-sku': 'sku_dup'"
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   153,
+   "catalog.ver",
+   "    // ── Catálogo ──         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   154,
+   "catalog.crear",
+   "   => 'catalogo.ver',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   155,
+   "catalog.editar",
+   " 'catalogo.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   156,
+   "catalog.resenas",
+   " 'catalogo.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   157,
+   "catalog.importar",
+   " 'catalogo.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   158,
+   "catalog.eliminar",
+   "atalogo.administrar',         "
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   303,
+   "catalogs.index",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   304,
+   "catalogs.store",
+   "ListController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   305,
+   "catalogs.update",
+   "istController::class, 'update'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   306,
+   "catalogs.destroy",
+   "stController::class, 'destroy'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   307,
+   "catalogs.values",
+   "istController::class, 'values'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   308,
+   "catalogs.values.store",
+   "CatalogListController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   309,
+   "catalogs.values.update",
+   "CatalogListController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   310,
+   "catalogs.values.destroy",
+   "CatalogListController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   311,
+   "catalogs.values.image",
+   "CatalogListController::class, "
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   395,
+   "combos.index",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   396,
+   "combos.store",
+   "omboController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   397,
+   "combos.update",
+   "mboController::class, 'update'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   398,
+   "combos.destroy",
+   "boController::class, 'destroy'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   399,
+   "combos.toggle",
+   "     [ComboController::class, "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   47,
+   "catalog.ver",
+   "yments.rechazar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   47,
+   "catalog.importar",
+   "     'pos.usar', 'catalog.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   125,
+   "catalog.ver",
+   "yments.rechazar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   125,
+   "catalog.importar",
+   "     'pos.usar', 'catalog.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CanonicalAccessTest.php",
+   117,
+   "catalog.ver",
+   "og.ver', 'web');         $u = "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CanonicalAccessTest.php",
+   119,
+   "catalog.ver",
+   "on(['catalog.ver']);          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   44,
+   "catalog.crear",
+   "       foreach ([             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   44,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   45,
+   "catalog.importar",
+   "'catalog.editar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   45,
+   "catalog.resenas",
+   ".eliminar', 'catalog.importar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   93,
+   "catalog.ver",
+   "nRol('catalogo_lectura_test', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   99,
+   "catalog.crear",
+   "_gerente_test', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   99,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   100,
+   "catalog.importar",
+   "'catalog.editar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   100,
+   "catalog.resenas",
+   ".eliminar', 'catalog.importar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   206,
+   "catalog.editar",
+   "onRol('catalogo_editor_test', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CatalogAuthorizationTest.php",
+   219,
+   "catalog.editar",
+   "nRol('catalogo_editor2_test', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   35,
+   "catalog.ver",
+   "   'orders.ver', 'clients.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/FinanzasModuloTest.php",
+   35,
+   "catalog.ver",
+   "ar', 'reports.ver', 'caja.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/FinanzasModuloTest.php",
+   50,
+   "catalog.ver",
+   "ar', 'reports.ver', 'caja.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/FusionPortalesTest.php",
+   34,
+   "catalog.ver",
+   "gs.negocio', 'settings.diseno'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/FusionPortalesTest.php",
+   41,
+   "catalog.ver",
+   "gs.negocio', 'settings.diseno'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/InventarioAuditableTest.php",
+   37,
+   "catalog.editar",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/InventarioAuditableTest.php",
+   122,
+   "catalog.ver",
+   "dulo('catalog');         $u = "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/InventarioAuditableTest.php",
+   146,
+   "catalog.editar",
+   "dulo('catalog');         $u = "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   29,
+   "catalog.editar",
+   "ations.view-history',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   29,
+   "catalog.eliminar",
+   "talog.crear', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   29,
+   "catalog.importar",
+   "og.editar', 'catalog.eliminar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   30,
+   "catalog.ver",
+   ", 'catalog.importar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   109,
+   "catalog.editar",
+   "go.administrar'],             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   109,
+   "catalog.eliminar",
+   "catalog.ver', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   114,
+   "catalog.editar",
+   "alogo.trabajar'],             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   149,
+   "catalog.eliminar",
+   "medios de cobro',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   180,
+   "catalog.ver",
+   "attendance.fichar', 'caja.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   186,
+   "catalog.ver",
+   ", 'attendance.ver', 'caja.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   207,
+   "catalog.editar",
+   "'],             'almacen'  => "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   207,
+   "catalog.eliminar",
+   "talog.crear', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   207,
+   "catalog.importar",
+   "og.editar', 'catalog.eliminar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   243,
+   "catalog.crear",
+   " void     {         $legacy = "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   243,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   243,
+   "catalog.eliminar",
+   "talog.crear', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   269,
+   "catalog.editar",
+   "id     {         $traducido = "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   269,
+   "catalog.eliminar",
+   "catalog.ver', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ModulesAuthorizationTest.php",
+   34,
+   "catalog.eliminar",
+   "', 'invoices.editar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ModulesAuthorizationTest.php",
+   108,
+   "catalog.editar",
+   "ear combo'        => ['POST', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ModulesAuthorizationTest.php",
+   109,
+   "catalog.editar",
+   "ear promoción'    => ['POST', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ModulesAuthorizationTest.php",
+   110,
+   "catalog.editar",
+   "ear cupón'        => ['POST', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   41,
+   "catalog.ver",
+   "veedores.editar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   61,
+   "catalog.ver",
+   "te_objetivo', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   100,
+   "catalog.eliminar",
+   "             'permissions' => "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   104,
+   "catalog.ver",
+   "this->assertSame(             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PanelAuthorizationTest.php",
+   174,
+   "catalog.ver",
+   "ictima->id, ['permissions' => "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   39,
+   "catalog.crear",
+   "ivate const TODOS = [         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   39,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   39,
+   "catalog.eliminar",
+   "talog.crear', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   39,
+   "catalog.importar",
+   "og.editar', 'catalog.eliminar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PublicacionBloqueadaTest.php",
+   82,
+   "catalog.no_products",
+   "p = $this->tienda();          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PublicacionBloqueadaTest.php",
+   90,
+   "catalog.products_without_price",
+   "' => 'direct']), 0);          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PublicacionBloqueadaTest.php",
+   116,
+   "catalog.products_without_price",
+   " 'quote_only']), 0);          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/UnidadesDeMedidaTest.php",
+   37,
+   "catalog.crear",
+   "nt::setUp();          foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/UnidadesDeMedidaTest.php",
+   37,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/UnidadesDeMedidaTest.php",
+   49,
+   "catalog.crear",
+   "dades_qa', 'web')             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/UnidadesDeMedidaTest.php",
+   49,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   23,
+   "catalog.crear",
+   "servicios, categorías         "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   23,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   23,
+   "catalog.eliminar",
+   "talog.crear', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   23,
+   "catalog.importar",
+   "og.editar', 'catalog.eliminar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   24,
+   "catalog.resenas",
+   ", 'catalog.importar',         "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   81,
+   "catalog.crear",
+   "   'gerente' => [             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   81,
+   "catalog.editar",
+   "'catalog.ver', 'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   81,
+   "catalog.eliminar",
+   "talog.crear', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   81,
+   "catalog.importar",
+   "og.editar', 'catalog.eliminar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   104,
+   "catalog.ver",
+   "  'vendedor' => [             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   123,
+   "catalog.ver",
+   "'revendedor' => [             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   137,
+   "catalog.crear",
+   "   'almacen' => [             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   137,
+   "catalog.editar",
+   "catalog.ver',  'catalog.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   137,
+   "catalog.eliminar",
+   "talog.crear', 'catalog.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   137,
+   "catalog.importar",
+   "og.editar', 'catalog.eliminar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   174,
+   "catalog.ver",
+   "olo_lectura' => [             "
+  ],
+  [
+   "ruta ",
+   "resources/views/catalog/products/index.blade.php",
+   1767,
+   "catalogs.index",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/catalog/products/index.blade.php",
+   1781,
+   "catalogs.index",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/catalog/products/index.blade.php",
+   2711,
+   "catalogs.index",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/catalog/products/index.blade.php",
+   2731,
+   "catalogs.index",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/catalog/products/index.blade.php",
+   2760,
+   "catalogs.index",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "no-vista",
+   "resources/views/catalogs/index.blade.php",
+   219,
+   "catalogs.length",
+   "00 mt-0.5\">             <span "
+  ],
+  [
+   "no-vista",
+   "resources/views/catalogs/index.blade.php",
+   286,
+   "catalogs.length",
+   "ont-semibold text-indigo-700\" "
+  ],
+  [
+   "ruta ",
+   "resources/views/layouts/app.blade.php",
+   1109,
+   "catalogs.index",
+   "gs.qr*'),                     "
+  ],
+  [
+   "no-vista",
+   "resources/views/layouts/app.blade.php",
+   1154,
+   "catalog.ver",
+   "t->owner_id===auth()->id() || "
+  ],
+  [
+   "ruta ",
+   "resources/views/layouts/app.blade.php",
+   1178,
+   "combos.index",
+   "       <a href=\"{{ $pid?route("
+  ]
+ ],
+ "avisos": [
+  "tests/Feature/EtiquetasMasivasTest.php: ruta de disco a vistas de catalogo"
+ ]
+}

@@ -5,16 +5,16 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Catalog\ProductController;
-use App\Http\Controllers\Catalog\ProductVariantController;
-use App\Http\Controllers\Catalog\ServiceController;
-use App\Http\Controllers\Catalog\CategoryController;
+use App\Modules\Catalogo\Controllers\ProductController;
+use App\Modules\Catalogo\Controllers\ProductVariantController;
+use App\Modules\Catalogo\Controllers\ServiceController;
+use App\Modules\Catalogo\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\CatalogListController;
+use App\Modules\Catalogo\Controllers\CatalogListController;
 use App\Modules\Personas\Controllers\RolePermissionController;
 use App\Modules\Personas\Controllers\HRController;
 use App\Http\Controllers\SedeController;
@@ -31,7 +31,7 @@ use App\Modules\Finanzas\Controllers\GuiaRemisionController;
 use App\Modules\Crm\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
 use App\Modules\Finanzas\Controllers\CertificadoController;
-use App\Http\Controllers\ComboController;
+use App\Modules\Catalogo\Controllers\ComboController;
 use App\Modules\Tienda\Controllers\PromotionController;
 use App\Modules\Bots\Controllers\WaBotController;
 use App\Http\Controllers\MesaController;
@@ -166,15 +166,15 @@ Route::middleware(['auth'])->group(function () {
 
         // Integraciones de catálogo — conectores externos (SISKOTE y futuros ERP)
         Route::prefix('catalog-integrations')->middleware(['module:catalog', 'can:catalog-integrations.view'])->group(function () {
-            Route::get('/',                     [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'index'])->name('catalog-integrations.index');
-            Route::get('/schema/{provider}',    [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'schema'])->name('catalog-integrations.schema');
-            Route::post('/',                    [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'store'])->name('catalog-integrations.store')->middleware('can:catalog-integrations.manage');
-            Route::put('/{integration}',        [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'update'])->whereNumber('integration')->name('catalog-integrations.update')->middleware('can:catalog-integrations.manage');
-            Route::delete('/{integration}',     [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'destroy'])->whereNumber('integration')->name('catalog-integrations.destroy')->middleware('can:catalog-integrations.manage');
-            Route::post('/{integration}/test',  [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'testConnection'])->whereNumber('integration')->name('catalog-integrations.test')->middleware('can:catalog-integrations.manage');
-            Route::post('/{integration}/sync',  [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'sync'])->whereNumber('integration')->name('catalog-integrations.sync')->middleware('can:catalog-integrations.sync');
-            Route::get('/{integration}/history', [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'history'])->whereNumber('integration')->name('catalog-integrations.history')->middleware('can:catalog-integrations.view-history');
-            Route::get('/{integration}/preview', [\App\Http\Controllers\Catalog\CatalogIntegrationController::class, 'preview'])->whereNumber('integration')->name('catalog-integrations.preview')->middleware('can:catalog-integrations.manage');
+            Route::get('/',                     [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'index'])->name('catalog-integrations.index');
+            Route::get('/schema/{provider}',    [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'schema'])->name('catalog-integrations.schema');
+            Route::post('/',                    [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'store'])->name('catalog-integrations.store')->middleware('can:catalog-integrations.manage');
+            Route::put('/{integration}',        [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'update'])->whereNumber('integration')->name('catalog-integrations.update')->middleware('can:catalog-integrations.manage');
+            Route::delete('/{integration}',     [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'destroy'])->whereNumber('integration')->name('catalog-integrations.destroy')->middleware('can:catalog-integrations.manage');
+            Route::post('/{integration}/test',  [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'testConnection'])->whereNumber('integration')->name('catalog-integrations.test')->middleware('can:catalog-integrations.manage');
+            Route::post('/{integration}/sync',  [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'sync'])->whereNumber('integration')->name('catalog-integrations.sync')->middleware('can:catalog-integrations.sync');
+            Route::get('/{integration}/history', [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'history'])->whereNumber('integration')->name('catalog-integrations.history')->middleware('can:catalog-integrations.view-history');
+            Route::get('/{integration}/preview', [\App\Modules\Catalogo\Controllers\CatalogIntegrationController::class, 'preview'])->whereNumber('integration')->name('catalog-integrations.preview')->middleware('can:catalog-integrations.manage');
         });
 
         // Servicios — /bixoadmin/services
@@ -431,19 +431,19 @@ Route::middleware(['auth'])->group(function () {
         // Plantilla automatica de imagenes de producto (constructor -> Catalogo).
         // Lectura con catalog.ver; escribir y regenerar exige settings.diseno,
         // que es el permiso con el que ya se toca el resto del constructor.
-        Route::get('/settings/builder/image-template', [\App\Http\Controllers\ProductImageTemplateController::class, 'show'])->name('builder.image-template.show')->middleware('can:catalog.ver');
-        Route::get('/settings/builder/image-template/status', [\App\Http\Controllers\ProductImageTemplateController::class, 'status'])->name('builder.image-template.status')->middleware('can:catalog.ver');
-        Route::post('/settings/builder/image-template', [\App\Http\Controllers\ProductImageTemplateController::class, 'save'])->name('builder.image-template.save')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/image-template/toggle', [\App\Http\Controllers\ProductImageTemplateController::class, 'toggle'])->name('builder.image-template.toggle')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/image-template/reset', [\App\Http\Controllers\ProductImageTemplateController::class, 'reset'])->name('builder.image-template.reset')->middleware('can:settings.diseno');
+        Route::get('/settings/builder/image-template', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'show'])->name('builder.image-template.show')->middleware('can:catalog.ver');
+        Route::get('/settings/builder/image-template/status', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'status'])->name('builder.image-template.status')->middleware('can:catalog.ver');
+        Route::post('/settings/builder/image-template', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'save'])->name('builder.image-template.save')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/toggle', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'toggle'])->name('builder.image-template.toggle')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/reset', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'reset'])->name('builder.image-template.reset')->middleware('can:settings.diseno');
         // Descargar la marca de agua ya aplanada con su transparencia, para
         // usarla fuera del catalogo (fichas, cotizaciones, redes).
-        Route::get('/settings/builder/image-template/watermark.png', [\App\Http\Controllers\ProductImageTemplateController::class, 'descargarMarca'])->name('builder.image-template.watermark')->middleware('can:catalog.ver');
-        Route::post('/settings/builder/image-template/upload', [\App\Http\Controllers\ProductImageTemplateController::class, 'upload'])->name('builder.image-template.upload')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/image-template/preview', [\App\Http\Controllers\ProductImageTemplateController::class, 'preview'])->name('builder.image-template.preview')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/image-template/apply', [\App\Http\Controllers\ProductImageTemplateController::class, 'apply'])->name('builder.image-template.apply')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/image-template/save-as', [\App\Http\Controllers\ProductImageTemplateController::class, 'saveAs'])->name('builder.image-template.save-as')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/image-template/activate', [\App\Http\Controllers\ProductImageTemplateController::class, 'activate'])->name('builder.image-template.activate')->middleware('can:settings.diseno');
+        Route::get('/settings/builder/image-template/watermark.png', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'descargarMarca'])->name('builder.image-template.watermark')->middleware('can:catalog.ver');
+        Route::post('/settings/builder/image-template/upload', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'upload'])->name('builder.image-template.upload')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/preview', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'preview'])->name('builder.image-template.preview')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/apply', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'apply'])->name('builder.image-template.apply')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/save-as', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'saveAs'])->name('builder.image-template.save-as')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/image-template/activate', [\App\Modules\Catalogo\Controllers\ProductImageTemplateController::class, 'activate'])->name('builder.image-template.activate')->middleware('can:settings.diseno');
         // Diseños guardados ("Mis plantillas")
         // Gestión de plantillas de diseño = ESKALA_ONLY por defecto (matriz de
         // capacidades): capacidad 'plantillas' — solo superadmin, o tenant con

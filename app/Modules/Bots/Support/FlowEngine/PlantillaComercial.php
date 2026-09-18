@@ -248,7 +248,7 @@ class PlantillaComercial
                 ->contains(fn ($k) => filled($s["payment_bank_{$k}"] ?? null))
             || ! empty($manual) || ! empty($aceptados);
 
-        $hayCatalogo = \App\Models\Product::where('project_id', $project->id)
+        $hayCatalogo = \App\Modules\Catalogo\Models\Product::where('project_id', $project->id)
             ->where('is_available', true)->where('price', '>', 0)->exists();
 
         return [

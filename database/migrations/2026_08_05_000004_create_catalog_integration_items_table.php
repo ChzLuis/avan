@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('external_parent_id', 120)->nullable(); // ej. categoría padre en el ERP
             $table->string('external_sku', 120)->nullable();
 
-            $table->string('local_type', 60)->nullable(); // App\Models\Product, App\Models\Category...
+            $table->string('local_type', 60)->nullable(); // App\Modules\Catalogo\Models\Product, App\Modules\Catalogo\Models\Category...
             $table->unsignedBigInteger('local_id')->nullable();
 
             $table->timestamp('external_updated_at')->nullable();

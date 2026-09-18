@@ -2,7 +2,7 @@
 
 namespace App\Modules\Tienda\Commands;
 
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Modules\Tienda\Storefront\AgrupadorModelos;
 use Illuminate\Console\Command;

@@ -121,7 +121,7 @@ class StorefrontNavigation
 
         $cat = is_object($categoria)
             ? $categoria
-            : \App\Models\Category::where('project_id', $project->id)->find($categoria);
+            : \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)->find($categoria);
 
         // Sin prefijo `c/`: perfiles y categorías comparten segmento y el
         // controlador resuelve cuál es. Las URLs con `c/` siguen sirviéndose

@@ -377,6 +377,32 @@ Linea base del dominio (48 clases, sin los 2 lentos): 10 rojos / 333 verdes
 antes → los mismos 10 despues (9 tests mas leian vistas por ruta de disco y se apuntaron al modulo). Guardian `TiendaModuloTest` (6).
 Quedan **Catalogo (7, con ImportLog) y Ventas (8)**.
 
+### Modulo 7/8 — `Catalogo/` MOVIDO (2026-09-17, misma sesion)
+
+73 movimientos, 370 reemplazos en 158 archivos, 76 rutas a `Modules\Catalogo`,
+0 viejas. Van: 8 controladores (`Catalog/*`, CatalogList, Combo,
+ProductImageTemplate), 16 modelos (Product* , Category, Service, CatalogList/
+Value, CatalogIntegration*, CatalogSyncRun, ImportLog, Combo*), 3 soportes
+(EtiquetasProducto, UnidadesMedida, SquareImage), **todo `app/Catalog` →
+`Conectores/`** (contratos, DTOs, SISKOTE, sync; mismo nombre de clase),
+`CatalogServiceProvider` (ahora en el modulo; `bootstrap/providers.php`
+actualizado), 4 comandos, 2 jobs y las vistas `catalog/ catalogs/ combos/` +
+`components/etiquetas-producto`. Se quedan en Core: `Imagen/`, `ImageVariants`,
+`BusquedaGlobal`; `ResellerPrice` y WooSync (sincroniza pedidos) son de Ventas.
+
+Trampa propia: `catalog.*` es sobre todo nombre de **permiso** (`catalog.ver`,
+`catalog.editar`, 45+20 apariciones) y de claves de checklist; el generador
+(`plan_catalogo.py`) solo renombra literales sueltos que coinciden con una
+vista real (117 descartados, revisados).
+
+**Bug previo encontrado y corregido:** `/bixoadmin/combos` daba 500 (mismo
+patron que Promociones: `@extends('layouts.app')` sobre un layout de
+componente). Queda uno igual fuera de este modulo: `projects/create.blade.php`
+(Core; `/projects` esta cerrado a clientes, revisar antes de tocar).
+
+Linea base del dominio (54 clases): 8 rojos / 632 verdes antes → los mismos 8 despues (666 verdes con los guardianes).
+Guardian `CatalogoModuloTest` (5). Queda **Ventas (8)** y el despliegue.
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia

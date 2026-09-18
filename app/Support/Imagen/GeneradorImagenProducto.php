@@ -2,8 +2,8 @@
 
 namespace App\Support\Imagen;
 
-use App\Models\ProductImage;
-use App\Models\ProductImageTemplate;
+use App\Modules\Catalogo\Models\ProductImage;
+use App\Modules\Catalogo\Models\ProductImageTemplate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 

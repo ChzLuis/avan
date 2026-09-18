@@ -2,10 +2,10 @@
 
 namespace App\Modules\Tienda\Storefront;
 
-use App\Models\Product;
-use App\Models\ProductAttribute;
-use App\Models\ProductAttributeValue;
-use App\Models\ProductVariant;
+use App\Modules\Catalogo\Models\Product;
+use App\Modules\Catalogo\Models\ProductAttribute;
+use App\Modules\Catalogo\Models\ProductAttributeValue;
+use App\Modules\Catalogo\Models\ProductVariant;
 use App\Models\Project;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;

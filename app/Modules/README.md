@@ -37,7 +37,7 @@ orden del plan y solo con el árbol de git limpio y la suite explicada:
 | 4 | Finanzas | movido 2026-09-17 | `FinanzasModuloTest` |
 | 5 | Crm + Bots | movidos 2026-09-17 | `CrmModuloTest`, `BotsModuloTest` |
 | 6 | Tienda | movido 2026-09-17 | `TiendaModuloTest` |
-| 7 | Catalogo | pendiente (incluye `ImportLog`) | |
+| 7 | Catalogo | movido 2026-09-17 (incluye `ImportLog` y los conectores) | `CatalogoModuloTest` |
 | 8 | Ventas | pendiente | |
 
 Lo movido **no está desplegado**: ARIN tiene el classmap optimizado, así que

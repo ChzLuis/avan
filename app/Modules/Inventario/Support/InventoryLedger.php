@@ -3,7 +3,7 @@
 namespace App\Modules\Inventario\Support;
 
 use App\Modules\Inventario\Models\InventoryMovement;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 /**

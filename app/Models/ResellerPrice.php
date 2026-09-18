@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Modules\Catalogo\Models\Product;
+
 use Illuminate\Database\Eloquent\Model;
 
 /**

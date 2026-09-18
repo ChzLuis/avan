@@ -262,7 +262,7 @@ class OrderController extends Controller
             ->get();
 
         foreach ($salidas as $mov) {
-            $producto = \App\Models\Product::find($mov->product_id);
+            $producto = \App\Modules\Catalogo\Models\Product::find($mov->product_id);
             if (!$producto) {
                 continue;
             }

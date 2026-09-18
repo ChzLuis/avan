@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\CatalogList;
-use App\Models\CatalogValue;
-use App\Models\Category;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\CatalogList;
+use App\Modules\Catalogo\Models\CatalogValue;
+use App\Modules\Catalogo\Models\Category;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

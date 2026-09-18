@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Modules\Catalogo\Models\Category;
 use App\Models\Employee;
 use App\Models\Module;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Service;
+use App\Modules\Catalogo\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;

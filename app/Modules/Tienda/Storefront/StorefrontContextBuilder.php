@@ -3,7 +3,7 @@
 namespace App\Modules\Tienda\Storefront;
 
 
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Modules\Tienda\Models\ProjectTemplate;
 use App\Modules\Tienda\Models\Review;

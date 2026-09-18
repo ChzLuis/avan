@@ -116,7 +116,7 @@ final class DatosPie
     public static function marcas(Project $project, int $max = 10): Collection
     {
         try {
-            return \App\Models\CatalogValue::query()
+            return \App\Modules\Catalogo\Models\CatalogValue::query()
                 ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
                 ->where('catalog_lists.project_id', $project->id)
                 ->where('catalog_lists.type', 'brand')

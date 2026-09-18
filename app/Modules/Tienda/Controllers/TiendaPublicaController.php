@@ -9,7 +9,7 @@ use App\Modules\Tienda\Storefront\StorefrontContextBuilder;
 use App\Models\AbandonedCart;
 use App\Models\Project;
 use App\Modules\Tienda\Models\Coupon;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Modules\Tienda\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -194,7 +194,7 @@ class TiendaPublicaController extends Controller
         abort_unless($request->hasValidSignature(), 403);
 
         $project = $this->project($slug);
-        $cat = \App\Models\Category::where('project_id', $project->id)
+        $cat = \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)
             ->where('slug', $categoria)->firstOrFail();
 
         $dir = storage_path('app/public/catalogos');
@@ -211,7 +211,7 @@ class TiendaPublicaController extends Controller
             abort_if($products->isEmpty(), 404);
 
             $groups = collect([$cat->name => $products]);
-            $html = view('catalog.products.catalog-pdf', [
+            $html = view('catalogo::catalog.products.catalog-pdf', [
                 'project' => $project, 'groups' => $groups, 'prices' => 'retail',
                 'profile' => null, 'category' => $cat,
                 'settings' => $project->settings()->pluck('value', 'key'),
@@ -285,7 +285,7 @@ class TiendaPublicaController extends Controller
     public function marca(Request $request, string $slug, string $marca)
     {
         $project = $this->project($slug);
-        $valor = \App\Models\CatalogValue::query()
+        $valor = \App\Modules\Catalogo\Models\CatalogValue::query()
             ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
             ->where('catalog_lists.project_id', $project->id)
             ->where('catalog_lists.type', 'brand')
@@ -321,7 +321,7 @@ class TiendaPublicaController extends Controller
             }
         });
 
-        $marcas = $q === '' ? collect() : \App\Models\CatalogValue::query()
+        $marcas = $q === '' ? collect() : \App\Modules\Catalogo\Models\CatalogValue::query()
             ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
             ->where('catalog_lists.project_id', $project->id)
             ->where('catalog_lists.type', 'brand')
@@ -387,7 +387,7 @@ class TiendaPublicaController extends Controller
         }
         if ($bid = $request->integer('brand_id')) {
             $query->where('brand_catalog_id', $bid);
-            $alcance = \App\Models\CatalogValue::find($bid)?->label ?? $alcance;
+            $alcance = \App\Modules\Catalogo\Models\CatalogValue::find($bid)?->label ?? $alcance;
         }
         if ($request->boolean('promos')) {
             $ids = \App\Modules\Tienda\Models\Promotion::where('project_id', $project->id)->vigentes()
@@ -406,7 +406,7 @@ class TiendaPublicaController extends Controller
         })->sortKeys()->mapWithKeys(fn ($items, $key) => [ltrim($key, '~') => $items]);
         $marcasCatalogo = $products->map(fn ($p) => $p->marca?->label)->filter()->unique()->sort()->values();
 
-        return view('catalog.products.catalog-pdf', [
+        return view('catalogo::catalog.products.catalog-pdf', [
             'project' => $project, 'groups' => $groups,
             'prices' => $ocultaPrecios ? 'none' : 'retail',
             'profile' => null, 'category' => $category, 'settings' => $settings,
@@ -422,7 +422,7 @@ class TiendaPublicaController extends Controller
     {
         $project = $this->project($slug);
 
-        $cat = \App\Models\Category::where('project_id', $project->id)
+        $cat = \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)
             ->where('slug', $categoria)
             ->first();
 
@@ -461,7 +461,7 @@ class TiendaPublicaController extends Controller
             && array_keys($request->query()) === ['category']
             && ctype_digit((string) $request->query('category'))
         ) {
-            $cat = \App\Models\Category::where('project_id', $project->id)
+            $cat = \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)
                 ->where('id', (int) $request->query('category'))
                 ->first();
 
@@ -483,7 +483,7 @@ class TiendaPublicaController extends Controller
                 && $project->catalogProfiles()->where('slug', $profile)->where('is_enabled', true)->exists();
 
             if (! $esPerfil) {
-                $cat = \App\Models\Category::where('project_id', $project->id)
+                $cat = \App\Modules\Catalogo\Models\Category::where('project_id', $project->id)
                     ->where('slug', $profile)->first();
 
                 if ($cat) {
@@ -564,7 +564,7 @@ class TiendaPublicaController extends Controller
         $requestedAttributes = $request->query('attribute', []);
         if (is_array($requestedAttributes)) {
             foreach (array_slice($requestedAttributes, 0, 10, true) as $attributeId => $requestedValues) {
-                $attribute = \App\Models\ProductAttribute::allProjects()
+                $attribute = \App\Modules\Catalogo\Models\ProductAttribute::allProjects()
                     ->where('project_id', $project->id)->where('is_active', true)->where('is_filterable', true)
                     ->find((int) $attributeId);
                 if (! $attribute) continue;
@@ -752,7 +752,7 @@ class TiendaPublicaController extends Controller
             ->get();
 
         if ($uncategorizedProducts->isNotEmpty()) {
-            $uncategorizedCategory = new \App\Models\Category([
+            $uncategorizedCategory = new \App\Modules\Catalogo\Models\Category([
                 'name' => 'Productos',
                 'slug' => 'productos',
                 'is_active' => true,
@@ -796,7 +796,7 @@ class TiendaPublicaController extends Controller
         // sin duplicar la lógica de la vista. Los servicios de subcategorías se
         // suben a la categoría padre (la vista solo recorre el primer nivel).
         $svcToProduct = function ($s) {
-            $p = new \App\Models\Product([
+            $p = new \App\Modules\Catalogo\Models\Product([
                 'name'         => $s->name,
                 'description'  => $s->description,
                 'price'        => $s->price,
@@ -976,7 +976,7 @@ class TiendaPublicaController extends Controller
                 $itemForVariant = collect($data['items'])->first(
                     fn (array $item) => (int) ($item['product_variant_id'] ?? 0) === (int) $variantId
                 );
-                $variant = \App\Models\ProductVariant::allProjects()
+                $variant = \App\Modules\Catalogo\Models\ProductVariant::allProjects()
                     ->where('id', $variantId)
                     ->where('project_id', $project->id)
                     ->where('is_active', true)
@@ -1054,7 +1054,7 @@ class TiendaPublicaController extends Controller
                     if (! $variant || (int) $variant->product_id !== (int) $prod->id) {
                         return response()->json(['ok' => false, 'message' => 'La combinación seleccionada no pertenece al producto.'], 422);
                     }
-                } elseif (\App\Models\ProductVariant::allProjects()
+                } elseif (\App\Modules\Catalogo\Models\ProductVariant::allProjects()
                     ->where('project_id', $project->id)
                     ->where('product_id', $prod->id)
                     ->where('is_active', true)

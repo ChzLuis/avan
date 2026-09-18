@@ -2,15 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\CatalogList;
-use App\Models\CatalogValue;
+use App\Modules\Catalogo\Models\CatalogList;
+use App\Modules\Catalogo\Models\CatalogValue;
 use App\Models\Employee;
 use App\Models\Module;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;
-use App\Support\UnidadesMedida;
+use App\Modules\Catalogo\Support\UnidadesMedida;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;

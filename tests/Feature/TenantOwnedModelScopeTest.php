@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Modules\Inventario\Models\InventoryMovement;
 use App\Modules\Finanzas\Models\Payment;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Modules\Inventario\Models\Proveedor;
 use App\Models\User;

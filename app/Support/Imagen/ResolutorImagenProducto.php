@@ -2,7 +2,7 @@
 
 namespace App\Support\Imagen;
 
-use App\Models\ProductImageTemplate;
+use App\Modules\Catalogo\Models\ProductImageTemplate;
 
 /**
  * Decide qué foto de producto ve el cliente.

@@ -299,7 +299,7 @@
     // (Catalogo -> Marca de agua en las fotos). Apagada por defecto y solo
     // posible si la tienda tiene logo; la intensidad tambien es configurable.
     $verVistaRapida = ($settings['catalog_quick_view'] ?? '1') !== '0';
-    $marcasPorNombre = \App\Models\CatalogValue::query()
+    $marcasPorNombre = \App\Modules\Catalogo\Models\CatalogValue::query()
         ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
         ->where('catalog_lists.project_id', $project->id)
         ->where('catalog_lists.type', 'brand')
@@ -308,7 +308,7 @@
         ->all();
     // Logo de cada marca (catalog_values.image_url) por nombre: la banda de
     // marcas de la portada lo usa cuando el item no trae imagen propia.
-    $marcasImgPorNombre = \App\Models\CatalogValue::query()
+    $marcasImgPorNombre = \App\Modules\Catalogo\Models\CatalogValue::query()
         ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
         ->where('catalog_lists.project_id', $project->id)
         ->where('catalog_lists.type', 'brand')

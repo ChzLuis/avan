@@ -1,5 +1,7 @@
 <?php
 namespace App\Models;
+
+use App\Modules\Catalogo\Models\Service;
 use Illuminate\Database\Eloquent\Model;
 class Appointment extends Model {
     protected $fillable = [

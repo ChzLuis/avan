@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Finanzas\Models;
 
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 
 class InvoiceItem extends Model

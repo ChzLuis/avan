@@ -189,7 +189,7 @@ class CadenaVentaGuiaTest extends TestCase
         /* En la guía se tecleaba la descripción a mano: erratas, y la línea
            salía sin enlace al producto. Ahora se elige del mismo catálogo
            que los comprobantes. */
-        \App\Models\Product::create([
+        \App\Modules\Catalogo\Models\Product::create([
             'project_id' => $this->project->id, 'name' => 'ROLLOS DE CABLE NH4 X100M.',
             'sku' => 'NH4-100', 'price' => 275, 'unit' => 'NIU', 'is_available' => true,
         ]);
@@ -208,7 +208,7 @@ class CadenaVentaGuiaTest extends TestCase
             'owner_id' => User::factory()->create()->id,
             'name' => 'Ajeno', 'slug' => 'ajeno-guia', 'is_active' => true,
         ]);
-        \App\Models\Product::create([
+        \App\Modules\Catalogo\Models\Product::create([
             'project_id' => $otro->id, 'name' => 'PRODUCTO AJENO',
             'price' => 10, 'is_available' => true,
         ]);
@@ -222,7 +222,7 @@ class CadenaVentaGuiaTest extends TestCase
     {
         // Ofrecer lo que no se vende lleva a emitir un documento con algo
         // que no hay.
-        \App\Models\Product::create([
+        \App\Modules\Catalogo\Models\Product::create([
             'project_id' => $this->project->id, 'name' => 'DESCATALOGADO SA',
             'price' => 10, 'is_available' => false,
         ]);

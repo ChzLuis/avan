@@ -4,9 +4,9 @@ namespace App\Support;
 
 use App\Models\Client;
 use App\Models\Order;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
-use App\Models\Service;
+use App\Modules\Catalogo\Models\Service;
 use Illuminate\Support\Collection;
 
 /**
@@ -138,7 +138,7 @@ class ProjectContext
     /** Categorías con productos (para navegar catálogos grandes). */
     public function categoriasConProductos(): Collection
     {
-        return \App\Models\Category::where('project_id', $this->project->id)
+        return \App\Modules\Catalogo\Models\Category::where('project_id', $this->project->id)
             ->where('is_active', true)
             ->withCount('products')
             ->orderBy('sort_order')->orderBy('name')
@@ -318,14 +318,14 @@ class ProjectContext
         return $n >= 6 && $n >= (int) ceil($max * 0.7) && (mb_strlen($largo) - $max) <= 3;
     }
 
-    public function categoriaQueCoincide(string $q): ?\App\Models\Category
+    public function categoriaQueCoincide(string $q): ?\App\Modules\Catalogo\Models\Category
     {
         $n = $this->normalizar($q);
         if ($n === '' || str_word_count($n) > 3) return null;
 
         $exacta = null;
         $afines = 0;
-        foreach (\App\Models\Category::where('project_id', $this->project->id)->get() as $cat) {
+        foreach (\App\Modules\Catalogo\Models\Category::where('project_id', $this->project->id)->get() as $cat) {
             $c = $this->normalizar($cat->name);
             if ($c === '') continue;
             if ($c === $n || $this->mismaRaiz($c, $n)) {
@@ -347,7 +347,7 @@ class ProjectContext
      * Colchones Espuma, Colchones Resortados). Con varias, lo honesto es
      * PREGUNTAR cual, no abrir una al azar.
      *
-     * @return \Illuminate\Support\Collection<int, \App\Models\Category>
+     * @return \Illuminate\Support\Collection<int, \App\Modules\Catalogo\Models\Category>
      */
     public function categoriasAfines(string $q): \Illuminate\Support\Collection
     {
@@ -364,10 +364,10 @@ class ProjectContext
         return $res;
     }
 
-    /** @return \Illuminate\Support\Collection<int, \App\Models\Category> */
+    /** @return \Illuminate\Support\Collection<int, \App\Modules\Catalogo\Models\Category> */
     private function categoriasQueMatchean(string $n): \Illuminate\Support\Collection
     {
-        return \App\Models\Category::where('project_id', $this->project->id)->get()
+        return \App\Modules\Catalogo\Models\Category::where('project_id', $this->project->id)->get()
             ->filter(function ($cat) use ($n) {
                 $c = $this->singular($this->normalizar($cat->name));
                 $plano = $this->normalizar($cat->name);
@@ -387,7 +387,7 @@ class ProjectContext
     public function paginaDeCategoria(int $categoriaId, int $offset = 0, int $limit = 5,
         ?float $precioMax = null, string $orden = 'relevancia', ?string $term = null): array
     {
-        $base = \App\Models\Product::where('project_id', $this->project->id)
+        $base = \App\Modules\Catalogo\Models\Product::where('project_id', $this->project->id)
             ->where('category_id', $categoriaId)
             ->where('is_available', true);
         if ($precioMax !== null) $base->where('price', '<=', $precioMax);
@@ -427,7 +427,7 @@ class ProjectContext
     public function productosPorIds(array $ids): \Illuminate\Support\Collection
     {
         if (empty($ids)) return collect();
-        $porId = \App\Models\Product::where('project_id', $this->project->id)
+        $porId = \App\Modules\Catalogo\Models\Product::where('project_id', $this->project->id)
             ->whereIn('id', $ids)->get(['id', 'name', 'price'])->keyBy('id');
 
         return collect($ids)->map(fn ($id) => $porId->get($id))->filter()

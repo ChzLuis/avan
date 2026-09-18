@@ -1147,7 +1147,7 @@ class FlowRunner
      * Abrir una categoria (contrato simple): titulo + link filtrado + PDF.
      * Nada mas: ni productos, ni paginas, ni alternativas.
      */
-    private function abrirCategoriaSimple(\App\Models\Category $cat, array &$vars, array &$out): void
+    private function abrirCategoriaSimple(\App\Modules\Catalogo\Models\Category $cat, array &$vars, array &$out): void
     {
         $out['respuestas'][] = "🛍️ *{$cat->name}*\n\n🌐 Mira todos los productos con fotos:\n" . $this->urlCategoria($cat);
         $out['respuestas'][] = $this->burbujaPdfCategoria($cat);
@@ -1158,7 +1158,7 @@ class FlowRunner
     /**
      * Link directo a UNA categoria de la tienda (con dominio propio si existe).
      */
-    private function urlCategoria(\App\Models\Category $cat): string
+    private function urlCategoria(\App\Modules\Catalogo\Models\Category $cat): string
     {
         $custom = trim((string) $this->project->custom_domain);
 
@@ -1168,7 +1168,7 @@ class FlowRunner
     }
 
     /** Respuesta de ARCHIVO con el catalogo PDF de la categoria (firmado 48 h). */
-    private function burbujaPdfCategoria(\App\Models\Category $cat): array
+    private function burbujaPdfCategoria(\App\Modules\Catalogo\Models\Category $cat): array
     {
         $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
             'publico.catalogo.pdf', now()->addHours(48),
@@ -2007,7 +2007,7 @@ class FlowRunner
                     $respuestas[] = 'Ese número no está en la lista 🤔. Responde con un número del 1 al ' . count($cats) . '.';
                     return '__ESPERAR__';
                 }
-                $cat = \App\Models\Category::where('project_id', $this->project->id)->find((int) $catId);
+                $cat = \App\Modules\Catalogo\Models\Category::where('project_id', $this->project->id)->find((int) $catId);
                 unset($vars['_modo'], $vars['_categorias']);
                 if ($cat) {
                     $out2 = ['respuestas' => []];
@@ -2042,7 +2042,7 @@ class FlowRunner
                 // Link y PDF: SOLO a pedido.
                 if (preg_match('/^(web|catalogo completo|ver catalogo( completo)?)$/u', $nm)) {
                     $cat = ! empty($vars['_nav']['cat_id'])
-                        ? \App\Models\Category::where('project_id', $this->project->id)->find($vars['_nav']['cat_id'])
+                        ? \App\Modules\Catalogo\Models\Category::where('project_id', $this->project->id)->find($vars['_nav']['cat_id'])
                         : null;
                     $respuestas[] = $cat
                         ? "🌐 Mira *{$cat->name}* con fotos y detalles:\n" . $this->urlCategoria($cat)
@@ -2050,7 +2050,7 @@ class FlowRunner
                     return '__ESPERAR__';
                 }
                 if (preg_match('/^(pdf|descargar catalogo|catalogo pdf)$/u', $nm) && ! empty($vars['_nav']['cat_id'])) {
-                    $cat = \App\Models\Category::where('project_id', $this->project->id)->find($vars['_nav']['cat_id']);
+                    $cat = \App\Modules\Catalogo\Models\Category::where('project_id', $this->project->id)->find($vars['_nav']['cat_id']);
                     if ($cat) { $respuestas[] = $this->burbujaPdfCategoria($cat); return '__ESPERAR__'; }
                 }
 
@@ -2087,7 +2087,7 @@ class FlowRunner
             // Cortos de duda DENTRO de la busqueda: se orienta con ejemplos
             // REALES (las categorias del negocio), no con un "no entendi".
             if ($modo === 'consulta_buscando' && preg_match('/^(no se|nose|no sé|ayuda|\?+|\.\.\.+)$/u', $m)) {
-                $cats = \App\Models\Category::where('project_id', $this->project->id)->limit(3)->pluck('name');
+                $cats = \App\Modules\Catalogo\Models\Category::where('project_id', $this->project->id)->limit(3)->pluck('name');
                 $ej = $cats->isNotEmpty() ? $cats->map(fn ($c) => "“" . mb_strtolower($c) . "”")->implode(', ') : '“ropero”, “mesa”';
                 $respuestas[] = "No hay problema 🙂 Puedes escribir algo general como {$ej}, o el nombre del producto.";
                 return '__ESPERAR__';
@@ -2170,7 +2170,7 @@ class FlowRunner
                     return '__ESPERAR__';
                 }
                 if (preg_match('/^(fotos?|ver fotos?|imagen(es)?)$/u', $nm) && $pid) {
-                    $prod = \App\Models\Product::where('project_id', $this->project->id)->find($pid);
+                    $prod = \App\Modules\Catalogo\Models\Product::where('project_id', $this->project->id)->find($pid);
                     if ($prod && $prod->main_image_url) {
                         $respuestas[] = ['tipo' => 'imagen', 'url' => url($prod->main_image_url),
                             'caption' => $prod->name, 'fallback' => "📸 {$prod->name}: " . url($prod->main_image_url)];
@@ -2187,7 +2187,7 @@ class FlowRunner
                     return '__ESPERAR__';
                 }
                 if (preg_match('/^(similares?|ver similares?|parecidos?)$/u', $nm) && $pid) {
-                    $prod = \App\Models\Product::where('project_id', $this->project->id)->find($pid);
+                    $prod = \App\Modules\Catalogo\Models\Product::where('project_id', $this->project->id)->find($pid);
                     if ($prod && $prod->category_id) {
                         // "Similares" hereda la afinidad del producto actual:
                         // desde un "TV 32..." los TV van primero, no las comodas.

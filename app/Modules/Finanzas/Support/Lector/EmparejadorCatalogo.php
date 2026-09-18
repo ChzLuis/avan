@@ -3,7 +3,7 @@
 namespace App\Modules\Finanzas\Support\Lector;
 
 use App\Modules\Finanzas\Models\Invoice;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Support\ProjectContext;
 

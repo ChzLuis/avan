@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Modules\Catalogo\Models\Category;
 use App\Models\Module;
-use App\Models\Product;
+use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\EtiquetasProducto as Etq;
+use App\Modules\Catalogo\Support\EtiquetasProducto as Etq;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -144,7 +144,7 @@ class EtiquetasMasivasTest extends TestCase
     /** El listado ofrece la accion. */
     public function test_el_listado_ofrece_la_accion(): void
     {
-        $vista = file_get_contents(resource_path('views/catalog/products/index.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Catalogo/Views/catalog/products/index.blade.php'));
 
         $this->assertStringContainsString("view==='etiquetas'", $vista, 'Falta el panel de etiquetas en masa.');
         $this->assertStringContainsString("runBulk('etiquetas'", $vista, 'El panel no dispara la accion.');
