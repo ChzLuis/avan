@@ -50,9 +50,11 @@ class BotWebhookController extends Controller
             'lid'      => 'nullable|string|max:40',   // id tecnico @lid de WhatsApp, si lo hubo
             'wa_canal_id' => 'nullable|integer',      // canal por el que entro (Meta); si falta, el canal Bot
             'media_url'   => 'nullable|string|max:500', // foto/audio/documento ya descargado por el webhook
+            'referral'    => 'nullable|array',        // anuncio click-to-WhatsApp que trajo al cliente (Meta)
         ]);
         $this->canalEntradaId = isset($data['wa_canal_id']) ? (int) $data['wa_canal_id'] : null;
         $this->medioEntrada = ['tipo' => $data['tipo'] ?? 'texto', 'url' => $data['media_url'] ?? null];
+        $this->referralEntrada = is_array($data['referral'] ?? null) ? $data['referral'] : null;
         $telefono = preg_replace('/[^\d]/', '', $data['telefono']);
 
         // IDENTIDAD WHATSAPP: el conector manda `telefono` = numero real (PN)
@@ -152,6 +154,14 @@ class BotWebhookController extends Controller
         $session->save();
 
         // 3) Guardar también lo que respondió el bot (mensajes salientes).
+        // El conector Baileys no sabe de botones ni de cta_url: recibe el texto
+        // de respaldo. Meta (canal de entrada conocido) recibe el formato nativo.
+        if (! $this->canalEntradaId) {
+            $res['respuestas'] = array_map(
+                fn ($r) => is_array($r) && in_array($r['tipo'] ?? '', ['botones', 'cta_url'], true) ? ($r['fallback'] ?? $r['cuerpo'] ?? '') : $r,
+                $res['respuestas']
+            );
+        }
         foreach ($res['respuestas'] as $resp) {
             if (is_array($resp)) {
                 // Lista, imagen o archivo: tomar el texto representativo para el historial.
@@ -372,6 +382,41 @@ class BotWebhookController extends Controller
     private ?int $canalEntradaId = null;
     /** Tipo y archivo del mensaje entrante en curso (imagen/audio/documento descargado). */
     private array $medioEntrada = ['tipo' => 'texto', 'url' => null];
+    /** Anuncio que trajo al cliente, si el mensaje en curso vino de un click-to-WhatsApp. */
+    private ?array $referralEntrada = null;
+
+    /**
+     * Campos de atribucion cuando el mensaje vino de un anuncio click-to-WhatsApp.
+     *
+     * Meta manda el `referral` SOLO en el mensaje con el que se abre el chat,
+     * asi que este es el unico momento en que se puede saber que anuncio pago
+     * esta conversacion. Devuelve vacio cuando no hubo anuncio, para no tocar
+     * las conversaciones organicas.
+     *
+     * `origen_anuncio` es de PRIMER TOQUE: si la conversacion ya nacio con un
+     * origen, un clic posterior en otro anuncio no le reescribe la historia.
+     * `anuncio_referral` y `anuncio_id`, en cambio, guardan el ultimo clic,
+     * que es el que explica por que el cliente esta escribiendo ahora.
+     */
+    private function atribucionAnuncio(?\App\Modules\Crm\Models\WaConversacion $conv): array
+    {
+        if ($this->referralEntrada === null) {
+            return [];
+        }
+
+        $anuncioId = mb_substr((string) ($this->referralEntrada['source_id'] ?? ''), 0, 40);
+
+        $campos = [
+            'anuncio_referral' => $this->referralEntrada,
+            'anuncio_id'       => $anuncioId !== '' ? $anuncioId : null,
+        ];
+
+        if ($conv === null || (string) ($conv->origen_anuncio ?? '') === '') {
+            $campos['origen_anuncio'] = 'anuncio_meta';
+        }
+
+        return $campos;
+    }
 
     private function guardarEnCrm(\App\Models\Project $project, string $telefono, string $nombre, string $texto, string $dir): void
     {
@@ -397,7 +442,7 @@ class BotWebhookController extends Controller
                 'no_leidos' => $dir === 'in' ? 1 : 0,
                 'ultimo_mensaje_at' => now(),
                 'bot_activo' => true,
-            ]);
+            ] + ($dir === 'in' ? $this->atribucionAnuncio(null) : []));
         } else {
             $conv->ultimo_mensaje_at = now();
             if ($dir === 'in') $conv->no_leidos++;
@@ -405,6 +450,10 @@ class BotWebhookController extends Controller
             // linea de Meta, la conversacion pasa a esa linea: es por donde se
             // le puede responder.
             if ($canal->conectadoAMeta() && $conv->wa_canal_id !== $canal->id) $conv->wa_canal_id = $canal->id;
+            // Un cliente que ya escribio antes puede volver por un anuncio
+            // nuevo: se registra ese clic sin perder de donde salio la primera
+            // vez (eso lo cuida atribucionAnuncio).
+            if ($dir === 'in') $conv->fill($this->atribucionAnuncio($conv));
             $conv->save();
         }
 

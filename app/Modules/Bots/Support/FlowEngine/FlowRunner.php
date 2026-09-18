@@ -184,7 +184,11 @@ class FlowRunner
                 break;
 
             case 'opciones':
-                $out['respuestas'][] = $this->textoOpciones($bloque, $vars);
+                // Hasta 3 opciones: botones nativos de WhatsApp (Meta). El id del
+                // boton es el numero de la opcion, asi la respuesta la resuelve el
+                // mismo codigo que el texto "1", "2", "3". Mas de 3, o un canal
+                // que no sabe de botones (Baileys), usan el texto numerado.
+                $out['respuestas'][] = $this->botonesOpciones($bloque, $vars);
                 $out['esperar'] = true;
                 break;
 
@@ -2428,6 +2432,25 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
             if (!empty($bloque['fallback'])) return [$bloque['fallback']];
         }
         return [];
+    }
+
+    /** Opciones como botones nativos (<= 3) con el texto numerado de respaldo. */
+    private function botonesOpciones(array $bloque, array $vars): string|array
+    {
+        $opciones = array_values($bloque['opciones'] ?? []);
+        $fallback = $this->textoOpciones($bloque, $vars);
+        if (count($opciones) === 0 || count($opciones) > 3) {
+            return $fallback;
+        }
+        return [
+            'tipo'     => 'botones',
+            'cuerpo'   => $this->interpolar($bloque['texto'] ?? 'Elige una opción:', $vars),
+            'botones'  => array_map(fn ($op, $i) => [
+                'id'     => (string) ($i + 1),
+                'titulo' => mb_substr(trim((string) ($op['texto'] ?? 'Opción ' . ($i + 1))), 0, 20),
+            ], $opciones, array_keys($opciones)),
+            'fallback' => $fallback,
+        ];
     }
 
     private function textoOpciones(array $bloque, array $vars): string

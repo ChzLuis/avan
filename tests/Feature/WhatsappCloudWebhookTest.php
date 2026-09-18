@@ -6,6 +6,7 @@ use App\Modules\Bots\Models\BotFlow;
 use App\Models\Project;
 use App\Models\User;
 use App\Modules\Crm\Models\WaCanal;
+use App\Modules\Crm\Models\WaConversacion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -249,6 +250,62 @@ class WhatsappCloudWebhookTest extends TestCase
         \Illuminate\Support\Facades\Storage::disk('public')->assertExists('wa/' . $m->conversacion->canal->project_id . '/in/MEDIA1.jpg');
     }
 
+    /** Con 3 opciones o menos, por Meta salen BOTONES nativos; el id del boton es el numero de la opcion. */
+    public function test_las_opciones_salen_como_botones_nativos_por_meta(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode([
+            'disparos' => [], 'inicio' => 'menu',
+            'bloques'  => [
+                'menu'    => ['tipo' => 'opciones', 'texto' => '¿Qué necesitas?', 'opciones' => [
+                    ['texto' => 'Ver planes', 'siguiente' => 'planes'], ['texto' => 'Hablar con un asesor', 'siguiente' => 'asesor'],
+                ]],
+                'planes'  => ['tipo' => 'mensaje', 'texto' => 'Desde S/ 490'],
+                'asesor'  => ['tipo' => 'mensaje', 'texto' => 'Te atiende una persona'],
+            ],
+        ])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        Http::assertSent(function ($req) {
+            $d = $req->data();
+            return ($d['type'] ?? '') === 'interactive'
+                && $d['interactive']['type'] === 'button'
+                && $d['interactive']['body']['text'] === '¿Qué necesitas?'
+                && $d['interactive']['action']['buttons'][0]['reply'] === ['id' => '1', 'title' => 'Ver planes']
+                && $d['interactive']['action']['buttons'][1]['reply']['title'] === 'Hablar con un asesor';
+        });
+        // Marcar leido lleva el "escribiendo..." de Meta.
+        Http::assertSent(fn ($req) => ($req->data()['status'] ?? '') === 'read' && ($req->data()['typing_indicator']['type'] ?? '') === 'text');
+    }
+
+    /** El cliente toca el boton: llega button_reply con id "2" y el motor sigue por esa rama. */
+    public function test_tocar_un_boton_sigue_por_su_rama(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode([
+            'disparos' => [], 'inicio' => 'menu',
+            'bloques'  => [
+                'menu'   => ['tipo' => 'opciones', 'texto' => '¿Qué necesitas?', 'opciones' => [['texto' => 'Planes', 'siguiente' => 'planes'], ['texto' => 'Asesor', 'siguiente' => 'asesor']]],
+                'planes' => ['tipo' => 'mensaje', 'texto' => 'Desde S/ 490'],
+                'asesor' => ['tipo' => 'mensaje', 'texto' => 'Te atiende una persona'],
+            ],
+        ])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+
+        $toque = json_encode(['object' => 'whatsapp_business_account', 'entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'messaging_product' => 'whatsapp', 'metadata' => ['phone_number_id' => '111'],
+            'contacts' => [['profile' => ['name' => 'Cliente'], 'wa_id' => '51900000001']],
+            'messages' => [['from' => '51900000001', 'id' => 'wamid.' . uniqid(), 'type' => 'interactive',
+                'interactive' => ['type' => 'button_reply', 'button_reply' => ['id' => '2', 'title' => 'Asesor']]]],
+        ]]]]]]);
+        $this->enviar($toque, 'secreto-a')->assertOk();
+
+        Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Te atiende una persona');
+    }
+
     public function test_atiende_aunque_falte_el_content_type(): void
     {
         $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');
@@ -260,5 +317,59 @@ class WhatsappCloudWebhookTest extends TestCase
         ]), $cuerpo)->assertOk();
 
         Http::assertSent(fn ($req) => ($req->data()['text']['body'] ?? '') === 'Hola desde A');
+    }
+
+    /**
+     * Un anuncio click-to-WhatsApp adjunta `referral` al primer mensaje. Es el
+     * unico momento en que Meta dice que anuncio pago esa conversacion: si no
+     * se guarda ahi, el gasto de la campaña queda sin atribuir para siempre.
+     */
+    public function test_un_mensaje_desde_un_anuncio_guarda_la_atribucion(): void
+    {
+        $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $cuerpo = json_encode(['entry' => [['changes' => [['field' => 'messages', 'value' => [
+            'metadata' => ['phone_number_id' => '111'],
+            'contacts' => [['profile' => ['name' => 'Cliente'], 'wa_id' => '51900000001']],
+            'messages' => [[
+                'from' => '51900000001',
+                'id'   => 'wamid.' . uniqid(),
+                'type' => 'text',
+                'text' => ['body' => 'hola, vi su anuncio'],
+                'referral' => [
+                    'source_url'  => 'https://fb.me/xyz',
+                    'source_id'   => '120246997153260068',
+                    'source_type' => 'ad',
+                    'headline'    => 'Tu tienda virtual desde S/490',
+                    'media_type'  => 'image',
+                    'ctwa_clid'   => 'ARBcdef123',
+                ],
+            ]],
+        ]]]]]]);
+
+        $this->enviar($cuerpo, 'secreto-a')->assertOk();
+
+        $conv = WaConversacion::where('cliente_telefono', '51900000001')->first();
+
+        $this->assertNotNull($conv, 'La conversación no llegó al CRM.');
+        $this->assertSame('120246997153260068', $conv->anuncio_id);
+        $this->assertSame('anuncio_meta', $conv->origen_anuncio);
+        $this->assertSame('ARBcdef123', $conv->anuncio_referral['ctwa_clid'] ?? null);
+    }
+
+    /** Sin anuncio no se inventa atribucion: lo organico queda como organico. */
+    public function test_un_mensaje_organico_no_guarda_atribucion(): void
+    {
+        $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $this->enviar($this->evento('111'), 'secreto-a')->assertOk();
+
+        $conv = WaConversacion::where('cliente_telefono', '51900000001')->first();
+
+        $this->assertNotNull($conv, 'La conversación no llegó al CRM.');
+        $this->assertNull($conv->anuncio_id);
+        $this->assertNull($conv->anuncio_referral);
     }
 }

@@ -93,11 +93,64 @@ class ClienteCloud
     {
         return match ($r['tipo'] ?? 'texto') {
             'lista'   => $this->armarLista($to, $r),
+            'botones' => $this->armarBotones($to, $r),
+            'cta_url' => $this->armarCtaUrl($to, $r),
             'imagen'  => $this->armarMedia($to, $r, 'image'),
             'audio'   => $this->armarMedia($to, ['url' => $r['url'] ?? ''], 'audio'),
             'archivo' => $this->armarMedia($to, $r, 'document'),
             default   => $this->armarTexto($to, $r['fallback'] ?? $r['cuerpo'] ?? ''),
         };
+    }
+
+    /**
+     * Botones de respuesta rapida (Meta admite 3 como maximo, titulos de 20
+     * caracteres). El cliente toca uno y el webhook recibe su `id`, que el
+     * motor resuelve igual que si hubiera escrito el numero.
+     */
+    private function armarBotones(string $to, array $r): array
+    {
+        $botones = [];
+        foreach (array_slice($r['botones'] ?? [], 0, 3) as $i => $b) {
+            $titulo = mb_substr(trim((string) ($b['titulo'] ?? '')), 0, 20);
+            if ($titulo === '') {
+                continue;
+            }
+            $botones[] = ['type' => 'reply', 'reply' => ['id' => (string) ($b['id'] ?? $i + 1), 'title' => $titulo]];
+        }
+        if ($botones === []) {
+            return $this->armarTexto($to, $r['fallback'] ?? $r['cuerpo'] ?? 'Elige una opción:');
+        }
+        $interactive = [
+            'type'   => 'button',
+            'body'   => ['text' => mb_substr((string) ($r['cuerpo'] ?? 'Elige una opción:'), 0, 1024)],
+            'action' => ['buttons' => $botones],
+        ];
+        if (! empty($r['pie'])) {
+            $interactive['footer'] = ['text' => mb_substr($r['pie'], 0, 60)];
+        }
+
+        return ['messaging_product' => 'whatsapp', 'to' => $to, 'type' => 'interactive', 'interactive' => $interactive];
+    }
+
+    /** Boton que abre un enlace (la tienda, un catalogo, un pago). */
+    private function armarCtaUrl(string $to, array $r): array
+    {
+        if (empty($r['url'])) {
+            return $this->armarTexto($to, $r['fallback'] ?? $r['cuerpo'] ?? '');
+        }
+        $interactive = [
+            'type'   => 'cta_url',
+            'body'   => ['text' => mb_substr((string) ($r['cuerpo'] ?? ''), 0, 1024)],
+            'action' => ['name' => 'cta_url', 'parameters' => [
+                'display_text' => mb_substr((string) ($r['boton'] ?? 'Abrir'), 0, 20),
+                'url'          => $r['url'],
+            ]],
+        ];
+        if (! empty($r['titulo'])) {
+            $interactive['header'] = ['type' => 'text', 'text' => mb_substr($r['titulo'], 0, 60)];
+        }
+
+        return ['messaging_product' => 'whatsapp', 'to' => $to, 'type' => 'interactive', 'interactive' => $interactive];
     }
 
     /**
@@ -230,10 +283,13 @@ class ClienteCloud
     /** Marca el mensaje como leido (los dos checks azules). */
     public function marcarLeido(string $waMessageId): void
     {
+        // Los dos checks azules y, ademas, el "escribiendo..." mientras el bot
+        // prepara la respuesta (Meta lo apaga solo al enviar o a los 25 s).
         $this->post([
             'messaging_product' => 'whatsapp',
             'status'            => 'read',
             'message_id'        => $waMessageId,
+            'typing_indicator'  => ['type' => 'text'],
         ]);
     }
 
