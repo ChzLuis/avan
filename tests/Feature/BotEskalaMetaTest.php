@@ -15,8 +15,8 @@ use Tests\TestCase;
 /**
  * El flujo REAL de Eskala (bot_builder_flows 17, copia en tests/Fixtures) recorrido
  * de punta a punta por WhatsApp oficial (Meta) y por el conector QR (Baileys).
- * Embudo v3: ¿cómo vendes? -> dolor + demo -> ¿cuántos productos? -> UN plan con
- * precio -> cierre humano (abre el trato). Determinista: no necesita IA.
+ * Guion v4: ¿que vendes? -> ¿cuantos productos? -> plan + demo -> precio + CTA -> cierre
+ * humano (abre el trato). Tres decisiones del cliente. Determinista: no necesita IA.
  */
 class BotEskalaMetaTest extends TestCase
 {
@@ -103,77 +103,76 @@ class BotEskalaMetaTest extends TestCase
         Http::assertNotSent(fn ($req) => ! str_contains($req->url(), 'graph.facebook.com'), 'Este camino no necesita IA');
     }
 
-    public function test_hola_abre_con_una_sola_pregunta_facil_y_sin_precios(): void
+    public function test_hola_abre_con_que_vendes_y_tres_rubros(): void
     {
         $this->meta($this->texto('hola'));
         $env = $this->enviados();
 
-        $this->assertCount(1, $env, 'Una sola burbuja para abrir conversacion');
-        $this->assertSame('button:btn:dolor_whatsapp|btn:dolor_redes|btn:dolor_inicio', $this->resumen($env[0]));
-        $this->assertStringContainsString('Cómo vendes hoy', $this->cuerpo($env[0]));
-        $this->assertStringNotContainsString('S/', $this->cuerpo($env[0]), 'Todavia no hay interes para hablar de precio');
+        $this->assertCount(1, $env, 'Una sola burbuja');
+        $this->assertSame('button:btn:cantidad|btn:cantidad|btn:cantidad', $this->resumen($env[0]));
+        $this->assertStringContainsString('qué vendes', $this->cuerpo($env[0]));
+        $this->assertStringNotContainsString('S/', $this->cuerpo($env[0]));
+        $this->assertSame('👕 Ropa', $env[0]['interactive']['action']['buttons'][0]['reply']['title']);
         $this->sinIa();
     }
 
-    public function test_vendo_por_whatsapp_muestra_el_dolor_la_tienda_y_pregunta_cuantos_productos(): void
+    public function test_el_rubro_lleva_a_cuantos_productos_con_tres_rangos(): void
     {
         $this->meta($this->texto('hola'));
         $n = count($this->enviados());
-        $this->meta($this->toque('btn:dolor_whatsapp'));
+        $this->meta($this->toque('btn:cantidad'));
         $env = $this->nuevos($n);
 
-        $this->assertCount(2, $env);
-        $this->assertSame('cta_url+image:https://arindg.com/ferreteria-demo', $this->resumen($env[0]), 'Captura + dolor + "Ver tienda funcionando" en una burbuja');
-        $this->assertStringContainsString('uno por uno', $this->cuerpo($env[0]));
-        $this->assertSame('Ver tienda en vivo', $env[0]['interactive']['action']['parameters']['display_text']);
-        $this->assertSame('button:btn:plan_start|btn:plan_pro|btn:plan_business', $this->resumen($env[1]));
-        $this->assertStringContainsString('cuántos productos', $this->cuerpo($env[1]));
+        $this->assertCount(1, $env);
+        $this->assertSame('button:btn:plan_start|btn:plan_pro|btn:plan_business', $this->resumen($env[0]));
+        $this->assertStringContainsString('Cuántos productos', $this->cuerpo($env[0]));
         $this->sinIa();
     }
 
-    public function test_de_51_a_100_recomienda_pro_con_precio_y_un_boton_de_compra(): void
+    public function test_de_50_a_150_recomienda_pro_muestra_la_demo_y_da_precio_con_cta(): void
     {
         $this->meta($this->texto('hola'));
-        $this->meta($this->toque('btn:dolor_redes'));
+        $this->meta($this->toque('btn:cantidad'));
         $n = count($this->enviados());
         $this->meta($this->toque('btn:plan_pro'));
         $env = $this->nuevos($n);
 
-        $this->assertCount(1, $env);
-        $this->assertSame('button:btn:cierre_pro|btn:incluye_pro|btn:dudas', $this->resumen($env[0]));
+        $this->assertCount(2, $env, 'Recomendacion + demo, y precio + CTA');
+        $this->assertSame('cta_url:https://arindg.com/ferreteria-demo', $this->resumen($env[0]));
         $this->assertStringContainsString('*PRO*', $this->cuerpo($env[0]));
-        $this->assertStringContainsString('S/ 590', $this->cuerpo($env[0]));
-        $this->assertStringContainsString('S/ 100 al año', $this->cuerpo($env[0]), 'La renovacion se dice desde el inicio');
-        $this->assertSame('🚀 Quiero mi tienda', $env[0]['interactive']['action']['buttons'][0]['reply']['title']);
+        $this->assertSame('👀 Ver tienda demo', $env[0]['interactive']['action']['parameters']['display_text']);
+        $this->assertSame('button:btn:cierre_pro|btn:planes_pro|btn:dudas', $this->resumen($env[1]));
+        $this->assertStringContainsString('S/ 590', $this->cuerpo($env[1]));
+        $this->assertSame('🚀 Quiero empezar', $env[1]['interactive']['action']['buttons'][0]['reply']['title']);
         $this->sinIa();
     }
 
-    public function test_que_incluye_dice_lo_esencial_con_el_tope_correcto_de_productos(): void
+    public function test_ver_planes_manda_el_flyer_con_los_tres_precios_y_vuelve_al_cta(): void
     {
         $this->meta($this->texto('hola'));
-        $this->meta($this->toque('btn:dolor_inicio'));
-        $this->meta($this->toque('btn:plan_pro'));
+        $this->meta($this->toque('btn:cantidad'));
+        $this->meta($this->toque('btn:plan_start'));
         $n = count($this->enviados());
-        $this->meta($this->toque('btn:incluye_pro'));
+        $this->meta($this->toque('btn:planes_start'));
         $env = $this->nuevos($n);
 
         $this->assertCount(1, $env);
-        $this->assertStringContainsString('Hasta 100 productos', $this->cuerpo($env[0]), 'PRO son 100, no 200');
-        $this->assertStringContainsString('50 % de adelanto', $this->cuerpo($env[0]));
-        $this->assertSame('button:btn:cierre_pro|btn:mas_ejemplos', $this->resumen($env[0]));
+        $this->assertSame('button+image:btn:cierre_start|btn:demo_start|btn:dudas', $this->resumen($env[0]));
+        $this->assertStringContainsString('START S/ 490 · PRO S/ 590 · BUSINESS S/ 690', $this->cuerpo($env[0]));
+        $this->assertStringContainsString('S/ 100 al año', $this->cuerpo($env[0]));
     }
 
-    public function test_quiero_mi_tienda_abre_el_trato_con_el_valor_del_plan_y_pide_los_datos(): void
+    public function test_quiero_empezar_abre_el_trato_con_el_valor_del_plan_y_pide_los_datos(): void
     {
         Productos::activar($this->proyecto, 'crm');
         $this->meta($this->texto('hola'));
-        $this->meta($this->toque('btn:dolor_whatsapp'));
+        $this->meta($this->toque('btn:cantidad'));
         $this->meta($this->toque('btn:plan_business'));
         $n = count($this->enviados());
         $this->meta($this->toque('btn:cierre_business'));
         $env = $this->nuevos($n);
 
-        $this->assertStringContainsString('Nombre de tu negocio', $this->cuerpo($env[0]));
+        $this->assertStringContainsString('nombre de tu negocio', $this->cuerpo($env[0]));
         $t = CrmTrato::where('project_id', $this->proyecto->id)->get();
         $this->assertCount(1, $t);
         $this->assertEquals(690, $t[0]->valor, 'El trato nace con el valor del plan elegido');
@@ -181,21 +180,20 @@ class BotEskalaMetaTest extends TestCase
         $this->assertSame('Nuevo', $t[0]->etapa->nombre);
         $this->assertNotNull($t[0]->wa_conversacion_id);
 
-        // Da sus datos: se anotan y no se abre otro trato.
         $this->meta($this->texto('Boutique Rosa, @boutiquerosa'));
-        $this->assertCount(1, CrmTrato::where('project_id', $this->proyecto->id)->get());
+        $this->assertCount(1, CrmTrato::where('project_id', $this->proyecto->id)->get(), 'Los datos no abren otro trato');
     }
 
     public function test_sin_producto_crm_el_cierre_no_crea_tratos(): void
     {
         $this->meta($this->texto('hola'));
-        $this->meta($this->toque('btn:dolor_whatsapp'));
+        $this->meta($this->toque('btn:cantidad'));
         $this->meta($this->toque('btn:plan_start'));
         $this->meta($this->toque('btn:cierre_start'));
         $this->assertSame(0, CrmTrato::count());
     }
 
-    public function test_preguntar_el_precio_se_responde_al_toque_y_sigue_el_embudo(): void
+    public function test_preguntar_el_precio_se_responde_al_toque_y_sigue_el_guion(): void
     {
         $this->meta($this->texto('hola'));
         $n = count($this->enviados());
@@ -203,42 +201,30 @@ class BotEskalaMetaTest extends TestCase
         $env = $this->nuevos($n);
 
         $this->assertCount(1, $env);
-        $this->assertStringContainsString('START S/ 490', $this->cuerpo($env[0]));
-        $this->assertSame('button:btn:plan_start|btn:plan_pro|btn:plan_business', $this->resumen($env[0]), 'Responde el precio y vuelve a preguntar la cantidad');
+        $this->assertStringContainsString('S/ 490', $this->cuerpo($env[0]));
+        $this->assertSame('button:btn:cantidad|btn:cantidad|btn:cantidad', $this->resumen($env[0]), 'Da el precio y vuelve a preguntar que vende');
         $this->sinIa();
     }
 
     public function test_el_primer_mensaje_ya_puede_traer_la_intencion(): void
     {
-        // Sin "hola": llega preguntando precio directamente.
         $this->meta($this->texto('hola, cuanto cuesta la tienda virtual?'));
         $env = $this->enviados();
 
-        $this->assertCount(1, $env);
-        $this->assertStringContainsString('START S/ 490', $this->cuerpo($env[0]));
+        $this->assertCount(1, $env, 'No manda ademas la apertura');
+        $this->assertStringContainsString('S/ 490', $this->cuerpo($env[0]));
     }
 
-    public function test_escribir_el_rubro_manda_la_foto_del_rubro_y_pregunta_la_cantidad(): void
+    public function test_escribir_el_rubro_en_vez_de_tocar_avanza_a_la_cantidad(): void
     {
         $this->meta($this->texto('hola'));
         $n = count($this->enviados());
         $this->meta($this->texto('tengo una ferretería'));
         $env = $this->nuevos($n);
 
-        $this->assertSame(['image', 'button:btn:plan_start|btn:plan_pro|btn:plan_business'], array_map(fn ($d) => $this->resumen($d), $env));
-        $this->assertStringContainsString('ferreteria', $env[0]['image']['link']);
+        $this->assertCount(1, $env);
+        $this->assertSame('button:btn:plan_start|btn:plan_pro|btn:plan_business', $this->resumen($env[0]));
         $this->sinIa();
-    }
-
-    public function test_texto_que_no_se_entiende_avanza_a_la_cantidad_en_vez_de_callarse(): void
-    {
-        $this->meta($this->texto('hola'));
-        $n = count($this->enviados());
-        $this->meta($this->texto('vendo cosas varias'));
-        $env = $this->nuevos($n);
-
-        $this->assertNotEmpty($env);
-        $this->assertSame('button:btn:plan_start|btn:plan_pro|btn:plan_business', $this->resumen(end($env)));
     }
 
     public function test_la_demo_escrita_y_el_no_siguen_funcionando(): void
@@ -247,13 +233,12 @@ class BotEskalaMetaTest extends TestCase
         $n = count($this->enviados());
         $this->meta($this->texto('quiero ver la demo'));
         $env = $this->nuevos($n);
-        $this->assertSame('cta_url+text:https://arindg.com/ferreteria-demo', $this->resumen($env[0]));
+        $this->assertSame('cta_url:https://arindg.com/ferreteria-demo', $this->resumen($env[0]));
         $this->assertSame('button:btn:cierre_pro|btn:sin_prisa', $this->resumen($env[1]));
 
         $n = count($this->enviados());
         $this->meta($this->texto('no'));
         $env = $this->nuevos($n);
-        $this->assertSame('text', $this->resumen($env[0]));
         $this->assertStringContainsString('Sin problema', $this->cuerpo($env[0]));
     }
 
@@ -269,13 +254,13 @@ class BotEskalaMetaTest extends TestCase
         $token = $this->proyecto->fresh()->copilot_token;
         $r = $this->postJson('/api/bot/inbound', ['telefono' => '51933333333', 'mensaje' => 'hola', 'nombre' => 'QR'], ['X-Copilot-Token' => $token])->assertOk();
         $respuestas = $r->json('respuestas');
-        $this->assertIsString(end($respuestas), 'La apertura con botones vuelve a texto');
-        $this->assertStringContainsString('Cómo vendes hoy', end($respuestas));
+        $this->assertIsString(end($respuestas));
+        $this->assertStringContainsString('qué vendes', end($respuestas));
 
-        $r = $this->postJson('/api/bot/inbound', ['telefono' => '51933333333', 'mensaje' => 'btn:dolor_whatsapp', 'nombre' => 'QR'], ['X-Copilot-Token' => $token])->assertOk();
-        $todo = $r->json('respuestas');
-        $this->assertSame('imagen', $todo[0]['tipo'], 'El enlace con foto vuelve a ser una imagen con el texto de pie');
-        $this->assertStringContainsString('https://arindg.com/ferreteria-demo', $todo[0]['caption']);
-        $this->assertStringNotContainsString('btn:', json_encode($todo));
+        $this->postJson('/api/bot/inbound', ['telefono' => '51933333333', 'mensaje' => 'btn:cantidad', 'nombre' => 'QR'], ['X-Copilot-Token' => $token])->assertOk();
+        $r = $this->postJson('/api/bot/inbound', ['telefono' => '51933333333', 'mensaje' => 'btn:plan_pro', 'nombre' => 'QR'], ['X-Copilot-Token' => $token])->assertOk();
+        $todo = json_encode($r->json('respuestas'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->assertStringContainsString('https://arindg.com/ferreteria-demo', $todo, 'El enlace va en el texto');
+        $this->assertStringNotContainsString('btn:', $todo);
     }
 }
