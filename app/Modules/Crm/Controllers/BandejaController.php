@@ -25,8 +25,8 @@ class BandejaController extends Controller
         $project  = $this->project();
         $canales  = WaCanal::where('project_id', $project->id)->where('activo', true)->get();
 
+        // Trae tambien las archivadas: la bandeja las muestra en su pestana.
         $query = WaConversacion::whereIn('wa_canal_id', $canales->pluck('id'))
-            ->where('archivado', false)
             ->with(['canal', 'ultimoMensaje'])
             ->orderByDesc('ultimo_mensaje_at');
 
@@ -63,7 +63,12 @@ class BandejaController extends Controller
             'origen_anuncio'   => $c->origen_anuncio,
             'notas'            => $c->notas,
             'ultimo_mensaje'   => $c->ultimoMensaje?->contenido,
+            'ultimo_tipo'      => $c->ultimoMensaje?->tipo,
+            'ultimo_direccion' => $c->ultimoMensaje?->direccion,
             'ultimo_mensaje_at'=> $c->ultimo_mensaje_at?->toISOString(),
+            'fijada'           => (bool) $c->fijada,
+            'asignado_a'       => $c->asignado_a,
+            'archivado'        => (bool) $c->archivado,
             'canal_tipo'       => $c->canal->tipo,
             'canal_color'      => $c->canal->color,
             'canal_nombre'     => $c->canal->nombre,
@@ -101,7 +106,12 @@ class BandejaController extends Controller
                 'no_leidos'        => $c->no_leidos,
                 'estado'           => $c->estado,
                 'ultimo_mensaje'   => $c->ultimoMensaje?->contenido,
+                'ultimo_tipo'      => $c->ultimoMensaje?->tipo,
+                'ultimo_direccion' => $c->ultimoMensaje?->direccion,
                 'ultimo_mensaje_at'=> $c->ultimo_mensaje_at?->toISOString(),
+                'fijada'           => (bool) $c->fijada,
+                'asignado_a'       => $c->asignado_a,
+                'archivado'        => (bool) $c->archivado,
                 'canal_tipo'       => $c->canal->tipo,
                 'canal_color'      => $c->canal->color,
                 'canal_nombre'     => $c->canal->nombre,
@@ -263,12 +273,58 @@ class BandejaController extends Controller
             'estado'           => 'nullable|in:nuevo,contactado,demo_enviada,propuesta,cerrado,perdido,academia',
             'notas'            => 'nullable|string',
             'archivado'        => 'nullable|boolean',
+            'fijada'           => 'nullable|boolean',
+            'asignado_a'       => 'nullable|string|max:100',
+            'no_leidos'        => 'nullable|integer|min:0|max:1', // 1 = marcar como no leida
             'cliente_nombre'   => 'nullable|string|max:100',
             'cliente_sector'   => 'nullable|string|max:80',
             'cliente_distrito' => 'nullable|string|max:80',
         ]);
-        $conversacion->update(array_filter($data, fn($v) => !is_null($v)));
+        $cambios = array_filter($data, fn($v) => !is_null($v));
+        if ($request->has('asignado_a')) $cambios['asignado_a'] = $data['asignado_a']; // null = sin asignar
+        $conversacion->update($cambios);
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Eliminar chat: borra la conversacion, sus mensajes y los adjuntos que
+     * BIXO guardo en disco. No toca el telefono del cliente (Meta no permite
+     * borrar en el otro extremo); es "eliminar de mi bandeja".
+     */
+    public function eliminar(WaConversacion $conversacion)
+    {
+        $this->autorizar($conversacion);
+        foreach ($conversacion->mensajes()->whereNotNull('media_url')->pluck('media_url') as $url) {
+            $this->borrarAdjunto($url);
+        }
+        $conversacion->mensajes()->delete();
+        $conversacion->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Eliminar un mensaje del historial (solo de la bandeja). */
+    public function eliminarMensaje(WaConversacion $conversacion, int $mensaje)
+    {
+        $this->autorizar($conversacion);
+        $m = $conversacion->mensajes()->findOrFail($mensaje);
+        if ($m->media_url) {
+            $this->borrarAdjunto($m->media_url);
+        }
+        $m->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Solo borra archivos del disco publico de ESTE negocio (wa/{project}/...). */
+    private function borrarAdjunto(string $url): void
+    {
+        $prefijo = '/storage/wa/' . session('comunicaciones_project_id') . '/';
+        $pos = strpos($url, $prefijo);
+        if ($pos === false) {
+            return;
+        }
+        Storage::disk('public')->delete('wa/' . session('comunicaciones_project_id') . '/' . substr($url, $pos + strlen($prefijo)));
     }
 
     private function autorizar(WaConversacion $conv): void

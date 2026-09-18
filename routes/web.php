@@ -1024,6 +1024,8 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::post('/{conversacion}/enviar',        [BandejaController::class, 'enviar'])->name('enviar');
         Route::post('/{conversacion}/reenviar',      [BandejaController::class, 'reenviar'])->name('reenviar');
         Route::patch('/{conversacion}',              [BandejaController::class, 'actualizar'])->name('actualizar');
+        Route::delete('/{conversacion}',             [BandejaController::class, 'eliminar'])->name('eliminar');
+        Route::delete('/{conversacion}/mensajes/{mensaje}', [BandejaController::class, 'eliminarMensaje'])->name('mensajes.eliminar');
 
         Route::get('/clientes',                      [ClientesCrmController::class, 'index'])->name('clientes');
 

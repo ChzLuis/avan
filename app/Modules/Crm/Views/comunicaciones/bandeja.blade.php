@@ -19,42 +19,39 @@ $estadoColores = [
      style="height:100%">
 
 {{-- ══════════════════════
-     COLUMNA IZQUIERDA — Bandeja
+     COLUMNA IZQUIERDA — Lista de chats (estilo WhatsApp)
 ══════════════════════ --}}
-<div class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0" style="width:300px;">
+<div class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0" style="width:340px;">
 
-    @if($canales->isEmpty())
-    {{-- Sin linea de WhatsApp: la bandeja no puede recibir nada. Es el primer paso. --}}
-    <a href="{{ route('bixocrm.conectar') }}" class="block m-3 p-3 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 transition">
-        <p class="text-xs font-bold text-green-800">Conecta tu WhatsApp</p>
-        <p class="text-[11px] text-green-700 mt-0.5">Aún no hay ninguna línea conectada. El asistente te guía en 3 pasos.</p>
-    </a>
-    @endif
-
-    {{-- Header bandeja --}}
-    <div class="px-3 py-3 border-b border-gray-100">
+    {{-- Cabecera --}}
+    <div class="px-3 pt-3 pb-2 border-b border-gray-100">
         <div class="flex items-center justify-between mb-2">
-            <h2 class="text-sm font-bold text-gray-900">Bandeja</h2>
-            <span class="text-xs bg-green-100 text-green-700 font-black px-1.5 py-0.5 rounded-full"
-                  x-show="totalNoLeidos > 0" x-text="totalNoLeidos"></span>
+            <h2 class="text-base font-bold text-gray-900">Chats</h2>
+            <div class="flex items-center gap-1">
+                <span class="text-[10px] bg-green-100 text-green-700 font-black px-1.5 py-0.5 rounded-full" x-show="totalNoLeidos > 0" x-text="totalNoLeidos"></span>
+                <button @click="modalRespuestas = true" class="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100" title="Respuestas rápidas">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </button>
+            </div>
         </div>
-
-        {{-- Buscador --}}
-        <div class="relative mb-2">
-            <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
-            </svg>
-            <input type="text" x-model="busqueda" placeholder="Buscar nombre o teléfono..."
-                   class="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-400">
+        <div class="relative">
+            <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            <input type="text" x-model="busqueda" placeholder="Buscar un chat o un teléfono"
+                   class="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-400">
         </div>
-
-        {{-- Filtros --}}
-        <div class="flex gap-1 flex-wrap">
-            @foreach([['todos','Todos'],['sin_leer','Sin leer']] as [$val,$lbl])
-            <button @click="filtroEstado='{{ $val }}'"
-                    :class="filtroEstado==='{{ $val }}' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                    class="px-2 py-0.5 text-[10px] font-semibold rounded-full transition-colors">{{ $lbl }}</button>
-            @endforeach
+        {{-- Pestañas: como WhatsApp (Todos / No leídos) y como un CRM (Mías / Sin asignar / Cerradas) --}}
+        <div class="flex gap-1 mt-2 overflow-x-auto pb-0.5" style="scrollbar-width:none">
+            <template x-for="t in [['todas','Todas'],['sin_leer','No leídas'],['mias','Mías'],['sin_asignar','Sin asignar'],['cerradas','Cerradas'],['archivadas','Archivadas']]" :key="t[0]">
+                <button @click="vista = t[0]"
+                        :class="vista === t[0] ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        class="px-2.5 py-1 text-[11px] font-semibold rounded-full whitespace-nowrap transition-colors flex items-center gap-1">
+                    <span x-text="t[1]"></span>
+                    <span class="opacity-70" x-text="'(' + contarVista(t[0]) + ')'"></span>
+                </button>
+            </template>
+        </div>
+        <div class="flex gap-1 mt-1.5 flex-wrap" x-show="{{ $canales->count() }} > 1">
+            <button @click="filtroCanal='todos'" :class="filtroCanal==='todos' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'" class="px-2 py-0.5 text-[10px] font-semibold rounded-full">Todas las líneas</button>
             @foreach($canales as $c)
             <button @click="filtroCanal='{{ $c->tipo }}'"
                     :class="filtroCanal==='{{ $c->tipo }}' ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
@@ -64,64 +61,80 @@ $estadoColores = [
         </div>
     </div>
 
-    {{-- Métricas rápidas --}}
-    <div class="grid grid-cols-3 gap-0 border-b border-gray-100 text-center">
-        <div class="py-2 border-r border-gray-100">
-            <p class="text-lg font-black text-gray-900">{{ $metricas['total_hoy'] }}</p>
-            <p class="text-[9px] text-gray-400 uppercase font-medium">Hoy</p>
-        </div>
-        <div class="py-2 border-r border-gray-100">
-            <p class="text-lg font-black text-red-600">{{ $metricas['sin_leer'] }}</p>
-            <p class="text-[9px] text-gray-400 uppercase font-medium">Sin leer</p>
-        </div>
-        <div class="py-2">
-            <p class="text-lg font-black text-green-600">{{ $metricas['cerrados'] }}</p>
-            <p class="text-[9px] text-gray-400 uppercase font-medium">Cerrados</p>
-        </div>
-    </div>
+    @if($canales->isEmpty())
+    {{-- Sin linea de WhatsApp: la bandeja no puede recibir nada. Es el primer paso. --}}
+    <a href="{{ route('bixocrm.conectar') }}" class="block m-3 p-3 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 transition">
+        <p class="text-xs font-bold text-green-800">Conecta tu WhatsApp</p>
+        <p class="text-[11px] text-green-700 mt-0.5">Aún no hay ninguna línea conectada. El asistente te guía en 3 pasos.</p>
+    </a>
+    @endif
 
-    {{-- Lista de conversaciones --}}
+    {{-- Lista --}}
     <div class="flex-1 overflow-y-auto">
         <template x-for="conv in conversacionesFiltradas" :key="conv.id">
             <div @click="abrirConversacion(conv)"
-                 :class="convActiva?.id === conv.id ? 'border-l-2 border-green-500' : 'border-l-2 border-transparent hover:bg-gray-50'"
-                 :style="convActiva?.id === conv.id ? 'background:#0d2a1a10' : ''"
-                 class="px-3 py-2.5 cursor-pointer transition-colors border-b border-gray-50">
-                <div class="flex items-start gap-2">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                 @contextmenu.prevent="menuConv = conv.id"
+                 :class="convActiva?.id === conv.id ? 'bg-green-50' : 'hover:bg-gray-50'"
+                 class="group relative px-3 py-2.5 cursor-pointer transition-colors border-b border-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-full flex items-center justify-center text-white text-base font-bold flex-shrink-0 relative"
                          :style="`background:${conv.canal_color}`"
-                         x-text="(conv.cliente_nombre || conv.cliente_telefono).charAt(0).toUpperCase()"></div>
+                         x-text="(conv.cliente_nombre || conv.cliente_telefono).charAt(0).toUpperCase()">
+                    </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-1">
-                            <span class="text-xs font-semibold text-gray-900 truncate"
-                                  x-text="conv.cliente_nombre || conv.cliente_telefono"></span>
-                            <span class="text-[10px] text-gray-400 flex-shrink-0" x-text="conv.tiempo"></span>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-sm font-semibold text-gray-900 truncate flex items-center gap-1">
+                                <span x-text="conv.cliente_nombre || conv.cliente_telefono"></span>
+                                <span x-show="conv.fijada" class="text-gray-400 text-[10px]" title="Fijado">📌</span>
+                            </span>
+                            <span class="text-[10px] flex-shrink-0" :class="conv.no_leidos > 0 ? 'text-green-600 font-bold' : 'text-gray-400'" x-text="conv.tiempo"></span>
                         </div>
-                        <p class="text-[11px] text-gray-500 truncate mt-0.5"
-                           x-text="conv.ultimo_mensaje || 'Sin mensajes'"></p>
+                        <div class="flex items-center justify-between gap-2 mt-0.5">
+                            <p class="text-xs text-gray-500 truncate flex items-center gap-1">
+                                <span x-show="conv.ultimo_direccion === 'saliente' || conv.ultimo_direccion === 'out'" class="text-gray-400">✓</span>
+                                <span x-text="previewMensaje(conv)"></span>
+                            </p>
+                            <span class="flex items-center gap-1 flex-shrink-0">
+                                <span x-show="conv.bot_activo" class="text-[10px]" title="Bot atendiendo">🤖</span>
+                                <span x-show="conv.no_leidos > 0" class="bg-green-500 text-white text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center" x-text="conv.no_leidos"></span>
+                            </span>
+                        </div>
                         <div class="flex items-center gap-1 mt-1">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                                  :style="`background:${conv.canal_color}22; color:${conv.canal_color}`"
-                                  x-text="conv.canal_nombre"></span>
-                            <span class="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                                  :style="estadoBadge(conv.estado)"
-                                  x-text="estadoLabel(conv.estado)"></span>
-                            <span x-show="conv.no_leidos > 0"
-                                  class="ml-auto bg-green-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"
-                                  x-text="conv.no_leidos"></span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" :style="`background:${conv.canal_color}22; color:${conv.canal_color}`" x-text="conv.canal_nombre" x-show="{{ $canales->count() }} > 1"></span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded-full font-medium" :style="estadoBadge(conv.estado)" x-text="estadoLabel(conv.estado)"></span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium" x-show="conv.asignado_a" x-text="conv.asignado_a"></span>
                         </div>
+                    </div>
+                    {{-- Menú del chat (⋯), como WhatsApp --}}
+                    <button @click.stop="menuConv = menuConv === conv.id ? null : conv.id"
+                            class="absolute right-2 top-2 p-1 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition"
+                            :class="menuConv === conv.id ? 'opacity-100' : ''">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="menuConv === conv.id" x-cloak @click.outside="menuConv = null" @click.stop
+                         class="absolute right-2 top-9 z-30 w-52 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-sm">
+                        <button @click="fijar(conv)" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="conv.fijada ? 'Desfijar chat' : 'Fijar chat'"></button>
+                        <button @click="marcarNoLeida(conv)" class="w-full text-left px-3 py-2 hover:bg-gray-50">Marcar como no leído</button>
+                        <button @click="asignar(conv, conv.asignado_a === YO ? null : YO)" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="conv.asignado_a === YO ? 'Quitarme la asignación' : 'Asignármelo'"></button>
+                        <button @click="archivar(conv, !conv.archivado)" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="conv.archivado ? 'Desarchivar chat' : 'Archivar chat'"></button>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <button @click="eliminarChat(conv)" class="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50">Eliminar chat</button>
                     </div>
                 </div>
             </div>
         </template>
 
-        <div x-show="conversacionesFiltradas.length === 0"
-             class="flex flex-col items-center justify-center py-16 text-gray-400">
-            <svg class="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-            </svg>
-            <p class="text-xs">Sin conversaciones</p>
+        <div x-show="conversacionesFiltradas.length === 0" class="flex flex-col items-center justify-center py-16 text-gray-400">
+            <svg class="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <p class="text-xs">Nada por aquí</p>
         </div>
+    </div>
+
+    {{-- Pie: métricas del día --}}
+    <div class="grid grid-cols-3 border-t border-gray-100 text-center bg-gray-50">
+        <div class="py-1.5 border-r border-gray-100"><p class="text-sm font-black text-gray-900">{{ $metricas['total_hoy'] }}</p><p class="text-[9px] text-gray-400 uppercase">Hoy</p></div>
+        <div class="py-1.5 border-r border-gray-100"><p class="text-sm font-black text-red-600">{{ $metricas['sin_leer'] }}</p><p class="text-[9px] text-gray-400 uppercase">Sin leer</p></div>
+        <div class="py-1.5"><p class="text-sm font-black text-green-600">{{ $metricas['cerrados'] }}</p><p class="text-[9px] text-gray-400 uppercase">Cerrados</p></div>
     </div>
 </div>
 
@@ -131,43 +144,60 @@ $estadoColores = [
 <div class="flex flex-col flex-1 min-w-0" x-show="convActiva">
 
     {{-- Header chat --}}
-    <div class="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-         style="background:#0f1117;border-bottom:1px solid #1e2130;">
-        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+    <div class="flex items-center gap-3 px-4 py-2.5 flex-shrink-0 bg-white border-b border-gray-200">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
              :style="`background:${convActiva?.canal_color}`"
              x-text="(convActiva?.cliente_nombre || convActiva?.cliente_telefono || '?').charAt(0).toUpperCase()"></div>
-        <div class="flex-1 min-w-0">
-            <p class="text-sm font-bold text-white truncate" x-text="convActiva?.cliente_nombre || convActiva?.cliente_telefono"></p>
-            <div class="flex items-center gap-2">
-                <p class="text-xs text-gray-400" x-text="convActiva?.cliente_telefono"></p>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                      :style="`background:${convActiva?.canal_color}33; color:${convActiva?.canal_color}`"
-                      x-text="convActiva?.canal_nombre"></span>
+        <div class="flex-1 min-w-0 cursor-pointer" @click="mostrarFicha = !mostrarFicha">
+            <p class="text-sm font-bold text-gray-900 truncate" x-text="convActiva?.cliente_nombre || convActiva?.cliente_telefono"></p>
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+                <span x-text="convActiva?.cliente_telefono"></span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" :style="`background:${convActiva?.canal_color}22; color:${convActiva?.canal_color}`" x-text="convActiva?.canal_nombre"></span>
+                <span class="text-[10px]" x-show="convActiva?.asignado_a" x-text="'· ' + convActiva?.asignado_a"></span>
             </div>
         </div>
-        <select x-model="estadoActual"
-                @change="cambiarEstado(estadoActual)"
-                class="text-xs border text-white rounded-lg px-2 py-1 focus:outline-none"
-                style="background:#1e2130;border-color:#374151;">
+        <select x-model="estadoActual" @change="cambiarEstado(estadoActual)"
+                class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-gray-50 focus:outline-none">
             @foreach($estadoColores as $key => $cfg)
             <option value="{{ $key }}">{{ $cfg['label'] }}</option>
             @endforeach
         </select>
-
-        {{-- Toggle bot --}}
         <button @click="toggleBot()"
-                :title="convActiva?.bot_activo ? 'Bot activo — clic para pausar' : 'Bot pausado — clic para activar'"
+                :title="convActiva?.bot_activo ? 'Bot activo — clic para atender tú' : 'Bot pausado — clic para que atienda el bot'"
                 class="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border transition-colors"
-                :class="convActiva?.bot_activo
-                    ? 'border-green-600 text-green-400 hover:bg-green-900/30'
-                    : 'border-gray-600 text-gray-500 hover:bg-gray-800'">
-            🤖
-            <span x-text="convActiva?.bot_activo ? 'Bot ON' : 'Bot OFF'"></span>
+                :class="convActiva?.bot_activo ? 'border-green-500 text-green-700 bg-green-50' : 'border-gray-300 text-gray-500'">
+            🤖 <span x-text="convActiva?.bot_activo ? 'Bot ON' : 'Bot OFF'"></span>
         </button>
+        <div class="relative">
+            <button @click="buscarEnChat = !buscarEnChat" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Buscar en la conversación">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            </button>
+        </div>
+        <button @click="mostrarFicha = !mostrarFicha" class="p-1.5 rounded-lg hover:bg-gray-100" :class="mostrarFicha ? 'text-green-600' : 'text-gray-400'" title="Ficha del cliente">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </button>
+        <div class="relative">
+            <button @click="menuChat = !menuChat" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Más">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            </button>
+            <div x-show="menuChat" x-cloak @click.outside="menuChat = false"
+                 class="absolute right-0 top-9 z-30 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-sm">
+                <button @click="fijar(convActiva); menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="convActiva?.fijada ? 'Desfijar chat' : 'Fijar chat'"></button>
+                <button @click="marcarNoLeida(convActiva); menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50">Marcar como no leído</button>
+                <button @click="asignar(convActiva, convActiva?.asignado_a === YO ? null : YO); menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="convActiva?.asignado_a === YO ? 'Quitarme la asignación' : 'Asignármelo'"></button>
+                <button @click="archivar(convActiva, !convActiva?.archivado); menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="convActiva?.archivado ? 'Desarchivar chat' : 'Archivar chat'"></button>
+                <div class="border-t border-gray-100 my-1"></div>
+                <button @click="eliminarChat(convActiva); menuChat=false" class="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50">Eliminar chat</button>
+            </div>
+        </div>
+    </div>
+    <div x-show="buscarEnChat" x-cloak class="px-4 py-2 bg-white border-b border-gray-100">
+        <input type="text" x-model="busquedaChat" placeholder="Buscar en esta conversación…" class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-gray-50 focus:outline-none">
     </div>
 
     {{-- Mensajes --}}
-    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-2" id="chat-messages" style="background:#f0f0ea;">
+    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-2" id="chat-messages"
+         style="background-color:#efeae2;background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);background-size:18px 18px;">
         <template x-if="cargandoMensajes">
             <div class="flex justify-center py-8">
                 <svg class="w-6 h-6 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
@@ -178,7 +208,7 @@ $estadoColores = [
         </template>
 
         <template x-for="(msg, i) in mensajes" :key="msg.id">
-            <div>
+            <div x-show="!busquedaChat || (msg.contenido || '').toLowerCase().includes(busquedaChat.toLowerCase())">
                 <template x-if="i === 0 || esDiaDiferente(mensajes[i-1], msg)">
                     <div class="flex items-center gap-2 my-3">
                         <div class="flex-1 h-px bg-gray-300 opacity-40"></div>
@@ -187,12 +217,18 @@ $estadoColores = [
                         <div class="flex-1 h-px bg-gray-300 opacity-40"></div>
                     </div>
                 </template>
-                <div :class="msg.direccion === 'saliente' ? 'flex justify-end' : 'flex justify-start'">
-                    <div :class="msg.direccion === 'saliente'
-                                 ? 'rounded-2xl rounded-tr-sm'
-                                 : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm border border-gray-200'"
-                         :style="msg.direccion === 'saliente' ? 'background:#25d366;color:white' : ''"
-                         class="max-w-[72%] px-3 py-2 text-sm shadow-sm">
+                <div class="group flex" :class="esSaliente(msg) ? 'justify-end' : 'justify-start'">
+                    <div :class="esSaliente(msg)
+                                 ? 'rounded-2xl rounded-tr-sm text-gray-900'
+                                 : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm'"
+                         :style="esSaliente(msg) ? 'background:#d9fdd3' : ''"
+                         class="relative max-w-[72%] px-3 py-1.5 text-sm shadow-sm">
+                        {{-- Menú del mensaje (aparece al pasar el mouse) --}}
+                        <div class="absolute -top-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition" :class="esSaliente(msg) ? 'left-1' : 'right-1'">
+                            <button @click="abrirReenvio(msg)" class="bg-white border border-gray-200 rounded-full w-6 h-6 text-[11px] shadow hover:bg-gray-50" title="Reenviar">↪</button>
+                            <button @click="copiarMensaje(msg)" class="bg-white border border-gray-200 rounded-full w-6 h-6 text-[11px] shadow hover:bg-gray-50" title="Copiar texto">⧉</button>
+                            <button @click="eliminarMensaje(msg)" class="bg-white border border-gray-200 rounded-full w-6 h-6 text-[11px] shadow hover:bg-red-50 text-red-600" title="Eliminar del historial">🗑</button>
+                        </div>
                         {{-- Adjuntos: imagen en linea, PDF como enlace. Todo lo demas, texto. --}}
                         <template x-if="msg.tipo === 'imagen' && msg.media_url">
                             <a :href="msg.media_url" target="_blank" class="block mb-1">
@@ -213,14 +249,13 @@ $estadoColores = [
                         <template x-if="!(['documento','audio','video'].includes(msg.tipo) && msg.media_url)">
                             <p class="whitespace-pre-wrap break-words" x-text="msg.contenido"></p>
                         </template>
-                        <div :class="msg.direccion === 'saliente' ? 'text-green-200' : 'text-gray-400'"
-                             class="flex items-center justify-end gap-1 mt-0.5">
-                            <button @click="abrirReenvio(msg)" class="text-[10px] opacity-70 hover:opacity-100 mr-1" title="Reenviar a otra conversación">↪ reenviar</button>
+                        <div class="flex items-center justify-end gap-1 mt-0.5 text-gray-400">
                             <span class="text-[10px]" x-text="formatearHora(msg.created_at)"></span>
-                            <template x-if="msg.direccion === 'saliente'">
+                            <template x-if="esSaliente(msg)">
                                 <span class="text-[10px]"
-                                      :class="msg.estado === 'leido' ? 'text-blue-200' : ''"
-                                      x-text="msg.estado === 'leido' ? '✓✓' : msg.estado === 'entregado' ? '✓✓' : '✓'"></span>
+                                      :class="msg.estado === 'leido' ? 'text-sky-500' : ''"
+                                      :title="msg.estado === 'pendiente' ? 'No se entregó' : msg.estado"
+                                      x-text="msg.estado === 'leido' || msg.estado === 'entregado' ? '✓✓' : msg.estado === 'pendiente' ? '⚠' : '✓'"></span>
                             </template>
                         </div>
                     </div>
@@ -302,7 +337,7 @@ $estadoColores = [
 
 {{-- ═══ COLUMNA 3: FICHA DEL LEAD (CRM) ═══ --}}
 <div class="flex flex-col bg-white border-l border-gray-200 flex-shrink-0 overflow-y-auto"
-     style="width:290px;" x-show="convActiva" x-cloak>
+     style="width:290px;" x-show="convActiva && mostrarFicha" x-cloak>
     <div class="px-4 py-3 border-b border-gray-100">
         <div class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ficha del cliente</div>
     </div>
@@ -513,6 +548,7 @@ $estadoColores = [
 <script>
 const CONVERSACIONES_INIT = @json($conversacionesJs);
 const RESPUESTAS_INIT = @json($respuestasRapidas);
+const YO = @json(auth()->user()->name ?? '');
 
 function bandeja() {
     return {
@@ -525,6 +561,12 @@ function bandeja() {
         textoMensaje: '',
         errorEnvio: null,
         adjunto: null,
+        vista: 'todas',
+        menuConv: null,
+        menuChat: false,
+        mostrarFicha: true,
+        buscarEnChat: false,
+        busquedaChat: '',
         grabando: false,
         grabador: null,
         reenvio: null,
@@ -548,9 +590,22 @@ function bandeja() {
             return this.conversaciones.reduce((s, c) => s + (c.no_leidos || 0), 0);
         },
 
+        contarVista(v) {
+            return this.conversaciones.filter(c => this.enVista(c, v)).length;
+        },
+        enVista(c, v) {
+            const cerrada = ['cerrado', 'perdido'].includes(c.estado);
+            if (v === 'archivadas') return !!c.archivado;
+            if (c.archivado) return false;
+            if (v === 'sin_leer') return c.no_leidos > 0;
+            if (v === 'mias') return c.asignado_a === YO;
+            if (v === 'sin_asignar') return !c.asignado_a && !cerrada;
+            if (v === 'cerradas') return cerrada;
+            return !cerrada;
+        },
         get conversacionesFiltradas() {
             return this.conversaciones.filter(c => {
-                if (this.filtroEstado === 'sin_leer' && c.no_leidos === 0) return false;
+                if (!this.enVista(c, this.vista)) return false;
                 if (this.filtroCanal !== 'todos' && c.canal_tipo !== this.filtroCanal) return false;
                 if (this.busqueda) {
                     const q = this.busqueda.toLowerCase();
@@ -561,8 +616,68 @@ function bandeja() {
             }).map(c => ({
                 ...c,
                 tiempo: c.ultimo_mensaje_at ? this.tiempoRelativo(c.ultimo_mensaje_at) : '',
-            })).sort((a,b) => new Date(b.ultimo_mensaje_at||0) - new Date(a.ultimo_mensaje_at||0));
+            })).sort((a,b) => (b.fijada?1:0) - (a.fijada?1:0) || new Date(b.ultimo_mensaje_at||0) - new Date(a.ultimo_mensaje_at||0));
         },
+        previewMensaje(c) {
+            const t = c.ultimo_tipo;
+            if (t === 'imagen') return '📷 Foto' + (c.ultimo_mensaje && !c.ultimo_mensaje.startsWith('📷') ? ' · ' + c.ultimo_mensaje : '');
+            if (t === 'audio') return '🎤 Audio';
+            if (t === 'video') return '🎬 Video';
+            if (t === 'documento') return '📄 ' + (c.ultimo_mensaje || 'Documento');
+            return c.ultimo_mensaje || 'Sin mensajes';
+        },
+        esSaliente(m) { return m.direccion === 'saliente' || m.direccion === 'out'; },
+
+        // ── Acciones de chat (estilo WhatsApp) ──
+        async patchConv(conv, datos) {
+            const res = await fetch(`/bixocrm/${conv.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                body: JSON.stringify(datos),
+            });
+            if (res.ok) {
+                const c = this.conversaciones.find(x => x.id === conv.id);
+                if (c) Object.assign(c, datos);
+                if (this.convActiva?.id === conv.id) Object.assign(this.convActiva, datos);
+            }
+            this.menuConv = null;
+            return res.ok;
+        },
+        fijar(conv) { this.patchConv(conv, { fijada: !conv.fijada }); },
+        archivar(conv, si) {
+            this.patchConv(conv, { archivado: si });
+            if (si && this.convActiva?.id === conv.id) this.convActiva = null;
+        },
+        marcarNoLeida(conv) {
+            this.patchConv(conv, { no_leidos: 1 });
+            if (this.convActiva?.id === conv.id) this.convActiva = null;
+        },
+        asignar(conv, a) { this.patchConv(conv, { asignado_a: a }); },
+        async eliminarChat(conv) {
+            const ok = typeof bxConfirmar === 'function'
+                ? await bxConfirmar({ titulo: 'Eliminar chat', mensaje: 'Se borra de tu bandeja con todos sus mensajes y adjuntos. En el teléfono del cliente no cambia nada.', boton: 'Eliminar' })
+                : confirm('¿Eliminar este chat de la bandeja? No se puede deshacer.');
+            if (!ok) return;
+            const res = await fetch(`/bixocrm/${conv.id}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            });
+            if (res.ok) {
+                this.conversaciones = this.conversaciones.filter(x => x.id !== conv.id);
+                if (this.convActiva?.id === conv.id) { this.convActiva = null; this.mensajes = []; }
+            }
+            this.menuConv = null;
+        },
+        async eliminarMensaje(msg) {
+            const ok = confirm('¿Quitar este mensaje del historial? En el teléfono del cliente no cambia nada.');
+            if (!ok || !this.convActiva) return;
+            const res = await fetch(`/bixocrm/${this.convActiva.id}/mensajes/${msg.id}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            });
+            if (res.ok) this.mensajes = this.mensajes.filter(m => m.id !== msg.id);
+        },
+        copiarMensaje(msg) { navigator.clipboard?.writeText(msg.contenido || '').catch(() => {}); },
 
         get respuestasFiltradas() {
             if (!this.buscadorRespuestas) return this.respuestas;
@@ -782,7 +897,8 @@ function bandeja() {
             this.convActiva.notas            = this.editNotas;
         },
 
-        async archivarConversacion() {
+        archivarConversacion() { if (this.convActiva) this.archivar(this.convActiva, true); },
+        async archivarConversacionLegacy() {
             if (!this.convActiva) return;
             await fetch(`/bixocrm/${this.convActiva.id}`, {
                 method: 'PATCH',

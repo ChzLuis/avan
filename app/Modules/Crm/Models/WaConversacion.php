@@ -14,12 +14,13 @@ class WaConversacion extends Model
         'wa_canal_id', 'client_id', 'cliente_nombre', 'cliente_telefono',
         'cliente_sector', 'cliente_distrito', 'origen_anuncio',
         'estado', 'notas', 'archivado', 'no_leidos',
-        'ultimo_mensaje_at', 'asignado_a', 'bot_activo',
+        'ultimo_mensaje_at', 'asignado_a', 'bot_activo', 'fijada',
     ];
 
     protected $casts = [
         'archivado'         => 'boolean',
         'bot_activo'        => 'boolean',
+        'fijada'            => 'boolean',
         'ultimo_mensaje_at' => 'datetime',
     ];
 
