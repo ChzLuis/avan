@@ -572,7 +572,7 @@ function bandeja() {
         reenvio: null,
         buscadorReenvio: '',
         errorReenvio: null,
-        busqueda: '',
+        busqueda: @json((string) request('q', '')),
         filtroCanal: 'todos',
         filtroEstado: 'todos',
         estadoActual: 'nuevo',
