@@ -413,7 +413,12 @@ class ClienteCloud
             // Meta explica el rechazo en error.message: se guarda visible en el
             // panel porque casi siempre es accionable (token vencido, ventana
             // de 24h cerrada, plantilla no aprobada).
-            $motivo = (string) data_get($res->json(), 'error.message', 'HTTP ' . $res->status());
+            $motivo = match ((int) data_get($res->json(), 'error.code')) {
+                190    => 'Token vencido o inválido. Genera un token PERMANENTE de usuario del sistema en Meta y pégalo en la línea.',
+                131005 => 'El token no tiene permiso sobre este número: en Meta, asigna la cuenta de WhatsApp al usuario del sistema (control total).',
+                131047 => 'Pasaron más de 24 h desde el último mensaje del cliente: solo se puede escribir con una plantilla aprobada.',
+                default => (string) data_get($res->json(), 'error.message', 'HTTP ' . $res->status()),
+            };
             $this->canal->forceFill(['ultimo_error' => mb_substr($motivo, 0, 255)])->saveQuietly();
             Log::warning('wa_cloud.envio_rechazado', [
                 'proyecto' => $this->canal->project_id,
