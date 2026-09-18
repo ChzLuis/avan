@@ -233,8 +233,59 @@ commits verificados (1: modelos + soporte + jobs + comandos; 2: controladores
 + vistas + rutas), corriendo entre ambos los 42 tests del dominio (linea base
 por medir al empezar).
 
-**Siguiente paso del plan:** ejecutar Finanzas con este inventario. Despues:
-Crm+Bots, Tienda, Catalogo, Ventas.
+**HECHO (misma sesion, mas tarde): `f9257be`.** 111 archivos, 58 renombrados,
+bateria de 41 clases **448 → 448**, 90 rutas a `Modules\Finanzas` y 0 al
+sitio viejo, `FinanzasModuloTest` (6). Cambio de metodo por el tamaño:
+`scripts/modulos/plan_finanzas.py` GENERA el plan leyendo el codigo (47
+movimientos, 222 reemplazos, 12 archivos con `use` nuevos) y
+`mover_finanzas.py` lo aplica con `--dry` que verifica todos los conteos
+antes de tocar nada. Tres huecos del generador salieron al ejecutar y ya
+estan corregidos en el (usarlo como base para los modulos que faltan):
+(1) los nombres de vista elegidos por TERNARIO (plantilla de PDF en facturas
+y guias) no van dentro de `view(...)`; (2) `extends Controller` sin importar
+no era un token; (3) al renombrar un archivo hay que renombrar la
+declaracion `class X`. La primera pasada dejo la mudanza a medias por un
+error de indexado de vistas: se volvio al commit limpio con `git reset
+--hard` (rescatando antes los 2 archivos versionados editados a mano) y se
+rehizo entera; con `--dry` primero, nunca mas a medias.
+`Facturacion\{Auth,Dashboard}Controller` → `Facturacion{Auth,Dashboard}Controller`.
+El provider registra ahora `Modules/*/Commands`. La portada fiscal es la
+pantalla de telefono: en escritorio redirige a comprobantes (regla previa).
+
+### Retiro del sorteo, de `pedidos-bot` y de los webhooks muertos — HECHO (`f0c55d1`)
+
+Comprobado en ARIN antes de tocar nada: `rifas` = 0 y `rifa_ventas` = 0
+filas (nunca hubo una venta), ningun canal tiene `phone_number_id` (Meta no
+esta conectado), 0 entradas de "Meta webhook recibido" en el log, el conector
+Baileys no llama a `wa/rifa*`, los canales son `bot_type=baileys` y
+`wa_chatbot_flows` = 0. Nada de lo retirado se ejecutaba en produccion.
+
+Se fueron 42 archivos y 5 094 lineas: `RifaController`, `Rifa`, `RifaVenta`,
+`WaWebhookController` entero con sus 4 rutas (queda UN solo webhook de Meta:
+`/api/whatsapp/webhook`, con firma y tests), 28 rutas de rifas/pedidos-bot/
+wa-rifa, los closures `/bot-qr` y `/bot-status`, los reportes `ventasBot` y
+`seguimientoBot`, la rama `indexRifa` del dashboard comercial y los bloques
+`$_usaRifas` del layout, vistas, seeder, permisos `rifas.*`, 3 tests cuyo
+sujeto se fue (RifaIsolation, AislamientoTenant, WaWebhookFirma) y el trait
+`VerificaFirmaMeta`. Migracion `2026_09_17_230000` elimina las dos tablas.
+`SinSorteosTest` prohibe que vuelva la palabra, las rutas o los archivos.
+Conteos actualizados: 64 mutadoras en bixosales (antes 72), 87 permisos de
+referencia (antes 90). 704 rutas quedan.
+
+Metodo: `scripts/modulos/retirar_sorteos.py`, cortes anclados a cadena exacta
+con conteo, todo verificado en memoria antes de escribir o borrar. A la
+primera fallaron 3 de ~45 anclajes (conteo real 9 y no 5, un `routeIs`
+distinto, un comentario JS huerfano) y el guardian encontro 8 restos mas en
+menus, colores, comentarios y un default `'rifa'`: hacer el guardian ANTES de
+dar por terminado un retiro.
+
+Deuda anotada: `WaChatbotFlow` y las pantallas de chatbot del CRM
+(`bixocrm/chatbot/*`) quedan sin motor que las ejecute (el unico que las
+corria era el webhook retirado; 0 flujos en ARIN). Decidir su retiro con la
+mudanza de `Bots/`: el constructor (`BotFlow`) es el unico motor.
+
+**Siguiente paso del plan:** modulo 5/8, `Crm/` + `Bots/` (la mudanza en si;
+el retiro ya esta hecho). Bots/IA solo en el CRM: 116 rutas fuera hoy.
 
 Trampas que costaron: `$r->input('entry')` es null sin `Content-Type` (leer
 `getContent()`); los bloques del FlowRunner van indexados por id y necesitan
