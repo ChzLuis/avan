@@ -52,3 +52,8 @@ por clase: no necesita cambios.
   si hay ambos, los botones van en un segundo mensaje con `botones_texto`.
 - `ClienteCloud::marcarLeido` envia el indicador "escribiendo...".
 - Por Baileys (sin `wa_canal_id`) `BotWebhookController` aplana todo al `fallback` de texto.
+
+- Acuses (`statuses`) de Meta: `procesarAcuses` sube el estado del WaMensaje (nunca retrocede);
+  `failed` -> `fallido` + `error` legible. `anotarEnvios` guarda el id de Meta en cada saliente.
+- `opciones` de 4 a 10 salen como lista nativa (id = numero de la fila).
+- Toques: el motor recibe el id (`btn:x` o numero); la bandeja guarda el titulo (`texto_visible`).

@@ -32,6 +32,15 @@ entrar, alta desde el chat, ganado/perdido con motivo, etapas editables.
   y `demo` (enlace a ferreteria-demo). Respaldo previo en el scratchpad de la sesion
   (`flujo_17_respaldo_20260918_130955.txt`).
 
+**Mejoras Meta 2** (`3783148`, en ARIN): acuses `statuses` -> WaMensaje.estado (enviado/entregado/
+leido/fallido + columna `error` con motivo en castellano; 131047 = ventana de 24 h); el bot anota
+el id de Meta en cada saliente (`anotarEnvios`); el sondeo de la bandeja devuelve `estados` y los
+checks se actualizan (✓, ✓✓, azul, ⚠ rojo con motivo). El toque de un boton se guarda como
+"👆 Titulo" (`texto_visible`), no como id. `opciones` de 4 a 10 -> lista nativa. Ubicacion -> enlace
+a Google Maps; contacto -> "👤 Nombre · +51...". La columna `error` se creo en ARIN por --sql y se
+registro en `migrations` (batch 60). OJO: direccion de salientes es 'out' (bot) o 'saliente'
+(bandeja): consultar siempre con whereIn.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
