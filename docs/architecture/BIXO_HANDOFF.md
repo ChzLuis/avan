@@ -456,6 +456,12 @@ Guardian `VentasModuloTest` (4).
   (`'operaciones::' . $vista`) haria que el generador renombrara el literal y
   quedara doble; los guardianes llevan el nombre completo.
 
+**Suite completa al cierre (168 clases, sin las 2 lentas de HTML):** 17 rojos /
+1458 verdes, y los 17 son los ya explicados antes de mover nada (fixtures sin
+modulo `clients` en Bot*, Diseño clasico, ComercialDashboard, FusionPortales,
+SettingsAuthorization preset, StorefrontEngineConsolidation, MenuTienda,
+PublicTemplateRuntime). Ningun rojo nuevo por la mudanza.
+
 **Estado final:** 66 rutas quedan en Core (auth, workspace, ajustes, proyectos,
 perfil, sedes, cara del portal comercial); el resto en 10 modulos. Ver
 `app/Modules/README.md` (tabla y receta de despliegue). **Nada desplegado.**
