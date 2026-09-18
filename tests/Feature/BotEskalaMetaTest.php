@@ -123,10 +123,12 @@ class BotEskalaMetaTest extends TestCase
         $this->meta($this->toque('btn:precios'));
         $env = $this->nuevos($n);
 
-        $this->assertCount(1, $env);
-        $this->assertStringContainsString('Start — S/ 490', $this->cuerpo($env[0]));
-        $this->assertStringContainsString('Business — S/ 690', $this->cuerpo($env[0]));
-        $this->assertSame('button:btn:comparar|btn:tienda|btn:quiero', $this->resumen($env[0]));
+        $this->assertCount(2, $env, 'Primero el flyer, luego el texto con botones');
+        $this->assertSame('image', $this->resumen($env[0]));
+        $this->assertStringContainsString('planes.jpg', $env[0]['image']['link']);
+        $this->assertStringContainsString('Start — S/ 490', $this->cuerpo($env[1]));
+        $this->assertStringContainsString('Business — S/ 690', $this->cuerpo($env[1]));
+        $this->assertSame('button:btn:comparar|btn:tienda|btn:quiero', $this->resumen($env[1]));
         $this->sinIa();
     }
 
@@ -138,7 +140,7 @@ class BotEskalaMetaTest extends TestCase
         $this->meta($this->toque('btn:comparar'));
         $env = $this->nuevos($n);
 
-        $this->assertSame('button+image:btn:quiero|btn:tienda|btn:dudas', $this->resumen($env[0]));
+        $this->assertSame('button:btn:quiero|btn:tienda|btn:dudas', $this->resumen($env[0]), 'El flyer ya se vio en precios');
         $this->assertStringContainsString('Pro: hasta 100', $this->cuerpo($env[0]));
         $this->assertStringContainsString('Business: hasta 200', $this->cuerpo($env[0]));
     }
@@ -211,13 +213,13 @@ class BotEskalaMetaTest extends TestCase
         // Precio directo, sin apertura.
         $this->meta($this->texto('precio?'));
         $env = $this->enviados();
-        $this->assertCount(1, $env);
-        $this->assertStringContainsString('Start — S/ 490', $this->cuerpo($env[0]));
+        $this->assertCount(2, $env);
+        $this->assertStringContainsString('Start — S/ 490', $this->cuerpo($env[1]));
 
         // Ejemplos -> demo. Que incluye -> comparar. Quiero comprar -> quiero.
         $casos = [
             ['quiero ver ejemplos', 'cta_url+image:https://arindg.com/ferreteria-demo'],
-            ['qué incluye?', 'button+image:btn:quiero|btn:tienda|btn:dudas'],
+            ['qué incluye?', 'button:btn:quiero|btn:tienda|btn:dudas'],
             ['quiero comprar', 'text'],
         ];
         foreach ($casos as $j => [$msg, $esperado]) {
