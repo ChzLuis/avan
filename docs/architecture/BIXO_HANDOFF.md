@@ -58,6 +58,18 @@ producto CRM. `pdf` ya no promete un PDF que nadie manda: lo envia el asesor. `m
 texto de relleno. Un segundo entre mensajes seguidos (`ClienteCloud::PAUSA_ENTRE_MENSAJES_MS`).
 Rechazos de Meta 190/131005/131047 explicados en castellano. Boton "Probar conexion" por canal.
 
+**Embudo de Eskala v3** (flujo 17 en ARIN; generador `flujo_eskala_v3.py` en el scratchpad, fixture
+en tests/Fixtures): ¿como vendes? (3 botones) -> dolor + captura + "Ver tienda en vivo" (cta_url con
+foto de cabecera) -> ¿cuantos productos? (rangos: hasta 50 / 51-100 / +100) -> UN plan con precio y
+renovacion (S/ 100/año) + 3 caminos (🚀 Quiero mi tienda / 📋 Que incluye / 💬 Duda) -> cierre humano
+que abre el trato con el valor del plan (490/590/690). Determinista: sin IA salvo `dudas` (con
+fallback si no hay IA). "¿cuanto cuesta?" se responde al toque (`precio_rapido`). Router con
+`palabra_completa` (sin eso los comodines `ferreter*` no funcionan sin IA). El router inicial ya no
+manda la apertura cuando el primer mensaje trae intencion, y acepta cualquier rama. 50 % adelanto y
+saldo al entregar: lo propuso el usuario. La IA (modulo bot_ia + feature_bot_ia) sigue SIN licenciar
+para Eskala: solo afecta a `dudas`. Pendiente: metricas por etapa para A/B y apertura distinta si
+viene de anuncio (referral, migracion ajena sin correr en ARIN).
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
