@@ -112,6 +112,36 @@ class CanalesController extends Controller
         return response()->json(['ok' => true, 'canal' => $canal->makeVisible(['verify_token']), 'suscripcion' => $suscripcion]);
     }
 
+    /**
+     * Prueba la linea con lo GUARDADO (o con el token/phone ID que se acaba de
+     * escribir, sin guardarlo). Si Meta responde, limpia el "ultimo error" para
+     * que la tarjeta deje de mostrar un fallo ya resuelto.
+     */
+    public function probarCanal(Request $request, WaCanal $canal)
+    {
+        abort_unless($canal->project_id === $this->project()->id, 403);
+        $data = $request->validate([
+            'phone_number_id' => 'nullable|string|max:80',
+            'access_token'    => 'nullable|string',
+        ]);
+        $phoneId = filled($data['phone_number_id'] ?? null) ? $data['phone_number_id'] : (string) $canal->phone_number_id;
+        $token   = filled($data['access_token'] ?? null) ? $data['access_token'] : (string) $canal->access_token;
+        if ($phoneId === '' || $token === '') {
+            return response()->json(['ok' => false, 'error' => 'Faltan el Phone number ID o el token.'], 422);
+        }
+
+        $r = ClienteCloud::probarCredenciales($phoneId, $token, $canal->api_version);
+        $usaGuardado = empty($data['access_token']) && empty($data['phone_number_id']);
+        if ($usaGuardado) {
+            $canal->forceFill($r['ok']
+                ? ['ultimo_error' => null, 'ultimo_ok_at' => now()]
+                : ['ultimo_error' => mb_substr((string) $r['error'], 0, 255)]
+            )->saveQuietly();
+        }
+
+        return response()->json($r + ['guardado' => $usaGuardado], $r['ok'] ? 200 : 422);
+    }
+
     public function eliminar(WaCanal $canal)
     {
         abort_unless($canal->project_id === $this->project()->id, 403);

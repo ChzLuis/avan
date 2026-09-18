@@ -52,8 +52,20 @@
                     @elseif($canal->ultimo_ok_at)
                     <p class="text-[11px] text-green-700 mt-1">Último envío correcto {{ $canal->ultimo_ok_at->diffForHumans() }}</p>
                     @endif
+                    <template x-if="prueba[{{ $canal->id }}]">
+                        <p class="text-[11px] mt-1 font-medium" :class="prueba[{{ $canal->id }}].ok ? 'text-green-700' : 'text-red-700'"
+                           x-text="prueba[{{ $canal->id }}].ok
+                               ? ('✓ Meta reconoce el número ' + (prueba[{{ $canal->id }}].numero || '') + (prueba[{{ $canal->id }}].nombre ? ' (' + prueba[{{ $canal->id }}].nombre + ')' : '') + '. El token funciona.')
+                               : ('✗ ' + (prueba[{{ $canal->id }}].error || 'Meta rechazó las credenciales.'))"></p>
+                    </template>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
+                    @if($canal->phone_number_id)
+                    <button @click="probarCanal({{ $canal->id }})" :disabled="probando === {{ $canal->id }}"
+                            class="px-3 py-1.5 text-xs font-semibold border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors disabled:opacity-60">
+                        <span x-text="probando === {{ $canal->id }} ? 'Probando…' : 'Probar conexión'"></span>
+                    </button>
+                    @endif
                     <button @click="abrirModal({{ $canal->id }})"
                             class="px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         Editar
@@ -169,6 +181,14 @@
                 <textarea x-model="form.access_token" rows="2"
                           placeholder="EAAxxxxx..."
                           class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 font-mono resize-none"></textarea>
+                <div class="flex items-center gap-2 mt-1.5" x-show="form.id || (form.phone_number_id && form.access_token)">
+                    <button type="button" @click="probarFormulario()" :disabled="probando === 'form'"
+                            class="px-3 py-1 text-[11px] font-semibold border border-green-300 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-60">
+                        <span x-text="probando === 'form' ? 'Probando…' : 'Probar antes de guardar'"></span>
+                    </button>
+                    <span x-show="pruebaForm" x-cloak class="text-[11px] font-medium" :class="pruebaForm?.ok ? 'text-green-700' : 'text-red-700'"
+                          x-text="pruebaForm ? (pruebaForm.ok ? '✓ Funciona: ' + (pruebaForm.numero || '') : '✗ ' + (pruebaForm.error || 'Meta rechazó las credenciales.')) : ''"></span>
+                </div>
             </div>
 
             {{-- Firma los mensajes que entran: sin ella el webhook acepta a
@@ -226,11 +246,15 @@ function configuracion() {
     return {
         modal: false,
         guardando: false,
+        probando: null,
+        prueba: {},
+        pruebaForm: null,
         form: {},
 
         init() {},
 
         abrirModal(id) {
+            this.pruebaForm = null;
             if (id) {
                 const c = CANALES_INIT.find(x => x.id === id);
                 this.form = { ...c, access_token: '', app_secret: '' };
@@ -259,6 +283,36 @@ function configuracion() {
                 bxAviso('Error al guardar', 'error');
             }
             this.guardando = false;
+        },
+
+        // Prueba la linea con las credenciales GUARDADAS (tras pegar un token nuevo).
+        async probarCanal(id) {
+            this.probando = id;
+            try {
+                const res = await fetch(`{{ url('/bixocrm/canales') }}/${id}/probar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                    body: '{}',
+                });
+                this.prueba = { ...this.prueba, [id]: await res.json().catch(() => ({ ok: false, error: 'Sin respuesta del servidor.' })) };
+            } catch (e) { this.prueba = { ...this.prueba, [id]: { ok: false, error: 'No se pudo consultar a Meta.' } }; }
+            this.probando = null;
+        },
+
+        // Prueba lo escrito en el formulario sin guardarlo (token nuevo, phone ID nuevo).
+        async probarFormulario() {
+            this.probando = 'form'; this.pruebaForm = null;
+            const url = this.form.id ? `{{ url('/bixocrm/canales') }}/${this.form.id}/probar` : '{{ route('bixocrm.conectar.probar') }}';
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                    body: JSON.stringify({ phone_number_id: this.form.phone_number_id || '', access_token: this.form.access_token || '' }),
+                });
+                const d = await res.json().catch(() => ({}));
+                this.pruebaForm = d.ok ? d : { ok: false, error: d.error || (d.errors ? Object.values(d.errors).flat().join(' ') : d.message) };
+            } catch (e) { this.pruebaForm = { ok: false, error: 'No se pudo consultar a Meta.' }; }
+            this.probando = null;
         },
 
         async eliminar(id, nombre) {

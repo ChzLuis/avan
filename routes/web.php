@@ -1045,6 +1045,7 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::post('/conectar/probar',              [CanalesController::class, 'probar'])->middleware('throttle:20,1')->name('conectar.probar');
         Route::post('/canales',                      [CanalesController::class, 'guardar'])->name('canales.guardar');
         Route::delete('/canales/{canal}',            [CanalesController::class, 'eliminar'])->name('canales.eliminar');
+        Route::post('/canales/{canal}/probar',       [CanalesController::class, 'probarCanal'])->middleware('throttle:20,1')->name('canales.probar');
 
         // Chatbot
         Route::get('/chatbot',                       [CanalesController::class, 'chatbot'])->name('chatbot');

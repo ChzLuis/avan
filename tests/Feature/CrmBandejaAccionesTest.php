@@ -111,4 +111,47 @@ class CrmBandejaAccionesTest extends TestCase
         $this->enElCrm()->deleteJson("/bixocrm/{$ajena->id}/mensajes/{$m->id}")->assertForbidden();
         $this->assertDatabaseHas('wa_conversaciones', ['id' => $ajena->id]);
     }
+    /** Regresion: la relacion mensajes() ordena ASC por su cuenta; el limit(100)+reverse() salia de cabeza. */
+    public function test_los_mensajes_salen_en_orden_cronologico_aunque_haya_mas_de_cien(): void
+    {
+        $conv = $this->conv();
+        for ($i = 1; $i <= 105; $i++) {
+            $conv->mensajes()->create(['direccion' => $i % 2 ? 'in' : 'out', 'tipo' => 'texto', 'contenido' => "m{$i}", 'estado' => 'enviado', 'created_at' => now()->subMinutes(200 - $i)]);
+        }
+        // Tres en el mismo segundo: el id desempata.
+        $t = now();
+        foreach (['a', 'b', 'c'] as $x) {
+            $conv->mensajes()->create(['direccion' => 'out', 'tipo' => 'texto', 'contenido' => "mismo-{$x}", 'estado' => 'enviado', 'created_at' => $t]);
+        }
+
+        $ids = collect($this->enElCrm()->getJson("/bixocrm/{$conv->id}/mensajes")->assertOk()->json('mensajes'));
+
+        $this->assertCount(100, $ids, 'Se pintan los 100 mas recientes');
+        $this->assertSame('mismo-c', $ids->last()['contenido'], 'El ultimo de la pantalla es el mas nuevo');
+        $this->assertSame($ids->pluck('id')->sort()->values()->all(), $ids->pluck('id')->all(), 'Cronologico de arriba a abajo');
+        $this->assertSame('m9', $ids->first()['contenido'], 'Los mas viejos (m1..m8) quedan fuera, no los nuevos');
+    }
+
+    public function test_probar_conexion_usa_lo_guardado_y_limpia_el_ultimo_error_si_meta_responde(): void
+    {
+        \Illuminate\Support\Facades\Http::fake(['graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response(['display_phone_number' => '+1 555', 'verified_name' => 'Eskala'], 200)]);
+        $this->canal->forceFill(['ultimo_error' => 'Authentication Error'])->save();
+
+        $r = $this->enElCrm()->postJson("/bixocrm/canales/{$this->canal->id}/probar", [])->assertOk();
+
+        $this->assertTrue($r->json('ok'));
+        $this->assertSame('+1 555', $r->json('numero'));
+        $this->assertNull($this->canal->fresh()->ultimo_error);
+        \Illuminate\Support\Facades\Http::assertSent(fn ($req) => $req->hasHeader('Authorization', 'Bearer T'));
+
+    }
+
+    public function test_probar_con_un_token_escrito_prueba_ese_token_y_no_toca_lo_guardado(): void
+    {
+        \Illuminate\Support\Facades\Http::fake(['graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response(['error' => ['message' => 'Invalid OAuth access token']], 401)]);
+        $r = $this->enElCrm()->postJson("/bixocrm/canales/{$this->canal->id}/probar", ['access_token' => 'NUEVO'])->assertStatus(422);
+        $this->assertStringContainsString('OAuth', $r->json('error'));
+        $this->assertNull($this->canal->fresh()->ultimo_error, 'Probar un token sin guardar no ensucia el estado del canal');
+        \Illuminate\Support\Facades\Http::assertSent(fn ($req) => $req->hasHeader('Authorization', 'Bearer NUEVO'));
+    }
 }

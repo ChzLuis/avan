@@ -86,7 +86,9 @@ class BandejaController extends Controller
         $this->autorizar($conversacion);
         $conversacion->update(['no_leidos' => 0]);
         // Varios mensajes en el mismo segundo (el bot manda tres seguidos): el id desempata, si no salian de cabeza.
-        $mensajes = $conversacion->mensajes()->orderByDesc('created_at')->orderByDesc('id')->limit(100)->get()->reverse()->values();
+        // reorder(): la relacion trae su propio orderBy('created_at') ASC y, sin quitarlo, el
+        // limit(100) se quedaba con los MAS VIEJOS y el reverse() los pintaba de cabeza.
+        $mensajes = $conversacion->mensajes()->reorder()->orderByDesc('created_at')->orderByDesc('id')->limit(100)->get()->reverse()->values();
         return response()->json([
             'mensajes'     => $mensajes,
             'conversacion' => $conversacion->load('canal'),
@@ -180,7 +182,7 @@ class BandejaController extends Controller
         if ($request->conversacion_id) {
             $conv = WaConversacion::find($request->conversacion_id);
             if ($conv && $canales->contains($conv->wa_canal_id)) {
-                $mensajesNuevos = $conv->mensajes()->where('created_at', '>=', $since)->orderBy('id')->get();
+                $mensajesNuevos = $conv->mensajes()->reorder()->where('created_at', '>=', $since)->orderBy('created_at')->orderBy('id')->get();
                 // Acuses de Meta sobre mensajes que ya estaban en pantalla (✓ -> ✓✓ -> azul, o fallo).
                 $estados = $conv->mensajes()->whereIn('direccion', ['out', 'saliente'])->where('updated_at', '>=', $since)
                     ->get(['id', 'estado', 'error', 'leido_at', 'entregado_at']);
