@@ -3,9 +3,12 @@
 @section('content')
 
 {{-- Asistente de conexion con Meta (WhatsApp Cloud API) en 3 pasos.
-     Paso 1 prueba las credenciales contra Meta ANTES de guardar; paso 2 da la
-     URL del webhook y el verify token para pegar en developers.facebook.com;
-     paso 3 guarda el canal (misma ruta que la pantalla de canales). --}}
+     Paso 1 prueba las credenciales contra Meta; al continuar SE GUARDA el
+     canal (misma ruta que la pantalla de canales), porque Meta verifica el
+     webhook comparando el verify token con los canales guardados: mostrarlo
+     antes de guardarlo hacia fallar la verificacion (visto el 2026-09-18).
+     Paso 2 da la URL y el token para pegar en developers.facebook.com;
+     paso 3 confirma. --}}
 <div class="max-w-3xl mx-auto py-8 px-4" x-data="asistenteMeta()" x-init="init()">
 
     @if(session('bienvenida'))
@@ -16,7 +19,7 @@
     @endif
 
     <h1 class="text-xl font-bold text-gray-900 mb-1">Conectar WhatsApp con Meta</h1>
-    <p class="text-sm text-gray-500 mb-6">Tres pasos. Nada se guarda hasta que Meta confirme que las credenciales funcionan.</p>
+    <p class="text-sm text-gray-500 mb-6">Tres pasos. Las credenciales se guardan solo cuando Meta confirma que funcionan.</p>
 
     {{-- Pasos --}}
     <div class="flex items-center gap-2 mb-6 text-xs font-semibold">
@@ -61,13 +64,15 @@
                     class="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style="background:#25d366">
                 <span x-text="cargando ? 'Consultando a Meta...' : 'Probar conexión'"></span>
             </button>
-            <button type="button" x-show="probado" x-cloak @click="paso = 2" class="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-300 text-gray-700">Continuar →</button>
+            <button type="button" x-show="probado" x-cloak @click="guardar()" :disabled="cargando" class="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-300 text-gray-700 disabled:opacity-50">
+                <span x-text="cargando ? 'Guardando...' : 'Guardar y continuar →'"></span>
+            </button>
         </div>
     </div>
 
     {{-- PASO 2: webhook --}}
     <div x-show="paso === 2" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-        <p class="text-sm text-gray-600">En <b>WhatsApp → Configuración → Webhook</b> pega estos dos datos y suscríbete al campo <b>messages</b>.</p>
+        <p class="text-sm text-gray-600">La línea ya está guardada. En <b>WhatsApp → Configuración → Webhook</b> pega estos dos datos, pulsa <b>Verificar y guardar</b> y suscríbete al campo <b>messages</b>.</p>
         <div>
             <label class="block text-xs font-semibold text-gray-700 mb-1">URL de devolución de llamada</label>
             <div class="flex items-center gap-2 p-2 rounded-xl bg-gray-50 border border-gray-200">
@@ -86,9 +91,7 @@
         <div x-show="error" x-cloak class="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700" x-text="error"></div>
         <div class="flex items-center gap-3">
             <button type="button" @click="paso = 1" class="px-4 py-2 rounded-xl text-sm border border-gray-300 text-gray-700">← Atrás</button>
-            <button type="button" @click="guardar()" :disabled="cargando" class="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style="background:#25d366">
-                <span x-text="cargando ? 'Guardando...' : 'Ya lo pegué en Meta, guardar'"></span>
-            </button>
+            <button type="button" @click="paso = 3" class="px-4 py-2 rounded-xl text-sm font-semibold text-white" style="background:#25d366">Ya lo verifiqué en Meta →</button>
         </div>
     </div>
 
@@ -136,7 +139,7 @@ function asistenteMeta() {
                     body: JSON.stringify(this.form),
                 });
                 const d = await r.json();
-                if (d.ok) { this.form.id = d.canal.id; this.paso = 3; } else this.error = d.message || 'No se pudo guardar.';
+                if (d.ok) { this.form.id = d.canal.id; this.form.access_token = ''; this.form.app_secret = ''; this.paso = 2; } else this.error = d.message || 'No se pudo guardar.';
             } catch (e) { this.error = 'No se pudo guardar.'; }
             this.cargando = false;
         },
