@@ -19,7 +19,8 @@
         .nav-tag { margin-left:auto;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.12);color:#e0e0f0; }
     </style>
 </head>
-<body class="font-sans antialiased bg-gray-50" x-data="{ open:true }">
+{{-- En movil la barra lateral arranca cerrada (es fija y taparia el chat); en PC, abierta. --}}
+<body class="font-sans antialiased bg-gray-50" x-data="{ open: window.innerWidth >= 1024 }">
 
 <div class="flex h-screen overflow-hidden">
 

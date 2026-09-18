@@ -21,7 +21,8 @@ $estadoColores = [
 {{-- ══════════════════════
      COLUMNA IZQUIERDA — Lista de chats (estilo WhatsApp)
 ══════════════════════ --}}
-<div class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0" style="width:340px;">
+<div class="flex-col bg-white border-r border-gray-200 flex-shrink-0 w-full md:w-[340px]"
+     :class="convActiva ? 'hidden md:flex' : 'flex'">
 
     {{-- Cabecera --}}
     <div class="px-3 pt-3 pb-2 border-b border-gray-100">
@@ -131,7 +132,7 @@ $estadoColores = [
     </div>
 
     {{-- Pie: métricas del día --}}
-    <div class="grid grid-cols-3 border-t border-gray-100 text-center bg-gray-50">
+    <div class="hidden md:grid grid-cols-3 border-t border-gray-100 text-center bg-gray-50">
         <div class="py-1.5 border-r border-gray-100"><p class="text-sm font-black text-gray-900">{{ $metricas['total_hoy'] }}</p><p class="text-[9px] text-gray-400 uppercase">Hoy</p></div>
         <div class="py-1.5 border-r border-gray-100"><p class="text-sm font-black text-red-600">{{ $metricas['sin_leer'] }}</p><p class="text-[9px] text-gray-400 uppercase">Sin leer</p></div>
         <div class="py-1.5"><p class="text-sm font-black text-green-600">{{ $metricas['cerrados'] }}</p><p class="text-[9px] text-gray-400 uppercase">Cerrados</p></div>
@@ -141,38 +142,34 @@ $estadoColores = [
 {{-- ══════════════════════
      COLUMNA CENTRAL — Chat
 ══════════════════════ --}}
-<div class="flex flex-col flex-1 min-w-0" x-show="convActiva">
+<div class="flex-col flex-1 min-w-0" :class="convActiva ? 'flex' : 'hidden'">
 
-    {{-- Header chat --}}
-    <div class="flex items-center gap-3 px-4 py-2.5 flex-shrink-0 bg-white border-b border-gray-200">
-        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-             :style="`background:${convActiva?.canal_color}`"
+    {{-- Header chat: nombre y linea a la izquierda, acciones a la derecha. En movil, flecha para volver a la lista. --}}
+    <div class="flex items-center gap-2 px-2 md:px-4 py-2 flex-shrink-0 bg-white border-b border-gray-200">
+        <button @click="convActiva = null" class="md:hidden p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100" title="Volver">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 cursor-pointer"
+             :style="`background:${convActiva?.canal_color}`" @click="mostrarFicha = !mostrarFicha"
              x-text="(convActiva?.cliente_nombre || convActiva?.cliente_telefono || '?').charAt(0).toUpperCase()"></div>
         <div class="flex-1 min-w-0 cursor-pointer" @click="mostrarFicha = !mostrarFicha">
             <p class="text-sm font-bold text-gray-900 truncate" x-text="convActiva?.cliente_nombre || convActiva?.cliente_telefono"></p>
-            <div class="flex items-center gap-2 text-xs text-gray-500">
+            <p class="text-[11px] text-gray-500 truncate">
                 <span x-text="convActiva?.cliente_telefono"></span>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" :style="`background:${convActiva?.canal_color}22; color:${convActiva?.canal_color}`" x-text="convActiva?.canal_nombre"></span>
-                <span class="text-[10px]" x-show="convActiva?.asignado_a" x-text="'· ' + convActiva?.asignado_a"></span>
-            </div>
+                <span x-show="{{ $canales->count() }} > 1" x-text="' · ' + (convActiva?.canal_nombre || '')"></span>
+                <span x-show="convActiva?.asignado_a" x-text="' · ' + (convActiva?.asignado_a || '')"></span>
+                <span x-show="convActiva?.bot_activo" class="text-green-600 font-semibold"> · Bot atendiendo</span>
+            </p>
         </div>
-        <select x-model="estadoActual" @change="cambiarEstado(estadoActual)"
-                class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-gray-50 focus:outline-none">
-            @foreach($estadoColores as $key => $cfg)
-            <option value="{{ $key }}">{{ $cfg['label'] }}</option>
-            @endforeach
-        </select>
         <button @click="toggleBot()"
                 :title="convActiva?.bot_activo ? 'Bot activo — clic para atender tú' : 'Bot pausado — clic para que atienda el bot'"
-                class="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border transition-colors"
+                class="px-2 py-1 rounded-lg text-[11px] font-semibold border transition-colors flex-shrink-0"
                 :class="convActiva?.bot_activo ? 'border-green-500 text-green-700 bg-green-50' : 'border-gray-300 text-gray-500'">
-            🤖 <span x-text="convActiva?.bot_activo ? 'Bot ON' : 'Bot OFF'"></span>
+            🤖 <span class="hidden sm:inline" x-text="convActiva?.bot_activo ? 'ON' : 'OFF'"></span>
         </button>
-        <div class="relative">
-            <button @click="buscarEnChat = !buscarEnChat" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Buscar en la conversación">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
-            </button>
-        </div>
+        <button @click="buscarEnChat = !buscarEnChat" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Buscar en la conversación">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+        </button>
         <button @click="mostrarFicha = !mostrarFicha" class="p-1.5 rounded-lg hover:bg-gray-100" :class="mostrarFicha ? 'text-green-600' : 'text-gray-400'" title="Ficha del cliente">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
         </button>
@@ -182,6 +179,7 @@ $estadoColores = [
             </button>
             <div x-show="menuChat" x-cloak @click.outside="menuChat = false"
                  class="absolute right-0 top-9 z-30 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-sm">
+                <button @click="buscarEnChat = !buscarEnChat; menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50 sm:hidden">Buscar en el chat</button>
                 <button @click="fijar(convActiva); menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="convActiva?.fijada ? 'Desfijar chat' : 'Fijar chat'"></button>
                 <button @click="marcarNoLeida(convActiva); menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50">Marcar como no leído</button>
                 <button @click="asignar(convActiva, convActiva?.asignado_a === YO ? null : YO); menuChat=false" class="w-full text-left px-3 py-2 hover:bg-gray-50" x-text="convActiva?.asignado_a === YO ? 'Quitarme la asignación' : 'Asignármelo'"></button>
@@ -222,7 +220,7 @@ $estadoColores = [
                                  ? 'rounded-2xl rounded-tr-sm text-gray-900'
                                  : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm'"
                          :style="esSaliente(msg) ? 'background:#d9fdd3' : ''"
-                         class="relative max-w-[72%] px-3 py-1.5 text-sm shadow-sm">
+                         class="relative max-w-[88%] md:max-w-[72%] px-3 py-1.5 text-sm shadow-sm">
                         {{-- Menú del mensaje (aparece al pasar el mouse) --}}
                         <div class="absolute -top-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition" :class="esSaliente(msg) ? 'left-1' : 'right-1'">
                             <button @click="abrirReenvio(msg)" class="bg-white border border-gray-200 rounded-full w-6 h-6 text-[11px] shadow hover:bg-gray-50" title="Reenviar">↪</button>
@@ -335,18 +333,40 @@ $estadoColores = [
     </div>
 </div>
 
-{{-- ═══ COLUMNA 3: FICHA DEL LEAD (CRM) ═══ --}}
-<div class="flex flex-col bg-white border-l border-gray-200 flex-shrink-0 overflow-y-auto"
-     style="width:290px;" x-show="convActiva && mostrarFicha" x-cloak>
-    <div class="px-4 py-3 border-b border-gray-100">
-        <div class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ficha del cliente</div>
+{{-- ═══ FICHA DEL CLIENTE: un solo panel. En PC es una columna plegable; en movil, un cajon superpuesto. ═══ --}}
+<div x-show="convActiva && mostrarFicha" x-cloak
+     class="fixed inset-y-0 right-0 z-40 w-[88vw] max-w-sm shadow-2xl lg:static lg:shadow-none lg:w-[300px] lg:max-w-none flex-col bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0 flex">
+    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ficha del cliente</span>
+        <button @click="mostrarFicha = false" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100" title="Cerrar">✕</button>
     </div>
-    <div class="p-4" x-show="lead">
-        <div class="text-base font-bold text-gray-800" x-text="lead?.nombre || (convActiva?.cliente_nombre) || 'Cliente'"></div>
-        <div class="text-xs text-gray-500 mt-0.5" x-text="lead?.telefono || (convActiva?.cliente_telefono) || ''"></div>
+    <div class="p-4 space-y-4">
+        {{-- Quien es --}}
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
+                 :style="`background:${convActiva?.canal_color}`"
+                 x-text="(convActiva?.cliente_nombre || convActiva?.cliente_telefono || '?').charAt(0).toUpperCase()"></div>
+            <div class="flex-1 min-w-0">
+                <input x-model="editNombre" @change="guardarDetalle()"
+                       class="text-sm font-semibold text-gray-900 border-0 border-b border-dashed border-gray-300 focus:outline-none focus:border-green-400 bg-transparent w-full"
+                       placeholder="Nombre del cliente">
+                <p class="text-xs text-gray-500 mt-0.5" x-text="convActiva?.cliente_telefono"></p>
+            </div>
+        </div>
 
-        {{-- Clasificación del lead --}}
-        <div class="mt-4 rounded-xl border border-gray-100 p-3 bg-gray-50" x-show="lead?.clasificacion">
+        {{-- Estado del lead (el que se ve en la lista) --}}
+        <div>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Estado</p>
+            <select x-model="estadoActual" @change="cambiarEstado(estadoActual)"
+                    class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-green-400">
+                @foreach($estadoColores as $key => $cfg)
+                <option value="{{ $key }}">{{ $cfg['label'] }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Temperatura (IA) --}}
+        <div class="rounded-xl border border-gray-100 p-3 bg-gray-50" x-show="lead?.clasificacion">
             <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">Temperatura</div>
             <template x-if="lead?.clasificacion">
                 <div>
@@ -366,10 +386,9 @@ $estadoColores = [
         </div>
 
         {{-- Etapa del pipeline --}}
-        <div class="mt-3">
-            <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">Etapa</div>
-            <select class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5"
-                    x-model="lead.etapa" @change="guardarEtapa()">
+        <div x-show="lead">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Etapa</p>
+            <select class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5" x-model="lead.etapa" @change="guardarEtapa()">
                 <option value="prospecto">Prospecto</option>
                 <option value="contactado">Contactado</option>
                 <option value="propuesta">Propuesta</option>
@@ -379,15 +398,28 @@ $estadoColores = [
             </select>
         </div>
 
-        {{-- Datos comerciales --}}
-        <div class="mt-3 space-y-2 text-sm">
-            <div x-show="lead?.empresa"><span class="text-gray-400 text-xs">Empresa:</span> <span x-text="lead?.empresa"></span></div>
-            <div x-show="lead?.producto_interes"><span class="text-gray-400 text-xs">Interés:</span> <span x-text="lead?.producto_interes"></span></div>
+        {{-- Datos --}}
+        <div>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Datos</p>
+            <div class="space-y-1.5">
+                <input x-model="editSector" @change="guardarDetalle()" placeholder="Sector / tipo de negocio"
+                       class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-400">
+                <input x-model="editDistrito" @change="guardarDetalle()" placeholder="Distrito"
+                       class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-400">
+            </div>
+            <div class="flex items-center gap-2 flex-wrap mt-2 text-xs">
+                <span class="font-bold px-2 py-0.5 rounded-full" :style="`background:${convActiva?.canal_color}22; color:${convActiva?.canal_color}`" x-text="convActiva?.canal_nombre"></span>
+                <span class="text-gray-500" x-text="origenLabel(convActiva?.origen_anuncio)"></span>
+            </div>
+            <div class="mt-2 space-y-1 text-sm" x-show="lead?.empresa || lead?.producto_interes">
+                <div x-show="lead?.empresa"><span class="text-gray-400 text-xs">Empresa:</span> <span x-text="lead?.empresa"></span></div>
+                <div x-show="lead?.producto_interes"><span class="text-gray-400 text-xs">Interés:</span> <span x-text="lead?.producto_interes"></span></div>
+            </div>
         </div>
 
-        {{-- Historial de pedidos --}}
-        <div class="mt-4" x-show="lead?.pedidos?.length">
-            <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">Últimos pedidos</div>
+        {{-- Pedidos --}}
+        <div x-show="lead?.pedidos?.length">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Últimos pedidos</p>
             <template x-for="p in (lead?.pedidos||[])" :key="p.id">
                 <div class="flex items-center justify-between text-xs py-1 border-b border-gray-50">
                     <span x-text="'#'+p.id+' · '+p.estado"></span>
@@ -395,91 +427,28 @@ $estadoColores = [
                 </div>
             </template>
         </div>
+
+        {{-- Notas --}}
+        <div>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Notas</p>
+            <textarea x-model="editNotas" rows="4" placeholder="Notas del cliente..."
+                      class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-green-400 resize-none"></textarea>
+            <button @click="guardarDetalle()" class="mt-1 w-full text-xs text-white py-1.5 rounded-lg" style="background:#25d366">Guardar notas</button>
+        </div>
+
+        <div class="flex gap-2">
+            <button @click="archivar(convActiva, !convActiva?.archivado)" class="flex-1 text-xs border border-gray-200 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50" x-text="convActiva?.archivado ? 'Desarchivar' : 'Archivar'"></button>
+            <button @click="eliminarChat(convActiva)" class="flex-1 text-xs border border-red-200 text-red-600 py-1.5 rounded-lg hover:bg-red-50">Eliminar chat</button>
+        </div>
     </div>
-    <div class="p-4 text-xs text-gray-400" x-show="!lead">Cargando ficha…</div>
 </div>
 
 {{-- Empty: sin conversación activa --}}
-<div class="flex-1 flex flex-col items-center justify-center text-gray-500" x-show="!convActiva">
+<div class="flex-1 flex-col items-center justify-center text-gray-500 hidden md:flex" x-show="!convActiva">
     <svg class="w-16 h-16 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
     </svg>
     <p class="text-sm">Selecciona una conversación</p>
-</div>
-
-{{-- ══════════════════════
-     COLUMNA DERECHA — Detalle
-══════════════════════ --}}
-<div class="flex-col bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0"
-     :class="convActiva ? 'flex' : 'hidden'"
-     style="width:270px;">
-    <div class="px-4 py-4 space-y-4">
-
-        {{-- Cliente --}}
-        <div>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Cliente</p>
-            <div class="flex items-center gap-2 mb-3">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                     :style="`background:${convActiva?.canal_color}`"
-                     x-text="(convActiva?.cliente_nombre || '?').charAt(0).toUpperCase()"></div>
-                <div class="flex-1 min-w-0">
-                    <input x-model="editNombre" @change="guardarDetalle()"
-                           class="text-sm font-semibold text-gray-900 border-0 border-b border-dashed border-gray-300 focus:outline-none focus:border-green-400 bg-transparent w-full"
-                           placeholder="Nombre del cliente">
-                    <p class="text-xs text-gray-500" x-text="convActiva?.cliente_telefono"></p>
-                </div>
-            </div>
-            <div class="space-y-1">
-                <input x-model="editSector" @change="guardarDetalle()"
-                       placeholder="Sector / tipo de negocio"
-                       class="w-full text-xs border border-gray-100 rounded-lg px-2 py-1.5 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-400">
-                <input x-model="editDistrito" @change="guardarDetalle()"
-                       placeholder="Distrito"
-                       class="w-full text-xs border border-gray-100 rounded-lg px-2 py-1.5 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-400">
-            </div>
-        </div>
-
-        {{-- Origen --}}
-        <div>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Origen</p>
-            <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-xs font-bold px-2 py-1 rounded-full"
-                      :style="`background:${convActiva?.canal_color}22; color:${convActiva?.canal_color}`"
-                      x-text="convActiva?.canal_nombre"></span>
-                <span class="text-xs text-gray-600" x-text="origenLabel(convActiva?.origen_anuncio)"></span>
-            </div>
-        </div>
-
-        {{-- Estado lead --}}
-        <div>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Estado del lead</p>
-            <select x-model="estadoActual" @change="cambiarEstado(estadoActual)"
-                    class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-green-400">
-                @foreach($estadoColores as $key => $cfg)
-                <option value="{{ $key }}">{{ $cfg['label'] }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        {{-- Notas --}}
-        <div>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Notas</p>
-            <textarea x-model="editNotas" rows="4"
-                      placeholder="Notas del cliente..."
-                      class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-green-400 resize-none"></textarea>
-            <button @click="guardarDetalle()"
-                    class="mt-1 w-full text-xs text-white py-1.5 rounded-lg transition-colors"
-                    style="background:#25d366">
-                Guardar notas
-            </button>
-        </div>
-
-        {{-- Acciones --}}
-        <button @click="archivarConversacion()"
-                class="w-full text-xs border border-gray-200 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-            Archivar conversación
-        </button>
-    </div>
 </div>
 
 {{-- Reenviar un mensaje a otra conversacion del negocio --}}
@@ -564,7 +533,7 @@ function bandeja() {
         vista: 'todas',
         menuConv: null,
         menuChat: false,
-        mostrarFicha: true,
+        mostrarFicha: window.innerWidth >= 1280,
         buscarEnChat: false,
         busquedaChat: '',
         grabando: false,
