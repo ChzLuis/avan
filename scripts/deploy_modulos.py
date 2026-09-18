@@ -47,7 +47,10 @@ rastreados = [l for l in git('ls-files', '--', *RAICES).splitlines() if l]
 def md5_local(p):
     with open(os.path.join(LOCAL, p), 'rb') as f: b = f.read()
     return hashlib.md5(b).hexdigest(), hashlib.md5(b.replace(b'\r\n', b'\n')).hexdigest()
-borrados = [l for l in git('diff', '--name-only', '--diff-filter=D', '--no-renames', COMMIT_BASE, 'HEAD', '--', *RAICES).splitlines() if l]
+# Todo lo que se borro o renombro en CUALQUIER commit desde la base (no solo
+# entre los dos extremos: la base es anterior a los 6 commits tematicos).
+borrados = sorted({l for l in git('log', '--diff-filter=D', '--name-only', '--no-renames', '--format=', f'{COMMIT_BASE}..HEAD', '--', *RAICES).splitlines() if l} - set(git('ls-files', '--', *RAICES).splitlines()))
+alguna_vez = set(git('log', '--all', '--name-only', '--format=', '--', *RAICES).splitlines())
 
 # ── Inventario remoto ───────────────────────────────────────────────────────
 dirs_remotos = ' '.join(f"{BASE}/{r}" for r in RAICES)
@@ -74,7 +77,44 @@ solo_arin = sorted(p for p in md5_remoto if p not in set(rastreados) and p not i
 print(f"rastreados locales: {len(rastreados)} | iguales en ARIN: {iguales} (de ellos {crlf} solo difieren en CRLF)")
 print(f"a subir: {len(subir)} ({len(nuevos)} nuevos, {len(cambiados)} cambiados) | a borrar en ARIN: {len(borrar)} de {len(borrados)} borrados en git")
 print(f"solo en ARIN (ni en HEAD ni borrados en git; NO se tocan, revisar): {len(solo_arin)}")
-for p in solo_arin[:40]: print('   ?', p)
+nunca = [p for p in solo_arin if p not in alguna_vez]
+print(f"   de ellos NUNCA rastreados en git (trabajo solo en ARIN): {len(nunca)}")
+for p in nunca: print('   ??', p)
+SCR = 'C:/Users/luich/AppData/Local/Temp/claude/c--xampp-htdocs-avan/500e9f7c-0ad1-4d49-990b-8bb6fb31d7d3/scratchpad'
+for nombre, lista in (('subir', subir), ('borrar', borrar), ('solo_arin', solo_arin)):
+    io.open(f'{SCR}/deploy_{nombre}.txt', 'w', encoding='utf-8').write('
+'.join(lista))
+# Puerta de deriva (la de deploy.py) sobre los cambiados: bloques de 3+ lineas
+# que ARIN tiene y el local no.
+import difflib
+deriva = {}
+sftp_ = c.open_sftp()
+for p in cambiados:
+    try:
+        with sftp_.open(f"{BASE}/{p}", 'rb') as rf: remoto = rf.read().decode('utf-8', 'replace').replace('
+', '
+').split('
+')
+    except IOError: continue
+    with open(os.path.join(LOCAL, p), 'r', encoding='utf-8', errors='replace') as fh: local = fh.read().replace('
+', '
+').split('
+')
+    perdidas = []
+    for tag, i1, i2, _, _ in difflib.SequenceMatcher(None, remoto, local).get_opcodes():
+        if tag == 'delete':
+            bloque = [l for l in remoto[i1:i2] if l.strip()]
+            if len(bloque) >= 3: perdidas += bloque
+    if perdidas: deriva[p] = perdidas
+sftp_.close()
+print(f"deriva (ARIN tiene bloques que el local no trae): {len(deriva)} archivos")
+for p, ls in deriva.items():
+    print(f"   ! {p} ({len(ls)} lineas)"); [print('       ' + l[:100]) for l in ls[:4]]
+io.open(f'{SCR}/deploy_deriva.txt', 'w', encoding='utf-8').write('
+
+'.join(p + '
+' + '
+'.join(ls) for p, ls in deriva.items()))
 print("\n=== entorno ARIN ===")
 print(run(f"cd {BASE} && php -v | head -1; composer --version 2>/dev/null | head -1 || echo 'composer: NO en PATH'; ls bootstrap/cache/ 2>/dev/null | tr '\\n' ' '; echo; php artisan migrate:status 2>/dev/null | grep -i pending | head; echo \"jobs: $(php artisan tinker --execute='echo DB::table(\"jobs\")->count();' 2>/dev/null)\"; grep -c . vendor/composer/autoload_classmap.php"))
 
