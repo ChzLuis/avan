@@ -41,6 +41,13 @@ a Google Maps; contacto -> "👤 Nombre · +51...". La columna `error` se creo e
 registro en `migrations` (batch 60). OJO: direccion de salientes es 'out' (bot) o 'saliente'
 (bandeja): consultar siempre con whereIn.
 
+**Plantillas de Meta / 24 h** (`79bbfc9`, en ARIN): `wa_canales.waba_id` (creada por --sql, batch 60);
+`ClienteCloud::plantillas()` (APPROVED del WABA), `armarPlantilla`, `suscribirApp()` (se llama al
+guardar un canal con WABA). Bandeja: `mensajes()` devuelve `ventana` {es_meta, abierta, cierra_at}
+= 24 h desde el ultimo ENTRANTE; banner ambar + modal de plantillas con {{n}}; rutas
+`bixocrm.plantillas` (GET) y `bixocrm.plantilla` (POST). El canal 7 de Eskala aun NO tiene waba_id:
+ponerlo en Configuracion del CRM (o el asistente) para que aparezcan las plantillas.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
