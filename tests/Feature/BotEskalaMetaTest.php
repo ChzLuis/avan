@@ -109,10 +109,12 @@ class BotEskalaMetaTest extends TestCase
         $env = $this->enviados();
 
         $this->assertCount(1, $env, 'Una sola burbuja');
-        $this->assertSame('button:btn:cantidad|btn:cantidad|btn:cantidad', $this->resumen($env[0]));
+        $this->assertSame('button:btn:cantidad|btn:cantidad#2|btn:cantidad#3', $this->resumen($env[0]));
         $this->assertStringContainsString('qué vendes', $this->cuerpo($env[0]));
         $this->assertStringNotContainsString('S/', $this->cuerpo($env[0]));
         $this->assertSame('👕 Ropa', $env[0]['interactive']['action']['buttons'][0]['reply']['title']);
+        $ids = array_map(fn ($b) => $b['reply']['id'], $env[0]['interactive']['action']['buttons']);
+        $this->assertCount(3, array_unique($ids), 'Meta rechaza (#131009) botones con el mismo id');
         $this->sinIa();
     }
 
@@ -120,10 +122,10 @@ class BotEskalaMetaTest extends TestCase
     {
         $this->meta($this->texto('hola'));
         $n = count($this->enviados());
-        $this->meta($this->toque('btn:cantidad'));
+        $this->meta($this->toque('btn:cantidad#3'));
         $env = $this->nuevos($n);
 
-        $this->assertCount(1, $env);
+        $this->assertCount(1, $env, 'El sufijo #3 del boton "Otros" no estorba');
         $this->assertSame('button:btn:plan_start|btn:plan_pro|btn:plan_business', $this->resumen($env[0]));
         $this->assertStringContainsString('Cuántos productos', $this->cuerpo($env[0]));
         $this->sinIa();
@@ -202,7 +204,7 @@ class BotEskalaMetaTest extends TestCase
 
         $this->assertCount(1, $env);
         $this->assertStringContainsString('S/ 490', $this->cuerpo($env[0]));
-        $this->assertSame('button:btn:cantidad|btn:cantidad|btn:cantidad', $this->resumen($env[0]), 'Da el precio y vuelve a preguntar que vende');
+        $this->assertSame('button:btn:cantidad|btn:cantidad#2|btn:cantidad#3', $this->resumen($env[0]), 'Da el precio y vuelve a preguntar que vende');
         $this->sinIa();
     }
 

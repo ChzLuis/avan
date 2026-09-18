@@ -2472,7 +2472,14 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
             if ($titulo === '' || ! isset($this->flow['bloques'][$destino])) {
                 continue;
             }
-            $botones[] = ['id' => 'btn:' . $destino, 'titulo' => $titulo];
+            // Meta exige ids distintos: si dos botones llevan al mismo bloque, el
+            // segundo va como btn:bloque#2 (destinoBoton ignora el sufijo).
+            $id = 'btn:' . $destino;
+            $usados = array_column($botones, 'id');
+            for ($k = 2; in_array($id, $usados, true); $k++) {
+                $id = 'btn:' . $destino . '#' . $k;
+            }
+            $botones[] = ['id' => $id, 'titulo' => $titulo];
         }
         $enlace = $bloque['enlace'] ?? null;
         $salida = [];
@@ -2515,7 +2522,7 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
         if (! str_starts_with($m, 'btn:')) {
             return null;
         }
-        $destino = substr($m, 4);
+        $destino = explode('#', substr($m, 4), 2)[0];
 
         return isset($this->flow['bloques'][$destino]) ? $destino : null;
     }
