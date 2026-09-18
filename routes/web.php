@@ -9,8 +9,8 @@ use App\Modules\Catalogo\Controllers\ProductController;
 use App\Modules\Catalogo\Controllers\ProductVariantController;
 use App\Modules\Catalogo\Controllers\ServiceController;
 use App\Modules\Catalogo\Controllers\CategoryController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\QuoteController;
+use App\Modules\Ventas\Controllers\OrderController;
+use App\Modules\Ventas\Controllers\QuoteController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\SettingsController;
@@ -20,16 +20,16 @@ use App\Modules\Personas\Controllers\HRController;
 use App\Http\Controllers\SedeController;
 use App\Modules\Personas\Controllers\UserGroupController;
 use App\Modules\Inventario\Controllers\ProveedorController;
-use App\Http\Controllers\ReporteController;
+use App\Modules\Ventas\Controllers\ReporteController;
 use App\Modules\Tienda\Controllers\TiendaPublicaController;
-use App\Http\Controllers\PortalController;
-use App\Http\Controllers\PosController;
+use App\Modules\Ventas\Controllers\PortalController;
+use App\Modules\Ventas\Controllers\PosController;
 use App\Modules\Finanzas\Controllers\PaymentController;
 use App\Modules\Finanzas\Controllers\InvoiceController;
 use App\Modules\Finanzas\Controllers\NotaController;
 use App\Modules\Finanzas\Controllers\GuiaRemisionController;
 use App\Modules\Crm\Controllers\ComunicacionesController;
-use App\Http\Controllers\ProposalController;
+use App\Modules\Ventas\Controllers\ProposalController;
 use App\Modules\Finanzas\Controllers\CertificadoController;
 use App\Modules\Catalogo\Controllers\ComboController;
 use App\Modules\Tienda\Controllers\PromotionController;
@@ -226,7 +226,7 @@ Route::middleware(['auth'])->group(function () {
         Route::match(['put', 'patch'], '/clients/{client}', [ClientController::class, 'update'])->name('clients.update')->middleware(['module:clients', 'can:clients.editar']);
         Route::delete('/clients/{client}',     [ClientController::class, 'destroy'])->name('clients.destroy')->middleware(['module:clients', 'can:clients.eliminar']);
         // Portal del Cliente (F11): generar/regenerar el enlace es una escritura.
-        Route::post('/clients/{client}/portal', [\App\Http\Controllers\PortalClienteController::class, 'generarEnlace'])->name('clients.portal')->middleware(['module:clients', 'can:clients.editar']);
+        Route::post('/clients/{client}/portal', [\App\Modules\Ventas\Controllers\PortalClienteController::class, 'generarEnlace'])->name('clients.portal')->middleware(['module:clients', 'can:clients.editar']);
 
         // CRM: pipeline de ventas (leads del Copilot)
         Route::get('/clients-pipeline', [ClientController::class, 'pipeline'])
@@ -241,8 +241,8 @@ Route::middleware(['auth'])->group(function () {
         // propia ruta hermana `saveMeta` si exigia permiso, lo que delata el
         // olvido. Los 7 roles tienen `reports.ver`, asi que no deja fuera a
         // nadie legitimo.
-        Route::get('/dashboard-comercial', [\App\Http\Controllers\DashboardComercialController::class, 'index'])->name('dashboard.comercial')->middleware('can:reports.ver');
-        Route::post('/dashboard-comercial/meta', [\App\Http\Controllers\DashboardComercialController::class, 'saveMeta'])->name('dashboard.comercial.meta')->middleware('can:settings.negocio');
+        Route::get('/dashboard-comercial', [\App\Modules\Ventas\Controllers\DashboardComercialController::class, 'index'])->name('dashboard.comercial')->middleware('can:reports.ver');
+        Route::post('/dashboard-comercial/meta', [\App\Modules\Ventas\Controllers\DashboardComercialController::class, 'saveMeta'])->name('dashboard.comercial.meta')->middleware('can:settings.negocio');
 
         // Copilot Empresarial (pregúntale a tu negocio en español)
         Route::get('/copilot',  [\App\Modules\Crm\Controllers\CopilotEmpresarialController::class, 'index'])->name('copilot.index');
@@ -558,9 +558,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pos/cotizar', [PosController::class, 'quote'])->name('pos.quote')->middleware(['module:orders', 'can:pos.usar']);
 
         // Revendedor: sus precios propios + su catálogo compartible
-        Route::get('/revendedor/precios',  [\App\Http\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios')->middleware('can:pos.usar');
-        Route::post('/revendedor/precio',  [\App\Http\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar')->middleware('can:pos.usar');
-        Route::post('/revendedor/catalogo',[\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
+        Route::get('/revendedor/precios',  [\App\Modules\Ventas\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios')->middleware('can:pos.usar');
+        Route::post('/revendedor/precio',  [\App\Modules\Ventas\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar')->middleware('can:pos.usar');
+        Route::post('/revendedor/catalogo',[\App\Modules\Ventas\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
 
         // Facturas
         // Estas rutas estaban SIN permiso alguno mientras sus gemelas
@@ -755,8 +755,8 @@ require __DIR__.'/auth.php';
 // archivo, asi que el comodin tapaba /admin (el panel del superadmin).
 // ── Fase 11: Portal del Cliente — enlace personal con token, sin contraseña.
 // Registrado ANTES del comodín /{slug} (que se traga toda ruta posterior).
-Route::get('/c/{token}',                    [\App\Http\Controllers\PortalClienteController::class, 'ver'])->name('portal.cliente');
-Route::post('/c/{token}/repetir/{orderId}', [\App\Http\Controllers\PortalClienteController::class, 'repetir'])->middleware('throttle:15,1')->name('portal.cliente.repetir');
+Route::get('/c/{token}',                    [\App\Modules\Ventas\Controllers\PortalClienteController::class, 'ver'])->name('portal.cliente');
+Route::post('/c/{token}/repetir/{orderId}', [\App\Modules\Ventas\Controllers\PortalClienteController::class, 'repetir'])->middleware('throttle:15,1')->name('portal.cliente.repetir');
 
 // ── Fase 3: impersonación auditada — soporte de Eskala entra al Workspace del
 // cliente con su usuario superadmin, dejando rastro en access_events. Es el
@@ -895,7 +895,7 @@ Route::post('/wa/find-order',                   [WaBotController::class, 'findOr
 Route::post('/wa/order/{order}/delivery',       [WaBotController::class, 'updateDelivery'])->name('wa.order.delivery')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // ─── QR público para conectar bot ────────────────────────────────────────────
-Route::post('/api/woo-webhook', [\App\Http\Controllers\WooSyncController::class, 'webhook'])
+Route::post('/api/woo-webhook', [\App\Modules\Ventas\Controllers\WooSyncController::class, 'webhook'])
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
     ->name('woo.webhook');
 
@@ -914,10 +914,10 @@ Route::post('/b/{slug}/c/{token}/reject', [PortalController::class, 'reject'])->
 Route::post('/b/{slug}/c/{token}/proof',  [PortalController::class, 'proof'])->name('portal.quote.proof')->middleware('throttle:10,1');
 
 // ─── Catálogo público del revendedor ─────────────────────────────────────────
-Route::get('/r/{slug}', [\App\Http\Controllers\ResellerController::class, 'catalogoPublico'])->name('reseller.catalogo.publico');
+Route::get('/r/{slug}', [\App\Modules\Ventas\Controllers\ResellerController::class, 'catalogoPublico'])->name('reseller.catalogo.publico');
 
 // ─── Propuesta comercial pública (la abre el cliente y la guarda como PDF) ────
-Route::get('/propuesta/{token}', [\App\Http\Controllers\ProposalController::class, 'publica'])->name('proposal.publica');
+Route::get('/propuesta/{token}', [\App\Modules\Ventas\Controllers\ProposalController::class, 'publica'])->name('proposal.publica');
 
 // ─── Portal Facturación ───────────────────────────────────────────────────────
 use App\Modules\Finanzas\Controllers\FacturacionAuthController as FacAuthController;
@@ -1072,22 +1072,22 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::post('/pagos/rechazar',   [\App\Modules\Crm\Controllers\PagoController::class, 'rechazar'])->name('pagos.rechazar')->middleware('can:payments.rechazar');
 
         // Revendedor: sus precios propios + su catálogo compartible
-        Route::get('/revendedor/precios',   [\App\Http\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios')->middleware('can:pos.usar');
-        Route::post('/revendedor/precio',   [\App\Http\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar')->middleware('can:pos.usar');
-        Route::post('/revendedor/catalogo', [\App\Http\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
+        Route::get('/revendedor/precios',   [\App\Modules\Ventas\Controllers\ResellerController::class, 'misPrecios'])->name('reseller.precios')->middleware('can:pos.usar');
+        Route::post('/revendedor/precio',   [\App\Modules\Ventas\Controllers\ResellerController::class, 'guardarPrecio'])->name('reseller.precio.guardar')->middleware('can:pos.usar');
+        Route::post('/revendedor/catalogo', [\App\Modules\Ventas\Controllers\ResellerController::class, 'toggleCatalogo'])->name('reseller.catalogo.toggle')->middleware('can:pos.usar');
 
 
         // WooCommerce
-        Route::get('/woo/orders',  [\App\Http\Controllers\WooSyncController::class, 'index'])->name('woo.orders')->middleware('can:catalog.ver');
-        Route::post('/woo/sync',   [\App\Http\Controllers\WooSyncController::class, 'sync'])->name('woo.sync')->middleware('can:catalog.importar');
-        Route::get('/woo/stats',   [\App\Http\Controllers\WooSyncController::class, 'stats'])->name('woo.stats')->middleware('can:catalog.ver');
+        Route::get('/woo/orders',  [\App\Modules\Ventas\Controllers\WooSyncController::class, 'index'])->name('woo.orders')->middleware('can:catalog.ver');
+        Route::post('/woo/sync',   [\App\Modules\Ventas\Controllers\WooSyncController::class, 'sync'])->name('woo.sync')->middleware('can:catalog.importar');
+        Route::get('/woo/stats',   [\App\Modules\Ventas\Controllers\WooSyncController::class, 'stats'])->name('woo.stats')->middleware('can:catalog.ver');
 
         // Tickets manuales WordPress
         Route::get('/conversaciones', [\App\Modules\Crm\Controllers\ConversacionesController::class, 'index'])->name('conversaciones')->middleware('can:tickets.ver');
         Route::get('/conversaciones/{id}/mensajes', [\App\Modules\Crm\Controllers\ConversacionesController::class, 'mensajes'])->name('conversaciones.mensajes')->middleware('can:tickets.ver');
-        Route::get('/tickets-manuales', [\App\Http\Controllers\TicketsWpController::class, 'index'])->name('tickets.wp')->middleware('can:tickets.ver');
-        Route::get('/tickets-manuales/buscar', [\App\Http\Controllers\TicketsWpController::class, 'buscar'])->name('tickets.wp.buscar')->middleware('can:tickets.ver');
-        Route::post('/tickets-manuales/eliminar', [\App\Http\Controllers\TicketsWpController::class, 'eliminar'])->name('tickets.wp.eliminar')->middleware('can:tickets.eliminar');
+        Route::get('/tickets-manuales', [\App\Modules\Ventas\Controllers\TicketsWpController::class, 'index'])->name('tickets.wp')->middleware('can:tickets.ver');
+        Route::get('/tickets-manuales/buscar', [\App\Modules\Ventas\Controllers\TicketsWpController::class, 'buscar'])->name('tickets.wp.buscar')->middleware('can:tickets.ver');
+        Route::post('/tickets-manuales/eliminar', [\App\Modules\Ventas\Controllers\TicketsWpController::class, 'eliminar'])->name('tickets.wp.eliminar')->middleware('can:tickets.eliminar');
 
         Route::get('/pedidos',                [OrderController::class, 'index'])->name('pedidos')->middleware('project.can:orders.ver|view-orders');
         Route::get('/pedidos/{order}/pdf',    [OrderController::class, 'pdf'])->name('pedidos.pdf')->middleware('project.can:orders.ver|view-orders');
@@ -1238,7 +1238,7 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         // desde el libro de cobros— pero no tenia ruta: nadie podia llamarla.
         Route::get('/clientes/{client}',      [ClientController::class, 'show'])->name('clientes.show')->middleware('project.can:clients.ver|view-clients');
         // Portal del Cliente (F11): generar/regenerar el enlace es una escritura.
-        Route::post('/clientes/{client}/portal', [\App\Http\Controllers\PortalClienteController::class, 'generarEnlace'])->name('clientes.portal')->middleware('project.can:clients.editar|manage-clients');
+        Route::post('/clientes/{client}/portal', [\App\Modules\Ventas\Controllers\PortalClienteController::class, 'generarEnlace'])->name('clientes.portal')->middleware('project.can:clients.editar|manage-clients');
         Route::post('/clientes',              [ClientController::class, 'store'])->name('clientes.store')->middleware('project.can:clients.crear|manage-clients');
         Route::put('/clientes/{client}',      [ClientController::class, 'update'])->name('clientes.update')->middleware('project.can:clients.editar|manage-clients');
         Route::delete('/clientes/{client}',   [ClientController::class, 'destroy'])->name('clientes.destroy')->middleware('project.can:clients.eliminar|manage-clients');

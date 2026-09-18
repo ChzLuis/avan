@@ -41,7 +41,7 @@ class PortalClienteTest extends TestCase
     }
 
     /** Un pedido histórico con dos líneas para repetir. */
-    private function pedidoOriginal(): \App\Models\Order
+    private function pedidoOriginal(): \App\Modules\Ventas\Models\Order
     {
         $pedido = $this->cliente->orders()->create([
             'project_id' => $this->project->id, 'client_name' => $this->cliente->name,

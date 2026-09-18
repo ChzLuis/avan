@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Modules\Catalogo\Models\Product;
 use App\Modules\Catalogo\Models\ProductAttribute;
 use App\Models\Project;

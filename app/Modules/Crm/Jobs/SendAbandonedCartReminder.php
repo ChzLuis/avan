@@ -2,7 +2,7 @@
 
 namespace App\Modules\Crm\Jobs;
 
-use App\Models\AbandonedCart;
+use App\Modules\Ventas\Models\AbandonedCart;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

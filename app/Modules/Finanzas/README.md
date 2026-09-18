@@ -11,7 +11,7 @@ Controllers/   Invoice, Payment, Caja, Cxc, Certificado, LectorComprobante,
                GuiaRemision, Nota, FacturacionAuth, FacturacionDashboard
 Models/        Invoice, InvoiceItem, Payment, ReceivableTerm, Caja, CajaMovimiento,
                Certificado, LecturaComprobante, GuiaRemision, GuiaRemisionItem
-Support/       ApisPeruService, NubefactService, CatalogoDocumentos, Ledger,
+Support/       ApisPeruService, NubefactService, CatalogoDocumentos, Ledger, Cobranza (desde el paso 8),
                Sunat/*, Lector/*
 Jobs/          SendInvoiceToSunat, DarDeBajaEnSunat, EnviarGuiaASunat  (pasan IDs, no modelos)
 Commands/      ArchivarComprobantes, ReintentarComprobantes  (los registra el ModulosServiceProvider)

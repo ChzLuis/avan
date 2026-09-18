@@ -4,12 +4,12 @@ namespace App\Modules\Crm\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
-use App\Models\Order;
-use App\Models\OrderItem;
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\OrderItem;
 use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
-use App\Models\Quote;
-use App\Models\QuoteItem;
+use App\Modules\Ventas\Models\Quote;
+use App\Modules\Ventas\Models\QuoteItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

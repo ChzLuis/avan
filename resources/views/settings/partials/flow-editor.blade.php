@@ -4,13 +4,13 @@
      Recibe: $selP (proyecto)
 ═══════════════════════════════════════════════════════════════════ --}}
 @php
-    $ed_catalog = \App\Support\OrderFlow::catalog($selP);
-    $ed_active  = \App\Support\OrderFlow::activeKeys($selP);
-    $ed_core    = \App\Support\OrderFlow::coreKeys($selP);
-    $ed_states  = \App\Support\OrderFlow::activeStates($selP);
-    $ed_config  = \App\Support\OrderFlow::config($selP);
-    $ed_pos     = \App\Support\OrderFlow::positions($selP);
-    $ed_trans   = \App\Support\OrderFlow::effectiveTransitions($selP);
+    $ed_catalog = \App\Modules\Ventas\Support\OrderFlow::catalog($selP);
+    $ed_active  = \App\Modules\Ventas\Support\OrderFlow::activeKeys($selP);
+    $ed_core    = \App\Modules\Ventas\Support\OrderFlow::coreKeys($selP);
+    $ed_states  = \App\Modules\Ventas\Support\OrderFlow::activeStates($selP);
+    $ed_config  = \App\Modules\Ventas\Support\OrderFlow::config($selP);
+    $ed_pos     = \App\Modules\Ventas\Support\OrderFlow::positions($selP);
+    $ed_trans   = \App\Modules\Ventas\Support\OrderFlow::effectiveTransitions($selP);
 
     // Preparar nodos para JS con posición (guardada o auto en fila)
     $ed_nodes = [];
@@ -19,7 +19,7 @@
     $colW = 200; $rowH = 110; $cols = 3; $padX = 30; $padY = 30;
     foreach ($ed_states as $k => $st) {
         $cfg = $ed_config[$k] ?? [];
-        $t   = \App\Support\OrderFlow::times($selP, $k);
+        $t   = \App\Modules\Ventas\Support\OrderFlow::times($selP, $k);
         $col = $i % $cols;
         $row = intdiv($i, $cols);
         $ed_nodes[] = [

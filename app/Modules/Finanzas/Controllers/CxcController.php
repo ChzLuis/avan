@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Modules\Finanzas\Models\ReceivableTerm;
 use App\Support\LineMath;
-use App\Support\QuoteStatus;
+use App\Modules\Ventas\Support\QuoteStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -36,9 +36,9 @@ class CxcController extends Controller
         /** @var \App\Models\Project $project */
         $project = app('active_project');
 
-        // El calculo vive en App\Support\Cobranza: el panel Comercial pregunta
+        // El calculo vive en App\Modules\Finanzas\Support\Cobranza: el panel Comercial pregunta
         // lo mismo y dos copias del mismo calculo terminan dando dos cifras.
-        $cartera = \App\Support\Cobranza::cartera($project);
+        $cartera = \App\Modules\Finanzas\Support\Cobranza::cartera($project);
         $filas   = $cartera['filas'];
         $resumen = $cartera['resumen'];
 

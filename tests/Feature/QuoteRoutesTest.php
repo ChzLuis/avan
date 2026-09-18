@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\QuoteController;
+use App\Modules\Ventas\Controllers\QuoteController;
 use App\Models\Employee;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -139,7 +139,7 @@ class QuoteRoutesTest extends TestCase
         $this->postJson("/quotes/{$ajena->id}/convert")->assertStatus(404);
 
         $this->assertSame('accepted', $ajena->fresh()->status, 'la cotizacion ajena no se toca');
-        $this->assertSame(0, \App\Models\Order::where('quote_id', $ajena->id)->count());
+        $this->assertSame(0, \App\Modules\Ventas\Models\Order::where('quote_id', $ajena->id)->count());
     }
 
     /**

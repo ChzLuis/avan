@@ -3,7 +3,7 @@
 namespace App\Modules\Crm\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,7 +90,7 @@ class PagoController extends Controller
             . (auth()->user() ? ' por ' . auth()->user()->name : ''));
         $order->save();
 
-        \App\Models\OrderEvent::log($project->id, 'payment_status', [
+        \App\Modules\Ventas\Models\OrderEvent::log($project->id, 'payment_status', [
             'from' => $desde, 'to' => 'paid', 'source' => 'aprobacion_bot',
             'user' => auth()->user()?->name,
         ], $order->id);
@@ -129,7 +129,7 @@ class PagoController extends Controller
             . '❌ Pago RECHAZADO el ' . now()->format('d/m/Y H:i') . ' — ' . $motivo);
         $order->save();
 
-        \App\Models\OrderEvent::log($project->id, 'payment_status', [
+        \App\Modules\Ventas\Models\OrderEvent::log($project->id, 'payment_status', [
             'from' => $desde, 'to' => 'pending', 'source' => 'rechazo_bot',
             'motivo' => $motivo, 'user' => auth()->user()?->name,
         ], $order->id);

@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Modules\Bots\Controllers\BotWebhookController;
 use App\Models\Employee;
-use App\Models\Order;
-use App\Models\OrderEvent;
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\OrderEvent;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;
@@ -198,14 +198,14 @@ class PaymentsStabilizationTest extends TestCase
 
     public function test_order_status_normaliza_y_presenta_la_revision(): void
     {
-        $this->assertSame('under_review', \App\Support\OrderStatus::pago('en_revision'));
-        $this->assertSame('under_review', \App\Support\OrderStatus::pago('under_review'));
+        $this->assertSame('under_review', \App\Modules\Ventas\Support\OrderStatus::pago('en_revision'));
+        $this->assertSame('under_review', \App\Modules\Ventas\Support\OrderStatus::pago('under_review'));
 
-        $pill = \App\Support\OrderStatus::pagoPresentacion('en_revision');
+        $pill = \App\Modules\Ventas\Support\OrderStatus::pagoPresentacion('en_revision');
         $this->assertSame('En revisión', $pill['label']);
 
-        $this->assertArrayHasKey('under_review', \App\Support\OrderStatus::opcionesPago());
-        $this->assertTrue(\App\Support\OrderStatus::debe('pending', 'under_review'),
+        $this->assertArrayHasKey('under_review', \App\Modules\Ventas\Support\OrderStatus::opcionesPago());
+        $this->assertTrue(\App\Modules\Ventas\Support\OrderStatus::debe('pending', 'under_review'),
             'un pago en revision sigue siendo deuda');
     }
 }

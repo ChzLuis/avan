@@ -4,7 +4,7 @@ namespace App\Modules\Finanzas\Controllers;
 
 use App\Http\Controllers\Controller;
 
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 use App\Modules\Finanzas\Support\Ledger;
 use Illuminate\Http\Request;

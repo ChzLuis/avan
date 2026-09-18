@@ -38,7 +38,7 @@ orden del plan y solo con el árbol de git limpio y la suite explicada:
 | 5 | Crm + Bots | movidos 2026-09-17 | `CrmModuloTest`, `BotsModuloTest` |
 | 6 | Tienda | movido 2026-09-17 | `TiendaModuloTest` |
 | 7 | Catalogo | movido 2026-09-17 (incluye `ImportLog` y los conectores) | `CatalogoModuloTest` |
-| 8 | Ventas | pendiente | |
+| 8 | Ventas | movido 2026-09-17 | `VentasModuloTest` |
 
 Lo movido **no está desplegado**: ARIN tiene el classmap optimizado, así que
 subir un módulo exige borrar los archivos viejos y `composer dump-autoload -o`

@@ -70,7 +70,7 @@ class ClientController extends Controller
 
         foreach ($client->quotes()->latest()->limit(30)->get() as $q) {
             $eventos->push(['tipo' => 'cotizacion', 'etiqueta' => 'Cotización '.$q->etiqueta,
-                'detalle' => \App\Support\QuoteStatus::clientePresentacion($q->status)['label'],
+                'detalle' => \App\Modules\Ventas\Support\QuoteStatus::clientePresentacion($q->status)['label'],
                 'monto' => (float) $q->total, 'fecha' => $q->created_at]);
         }
         foreach ($client->orders()->latest()->limit(30)->get() as $o) {
@@ -87,7 +87,7 @@ class ClientController extends Controller
             $eventos->push(['tipo' => 'guia', 'etiqueta' => 'Guía '.$g->numero,
                 'detalle' => $g->motivoLegible(), 'monto' => null, 'fecha' => $g->created_at]);
         }
-        foreach (\App\Models\SalesInteraction::where('client_id', $client->id)->latest()->limit(15)->get() as $s) {
+        foreach (\App\Modules\Ventas\Models\SalesInteraction::where('client_id', $client->id)->latest()->limit(15)->get() as $s) {
             $eventos->push(['tipo' => 'interaccion', 'etiqueta' => 'Interacción · '.($s->canal ?: 'nota'),
                 'detalle' => \Illuminate\Support\Str::limit((string) ($s->texto ?? ''), 70),
                 'monto' => null, 'fecha' => $s->created_at]);

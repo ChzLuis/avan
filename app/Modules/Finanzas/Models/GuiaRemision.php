@@ -3,7 +3,7 @@
 namespace App\Modules\Finanzas\Models;
 
 use App\Models\Client;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 

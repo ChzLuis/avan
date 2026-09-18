@@ -4,8 +4,8 @@ namespace App\Modules\Finanzas\Support;
 
 use App\Support\LineMath;
 
-use App\Models\Order;
-use App\Models\OrderEvent;
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\OrderEvent;
 use App\Modules\Finanzas\Models\Payment;
 use App\Models\Project;
 use App\Modules\Finanzas\Models\ReceivableTerm;

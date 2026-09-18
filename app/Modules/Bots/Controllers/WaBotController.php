@@ -6,8 +6,8 @@ use App\Modules\Bots\Models\BotInstance;
 
 use App\Modules\Bots\Models\BotFlow;
 use App\Modules\Bots\Models\BotSession;
-use App\Models\Order;
-use App\Models\OrderItem;
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\OrderItem;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -293,7 +293,7 @@ class WaBotController extends Controller
         $project = $order->project;
 
         // El estado debe ser uno de los activos del flujo del proyecto (según su rubro)
-        $activos = \App\Support\OrderFlow::activeKeys($project);
+        $activos = \App\Modules\Ventas\Support\OrderFlow::activeKeys($project);
         $data = $request->validate([
             'status' => 'required|string|in:' . implode(',', $activos),
         ]);
@@ -303,18 +303,18 @@ class WaBotController extends Controller
             'laundry_status'    => $newStatus,
             'laundry_status_at' => now(),
             // Mantener coherente el status genérico (reportes, filtros, dona de estados)
-            'status'            => \App\Support\OrderFlow::toGenericStatus($project, $newStatus),
+            'status'            => \App\Modules\Ventas\Support\OrderFlow::toGenericStatus($project, $newStatus),
         ];
         if (in_array($newStatus, ['listo', 'finalizado'])) $update['ready_at'] = now();
         $order->update($update);
 
         // ¿Este estado dispara aviso por WhatsApp? (según config del proyecto)
         $sent = false;
-        if (\App\Support\OrderFlow::shouldNotify($project, $newStatus)) {
+        if (\App\Modules\Ventas\Support\OrderFlow::shouldNotify($project, $newStatus)) {
             $phone = $order->wa_number ?: $order->client_phone;
             if ($phone) {
                 $negocio = $project?->name ?? $project->name;
-                $mensaje = \App\Support\OrderFlow::notifyMessage($project, $newStatus, $order, $negocio);
+                $mensaje = \App\Modules\Ventas\Support\OrderFlow::notifyMessage($project, $newStatus, $order, $negocio);
                 try {
                     $res = Http::timeout(4)->post($this->botUrl() . '/action', [
                         'token'     => $this->botToken(),

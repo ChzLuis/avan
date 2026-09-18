@@ -1,0 +1,3976 @@
+{
+ "moves": [
+  [
+   "app/Http/Controllers/OrderController.php",
+   "app/Modules/Ventas/Controllers/OrderController.php"
+  ],
+  [
+   "app/Http/Controllers/QuoteController.php",
+   "app/Modules/Ventas/Controllers/QuoteController.php"
+  ],
+  [
+   "app/Http/Controllers/PosController.php",
+   "app/Modules/Ventas/Controllers/PosController.php"
+  ],
+  [
+   "app/Http/Controllers/ProposalController.php",
+   "app/Modules/Ventas/Controllers/ProposalController.php"
+  ],
+  [
+   "app/Http/Controllers/PortalController.php",
+   "app/Modules/Ventas/Controllers/PortalController.php"
+  ],
+  [
+   "app/Http/Controllers/PortalClienteController.php",
+   "app/Modules/Ventas/Controllers/PortalClienteController.php"
+  ],
+  [
+   "app/Http/Controllers/ResellerController.php",
+   "app/Modules/Ventas/Controllers/ResellerController.php"
+  ],
+  [
+   "app/Http/Controllers/WooSyncController.php",
+   "app/Modules/Ventas/Controllers/WooSyncController.php"
+  ],
+  [
+   "app/Http/Controllers/ReporteController.php",
+   "app/Modules/Ventas/Controllers/ReporteController.php"
+  ],
+  [
+   "app/Http/Controllers/DashboardComercialController.php",
+   "app/Modules/Ventas/Controllers/DashboardComercialController.php"
+  ],
+  [
+   "app/Http/Controllers/TicketsWpController.php",
+   "app/Modules/Ventas/Controllers/TicketsWpController.php"
+  ],
+  [
+   "app/Models/Order.php",
+   "app/Modules/Ventas/Models/Order.php"
+  ],
+  [
+   "app/Models/OrderItem.php",
+   "app/Modules/Ventas/Models/OrderItem.php"
+  ],
+  [
+   "app/Models/OrderEvent.php",
+   "app/Modules/Ventas/Models/OrderEvent.php"
+  ],
+  [
+   "app/Models/Quote.php",
+   "app/Modules/Ventas/Models/Quote.php"
+  ],
+  [
+   "app/Models/QuoteItem.php",
+   "app/Modules/Ventas/Models/QuoteItem.php"
+  ],
+  [
+   "app/Models/Proposal.php",
+   "app/Modules/Ventas/Models/Proposal.php"
+  ],
+  [
+   "app/Models/ResellerPrice.php",
+   "app/Modules/Ventas/Models/ResellerPrice.php"
+  ],
+  [
+   "app/Models/SalesInteraction.php",
+   "app/Modules/Ventas/Models/SalesInteraction.php"
+  ],
+  [
+   "app/Models/AbandonedCart.php",
+   "app/Modules/Ventas/Models/AbandonedCart.php"
+  ],
+  [
+   "app/Support/OrderFlow.php",
+   "app/Modules/Ventas/Support/OrderFlow.php"
+  ],
+  [
+   "app/Support/OrderStatus.php",
+   "app/Modules/Ventas/Support/OrderStatus.php"
+  ],
+  [
+   "app/Support/OrderAbilities.php",
+   "app/Modules/Ventas/Support/OrderAbilities.php"
+  ],
+  [
+   "app/Support/QuoteAbilities.php",
+   "app/Modules/Ventas/Support/QuoteAbilities.php"
+  ],
+  [
+   "app/Support/QuoteStatus.php",
+   "app/Modules/Ventas/Support/QuoteStatus.php"
+  ],
+  [
+   "app/Support/Cobranza.php",
+   "app/Modules/Finanzas/Support/Cobranza.php"
+  ],
+  [
+   "resources/views/orders",
+   "app/Modules/Ventas/Views/orders"
+  ],
+  [
+   "resources/views/quotes",
+   "app/Modules/Ventas/Views/quotes"
+  ],
+  [
+   "resources/views/pos",
+   "app/Modules/Ventas/Views/pos"
+  ],
+  [
+   "resources/views/proposals",
+   "app/Modules/Ventas/Views/proposals"
+  ],
+  [
+   "resources/views/reseller",
+   "app/Modules/Ventas/Views/reseller"
+  ],
+  [
+   "resources/views/portal-cliente",
+   "app/Modules/Ventas/Views/portal-cliente"
+  ],
+  [
+   "resources/views/ventas",
+   "app/Modules/Ventas/Views/ventas"
+  ],
+  [
+   "resources/views/dashboard/comercial.blade.php",
+   "app/Modules/Ventas/Views/dashboard/comercial.blade.php"
+  ],
+  [
+   "resources/views/comercial/reportes",
+   "app/Modules/Ventas/Views/comercial/reportes"
+  ],
+  [
+   "resources/views/comercial/woo-orders.blade.php",
+   "app/Modules/Ventas/Views/comercial/woo-orders.blade.php"
+  ],
+  [
+   "resources/views/comercial/tickets-wp.blade.php",
+   "app/Modules/Ventas/Views/comercial/tickets-wp.blade.php"
+  ],
+  [
+   "resources/views/facturacion/pedidos",
+   "app/Modules/Ventas/Views/facturacion/pedidos"
+  ],
+  [
+   "resources/views/facturacion/cotizaciones",
+   "app/Modules/Ventas/Views/facturacion/cotizaciones"
+  ]
+ ],
+ "edits": {
+  "app/Console/Commands/CheckLaundryOverdue.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 2
+   }
+  ],
+  "app/Http/Controllers/ClientController.php": [
+   {
+    "old": "App\\Models\\SalesInteraction",
+    "new": "App\\Modules\\Ventas\\Models\\SalesInteraction",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/DashboardComercialController.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('dashboard.comercial'",
+    "new": "view('ventas::dashboard.comercial'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/DeliveryController.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/MesaController.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/OrderController.php": [
+   {
+    "old": "App\\Support\\OrderAbilities",
+    "new": "App\\Modules\\Ventas\\Support\\OrderAbilities",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\OrderStatus",
+    "new": "App\\Modules\\Ventas\\Support\\OrderStatus",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 4
+   },
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('orders.index'",
+    "new": "view('ventas::orders.index'",
+    "n": 1
+   },
+   {
+    "old": "view('orders.pdf'",
+    "new": "view('ventas::orders.pdf'",
+    "n": 1
+   },
+   {
+    "old": "view('orders.tag'",
+    "new": "view('ventas::orders.tag'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.pedidos.index'",
+    "new": "view('ventas::facturacion.pedidos.index'",
+    "n": 1
+   },
+   {
+    "old": "view('orders.kitchen'",
+    "new": "view('ventas::orders.kitchen'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/PortalClienteController.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('portal-cliente.inicio'",
+    "new": "view('ventas::portal-cliente.inicio'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/PortalController.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 8
+   },
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('quotes.pdf'",
+    "new": "view('ventas::quotes.pdf'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/PosController.php": [
+   {
+    "old": "App\\Models\\ResellerPrice",
+    "new": "App\\Modules\\Ventas\\Models\\ResellerPrice",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('pos.index'",
+    "new": "view('ventas::pos.index'",
+    "n": 3
+   },
+   {
+    "old": "view('ventas.express'",
+    "new": "view('ventas::ventas.express'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/ProposalController.php": [
+   {
+    "old": "App\\Models\\Proposal",
+    "new": "App\\Modules\\Ventas\\Models\\Proposal",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('proposals.index'",
+    "new": "view('ventas::proposals.index'",
+    "n": 1
+   },
+   {
+    "old": "view('proposals.publica'",
+    "new": "view('ventas::proposals.publica'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/QuoteController.php": [
+   {
+    "old": "App\\Support\\QuoteAbilities",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteAbilities",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 10
+   },
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 10
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 5
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('quotes.index'",
+    "new": "view('ventas::quotes.index'",
+    "n": 1
+   },
+   {
+    "old": "view('quotes.pdf'",
+    "new": "view('ventas::quotes.pdf'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.cotizaciones.index'",
+    "new": "view('ventas::facturacion.cotizaciones.index'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.cotizaciones.create'",
+    "new": "view('ventas::facturacion.cotizaciones.create'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.cotizaciones.edit'",
+    "new": "view('ventas::facturacion.cotizaciones.edit'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/ReporteController.php": [
+   {
+    "old": "App\\Models\\OrderItem",
+    "new": "App\\Modules\\Ventas\\Models\\OrderItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.reportes.top-productos'",
+    "new": "view('ventas::comercial.reportes.top-productos'",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.reportes.ventas'",
+    "new": "view('ventas::comercial.reportes.ventas'",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.reportes.rentabilidad'",
+    "new": "view('ventas::comercial.reportes.rentabilidad'",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.reportes.inventario'",
+    "new": "view('ventas::comercial.reportes.inventario'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/ResellerController.php": [
+   {
+    "old": "App\\Models\\ResellerPrice",
+    "new": "App\\Modules\\Ventas\\Models\\ResellerPrice",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('reseller.precios'",
+    "new": "view('ventas::reseller.precios'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/SettingsController.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 3
+   }
+  ],
+  "app/Http/Controllers/Comercial/DashboardController.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\OrderItem",
+    "new": "App\\Modules\\Ventas\\Models\\OrderItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Cobranza",
+    "new": "App\\Modules\\Finanzas\\Support\\Cobranza",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Http/Middleware/EnsureProjectScope.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/OrderEvent.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/BotWebhookController.php": [
+   {
+    "old": "App\\Models\\OrderItem",
+    "new": "App\\Modules\\Ventas\\Models\\OrderItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Controllers/WaBotController.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 4
+   },
+   {
+    "old": "App\\Models\\OrderItem",
+    "new": "App\\Modules\\Ventas\\Models\\OrderItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Control/Controllers/AdminDashboardController.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Commands/SendAbandonedCartReminders.php": [
+   {
+    "old": "App\\Models\\AbandonedCart",
+    "new": "App\\Modules\\Ventas\\Models\\AbandonedCart",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/PagoController.php": [
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Controllers/VentaExtensionController.php": [
+   {
+    "old": "App\\Models\\OrderItem",
+    "new": "App\\Modules\\Ventas\\Models\\OrderItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\QuoteItem",
+    "new": "App\\Modules\\Ventas\\Models\\QuoteItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "app/Modules/Crm/Jobs/SendAbandonedCartReminder.php": [
+   {
+    "old": "App\\Models\\AbandonedCart",
+    "new": "App\\Modules\\Ventas\\Models\\AbandonedCart",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/CxcController.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Cobranza",
+    "new": "App\\Modules\\Finanzas\\Support\\Cobranza",
+    "n": 2
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/FacturacionDashboardController.php": [
+   {
+    "old": "App\\Support\\Cobranza",
+    "new": "App\\Modules\\Finanzas\\Support\\Cobranza",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/InvoiceController.php": [
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/PaymentController.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/Caja.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 2
+   }
+  ],
+  "app/Modules/Finanzas/Models/CajaMovimiento.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/GuiaRemision.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/Invoice.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Ledger.php": [
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Personas/Controllers/AttendanceController.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/TiendaPublicaController.php": [
+   {
+    "old": "App\\Models\\AbandonedCart",
+    "new": "App\\Modules\\Ventas\\Models\\AbandonedCart",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/Coupon.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/portal-quote.blade.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 4
+   }
+  ],
+  "app/Support/AvisosPortal.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "app/Support/LaundryFlow.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 1
+   }
+  ],
+  "app/Support/ModulosPortal.php": [
+   {
+    "old": "App\\Models\\ResellerPrice",
+    "new": "App\\Modules\\Ventas\\Models\\ResellerPrice",
+    "n": 1
+   }
+  ],
+  "app/Support/ProjectContext.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "routes/web.php": [
+   {
+    "old": "App\\Http\\Controllers\\DashboardComercialController",
+    "new": "App\\Modules\\Ventas\\Controllers\\DashboardComercialController",
+    "n": 2
+   },
+   {
+    "old": "App\\Http\\Controllers\\PortalClienteController",
+    "new": "App\\Modules\\Ventas\\Controllers\\PortalClienteController",
+    "n": 4
+   },
+   {
+    "old": "App\\Http\\Controllers\\TicketsWpController",
+    "new": "App\\Modules\\Ventas\\Controllers\\TicketsWpController",
+    "n": 3
+   },
+   {
+    "old": "App\\Http\\Controllers\\ProposalController",
+    "new": "App\\Modules\\Ventas\\Controllers\\ProposalController",
+    "n": 2
+   },
+   {
+    "old": "App\\Http\\Controllers\\ResellerController",
+    "new": "App\\Modules\\Ventas\\Controllers\\ResellerController",
+    "n": 7
+   },
+   {
+    "old": "App\\Http\\Controllers\\WooSyncController",
+    "new": "App\\Modules\\Ventas\\Controllers\\WooSyncController",
+    "n": 4
+   },
+   {
+    "old": "App\\Http\\Controllers\\ReporteController",
+    "new": "App\\Modules\\Ventas\\Controllers\\ReporteController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\PortalController",
+    "new": "App\\Modules\\Ventas\\Controllers\\PortalController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\OrderController",
+    "new": "App\\Modules\\Ventas\\Controllers\\OrderController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\QuoteController",
+    "new": "App\\Modules\\Ventas\\Controllers\\QuoteController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\PosController",
+    "new": "App\\Modules\\Ventas\\Controllers\\PosController",
+    "n": 1
+   }
+  ],
+  "tests/Feature/AlpineAtributoIntactoTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BixoSalesAuthorizationTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CadenaVentaGuiaTest.php": [
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CarteraSoloPedidosTest.php": [
+   {
+    "old": "App\\Support\\Cobranza",
+    "new": "App\\Modules\\Finanzas\\Support\\Cobranza",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CheckoutPublicoPrecioTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ClienteEnlazadoTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ClientRoutesAuthorizationTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CoherenciaDeudaTest.php": [
+   {
+    "old": "App\\Support\\Cobranza",
+    "new": "App\\Modules\\Finanzas\\Support\\Cobranza",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ComercialDashboardTest.php": [
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Cobranza",
+    "new": "App\\Modules\\Finanzas\\Support\\Cobranza",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CxcTest.php": [
+   {
+    "old": "App\\Support\\Cobranza",
+    "new": "App\\Modules\\Finanzas\\Support\\Cobranza",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/EdicionEnSitioTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/FacturacionDescuentoTest.php": [
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/InventoryLedgerTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/LedgerTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/NotaPedidoTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/NotInNullTrapTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/OrdersBoundaryTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/OrdersQuotesAuthorizationTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PagoBotContratoTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PagoPanelLedgerTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PaymentsStabilizationTest.php": [
+   {
+    "old": "App\\Support\\OrderStatus",
+    "new": "App\\Modules\\Ventas\\Support\\OrderStatus",
+    "n": 5
+   },
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PortalClienteTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PortalQuoteConvertedTest.php": [
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PosCobroSeguroTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PosSaleQuoteTest.php": [
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 3
+   }
+  ],
+  "tests/Feature/PosUsabilidadTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProductVariantsTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProjectIsolationTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuoteConversionTest.php": [
+   {
+    "old": "App\\Http\\Controllers\\QuoteController",
+    "new": "App\\Modules\\Ventas\\Controllers\\QuoteController",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuoteDeepLinkTest.php": [
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   },
+   {
+    "old": "assertViewIs('quotes.index'",
+    "new": "assertViewIs('ventas::quotes.index'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuoteDocumentoUnicoTest.php": [
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuoteNumeracionTest.php": [
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuoteRoutesTest.php": [
+   {
+    "old": "App\\Http\\Controllers\\QuoteController",
+    "new": "App\\Modules\\Ventas\\Controllers\\QuoteController",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuotesUiContractTest.php": [
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuotesVocabularyTest.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   },
+   {
+    "old": "resource_path('views/quotes/index.blade.php",
+    "new": "app_path('Modules/Ventas/Views/quotes/index.blade.php",
+    "n": 6
+   }
+  ],
+  "tests/Feature/TrazabilidadAuditoriaTest.php": [
+   {
+    "old": "App\\Models\\OrderEvent",
+    "new": "App\\Modules\\Ventas\\Models\\OrderEvent",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Quote",
+    "new": "App\\Modules\\Ventas\\Models\\Quote",
+    "n": 1
+   }
+  ],
+  "tests/Feature/WaBotIsolationTest.php": [
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 1
+   }
+  ],
+  "tests/Unit/QuoteAbilitiesTest.php": [
+   {
+    "old": "App\\Support\\QuoteAbilities",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteAbilities",
+    "n": 1
+   }
+  ],
+  "resources/views/comercial/dashboard.blade.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 3
+   }
+  ],
+  "resources/views/comercial/layouts/app.blade.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Order",
+    "new": "App\\Modules\\Ventas\\Models\\Order",
+    "n": 2
+   }
+  ],
+  "resources/views/layouts/app.blade.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Views/orders/index.blade.php": [
+   {
+    "old": "App\\Support\\OrderStatus",
+    "new": "App\\Modules\\Ventas\\Support\\OrderStatus",
+    "n": 5
+   },
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 1
+   },
+   {
+    "old": "@include('orders._filtros'",
+    "new": "@include('ventas::orders._filtros'",
+    "n": 1
+   },
+   {
+    "old": "@include('orders._fila'",
+    "new": "@include('ventas::orders._fila'",
+    "n": 1
+   },
+   {
+    "old": "@include('orders._drawer'",
+    "new": "@include('ventas::orders._drawer'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Views/orders/_filtros-campos.blade.php": [
+   {
+    "old": "App\\Support\\OrderStatus",
+    "new": "App\\Modules\\Ventas\\Support\\OrderStatus",
+    "n": 2
+   }
+  ],
+  "app/Modules/Ventas/Views/quotes/index.blade.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 5
+   },
+   {
+    "old": "@include('quotes._acciones'",
+    "new": "@include('ventas::quotes._acciones'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Views/quotes/pdf.blade.php": [
+   {
+    "old": "App\\Support\\QuoteStatus",
+    "new": "App\\Modules\\Ventas\\Support\\QuoteStatus",
+    "n": 2
+   }
+  ],
+  "resources/views/settings/partials/flow-editor.blade.php": [
+   {
+    "old": "App\\Support\\OrderFlow",
+    "new": "App\\Modules\\Ventas\\Support\\OrderFlow",
+    "n": 8
+   }
+  ],
+  "app/Modules/Ventas/Controllers/WooSyncController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.woo-orders'",
+    "new": "view('ventas::comercial.woo-orders'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Controllers/TicketsWpController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Ventas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('comercial.tickets-wp'",
+    "new": "view('ventas::comercial.tickets-wp'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/Order.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/OrderItem.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/Quote.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/QuoteItem.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/Proposal.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/ResellerPrice.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/SalesInteraction.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Models/AbandonedCart.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Ventas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Support/OrderFlow.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Ventas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Support/OrderStatus.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Ventas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Support/OrderAbilities.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Ventas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Support/QuoteAbilities.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Ventas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Support/QuoteStatus.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Ventas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Cobranza.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Finanzas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Ventas/Views/orders/_filtros.blade.php": [
+   {
+    "old": "@include('orders._filtros-campos'",
+    "new": "@include('ventas::orders._filtros-campos'",
+    "n": 2
+   }
+  ]
+ },
+ "inserts": {
+  "app/Modules/Ventas/Controllers/OrderController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Ventas\\Models\\OrderEvent;",
+   "use App\\Modules\\Ventas\\Support\\OrderAbilities;",
+   "use App\\Modules\\Ventas\\Support\\OrderFlow;",
+   "use App\\Modules\\Ventas\\Support\\OrderStatus;"
+  ],
+  "app/Modules/Ventas/Controllers/QuoteController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Ventas\\Models\\Order;",
+   "use App\\Modules\\Ventas\\Models\\OrderEvent;",
+   "use App\\Modules\\Ventas\\Support\\QuoteAbilities;",
+   "use App\\Modules\\Ventas\\Support\\QuoteStatus;"
+  ],
+  "app/Modules/Ventas/Controllers/PosController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Ventas\\Models\\Quote;",
+   "use App\\Modules\\Ventas\\Models\\ResellerPrice;",
+   "use App\\Modules\\Ventas\\Support\\QuoteStatus;"
+  ],
+  "app/Modules/Ventas/Controllers/ProposalController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Ventas/Controllers/PortalController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Ventas\\Models\\OrderEvent;",
+   "use App\\Modules\\Ventas\\Support\\QuoteStatus;"
+  ],
+  "app/Modules/Ventas/Controllers/PortalClienteController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Ventas/Controllers/ResellerController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Ventas/Controllers/WooSyncController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Ventas/Controllers/ReporteController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Ventas/Controllers/DashboardComercialController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Ventas\\Models\\Quote;"
+  ],
+  "app/Modules/Ventas/Controllers/TicketsWpController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Ventas/Models/Order.php": [
+   "use App\\Models\\Client;",
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Ventas/Models/OrderEvent.php": [
+   "use App\\Models\\User;",
+   "use App\\Modules\\Ventas\\Support\\QuoteStatus;"
+  ],
+  "app/Modules/Ventas/Models/Quote.php": [
+   "use App\\Models\\Client;",
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Ventas/Models/Proposal.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Ventas/Models/ResellerPrice.php": [
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Ventas/Models/SalesInteraction.php": [
+   "use App\\Models\\Client;"
+  ],
+  "app/Modules/Ventas/Models/AbandonedCart.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Finanzas/Support/Cobranza.php": [
+   "use App\\Modules\\Ventas\\Support\\QuoteStatus;",
+   "use App\\Support\\LineMath;"
+  ],
+  "app/Models/Client.php": [
+   "use App\\Modules\\Ventas\\Models\\Order;",
+   "use App\\Modules\\Ventas\\Models\\Quote;",
+   "use App\\Modules\\Ventas\\Models\\SalesInteraction;"
+  ],
+  "app/Models/Project.php": [
+   "use App\\Modules\\Ventas\\Models\\Order;",
+   "use App\\Modules\\Ventas\\Models\\Proposal;",
+   "use App\\Modules\\Ventas\\Models\\Quote;"
+  ]
+ },
+ "decisiones": [
+  [
+   "no-vista",
+   "app/Http/Controllers/DashboardComercialController.php",
+   175,
+   "orders.id",
+   "order_items')                 "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/DashboardComercialController.php",
+   176,
+   "orders.project_id",
+   "ms.order_id')                 "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/DashboardComercialController.php",
+   177,
+   "orders.status",
+   ", $projectId)                 "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/OrderController.php",
+   215,
+   "orders.cancelar",
+   "  if ($seAnula) {             "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   88,
+   "pos.store",
+   ". */         $posStoreRoute = "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   89,
+   "pos.quote",
+   "e');         $posQuoteRoute = "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   155,
+   "orders.descuento",
+   "id === auth()->id() || (bool) "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   416,
+   "quotes.ver",
+   " $usuario?->id             || "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   439,
+   "quotes.show",
+   "cotizaciones.show', $quote) : "
+  ],
+  [
+   "ruta ",
+   "app/Http/Controllers/PosController.php",
+   440,
+   "quotes.pdf",
+   "aciones.pdf', $quote) : route("
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   498,
+   "orders.id",
+   "le('order_items')             "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   499,
+   "orders.project_id",
+   "_items.order_id')             "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   500,
+   "orders.created_at",
+   "d', $project->id)             "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   520,
+   "pos.store",
+   "oute('bixosales.pos.store') : "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   521,
+   "pos.quote",
+   "oute('bixosales.pos.quote') : "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/PosController.php",
+   523,
+   "orders.descuento",
+   "id === auth()->id() || (bool) "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/QuoteController.php",
+   725,
+   "facturacion.cotizaciones",
+   ";         $indexUrl         = "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/ReporteController.php",
+   23,
+   "orders.id",
+   "ers', 'order_items.order_id', "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/ReporteController.php",
+   24,
+   "orders.project_id",
+   "'=', 'orders.id')             "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/ReporteController.php",
+   25,
+   "orders.status",
+   "d', $project->id)             "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/ResellerController.php",
+   56,
+   "reseller.precio.guardar",
+   " $rutaGuardar = route($prefix "
+  ],
+  [
+   "no-vista",
+   "app/Http/Controllers/ResellerController.php",
+   57,
+   "reseller.catalogo.toggle",
+   " $rutaToggle  = route($prefix "
+  ],
+  [
+   "ruta ",
+   "app/Http/Controllers/ResellerController.php",
+   58,
+   "pos.index",
+   "oute('bixosales.pos') : route("
+  ],
+  [
+   "ruta ",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   446,
+   "pos.index",
+   "       <a href=\"{{ $pid?route("
+  ],
+  [
+   "ruta ",
+   "app/Modules/Bots/Views/bots/app.blade.php",
+   554,
+   "proposals.index",
+   "ropuestas',     url:'{{ route("
+  ],
+  [
+   "no-vista",
+   "app/Modules/Finanzas/Views/facturacion/dashboard.blade.php",
+   92,
+   "facturacion.pedidos",
+   "     </a>         <a href=\"{{ "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Finanzas/Views/facturacion/dashboard.blade.php",
+   100,
+   "facturacion.cotizaciones",
+   "     </a>         <a href=\"{{ "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Finanzas/Views/facturacion/dashboard.blade.php",
+   150,
+   "facturacion.pedidos",
+   ">                 <a href=\"{{ "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Finanzas/Views/facturacion/layouts/app.blade.php",
+   80,
+   "facturacion.pedidos",
+   "</p>              <a href=\"{{ "
+  ],
+  [
+   "no-vista",
+   "app/Modules/Finanzas/Views/facturacion/layouts/app.blade.php",
+   89,
+   "facturacion.cotizaciones",
+   "</a>              <a href=\"{{ "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   184,
+   "orders.ver",
+   "parto y logística) ──         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   185,
+   "orders.crear",
+   "    => 'pedidos.ver',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   186,
+   "orders.editar",
+   "> 'pedidos.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   187,
+   "orders.eliminar",
+   "> 'pedidos.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   188,
+   "orders.cancelar",
+   "pedidos.administrar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   197,
+   "quotes.ver",
+   "// ── Cotizaciones ──         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   198,
+   "quotes.crear",
+   "> 'cotizaciones.ver',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   199,
+   "quotes.editar",
+   "tizaciones.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   200,
+   "quotes.eliminar",
+   "tizaciones.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   213,
+   "pos.usar",
+   "or, no del pedido. ──         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   213,
+   "pos.trabajar",
+   "──         'pos.usar'         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   214,
+   "orders.descuento",
+   "   => 'pos.trabajar',         "
+  ],
+  [
+   "no-vista",
+   "app/Support/Access.php",
+   214,
+   "pos.administrar",
+   "',         'orders.descuento' "
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   244,
+   "dashboard.comercial",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   245,
+   "dashboard.comercial.meta",
+   "rdComercialController::class, "
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   539,
+   "proposals.index",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   540,
+   "proposals.store",
+   "osalController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   541,
+   "proposals.update",
+   "salController::class, 'update'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   542,
+   "proposals.destroy",
+   "alController::class, 'destroy'"
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   555,
+   "pos.index",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   556,
+   "ventas.express",
+   "ler::class, 'express'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   557,
+   "pos.store",
+   "[PosController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   558,
+   "pos.quote",
+   "[PosController::class, 'quote'"
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   561,
+   "reseller.precios",
+   "::class, 'misPrecios'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   562,
+   "reseller.precio.guardar",
+   "rs\\ResellerController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   563,
+   "reseller.catalogo.toggle",
+   "rs\\ResellerController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   618,
+   "quotes.show",
+   "QuoteController::class, 'show'"
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   619,
+   "quotes.pdf",
+   "troller::class, 'pdf'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   620,
+   "quotes.events",
+   "oteController::class, 'events'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   621,
+   "quotes.store",
+   "uoteController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   622,
+   "quotes.update",
+   "oteController::class, 'update'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   623,
+   "quotes.destroy",
+   "teController::class, 'destroy'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   624,
+   "quotes.update_full",
+   "',   [QuoteController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   625,
+   "quotes.send",
+   "QuoteController::class, 'send'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   626,
+   "quotes.duplicate",
+   "Controller::class, 'duplicate'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   628,
+   "quotes.seen",
+   "     [QuoteController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   632,
+   "orders.show",
+   "OrderController::class, 'show'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   633,
+   "orders.store",
+   "rderController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   634,
+   "orders.update",
+   "derController::class, 'update'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   635,
+   "orders.destroy",
+   "erController::class, 'destroy'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   638,
+   "orders.wa.action",
+   "',   [WaBotController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   639,
+   "orders.wa.delivery",
+   "ry', [WaBotController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   640,
+   "orders.laundry-status",
+   "us', [WaBotController::class, "
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   641,
+   "orders.tag",
+   "troller::class, 'tag'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   642,
+   "orders.pdf",
+   "troller::class, 'pdf'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   643,
+   "orders.pay",
+   "[OrderController::class, 'pay'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   644,
+   "orders.issue-document",
+   "nt', [OrderController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   645,
+   "orders.events",
+   "derController::class, 'events'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   646,
+   "orders.wa-sent",
+   "     [OrderController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   647,
+   "orders.export",
+   "     [OrderController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   652,
+   "quotes.convert",
+   "teController::class, 'convert'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   917,
+   "reseller.catalogo.publico",
+   "rs\\ResellerController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   959,
+   "pos.store",
+   "/pos', [PosController::class, "
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   1063,
+   "ventas.express",
+   "ler::class, 'express'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   1064,
+   "pos.store",
+   "[PosController::class, 'store'"
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   1065,
+   "pos.quote",
+   "[PosController::class, 'quote'"
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   1075,
+   "reseller.precios",
+   "::class, 'misPrecios'])->name("
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   1076,
+   "reseller.precio.guardar",
+   "rs\\ResellerController::class, "
+  ],
+  [
+   "no-vista",
+   "routes/web.php",
+   1077,
+   "reseller.catalogo.toggle",
+   "rs\\ResellerController::class, "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   43,
+   "quotes.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   43,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   43,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   44,
+   "orders.editar",
+   ".eliminar',                   "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   58,
+   "quotes.crear",
+   "('alpine_qa', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   58,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   58,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/AlpineAtributoIntactoTest.php",
+   59,
+   "orders.editar",
+   "                              "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   39,
+   "orders.crear",
+   "       foreach ([             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   39,
+   "orders.editar",
+   "  'orders.ver', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   39,
+   "orders.eliminar",
+   "orders.crear', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   40,
+   "quotes.crear",
+   "orders.eliminar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   40,
+   "quotes.editar",
+   "  'quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   40,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   111,
+   "quotes.ver",
+   "his->usuario('qa_lectura_bx', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   117,
+   "orders.crear",
+   "o('gerente_bx', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   117,
+   "orders.editar",
+   "  'orders.ver', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   117,
+   "orders.eliminar",
+   "orders.crear', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   118,
+   "quotes.crear",
+   "orders.eliminar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   118,
+   "quotes.editar",
+   "  'quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   118,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/BixoSalesAuthorizationTest.php",
+   332,
+   "orders.crear",
+   "l($this->usuario('solo_b_bx', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CadenaVentaGuiaTest.php",
+   85,
+   "facturacion.cotizaciones.convertir",
+   "otizacion();         $ruta  = "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CadenaVentaGuiaTest.php",
+   103,
+   "facturacion.cotizaciones.convertir",
+   "ueno()->postJson(             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CanonicalAccessTest.php",
+   148,
+   "orders.ver",
+   "        $this->assertSame([], "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CapacidadesRestringidasTest.php",
+   137,
+   "orders.ver",
+   "rCreate('caps_vendedor', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClienteEnlazadoTest.php",
+   36,
+   "quotes.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClienteEnlazadoTest.php",
+   36,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClienteEnlazadoTest.php",
+   50,
+   "quotes.crear",
+   "ate('cli_qa', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ClienteEnlazadoTest.php",
+   50,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComercialDashboardTest.php",
+   38,
+   "quotes.ver",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComercialDashboardTest.php",
+   49,
+   "quotes.ver",
+   "dOrCreate('com_gerente', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComercialEntitlementTest.php",
+   85,
+   "orders.ver",
+   "  $this->usuarioCon($project, "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComercialEntitlementTest.php",
+   94,
+   "orders.ver",
+   "gistics.ver', 'view-logistics'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComprobantesPorTipoTest.php",
+   33,
+   "orders.ver",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ComprobantesPorTipoTest.php",
+   47,
+   "orders.ver",
+   "indOrCreate('fiscal_qa', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/Customer360Test.php",
+   30,
+   "orders.ver",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/Customer360Test.php",
+   42,
+   "orders.ver",
+   ":findOrCreate('c360_qa', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CxcTest.php",
+   32,
+   "quotes.ver",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CxcTest.php",
+   32,
+   "orders.ver",
+   " (['reports.ver', 'quotes.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/CxcTest.php",
+   64,
+   "orders.ver",
+   "o_entra(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   34,
+   "quotes.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   34,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   34,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   83,
+   "quotes.editar",
+   "e_estan(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   106,
+   "quotes.editar",
+   "l_sitio(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   120,
+   "quotes.editar",
+   "l_final(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   138,
+   "quotes.editar",
+   "rmacion(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   138,
+   "quotes.eliminar",
+   "['quotes.ver', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/EdicionEnSitioTest.php",
+   163,
+   "orders.ver",
+   "r(['quotes.ver', 'clients.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/FacturacionDescuentoTest.php",
+   37,
+   "quotes.editar",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/FacturacionDescuentoTest.php",
+   49,
+   "quotes.editar",
+   "('fiscal_qa', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/FusionPortalesTest.php",
+   141,
+   "orders.ver",
+   "reate('fusion_vendedor', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   40,
+   "orders.crear",
+   ".editar', 'mapa.ver',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   40,
+   "orders.descuento",
+   "ders.cancelar', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   40,
+   "orders.editar",
+   "ers.crear', 'orders.descuento'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   41,
+   "orders.ver",
+   "to', 'orders.editar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   44,
+   "quotes.editar",
+   "', 'proveedores.ver',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   44,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   44,
+   "quotes.ver",
+   "tes.editar', 'quotes.eliminar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   121,
+   "pos.administrar",
+   "e_venta(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   121,
+   "orders.descuento",
+   "sertSame(['pos.administrar'], "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   176,
+   "orders.ver",
+   "clients.ver',                 "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   176,
+   "pos.usar",
+   "  'orders.crear', 'orders.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   177,
+   "quotes.editar",
+   ", 'pos.usar',                 "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   177,
+   "quotes.ver",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   182,
+   "orders.crear",
+   "nvoices.ver',                 "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   182,
+   "orders.descuento",
+   "ders.cancelar', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   182,
+   "orders.editar",
+   "ers.crear', 'orders.descuento'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   182,
+   "orders.ver",
+   "rs.descuento', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   183,
+   "pos.usar",
+   "'orders.ver',                 "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   183,
+   "quotes.crear",
+   "    'payments.ver', 'pos.usar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   183,
+   "quotes.editar",
+   "r', 'pos.usar', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   183,
+   "quotes.ver",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   187,
+   "orders.ver",
+   "r', 'invoices.ver', 'mapa.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   188,
+   "quotes.ver",
+   "yments.ver', 'proveedores.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   204,
+   "orders.cancelar",
+   "nvoices.crear', 'invoices.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   204,
+   "orders.crear",
+   "voices.ver', 'orders.cancelar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   205,
+   "orders.editar",
+   "',                            "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   205,
+   "orders.ver",
+   "rs.descuento', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   206,
+   "quotes.crear",
+   "',                            "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   206,
+   "quotes.editar",
+   "    'pos.usar', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   206,
+   "quotes.ver",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   212,
+   "orders.ver",
+   "voices.editar', 'invoices.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   213,
+   "quotes.ver",
+   "ents.rechazar', 'payments.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   222,
+   "pos.administrar",
+   "',                            "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/LegacyMappingTest.php",
+   270,
+   "orders.crear",
+   "                              "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   35,
+   "quotes.ver",
+   "       foreach ([             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   36,
+   "pos.usar",
+   ", 'invoices.ver',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   78,
+   "quotes.ver",
+   "ente_plegable', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   79,
+   "pos.usar",
+   "    'invoices.ver', 'caja.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   102,
+   "quotes.ver",
+   "tual_plegable', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   121,
+   "quotes.ver",
+   "'menu_volcado', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   122,
+   "pos.usar",
+   "    'invoices.ver', 'caja.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   131,
+   "quotes.ver",
+   "'menu_gerente', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   132,
+   "pos.usar",
+   "    'invoices.ver', 'caja.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   158,
+   "orders.ver",
+   "$this->entrar('menu_pedidos', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   173,
+   "quotes.ver",
+   " $this->entrar('menu_lector', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   191,
+   "quotes.ver",
+   "r('menu_nuevo', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   192,
+   "pos.usar",
+   "      'caja.ver', 'agenda.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/MenuLateralComercialTest.php",
+   238,
+   "orders.ver",
+   "$this->entrar('menu_lector2', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ModulesAuthorizationTest.php",
+   35,
+   "quotes.editar",
+   ", 'catalog.eliminar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ModulesAuthorizationTest.php",
+   35,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ModulesAuthorizationTest.php",
+   111,
+   "quotes.crear",
+   "ear propuesta'    => ['POST', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/NotaPedidoTest.php",
+   60,
+   "orders.ver",
+   "dOrCreate('nota_lector', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersBoundaryTest.php",
+   32,
+   "orders.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersBoundaryTest.php",
+   32,
+   "orders.editar",
+   "(['orders.ver', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersBoundaryTest.php",
+   32,
+   "quotes.ver",
+   "orders.crear', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersBoundaryTest.php",
+   61,
+   "quotes.ver",
+   "reate('lector_frontera', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersBoundaryTest.php",
+   123,
+   "orders.crear",
+   "ontera')->value('id')         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   42,
+   "orders.crear",
+   "       foreach ([             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   42,
+   "orders.editar",
+   "  'orders.ver', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   42,
+   "orders.eliminar",
+   "orders.crear', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   43,
+   "quotes.crear",
+   "orders.eliminar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   43,
+   "quotes.editar",
+   "  'quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   43,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   113,
+   "quotes.ver",
+   "arioConRol('qa_lectura_test', "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   119,
+   "orders.crear",
+   "'gerente_test', [             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   119,
+   "orders.editar",
+   "  'orders.ver', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   119,
+   "orders.eliminar",
+   "orders.crear', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   120,
+   "quotes.crear",
+   "orders.eliminar',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   120,
+   "quotes.editar",
+   "  'quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/OrdersQuotesAuthorizationTest.php",
+   120,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PagoPanelLedgerTest.php",
+   36,
+   "orders.editar",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PagoPanelLedgerTest.php",
+   47,
+   "orders.editar",
+   "pagos_panel', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PagoPanelLedgerTest.php",
+   229,
+   "orders.ver",
+   "ate('pos_qa', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PaymentsStabilizationTest.php",
+   36,
+   "orders.ver",
+   ".aprobar', 'payments.rechazar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PosCobroSeguroTest.php",
+   60,
+   "pos.store",
+   "aders($cabeceras)             "
+  ],
+  [
+   "ruta ",
+   "tests/Feature/PosFiltrosTest.php",
+   50,
+   "pos.index",
+   "id])\r             ->get(route("
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PosSaleQuoteTest.php",
+   34,
+   "orders.descuento",
+   "nt::setUp();\r         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PosSaleQuoteTest.php",
+   34,
+   "quotes.ver",
+   "'pos.usar', 'orders.descuento'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PosSaleQuoteTest.php",
+   55,
+   "quotes.ver",
+   "ndOrCreate('pos_cajero', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PosSaleQuoteTest.php",
+   173,
+   "quotes.ver",
+   "indOrCreate('pos_miron', 'web'"
+  ],
+  [
+   "ruta ",
+   "tests/Feature/PosUsabilidadTest.php",
+   48,
+   "pos.index",
+   "$this->comoDueno()->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/PosUsabilidadTest.php",
+   58,
+   "pos.index",
+   "$this->comoDueno()->get(route("
+  ],
+  [
+   "no-vista",
+   "tests/Feature/PosUsabilidadTest.php",
+   75,
+   "pos.store",
+   "true,\r         ]);\r \r         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   40,
+   "orders.crear",
+   ", 'catalog.importar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   40,
+   "orders.editar",
+   "  'orders.ver', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   40,
+   "orders.eliminar",
+   "orders.crear', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   40,
+   "orders.cancelar",
+   "ers.editar', 'orders.eliminar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   41,
+   "quotes.crear",
+   "', 'orders.cancelar',         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   41,
+   "quotes.editar",
+   "  'quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ProjectIsolationTest.php",
+   41,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteConversionTest.php",
+   35,
+   "quotes.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteConversionTest.php",
+   35,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteConversionTest.php",
+   35,
+   "orders.ver",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteConversionTest.php",
+   50,
+   "quotes.crear",
+   "dOrCreate('conv_editor', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteConversionTest.php",
+   50,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteConversionTest.php",
+   50,
+   "orders.ver",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteConversionTest.php",
+   434,
+   "quotes.eliminar",
+   "indByName('conv_editor', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteDeepLinkTest.php",
+   32,
+   "quotes.editar",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteDeepLinkTest.php",
+   48,
+   "quotes.ver",
+   "dOrCreate('deep_lector', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   37,
+   "quotes.editar",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   37,
+   "orders.ver",
+   "'view-quotes', 'manage-quotes'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   84,
+   "facturacion.cotizaciones.convertir",
+   "convertirPortal',             "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   95,
+   "quotes.editar",
+   "xosales(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   104,
+   "quotes.editar",
+   "odia antes: la ruta del panel "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   115,
+   "quotes.ver",
+   "_es_403(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   136,
+   "quotes.editar",
+   "$this->quote($otro);          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuoteRoutesTest.php",
+   162,
+   "quotes.ver",
+   "l_panel(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   35,
+   "quotes.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   35,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   35,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   79,
+   "quotes.editar",
+   "sueltas(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   93,
+   "quotes.ver",
+   "nvertir(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   105,
+   "quotes.editar",
+   "s_active' => false]);         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   115,
+   "quotes.editar",
+   "_claves(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   144,
+   "quotes.editar",
+   "pletada(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   168,
+   "quotes.editar",
+   "_modulo(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   181,
+   "quotes.editar",
+   "cesible(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   201,
+   "orders.ver",
+   "): void     {         // Hace "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   203,
+   "quotes.editar",
+   "'orders.ver', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   203,
+   "orders.ver",
+   "['quotes.ver', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   217,
+   "quotes.ver",
+   "o_texto(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   238,
+   "quotes.ver",
+   "izacion(): void     {         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesUiContractTest.php",
+   274,
+   "quotes.ver",
+   "dom(24),         ]);          "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesVocabularyTest.php",
+   35,
+   "quotes.crear",
+   "nt::setUp();\r         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesVocabularyTest.php",
+   35,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesVocabularyTest.php",
+   52,
+   "quotes.crear",
+   "eate('editor_quotes_qa', 'web'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/QuotesVocabularyTest.php",
+   52,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/ShellUnicoWorkspaceTest.php",
+   49,
+   "orders.ver",
+   " 'catalog.ver', 'invoices.ver'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/TrazabilidadAuditoriaTest.php",
+   36,
+   "quotes.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/TrazabilidadAuditoriaTest.php",
+   36,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/TrazabilidadAuditoriaTest.php",
+   36,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/TrazabilidadAuditoriaTest.php",
+   50,
+   "quotes.crear",
+   "uditoria_qa', 'web');         "
+  ],
+  [
+   "no-vista",
+   "tests/Feature/TrazabilidadAuditoriaTest.php",
+   50,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Feature/TrazabilidadAuditoriaTest.php",
+   50,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   29,
+   "quotes.crear",
+   "ent::setUp();         foreach "
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   29,
+   "quotes.editar",
+   "(['quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   29,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   75,
+   "quotes.editar",
+   "): void     {         $user = "
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   88,
+   "quotes.editar",
+   "a de convertir exigia         "
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   102,
+   "quotes.ver",
+   "     {         $capacidades = "
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   112,
+   "quotes.editar",
+   " donde vivir.         $user = "
+  ],
+  [
+   "no-vista",
+   "tests/Unit/QuoteAbilitiesTest.php",
+   121,
+   "quotes.editar",
+   "     {         $capacidades = "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   18,
+   "orders.crear",
+   "     //          o en Blade:  "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   27,
+   "orders.crear",
+   "     // Pedidos y POS         "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   27,
+   "orders.editar",
+   "  'orders.ver', 'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   27,
+   "orders.eliminar",
+   "orders.crear', 'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   27,
+   "orders.cancelar",
+   "ers.editar', 'orders.eliminar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   27,
+   "orders.descuento",
+   "s.eliminar', 'orders.cancelar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   28,
+   "pos.usar",
+   ", 'orders.descuento',         "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   31,
+   "quotes.crear",
+   "      // Cotizaciones         "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   31,
+   "quotes.editar",
+   "  'quotes.ver', 'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   31,
+   "quotes.eliminar",
+   "quotes.crear', 'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   82,
+   "orders.crear",
+   "atalog.importar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   82,
+   "orders.editar",
+   " 'orders.ver',  'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   82,
+   "orders.eliminar",
+   "rders.crear',  'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   82,
+   "orders.cancelar",
+   "rs.editar',  'orders.eliminar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   82,
+   "orders.descuento",
+   ".eliminar',  'orders.cancelar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   83,
+   "pos.usar",
+   "rders.descuento',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   84,
+   "quotes.crear",
+   "      'pos.usar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   84,
+   "quotes.editar",
+   " 'quotes.ver',  'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   84,
+   "quotes.eliminar",
+   "uotes.crear',  'quotes.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   105,
+   "orders.crear",
+   "   'catalog.ver',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   105,
+   "orders.editar",
+   " 'orders.ver',  'orders.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   105,
+   "orders.descuento",
+   "rders.crear',  'orders.editar'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   106,
+   "pos.usar",
+   "rders.descuento',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   107,
+   "quotes.crear",
+   "      'pos.usar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   107,
+   "quotes.editar",
+   " 'quotes.ver',  'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   124,
+   "pos.usar",
+   "   'catalog.ver',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   125,
+   "orders.crear",
+   "      'pos.usar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   126,
+   "quotes.crear",
+   "  'orders.crear',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   126,
+   "quotes.editar",
+   " 'quotes.ver',  'quotes.crear'"
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   140,
+   "orders.ver",
+   "veedores.editar',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   162,
+   "orders.ver",
+   "invoices.anular',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   163,
+   "quotes.ver",
+   "    'orders.ver',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   175,
+   "orders.ver",
+   "   'catalog.ver',             "
+  ],
+  [
+   "no-vista",
+   "database/seeders/PermissionsSeeder.php",
+   176,
+   "quotes.ver",
+   "    'orders.ver',             "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/dashboard.blade.php",
+   166,
+   "pos.usar",
+   "er  = $_u2?->is_superadmin || "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/dashboard.blade.php",
+   167,
+   "quotes.crear",
+   "zar = $_u2?->is_superadmin || "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/app.blade.php",
+   10,
+   "quotes.ver",
+   "sos alternativos // (universo "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/app.blade.php",
+   1114,
+   "pos.usar",
+   "as('orders'))                 "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/_sidebar.blade.php",
+   13,
+   "quotes.ver",
+   "b.php      (universo canonico "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/_sidebar.blade.php",
+   68,
+   "pos.usar",
+   "tas', 'bixosales.pos', 'pos', "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/_sidebar.blade.php",
+   69,
+   "pos.usar",
+   "ales.ventas.express', 'rayo', "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/layouts/_sidebar.blade.php",
+   88,
+   "pos.usar",
+   "eseller.precios', 'etiqueta', "
+  ],
+  [
+   "no-vista",
+   "resources/views/comercial/panel/inicio-movil.blade.php",
+   16,
+   "pos.usar",
+   "   = $hay('bixosales.pos') && "
+  ],
+  [
+   "ruta ",
+   "resources/views/dashboard/comercial.blade.php",
+   17,
+   "ventas.express",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "no-vista",
+   "resources/views/dashboard/comercial.blade.php",
+   75,
+   "dashboard.comercial.meta",
+   "form method=\"POST\" action=\"{{ "
+  ],
+  [
+   "no-vista",
+   "resources/views/facturacion/cotizaciones/create.blade.php",
+   2,
+   "facturacion.cotizaciones.store",
+   "@php     $storeUrl  = "
+  ],
+  [
+   "no-vista",
+   "resources/views/facturacion/cotizaciones/create.blade.php",
+   4,
+   "facturacion.cotizaciones",
+   "ject->slug);     $listUrl   = "
+  ],
+  [
+   "ruta ",
+   "resources/views/facturacion/cotizaciones/index.blade.php",
+   16,
+   "facturacion.cotizaciones.create",
+   "iv>         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/facturacion/cotizaciones/index.blade.php",
+   99,
+   "facturacion.cotizaciones.edit",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/layouts/app.blade.php",
+   1204,
+   "dashboard.comercial",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/layouts/app.blade.php",
+   1204,
+   "dashboard.comercial",
+   "ub-item {{ request()->routeIs("
+  ],
+  [
+   "no-vista",
+   "resources/views/layouts/app.blade.php",
+   1245,
+   "pos.ver",
+   "t->owner_id===auth()->id() || "
+  ],
+  [
+   "no-vista",
+   "resources/views/layouts/app.blade.php",
+   1248,
+   "pos.usar",
+   "t->owner_id===auth()->id() || "
+  ],
+  [
+   "no-vista",
+   "resources/views/layouts/app.blade.php",
+   1251,
+   "orders.ver",
+   "t->owner_id===auth()->id() || "
+  ],
+  [
+   "ruta ",
+   "resources/views/orders/index.blade.php",
+   587,
+   "ventas.express",
+   "ales.ventas.express') : route("
+  ],
+  [
+   "no-vista",
+   "resources/views/orders/_filtros.blade.php",
+   70,
+   "orders.length",
+   "ered.length\"></span> de <span "
+  ],
+  [
+   "no-vista",
+   "resources/views/pos/index.blade.php",
+   1600,
+   "pos.store",
+   "ostJson(@js($posStoreRoute ?? "
+  ],
+  [
+   "no-vista",
+   "resources/views/pos/index.blade.php",
+   1724,
+   "pos.quote",
+   "ostJson(@js($posQuoteRoute ?? "
+  ],
+  [
+   "no-vista",
+   "resources/views/proposals/index.blade.php",
+   202,
+   "proposals.store",
+   "    const r = await fetch('{{ "
+  ],
+  [
+   "no-vista",
+   "resources/views/quotes/index.blade.php",
+   12,
+   "quotes.convert",
+   "uote' => '__ID__'])         : "
+  ],
+  [
+   "no-vista",
+   "resources/views/quotes/index.blade.php",
+   16,
+   "quotes.show",
+   "uote' => '__ID__'])         : "
+  ],
+  [
+   "no-vista",
+   "resources/views/quotes/index.blade.php",
+   1184,
+   "orders.show",
+   "ow', ['order' => '__ID__']) : "
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/modules.blade.php",
+   104,
+   "pos.index",
+   "            'url'    => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/modules.blade.php",
+   146,
+   "pos.index",
+   "             'url'   => route("
+  ]
+ ],
+ "avisos": []
+}

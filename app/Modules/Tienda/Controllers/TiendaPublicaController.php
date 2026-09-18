@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Tienda\Storefront\CatalogQueryService;
 use App\Modules\Tienda\Storefront\StorefrontContextBuilder;
 
-use App\Models\AbandonedCart;
+use App\Modules\Ventas\Models\AbandonedCart;
 use App\Models\Project;
 use App\Modules\Tienda\Models\Coupon;
 use App\Modules\Catalogo\Models\Product;

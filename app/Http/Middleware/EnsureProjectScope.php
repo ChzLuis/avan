@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Verifica que el recurso solicitado por ID pertenece al proyecto activo en sesión.
- * Uso en ruta: ->middleware('project.scope:App\Models\Order')
+ * Uso en ruta: ->middleware('project.scope:App\Modules\Ventas\Models\Order')
  */
 class EnsureProjectScope
 {

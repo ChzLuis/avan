@@ -131,7 +131,7 @@ class ClientRoutesAuthorizationTest extends TestCase
     {
         $this->entrar(['clients.ver']);
         $cliente = $this->project->clients()->create(['name' => 'Deudor']);
-        \App\Models\Order::create([
+        \App\Modules\Ventas\Models\Order::create([
             'project_id' => $this->project->id, 'client_id' => $cliente->id,
             'client_name' => 'Deudor', 'status' => 'pending',
             'payment_status' => 'pending', 'total' => '1500.00',

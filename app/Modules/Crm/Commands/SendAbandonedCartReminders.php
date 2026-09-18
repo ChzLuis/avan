@@ -3,7 +3,7 @@
 namespace App\Modules\Crm\Commands;
 
 use App\Modules\Crm\Jobs\SendAbandonedCartReminder;
-use App\Models\AbandonedCart;
+use App\Modules\Ventas\Models\AbandonedCart;
 use Illuminate\Console\Command;
 
 class SendAbandonedCartReminders extends Command

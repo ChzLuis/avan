@@ -2,10 +2,12 @@
 
 namespace App\Support;
 
+use App\Modules\Ventas\Support\OrderFlow;
+
 use App\Models\Project;
 
 /**
- * @deprecated Usar App\Support\OrderFlow (flujo genérico por rubro).
+ * @deprecated Usar App\Modules\Ventas\Support\OrderFlow (flujo genérico por rubro).
  *
  * Se mantiene como fachada para no romper el código existente. Todos los
  * métodos delegan en OrderFlow, que ahora maneja los estados por rubro.

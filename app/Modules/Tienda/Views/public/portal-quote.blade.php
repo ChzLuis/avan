@@ -6,14 +6,14 @@
 @php
   $primaryColor = $settings['primary_color'] ?? '#4f46e5';
   $logoUrl      = $project->logo_url ? asset('storage/'.$project->logo_url) : null;
-  // El estado lo nombra App\Support\QuoteStatus::clientePresentacion, el
+  // El estado lo nombra App\Modules\Ventas\Support\QuoteStatus::clientePresentacion, el
   // MISMO que usa el PDF: antes el portal decia "Pendiente" y el documento
   // que el cliente se descarga decia "Enviada" para la misma cotizacion.
   // Estado normalizado (las filas legacy 'borrador' del historial se leen bien)
-  $estadoCanonico = \App\Support\QuoteStatus::comercial($quote->status);
-  $st = \App\Support\QuoteStatus::clientePresentacion($quote->status);
+  $estadoCanonico = \App\Modules\Ventas\Support\QuoteStatus::comercial($quote->status);
+  $st = \App\Modules\Ventas\Support\QuoteStatus::clientePresentacion($quote->status);
   // Vigencia DERIVADA: si venció y sigue abierta, no se ofrece Aceptar.
-  $vencida = \App\Support\QuoteStatus::vencida($quote->status, $quote->valid_until);
+  $vencida = \App\Modules\Ventas\Support\QuoteStatus::vencida($quote->status, $quote->valid_until);
   // Fecha en español SIN setlocale (F1c): un locale global afectaria a otras
   // vistas y hasta al formateo numerico. Mapa explicito en el punto de uso.
   $meses = [1=>'enero','febrero','marzo','abril','mayo','junio','julio',

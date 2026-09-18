@@ -1,5 +1,9 @@
 <?php
 namespace App\Models;
+
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\Quote;
+use App\Modules\Ventas\Models\SalesInteraction;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasProjectScope;
 class Client extends Model {

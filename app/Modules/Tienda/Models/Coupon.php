@@ -2,7 +2,7 @@
 
 namespace App\Modules\Tienda\Models;
 
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 
 use Illuminate\Database\Eloquent\Model;

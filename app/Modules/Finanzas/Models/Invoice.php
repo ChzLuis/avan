@@ -2,9 +2,9 @@
 namespace App\Modules\Finanzas\Models;
 
 use App\Models\Client;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Models\User;
 
 use App\Models\Traits\HasProjectScope;

@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\Proposal;
+use App\Modules\Ventas\Models\Quote;
+
 use App\Modules\Catalogo\Models\CatalogIntegration;
 use App\Modules\Catalogo\Models\Category;
 use App\Modules\Catalogo\Models\Combo;

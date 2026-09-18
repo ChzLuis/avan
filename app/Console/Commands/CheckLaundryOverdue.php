@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Project;
 use App\Modules\Bots\Models\BotInstance;
-use App\Support\OrderFlow;
+use App\Modules\Ventas\Support\OrderFlow;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -32,7 +32,7 @@ class CheckLaundryOverdue extends Command
         }
         // Solo proyectos cuyo rubro tiene flujo de estados
         $projects = $query->get()->filter(
-            fn($p) => \App\Support\OrderFlow::supportsFlow($p->category)
+            fn($p) => \App\Modules\Ventas\Support\OrderFlow::supportsFlow($p->category)
         );
 
         $totalAvisos = 0;

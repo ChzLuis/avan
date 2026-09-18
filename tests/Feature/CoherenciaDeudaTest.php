@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Modules\Finanzas\Models\Payment;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\Cobranza;
+use App\Modules\Finanzas\Support\Cobranza;
 use App\Modules\Finanzas\Support\Ledger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

@@ -985,9 +985,9 @@ class SettingsController extends Controller
         $states = array_filter((array) $request->input('states', []));
 
         // Filtrar a estados válidos del rubro + forzar los "core"
-        $valid = array_keys(\App\Support\OrderFlow::catalog($project));
+        $valid = array_keys(\App\Modules\Ventas\Support\OrderFlow::catalog($project));
         $states = array_values(array_intersect($states, $valid));
-        foreach (\App\Support\OrderFlow::coreKeys($project) as $core) {
+        foreach (\App\Modules\Ventas\Support\OrderFlow::coreKeys($project) as $core) {
             if (!in_array($core, $states)) $states[] = $core;
         }
 
@@ -1032,7 +1032,7 @@ class SettingsController extends Controller
         $project = app('active_project');
         $this->authorizeProject($project);
 
-        $valid = array_keys(\App\Support\OrderFlow::catalog($project));
+        $valid = array_keys(\App\Modules\Ventas\Support\OrderFlow::catalog($project));
 
         // Posiciones: { key: {x, y} }
         $positions = [];

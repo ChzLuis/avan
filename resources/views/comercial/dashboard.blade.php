@@ -2,9 +2,9 @@
 @php
 $cat = $project->category ?? 'default';
 $esRest = in_array($cat, ['restaurante','cafeteria']);
-$esLavanderia = \App\Support\OrderFlow::supportsFlow($cat); // "tiene flujo de estados" (cualquier rubro)
-$lavStates = $esLavanderia ? \App\Support\OrderFlow::activeStates($project) : [];
-$lavOverdue = $esLavanderia ? \App\Support\OrderFlow::overdueCount($project) : 0;
+$esLavanderia = \App\Modules\Ventas\Support\OrderFlow::supportsFlow($cat); // "tiene flujo de estados" (cualquier rubro)
+$lavStates = $esLavanderia ? \App\Modules\Ventas\Support\OrderFlow::activeStates($project) : [];
+$lavOverdue = $esLavanderia ? \App\Modules\Ventas\Support\OrderFlow::overdueCount($project) : 0;
 
 // KPI labels por rubro
 $kpi = match(true) {

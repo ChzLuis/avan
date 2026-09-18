@@ -320,7 +320,7 @@ class BotWebhookController extends Controller
             };
             if ($esDigital) $notas[] = '⏳ Pago reportado por el cliente — PENDIENTE DE APROBACIÓN';
 
-            $order = \App\Models\Order::create([
+            $order = \App\Modules\Ventas\Models\Order::create([
                 'project_id'    => $project->id,
                 'client_name'   => $client->name ?: $nombre,
                 'client_phone'  => $telefono,
@@ -334,7 +334,7 @@ class BotWebhookController extends Controller
                 'total'         => $ped['total'] ?? 0,
             ]);
             foreach ($ped['items'] as $it) {
-                \App\Models\OrderItem::create([
+                \App\Modules\Ventas\Models\OrderItem::create([
                     'order_id'   => $order->id,
                     'product_id' => is_numeric($it['id'] ?? null) ? $it['id'] : null,
                     'name'       => $it['nombre'] ?? 'Producto',

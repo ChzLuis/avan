@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Comercial;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
-use App\Models\Order;
-use App\Models\OrderItem;
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\OrderItem;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -67,15 +67,15 @@ class DashboardController extends Controller
         // Antes este KPI sumaba el total de los pedidos no pagados, sin restar
         // adelantos ni incluir cotizaciones aceptadas: el panel y Cobranza
         // daban dos cifras distintas para "cuanto me deben". Ahora las dos
-        // pantallas preguntan a App\Support\Cobranza.
+        // pantallas preguntan a App\Modules\Finanzas\Support\Cobranza.
         // "Por cobrar" es la deuda que nace de una venta. Las cotizaciones
         // aceptadas ya no suman aqui: no son deuda, son trabajo pendiente
         // (convertirlas en pedido), y como tal se enseñan.
-        $cartera      = \App\Support\Cobranza::cartera($project);
+        $cartera      = \App\Modules\Finanzas\Support\Cobranza::cartera($project);
         $porCobrar    = $cartera['total_cents'] / 100;
         $vencido      = $cartera['vencido_cents'] / 100;
         $docsVencidos = $cartera['vencidas'];
-        $porConvertir = \App\Support\Cobranza::aceptadasSinConvertir($project);
+        $porConvertir = \App\Modules\Finanzas\Support\Cobranza::aceptadasSinConvertir($project);
 
         // ── Stock critico ────────────────────────────────────────────────
         // El catalogo guarda `stock_min` por producto desde siempre y el panel
@@ -162,7 +162,7 @@ class DashboardController extends Controller
         // `order_events` ya registra los hechos del negocio (pagos, envios,
         // conversiones, aceptaciones del cliente) y no se enseñaban en ninguna
         // pantalla del portal.
-        $actividad = \App\Models\OrderEvent::where('project_id', $pid)
+        $actividad = \App\Modules\Ventas\Models\OrderEvent::where('project_id', $pid)
             ->orderByDesc('created_at')->limit(6)->get();
 
         $meta = (float) $project->setting('sales_goal_month', 0);
@@ -198,7 +198,7 @@ class DashboardController extends Controller
         // rubro con categoria, asi que una ferreteria contaba sus pedidos por
         // `laundry_status` —columna que nunca rellena— y el bloque salia en
         // cero teniendo pedidos. Lo decide el dato, no el nombre del rubro.
-        $usaFlujoPropio = \App\Support\OrderFlow::supportsFlow($project->category ?? '')
+        $usaFlujoPropio = \App\Modules\Ventas\Support\OrderFlow::supportsFlow($project->category ?? '')
             && $project->orders()->whereNotNull('laundry_status')->exists();
 
         if ($usaFlujoPropio) {
@@ -206,7 +206,7 @@ class DashboardController extends Controller
                 ->select('laundry_status', DB::raw('count(*) as total'))
                 ->groupBy('laundry_status')->pluck('total', 'laundry_status');
 
-            $lavStates = \App\Support\OrderFlow::activeStates($project);
+            $lavStates = \App\Modules\Ventas\Support\OrderFlow::activeStates($project);
             $donaLabels = []; $donaData = []; $donaColors = [];
             foreach ($lavStates as $key => $st) {
                 $donaLabels[] = $st['label'];
@@ -274,7 +274,7 @@ class DashboardController extends Controller
         $contarQuote = function (string $canonico) use ($estadosQuote) {
             $total = 0;
             foreach ($estadosQuote as $estado => $n) {
-                if (\App\Support\QuoteStatus::comercial((string) $estado) === $canonico) {
+                if (\App\Modules\Ventas\Support\QuoteStatus::comercial((string) $estado) === $canonico) {
                     $total += (int) $n;
                 }
             }

@@ -6,7 +6,7 @@ use App\Models\Employee;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -77,7 +77,7 @@ class QuoteDeepLinkTest extends TestCase
 
         $r = $this->get("/bixosales/cotizaciones/{$q->id}")->assertSuccessful();
 
-        $r->assertViewIs('quotes.index');
+        $r->assertViewIs('ventas::quotes.index');
         $this->assertSame($q->id, $r->viewData('cotizacionInicial'),
             'la vista debe saber que cotizacion abrir');
         $this->assertStringNotContainsString('"client_name":"Cliente Deep","status"', $r->getContent(),

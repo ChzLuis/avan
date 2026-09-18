@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Modules\Inventario\Models\InventoryMovement;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\User;

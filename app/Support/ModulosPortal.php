@@ -43,7 +43,7 @@ final class ModulosPortal
         // Los precios propios son del usuario, no del negocio: no se cachean
         // con el proyecto porque cambian de una persona a otra.
         $uso['revendedor'] = $userId !== null
-            && \App\Models\ResellerPrice::where('project_id', $project->id)
+            && \App\Modules\Ventas\Models\ResellerPrice::where('project_id', $project->id)
                 ->where('user_id', $userId)->exists();
 
         // Unificación con el entitlement canónico (TD-017/auditoría): donde la

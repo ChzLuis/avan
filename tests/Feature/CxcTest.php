@@ -4,10 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Employee;
 use App\Models\Module;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -274,7 +274,7 @@ class CxcTest extends TestCase
 
         $this->assertSame('0.00', $r->viewData('resumen')['total']);
 
-        $pendiente = \App\Support\Cobranza::aceptadasSinConvertir($this->project);
+        $pendiente = \App\Modules\Finanzas\Support\Cobranza::aceptadasSinConvertir($this->project);
         $this->assertSame(1, $pendiente['n']);
         $this->assertSame(1342010, $pendiente['cents']);
     }

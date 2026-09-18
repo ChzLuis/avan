@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Finanzas\Models;
 
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -45,7 +45,7 @@ class Caja extends Model {
     public function totalVentas(): float {
         $hasta = $this->closed_at ?: now();
 
-        return (float) \App\Models\Order::where('project_id', $this->project_id)
+        return (float) \App\Modules\Ventas\Models\Order::where('project_id', $this->project_id)
             ->where('payment_status', 'paid')
             ->whereBetween('created_at', [$this->opened_at, $hasta])
             ->where(fn ($q) => $q->where('payment_method', 'like', '%fectivo%')

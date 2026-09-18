@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Finanzas\Models;
 
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 

@@ -102,7 +102,7 @@ class PosSaleQuoteTest extends TestCase
 
         // La confirmacion del mostrador se pinta con estos campos: si dejan de
         // venir, el cajero envia al cliente un documento que no ha visto.
-        $quote = \App\Models\Quote::where('project_id', $this->project->id)->firstOrFail();
+        $quote = \App\Modules\Ventas\Models\Quote::where('project_id', $this->project->id)->firstOrFail();
         // El numero es el correlativo DEL NEGOCIO, no el id global: la primera
         // cotizacion de un cliente nuevo es la 1, no la 187.
         $this->assertSame('COT-00001', $res->json('number'));
@@ -135,7 +135,7 @@ class PosSaleQuoteTest extends TestCase
             ],
         ])->assertOk();
 
-        $quote = \App\Models\Quote::where('project_id', $this->project->id)->firstOrFail();
+        $quote = \App\Modules\Ventas\Models\Quote::where('project_id', $this->project->id)->firstOrFail();
         $res = $this->get('/quotes/' . $quote->id . '/pdf');
 
         $res->assertOk()
@@ -153,7 +153,7 @@ class PosSaleQuoteTest extends TestCase
             'owner_id' => User::factory()->create()->id,
             'name' => 'Ajeno', 'slug' => 'ajeno-qa', 'category' => 'retail', 'is_active' => true,
         ]);
-        $ajena = \App\Models\Quote::create([
+        $ajena = \App\Modules\Ventas\Models\Quote::create([
             'project_id' => $otro->id, 'client_name' => 'X', 'status' => 'sent',
             'total' => 10, 'token' => str()->random(24),
         ]);

@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Employee;
 use App\Models\Module;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Modules\Finanzas\Models\Payment;
 use App\Models\Project;
 use App\Models\ProjectMember;

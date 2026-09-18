@@ -403,6 +403,43 @@ componente). Queda uno igual fuera de este modulo: `projects/create.blade.php`
 Linea base del dominio (54 clases): 8 rojos / 632 verdes antes → los mismos 8 despues (666 verdes con los guardianes).
 Guardian `CatalogoModuloTest` (5). Queda **Ventas (8)** y el despliegue.
 
+### Modulo 8/8 — `Ventas/` MOVIDO (2026-09-17, misma sesion) — MUDANZA COMPLETA
+
+39 movimientos, 215 reemplazos en 105 archivos, 107 rutas a `Modules\Ventas`,
+0 viejas. Van: 11 controladores (Order, Quote, Pos, Proposal, Portal,
+PortalCliente, Reseller, WooSync, Reporte, DashboardComercial, TicketsWp),
+9 modelos (Order*, Quote*, Proposal, ResellerPrice, SalesInteraction,
+AbandonedCart), 5 soportes (OrderFlow/Status/Abilities, QuoteAbilities/Status)
+y las vistas `orders/ quotes/ pos/ proposals/ reseller/ portal-cliente/ ventas/
+dashboard/comercial comercial/{reportes,woo-orders,tickets-wp}
+facturacion/{pedidos,cotizaciones}` (`ventas::`). **`Cobranza` paso a
+Finanzas/Support** (era un resto del paso 4). Se quedan en Core la CARA del
+portal comercial (`Comercial\{Auth,Dashboard}Controller`, `DashboardController`,
+`comercial/{layouts,login,dashboard,panel,monitoreo}`, `AvisosPortal`,
+`BusinessTerms`) y, pendientes de Operaciones, `LaundryFlow`,
+`CheckLaundryOverdue` y `comercial/{delivery,mesas,reservas}`.
+
+Hueco nuevo del generador, ya cerrado en `plan_ventas.py` (paso 3b): archivos
+de Core que comparten el namespace viejo del movido y lo usan por nombre corto
+sin `use` (`AvisosPortal`→Cobranza/OrderFlow, `BusquedaGlobal`→QuoteStatus,
+`LaundryFlow`→OrderFlow) pierden la resolucion implicita; antes solo se cubrian
+los modelos. Las lecturas de vistas por ruta de disco en tests ya se reescriben
+solas (`QuotesVocabularyTest`, 6).
+
+Linea base del dominio (51 clases): 2 rojos / 542 verdes antes → los mismos 2 despues (61 clases con los guardianes).
+Guardian `VentasModuloTest` (4).
+
+**Que queda tras los 8 modulos:**
+1. `Client` + `ClientController` + `clients/` + `facturacion/clientes` → `Crm/`
+   (MODULE_OWNERSHIP dice CRM; el README de Ventas lo decia mal y ya esta
+   corregido). Paso corto con el mismo generador.
+2. `Operaciones/`: Agenda/Appointment/Availability/BlockedDate, Mesa, Reserva,
+   Delivery, OperationalMap/Object/Event/Request, `LaundryFlow`,
+   `CheckLaundryOverdue`, `comercial/{delivery,mesas,reservas}`, `mapa/`,
+   `agenda/`. `Sede` es Settings (Core).
+3. **Desplegar 1–8 juntos a ARIN** (ver receta en `app/Modules/README.md`).
+4. Inversion de dependencia de los botones de WhatsApp en pedidos (eventos).
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia

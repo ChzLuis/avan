@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Modules\Finanzas\Models\ReceivableTerm;
 use App\Models\User;
-use App\Support\Cobranza;
+use App\Modules\Finanzas\Support\Cobranza;
 use App\Modules\Finanzas\Support\Ledger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

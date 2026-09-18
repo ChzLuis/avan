@@ -1021,12 +1021,12 @@ $_nav = match(true) {
             $_pid_alert = session('comercial_project_id');
                 $_alertas = [];
                 $_projAlert = $_pid_alert ? \App\Models\Project::find($_pid_alert) : null;
-                $_esLavAlert = $_projAlert && \App\Support\OrderFlow::supportsFlow($_projAlert->category);
+                $_esLavAlert = $_projAlert && \App\Modules\Ventas\Support\OrderFlow::supportsFlow($_projAlert->category);
 
                 if ($_esLavAlert) {
                     // Lavandería: alertas basadas en el SLA por estado (no umbral genérico).
                     $_lavStatesA = \App\Support\LaundryFlow::activeStates($_projAlert);
-                    $__orders = \App\Models\Order::where('project_id', $_pid_alert)
+                    $__orders = \App\Modules\Ventas\Models\Order::where('project_id', $_pid_alert)
                         ->whereNotIn('laundry_status', ['entregado','anulado'])
                         ->whereNotNull('laundry_status')
                         ->orderBy('laundry_status_at')->limit(20)->get();
@@ -1042,7 +1042,7 @@ $_nav = match(true) {
                             'desc'   => $_t . ' en este estado' . ($__o->client_name ? ' · ' . $__o->client_name : '')];
                     }
                 } elseif ($_pid_alert) {
-                    $__orders = \App\Models\Order::where('project_id', $_pid_alert)
+                    $__orders = \App\Modules\Ventas\Models\Order::where('project_id', $_pid_alert)
                         ->whereIn('status', ['pending','process'])
                         ->where('created_at', '<', now()->subMinutes(30))
                         ->orderBy('created_at')->limit(5)->get();

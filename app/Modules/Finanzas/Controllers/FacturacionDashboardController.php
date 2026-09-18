@@ -5,7 +5,7 @@ namespace App\Modules\Finanzas\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Modules\Finanzas\Models\Invoice;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 
 class FacturacionDashboardController extends Controller
 {
@@ -95,7 +95,7 @@ class FacturacionDashboardController extends Controller
         $guiasSinEnviar      = $guias->filter(fn ($g) => $g->sunat_status !== 'accepted')->count();
         $guiasSinComprobante = $guias->filter(fn ($g) => $g->motivo_codigo === '01' && ! $g->invoice_id)->count();
 
-        $cartera = \App\Support\Cobranza::cartera($project);
+        $cartera = \App\Modules\Finanzas\Support\Cobranza::cartera($project);
 
         // Datos del emisor que SUNAT exige: sin ellos el primer envio rebota.
         $faltanEmisor = collect([

@@ -6,9 +6,9 @@ use App\Models\Employee;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Models\User;
-use App\Support\QuoteStatus;
+use App\Modules\Ventas\Support\QuoteStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -223,7 +223,7 @@ class QuotesVocabularyTest extends TestCase
     {
         // F1b: quote_items.discount existe y persiste — el input VUELVE, con
         // rango/step correctos, y toda la matematica pasa por el espejo BigInt.
-        $vista = file_get_contents(resource_path('views/quotes/index.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Ventas/Views/quotes/index.blade.php'));
 
         $this->assertStringContainsString('x-model="form.items[i].discount"', $vista);
         $this->assertStringContainsString('min="0" max="100" step="0.01"', $vista);
@@ -235,7 +235,7 @@ class QuotesVocabularyTest extends TestCase
 
     public function test_el_frontend_no_compara_ni_actua_con_estados_espanoles(): void
     {
-        $vista = file_get_contents(resource_path('views/quotes/index.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Ventas/Views/quotes/index.blade.php'));
 
         // Los alias españoles viven SOLO en la frontera de QuoteStatus; el
         // estado interno de Alpine es siempre canonico. Estas aserciones
@@ -270,7 +270,7 @@ class QuotesVocabularyTest extends TestCase
 
     public function test_los_exportadores_no_inventan_igv(): void
     {
-        $vista = file_get_contents(resource_path('views/quotes/index.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Ventas/Views/quotes/index.blade.php'));
 
         $this->assertSame(0, substr_count($vista, '* 0.18'),
             'ningun exportador puede sumar 18% mientras el editor calcula 0');
@@ -299,7 +299,7 @@ class QuotesVocabularyTest extends TestCase
      */
     public function test_ninguna_ruta_monetaria_usa_float(): void
     {
-        $vista = file_get_contents(resource_path('views/quotes/index.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Ventas/Views/quotes/index.blade.php'));
 
         // Busqueda negativa: toFixed desaparece por completo de la vista.
         $this->assertSame(0, substr_count($vista, 'toFixed'),
@@ -374,7 +374,7 @@ class QuotesVocabularyTest extends TestCase
      */
     public function test_el_panel_presenta_los_miles_como_el_portal(): void
     {
-        $vista  = file_get_contents(resource_path('views/quotes/index.blade.php'));
+        $vista  = file_get_contents(app_path('Modules/Ventas/Views/quotes/index.blade.php'));
         $portal = file_get_contents(app_path('Modules/Tienda/Views/public/portal-quote.blade.php'));
 
         $this->assertStringContainsString('lmPresent(exacto)', $vista, 'el panel necesita su presentador');
@@ -403,7 +403,7 @@ class QuotesVocabularyTest extends TestCase
      */
     public function test_los_exportadores_escapan_los_datos_del_usuario(): void
     {
-        $vista = file_get_contents(resource_path('views/quotes/index.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Ventas/Views/quotes/index.blade.php'));
         $exportadores = substr($vista, strpos($vista, 'function buildQuoteHtml'));
 
         $this->assertStringContainsString('function esc(v)', $vista, 'debe existir el helper de escape');

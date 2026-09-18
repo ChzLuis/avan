@@ -1115,7 +1115,7 @@ class InvoiceController extends Controller
         // Pre-cargar datos de cotización si viene de una conversión
         $fromQuote = null;
         if ($quoteId = request()->get('from_quote')) {
-            $quote = \App\Models\Quote::where('id', $quoteId)
+            $quote = \App\Modules\Ventas\Models\Quote::where('id', $quoteId)
                 ->where('project_id', $project->id)
                 ->with('items')
                 ->first();

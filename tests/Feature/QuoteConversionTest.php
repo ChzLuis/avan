@@ -4,11 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Employee;
 use App\Models\Module;
-use App\Models\Order;
-use App\Models\OrderEvent;
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\OrderEvent;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -279,7 +279,7 @@ class QuoteConversionTest extends TestCase
             ['description' => 'A', 'price' => '33.33', 'quantity' => 3, 'discount' => '10'],
         ], ['status' => 'accepted']);
 
-        $r = app(\App\Http\Controllers\QuoteController::class)
+        $r = app(\App\Modules\Ventas\Controllers\QuoteController::class)
             ->convertirPortal(new \Illuminate\Http\Request(['type' => 'boleta']),
                 $this->project->slug, $q->id);
 
@@ -453,7 +453,7 @@ class QuoteConversionTest extends TestCase
 
         $copiaId = $r->json('quote.id');
         $this->assertNotSame($q->id, $copiaId);
-        $this->assertSame('draft', \App\Support\QuoteStatus::comercial(Quote::find($copiaId)->status));
+        $this->assertSame('draft', \App\Modules\Ventas\Support\QuoteStatus::comercial(Quote::find($copiaId)->status));
         $this->assertNull(Quote::find($copiaId)->order, 'la copia nace sin pedido');
     }
 

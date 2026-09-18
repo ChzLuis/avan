@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Modules\Ventas\Support\QuoteStatus;
+
 use App\Models\Project;
 use App\Models\User;
 

@@ -5,7 +5,7 @@ namespace App\Modules\Control\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\User;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Modules\Finanzas\Models\Invoice;
 
 class AdminDashboardController extends Controller

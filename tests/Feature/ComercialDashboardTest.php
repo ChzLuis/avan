@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Employee;
-use App\Models\Order;
-use App\Models\OrderEvent;
+use App\Modules\Ventas\Models\Order;
+use App\Modules\Ventas\Models\OrderEvent;
 use App\Modules\Catalogo\Models\Product;
 use App\Models\Project;
 use App\Models\ProjectMember;
-use App\Models\Quote;
+use App\Modules\Ventas\Models\Quote;
 use App\Modules\Finanzas\Models\ReceivableTerm;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -111,7 +111,7 @@ class ComercialDashboardTest extends TestCase
             ->assertSee('250.00');
 
         // La misma pregunta en las dos pantallas tiene que dar lo mismo.
-        $cartera = \App\Support\Cobranza::cartera($this->project);
+        $cartera = \App\Modules\Finanzas\Support\Cobranza::cartera($this->project);
         $this->assertSame(25000, $cartera['total_cents']);
         $this->assertSame(25000, $cartera['vencido_cents']);
         $this->assertSame(1, $cartera['vencidas']);
@@ -178,13 +178,13 @@ class ComercialDashboardTest extends TestCase
             'token' => str()->random(24)]);
 
         // La cartera solo tiene el pedido.
-        $cartera = \App\Support\Cobranza::cartera($this->project);
+        $cartera = \App\Modules\Finanzas\Support\Cobranza::cartera($this->project);
         $this->assertSame(100000, $cartera['total_cents']);
         $this->assertCount(1, $cartera['filas']);
         $this->assertSame('pedido', $cartera['filas'][0]['tipo']);
 
         // Y la cotizacion aparece como trabajo por hacer, con su importe.
-        $pendiente = \App\Support\Cobranza::aceptadasSinConvertir($this->project);
+        $pendiente = \App\Modules\Finanzas\Support\Cobranza::aceptadasSinConvertir($this->project);
         $this->assertSame(1, $pendiente['n']);
         $this->assertSame(50000, $pendiente['cents']);
 

@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\QuoteAbilities;
+use App\Modules\Ventas\Support\QuoteAbilities;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Modules\Personas\Models\Attendance;
 use App\Models\Employee;
-use App\Models\Order;
+use App\Modules\Ventas\Models\Order;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
