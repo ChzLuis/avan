@@ -262,6 +262,7 @@ $estadoColores = [
                 </svg>
             </button>
             <textarea x-model="textoMensaje"
+                      @paste="pegarArchivo($event)"
                       @keydown.enter.prevent="if(!$event.shiftKey) enviarMensaje()"
                       @keydown.enter.shift="textoMensaje += '\n'"
                       placeholder="Escribe un mensaje... (Enter para enviar)"
@@ -655,6 +656,19 @@ function bandeja() {
             }
             this.enviando = false;
             this.$refs.inputMensaje?.focus();
+        },
+
+        // Ctrl+V con una imagen en el portapapeles (captura de pantalla, foto
+        // copiada): entra como adjunto, sin pasar por el explorador de archivos.
+        pegarArchivo(e) {
+            const items = Array.from(e.clipboardData?.items || []);
+            const it = items.find(i => i.kind === 'file' && (i.type.startsWith('image/') || i.type === 'application/pdf'));
+            if (!it) return;
+            const f = it.getAsFile();
+            if (!f) return;
+            e.preventDefault();
+            const ext = f.type === 'application/pdf' ? 'pdf' : (f.type.split('/')[1] || 'png');
+            this.adjunto = f.name && f.name !== 'image.png' ? f : new File([f], 'pegado-' + Date.now() + '.' + ext, { type: f.type });
         },
 
         abrirReenvio(msg) { this.reenvio = msg; this.errorReenvio = null; this.buscadorReenvio = ''; },
