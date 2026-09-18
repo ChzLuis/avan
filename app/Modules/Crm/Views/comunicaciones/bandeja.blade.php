@@ -436,6 +436,9 @@ $estadoColores = [
             <button @click="guardarDetalle()" class="mt-1 w-full text-xs text-white py-1.5 rounded-lg" style="background:#25d366">Guardar notas</button>
         </div>
 
+        <a :href="'/bixocrm/tratos?nuevo=1&conversacion=' + (convActiva?.id || '')"
+           class="block text-center text-xs font-semibold text-white py-2 rounded-lg" style="background:#16a34a">+ Crear trato desde este chat</a>
+
         <div class="flex gap-2">
             <button @click="archivar(convActiva, !convActiva?.archivado)" class="flex-1 text-xs border border-gray-200 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50" x-text="convActiva?.archivado ? 'Desarchivar' : 'Archivar'"></button>
             <button @click="eliminarChat(convActiva)" class="flex-1 text-xs border border-red-200 text-red-600 py-1.5 rounded-lg hover:bg-red-50">Eliminar chat</button>

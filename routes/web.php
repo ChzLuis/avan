@@ -44,6 +44,7 @@ use App\Modules\Control\Controllers\DemoController;
 use App\Modules\Crm\Controllers\CrmAuthController as ComWaAuthController;
 use App\Modules\Crm\Controllers\BandejaController;
 use App\Modules\Crm\Controllers\ClientesCrmController;
+use App\Modules\Crm\Controllers\TratosController;
 use App\Modules\Crm\Controllers\CanalesController;
 use Illuminate\Support\Facades\Route;
 
@@ -1028,6 +1029,13 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::delete('/{conversacion}/mensajes/{mensaje}', [BandejaController::class, 'eliminarMensaje'])->name('mensajes.eliminar');
 
         Route::get('/clientes',                      [ClientesCrmController::class, 'index'])->name('clientes');
+        // Tratos: embudo de ventas (tablero/lista) con etapas por negocio
+        Route::get('/tratos',                        [TratosController::class, 'index'])->name('tratos');
+        Route::post('/tratos',                       [TratosController::class, 'store'])->name('tratos.store');
+        Route::put('/tratos/etapas',                 [TratosController::class, 'guardarEtapas'])->name('tratos.etapas');
+        Route::patch('/tratos/{trato}/mover',        [TratosController::class, 'mover'])->name('tratos.mover');
+        Route::patch('/tratos/{trato}',              [TratosController::class, 'update'])->name('tratos.update');
+        Route::delete('/tratos/{trato}',             [TratosController::class, 'destroy'])->name('tratos.destroy');
 
         Route::get('/configuracion',                 [CanalesController::class, 'index'])->name('configuracion');
         // Asistente de conexion con Meta (WhatsApp Cloud API)
