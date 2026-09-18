@@ -526,6 +526,42 @@ no cuanto cuesta. Siguiente del plan del CRM: pipeline de oportunidades,
 asignacion de conversaciones a asesores, tareas/notas/etiquetas, plantillas
 de Meta para la ventana de 24 h, panel de metricas.
 
+### CRM como producto — bloque 2, fase 1 HECHA (2026-09-18): bandeja WhatsApp + armazon Pipedrive
+
+Referencias del usuario: WhatsApp Web (chat) y Pipedrive (armazon, tratos,
+chat en vivo, playbooks). Plan en fases, cada una desplegada:
+
+- **Fase 1 (hecha)**: bandeja estilo WhatsApp (lista con avatar, vista previa
+  por tipo, fijados, pestanas Todas/No leidas/Mias/Sin asignar/Cerradas/
+  Archivadas, menu por chat: fijar, no leido, asignarmelo, archivar, eliminar;
+  burbujas con reenviar/copiar/eliminar; busqueda en el chat; ficha plegable;
+  adjuntos imagen/PDF/audio, pegar con Ctrl+V, nota de voz con ffmpeg
+  instalado en ARIN; medios entrantes descargados). Armazon estilo Pipedrive
+  (barra azul marino, Prospectos, Tratos/Acciones/Avances apagados con
+  "pronto", buscador global `?q=`). Selector de negocio al entrar; el portal
+  exige el producto CRM completo (clients+bots). Control muestra productos.
+- **Fase 2**: Tratos = pipeline kanban de oportunidades (tabla propia:
+  titulo, valor, etapa configurable por negocio, asesor, cierre estimado,
+  motivo de perdida), arrastrar entre etapas, vista lista, desde una
+  conversacion "crear trato".
+- **Fase 3**: Acciones (tareas y recordatorios ligados a trato/cliente),
+  Contactos con historial unificado (mensajes, pedidos, cotizaciones, pagos),
+  Avances (tiempo de primera respuesta, conversaciones por asesor, tasa de
+  cierre), estado "estoy conectado" del asesor y reparto de Sin asignar.
+- **Fase 4**: playbooks (plantillas de flujo para el constructor: conseguir
+  prospectos, reservar reuniones, cualificar y transferir a humano), % de
+  conversion por bloque, widget de chat en la web de la tienda, plantillas
+  de Meta para la ventana de 24 h y secuencias.
+
+Estado de datos en ARIN tras hoy: solo **Eskala** tiene CRM (a MegaHogar se
+le apago `bots`); la linea de Meta (canal 5) **fue eliminada desde la
+pantalla de Canales a las 12:24** y hay que reconectarla bajo Eskala con el
+asistente (token permanente de usuario del sistema + app secret). El
+asistente aun no suscribe la app a la cuenta de WhatsApp (`subscribed_apps`):
+se hizo a mano desde el servidor; automatizarlo va en la fase 2.
+`tailwind.config.js` escanea ahora `app/Modules/**/Views`; `public/build` va
+fuera de git y se sube con `deploy.py` (manifest + css nuevo).
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia
