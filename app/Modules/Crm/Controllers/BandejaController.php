@@ -85,7 +85,8 @@ class BandejaController extends Controller
     {
         $this->autorizar($conversacion);
         $conversacion->update(['no_leidos' => 0]);
-        $mensajes = $conversacion->mensajes()->latest()->limit(100)->get()->reverse()->values();
+        // Varios mensajes en el mismo segundo (el bot manda tres seguidos): el id desempata, si no salian de cabeza.
+        $mensajes = $conversacion->mensajes()->orderByDesc('created_at')->orderByDesc('id')->limit(100)->get()->reverse()->values();
         return response()->json(['mensajes' => $mensajes, 'conversacion' => $conversacion->load('canal')]);
     }
 
