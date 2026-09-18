@@ -88,6 +88,7 @@ class BotEskalaMetaTest extends TestCase
             'interactive' => $d['interactive']['type']
                 . (isset($d['interactive']['header']) ? '+' . $d['interactive']['header']['type'] : '')
                 . ':' . implode('|', array_map(fn ($b) => $b['reply']['id'], $d['interactive']['action']['buttons'] ?? []))
+                . implode('|', array_map(fn ($f) => $f['id'], $d['interactive']['action']['sections'][0]['rows'] ?? []))
                 . ($d['interactive']['action']['parameters']['url'] ?? ''),
             default       => $d['type'],
         };
@@ -109,12 +110,16 @@ class BotEskalaMetaTest extends TestCase
         $env = $this->enviados();
 
         $this->assertCount(1, $env, 'Una sola burbuja');
-        $this->assertSame('button:btn:cantidad|btn:cantidad#2|btn:cantidad#3', $this->resumen($env[0]));
+        // 7 rubros: WhatsApp no admite mas de 3 botones, asi que va como menu desplegable.
+        $filas = $env[0]['interactive']['action']['sections'][0]['rows'];
+        $this->assertSame('list', $env[0]['interactive']['type']);
+        $this->assertSame('Elegir rubro', $env[0]['interactive']['action']['button']);
+        $this->assertCount(7, $filas);
+        $this->assertSame('👕 Ropa y calzado', $filas[0]['title']);
+        $this->assertSame('🛍️ Otro rubro', $filas[6]['title']);
+        $this->assertCount(7, array_unique(array_column($filas, 'id')), 'Meta rechaza (#131009) ids repetidos');
         $this->assertStringContainsString('qué vendes', $this->cuerpo($env[0]));
         $this->assertStringNotContainsString('S/', $this->cuerpo($env[0]));
-        $this->assertSame('👕 Ropa', $env[0]['interactive']['action']['buttons'][0]['reply']['title']);
-        $ids = array_map(fn ($b) => $b['reply']['id'], $env[0]['interactive']['action']['buttons']);
-        $this->assertCount(3, array_unique($ids), 'Meta rechaza (#131009) botones con el mismo id');
         $this->sinIa();
     }
 
@@ -122,10 +127,10 @@ class BotEskalaMetaTest extends TestCase
     {
         $this->meta($this->texto('hola'));
         $n = count($this->enviados());
-        $this->meta($this->toque('btn:cantidad#3'));
+        $this->meta(['type' => 'interactive', 'interactive' => ['type' => 'list_reply', 'list_reply' => ['id' => 'btn:cantidad#7', 'title' => 'Otro rubro']]]);
         $env = $this->nuevos($n);
 
-        $this->assertCount(1, $env, 'El sufijo #3 del boton "Otros" no estorba');
+        $this->assertCount(1, $env, 'La fila elegida (con sufijo #7) lleva a la cantidad');
         $this->assertSame('button:btn:plan_start|btn:plan_pro|btn:plan_business', $this->resumen($env[0]));
         $this->assertStringContainsString('Cuántos productos', $this->cuerpo($env[0]));
         $this->sinIa();
@@ -204,7 +209,7 @@ class BotEskalaMetaTest extends TestCase
 
         $this->assertCount(1, $env);
         $this->assertStringContainsString('S/ 490', $this->cuerpo($env[0]));
-        $this->assertSame('button:btn:cantidad|btn:cantidad#2|btn:cantidad#3', $this->resumen($env[0]), 'Da el precio y vuelve a preguntar que vende');
+        $this->assertSame('list', $env[0]['interactive']['type'], 'Da el precio y vuelve a preguntar que vende');
         $this->sinIa();
     }
 
@@ -256,8 +261,10 @@ class BotEskalaMetaTest extends TestCase
         $token = $this->proyecto->fresh()->copilot_token;
         $r = $this->postJson('/api/bot/inbound', ['telefono' => '51933333333', 'mensaje' => 'hola', 'nombre' => 'QR'], ['X-Copilot-Token' => $token])->assertOk();
         $respuestas = $r->json('respuestas');
-        $this->assertIsString(end($respuestas));
-        $this->assertStringContainsString('qué vendes', end($respuestas));
+        $ultima = end($respuestas);
+        // Baileys si sabe de listas nativas: el menu de rubros viaja como lista con su texto de respaldo.
+        $this->assertSame('lista', $ultima['tipo']);
+        $this->assertStringContainsString('qué vendes', $ultima['fallback']);
 
         $this->postJson('/api/bot/inbound', ['telefono' => '51933333333', 'mensaje' => 'btn:cantidad', 'nombre' => 'QR'], ['X-Copilot-Token' => $token])->assertOk();
         $r = $this->postJson('/api/bot/inbound', ['telefono' => '51933333333', 'mensaje' => 'btn:plan_pro', 'nombre' => 'QR'], ['X-Copilot-Token' => $token])->assertOk();

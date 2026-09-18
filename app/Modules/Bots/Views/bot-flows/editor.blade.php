@@ -382,7 +382,7 @@
                         </label>
 
                         <div class="mt-3 pt-3 border-t border-gray-100">
-                            <label class="text-xs font-semibold text-gray-600">Botones de atajo <span class="font-normal text-gray-400">(WhatsApp oficial · máx. 3)</span></label>
+                            <label class="text-xs font-semibold text-gray-600">Botones de atajo <span class="font-normal text-gray-400">(hasta 3 botones; de 4 a 10 salen como menú desplegable)</span></label>
                             <p class="text-[11px] text-gray-500 mt-0.5">El cliente puede tocar un botón o escribir libre. Por el conector QR salen como texto.</p>
                             <template x-for="(bt,bi) in (bloques[selected].botones||[])" :key="bi">
                                 <div class="flex items-center gap-1.5 mt-1.5">
@@ -396,7 +396,7 @@
                                     <button type="button" @click="bloques[selected].botones.splice(bi,1); save()" class="text-gray-400 hover:text-red-500 text-sm" title="Quitar">✕</button>
                                 </div>
                             </template>
-                            <button type="button" x-show="(bloques[selected].botones||[]).length < 3"
+                            <button type="button" x-show="(bloques[selected].botones||[]).length < 10"
                                     @click="bloques[selected].botones = (bloques[selected].botones||[]); bloques[selected].botones.push({titulo:'',siguiente:''}); save()"
                                     class="mt-1.5 text-[11px] font-semibold text-violet-700 hover:underline">+ Añadir botón</button>
                         </div>

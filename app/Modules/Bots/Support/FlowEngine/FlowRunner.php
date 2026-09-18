@@ -2466,7 +2466,7 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
     {
         $texto = $this->interpolar($bloque['texto'], $vars);
         $botones = [];
-        foreach (array_slice(array_values($bloque['botones'] ?? []), 0, 3) as $b) {
+        foreach (array_slice(array_values($bloque['botones'] ?? []), 0, 10) as $b) {
             $titulo = mb_substr(trim((string) ($b['titulo'] ?? '')), 0, 20);
             $destino = (string) ($b['siguiente'] ?? '');
             if ($titulo === '' || ! isset($this->flow['bloques'][$destino])) {
@@ -2500,11 +2500,23 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
             }
             // Con enlace Y botones, los botones van en un segundo mensaje corto.
             $texto = $this->interpolar($bloque['botones_texto'] ?? '¿Cómo seguimos?', $vars);
-            $salida[] = ['tipo' => 'botones', 'cuerpo' => $texto, 'botones' => $botones, 'fallback' => $texto];
+            $salida[] = count($botones) > 3
+                ? ['tipo' => 'lista', 'titulo' => '', 'cuerpo' => $texto, 'pie' => '', 'boton' => 'Elegir', 'secciones' => [['titulo' => 'Opciones', 'filas' => array_map(fn ($b) => ['id' => $b['id'], 'titulo' => mb_substr($b['titulo'], 0, 24), 'descripcion' => ''], $botones)]], 'fallback' => $texto]
+                : ['tipo' => 'botones', 'cuerpo' => $texto, 'botones' => $botones, 'fallback' => $texto];
             return $salida;
         }
         if ($botones === []) {
             return [$texto];
+        }
+        // Mas de 3: WhatsApp no admite mas botones, asi que va como menu desplegable (hasta 10).
+        if (count($botones) > 3) {
+            $fallback = $texto . "
+
+" . implode("
+", array_map(fn ($b, $i) => ($i + 1) . '. ' . $b['titulo'], $botones, array_keys($botones)));
+            return [['tipo' => 'lista', 'titulo' => '', 'cuerpo' => $texto, 'pie' => '', 'boton' => $this->interpolar((string) ($bloque['lista_boton'] ?? 'Elegir'), $vars),
+                'secciones' => [['titulo' => $bloque['lista_titulo'] ?? 'Opciones', 'filas' => array_map(fn ($b) => ['id' => $b['id'], 'titulo' => mb_substr($b['titulo'], 0, 24), 'descripcion' => ''], $botones)]],
+                'fallback' => $fallback]];
         }
         $msg = ['tipo' => 'botones', 'cuerpo' => $texto, 'botones' => $botones, 'fallback' => $texto];
         // Imagen de cabecera: foto + pregunta + botones en UNA sola burbuja (Meta).
