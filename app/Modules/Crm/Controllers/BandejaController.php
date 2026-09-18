@@ -11,6 +11,7 @@ use App\Modules\Crm\Models\WaCanal;
 use App\Modules\Crm\Models\WaConversacion;
 use App\Modules\Crm\Models\WaRespuestaRapida;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class BandejaController extends Controller
 {
@@ -121,20 +122,80 @@ class BandejaController extends Controller
         ]);
     }
 
+    /**
+     * Envia texto o un adjunto (imagen o PDF). El adjunto se guarda en el
+     * disco publico del negocio y a Meta se le pasa la URL: la Graph API
+     * descarga el archivo desde ahi, por eso tiene que ser publica.
+     */
     public function enviar(Request $request, WaConversacion $conversacion)
     {
         $this->autorizar($conversacion);
-        $data = $request->validate(['contenido' => 'required|string|max:4096']);
+        $data = $request->validate([
+            'contenido' => 'nullable|string|max:4096',
+            'archivo'   => 'nullable|file|max:20480|mimes:jpg,jpeg,png,webp,pdf',
+        ]);
+        if (! $request->hasFile('archivo') && trim((string) ($data['contenido'] ?? '')) === '') {
+            return response()->json(['ok' => false, 'error' => 'Escribe un mensaje o adjunta un archivo.'], 422);
+        }
 
+        $respuesta = (string) ($data['contenido'] ?? '');
+        $tipo = 'texto'; $mediaUrl = null; $contenido = $respuesta;
+        if ($request->hasFile('archivo')) {
+            $archivo = $request->file('archivo');
+            $esImagen = str_starts_with((string) $archivo->getMimeType(), 'image/');
+            $ruta = $archivo->store('wa/' . $conversacion->canal->project_id, 'public');
+            $mediaUrl = Storage::disk('public')->url($ruta);
+            $tipo = $esImagen ? 'imagen' : 'documento';
+            $nombre = $archivo->getClientOriginalName();
+            $contenido = $respuesta !== '' ? $respuesta : $nombre;
+            $respuesta = $esImagen
+                ? ['tipo' => 'imagen', 'url' => $mediaUrl, 'caption' => $data['contenido'] ?? '']
+                : ['tipo' => 'archivo', 'url' => $mediaUrl, 'caption' => $data['contenido'] ?? '', 'nombre' => $nombre];
+        }
+
+        return $this->despachar($conversacion, $respuesta, $tipo, $contenido, $mediaUrl);
+    }
+
+    /** Reenvia un mensaje de esta conversacion (texto o adjunto) a otra del mismo negocio. */
+    public function reenviar(Request $request, WaConversacion $conversacion)
+    {
+        $this->autorizar($conversacion);
+        $data = $request->validate([
+            'mensaje_id' => 'required|integer',
+            'destino_id' => 'required|integer',
+        ]);
+        $mensaje = $conversacion->mensajes()->findOrFail($data['mensaje_id']);
+        $destino = WaConversacion::findOrFail($data['destino_id']);
+        $this->autorizar($destino);
+
+        $respuesta = match ($mensaje->tipo) {
+            'imagen'    => ['tipo' => 'imagen', 'url' => $mensaje->media_url, 'caption' => ''],
+            'documento' => ['tipo' => 'archivo', 'url' => $mensaje->media_url, 'caption' => '', 'nombre' => basename((string) $mensaje->media_url)],
+            default     => (string) $mensaje->contenido,
+        };
+        if (in_array($mensaje->tipo, ['imagen', 'documento'], true) && ! $mensaje->media_url) {
+            return response()->json(['ok' => false, 'error' => 'Este adjunto no tiene archivo descargado para reenviar.'], 422);
+        }
+
+        return $this->despachar($destino, $respuesta, $mensaje->tipo, (string) $mensaje->contenido, $mensaje->media_url);
+    }
+
+    /**
+     * Manda por Meta y deja constancia en el historial. El envio pasa por
+     * ClienteCloud, el mismo que usa el bot: una sola implementacion de la
+     * Graph API para el canal automatico y el humano. Un fallo NO puede pasar
+     * desapercibido: se devuelve con 502 y el motivo de Meta, que suele ser
+     * accionable (token vencido, ventana de 24 h cerrada).
+     */
+    private function despachar(WaConversacion $conversacion, string|array $respuesta, string $tipo, string $contenido, ?string $mediaUrl)
+    {
         $canal = $conversacion->canal;
         $waMessageId = null;
         $fallo = null;
 
-        // El envio pasa por ClienteCloud, el mismo que usa el bot: una sola
-        // implementacion de la Graph API para el canal automatico y el humano.
         if ($canal->conectadoAMeta()) {
             $res = (new \App\Modules\Crm\Support\WhatsappCloud\ClienteCloud($canal))
-                ->enviarUna($conversacion->cliente_telefono, $data['contenido']);
+                ->enviarUna($conversacion->cliente_telefono, $respuesta);
 
             $waMessageId = $res['id'] ?? null;
             $fallo = ($res['ok'] ?? false) ? null : ($res['error'] ?? 'No se pudo enviar.');
@@ -145,8 +206,9 @@ class BandejaController extends Controller
         $mensaje = $conversacion->mensajes()->create([
             'wa_message_id' => $waMessageId,
             'direccion'     => 'saliente',
-            'tipo'          => 'texto',
-            'contenido'     => $data['contenido'],
+            'tipo'          => $tipo,
+            'contenido'     => $contenido,
+            'media_url'     => $mediaUrl,
             'estado'        => $waMessageId ? 'enviado' : 'pendiente',
         ]);
 
@@ -155,10 +217,6 @@ class BandejaController extends Controller
             'estado' => $conversacion->estado === 'nuevo' ? 'contactado' : $conversacion->estado,
         ]);
 
-        // Un fallo de envio NO puede pasar desapercibido: antes se tragaba la
-        // excepcion y el asesor veia su mensaje en pantalla creyendo que habia
-        // llegado, cuando WhatsApp nunca lo entrego. El motivo de Meta suele
-        // ser accionable (token vencido, ventana de 24 h cerrada).
         return response()->json([
             'ok'      => $fallo === null,
             'mensaje' => $mensaje,

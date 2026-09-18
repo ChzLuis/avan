@@ -193,9 +193,23 @@ $estadoColores = [
                                  : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm border border-gray-200'"
                          :style="msg.direccion === 'saliente' ? 'background:#25d366;color:white' : ''"
                          class="max-w-[72%] px-3 py-2 text-sm shadow-sm">
-                        <p class="whitespace-pre-wrap break-words" x-text="msg.contenido"></p>
+                        {{-- Adjuntos: imagen en linea, PDF como enlace. Todo lo demas, texto. --}}
+                        <template x-if="msg.tipo === 'imagen' && msg.media_url">
+                            <a :href="msg.media_url" target="_blank" class="block mb-1">
+                                <img :src="msg.media_url" class="rounded-lg max-h-64 object-cover" loading="lazy" alt="imagen">
+                            </a>
+                        </template>
+                        <template x-if="msg.tipo === 'documento' && msg.media_url">
+                            <a :href="msg.media_url" target="_blank" class="flex items-center gap-2 mb-1 underline">
+                                <span>📄</span><span class="truncate max-w-[220px]" x-text="msg.contenido || 'Documento'"></span>
+                            </a>
+                        </template>
+                        <template x-if="!(msg.tipo === 'documento' && msg.media_url)">
+                            <p class="whitespace-pre-wrap break-words" x-text="msg.contenido"></p>
+                        </template>
                         <div :class="msg.direccion === 'saliente' ? 'text-green-200' : 'text-gray-400'"
                              class="flex items-center justify-end gap-1 mt-0.5">
+                            <button @click="abrirReenvio(msg)" class="text-[10px] opacity-70 hover:opacity-100 mr-1" title="Reenviar a otra conversación">↪ reenviar</button>
                             <span class="text-[10px]" x-text="formatearHora(msg.created_at)"></span>
                             <template x-if="msg.direccion === 'saliente'">
                                 <span class="text-[10px]"
@@ -227,7 +241,19 @@ $estadoColores = [
         <template x-if="textoMensaje.includes('[')">
             <p class="text-[10px] text-amber-600 mb-1 px-1">Recuerda reemplazar [nombre], [FECHA], [LINK]</p>
         </template>
+        <div x-show="adjunto" x-cloak class="flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg bg-green-50 border border-green-200 text-[11px] text-green-800">
+            <span>📎</span><span class="truncate" x-text="adjunto?.name"></span>
+            <button @click="adjunto = null; $refs.inputArchivo.value = ''" class="ml-auto text-green-600 hover:text-green-800">✕</button>
+        </div>
         <div class="flex items-end gap-2">
+            <input type="file" x-ref="inputArchivo" class="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf" @change="adjunto = $event.target.files[0] || null">
+            <button @click="$refs.inputArchivo.click()"
+                    class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
+                    title="Adjuntar imagen o PDF (hasta 20 MB)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                </svg>
+            </button>
             <button @click="modalRespuestas = true"
                     class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
                     title="Respuestas rápidas">
@@ -245,7 +271,7 @@ $estadoColores = [
                       x-ref="inputMensaje"
                       @input="$el.style.height='auto'; $el.style.height=Math.min($el.scrollHeight,120)+'px'"></textarea>
             <button @click="enviarMensaje()"
-                    :disabled="!textoMensaje.trim() || enviando"
+                    :disabled="(!textoMensaje.trim() && !adjunto) || enviando"
                     class="p-2 text-white rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                     style="background:#25d366">
                 <svg x-show="!enviando" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -407,6 +433,29 @@ $estadoColores = [
     </div>
 </div>
 
+{{-- Reenviar un mensaje a otra conversacion del negocio --}}
+<div x-show="reenvio" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)" @keydown.escape.window="reenvio=null">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl" @click.outside="reenvio=null">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h3 class="font-bold text-gray-900 text-sm">Reenviar a…</h3>
+            <p class="text-xs text-gray-500 mt-0.5 truncate" x-text="reenvio?.contenido"></p>
+            <input type="text" x-model="buscadorReenvio" placeholder="Buscar nombre o teléfono…" class="mt-2 w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-gray-50 focus:outline-none">
+        </div>
+        <div class="max-h-72 overflow-y-auto">
+            <template x-for="c in conversaciones.filter(c => c.id !== convActiva?.id && (c.cliente_nombre + ' ' + c.cliente_telefono).toLowerCase().includes(buscadorReenvio.toLowerCase()))" :key="c.id">
+                <button @click="reenviarA(c)" class="w-full text-left px-5 py-2.5 hover:bg-green-50 border-b border-gray-50">
+                    <p class="text-sm font-medium text-gray-900" x-text="c.cliente_nombre"></p>
+                    <p class="text-[11px] text-gray-500" x-text="c.cliente_telefono"></p>
+                </button>
+            </template>
+        </div>
+        <div x-show="errorReenvio" x-cloak class="px-5 py-2 text-[11px] text-red-700 bg-red-50" x-text="errorReenvio"></div>
+        <div class="px-5 py-3 border-t border-gray-100 text-right">
+            <button @click="reenvio=null" class="px-4 py-1.5 text-sm border border-gray-200 rounded-xl">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 {{-- Modal respuestas rápidas --}}
 <div x-show="modalRespuestas" x-cloak
      @keydown.escape.window="modalRespuestas=false"
@@ -461,6 +510,10 @@ function bandeja() {
         enviando: false,
         textoMensaje: '',
         errorEnvio: null,
+        adjunto: null,
+        reenvio: null,
+        buscadorReenvio: '',
+        errorReenvio: null,
         busqueda: '',
         filtroCanal: 'todos',
         filtroEstado: 'todos',
@@ -561,40 +614,71 @@ function bandeja() {
         },
 
         async enviarMensaje() {
-            if (!this.textoMensaje.trim() || !this.convActiva || this.enviando) return;
+            if ((!this.textoMensaje.trim() && !this.adjunto) || !this.convActiva || this.enviando) return;
             this.enviando = true;
             const contenido = this.textoMensaje;
+            const archivo = this.adjunto;
             this.textoMensaje = '';
 
+            // Multipart siempre: el adjunto viaja como archivo y Meta lo
+            // descarga desde la URL publica que le da el servidor.
+            const fd = new FormData();
+            fd.append('contenido', contenido);
+            if (archivo) fd.append('archivo', archivo);
             const res = await fetch(`/bixocrm/${this.convActiva.id}/enviar`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: fd,
+            });
+            const data = await res.json().catch(() => ({}));
+
+            // El mensaje se pinta igual (quedo guardado en el historial), pero
+            // si WhatsApp no lo entrego hay que DECIRLO: el texto vuelve al
+            // campo para poder reintentar.
+            if (data.mensaje) {
+                this.mensajes.push(data.mensaje);
+                this.convActiva.ultimo_mensaje = data.mensaje.contenido;
+                this.convActiva.ultimo_mensaje_at = new Date().toISOString();
+                this.$nextTick(() => this.scrollBottom());
+            }
+            if (!data.ok) {
+                this.errorEnvio = data.error || (data.errors ? Object.values(data.errors).flat().join(' ') : 'No se pudo enviar el mensaje a WhatsApp.');
+                this.textoMensaje = contenido;
+            } else {
+                this.errorEnvio = null;
+                this.adjunto = null;
+                if (this.$refs.inputArchivo) this.$refs.inputArchivo.value = '';
+            }
+            this.enviando = false;
+            this.$refs.inputMensaje?.focus();
+        },
+
+        abrirReenvio(msg) { this.reenvio = msg; this.errorReenvio = null; this.buscadorReenvio = ''; },
+
+        async reenviarA(conv) {
+            if (!this.reenvio || !this.convActiva) return;
+            const res = await fetch(`/bixocrm/${this.convActiva.id}/reenviar`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
                 },
-                body: JSON.stringify({ contenido, tipo: 'texto' }),
+                body: JSON.stringify({ mensaje_id: this.reenvio.id, destino_id: conv.id }),
             });
             const data = await res.json().catch(() => ({}));
-
-            // El mensaje se pinta igual (quedó guardado en el historial), pero
-            // si WhatsApp no lo entregó hay que DECIRLO: antes desaparecía del
-            // campo y el asesor daba por hecho que el cliente lo había
-            // recibido. Se devuelve el texto al campo para poder reintentar.
-            if (data.mensaje) {
-                this.mensajes.push(data.mensaje);
-                this.convActiva.ultimo_mensaje = contenido;
-                this.convActiva.ultimo_mensaje_at = new Date().toISOString();
-                this.$nextTick(() => this.scrollBottom());
-            }
-            if (!data.ok) {
-                this.errorEnvio = data.error || 'No se pudo enviar el mensaje a WhatsApp.';
-                this.textoMensaje = contenido;
+            if (data.ok) {
+                this.reenvio = null;
+                conv.ultimo_mensaje = data.mensaje?.contenido || conv.ultimo_mensaje;
+                if (typeof bxAviso === 'function') bxAviso('Reenviado a ' + conv.cliente_nombre, 'success');
             } else {
-                this.errorEnvio = null;
+                this.errorReenvio = data.error || 'No se pudo reenviar.';
             }
-            this.enviando = false;
-            this.$refs.inputMensaje?.focus();
         },
 
         async toggleBot() {

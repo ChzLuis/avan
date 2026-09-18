@@ -1019,6 +1019,7 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::post('/lead/{id}/etapa',              [ClientesCrmController::class, 'leadEtapa'])->name('lead.etapa');
         Route::get('/{conversacion}/mensajes',       [BandejaController::class, 'mensajes'])->name('mensajes');
         Route::post('/{conversacion}/enviar',        [BandejaController::class, 'enviar'])->name('enviar');
+        Route::post('/{conversacion}/reenviar',      [BandejaController::class, 'reenviar'])->name('reenviar');
         Route::patch('/{conversacion}',              [BandejaController::class, 'actualizar'])->name('actualizar');
 
         Route::get('/clientes',                      [ClientesCrmController::class, 'index'])->name('clientes');
