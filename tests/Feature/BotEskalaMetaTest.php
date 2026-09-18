@@ -95,10 +95,13 @@ class BotEskalaMetaTest extends TestCase
         $env = $this->enviados();
         $r = array_map(fn ($d) => $this->resumen($d), $env);
 
-        $this->assertStringStartsWith('text:', $r[0], 'Saludo primero');
-        $this->assertContains('image', $r, 'El flyer sale como imagen');
-        $this->assertSame('button:btn:mas_ejemplos|btn:demo|btn:asesor', end($r), 'La pregunta del rubro cierra con los 3 atajos');
-        $this->assertStringContainsString('qué negocio tienes', end($env)['interactive']['body']['text']);
+        // Primer contacto = 2 burbujas: flyer con el saludo de pie + foto con la pregunta y 3 botones.
+        $this->assertCount(2, $r, 'Dos mensajes, no cinco');
+        $this->assertSame('image', $r[0], 'El flyer sale primero, con el saludo como pie');
+        $this->assertStringContainsString('Valeria', $env[0]['image']['caption']);
+        $this->assertSame('button:btn:demo|btn:mas_ejemplos|btn:asesor', $r[1], 'La pregunta del rubro cierra con los 3 atajos');
+        $this->assertStringContainsString('Qué vendes', $env[1]['interactive']['body']['text']);
+        $this->assertSame('image', $env[1]['interactive']['header']['type'], 'La foto de la tienda va de cabecera, en la misma burbuja');
         $this->sinIa('Hasta aqui no hace falta IA');
     }
 
@@ -113,7 +116,7 @@ class BotEskalaMetaTest extends TestCase
         $this->assertSame('cta_url:https://arindg.com/ferreteria-demo', $r[$n - 2]);
         $this->assertSame('Abrir la demo', $env[$n - 2]['interactive']['action']['parameters']['display_text']);
         $this->assertSame('button:btn:asesor|btn:sin_prisa', $r[$n - 1]);
-        $this->assertSame('¿Te preparo una demo con el rubro de tu negocio?', $env[$n - 1]['interactive']['body']['text']);
+        $this->assertSame('¿Te armamos una así para tu negocio?', $env[$n - 1]['interactive']['body']['text']);
         $this->sinIa('El toque no pasa por la IA');
     }
 
@@ -164,8 +167,7 @@ class BotEskalaMetaTest extends TestCase
         $this->meta($this->toque('btn:mas_ejemplos'));
         $r = array_map(fn ($d) => $this->resumen($d), array_slice($this->enviados(), $antes));
 
-        $this->assertContains('image', $r);
-        $this->assertSame('button:btn:demo|btn:asesor|btn:sin_prisa', end($r));
+        $this->assertSame(['image', 'image', 'button:btn:demo|btn:asesor|btn:sin_prisa'], $r, 'Dos fotos con pie y el cierre, sin texto de relleno');
     }
 
     public function test_escribir_el_rubro_en_vez_de_tocar_sigue_teniendo_respuesta(): void
@@ -194,9 +196,36 @@ class BotEskalaMetaTest extends TestCase
         $respuestas = $r->json('respuestas');
         $ultima = end($respuestas);
 
-        $this->assertIsString($ultima, 'Por Baileys la pregunta con botones vuelve a texto');
-        $this->assertStringContainsString('qué negocio tienes', $ultima);
+        // Por Baileys la pregunta con botones y foto vuelve a ser una imagen con la pregunta de pie.
+        $this->assertIsArray($ultima);
+        $this->assertSame('imagen', $ultima['tipo']);
+        $this->assertStringContainsString('Qué vendes', $ultima['caption']);
         $this->assertStringNotContainsString('btn:', json_encode($respuestas));
         $this->assertStringNotContainsString('cta_url', json_encode($respuestas));
+    }
+    public function test_pedir_asesor_abre_un_trato_en_el_embudo_y_no_lo_duplica(): void
+    {
+        \App\Support\Productos::activar($this->proyecto, 'crm');
+        $this->meta($this->texto('hola'));
+        $this->meta($this->toque('btn:asesor'));
+
+        $t = \App\Modules\Crm\Models\CrmTrato::where('project_id', $this->proyecto->id)->get();
+        $this->assertCount(1, $t);
+        $this->assertSame('bot', $t[0]->origen);
+        $this->assertSame('51900000001', $t[0]->contacto_telefono);
+        $this->assertSame('Nuevo', $t[0]->etapa->nombre);
+        $this->assertEquals(490, $t[0]->valor);
+        $this->assertNotNull($t[0]->wa_conversacion_id, 'Queda enlazado al chat');
+
+        // Vuelve a pedir asesor: no se abre otro, se anota en el mismo.
+        $this->meta($this->texto('quiero hablar con un asesor'));
+        $this->assertCount(1, \App\Modules\Crm\Models\CrmTrato::where('project_id', $this->proyecto->id)->get());
+    }
+
+    public function test_sin_producto_crm_pedir_asesor_no_crea_tratos(): void
+    {
+        $this->meta($this->texto('hola'));
+        $this->meta($this->toque('btn:asesor'));
+        $this->assertSame(0, \App\Modules\Crm\Models\CrmTrato::count());
     }
 }

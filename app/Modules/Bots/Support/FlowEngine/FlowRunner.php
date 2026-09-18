@@ -130,7 +130,7 @@ class FlowRunner
         }
 
         // Acciones sobre el CRM que el webhook ejecuta (registrar lead, agendar, crear pedido).
-        $acciones = ['registrar' => null, 'agendar' => null, 'pedido' => null];
+        $acciones = ['registrar' => null, 'agendar' => null, 'pedido' => null, 'trato' => null];
 
         // Ejecutar bloques en cadena hasta que uno pida esperar o se acabe.
         $guardas = 0;
@@ -143,6 +143,16 @@ class FlowRunner
             if (!empty($r['registrar'])) $acciones['registrar'] = $r['registrar'];
             if (!empty($r['agendar']))   $acciones['agendar']   = $r['agendar'];
             if (!empty($r['pedido']))    $acciones['pedido']    = $r['pedido'];
+            // Cualquier bloque puede abrir un TRATO en el embudo del CRM al pasar por el
+            // (p. ej. "asesor": el cliente pidio que lo contacten = oportunidad real).
+            if (!empty($bloque['trato']) && is_array($bloque['trato'])) {
+                $acciones['trato'] = [
+                    'titulo' => $this->interpolar((string) ($bloque['trato']['titulo'] ?? 'Oportunidad de WhatsApp'), $vars),
+                    'valor'  => (float) ($bloque['trato']['valor'] ?? 0),
+                    'etapa'  => (string) ($bloque['trato']['etapa'] ?? ''),
+                    'bloque' => $actualId,
+                ];
+            }
 
             if ($r['esperar']) {
                 // Un bloque puede pedir que el proximo mensaje se procese en OTRO
@@ -2486,7 +2496,13 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
         if ($botones === []) {
             return [$texto];
         }
-        return [['tipo' => 'botones', 'cuerpo' => $texto, 'botones' => $botones, 'fallback' => $texto]];
+        $msg = ['tipo' => 'botones', 'cuerpo' => $texto, 'botones' => $botones, 'fallback' => $texto];
+        // Imagen de cabecera: foto + pregunta + botones en UNA sola burbuja (Meta).
+        if (! empty($bloque['imagen'])) {
+            $msg['imagen'] = $this->interpolar((string) $bloque['imagen'], $vars);
+        }
+
+        return [$msg];
     }
 
     /** Si el mensaje es el id de un boton de atajo (`btn:<bloque>`) devuelve ese bloque. */

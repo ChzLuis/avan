@@ -134,6 +134,9 @@ class ClienteCloud
             'body'   => ['text' => mb_substr((string) ($r['cuerpo'] ?? 'Elige una opción:'), 0, 1024)],
             'action' => ['buttons' => $botones],
         ];
+        if (! empty($r['imagen'])) {
+            $interactive['header'] = ['type' => 'image', 'image' => ['link' => $r['imagen']]];
+        }
         if (! empty($r['pie'])) {
             $interactive['footer'] = ['text' => mb_substr($r['pie'], 0, 60)];
         }

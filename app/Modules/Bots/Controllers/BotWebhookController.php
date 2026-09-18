@@ -159,7 +159,14 @@ class BotWebhookController extends Controller
         // de respaldo. Meta (canal de entrada conocido) recibe el formato nativo.
         if (! $this->canalEntradaId) {
             $res['respuestas'] = array_map(
-                fn ($r) => is_array($r) && in_array($r['tipo'] ?? '', ['botones', 'cta_url'], true) ? ($r['fallback'] ?? $r['cuerpo'] ?? '') : $r,
+                function ($r) {
+                    if (! is_array($r) || ! in_array($r['tipo'] ?? '', ['botones', 'cta_url'], true)) {
+                        return $r;
+                    }
+                    $texto = $r['fallback'] ?? $r['cuerpo'] ?? '';
+                    // Botones con foto de cabecera: por Baileys va la foto con el texto de pie.
+                    return ! empty($r['imagen']) ? ['tipo' => 'imagen', 'url' => $r['imagen'], 'caption' => $texto] : $texto;
+                },
                 $res['respuestas']
             );
         }
@@ -178,6 +185,11 @@ class BotWebhookController extends Controller
                         };
                     }
                     $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $texto, 'out', $tipoCrm, (string) $resp['url']);
+                    continue;
+                }
+                // Botones con foto de cabecera: en la bandeja se ve la foto con la pregunta.
+                if ($tipoResp === 'botones' && ! empty($resp['imagen'])) {
+                    $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, (string) ($resp['cuerpo'] ?? ''), 'out', 'imagen', (string) $resp['imagen']);
                     continue;
                 }
                 // Lista, botones o enlace: el texto representativo para el historial.
@@ -312,6 +324,49 @@ class BotWebhookController extends Controller
         return false;
     }
 
+    /**
+     * Abre un trato en el embudo (solo negocios con CRM) enlazado a la conversacion.
+     * Si el cliente ya tiene un trato abierto, no se duplica: se anota en sus notas.
+     */
+    private function abrirTrato(Project $project, string $telefono, string $nombre, array $trato): void
+    {
+        if (! \App\Support\Productos::contratado($project, 'crm')) {
+            return;
+        }
+        $canales = WaCanal::where('project_id', $project->id)->pluck('id');
+        $conv = WaConversacion::whereIn('wa_canal_id', $canales)->where('cliente_telefono', $telefono)->first();
+        \App\Modules\Crm\Models\CrmEtapa::asegurar($project);
+        $etapas = \App\Modules\Crm\Models\CrmEtapa::where('project_id', $project->id)->orderBy('orden')->get();
+        $etapa = ($trato['etapa'] !== '' ? $etapas->first(fn ($e) => mb_strtolower($e->nombre) === mb_strtolower($trato['etapa'])) : null)
+            ?? $etapas->first(fn ($e) => ! $e->es_ganado && ! $e->es_perdido);
+        if (! $etapa) {
+            return;
+        }
+        $nota = 'Abierto por el bot (' . ($trato['bloque'] ?? 'flujo') . ') el ' . now()->format('d/m H:i');
+
+        $abierto = \App\Modules\Crm\Models\CrmTrato::where('project_id', $project->id)
+            ->where('contacto_telefono', $telefono)->whereNull('ganado_at')->whereNull('perdido_at')->first();
+        if ($abierto) {
+            $abierto->forceFill(['notas' => trim((string) $abierto->notas . "\n" . 'El cliente volvió a pedir asesor · ' . $nota)])->save();
+            if (! $abierto->wa_conversacion_id && $conv) $abierto->forceFill(['wa_conversacion_id' => $conv->id])->save();
+
+            return;
+        }
+
+        \App\Modules\Crm\Models\CrmTrato::create([
+            'project_id'         => $project->id,
+            'etapa_id'           => $etapa->id,
+            'wa_conversacion_id' => $conv?->id,
+            'titulo'             => mb_substr($trato['titulo'] !== '' ? $trato['titulo'] : ('Tienda virtual · ' . ($nombre ?: $telefono)), 0, 120),
+            'valor'              => $trato['valor'] ?? 0,
+            'contacto_nombre'    => $nombre ?: $telefono,
+            'contacto_telefono'  => $telefono,
+            'origen'             => 'bot',
+            'notas'              => $nota,
+            'etapa_desde'        => now(),
+        ]);
+    }
+
     /** Aplica las acciones CRM (registrar etapa/etiqueta, agendar seguimiento) que pidió el flujo. */
     private function aplicarAcciones(Project $project, string $telefono, string $nombre, array $acciones): void
     {
@@ -322,6 +377,10 @@ class BotWebhookController extends Controller
                 'project_id' => $project->id, 'name' => $nombre ?: $telefono,
                 'phone' => $telefono, 'etapa' => 'prospecto',
             ]);
+        }
+
+        if (!empty($acciones['trato'])) {
+            $this->abrirTrato($project, $telefono, $nombre, $acciones['trato']);
         }
 
         if (!empty($acciones['registrar'])) {
