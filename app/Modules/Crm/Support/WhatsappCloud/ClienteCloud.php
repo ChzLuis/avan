@@ -245,7 +245,9 @@ class ClienteCloud
                 'url'          => $r['url'],
             ]],
         ];
-        if (! empty($r['titulo'])) {
+        if (! empty($r['imagen'])) {
+            $interactive['header'] = ['type' => 'image', 'image' => ['link' => $r['imagen']]];
+        } elseif (! empty($r['titulo'])) {
             $interactive['header'] = ['type' => 'text', 'text' => mb_substr($r['titulo'], 0, 60)];
         }
 

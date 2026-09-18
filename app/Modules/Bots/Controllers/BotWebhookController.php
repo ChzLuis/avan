@@ -188,8 +188,8 @@ class BotWebhookController extends Controller
                     continue;
                 }
                 // Botones con foto de cabecera: en la bandeja se ve la foto con la pregunta.
-                if ($tipoResp === 'botones' && ! empty($resp['imagen'])) {
-                    $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, (string) ($resp['cuerpo'] ?? ''), 'out', 'imagen', (string) $resp['imagen']);
+                if (in_array($tipoResp, ['botones', 'cta_url'], true) && ! empty($resp['imagen'])) {
+                    $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, (string) ($resp['fallback'] ?? $resp['cuerpo'] ?? ''), 'out', 'imagen', (string) $resp['imagen']);
                     continue;
                 }
                 // Lista, botones o enlace: el texto representativo para el historial.

@@ -820,10 +820,11 @@ class FlowRunner
                             $r = $this->ejecutar($destino, $mensaje, $vars, $telefono);
                             $sig = $r['siguiente'] ?? null;
                             // Solo si el router encontro algo DISTINTO de su rama
-                            // por defecto: si no, la pregunta sigue su curso.
-                            $permitidas = ['asesor', 'demo', 'mas_ejemplos', 'pdf', 'audio', 'sin_prisa'];
-                            if ($sig && $sig !== ($destino['si_no'] ?? null) && in_array($sig, $permitidas, true)) {
-                                if (! empty($bloque['texto'])) $out['respuestas'][] = $this->interpolar($bloque['texto'], $vars);
+                            // por defecto: si no, la pregunta sigue su curso. Cualquier rama
+                            // vale (precio, rubro, asesor...): el primer mensaje ya trae intencion.
+                            if ($sig && $sig !== ($destino['si_no'] ?? null)) {
+                                // Se va directo a la rama: preguntar "como vendes" y acto seguido
+                                // responder el precio se leia como no haber escuchado.
                                 $out['siguiente'] = $sig;
                                 $out['consumir_mensaje'] = true;
                                 break;
@@ -2484,6 +2485,8 @@ Ahora: *" . $this->precioTxt($f['precio']) . '*';
                 'boton'    => $enlace['boton'] ?? 'Abrir',
                 'titulo'   => $enlace['titulo'] ?? null,
                 'fallback' => $texto . "\n\n" . $url,
+                // Foto de cabecera: captura de la tienda + texto + boton, en una burbuja.
+                ...(! empty($bloque['imagen']) ? ['imagen' => $this->interpolar((string) $bloque['imagen'], $vars)] : []),
             ];
             if ($botones === []) {
                 return $salida;
