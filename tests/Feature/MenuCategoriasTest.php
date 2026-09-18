@@ -6,7 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\HeaderPresets;
+use App\Modules\Tienda\Support\HeaderPresets;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -132,13 +132,13 @@ class MenuCategoriasTest extends TestCase
     /** Un solo editor por ajuste en la etapa; el auditor no debe ver duplicados. */
     public function test_sin_editores_duplicados(): void
     {
-        $etapa = file_get_contents(resource_path('views/settings/builder/stages/header.blade.php'));
+        $etapa = file_get_contents(app_path('Modules/Tienda/Views/settings/builder/stages/header.blade.php'));
 
         foreach (['hp_cat_trigger', 'mega_button_text', 'hp_cats_pos', 'hp_cats_style'] as $clave) {
             $this->assertSame(1, substr_count($etapa, "setSetting('{$clave}'"), "La clave {$clave} debe tener exactamente un editor.");
         }
 
-        $auditoria = \App\Storefront\ConstructorAuditor::make()->auditar();
+        $auditoria = \App\Modules\Tienda\Storefront\ConstructorAuditor::make()->auditar();
         $this->assertSame(0, is_array($auditoria['DUPLICATE_EDITORS'] ?? null) ? count($auditoria['DUPLICATE_EDITORS']) : (int) ($auditoria['DUPLICATE_EDITORS'] ?? 0));
     }
 }

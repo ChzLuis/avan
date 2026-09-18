@@ -1,5 +1,5 @@
 {{-- Panel izquierdo: estructura de la tienda --}}
-@php $dzIcons = \App\Support\DesignerIcons::all(); @endphp
+@php $dzIcons = \App\Modules\Tienda\Support\DesignerIcons::all(); @endphp
 
 <aside class="dz-structure" aria-label="Estructura de la tienda">
   <div class="dz-structure-head">

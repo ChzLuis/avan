@@ -2,7 +2,7 @@
 
 namespace App\Modules\Bots\Support\FlowEngine;
 
-use App\Support\StorefrontNavigation;
+use App\Modules\Tienda\Support\StorefrontNavigation;
 
 use App\Modules\Bots\Ia\IA;
 use App\Models\Project;
@@ -1164,7 +1164,7 @@ class FlowRunner
 
         return $custom !== ''
             ? 'https://' . $custom . '/tienda/' . $cat->slug
-            : \App\Support\StorefrontNavigation::categoryUrl($this->project, $cat);
+            : \App\Modules\Tienda\Support\StorefrontNavigation::categoryUrl($this->project, $cat);
     }
 
     /** Respuesta de ARCHIVO con el catalogo PDF de la categoria (firmado 48 h). */

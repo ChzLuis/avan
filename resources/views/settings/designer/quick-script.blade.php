@@ -7,7 +7,7 @@ function quickSetup(cfg){
     form: { rubro:'', logo_url:'', primary_color:'#4f46e5', secondary_color:'#0f172a', quote_whatsapp:'', store_mode:'direct', template:'ecommerce', theme_preset:'classic', product_card_style:'classic' },
 
     // Rubros → configuración recomendada (plantilla + paleta). Sólo ajustes, sin marcas.
-    rubroIcons: @js(collect(\App\Support\DesignerIcons::all())->only(['rubro_tecnologia','rubro_moda','rubro_bebes','rubro_muebles','rubro_ferreteria','rubro_alimentos','rubro_servicios','rubro_mayorista'])),
+    rubroIcons: @js(collect(\App\Modules\Tienda\Support\DesignerIcons::all())->only(['rubro_tecnologia','rubro_moda','rubro_bebes','rubro_muebles','rubro_ferreteria','rubro_alimentos','rubro_servicios','rubro_mayorista'])),
     rubros: [
       { id:'tecnologia', label:'Tecnología', icon:'rubro_tecnologia', template:'ecommerce', theme:'tech-dark', card:'tech', primary:'#2563eb', secondary:'#0f172a' },
       { id:'moda',       label:'Moda',        icon:'rubro_moda', template:'ecommerce',   primary:'#db2777', secondary:'#1f2937' },

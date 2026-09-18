@@ -1,6 +1,6 @@
 <?php
 
-use App\Storefront\StagePresets;
+use App\Modules\Tienda\Storefront\StagePresets;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 

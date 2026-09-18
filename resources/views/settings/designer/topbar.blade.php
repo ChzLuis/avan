@@ -8,7 +8,7 @@
     <div class="dz-store-meta">
       <strong x-text="project">{{ $project->name }}</strong>
       @php $dzTplKey = $project->setting('catalog_template', 'default'); @endphp
-      <span class="dz-template-badge">{{ \App\Support\CatalogTemplates::all()[$dzTplKey]['label'] ?? ucfirst($dzTplKey) }}</span>
+      <span class="dz-template-badge">{{ \App\Modules\Tienda\Support\CatalogTemplates::all()[$dzTplKey]['label'] ?? ucfirst($dzTplKey) }}</span>
     </div>
   </div>
 
@@ -41,7 +41,7 @@
       <span x-text="statusLabel"></span>
     </span>
 
-    <button type="button" class="dz-btn dz-btn-ghost dz-btn-ico" @click="quickOpen=true">{!! \App\Support\DesignerIcons::get('bolt') !!} Configuración rápida</button>
+    <button type="button" class="dz-btn dz-btn-ghost dz-btn-ico" @click="quickOpen=true">{!! \App\Modules\Tienda\Support\DesignerIcons::get('bolt') !!} Configuración rápida</button>
     <a href="{{ route('public.catalog', $project->slug) }}?preview=1" target="_blank" rel="noopener" class="dz-btn dz-btn-ghost">Vista previa</a>
     <button type="button" class="dz-btn dz-btn-ghost" @click="saveDraft()" :disabled="status==='saving'">Guardar borrador</button>
     <button type="button" class="dz-btn dz-btn-primary" @click="publish()" :disabled="status==='saving'">Publicar</button>

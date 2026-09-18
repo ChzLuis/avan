@@ -102,7 +102,7 @@ class StorefrontEngineConsolidationTest extends TestCase
 
         $this->get('/'.$project->slug)
             ->assertOk()
-            ->assertViewIs('public.templates.ecommerce')
+            ->assertViewIs('tienda::public.templates.ecommerce')
             ->assertSee('class="theme-tech-dark card-style-tech"', false)
             ->assertSee('--bg-body: #0b1220', false);
     }

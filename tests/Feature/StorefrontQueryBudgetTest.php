@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\User;
-use App\Storefront\StorefrontContextBuilder;
-use App\Support\StorefrontNavigation;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Storefront\StorefrontContextBuilder;
+use App\Modules\Tienda\Support\StorefrontNavigation;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;

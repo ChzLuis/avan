@@ -142,7 +142,7 @@ class PortalQuoteConvertedTest extends TestCase
         // Sin efectos globales: la vista no puede tocar el locale del proceso.
         // Se busca la LLAMADA (con parentesis), no la palabra: si no, el propio
         // comentario que explica la decision haria fallar la prueba.
-        $vista = file_get_contents(resource_path('views/public/portal-quote.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Tienda/Views/public/portal-quote.blade.php'));
         $this->assertStringNotContainsString('setlocale(', $vista);
         $this->assertStringNotContainsString('->locale(', $vista);
         $this->assertStringNotContainsString('Carbon::setLocale', $vista);

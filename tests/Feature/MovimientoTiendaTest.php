@@ -91,7 +91,7 @@ class MovimientoTiendaTest extends TestCase
     /** El control vive en 02 Apariencia, y en un solo sitio. */
     public function test_el_control_esta_en_apariencia(): void
     {
-        $vista = resource_path('views/settings/builder/stages/appearance.blade.php');
+        $vista = app_path('Modules/Tienda/Views/settings/builder/stages/appearance.blade.php');
         $html = file_get_contents($vista);
 
         foreach (['hover_card_effect', 'hover_image_zoom', 'anim_stagger_ms'] as $clave) {

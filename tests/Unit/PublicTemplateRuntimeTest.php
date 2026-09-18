@@ -15,7 +15,7 @@ class PublicTemplateRuntimeTest extends TestCase
         // usan**, asi que exigirle el runtime compartido era pedirselo a codigo
         // que ninguna tienda puede servir. Ademas, atarse al mapa hace que el
         // contrato cubra solo automaticamente cualquier plantilla nueva.
-        $vistas = \App\Http\Controllers\PublicController::PRODUCTION_TEMPLATE_VIEWS;
+        $vistas = \App\Modules\Tienda\Controllers\TiendaPublicaController::PRODUCTION_TEMPLATE_VIEWS;
         $this->assertNotEmpty($vistas);
 
         foreach ($vistas as $clave => $vista) {
@@ -26,13 +26,13 @@ class PublicTemplateRuntimeTest extends TestCase
             $this->assertStringContainsString('public-store-runtime', $contenido, $clave);
         }
 
-        $catalog = file_get_contents(dirname(__DIR__, 2).'/resources/views/public/catalog.blade.php');
+        $catalog = file_get_contents(dirname(__DIR__, 2).'/app/Modules/Tienda/Views/public/catalog.blade.php');
         $this->assertStringContainsString('public-store-runtime', $catalog);
     }
 
     public function test_shared_runtime_consumes_global_design_settings(): void
     {
-        $runtime = file_get_contents(dirname(__DIR__, 2).'/resources/views/components/public-store-runtime.blade.php');
+        $runtime = file_get_contents(dirname(__DIR__, 2).'/app/Modules/Tienda/Views/components/public-store-runtime.blade.php');
         foreach ([
             'primary_color','secondary_color','font_title','font_body','logo_url','logo_height','favicon_url',
             'header_bg_color','header_text_color','header_height','footer_bg_color','footer_text_color','footer_logo_height',
@@ -62,7 +62,7 @@ class PublicTemplateRuntimeTest extends TestCase
 
     public function test_builder_hero_replaces_the_complete_native_hero_section(): void
     {
-        $runtime = file_get_contents(dirname(__DIR__, 2).'/resources/views/components/public-store-runtime.blade.php');
+        $runtime = file_get_contents(dirname(__DIR__, 2).'/app/Modules/Tienda/Views/components/public-store-runtime.blade.php');
 
         $this->assertStringContainsString(
             "const nativeHero = heroTitle?.closest('section') || heroTitle?.closest('[class*=\"hero\" i],[class*=\"banner\" i]');",
@@ -73,7 +73,7 @@ class PublicTemplateRuntimeTest extends TestCase
 
     public function test_every_managed_home_section_can_replace_complete_native_sections(): void
     {
-        $runtime = file_get_contents(dirname(__DIR__, 2).'/resources/views/components/public-store-runtime.blade.php');
+        $runtime = file_get_contents(dirname(__DIR__, 2).'/app/Modules/Tienda/Views/components/public-store-runtime.blade.php');
 
         $this->assertStringContainsString("document.querySelectorAll('[data-store-native-section]')", $runtime);
         $this->assertStringContainsString('owners.some(component => managedComponents.has(component))', $runtime);
@@ -89,7 +89,7 @@ class PublicTemplateRuntimeTest extends TestCase
         // El canon del constructor, en vivo: asi el contrato cubre solo
         // cualquier componente nuevo en vez de caducar (estaba fijado a 8
         // nombres cuando el registro ya tiene 20).
-        $allowed = array_keys(\App\Support\StorefrontSections::COMPONENTS);
+        $allowed = array_keys(\App\Modules\Tienda\Support\StorefrontSections::COMPONENTS);
 
         // CompuTienda traduce a proposito los componentes canonicos a su propio
         // vocabulario de marcadores (`$componentAliases` en su Blade, con
@@ -102,10 +102,10 @@ class PublicTemplateRuntimeTest extends TestCase
         ]);
         $files = array_merge(
             [
-                dirname(__DIR__, 2).'/resources/views/components/public-store-runtime.blade.php',
-                dirname(__DIR__, 2).'/resources/views/public/catalog.blade.php',
+                dirname(__DIR__, 2).'/app/Modules/Tienda/Views/components/public-store-runtime.blade.php',
+                dirname(__DIR__, 2).'/app/Modules/Tienda/Views/public/catalog.blade.php',
             ],
-            glob(dirname(__DIR__, 2).'/resources/views/public/templates/*.blade.php') ?: []
+            glob(dirname(__DIR__, 2).'/app/Modules/Tienda/Views/public/templates/*.blade.php') ?: []
         );
 
         $found = [];

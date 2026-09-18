@@ -21,7 +21,7 @@ use App\Http\Controllers\SedeController;
 use App\Modules\Personas\Controllers\UserGroupController;
 use App\Modules\Inventario\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteController;
-use App\Http\Controllers\PublicController;
+use App\Modules\Tienda\Controllers\TiendaPublicaController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PosController;
 use App\Modules\Finanzas\Controllers\PaymentController;
@@ -32,7 +32,7 @@ use App\Modules\Crm\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
 use App\Modules\Finanzas\Controllers\CertificadoController;
 use App\Http\Controllers\ComboController;
-use App\Http\Controllers\PromotionController;
+use App\Modules\Tienda\Controllers\PromotionController;
 use App\Modules\Bots\Controllers\WaBotController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\ReservaController;
@@ -421,12 +421,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/designer', [SettingsController::class, 'designer'])->name('settings.designer')->middleware('project.can:settings.diseno'); // nuevo Diseñador visual (Fase A)
 
         // Constructor guiado (B0): entrada + lectura + contrato borrador/publicación.
-        Route::get('/settings/builder', [\App\Http\Controllers\StoreBuilderController::class, 'index'])->name('settings.builder');
-        Route::get('/settings/builder/progress', [\App\Http\Controllers\StoreBuilderController::class, 'progress'])->name('settings.builder.progress');
-        Route::get('/settings/builder/checklist', [\App\Http\Controllers\StoreBuilderController::class, 'checklist'])->name('settings.builder.checklist');
-        Route::get('/settings/builder/catalog/metrics', [\App\Http\Controllers\StoreBuilderController::class, 'catalogMetrics'])->name('settings.builder.metrics');
-        Route::post('/settings/builder/draft/settings', [\App\Http\Controllers\StoreBuilderController::class, 'saveDraftSettings'])->name('settings.builder.draft.settings')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/design-preset', [\App\Http\Controllers\StoreBuilderController::class, 'applyDesignPreset'])->name('settings.builder.design-preset')->middleware('can:settings.diseno');
+        Route::get('/settings/builder', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'index'])->name('settings.builder');
+        Route::get('/settings/builder/progress', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'progress'])->name('settings.builder.progress');
+        Route::get('/settings/builder/checklist', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'checklist'])->name('settings.builder.checklist');
+        Route::get('/settings/builder/catalog/metrics', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'catalogMetrics'])->name('settings.builder.metrics');
+        Route::post('/settings/builder/draft/settings', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'saveDraftSettings'])->name('settings.builder.draft.settings')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/design-preset', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'applyDesignPreset'])->name('settings.builder.design-preset')->middleware('can:settings.diseno');
 
         // Plantilla automatica de imagenes de producto (constructor -> Catalogo).
         // Lectura con catalog.ver; escribir y regenerar exige settings.diseno,
@@ -450,70 +450,70 @@ Route::middleware(['auth'])->group(function () {
         // el flag cap_plantillas que Eskala enciende a mano. El export iba SIN
         // middleware (hallazgo de la auditoría 2026-08-30).
         Route::middleware('capacidad:plantillas')->group(function () {
-            Route::get('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'index'])->name('design-templates.index');
-            Route::post('/settings/design-templates', [\App\Http\Controllers\DesignTemplateController::class, 'store'])->name('design-templates.store');
-            Route::post('/settings/design-templates/import', [\App\Http\Controllers\DesignTemplateController::class, 'import'])->name('design-templates.import');
-            Route::post('/settings/design-templates/{id}/apply', [\App\Http\Controllers\DesignTemplateController::class, 'apply'])->name('design-templates.apply');
-            Route::post('/settings/design-templates/{id}/version', [\App\Http\Controllers\DesignTemplateController::class, 'newVersion'])->name('design-templates.version');
-            Route::post('/settings/design-templates/{id}/restore/{versionNumber}', [\App\Http\Controllers\DesignTemplateController::class, 'restore'])->name('design-templates.restore');
-            Route::post('/settings/design-templates/{id}/duplicate', [\App\Http\Controllers\DesignTemplateController::class, 'duplicate'])->name('design-templates.duplicate');
-            Route::post('/settings/design-templates/{id}/toggle', [\App\Http\Controllers\DesignTemplateController::class, 'toggle'])->name('design-templates.toggle');
-            Route::put('/settings/design-templates/{id}', [\App\Http\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update');
-            Route::get('/settings/design-templates/{id}/export', [\App\Http\Controllers\DesignTemplateController::class, 'export'])->name('design-templates.export');
+            Route::get('/settings/design-templates', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'index'])->name('design-templates.index');
+            Route::post('/settings/design-templates', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'store'])->name('design-templates.store');
+            Route::post('/settings/design-templates/import', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'import'])->name('design-templates.import');
+            Route::post('/settings/design-templates/{id}/apply', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'apply'])->name('design-templates.apply');
+            Route::post('/settings/design-templates/{id}/version', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'newVersion'])->name('design-templates.version');
+            Route::post('/settings/design-templates/{id}/restore/{versionNumber}', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'restore'])->name('design-templates.restore');
+            Route::post('/settings/design-templates/{id}/duplicate', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'duplicate'])->name('design-templates.duplicate');
+            Route::post('/settings/design-templates/{id}/toggle', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'toggle'])->name('design-templates.toggle');
+            Route::put('/settings/design-templates/{id}', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'update'])->name('design-templates.update');
+            Route::get('/settings/design-templates/{id}/export', [\App\Modules\Tienda\Controllers\DesignTemplateController::class, 'export'])->name('design-templates.export');
         });
-        Route::post('/settings/builder/publish', [\App\Http\Controllers\StoreBuilderController::class, 'publish'])->name('settings.builder.publish')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/publish', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'publish'])->name('settings.builder.publish')->middleware('can:settings.diseno');
         // Descartar el borrador y volver a lo publicado. Hasta ahora la única
         // salida de un borrador con cambios no deseados era publicarlos.
-        Route::post('/settings/builder/descartar-borrador', [\App\Http\Controllers\StoreBuilderController::class, 'discardDraft'])->name('settings.builder.discard')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/descartar-borrador', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'discardDraft'])->name('settings.builder.discard')->middleware('can:settings.diseno');
         // Historial de publicaciones: consultarlo es leer; volver atras reescribe
         // la tienda publicada y exige el mismo permiso que publicar.
-        Route::get('/settings/builder/versiones', [\App\Http\Controllers\StoreBuilderController::class, 'versions'])->name('settings.builder.versions');
-        Route::post('/settings/builder/restaurar', [\App\Http\Controllers\StoreBuilderController::class, 'rollback'])->name('settings.builder.rollback')->middleware('can:settings.diseno');
-        Route::get('/settings/builder/preview', [\App\Http\Controllers\StoreBuilderController::class, 'preview'])->name('settings.builder.preview');
-        Route::get('/settings/builder/catalog/products', [\App\Http\Controllers\StoreBuilderController::class, 'catalogList'])->name('settings.builder.catalog.list');
-        Route::post('/settings/builder/catalog/bulk', [\App\Http\Controllers\StoreBuilderController::class, 'catalogBulk'])->name('settings.builder.catalog.bulk')->middleware('can:settings.diseno');
-        Route::get('/settings/builder/copy/sources', [\App\Http\Controllers\StoreBuilderController::class, 'copySources'])->name('settings.builder.copy.sources');
-        Route::post('/settings/builder/copy', [\App\Http\Controllers\StoreBuilderController::class, 'copyStore'])->name('settings.builder.copy')->middleware('can:settings.diseno');
-        Route::get('/settings/builder/icons/search', [\App\Http\Controllers\StoreBuilderController::class, 'iconSearch'])->name('settings.builder.icons.search');
-        Route::post('/settings/builder/category-photo', [\App\Http\Controllers\StoreBuilderController::class, 'categoryPhoto'])->name('settings.builder.category-photo')->middleware('can:settings.diseno');
-        Route::post('/settings/builder/icons/assign', [\App\Http\Controllers\StoreBuilderController::class, 'iconAssign'])->name('settings.builder.icons.assign')->middleware('can:settings.diseno');
+        Route::get('/settings/builder/versiones', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'versions'])->name('settings.builder.versions');
+        Route::post('/settings/builder/restaurar', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'rollback'])->name('settings.builder.rollback')->middleware('can:settings.diseno');
+        Route::get('/settings/builder/preview', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'preview'])->name('settings.builder.preview');
+        Route::get('/settings/builder/catalog/products', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'catalogList'])->name('settings.builder.catalog.list');
+        Route::post('/settings/builder/catalog/bulk', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'catalogBulk'])->name('settings.builder.catalog.bulk')->middleware('can:settings.diseno');
+        Route::get('/settings/builder/copy/sources', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'copySources'])->name('settings.builder.copy.sources');
+        Route::post('/settings/builder/copy', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'copyStore'])->name('settings.builder.copy')->middleware('can:settings.diseno');
+        Route::get('/settings/builder/icons/search', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'iconSearch'])->name('settings.builder.icons.search');
+        Route::post('/settings/builder/category-photo', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'categoryPhoto'])->name('settings.builder.category-photo')->middleware('can:settings.diseno');
+        Route::post('/settings/builder/icons/assign', [\App\Modules\Tienda\Controllers\StoreBuilderController::class, 'iconAssign'])->name('settings.builder.icons.assign')->middleware('can:settings.diseno');
         Route::post('/settings/design',  [SettingsController::class, 'updateDesign'])->name('settings.design.update')->middleware('can:settings.diseno');
         Route::post('/settings/design/apply-template', [SettingsController::class, 'applyTemplate'])->name('settings.design.applyTemplate')->middleware('can:settings.diseno');
         Route::post('/settings/design/apply-project-template', [SettingsController::class, 'applyProjectTemplate'])->name('settings.design.applyProjectTemplate')->middleware('can:settings.diseno');
         Route::post('/settings/design/project-templates', [SettingsController::class, 'storeProjectTemplate'])->name('settings.design.projectTemplates.store')->middleware('can:settings.diseno');
         Route::put('/settings/design/project-templates/{id}', [SettingsController::class, 'updateProjectTemplate'])->name('settings.design.projectTemplates.update')->middleware('can:settings.diseno');
         Route::delete('/settings/design/project-templates/{id}', [SettingsController::class, 'destroyProjectTemplate'])->name('settings.design.projectTemplates.destroy')->middleware('can:settings.diseno');
-        Route::get('/settings/experience', [\App\Http\Controllers\StoreExperienceController::class, 'index'])->name('settings.experience');
-        Route::post('/settings/experience/home/reorder', [\App\Http\Controllers\StoreExperienceController::class, 'reorderHome'])->name('settings.experience.home.reorder')->middleware('can:settings.diseno');
-        Route::post('/settings/experience/home/publish-all', [\App\Http\Controllers\StoreExperienceController::class, 'publishAll'])->name('settings.experience.home.publishAll')->middleware('can:settings.diseno');
-        Route::post('/settings/experience/home/{component}/publish', [\App\Http\Controllers\StoreExperienceController::class, 'publishOne'])->name('settings.experience.home.publishOne')->middleware('can:settings.diseno');
-        Route::delete('/settings/experience/home/{component}/draft', [\App\Http\Controllers\StoreExperienceController::class, 'discardDraft'])->name('settings.experience.home.discardDraft')->middleware('can:settings.diseno');
-        Route::post('/settings/experience/home/{component}', [\App\Http\Controllers\StoreExperienceController::class, 'saveHomeSection'])->name('settings.experience.home.save')->middleware('can:settings.diseno');
-        Route::post('/settings/experience/home/{component}/state', [\App\Http\Controllers\StoreExperienceController::class, 'sectionState'])->name('settings.experience.home.state')->middleware('can:settings.diseno'); // Diseñador: sólo estado
-        Route::get('/settings/experience/preview', [\App\Http\Controllers\StoreExperienceController::class, 'preview'])->name('settings.experience.preview');
-        Route::post('/settings/experience/section', [\App\Http\Controllers\StoreExperienceController::class, 'section'])->name('settings.experience.section')->middleware('can:settings.diseno');
-        Route::delete('/settings/experience/section/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'deleteSection'])->name('settings.experience.section.delete')->middleware('can:settings.diseno');
-        Route::post('/settings/experience/page', [\App\Http\Controllers\StoreExperienceController::class, 'page'])->name('settings.experience.page')->middleware('can:settings.diseno');
-        Route::post('/settings/experience/popup', [\App\Http\Controllers\StoreExperienceController::class, 'popup'])->name('settings.experience.popup')->middleware('can:settings.diseno');
-        Route::post('/settings/storefront/header', [\App\Http\Controllers\StoreNavigationController::class, 'updateHeader'])->name('settings.storefront.header')->middleware('can:settings.diseno');
-        Route::post('/settings/storefront/publish', [\App\Http\Controllers\StoreNavigationController::class, 'publishStructure'])->name('settings.storefront.publish')->middleware('can:settings.diseno');
-        Route::post('/settings/storefront/menu/items', [\App\Http\Controllers\StoreNavigationController::class, 'storeItem'])->name('settings.storefront.menu.items.store')->middleware('can:settings.diseno');
-        Route::put('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'updateItem'])->name('settings.storefront.menu.items.update')->middleware('can:settings.diseno');
-        Route::delete('/settings/storefront/menu/items/{item}', [\App\Http\Controllers\StoreNavigationController::class, 'destroyItem'])->name('settings.storefront.menu.items.destroy')->middleware('can:settings.diseno');
-        Route::post('/settings/storefront/menu/reorder', [\App\Http\Controllers\StoreNavigationController::class, 'reorder'])->name('settings.storefront.menu.reorder')->middleware('can:settings.diseno');
+        Route::get('/settings/experience', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'index'])->name('settings.experience');
+        Route::post('/settings/experience/home/reorder', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'reorderHome'])->name('settings.experience.home.reorder')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/publish-all', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'publishAll'])->name('settings.experience.home.publishAll')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/{component}/publish', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'publishOne'])->name('settings.experience.home.publishOne')->middleware('can:settings.diseno');
+        Route::delete('/settings/experience/home/{component}/draft', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'discardDraft'])->name('settings.experience.home.discardDraft')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/{component}', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'saveHomeSection'])->name('settings.experience.home.save')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/home/{component}/state', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'sectionState'])->name('settings.experience.home.state')->middleware('can:settings.diseno'); // Diseñador: sólo estado
+        Route::get('/settings/experience/preview', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'preview'])->name('settings.experience.preview');
+        Route::post('/settings/experience/section', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'section'])->name('settings.experience.section')->middleware('can:settings.diseno');
+        Route::delete('/settings/experience/section/{id}', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'deleteSection'])->name('settings.experience.section.delete')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/page', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'page'])->name('settings.experience.page')->middleware('can:settings.diseno');
+        Route::post('/settings/experience/popup', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'popup'])->name('settings.experience.popup')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/header', [\App\Modules\Tienda\Controllers\StoreNavigationController::class, 'updateHeader'])->name('settings.storefront.header')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/publish', [\App\Modules\Tienda\Controllers\StoreNavigationController::class, 'publishStructure'])->name('settings.storefront.publish')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/menu/items', [\App\Modules\Tienda\Controllers\StoreNavigationController::class, 'storeItem'])->name('settings.storefront.menu.items.store')->middleware('can:settings.diseno');
+        Route::put('/settings/storefront/menu/items/{item}', [\App\Modules\Tienda\Controllers\StoreNavigationController::class, 'updateItem'])->name('settings.storefront.menu.items.update')->middleware('can:settings.diseno');
+        Route::delete('/settings/storefront/menu/items/{item}', [\App\Modules\Tienda\Controllers\StoreNavigationController::class, 'destroyItem'])->name('settings.storefront.menu.items.destroy')->middleware('can:settings.diseno');
+        Route::post('/settings/storefront/menu/reorder', [\App\Modules\Tienda\Controllers\StoreNavigationController::class, 'reorder'])->name('settings.storefront.menu.reorder')->middleware('can:settings.diseno');
 
         // Perfiles de catálogo (opcional, desactivado por defecto)
-        Route::post('/settings/catalog-profiles/feature', [\App\Http\Controllers\CatalogProfileController::class, 'toggleFeature'])->name('settings.catalog-profiles.feature')->middleware('can:settings.catalogos');
-        Route::post('/settings/catalog-profiles', [\App\Http\Controllers\CatalogProfileController::class, 'store'])->name('settings.catalog-profiles.store')->middleware('can:settings.catalogos');
-        Route::post('/settings/catalog-profiles/quick', [\App\Http\Controllers\CatalogProfileController::class, 'quickCreate'])->name('settings.catalog-profiles.quick')->middleware('can:settings.catalogos');
-        Route::put('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'update'])->name('settings.catalog-profiles.update')->where('id', '[0-9]+')->middleware('can:settings.catalogos');
-        Route::delete('/settings/catalog-profiles/{id}', [\App\Http\Controllers\CatalogProfileController::class, 'destroy'])->name('settings.catalog-profiles.destroy')->where('id', '[0-9]+')->middleware('can:settings.catalogos');
-        Route::post('/settings/catalog-profiles/reorder', [\App\Http\Controllers\CatalogProfileController::class, 'reorder'])->name('settings.catalog-profiles.reorder')->middleware('can:settings.catalogos');
-        Route::patch('/settings/experience/complaints/{id}', [\App\Http\Controllers\StoreExperienceController::class, 'complaintStatus'])->name('settings.experience.complaint.status')->middleware('can:settings.negocio');
+        Route::post('/settings/catalog-profiles/feature', [\App\Modules\Tienda\Controllers\CatalogProfileController::class, 'toggleFeature'])->name('settings.catalog-profiles.feature')->middleware('can:settings.catalogos');
+        Route::post('/settings/catalog-profiles', [\App\Modules\Tienda\Controllers\CatalogProfileController::class, 'store'])->name('settings.catalog-profiles.store')->middleware('can:settings.catalogos');
+        Route::post('/settings/catalog-profiles/quick', [\App\Modules\Tienda\Controllers\CatalogProfileController::class, 'quickCreate'])->name('settings.catalog-profiles.quick')->middleware('can:settings.catalogos');
+        Route::put('/settings/catalog-profiles/{id}', [\App\Modules\Tienda\Controllers\CatalogProfileController::class, 'update'])->name('settings.catalog-profiles.update')->where('id', '[0-9]+')->middleware('can:settings.catalogos');
+        Route::delete('/settings/catalog-profiles/{id}', [\App\Modules\Tienda\Controllers\CatalogProfileController::class, 'destroy'])->name('settings.catalog-profiles.destroy')->where('id', '[0-9]+')->middleware('can:settings.catalogos');
+        Route::post('/settings/catalog-profiles/reorder', [\App\Modules\Tienda\Controllers\CatalogProfileController::class, 'reorder'])->name('settings.catalog-profiles.reorder')->middleware('can:settings.catalogos');
+        Route::patch('/settings/experience/complaints/{id}', [\App\Modules\Tienda\Controllers\StoreExperienceController::class, 'complaintStatus'])->name('settings.experience.complaint.status')->middleware('can:settings.negocio');
         // Libro de Reclamaciones: verlo basta con `settings.ver`; cambiar el
         // estado de un reclamo ya es escribir y exige `settings.negocio`.
-        Route::get('/complaints', [\App\Http\Controllers\ComplaintController::class, 'index'])->name('complaints.index');
-        Route::patch('/complaints/{complaint}', [\App\Http\Controllers\ComplaintController::class, 'updateStatus'])->name('complaints.status')->middleware('can:settings.negocio');
+        Route::get('/complaints', [\App\Modules\Tienda\Controllers\ComplaintController::class, 'index'])->name('complaints.index');
+        Route::patch('/complaints/{complaint}', [\App\Modules\Tienda\Controllers\ComplaintController::class, 'updateStatus'])->name('complaints.status')->middleware('can:settings.negocio');
         Route::post('/settings/flow', [SettingsController::class, 'updateFlow'])->name('settings.flow.update')->middleware('can:settings.negocio');
         Route::post('/settings/flow/diagram', [SettingsController::class, 'updateDiagram'])->name('settings.flow.diagram')->middleware('can:settings.negocio');
         Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo')->middleware('can:settings.diseno');
@@ -667,12 +667,12 @@ Route::get('/sitemap.xml', function () {
     // verificar bound() evita el error que inundaba el log.
     $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
     if (!$project) abort(404);
-    return app(\App\Http\Controllers\PublicController::class)->sitemap($project->slug);
+    return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->sitemap($project->slug);
 });
 Route::get('/robots.txt', function () {
     $project = app()->bound('custom_domain_project') ? app('custom_domain_project') : null;
     if (!$project) abort(404);
-    return app(\App\Http\Controllers\PublicController::class)->robots($project->slug);
+    return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->robots($project->slug);
 });
 
 // ─── Ficha de producto en dominio propio (sin slug en la URL) ────────────────
@@ -695,7 +695,7 @@ Route::get('/producto/{clave}', function (string $clave) {
         return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
     }
 
-    return app(\App\Http\Controllers\PublicController::class)->product($project->slug, $id);
+    return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->product($project->slug, $id);
 })->where('clave', '[A-Za-z0-9-]*[0-9]+')->name('public.product.domain');
 
 // Enlaces antiguos (/p/460): 301 al nombre para no perder lo ya compartido.
@@ -717,7 +717,7 @@ Route::get('/catalogo.pdf', function (\Illuminate\Http\Request $request) {
     if (! $project) {
         abort(404);
     }
-    return app(\App\Http\Controllers\PublicController::class)->catalogoPdfPublico($request, $project->slug);
+    return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->catalogoPdfPublico($request, $project->slug);
 })->name('public.catalog_pdf_domain');
 
 // El carrito vive dentro de la tienda; un enlace directo no debe dar error.
@@ -732,7 +732,7 @@ Route::get('/tienda/c/{categoria}', function (string $categoria, \Illuminate\Htt
     if (! $project) {
         abort(404);
     }
-    return app(\App\Http\Controllers\PublicController::class)->shopPorCategoria($request, $project->slug, $categoria);
+    return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->shopPorCategoria($request, $project->slug, $categoria);
 })->where('categoria', '[a-z0-9-]+');
 
 // Colección del catálogo en dominio propio (/tienda/nino, /tienda/nina...).
@@ -741,7 +741,7 @@ Route::get('/tienda/{profile}', function (string $profile, \Illuminate\Http\Requ
     if (! $project) {
         abort(404);
     }
-    return app(\App\Http\Controllers\PublicController::class)->shop($request, $project->slug, $profile);
+    return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->shop($request, $project->slug, $profile);
 })->where('profile', '[a-z0-9-]+');
 
 // Las rutas de autenticacion se cargan ANTES del comodin publico: al estar al
@@ -806,51 +806,51 @@ Route::get('/storefront-preview/{project}', function (\App\Models\Project $proje
     abort_unless($project->is_active, 404);
     if (request('page') === 'shop') {
         request()->attributes->set('storefront_preview', true);
-        return app(\App\Http\Controllers\PublicController::class)->shop(request(), $project->slug);
+        return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->shop(request(), $project->slug);
     }
-    return app(\App\Http\Controllers\PublicController::class)->previewStorefront($project);
+    return app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)->previewStorefront($project);
 })->middleware('signed')->name('public.storefront.preview');
-Route::get('/{slug}/sitemap.xml', [PublicController::class, 'sitemap'])->name('public.sitemap')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/robots.txt',  [PublicController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/nosotros', [\App\Http\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/sitemap.xml', [TiendaPublicaController::class, 'sitemap'])->name('public.sitemap')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/robots.txt',  [TiendaPublicaController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/contacto', [\App\Modules\Tienda\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/nosotros', [\App\Modules\Tienda\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 // Marcas: pagina de todas y pagina de una (la tienda filtrada, con cabecera).
-Route::get('/{slug}/marcas',         [PublicController::class, 'marcas'])->name('public.brands')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/marca/{marca}',  [PublicController::class, 'marca'])->name('public.brand')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('marca', '[a-z0-9-]+');
-Route::get('/{slug}/buscar',         [PublicController::class, 'buscar'])->name('public.search')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/promociones',    [PublicController::class, 'promociones'])->name('public.promotions')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/catalogo',       [PublicController::class, 'catalogo'])->name('public.catalog_page')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/catalogo.pdf',   [PublicController::class, 'catalogoPdfPublico'])->name('public.catalog_pdf')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/blog', [\App\Http\Controllers\StorePageController::class, 'blog'])->name('public.blog')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/blog/{key}', [\App\Http\Controllers\StorePageController::class, 'blogPost'])->name('public.blog.show')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('key', '[a-zA-Z0-9_-]+');
-Route::post('/{slug}/contacto', [\App\Http\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::post('/{slug}/libro-reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/marcas',         [TiendaPublicaController::class, 'marcas'])->name('public.brands')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/marca/{marca}',  [TiendaPublicaController::class, 'marca'])->name('public.brand')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('marca', '[a-z0-9-]+');
+Route::get('/{slug}/buscar',         [TiendaPublicaController::class, 'buscar'])->name('public.search')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/promociones',    [TiendaPublicaController::class, 'promociones'])->name('public.promotions')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/catalogo',       [TiendaPublicaController::class, 'catalogo'])->name('public.catalog_page')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/catalogo.pdf',   [TiendaPublicaController::class, 'catalogoPdfPublico'])->name('public.catalog_pdf')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/blog', [\App\Modules\Tienda\Controllers\StorePageController::class, 'blog'])->name('public.blog')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/blog/{key}', [\App\Modules\Tienda\Controllers\StorePageController::class, 'blogPost'])->name('public.blog.show')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('key', '[a-zA-Z0-9_-]+');
+Route::post('/{slug}/contacto', [\App\Modules\Tienda\Controllers\StorePageController::class, 'sendContact'])->name('public.contact.send')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/libro-reclamaciones', [\App\Modules\Tienda\Controllers\StorePageController::class, 'complaints'])->name('public.complaints')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/libro-reclamaciones', [\App\Modules\Tienda\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 // Alias corto usado por los footers de las plantillas + páginas legales.
-Route::get('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'complaints'])->name('public.complaints.short')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::post('/{slug}/reclamaciones', [\App\Http\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.short.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/privacidad', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'privacidad')->name('public.privacy')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/terminos', [\App\Http\Controllers\StorePageController::class, 'legal'])->defaults('key', 'terminos')->name('public.terms')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/pagina/{key}', [\App\Http\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('key', '[a-z0-9-]+');
+Route::get('/{slug}/reclamaciones', [\App\Modules\Tienda\Controllers\StorePageController::class, 'complaints'])->name('public.complaints.short')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/reclamaciones', [\App\Modules\Tienda\Controllers\StorePageController::class, 'storeComplaint'])->name('public.complaints.short.store')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/privacidad', [\App\Modules\Tienda\Controllers\StorePageController::class, 'legal'])->defaults('key', 'privacidad')->name('public.privacy')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/terminos', [\App\Modules\Tienda\Controllers\StorePageController::class, 'legal'])->defaults('key', 'terminos')->name('public.terms')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/pagina/{key}', [\App\Modules\Tienda\Controllers\StorePageController::class, 'page'])->name('public.page')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('key', '[a-z0-9-]+');
 // ═══ Categoría con URL legible: /{slug}/tienda/c/computadoras ═══
 // El prefijo `c/` es deliberado: sin él chocaría con /tienda/{profile}, que ya
 // existe para los perfiles (nino, nina...). La categoría se resuelve por slug y
 // se inyecta como si viniera en la query, así el catálogo no cambia en nada.
 // Catalogo PDF por categoria (enlace FIRMADO que emite el bot).
-Route::get('/{slug}/catalogo-pdf/{categoria}', [PublicController::class, 'catalogoPdf'])
+Route::get('/{slug}/catalogo-pdf/{categoria}', [TiendaPublicaController::class, 'catalogoPdf'])
     ->name('publico.catalogo.pdf')
     ->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')
     ->where('categoria', '[a-z0-9-]+');
 
 Route::get('/{slug}/tienda/c/{categoria}', function (string $slug, string $categoria, \Illuminate\Http\Request $request) {
-    return app(PublicController::class)->shopPorCategoria($request, $slug, $categoria);
+    return app(TiendaPublicaController::class)->shopPorCategoria($request, $slug, $categoria);
 })->name('public.shop.category')
   ->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')
   ->where('categoria', '[a-z0-9-]+');
 
-Route::get('/{slug}/tienda', [PublicController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/tienda/{profile}', [PublicController::class, 'shop'])->name('public.shop.profile')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('profile', '[a-z0-9-]+');
-Route::get('/{slug}',          [PublicController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/tienda', [TiendaPublicaController::class, 'shop'])->name('public.shop')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/tienda/{profile}', [TiendaPublicaController::class, 'shop'])->name('public.shop.profile')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('profile', '[a-z0-9-]+');
+Route::get('/{slug}',          [TiendaPublicaController::class, 'catalog'])->name('public.catalog')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 Route::get('/{slug}/producto/{clave}', function (string $slug, string $clave) {
     $id = \App\Support\ImageVariants::idDeClave($clave);
     if ($id <= 0) {
@@ -862,7 +862,7 @@ Route::get('/{slug}/producto/{clave}', function (string $slug, string $clave) {
         return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
     }
 
-    return app(PublicController::class)->product($slug, $id);
+    return app(TiendaPublicaController::class)->product($slug, $id);
 })->name('public.product')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('clave', '[A-Za-z0-9-]*[0-9]+');
 // Enlaces antiguos (/tienda-x/p/460): 301 al nombre.
 Route::get('/{slug}/p/{id}', function (string $slug, int $id) {
@@ -871,16 +871,16 @@ Route::get('/{slug}/p/{id}', function (string $slug, int $id) {
 
     return redirect(\App\Support\ImageVariants::productUrl($project, $id, $producto->name), 301);
 })->name('public.product.legacy')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('id', '[0-9]+');
-Route::post('/{slug}/order-proof',    [PublicController::class, 'uploadOrderProof'])->name('public.order.proof')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::post('/{slug}/order',          [PublicController::class, 'storeOrder'])->name('public.order')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::post('/{slug}/upload-voucher', [PublicController::class, 'uploadVoucher'])->name('public.upload.voucher')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::post('/{slug}/cart',    [PublicController::class, 'saveCart'])->name('public.cart.save')->middleware('throttle:60,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::post('/{slug}/coupon',  [PublicController::class, 'validateCoupon'])->name('public.coupon')->middleware('throttle:30,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/thanks/{order}', [PublicController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('order', '[0-9]+');
-Route::post('/{slug}/p/{product}/review', [PublicController::class, 'storeReview'])->name('public.review')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('product', '[0-9]+');
-Route::post('/{slug}/quote',   [PublicController::class, 'storeQuote'])->name('public.quote')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::get('/{slug}/book',     [PublicController::class, 'book'])->name('public.book')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
-Route::post('/{slug}/book',    [PublicController::class, 'storeBook'])->name('public.book.store')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/order-proof',    [TiendaPublicaController::class, 'uploadOrderProof'])->name('public.order.proof')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/order',          [TiendaPublicaController::class, 'storeOrder'])->name('public.order')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/upload-voucher', [TiendaPublicaController::class, 'uploadVoucher'])->name('public.upload.voucher')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/cart',    [TiendaPublicaController::class, 'saveCart'])->name('public.cart.save')->middleware('throttle:60,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/coupon',  [TiendaPublicaController::class, 'validateCoupon'])->name('public.coupon')->middleware('throttle:30,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/thanks/{order}', [TiendaPublicaController::class, 'thankyou'])->name('public.thanks')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('order', '[0-9]+');
+Route::post('/{slug}/p/{product}/review', [TiendaPublicaController::class, 'storeReview'])->name('public.review')->middleware('throttle:5,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+')->where('product', '[0-9]+');
+Route::post('/{slug}/quote',   [TiendaPublicaController::class, 'storeQuote'])->name('public.quote')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/book',     [TiendaPublicaController::class, 'book'])->name('public.book')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/book',    [TiendaPublicaController::class, 'storeBook'])->name('public.book.store')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 
 // ─── WhatsApp Bot API (sin auth, validada por token interno) ─────────────────
 Route::get('/wa/config',                        [WaBotController::class, 'getConfig'])->name('wa.config');

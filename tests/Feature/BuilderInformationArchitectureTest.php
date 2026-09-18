@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\User;
-use App\Storefront\BuilderRuleRegistry;
+use App\Modules\Tienda\Storefront\BuilderRuleRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

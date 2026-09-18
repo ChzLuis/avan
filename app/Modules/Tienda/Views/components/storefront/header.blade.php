@@ -1,0 +1,71 @@
+@php
+    use App\Modules\Tienda\Support\StorefrontNavigation;
+    $headerSettings = $headerSettings ?? StorefrontNavigation::headerDefaults();
+    $storeMenu = $storeMenu ?? null;
+    $routeName = request()->route()?->getName() ?? '';
+    $selectedCategory = request()->integer('category') ?: null;
+    $logoPath = $headerSettings['header_logo_url'] ?: ($settings['logo_url'] ?? $project->logo_url ?? '');
+    $logoUrl = $logoPath ? (str_starts_with($logoPath,'http') ? $logoPath : asset('storage/'.$logoPath)) : null;
+    // Contacto: misma cadena de resolucion que usan las plantillas de produccion
+    // (computienda). Sin esto, la estructura V2 nacia leyendo solo las columnas
+    // del proyecto e ignoraba lo que el comerciante escribe en el Constructor.
+    // La columna sera la fuente canonica tras la migracion; hasta entonces el
+    // ajuste manda para no revertir lo ya editado.
+    $storePhone = trim((string) ($settings['contact_phone'] ?? '')) ?: trim((string) ($project->phone ?? ''));
+    $storeWhatsapp = trim((string) ($settings['quote_whatsapp'] ?? '')) ?: trim((string) ($project->whatsapp ?? ''));
+    $fontClass = str_replace(' ', '+', $headerSettings['header_font']);
+@endphp
+<style>
+@import url('https://fonts.googleapis.com/css2?family={{ $fontClass }}:wght@400;500;600;700&display=swap');
+.store-header{position:{{ $headerSettings['header_sticky']==='1'?'sticky':'relative' }};z-index:100;top:0;border-bottom:1px solid color-mix(in srgb,{{ $headerSettings['header_text_color'] }} 12%,transparent);background:{{ $headerSettings['header_bg_color'] }};color:{{ $headerSettings['header_text_color'] }};font-family:'{{ $headerSettings['header_font'] }}',sans-serif}.store-header-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;min-height:{{ (int)$headerSettings['header_height'] }}px;align-items:center;gap:24px}.store-brand{display:flex;min-width:0;align-items:center;gap:11px;text-decoration:none}.store-brand img{width:auto;max-width:180px;height:{{ (int)$headerSettings['header_logo_height'] }}px;object-fit:contain}.store-brand-mark{display:grid;width:{{ (int)$headerSettings['header_logo_height'] }}px;height:{{ (int)$headerSettings['header_logo_height'] }}px;flex:0 0 auto;place-items:center;border-radius:9px;background:var(--store-primary);color:#fff;font-size:18px;font-weight:800}.store-brand-copy{display:grid;min-width:0}.store-brand-copy strong{overflow:hidden;color:inherit;font-size:15px;text-overflow:ellipsis;white-space:nowrap}.store-brand-copy small{max-width:190px;overflow:hidden;opacity:.62;font-size:10px;text-overflow:ellipsis;white-space:nowrap}.store-navigation{justify-self:center}.store-nav-list,.store-submenu{margin:0;padding:0;list-style:none}.store-nav-list{display:flex;align-items:center;gap:3px}.store-nav-item{position:relative}.store-nav-link{display:inline-flex;min-height:44px;align-items:center;gap:5px;padding:9px 11px;border-radius:7px;color:inherit;font-size:{{ (int)$headerSettings['header_font_size'] }}px;font-weight:600;text-decoration:none;white-space:nowrap}.store-nav-link:hover{color:{{ $headerSettings['header_hover_color'] }};background:color-mix(in srgb,{{ $headerSettings['header_hover_color'] }} 8%,transparent)}.store-nav-link.is-active{color:{{ $headerSettings['header_active_color'] }};background:color-mix(in srgb,{{ $headerSettings['header_active_color'] }} 10%,transparent)}.store-nav-chevron{width:13px;height:13px}.store-submenu{position:absolute;top:calc(100% + 7px);left:0;display:none;min-width:220px;padding:7px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;color:#172033;box-shadow:0 18px 42px rgba(15,23,42,.14)}.store-nav-item:hover>.store-submenu,.store-nav-item:focus-within>.store-submenu{display:grid}.store-submenu .store-nav-link{width:100%}.store-header-actions{display:flex;align-items:center;gap:8px}.store-header-action{display:grid;width:44px;height:44px;place-items:center;border:1px solid color-mix(in srgb,{{ $headerSettings['header_text_color'] }} 18%,transparent);border-radius:8px;background:transparent;color:inherit;text-decoration:none;cursor:pointer}.store-header-action:hover{border-color:{{ $headerSettings['header_hover_color'] }};color:{{ $headerSettings['header_hover_color'] }}}.store-header-action svg{width:20px;height:20px}.store-contact{display:grid;padding-right:5px;text-align:right;text-decoration:none}.store-contact small{opacity:.62;font-size:9px}.store-contact strong{font-size:12px}.store-mobile-toggle{display:none}.store-mobile-panel,.store-mobile-backdrop{display:none}
+@media(max-width:1100px){.store-contact{display:none}.store-header-inner{gap:14px}.store-nav-link{padding-inline:8px}.store-brand-copy small{display:none}}
+@media(max-width:900px){.store-header-inner{grid-template-columns:1fr auto}.store-navigation{display:none}.store-mobile-toggle{display:grid}.store-brand-copy small{display:block}.store-mobile-backdrop.is-open{position:fixed;z-index:101;inset:0;display:block;border:0;background:rgba(15,23,42,.46)}.store-mobile-panel{position:fixed;z-index:102;top:0;right:0;display:flex;width:min(380px,90vw);height:100dvh;transform:translateX(105%);flex-direction:column;background:#fff;color:#172033;box-shadow:-20px 0 50px rgba(15,23,42,.18);transition:transform .2s ease}.store-mobile-panel.is-open{transform:none}.store-mobile-head{display:flex;min-height:70px;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #e2e8f0}.store-mobile-head strong{font-size:15px}.store-mobile-nav{overflow-y:auto;padding:12px}.store-mobile-nav ul{margin:0;padding:0;list-style:none}.store-mobile-nav .store-nav-link{width:100%;min-height:48px;justify-content:space-between}.store-mobile-nav .store-submenu{position:static;display:grid;margin:0 0 7px 16px;padding:2px 0 2px 10px;border:0;border-left:2px solid #e2e8f0;border-radius:0;box-shadow:none}.store-mobile-search{display:flex;gap:7px;padding:15px 18px;border-top:1px solid #e2e8f0}.store-mobile-search input{min-width:0;flex:1;padding:10px 11px;border:1px solid #cbd5e1;border-radius:8px}.store-mobile-search button{width:44px;border:0;border-radius:8px;background:var(--store-primary);color:#fff}}
+@media(max-width:640px){.store-header-inner{min-height:max(62px,{{ (int)$headerSettings['header_height']-10 }}px)}.store-brand img{max-width:140px;height:min({{ (int)$headerSettings['header_logo_height'] }}px,42px)}.store-brand-copy strong{font-size:14px}.store-brand-copy small{max-width:145px}.store-header-actions .store-cart-action{display:{{ $headerSettings['header_show_cart']==='1'?'grid':'none' }}}
+}
+@media(min-width:901px){.store-nav-hide-desktop{display:none!important}}@media(min-width:641px) and (max-width:900px){.store-nav-hide-tablet{display:none!important}}@media(max-width:640px){.store-nav-hide-mobile{display:none!important}}
+</style>
+<style>@media(max-width:640px){.store-search-action{display:none}.store-brand-copy small{display:none}.store-header-inner{gap:8px}.store-header-actions{gap:6px}}</style>
+<header class="store-header">
+    <div class="store-container store-header-inner">
+        <a class="store-brand" href="{{ route('public.catalog',$project->slug) }}">
+            @if($logoUrl)<img src="{{ $logoUrl }}" alt="{{ $project->name }}">@if(($settings['logo_wordmark'] ?? '0') === '1')<span class="brand-wordmark">{{ $settings['logo_wordmark_text'] ?? $project->name }}</span>@endif@else<span class="store-brand-mark">{{ mb_strtoupper(mb_substr($project->name,0,1)) }}</span>@endif
+            <span class="store-brand-copy"><strong>{{ $project->name }}</strong>@if($project->description)<small>{{ $project->description }}</small>@endif</span>
+        </a>
+        <nav class="store-navigation" aria-label="Navegación principal">
+            <ul class="store-nav-list">
+                @foreach($storeMenu?->rootItems ?? [] as $item)
+                    <li class="store-nav-item {{ StorefrontNavigation::deviceClasses($item) }}"><a class="store-nav-link {{ StorefrontNavigation::isActive($item,$routeName,$selectedCategory)?'is-active':'' }}" href="{{ StorefrontNavigation::resolveUrl($project,$item) }}" target="{{ $item->target }}" @if($item->target==='_blank')rel="noopener noreferrer"@endif>{{ $item->label }}@if($item->children->isNotEmpty())<svg class="store-nav-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor"><path d="m6 8 4 4 4-4" stroke-width="1.8" stroke-linecap="round"/></svg>@endif</a>
+                        @if($item->children->isNotEmpty())<ul class="store-submenu">@foreach($item->children as $child)<li class="{{ StorefrontNavigation::deviceClasses($child) }}"><a class="store-nav-link {{ StorefrontNavigation::isActive($child,$routeName,$selectedCategory)?'is-active':'' }}" href="{{ StorefrontNavigation::resolveUrl($project,$child) }}" target="{{ $child->target }}" @if($child->target==='_blank')rel="noopener noreferrer"@endif>{{ $child->label }}</a></li>@endforeach</ul>@endif
+                    </li>
+                @endforeach
+            </ul>
+        </nav>
+        <div class="store-header-actions">
+            @if($headerSettings['header_show_contact']==='1' && ($storePhone || $storeWhatsapp))<a class="store-contact" href="tel:{{ preg_replace('/[^0-9+]/','',$storePhone ?: $storeWhatsapp) }}"><small>Atención comercial</small><strong>{{ $storePhone ?: $storeWhatsapp }}</strong></a>@endif
+            @if($headerSettings['header_show_search']==='1')<a class="store-header-action store-search-action" href="{{ route('public.shop',$project->slug) }}#buscar" aria-label="Buscar productos"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="7" stroke-width="1.8"/><path d="m20 20-4-4" stroke-width="1.8" stroke-linecap="round"/></svg></a>@endif
+            @if($headerSettings['header_show_cart']==='1')<a class="store-header-action store-cart-action" href="{{ route('public.shop',$project->slug) }}#catalogo" aria-label="Ver productos"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 4h2l2 11h10l3-8H6" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></a>@endif
+            <button class="store-header-action store-mobile-toggle" type="button" data-store-menu-open aria-label="Abrir menú" aria-expanded="false"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 7h16M4 12h16M4 17h16" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </div>
+    </div>
+</header>
+<button class="store-mobile-backdrop" type="button" data-store-menu-close aria-label="Cerrar menú"></button>
+<aside class="store-mobile-panel" data-store-menu-panel aria-hidden="true">
+    <div class="store-mobile-head"><strong>Menú</strong><button class="store-header-action" type="button" data-store-menu-close aria-label="Cerrar menú"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+    <nav class="store-mobile-nav" aria-label="Navegación móvil"><ul>@foreach($storeMenu?->rootItems ?? [] as $item)<li class="{{ StorefrontNavigation::deviceClasses($item) }}"><a class="store-nav-link" href="{{ StorefrontNavigation::resolveUrl($project,$item) }}" target="{{ $item->target }}">{{ $item->label }}</a>@if($item->children->isNotEmpty())<ul class="store-submenu">@foreach($item->children as $child)<li class="{{ StorefrontNavigation::deviceClasses($child) }}"><a class="store-nav-link" href="{{ StorefrontNavigation::resolveUrl($project,$child) }}" target="{{ $child->target }}">{{ $child->label }}</a></li>@endforeach</ul>@endif</li>@endforeach</ul></nav>
+    @if($headerSettings['header_show_search']==='1')<form class="store-mobile-search" method="GET" action="{{ route('public.shop',$project->slug) }}"><label style="position:absolute;clip:rect(0,0,0,0)" for="mobile-store-search">Buscar productos</label><input id="mobile-store-search" name="q" placeholder="{{ $settings['txt_search_placeholder'] ?? 'Buscar productos...' }}"><button aria-label="Buscar">→</button></form>@endif
+</aside>
+<script>
+(()=>{const panel=document.querySelector('[data-store-menu-panel]'),backdrop=document.querySelector('.store-mobile-backdrop'),open=document.querySelector('[data-store-menu-open]'),closes=document.querySelectorAll('[data-store-menu-close]');if(!panel||!open)return;const setOpen=value=>{panel.classList.toggle('is-open',value);backdrop?.classList.toggle('is-open',value);panel.setAttribute('aria-hidden',value?'false':'true');open.setAttribute('aria-expanded',value?'true':'false');document.body.classList.toggle('store-menu-open',value);if(value)panel.querySelector('a,button')?.focus();else open.focus()};open.addEventListener('click',()=>setOpen(true));closes.forEach(button=>button.addEventListener('click',()=>setOpen(false)));document.addEventListener('keydown',event=>{if(event.key==='Escape'&&panel.classList.contains('is-open'))setOpen(false)})})();
+</script>
+
+<style>
+  /* Titulo junto al logo. Apagado por defecto: donde va el logo no se repite
+     el nombre, salvo que el negocio lo pida. */
+  /* El nombre no puede empujar al buscador: se acota y, si no cabe, se corta
+     con puntos suspensivos. Por debajo de 1100 px desaparece — ahi el espacio
+     es del buscador y del carrito, que son lo que la gente usa. */
+  .brand-wordmark{margin-left:10px;font-family:var(--font-title,inherit);font-size:20px;
+                  font-weight:700;color:currentColor;line-height:1.1;white-space:nowrap;
+                  max-width:min(30vw,260px);overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:1100px){.brand-wordmark{display:none}}
+</style>

@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Project;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration

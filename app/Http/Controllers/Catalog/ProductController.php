@@ -99,7 +99,7 @@ class ProductController extends Controller
         $category = null;
 
         if ($pid = $request->integer('profile_id')) {
-            $profile = \App\Models\StoreCatalogProfile::where('project_id', $project->id)->findOrFail($pid);
+            $profile = \App\Modules\Tienda\Models\StoreCatalogProfile::where('project_id', $project->id)->findOrFail($pid);
 
             // Misma regla que CatalogQueryService::applyProfileScope (la tienda):
             // productos directos ∪ categorías asignadas (raíces expandidas a hijas),
@@ -161,8 +161,8 @@ class ProductController extends Controller
 
         // URL pública para el QR: el perfil tiene la suya propia.
         $storeUrl = $profile
-            ? \App\Support\StorefrontNavigation::profileUrl($project, $profile->slug)
-            : \App\Support\StorefrontNavigation::publicUrl($project);
+            ? \App\Modules\Tienda\Support\StorefrontNavigation::profileUrl($project, $profile->slug)
+            : \App\Modules\Tienda\Support\StorefrontNavigation::publicUrl($project);
 
         return view('catalog.products.catalog-pdf', compact(
             'project', 'groups', 'prices', 'profile', 'category', 'settings',
@@ -1282,7 +1282,7 @@ class ProductController extends Controller
     public function reviews()
     {
         $project = project();
-        $reviews = \App\Models\Review::where('project_id', $project->id)
+        $reviews = \App\Modules\Tienda\Models\Review::where('project_id', $project->id)
             ->with('product')
             ->latest()
             ->get()
@@ -1302,7 +1302,7 @@ class ProductController extends Controller
     public function approveReview(int $id)
     {
         $project = project();
-        $review  = \App\Models\Review::where('project_id', $project->id)->findOrFail($id);
+        $review  = \App\Modules\Tienda\Models\Review::where('project_id', $project->id)->findOrFail($id);
         $review->update(['is_approved' => !$review->is_approved]);
         return response()->json(['ok' => true, 'is_approved' => $review->is_approved]);
     }
@@ -1310,7 +1310,7 @@ class ProductController extends Controller
     public function destroyReview(int $id)
     {
         $project = project();
-        \App\Models\Review::where('project_id', $project->id)->findOrFail($id)->delete();
+        \App\Modules\Tienda\Models\Review::where('project_id', $project->id)->findOrFail($id)->delete();
         return response()->json(['ok' => true]);
     }
 

@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\User;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -39,7 +39,7 @@ class ConstructorCapacidadesRescatadasTest extends TestCase
 
     private function etapa(string $archivo): string
     {
-        return file_get_contents(resource_path('views/settings/builder/'.$archivo));
+        return file_get_contents(app_path('Modules/Tienda/Views/settings/builder/'.$archivo));
     }
 
     // ═══ Editores rescatados ════════════════════════════════════════════════

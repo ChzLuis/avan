@@ -375,7 +375,7 @@ class QuotesVocabularyTest extends TestCase
     public function test_el_panel_presenta_los_miles_como_el_portal(): void
     {
         $vista  = file_get_contents(resource_path('views/quotes/index.blade.php'));
-        $portal = file_get_contents(resource_path('views/public/portal-quote.blade.php'));
+        $portal = file_get_contents(app_path('Modules/Tienda/Views/public/portal-quote.blade.php'));
 
         $this->assertStringContainsString('lmPresent(exacto)', $vista, 'el panel necesita su presentador');
         $this->assertStringContainsString('LineMath::present(', $portal, 'el portal usa el presentador del servidor');

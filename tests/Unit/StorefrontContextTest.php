@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Project;
-use App\Storefront\StorefrontContext;
+use App\Modules\Tienda\Storefront\StorefrontContext;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
 

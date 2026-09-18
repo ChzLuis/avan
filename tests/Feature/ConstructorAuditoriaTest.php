@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Storefront\ConstructorAuditor;
+use App\Modules\Tienda\Storefront\ConstructorAuditor;
 use Tests\TestCase;
 
 /**

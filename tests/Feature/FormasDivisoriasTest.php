@@ -31,7 +31,7 @@ class FormasDivisoriasTest extends TestCase
             $project->settings()->create(['key' => $k, 'value' => $v]);
         }
 
-        return view('components.storefront-shapes', [
+        return view('tienda::components.storefront-shapes', [
             'settings' => $ajustes, 'project' => $project,
         ])->render();
     }
@@ -100,7 +100,7 @@ class FormasDivisoriasTest extends TestCase
     /** El control vive en 03 Página de inicio, junto a la animación del bloque. */
     public function test_el_control_esta_en_la_pagina_de_inicio(): void
     {
-        $vista = file_get_contents(resource_path('views/settings/builder/stages/home.blade.php'));
+        $vista = file_get_contents(app_path('Modules/Tienda/Views/settings/builder/stages/home.blade.php'));
 
         foreach (['_style', '_height', '_flip'] as $sufijo) {
             $this->assertStringContainsString("'shape_'+editingBlock.component+'{$sufijo}'", $vista,

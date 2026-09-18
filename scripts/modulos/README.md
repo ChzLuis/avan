@@ -43,3 +43,13 @@ Huecos que ya tiene resueltos el generador (no volver a caer): vistas elegidas
 por ternario, `extends Controller` sin importar, renombrar la declaración
 `class X extends` al renombrar el archivo (el ancla `class X ` falla con el
 conteo acotado), tests que leen una vista **por ruta de disco**.
+
+Novedades de `plan_tienda.py` (módulo 6): literales de vista fuera de `view()`
+clasificados por contexto porque `public.*` es a la vez nombre de vista y de
+ruta (se imprimen todas las decisiones y los "ruta" que no son ruta real);
+renombrado de clase por nombre corto con el carácter previo (no pisa el FQCN
+nuevo, que termina igual); componentes anónimos con prefijo `components.<x>`
+para los `@include` por nombre; solo se renombran literales con punto (un
+`'promotions'` suelto es una tabla, no una vista). Tras aplicar, correr
+`python scripts/modulos/limpiar_imports.py scripts/modulos/plan_X.json` para quitar los
+`use` que sobran de clases usadas solo por FQCN.

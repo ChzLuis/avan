@@ -5,13 +5,13 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Project;
-use App\Models\ProjectTemplate;
-use App\Models\StoreMenuItem;
-use App\Models\StorePage;
+use App\Modules\Tienda\Models\ProjectTemplate;
+use App\Modules\Tienda\Models\StoreMenuItem;
+use App\Modules\Tienda\Models\StorePage;
 use App\Models\User;
-use App\Support\StorefrontNavigation;
-use App\Support\StorefrontSections;
-use App\Support\CatalogTemplates;
+use App\Modules\Tienda\Support\StorefrontNavigation;
+use App\Modules\Tienda\Support\StorefrontSections;
+use App\Modules\Tienda\Support\CatalogTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
@@ -186,24 +186,24 @@ class StorefrontStructureV2Test extends TestCase
     {
         [, $project] = $this->project('temas-v2');
         $productionViews = [
-            'default' => 'public.catalog',
-            'direct' => 'public.templates.direct',
-            'ella' => 'public.templates.ella',
-            'urban' => 'public.templates.urban',
-            'boutique' => 'public.templates.boutique',
-            'nordic' => 'public.templates.nordic',
-            'flash' => 'public.templates.flash',
-            'fresh' => 'public.templates.fresh',
-            'porto' => 'public.templates.porto',
-            'licoreria' => 'public.templates.licoreria',
-            'farma' => 'public.templates.farma',
-            'lavanderia' => 'public.templates.lavanderia',
-            'ecommerce' => 'public.templates.ecommerce',
-            'tecnologia' => 'public.templates.tecnologia',
-            'computienda' => 'public.templates.computienda',
+            'default' => 'tienda::public.catalog',
+            'direct' => 'tienda::public.templates.direct',
+            'ella' => 'tienda::public.templates.ella',
+            'urban' => 'tienda::public.templates.urban',
+            'boutique' => 'tienda::public.templates.boutique',
+            'nordic' => 'tienda::public.templates.nordic',
+            'flash' => 'tienda::public.templates.flash',
+            'fresh' => 'tienda::public.templates.fresh',
+            'porto' => 'tienda::public.templates.porto',
+            'licoreria' => 'tienda::public.templates.licoreria',
+            'farma' => 'tienda::public.templates.farma',
+            'lavanderia' => 'tienda::public.templates.lavanderia',
+            'ecommerce' => 'tienda::public.templates.ecommerce',
+            'tecnologia' => 'tienda::public.templates.tecnologia',
+            'computienda' => 'tienda::public.templates.computienda',
         ];
 
-        foreach (array_keys(\App\Support\CatalogTemplates::all()) as $template) {
+        foreach (array_keys(\App\Modules\Tienda\Support\CatalogTemplates::all()) as $template) {
             $project->settings()->updateOrCreate(['key'=>'catalog_template'],['value'=>$template]);
             $response = $this->get(route('public.catalog',$project->slug));
             $response->assertOk();
@@ -230,7 +230,7 @@ class StorefrontStructureV2Test extends TestCase
 
             $this->get(route('public.catalog', $project->slug))
                 ->assertOk()
-                ->assertViewIs('public.templates.direct');
+                ->assertViewIs('tienda::public.templates.direct');
         }
 
         // Antes se contaba cuantas veces aparecia `$settings['hero_align']` en
@@ -335,10 +335,10 @@ class StorefrontStructureV2Test extends TestCase
     {
         [, $project] = $this->project('vistas-base-v2');
         $views = [
-            'computienda' => 'public.templates.computienda',
-            'ecommerce' => 'public.templates.ecommerce',
-            'direct' => 'public.templates.direct',
-            'default' => 'public.catalog',
+            'computienda' => 'tienda::public.templates.computienda',
+            'ecommerce' => 'tienda::public.templates.ecommerce',
+            'direct' => 'tienda::public.templates.direct',
+            'default' => 'tienda::public.catalog',
         ];
 
         foreach ($views as $template => $expectedView) {
@@ -348,7 +348,7 @@ class StorefrontStructureV2Test extends TestCase
                 ->assertViewIs($expectedView);
             $this->assertSame(
                 $expectedView,
-                app(\App\Http\Controllers\PublicController::class)
+                app(\App\Modules\Tienda\Controllers\TiendaPublicaController::class)
                     ->previewStorefront($project->fresh())
                     ->name()
             );
@@ -372,7 +372,7 @@ class StorefrontStructureV2Test extends TestCase
 
         $this->get(route('public.catalog', $project->slug))
             ->assertOk()
-            ->assertViewIs('public.templates.computienda')
+            ->assertViewIs('tienda::public.templates.computienda')
             ->assertSee('catalog-filter-panel', false)
             ->assertSee('catalog-product-grid', false)
             ->assertSee('catalog-filter-drawer', false)

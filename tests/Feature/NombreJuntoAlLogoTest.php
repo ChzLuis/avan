@@ -27,8 +27,8 @@ class NombreJuntoAlLogoTest extends TestCase
         $mudas = [];
 
         $vistas = array_merge(
-            glob(resource_path('views/storefront/partials/headers/*.blade.php')),
-            [resource_path('views/components/storefront/header.blade.php')]
+            glob(app_path('Modules/Tienda/Views/storefront/partials/headers/*.blade.php')),
+            [app_path('Modules/Tienda/Views/components/storefront/header.blade.php')]
         );
 
         foreach ($vistas as $ruta) {
@@ -44,7 +44,7 @@ class NombreJuntoAlLogoTest extends TestCase
     /** Y se puede encender desde el Constructor: si no, la clave está muerta. */
     public function test_el_interruptor_tiene_editor(): void
     {
-        $editor = file_get_contents(resource_path('views/settings/builder/stages/header.blade.php'));
+        $editor = file_get_contents(app_path('Modules/Tienda/Views/settings/builder/stages/header.blade.php'));
 
         $this->assertStringContainsString("setSetting('logo_wordmark'", $editor,
             'Sin editor, la clave no se puede encender.');
@@ -55,7 +55,7 @@ class NombreJuntoAlLogoTest extends TestCase
     /** Apagado por defecto: la regla de no repetir el nombre se mantiene. */
     public function test_apagado_por_defecto(): void
     {
-        foreach (glob(resource_path('views/storefront/partials/headers/*.blade.php')) as $ruta) {
+        foreach (glob(app_path('Modules/Tienda/Views/storefront/partials/headers/*.blade.php')) as $ruta) {
             $cuerpo = file_get_contents($ruta);
             if (! str_contains($cuerpo, 'logo_wordmark')) {
                 continue;

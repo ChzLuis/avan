@@ -336,6 +336,47 @@ Catalogo (7, con ImportLog) y Ventas (8)**; y desplegar 1–5 juntos a ARIN
 (nuevos + borrar viejos + `composer dump-autoload -o` + cache de rutas + cola
 vacia; el conector Baileys llama por URL y no cambia).
 
+### Modulo 6/8 — `Tienda/` MOVIDO (2026-09-17, misma sesion)
+
+El mas grande en vistas: **81 movimientos, 527 reemplazos en 189 archivos**,
+94 rutas a `Modules\Tienda`, 0 viejas. `PublicController` → **`TiendaPublicaController`**
+("Public" no decia que hace). Todo `app/Storefront` (24 servicios del
+Constructor) → `App\Modules\Tienda\Storefront`, mismo nombre de clase.
+Van tambien: 8 controladores mas (StoreBuilder, StoreExperience,
+StoreNavigation, StorePage, DesignTemplate, Promotion, Complaint,
+CatalogProfile), 14 modelos (Store*, DesignTemplate*, Coupon, Promotion,
+Review, ProjectTemplate, ContactMessage, Complaint), 11 soportes
+(Storefront*, HeaderPresets, CatalogTemplates, ContenidoEjemplo, iconos),
+3 comandos (auditar-constructor, consolidate-engines, fusionar-modelos) y
+las vistas `public/ storefront/ promotions/ complaints/ layouts/storefront
+settings/builder settings/design-templates` + 4 parciales de `settings/partials`
++ 9 componentes anonimos (`<x-storefront-*>`, `<x-store-menu>`... el tag no
+cambia). Se quedan en Core: `AbandonedCart`, `ImageVariants`,
+`DetectCustomDomain`, `SettingsController` (con el CRUD de cupones: deuda) y
+el Diseño clasico (`settings/{design,designer,store-experience}`, retirado).
+
+Dos trampas propias, resueltas en `scripts/modulos/plan_tienda.py`:
+1. Los nombres de vista `public.*` **chocan con los nombres de ruta**
+   `public.*`. Los literales fuera de `view()`/`@include` se clasifican por
+   contexto (`route(`, `->name(`, `routeIs(`, `===`...) y se imprimen todos;
+   solo se renombran los que llevan punto (un `'promotions'` suelto es tabla).
+2. Parciales elegidos por **nombre construido** con `view()->exists()` de
+   guarda (`StorefrontLayoutPacks`, `HeaderPresets`, plantilla computienda,
+   arreglo de plantillas del controlador): si el prefijo faltara no habria
+   error, la tienda saldria sin cabecera. `TiendaModuloTest` comprueba que
+   existen bajo `tienda::`. `ConstructorAuditor` y 2 tests leen vistas por
+   ruta de disco: apuntados a `app/Modules/Tienda/Views` (la auditoria sigue
+   en 0/0/0/0/0).
+
+**Bug previo encontrado y corregido:** `/bixoadmin/promotions` daba 500 desde
+siempre: la vista hacia `@extends('layouts.app')` y ese layout es de componente
+(`$slot`, sin `@yield('content')`). Ningun test la pintaba. Ahora usa
+`<x-app-layout>`.
+
+Linea base del dominio (48 clases, sin los 2 lentos): 10 rojos / 333 verdes
+antes → los mismos 10 despues (9 tests mas leian vistas por ruta de disco y se apuntaron al modulo). Guardian `TiendaModuloTest` (6).
+Quedan **Catalogo (7, con ImportLog) y Ventas (8)**.
+
 ## Sesion 2026-09-02/03 — FACTURACION: emitir != consultar (en ARIN)
 
 El usuario reporto que la pantalla de Facturas "no estaba separada". Hacia

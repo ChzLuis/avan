@@ -1,7 +1,7 @@
 {{-- Lógica del Diseñador (Alpine). Guarda con el endpoint canónico
      settings.design.update — mismos name= que el diseñador anterior. --}}
 @php
-  $dzIcons = \App\Support\DesignerIcons::all();
+  $dzIcons = \App\Modules\Tienda\Support\DesignerIcons::all();
   // Serializa las secciones del Inicio con su estado (para el árbol y la preview).
   $componentLabels = [
     'announcement_bar'=>'Barra de anuncio','hero'=>'Banner principal','benefits'=>'Beneficios',

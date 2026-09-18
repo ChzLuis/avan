@@ -36,7 +36,7 @@ orden del plan y solo con el árbol de git limpio y la suite explicada:
 | 3 | Inventario | movido 2026-09-17 | `InventarioModuloTest` |
 | 4 | Finanzas | movido 2026-09-17 | `FinanzasModuloTest` |
 | 5 | Crm + Bots | movidos 2026-09-17 | `CrmModuloTest`, `BotsModuloTest` |
-| 6 | Tienda | pendiente | |
+| 6 | Tienda | movido 2026-09-17 | `TiendaModuloTest` |
 | 7 | Catalogo | pendiente (incluye `ImportLog`) | |
 | 8 | Ventas | pendiente | |
 

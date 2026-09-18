@@ -2,15 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\PublicController;
+use App\Modules\Tienda\Controllers\TiendaPublicaController;
 use App\Models\Project;
-use App\Models\StorePopup;
+use App\Modules\Tienda\Models\StorePopup;
 use App\Models\User;
-use App\Storefront\StorefrontContext;
-use App\Storefront\StorefrontContextBuilder;
-use App\Support\CatalogTemplates;
-use App\Support\StorefrontNavigation;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Storefront\StorefrontContext;
+use App\Modules\Tienda\Storefront\StorefrontContextBuilder;
+use App\Modules\Tienda\Support\CatalogTemplates;
+use App\Modules\Tienda\Support\StorefrontNavigation;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -88,7 +88,7 @@ class StorefrontContextIntegrationTest extends TestCase
 
         foreach (CatalogTemplates::supportedKeys() as $template) {
             $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $template]);
-            [$view, $data] = app(PublicController::class)->prepararCatalogo($project->fresh());
+            [$view, $data] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh());
             $this->assertSame(CatalogTemplates::get($template)['view'], $view);
             $this->assertInstanceOf(StorefrontContext::class, $data['storefrontContext']);
             $this->assertSame($data['storefrontContext']->globalSettings(), $data['settings']);
@@ -124,9 +124,10 @@ class StorefrontContextIntegrationTest extends TestCase
         // Superficies YA adaptadas: aqui una consulta a base desde la vista es
         // una regresion y debe fallar.
         $files = [
-            'settings/qr.blade.php',
-            'public/templates/ecommerce.blade.php', 'public/templates/direct.blade.php',
-            'components/storefront-home-sections.blade.php',
+            resource_path('views/settings/qr.blade.php'),
+            app_path('Modules/Tienda/Views/public/templates/ecommerce.blade.php'),
+            app_path('Modules/Tienda/Views/public/templates/direct.blade.php'),
+            app_path('Modules/Tienda/Views/components/storefront-home-sections.blade.php'),
         ];
 
         // PENDIENTES, nombrados a proposito para que no se pierdan:
@@ -144,7 +145,7 @@ class StorefrontContextIntegrationTest extends TestCase
         ];
 
         foreach ($files as $file) {
-            $contents = file_get_contents(resource_path('views/'.$file));
+            $contents = file_get_contents($file);
             foreach ($patterns as $pattern) $this->assertStringNotContainsString($pattern, $contents, $file.' contains '.$pattern);
         }
     }

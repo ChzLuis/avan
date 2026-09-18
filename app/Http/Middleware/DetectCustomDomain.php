@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Http\Controllers\PublicController;
+use App\Modules\Tienda\Controllers\TiendaPublicaController;
 use App\Models\Project;
 use Closure;
 use Illuminate\Http\Request;
@@ -54,68 +54,68 @@ class DetectCustomDomain
 
             // Raíz → servir catálogo (inicio) directamente sin cambiar URL
             if ($path === '') {
-                $view = app(PublicController::class)->catalog($project->slug);
+                $view = app(TiendaPublicaController::class)->catalog($project->slug);
                 return response()->make($view instanceof Response ? $view->getContent() : $view);
             }
 
             // /tienda → catálogo completo con filtros (modo tienda)
             if ($path === '/tienda') {
-                $view = app(PublicController::class)->shop($request, $project->slug);
+                $view = app(TiendaPublicaController::class)->shop($request, $project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             // /tienda/{coleccion} → catálogo acotado a una colección (Niño, Niña…).
             // Sin esta ruta las colecciones solo funcionaban entrando por arindg.com.
             if (preg_match('#^/tienda/([a-z0-9-]+)$#', $path, $mp)) {
-                $view = app(PublicController::class)->shop($request, $project->slug, $mp[1]);
+                $view = app(TiendaPublicaController::class)->shop($request, $project->slug, $mp[1]);
                 return $view instanceof Response ? $view : response()->make($view);
             }
 
             // /nosotros y /contacto → páginas institucionales
             if ($path === '/nosotros') {
-                $view = app(\App\Http\Controllers\StorePageController::class)->about($project->slug);
+                $view = app(\App\Modules\Tienda\Controllers\StorePageController::class)->about($project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             if ($path === '/catalogo') {
-                $view = app(PublicController::class)->catalogo($request, $project->slug);
+                $view = app(TiendaPublicaController::class)->catalogo($request, $project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             if ($path === '/catalogo.pdf') {
-                $view = app(PublicController::class)->catalogoPdfPublico($request, $project->slug);
+                $view = app(TiendaPublicaController::class)->catalogoPdfPublico($request, $project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             if ($path === '/promociones') {
-                $view = app(PublicController::class)->promociones($request, $project->slug);
+                $view = app(TiendaPublicaController::class)->promociones($request, $project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             // /buscar → resultados de busqueda (tienda filtrada + marcas y categorias).
             if ($path === '/buscar') {
-                $view = app(PublicController::class)->buscar($request, $project->slug);
+                $view = app(TiendaPublicaController::class)->buscar($request, $project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             // /marcas y /marca/{slug} → marcas que distribuye la tienda.
             if ($path === '/marcas') {
-                $view = app(PublicController::class)->marcas($request, $project->slug);
+                $view = app(TiendaPublicaController::class)->marcas($request, $project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             if (preg_match('#^/marca/([a-z0-9-]+)$#', $path, $mp)) {
-                $view = app(PublicController::class)->marca($request, $project->slug, $mp[1]);
+                $view = app(TiendaPublicaController::class)->marca($request, $project->slug, $mp[1]);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             if ($path === '/contacto' && $request->isMethod('get')) {
-                $view = app(\App\Http\Controllers\StorePageController::class)->contact($project->slug);
+                $view = app(\App\Modules\Tienda\Controllers\StorePageController::class)->contact($project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
             // Páginas legales y Libro de Reclamaciones (el rewrite de REQUEST_URI no
             // aplica aquí: Symfony ya resolvió pathInfo, así que van explícitas).
             if ($path === '/privacidad' || $path === '/terminos') {
-                $view = app(\App\Http\Controllers\StorePageController::class)->legal($project->slug, ltrim($path, '/'));
+                $view = app(\App\Modules\Tienda\Controllers\StorePageController::class)->legal($project->slug, ltrim($path, '/'));
                 return $view instanceof Response ? $view : response()->make($view);
             }
             if ($path === '/reclamaciones' || $path === '/libro-reclamaciones') {
                 if ($request->isMethod('post')) {
-                    return app(\App\Http\Controllers\StorePageController::class)->storeComplaint($request, $project->slug);
+                    return app(\App\Modules\Tienda\Controllers\StorePageController::class)->storeComplaint($request, $project->slug);
                 }
-                $view = app(\App\Http\Controllers\StorePageController::class)->complaints($project->slug);
+                $view = app(\App\Modules\Tienda\Controllers\StorePageController::class)->complaints($project->slug);
                 return $view instanceof Response ? $view : response()->make($view);
             }
 
@@ -131,7 +131,7 @@ class DetectCustomDomain
                 if (\App\Support\ImageVariants::claveProducto($id, $producto->name) !== $m[1]) {
                     return redirect('/producto/'.\App\Support\ImageVariants::claveProducto($id, $producto->name), 301);
                 }
-                $view = app(PublicController::class)->product($project->slug, $id);
+                $view = app(TiendaPublicaController::class)->product($project->slug, $id);
                 return $view instanceof Response ? $view : response()->make($view);
             }
 
@@ -152,10 +152,10 @@ class DetectCustomDomain
 
             // Sitemap y robots en raíz del custom domain
             if ($path === '/sitemap.xml') {
-                return app(PublicController::class)->sitemap($project->slug);
+                return app(TiendaPublicaController::class)->sitemap($project->slug);
             }
             if ($path === '/robots.txt') {
-                return app(PublicController::class)->robots($project->slug);
+                return app(TiendaPublicaController::class)->robots($project->slug);
             }
 
             // Rutas de admin → bloquear

@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\PublicController;
+use App\Modules\Tienda\Controllers\TiendaPublicaController;
 use App\Http\Controllers\SettingsController;
 use App\Models\Project;
-use App\Models\ProjectTemplate;
-use App\Models\StorePopup;
-use App\Models\StoreSection;
+use App\Modules\Tienda\Models\ProjectTemplate;
+use App\Modules\Tienda\Models\StorePopup;
+use App\Modules\Tienda\Models\StoreSection;
 use App\Models\User;
-use App\Support\CatalogTemplates;
+use App\Modules\Tienda\Support\CatalogTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Tests\TestCase;
@@ -96,8 +96,8 @@ class GlobalTemplateSettingsTest extends TestCase
         $this->assertSame('#123456', $project->setting('primary_color'));
         $this->assertSame('Portada personalizada', $project->setting('hero_title'));
 
-        [$view, $data] = app(PublicController::class)->prepararCatalogo($project->fresh());
-        $this->assertSame('public.templates.direct', $view);
+        [$view, $data] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh());
+        $this->assertSame('tienda::public.templates.direct', $view);
         $this->assertSame('#123456', $data['settings']['primary_color']);
         $this->assertSame('Portada personalizada', $data['settings']['hero_title']);
         $this->assertSame('logos/mi-logo.png', $data['settings']['logo_url']);

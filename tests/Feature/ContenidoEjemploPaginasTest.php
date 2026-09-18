@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
-use App\Models\StorePage;
+use App\Modules\Tienda\Models\StorePage;
 use App\Models\User;
-use App\Support\ContenidoEjemplo;
+use App\Modules\Tienda\Support\ContenidoEjemplo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

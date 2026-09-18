@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Complaint;
+use App\Modules\Tienda\Models\Complaint;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -114,7 +114,7 @@ class LibroReclamacionesPanelTest extends TestCase
         $c->created_at = \Illuminate\Support\Carbon::parse('2026-09-04'); // viernes
         $c->save();
 
-        $vence = \App\Http\Controllers\ComplaintController::vence($c->fresh());
+        $vence = \App\Modules\Tienda\Controllers\ComplaintController::vence($c->fresh());
 
         $this->assertFalse($vence->isWeekend(), 'el vencimiento no puede caer en fin de semana');
         $this->assertSame('2026-09-25', $vence->format('Y-m-d'));

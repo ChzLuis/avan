@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
-use App\Models\StorePage;
+use App\Modules\Tienda\Models\StorePage;
 use App\Models\User;
-use App\Storefront\BuilderDraftService;
-use App\Storefront\StorePageWriteService;
+use App\Modules\Tienda\Storefront\BuilderDraftService;
+use App\Modules\Tienda\Storefront\StorePageWriteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

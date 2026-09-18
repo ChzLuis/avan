@@ -472,7 +472,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
   <div class="flex gap-4">
 
     {{-- Sidebar Categorías --}}
-    @include('public.partials.category-sidebar')
+    @include('tienda::public.partials.category-sidebar')
 
     {{-- Hero + Mini banners --}}
     <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -600,7 +600,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     @if($newArrivals->count())
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
       @foreach($newArrivals as $p)
-        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
+        @include('tienda::public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
       @endforeach
     </div>
     @else
@@ -613,7 +613,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     @if($onSale->count())
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
       @foreach($onSale as $p)
-        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
+        @include('tienda::public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
       @endforeach
     </div>
     @else
@@ -629,7 +629,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
     @if($featured->count())
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" data-products-grid>
       @foreach($featured as $p)
-        @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
+        @include('tienda::public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp, 'quoteWa' => $quoteWa, 'loop' => $loop])
       @endforeach
     </div>
     @else
@@ -1013,7 +1013,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
                    data-ts="{{ $p->created_at ? $p->created_at->timestamp : 0 }}"
                    data-name="{{ strtolower($p->name) }}"
                    data-qv='{{ $qvData }}'>
-            @include('public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp ?? 'show', 'quoteWa' => $quoteWa ?? '', 'loop' => $loop])
+            @include('tienda::public.partials.product-card', ['product' => $p, 'projectName' => $project->name, 'isQuoteOnly' => $isQuoteOnly, 'quotePriceDisp' => $quotePriceDisp ?? 'show', 'quoteWa' => $quoteWa ?? '', 'loop' => $loop])
           </article>
           @endforeach
           @endif
@@ -1725,7 +1725,7 @@ $searchIndex = $categories->flatMap(function($cat) use ($project) {
 {{-- ═══════════════════════════════════════════
      FOOTER
 ═══════════════════════════════════════════ --}}
-@include('public.partials.footer', ['footerBg'=>$footerBg,'footerText'=>$footerText,'footerLogoH'=>$footerLogoH,'logoSrc'=>$logoSrc])
+@include('tienda::public.partials.footer', ['footerBg'=>$footerBg,'footerText'=>$footerText,'footerLogoH'=>$footerLogoH,'logoSrc'=>$logoSrc])
 
 {{-- ═══════════════════════════════════════════
      ALPINE STORE

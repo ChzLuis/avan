@@ -1,0 +1,1520 @@
+<?php
+
+namespace App\Modules\Tienda\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Modules\Tienda\Storefront\CatalogQueryService;
+use App\Modules\Tienda\Storefront\StorefrontContextBuilder;
+
+use App\Models\AbandonedCart;
+use App\Models\Project;
+use App\Modules\Tienda\Models\Coupon;
+use App\Models\Product;
+use App\Modules\Tienda\Models\Review;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Modules\Tienda\Support\StorefrontNavigation;
+use App\Modules\Tienda\Support\StorefrontTheme;
+use App\Modules\Tienda\Models\StoreSection;
+use App\Modules\Tienda\Models\StorePopup;
+use App\Modules\Tienda\Models\ProjectTemplate;
+
+class TiendaPublicaController extends Controller
+{
+    /**
+     * Plantillas completas que ya existen en producción.
+     *
+     * Estas vistas no deben sustituirse por el layout genérico de la
+     * estructura V2: al seleccionarlas, se renderiza su diseño Blade real.
+     */
+    /** Plantillas cuya página de producto vive dentro de la misma plantilla
+     *  (bloque storeView==='producto'). ecommerce NO va aquí: usa SPA interna. */
+    public const PRODUCT_VIEW_TEMPLATES = ['computienda'];
+
+    public const PRODUCTION_TEMPLATE_VIEWS = [
+        'default'     => 'tienda::public.catalog',
+        'direct'      => 'tienda::public.templates.direct',
+        'ella'        => 'tienda::public.templates.ella',
+        'editorial'   => 'tienda::public.templates.editorial',
+        'nordic'      => 'tienda::public.templates.nordic',
+        'luxe'        => 'tienda::public.templates.luxe',
+        'flash'       => 'tienda::public.templates.flash',
+        'bistro'      => 'tienda::public.templates.bistro',
+        'urban'       => 'tienda::public.templates.urban',
+        'boutique'    => 'tienda::public.templates.boutique',
+        'fresh'       => 'tienda::public.templates.fresh',
+        'porto'       => 'tienda::public.templates.porto',
+        'licoreria'   => 'tienda::public.templates.licoreria',
+        'farma'       => 'tienda::public.templates.farma',
+        'lavanderia'  => 'tienda::public.templates.lavanderia',
+        'ecommerce'   => 'tienda::public.templates.ecommerce',
+        'tecnologia'  => 'tienda::public.templates.tecnologia',
+        'computienda' => 'tienda::public.templates.computienda',
+    ];
+
+    private function project(string $slug): Project
+    {
+        return Project::where('slug', $slug)->where('is_active', true)->firstOrFail();
+    }
+
+    public function catalog(string $slug)
+    {
+        $project = $this->project($slug);
+
+        // Las plantillas de producción conservan su estructura visual propia,
+        // incluso cuando el proyecto utiliza el constructor V2.
+        if ($this->productionTemplateView($project)) {
+            [$view, $data] = $this->prepararCatalogo($project);
+            return view($view, $data);
+        }
+
+        if ($project->setting('storefront_structure_v2', '0') === '1') {
+            return $this->renderStorefrontHome($project);
+        }
+        [$view, $data] = $this->prepararCatalogo($project);
+        return view($view, $data);
+    }
+
+    public function previewStorefront(Project $project)
+    {
+        if ($this->productionTemplateView($project, true)) {
+            [$view, $data] = $this->prepararCatalogo($project, true, 'home', $this->draftSettingsOverlay($project));
+            return view($view, $data);
+        }
+
+        return $this->renderStorefrontHome($project, true);
+    }
+
+    /** Todos los settings en borrador del Constructor, como overlay para preview. */
+    private function draftSettingsOverlay(Project $project): array
+    {
+        return DB::table('builder_drafts')
+            ->where('project_id', $project->id)->where('resource_type', 'settings')
+            ->pluck('payload', 'resource_key')
+            ->map(fn ($payload) => json_decode($payload, true)['value'] ?? null)
+            ->filter(fn ($v) => $v !== null)->all();
+    }
+
+    /**
+     * $preview=true (solo desde la vista previa del Constructor) considera la
+     * plantilla elegida en borrador aunque aún no se haya publicado. La tienda
+     * pública real siempre llama esto sin el flag: solo ve lo publicado.
+     */
+    private function productionTemplateView(Project $project, bool $preview = false): ?string
+    {
+        $template = $preview
+            ? (string) ($this->draftSettingsOverlay($project)['catalog_template'] ?? $project->setting('catalog_template', 'default'))
+            : (string) $project->setting('catalog_template', 'default');
+        $view = self::PRODUCTION_TEMPLATE_VIEWS[$template] ?? null;
+
+        // Si la plantilla elegida no tiene vista, la tienda cae a la de por
+        // defecto y responde 200 con OTRA plantilla, sin avisar a nadie: ni al
+        // negocio, que la eligio, ni al operador. `editorial`, `luxe` y
+        // `bistro` estan declaradas y son ofrecibles pero NO tienen Blade.
+        // Hoy ningun proyecto las usa (solo `computienda` y `ecommerce`), asi
+        // que esto es una trampa latente: se deja registrada para que se
+        // detecte el dia que alguien las elija, en vez de fallar en silencio.
+        if ($view && ! view()->exists($view)) {
+            // Las claves del contexto son las que fija el contrato
+            // (`StorefrontStructureV2Test`): `project_id` y `template`. Las
+            // habia escrito en español y el propio contrato lo caza.
+            \Illuminate\Support\Facades\Log::warning('compatibility fallback: plantilla sin vista', [
+                'project_id' => $project->id,
+                'template'   => $template,
+                'view'       => $view,
+            ]);
+        }
+
+        return $view && view()->exists($view) ? $view : null;
+    }
+
+    /**
+     * ¿Están habilitados los perfiles de catálogo para esta tienda?
+     * Desactivado por defecto: sin coste ni consultas de perfiles cuando no se usa.
+     */
+    private function catalogProfilesEnabled(Project $project): bool
+    {
+        return (string) $project->setting('catalog_profiles_enabled', '0') === '1';
+    }
+
+    /**
+     * Resuelve el perfil activo desde el slug de la URL. La URL es la fuente de
+     * verdad. Si la funcionalidad está desactivada, no hay slug, o el perfil no
+     * existe/está deshabilitado, devuelve null (catálogo normal) — salvo que se
+     * pida explícitamente un slug inexistente/deshabilitado, en cuyo caso 404.
+     */
+    private function resolveActiveProfile(Project $project, ?string $profileSlug): ?\App\Modules\Tienda\Models\StoreCatalogProfile
+    {
+        if (! $this->catalogProfilesEnabled($project)) {
+            // Funcionalidad off: un slug de perfil en la URL no debe "colgar" la ruta.
+            abort_if($profileSlug !== null, 404);
+            return null;
+        }
+        if ($profileSlug === null) {
+            return null; // /tienda sin perfil → catálogo completo
+        }
+        $profile = $project->catalogProfiles()->where('slug', $profileSlug)->first();
+        // Perfil inexistente o deshabilitado → respuesta segura (404), sin productos.
+        abort_if($profile === null || ! $profile->is_enabled, 404);
+
+        return $profile;
+    }
+
+    /** Perfiles habilitados y visibles en el menú (para el selector/nav). Vacío si off. */
+    private function menuProfiles(Project $project): \Illuminate\Support\Collection
+    {
+        if (! $this->catalogProfilesEnabled($project)) {
+            return collect();
+        }
+
+        return $project->catalogProfiles()->inMenu()->orderBy('sort_order')->orderBy('name')->get();
+    }
+
+    /**
+     * Catálogo filtrado por categoría con URL legible: /tienda/c/computadoras.
+     *
+     * No duplica nada de `shop()`: resuelve el slug a id, lo inyecta en la
+     * petición como si hubiera llegado por `?category=` y delega. Así el
+     * catálogo, los filtros y la paginación siguen funcionando exactamente
+     * igual, y la forma antigua sigue viva.
+     *
+     * Si el slug no existe, 404 — mejor que devolver el catálogo entero y hacer
+     * creer al visitante que esa categoría está vacía.
+     */
+    /**
+     * Catalogo en PDF de UNA categoria, para que el bot lo mande por WhatsApp.
+     *
+     * Ruta FIRMADA (solo enlaces emitidos por nosotros) y cacheada: el primer
+     * acceso lo genera con Chrome headless (ya instalado en el VPS, sin tocar
+     * vendor/) y los siguientes sirven el archivo. La informacion es la misma
+     * que la tienda publica: nada nuevo queda expuesto.
+     */
+    public function catalogoPdf(Request $request, string $slug, string $categoria)
+    {
+        abort_unless($request->hasValidSignature(), 403);
+
+        $project = $this->project($slug);
+        $cat = \App\Models\Category::where('project_id', $project->id)
+            ->where('slug', $categoria)->firstOrFail();
+
+        $dir = storage_path('app/public/catalogos');
+        if (! is_dir($dir)) @mkdir($dir, 0775, true);
+        $pdf = "{$dir}/cat-{$project->id}-{$cat->id}.pdf";
+
+        // Cache de 12 h: el catalogo cambia poco y la generacion es cara.
+        if (! is_file($pdf) || time() - filemtime($pdf) > 43200) {
+            $childIds = $project->categories()->where('parent_id', $cat->id)->pluck('id');
+            $products = $project->products()->where('is_available', true)
+                ->with(['images' => fn ($q) => $q->where('is_main', true), 'category.parent'])
+                ->where(fn ($q) => $q->where('category_id', $cat->id)->orWhereIn('category_id', $childIds))
+                ->orderBy('sort_order')->orderBy('name')->get();
+            abort_if($products->isEmpty(), 404);
+
+            $groups = collect([$cat->name => $products]);
+            $html = view('catalog.products.catalog-pdf', [
+                'project' => $project, 'groups' => $groups, 'prices' => 'retail',
+                'profile' => null, 'category' => $cat,
+                'settings' => $project->settings()->pluck('value', 'key'),
+                'layout' => 'grid3', 'cover' => false,
+                'storeUrl' => \App\Modules\Tienda\Support\StorefrontNavigation::publicUrl($project),
+                'content' => 'main',
+            ])->render();
+
+            $htmlTmp = "{$dir}/tmp-{$project->id}-{$cat->id}.html";
+            file_put_contents($htmlTmp, $html);
+
+            $chrome = collect([env('CHROME_BIN'), '/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium'])
+                ->first(fn ($b) => $b && @is_executable($b));
+            if ($chrome) {
+                $cmd = escapeshellarg($chrome)
+                    . ' --headless=new --disable-gpu --no-sandbox --virtual-time-budget=20000'
+                    . ' --print-to-pdf=' . escapeshellarg($pdf) . ' ' . escapeshellarg('file://' . $htmlTmp)
+                    . ' 2>&1';
+                @shell_exec($cmd);
+            }
+            if (! is_file($pdf) || filesize($pdf) < 1000) {
+                // Sin Chrome (entorno de pruebas) o generacion fallida: un PDF
+                // minimo valido que enlaza al catalogo web. Nunca un 500.
+                $url = \App\Modules\Tienda\Support\StorefrontNavigation::categoryUrl($project, $cat);
+                $texto = "Catalogo de {$cat->name} - {$project->name}. Vealo completo en: {$url}";
+                $stream = "BT /F1 12 Tf 40 750 Td (" . str_replace(['(', ')', '\\'], ' ', $texto) . ") Tj ET";
+                $len = strlen($stream);
+                file_put_contents($pdf,
+                    "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                    . "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+                    . "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n"
+                    . "4 0 obj<</Length {$len}>>stream\n{$stream}\nendstream endobj\n"
+                    . "5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n"
+                    . "trailer<</Root 1 0 R>>\n%%EOF");
+            }
+            @unlink($htmlTmp);
+        }
+
+        return response()->file($pdf, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="catalogo-' . $cat->slug . '.pdf"',
+        ]);
+    }
+
+    /**
+     * Pagina de marcas: una tarjeta por marca con producto publicado.
+     *
+     * Las marcas NO son categorias: viven en `catalog_values` (lista `brand`).
+     * Esta pagina existe para que quien llega buscando Indeco descubra que la
+     * distribuidora tambien trabaja 3M, Bticino, Schneider...
+     */
+    public function marcas(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $catalog = app(\App\Modules\Tienda\Storefront\CatalogQueryService::class);
+        [$view, $data] = $this->prepararCatalogo($project, false, 'marcas');
+        $data['catalogBrands']   = $catalog->marcas($project);
+        $data['catalogBrandMap'] = $catalog->marcasPorRubro($project);
+        // Nombre de cada rubro raiz, para decir en que trabaja cada marca.
+        $data['rubroNombres']    = $project->categories()->whereNull('parent_id')->pluck('name', 'id');
+        return view($view, $data);
+    }
+
+    /**
+     * Pagina de UNA marca: la tienda ya filtrada por ella, con cabecera propia.
+     *
+     * Reutiliza `shop()` entero (rejilla, filtros combinables, paginacion): el
+     * cliente sigue afinando por rubro o seccion desde aqui. Misma tecnica que
+     * `shopPorCategoria()`: se inyecta el filtro y se marca la peticion.
+     */
+    public function marca(Request $request, string $slug, string $marca)
+    {
+        $project = $this->project($slug);
+        $valor = \App\Models\CatalogValue::query()
+            ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
+            ->where('catalog_lists.project_id', $project->id)
+            ->where('catalog_lists.type', 'brand')
+            ->where('catalog_values.slug', $marca)
+            ->select('catalog_values.*')
+            ->first();
+        abort_unless($valor, 404);
+
+        $request->merge(['brand' => [(string) $valor->id]]);
+        $request->attributes->set('marca_activa', $valor);
+        $request->attributes->set('url_ya_canonica', true);
+
+        return $this->shop($request, $slug);
+    }
+
+    /**
+     * Resultados de busqueda: la tienda filtrada por `q`, con una franja arriba
+     * de marcas y categorias que tambien casan. "indeco" ofrece la marca,
+     * "cable" la categoria, "cable indeco 4mm" los productos exactos.
+     * Reutiliza `shop()` entero, como `marca()` y `shopPorCategoria()`.
+     */
+    public function buscar(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $q = trim((string) $request->query('q', ''));
+        // Marcas y categorias casan por PALABRA, no por la frase entera:
+        // "cinta 3m" debe ofrecer la marca 3M y la categoria Cintas, y la
+        // frase completa no aparece en ninguna de las dos.
+        $palabras = collect(preg_split('/\s+/u', $q))->filter(fn ($w) => mb_strlen($w) >= 2)->take(6);
+        $porPalabra = fn ($query, string $col) => $query->where(function ($b) use ($palabras, $col) {
+            foreach ($palabras as $w) {
+                $b->orWhere($col, 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $w).'%');
+            }
+        });
+
+        $marcas = $q === '' ? collect() : \App\Models\CatalogValue::query()
+            ->join('catalog_lists', 'catalog_lists.id', '=', 'catalog_values.catalog_list_id')
+            ->where('catalog_lists.project_id', $project->id)
+            ->where('catalog_lists.type', 'brand')
+            ->where('catalog_values.is_active', true)
+            ->tap(fn ($query) => $porPalabra($query, 'catalog_values.label'))
+            ->select('catalog_values.id', 'catalog_values.label', 'catalog_values.slug')
+            ->get();
+
+        $categorias = $q === '' ? collect() : $project->categories()
+            ->where('is_active', true)
+            ->tap(fn ($query) => $porPalabra($query, 'name'))
+            ->get(['id', 'name', 'slug', 'parent_id']);
+
+        $request->attributes->set('busqueda', ['q' => $q, 'marcas' => $marcas, 'categorias' => $categorias]);
+        $request->attributes->set('url_ya_canonica', true);
+
+        return $this->shop($request, $slug);
+    }
+
+    /** Pagina de promociones vigentes. Las tarjetas las arma la propia plantilla. */
+    public function promociones(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        [$view, $data] = $this->prepararCatalogo($project, false, 'promociones');
+        return view($view, $data);
+    }
+
+    /** Pagina "Catalogo PDF": elegir que catalogo descargar. */
+    public function catalogo(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $catalog = app(\App\Modules\Tienda\Storefront\CatalogQueryService::class);
+        [$view, $data] = $this->prepararCatalogo($project, false, 'catalogo');
+        $data['catalogBrands'] = $catalog->marcas($project);
+        $data['rubrosCatalogo'] = $project->categories()->whereNull('parent_id')->where('is_active', true)
+            ->orderBy('sort_order')->get(['id', 'name']);
+        $data['hayPromos'] = \App\Modules\Tienda\Models\Promotion::where('project_id', $project->id)->vigentes()
+            ->where('applies_to', 'product')->exists();
+        return view($view, $data);
+    }
+
+    /**
+     * PDF publico del catalogo. Mismo documento que genera el panel, pero
+     * acotado por lo que pida el visitante: todo, un rubro, una marca, o solo
+     * las promociones vigentes. Nunca lleva precios si la tienda los oculta.
+     */
+    public function catalogoPdfPublico(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $settings = $project->settings()->pluck('value', 'key');
+        $ocultaPrecios = (string) ($settings['store_mode'] ?? 'direct') === 'quote'
+            && (string) ($settings['quote_price_display'] ?? 'show') === 'hide';
+
+        $query = $project->products()->where('is_available', true)
+            ->with(['images' => fn ($q) => $q->where('is_main', true), 'category.parent', 'marca']);
+
+        $category = null; $alcance = null;
+        if ($cid = $request->integer('category_id')) {
+            $category = $project->categories()->findOrFail($cid);
+            $childIds = $project->categories()->where('parent_id', $cid)->pluck('id');
+            $query->where(fn ($q) => $q->where('category_id', $cid)->orWhereIn('category_id', $childIds));
+            $alcance = $category->name;
+        }
+        if ($bid = $request->integer('brand_id')) {
+            $query->where('brand_catalog_id', $bid);
+            $alcance = \App\Models\CatalogValue::find($bid)?->label ?? $alcance;
+        }
+        if ($request->boolean('promos')) {
+            $ids = \App\Modules\Tienda\Models\Promotion::where('project_id', $project->id)->vigentes()
+                ->where('applies_to', 'product')->pluck('applies_to_id');
+            $query->whereIn('id', $ids->all());
+            $alcance = 'Promociones';
+        }
+
+        $products = $query->orderBy('sort_order')->orderBy('name')->get();
+        $agrupar = $request->query('agrupar') === 'marca' ? 'marca' : 'categoria';
+        $groups = $products->groupBy(function ($p) use ($agrupar) {
+            if ($agrupar === 'marca') return $p->marca?->label ?: '~Otras marcas';
+            $c = $p->category;
+            if (!$c) return '~Sin categoría';
+            return $c->parent ? $c->parent->name : $c->name;
+        })->sortKeys()->mapWithKeys(fn ($items, $key) => [ltrim($key, '~') => $items]);
+        $marcasCatalogo = $products->map(fn ($p) => $p->marca?->label)->filter()->unique()->sort()->values();
+
+        return view('catalog.products.catalog-pdf', [
+            'project' => $project, 'groups' => $groups,
+            'prices' => $ocultaPrecios ? 'none' : 'retail',
+            'profile' => null, 'category' => $category, 'settings' => $settings,
+            'layout' => in_array($request->query('layout'), ['grid2', 'grid3', 'grid4'], true) ? $request->query('layout') : 'grid3',
+            'cover' => true, 'content' => 'main',
+            'storeUrl' => \App\Modules\Tienda\Support\StorefrontNavigation::publicUrl($project),
+            'agrupar' => $agrupar, 'marcasCatalogo' => $marcasCatalogo,
+            'scopeLabel' => $alcance,
+        ]);
+    }
+
+    public function shopPorCategoria(Request $request, string $slug, string $categoria)
+    {
+        $project = $this->project($slug);
+
+        $cat = \App\Models\Category::where('project_id', $project->id)
+            ->where('slug', $categoria)
+            ->first();
+
+        if (! $cat) {
+            abort(404);
+        }
+
+        $request->merge(['category' => (string) $cat->id]);
+        $request->attributes->set('url_ya_canonica', true);
+
+        return $this->shop($request, $slug);
+    }
+
+    public function shop(Request $request, string $slug, ?string $profile = null)
+    {
+        $project = $this->project($slug);
+
+        // ═══ 301 de la forma antigua a la legible ═══
+        // /tienda?category=394 → /tienda/c/computadoras, para que los enlaces ya
+        // compartidos no queden en una URL de segunda y el buscador indexe una
+        // sola dirección por categoría.
+        //
+        // Con tres guardas, porque este método sirve tanto páginas como datos:
+        //  1. Nunca en peticiones JSON: el catálogo pagina con `?format=json`
+        //     y una redirección ahí rompería el scroll infinito.
+        //  2. Solo si `category` es el ÚNICO parámetro: con filtros de precio,
+        //     orden o página, redirigir perdería lo que el visitante eligió.
+        //  3. Solo si la categoría existe y tiene slug.
+        // `shopPorCategoria()` marca la petición: ya viene de la URL legible y
+        // le inyectó `category`, así que redirigirla la mandaría a sí misma.
+        if ($request->isMethod('GET')
+            && $profile === null
+            && ! $request->attributes->get('url_ya_canonica')
+            && $request->query('format') !== 'json'
+            && ! $request->expectsJson()
+            && array_keys($request->query()) === ['category']
+            && ctype_digit((string) $request->query('category'))
+        ) {
+            $cat = \App\Models\Category::where('project_id', $project->id)
+                ->where('id', (int) $request->query('category'))
+                ->first();
+
+            if ($cat && filled($cat->slug)) {
+                return redirect(\App\Modules\Tienda\Support\StorefrontNavigation::categoryUrl($project, $cat), 301);
+            }
+        }
+
+        // Perfil de catálogo activo (si la funcionalidad está habilitada y el slug
+        // corresponde a un perfil habilitado de esta tienda). Es null en el flujo normal.
+        // ═══ Un solo segmento para perfiles y categorías ═══
+        // /tienda/nino (perfil) y /tienda/discos-y-memorias (categoría) comparten
+        // sitio. Antes las categorías llevaban un prefijo `c/` para no chocar,
+        // pero esa letra suelta no significa nada para quien lee la URL.
+        // Se resuelve por orden: primero perfil, luego categoría. Si el nombre
+        // coincidiera, manda el perfil — es la pieza con identidad propia.
+        if ($profile !== null && ! $request->attributes->get('url_ya_canonica')) {
+            $esPerfil = $this->catalogProfilesEnabled($project)
+                && $project->catalogProfiles()->where('slug', $profile)->where('is_enabled', true)->exists();
+
+            if (! $esPerfil) {
+                $cat = \App\Models\Category::where('project_id', $project->id)
+                    ->where('slug', $profile)->first();
+
+                if ($cat) {
+                    $request->merge(['category' => (string) $cat->id]);
+                    $request->attributes->set('url_ya_canonica', true);
+                    $profile = null;
+                }
+            }
+        }
+
+        $activeProfile = $this->resolveActiveProfile($project, $profile);
+
+        // Plantillas de producción (computienda, etc.): su /tienda usa la MISMA
+        // plantilla que el inicio, pero en modo "tienda" (catálogo con filtros).
+        if ($this->productionTemplateView($project)) {
+            // Fase 2A: catálogo paginado desde DB. Respuesta JSON para AJAX.
+            $catalog = app(\App\Modules\Tienda\Storefront\CatalogQueryService::class);
+            if ($request->query('format') === 'json') {
+                $page = $catalog->paginate($project, $request, $activeProfile);
+                return response()->json([
+                    'products' => collect($page->items())->map(fn ($p) => $catalog->toCard($p, $project->slug))->all(),
+                    'current_page' => $page->currentPage(),
+                    'last_page' => $page->lastPage(),
+                    'total' => $page->total(),
+                    'has_more' => $page->hasMorePages(),
+                    'next_page_url' => $page->nextPageUrl(),
+                    'profile' => $activeProfile?->slug,
+                ]);
+            }
+            [$view, $data] = $this->prepararCatalogo($project, false, 'tienda');
+            $catalogPage = $catalog->paginate($project, $request, $activeProfile);
+            $data['catalogPage'] = $catalogPage;
+            $data['catalogCards'] = collect($catalogPage->items())->map(fn ($p) => $catalog->toCard($p, $project->slug))->all();
+            $data['catalogMaxPrice'] = (float) $project->products()->where('is_available', true)->max('price');
+            $data['catalogFacets'] = $catalog->facets($project);
+            $data['catalogBrands'] = $catalog->marcas($project);
+            $data['catalogBrandMap'] = $catalog->marcasPorRubro($project);
+            // Marca activa cuando se entra por /marca/{slug}: la plantilla pinta
+            // su cabecera (logo, descripcion, rubros) encima de la rejilla.
+            $data['activeBrand'] = $request->attributes->get('marca_activa');
+            $data['searchMatches'] = $request->attributes->get('busqueda');
+            $data['rubroNombres'] = $project->categories()->whereNull('parent_id')->pluck('name', 'id');
+            $data['activeProfile'] = $activeProfile;
+            $data['catalogProfiles'] = $this->menuProfiles($project);
+            // La identidad efectiva del perfil (overrides sobre la identidad global)
+            // la aplica la propia plantilla, que re-lee settings frescos del proyecto.
+            return view($view, $data);
+        }
+
+        abort_unless($project->setting('storefront_structure_v2', '0') === '1' || $request->attributes->get('storefront_preview') === true, 404);
+        $data = $this->storefrontBaseData($project);
+        $categories = $project->categories()->where('is_active', true)
+            ->with(['children' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')])
+            ->whereNull('parent_id')->orderBy('sort_order')->orderBy('name')->get();
+
+        $query = $project->products()->where('is_available', true)->with(['mainImage', 'category']);
+        $search = trim((string) $request->query('q', ''));
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
+                $builder->where('name', 'like', $like)->orWhere('sku', 'like', $like)->orWhere('description', 'like', $like);
+            });
+        }
+
+        $categoryId = $request->integer('category');
+        $selectedCategory = null;
+        if ($categoryId) {
+            $selectedCategory = $project->categories()->where('is_active', true)->find($categoryId);
+            if ($selectedCategory) {
+                $ids = $selectedCategory->parent_id ? [$selectedCategory->id] : $selectedCategory->children()->where('is_active', true)->pluck('id')->prepend($selectedCategory->id)->all();
+                $query->whereIn('category_id', $ids);
+            }
+        }
+        if ($request->boolean('sale')) $query->whereNotNull('compare_price')->whereColumn('compare_price', '>', 'price');
+        if (is_numeric($request->query('min_price'))) $query->where('price', '>=', max(0, (float) $request->query('min_price')));
+        if (is_numeric($request->query('max_price'))) $query->where('price', '<=', max(0, (float) $request->query('max_price')));
+
+        $requestedAttributes = $request->query('attribute', []);
+        if (is_array($requestedAttributes)) {
+            foreach (array_slice($requestedAttributes, 0, 10, true) as $attributeId => $requestedValues) {
+                $attribute = \App\Models\ProductAttribute::allProjects()
+                    ->where('project_id', $project->id)->where('is_active', true)->where('is_filterable', true)
+                    ->find((int) $attributeId);
+                if (! $attribute) continue;
+                $valueIds = $attribute->values()->where('is_active', true)
+                    ->whereIn('id', collect(\Illuminate\Support\Arr::wrap($requestedValues))->map(fn ($id) => (int) $id)->filter()->unique())
+                    ->pluck('id')->all();
+                if (! $valueIds) continue;
+                $query->where(function ($builder) use ($attribute, $valueIds) {
+                    $builder->whereHas('attributeValues', fn ($values) => $values
+                        ->where('product_attribute_values.product_attribute_id', $attribute->id)
+                        ->whereIn('product_attribute_values.id', $valueIds))
+                        ->orWhereHas('variants', fn ($variants) => $variants->where('is_active', true)
+                            ->whereHas('values', fn ($values) => $values
+                                ->where('product_attribute_values.product_attribute_id', $attribute->id)
+                                ->whereIn('product_attribute_values.id', $valueIds)));
+                });
+            }
+        }
+
+        match ($request->query('sort', 'recommended')) {
+            'price_asc' => $query->orderBy('price')->orderBy('id'),
+            'price_desc' => $query->orderByDesc('price')->orderByDesc('id'),
+            'name' => $query->orderBy('name'),
+            'newest' => $query->latest(),
+            default => $query->orderBy('sort_order')->orderByDesc('id'),
+        };
+        $perPage = in_array($request->integer('per_page'), [12, 24, 48], true) ? $request->integer('per_page') : 12;
+        $products = $query->paginate($perPage)->withQueryString();
+
+        $catalogFacets = app(\App\Modules\Tienda\Storefront\CatalogQueryService::class)->facets($project);
+        return view('tienda::public.storefront.shop', $data + compact('categories', 'products', 'search', 'selectedCategory', 'catalogFacets'));
+    }
+
+    private function renderStorefrontHome(Project $project, bool $preview = false)
+    {
+        $data = $this->storefrontBaseData($project, $preview);
+        $view = match ($data['storefrontTheme']['key'] ?? 'default') {
+            'computienda' => 'tienda::public.storefront.templates.computienda',
+            'ecommerce' => 'tienda::public.storefront.templates.ecommerce',
+            'direct' => 'tienda::public.storefront.templates.direct',
+            'default' => 'tienda::public.storefront.templates.classic',
+            default => 'tienda::public.storefront.home',
+        };
+
+        return view($view, $data);
+    }
+
+    public function storefrontBaseData(Project $project, bool $preview = false): array
+    {
+        $settings = $project->settings()->pluck('value', 'key')->all();
+        $projectTemplate = ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->first();
+        if ($projectTemplate && is_array($projectTemplate->settings)) $settings = array_merge($projectTemplate->settings, $settings);
+
+        // La vista previa del Constructor debe reflejar lo que el usuario ya
+        // eligió/guardó (borrador), aunque todavía no haya publicado — igual
+        // que el checklist. La tienda pública real ($preview=false) sigue
+        // mostrando exclusivamente lo publicado.
+        if ($preview) {
+            $settings = array_merge($settings, $this->draftSettingsOverlay($project));
+        }
+
+        $sectionsQuery = StoreSection::where('project_id', $project->id)->where('page', 'home');
+        if (!$preview) {
+            $sectionsQuery->where('is_enabled', true)
+                ->where(fn ($query) => $query->whereNull('publish_from')->orWhere('publish_from', '<=', now()))
+                ->where(fn ($query) => $query->whereNull('publish_until')->orWhere('publish_until', '>=', now()));
+        }
+        $sections = $sectionsQuery->orderBy('sort_order')->get()->groupBy('component')->map->first();
+        if ($preview) {
+            $sections = $sections->filter->enabledForPreview()->map(function ($section) {
+                $section->content = $section->contentForPreview();
+                $section->variant = $section->variantForPreview();
+                $section->sort_order = $section->draft_sort_order ?? $section->sort_order;
+                return $section;
+            })->sortBy('sort_order')->values();
+        } else $sections = $sections->sortBy('sort_order')->values();
+
+        $popup = StorePopup::where('project_id', $project->id)->where('is_enabled', true)
+            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+            ->latest()->first();
+        $storeMenu = StorefrontNavigation::menu($project) ?: StorefrontNavigation::ensure($project)->load(['rootItems.children']);
+        $headerSettings = StorefrontNavigation::headerSettings($project);
+        $storefrontTheme = StorefrontTheme::resolve($settings);
+
+        $previewMode = $preview;
+        $hasSectionRegistry = $sections->isNotEmpty()
+            || StoreSection::where('project_id', $project->id)->where('page', 'home')->exists();
+        return compact('project', 'settings', 'sections', 'popup', 'storeMenu', 'headerSettings', 'storefrontTheme', 'previewMode', 'hasSectionRegistry');
+    }
+
+    /**
+     * Prepara TODOS los datos que necesitan las plantillas de tienda
+     * (categorías con productos, secciones, settings de diseño) y decide
+     * qué plantilla usar. Reutilizable: la tienda pública y el catálogo del
+     * revendedor comparten exactamente la misma vista y datos.
+     *
+     * @return array{0:string,1:array}  [nombre de la vista, datos]
+     */
+    public function prepararCatalogo(\App\Models\Project $project, bool $preview = false, string $storeView = 'home', array $settingsOverlay = []): array
+    {
+        // Cargar settings del proyecto como arreglo clave=>valor
+        $settingsCollection = $project->settings()->pluck('value', 'key');
+        $settings = $settingsCollection->toArray();
+        // Constructor (B1): el preview del borrador superpone los settings en
+        // borrador SIN tocar el camino público (overlay vacío = comportamiento actual).
+        if ($settingsOverlay !== []) {
+            $settings = array_merge($settings, $settingsOverlay);
+        }
+
+        $popup = \App\Modules\Tienda\Models\StorePopup::where('project_id', $project->id)
+            ->where('is_enabled', true)
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+            ->latest()->first();
+        $sectionsQuery = \App\Modules\Tienda\Models\StoreSection::where('project_id', $project->id)->where('page', 'home');
+        if (!$preview) {
+            $sectionsQuery->where('is_enabled', true)
+                ->where(fn ($q) => $q->whereNull('publish_from')->orWhere('publish_from', '<=', now()))
+                ->where(fn ($q) => $q->whereNull('publish_until')->orWhere('publish_until', '>=', now()));
+        }
+        $sections = $sectionsQuery->orderBy('sort_order')->get()->groupBy('component')->map->first();
+        if ($preview) {
+            $sections = $sections->filter->enabledForPreview()->map(function ($section) {
+                $section->content = $section->contentForPreview();
+                $section->variant = $section->variantForPreview();
+                $section->sort_order = $section->draft_sort_order ?? $section->sort_order;
+                return $section;
+            })->sortBy('sort_order')->values();
+        } else {
+            $sections = $sections->sortBy('sort_order')->values();
+        }
+        // Con filas de secciones (aunque estén desactivadas) se respeta lo publicado;
+        // el fallback "mostrar todo" queda solo para tiendas sin configurar.
+        $hasSectionRegistry = $sections->isNotEmpty()
+            || \App\Modules\Tienda\Models\StoreSection::where('project_id', $project->id)->where('page', 'home')->exists();
+        $aboutPage = \App\Modules\Tienda\Models\StorePage::where('project_id', $project->id)->where('key', 'nosotros')->where('is_enabled', true)->first();
+
+        // Si el proyecto tiene una plantilla activa, fusionar defaults de la plantilla
+        $projectTemplate = \App\Modules\Tienda\Models\ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->first();
+        if ($projectTemplate && is_array($projectTemplate->settings)) {
+            // Template settings actúan como valores por defecto; los settings del proyecto sobrescriben.
+            $settings = array_merge($projectTemplate->settings, $settings);
+        }
+
+        // Cargar árbol: padres con hijos, cada nodo con sus productos y servicios.
+        // El filtro de precio replica la regla de CatalogQueryService: un producto
+        // sin precio no se puede comprar y la rejilla ya lo excluía. Aquí no se
+        // aplicaba, así que los contadores del filtro lateral y las secciones de
+        // portada contaban productos que la tienda nunca llegaba a mostrar: se
+        // leía "26 productos" junto a un filtro que decía "57".
+        $vendible = fn($q) => \App\Modules\Tienda\Storefront\CatalogQueryService::mostrable($q, $project, $settings);
+
+        // Con la agrupación por modelo activa, las secciones de portada también
+        // enseñan un color por modelo. Si no, la misma casaca sale seis veces
+        // seguidas y la portada parece el escaparate de un solo producto.
+        if (\App\Modules\Tienda\Storefront\AgrupadorModelos::activoEn($project)) {
+            $representantes = app(\App\Modules\Tienda\Storefront\AgrupadorModelos::class)->representantes($project);
+            $vendible = fn($q) => \App\Modules\Tienda\Storefront\CatalogQueryService::mostrable($q, $project, $settings)
+                ->whereIn('id', $representantes);
+        }
+
+        $categories = $project->categories()
+            ->where('is_active', true)
+            ->whereNull('parent_id')
+            ->with([
+                'products' => fn($q) => $vendible($q)->with(['mainImage', 'activeVariants'])->orderBy('sort_order'),
+                'services' => fn($q) => $q->where('is_available', true)->orderBy('sort_order'),
+                'children' => fn($q) => $q->where('is_active', true)->with([
+                    'products' => fn($q2) => $vendible($q2)->with(['mainImage', 'activeVariants'])->orderBy('sort_order'),
+                    'services' => fn($q2) => $q2->where('is_available', true)->orderBy('sort_order'),
+                ])->orderBy('sort_order'),
+            ])
+            ->orderBy('sort_order')->get();
+
+        // Una tienda puede cargar productos antes de organizar sus categorías.
+        // Las plantillas basadas en el árbol (especialmente Directo) antes los
+        // ocultaban por completo. Esta categoría existe solo durante el
+        // renderizado: no crea ni modifica datos del negocio.
+        $uncategorizedProducts = $vendible($project->products())
+            ->whereNull('category_id')
+            ->with(['mainImage', 'activeVariants'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        if ($uncategorizedProducts->isNotEmpty()) {
+            $uncategorizedCategory = new \App\Models\Category([
+                'name' => 'Productos',
+                'slug' => 'productos',
+                'is_active' => true,
+                'sort_order' => PHP_INT_MAX,
+            ]);
+            // IDs reales son positivos; -1 identifica el grupo virtual sin
+            // poder confundirse con una categoría persistida.
+            $uncategorizedCategory->id = -1;
+            $uncategorizedCategory->exists = false;
+            $uncategorizedCategory->setRelation('products', $uncategorizedProducts);
+            $uncategorizedCategory->setRelation('services', collect());
+            $uncategorizedCategory->setRelation('children', collect());
+            $categories->push($uncategorizedCategory);
+        }
+
+        // Productos para secciones de la tienda. take(24) = tope del límite
+        // configurable de la sección de productos del constructor.
+        $newArrivals = $vendible($project->products())
+            ->with(['mainImage','category','activeVariants'])->latest()->take(24)->get();
+        $onSale = $vendible($project->products())
+            ->whereNotNull('compare_price')->whereColumn('compare_price', '>', 'price')
+            ->with(['mainImage','category','activeVariants'])->take(24)->get();
+        $featured = $vendible($project->products())
+            ->with(['mainImage','category','activeVariants'])->inRandomOrder()->take(24)->get();
+
+        $productRatings = \App\Modules\Tienda\Models\Review::where('project_id', $project->id)
+            ->where('is_approved', true)
+            ->select('product_id', \DB::raw('ROUND(AVG(rating),1) as avg_rating'), \DB::raw('COUNT(*) as rating_count'))
+            ->groupBy('product_id')
+            ->get()->keyBy('product_id');
+
+        // Detectar plantilla activa y cargar vista correspondiente
+        $template  = $settings['catalog_template'] ?? 'default';
+        $tplViews = self::PRODUCTION_TEMPLATE_VIEWS;
+        $view = isset($tplViews[$template]) && view()->exists($tplViews[$template])
+            ? $tplViews[$template]
+            : 'tienda::public.catalog';
+
+        // Negocios de servicios (ej. lavandería): fusionar servicios dentro de
+        // la relación 'products' para que las plantillas los muestren igual,
+        // sin duplicar la lógica de la vista. Los servicios de subcategorías se
+        // suben a la categoría padre (la vista solo recorre el primer nivel).
+        $svcToProduct = function ($s) {
+            $p = new \App\Models\Product([
+                'name'         => $s->name,
+                'description'  => $s->description,
+                'price'        => $s->price,
+                'category_id'  => $s->category_id,
+                'is_available' => $s->is_available,
+                'sort_order'   => $s->sort_order,
+            ]);
+            $p->id = 'svc-' . $s->id;   // id no numérico para distinguirlo
+            $p->setRelation('mainImage', null);
+            return $p;
+        };
+
+        foreach ($categories as $cat) {
+            $svc = collect();
+            if ($cat->relationLoaded('services')) {
+                $svc = $svc->concat($cat->services);
+            }
+            if ($cat->relationLoaded('children')) {
+                foreach ($cat->children as $child) {
+                    if ($child->relationLoaded('services')) {
+                        $svc = $svc->concat($child->services);
+                    }
+                }
+            }
+            if ($svc->isNotEmpty()) {
+                $asProducts = $svc->map($svcToProduct);
+                $cat->setRelation('products', $cat->products->concat($asProducts)->sortBy('sort_order')->values());
+            }
+        }
+
+        // Secciones destacadas: si no hay productos, usar los servicios fusionados
+        if ($featured->isEmpty()) {
+            $featured = $categories->flatMap->products->take(8)->values();
+        }
+
+        // Menú del Constructor (para que las plantillas lo usen en su navegación)
+        $storeMenu = \App\Modules\Tienda\Support\StorefrontNavigation::menu($project)
+            ?: \App\Modules\Tienda\Support\StorefrontNavigation::ensure($project)->load(['rootItems.children']);
+
+        // Testimonios: la consultaba `ecommerce.blade.php` dentro de un @php.
+        // Una vista no deberia leer de la base; se calcula aqui con la MISMA
+        // consulta para que lo renderizado no cambie.
+        $reviews = \App\Modules\Tienda\Models\Review::where('project_id', $project->id)
+            ->where('is_approved', true)->orderByDesc('rating')->take(3)->get();
+
+        // `previewMode` faltaba en este payload: las plantillas no podían saber
+        // si estaban dentro de la vista previa del Constructor, así que las
+        // páginas institucionales leían siempre lo publicado y el negocio nunca
+        // veía en el preview lo que acababa de guardar en borrador.
+        $previewMode = $preview;
+        $data = compact('project','categories','settings','newArrivals','onSale','featured','productRatings','popup','sections','aboutPage','storeMenu','storeView','hasSectionRegistry','reviews','previewMode');
+
+        // Contexto canonico (proposito de la rama `refactor/store-builder-
+        // canonical-context`). Se construye CON LOS MISMOS valores que ya usa
+        // esta vista, no recalculandolos: asi las plantillas pueden migrar a
+        // `$storefrontContext` uno a uno sin que cambie ni un pixel de lo que
+        // hoy se sirve.
+        //
+        // La unificacion COMPLETA —que `settings` salga de
+        // `StorefrontContextBuilder::resolveSettings()`, con los valores por
+        // defecto de la plantilla y los respaldos heredados— si altera lo
+        // renderizado en TODA tienda publica, asi que exige revision visual y
+        // queda fuera de este paso a proposito.
+        $data['storefrontContext'] = new \App\Modules\Tienda\Storefront\StorefrontContext(
+            project: $project,
+            settings: $settings,
+            template: array_merge(
+                (array) (\App\Modules\Tienda\Support\CatalogTemplates::get($settings['catalog_template'] ?? 'default') ?? []),
+                ['key' => (string) ($settings['catalog_template'] ?? 'default')]
+            ),
+            theme: \App\Modules\Tienda\Support\StorefrontTheme::resolve($settings),
+            sectionCollection: $sections instanceof \Illuminate\Support\Collection ? $sections : collect($sections),
+            menuCollection: collect($storeMenu ? ['primary' => $storeMenu] : []),
+            pageCollection: collect($aboutPage ? ['nosotros' => $aboutPage] : []),
+            activePopup: $popup,
+            categoryCollection: $categories instanceof \Illuminate\Support\Collection ? $categories : collect($categories),
+            productCollection: collect($featured),
+            urls: ['public' => \App\Modules\Tienda\Support\StorefrontNavigation::publicUrl($project)],
+            capabilityMap: [],
+            legacyFallbacks: [],
+            catalogData: ['profiles' => $this->menuProfiles($project)],
+            templateCollection: collect(),
+            storeView: $storeView,
+            preview: $preview,
+        );
+        // Los perfiles de catálogo (Niño/Niña, etc.) viven en la navegación compartida:
+        // deben verse también en el Inicio y demás vistas, no solo en la Tienda.
+        $data['catalogProfiles'] = $this->menuProfiles($project);
+
+        return [$view, $data];
+    }
+
+    public function validateCoupon(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $code    = strtoupper(trim($request->input('code', '')));
+        $subtotal = (float) $request->input('subtotal', 0);
+
+        $shipping = (float) $request->input('shipping', 0);
+        $phone    = $request->input('phone', '');
+
+        $coupon = $project->coupons()->where('code', $code)->first();
+        if (!$coupon || !$coupon->isValid($subtotal, $phone)) {
+            $msg = 'Cupón inválido o expirado.';
+            if ($coupon && ($coupon->type === 'first_purchase' || $coupon->first_purchase_only)) {
+                $msg = 'Este cupón es solo para nuevos clientes.';
+            }
+            return response()->json(['ok' => false, 'message' => $msg]);
+        }
+
+        $discount = $coupon->calculateDiscount($subtotal, $shipping);
+        return response()->json([
+            'ok'        => true,
+            'code'      => $coupon->code,
+            'type'      => $coupon->type,
+            'value'     => (float) $coupon->value,
+            'min_order' => (float) $coupon->min_order,
+            'discount'  => $discount,
+            'label'     => \App\Modules\Tienda\Models\Coupon::$types[$coupon->type] ?? $coupon->type,
+        ]);
+    }
+
+    /** Comprobante de pago (voucher Yape/transferencia) subido por el cliente antes de enviar el pedido. */
+    public function uploadOrderProof(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $request->validate(['proof' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096']);
+        $path = $request->file('proof')->store("order-proofs/{$project->id}", 'public');
+
+        return response()->json(['ok' => true, 'url' => asset('storage/' . $path)]);
+    }
+
+    public function storeOrder(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $data = $request->validate([
+            'client_name'      => 'required|string|max:100',
+            'client_phone'     => 'required|string|max:30',
+            'client_email'     => 'nullable|email|max:150',
+            'notes'            => 'nullable|string',
+            'coupon_code'      => 'nullable|string|max:50',
+            'delivery_address' => 'nullable|string|max:255',
+            'shipping_cost'    => 'nullable|numeric|min:0',
+            'items'            => 'required|array|min:1',
+            'items.*.product_id' => 'nullable|integer',
+            'items.*.product_variant_id' => 'nullable|integer',
+            'items.*.name'       => 'nullable|string|max:255',
+            // Se sigue ACEPTANDO para no romper a los clientes que ya lo
+            // envian, pero es informativo: el precio real sale del catalogo.
+            'items.*.price'      => 'nullable|numeric|min:0',
+            'items.*.quantity'   => 'required|integer|min:1',
+            'payment_method'   => 'nullable|string|max:80',
+            'payment_reference'=> 'nullable|string|max:100',
+            'payment_proof'    => 'nullable|url|max:500',
+        ]);
+
+        return DB::transaction(function () use ($project, $data) {
+            // Verificar stock con lock pesimista. Se agrupa por producto ANTES de
+            // validar: un mismo producto puede venir en varias líneas del carrito y
+            // validar cada línea por separado dejaría pasar la suma (2 líneas de 4
+            // contra un stock de 5 pasarían las dos y el stock quedaría en -3).
+            $pedidoPorProducto = [];
+            $pedidoPorVariante = [];
+            foreach ($data['items'] as $item) {
+                if (empty($item['product_id'])) continue;
+                if (! empty($item['product_variant_id'])) {
+                    $vid = (int) $item['product_variant_id'];
+                    $pedidoPorVariante[$vid] = ($pedidoPorVariante[$vid] ?? 0) + (int) ($item['quantity'] ?? 1);
+                    continue;
+                }
+                $pid = (int) $item['product_id'];
+                $pedidoPorProducto[$pid] = ($pedidoPorProducto[$pid] ?? 0) + (int) ($item['quantity'] ?? 1);
+            }
+
+            $variantesBloqueadas = [];
+            foreach ($pedidoPorVariante as $variantId => $qtyTotal) {
+                $itemForVariant = collect($data['items'])->first(
+                    fn (array $item) => (int) ($item['product_variant_id'] ?? 0) === (int) $variantId
+                );
+                $variant = \App\Models\ProductVariant::allProjects()
+                    ->where('id', $variantId)
+                    ->where('project_id', $project->id)
+                    ->where('is_active', true)
+                    ->with(['product', 'values.attribute'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $variant || ! $variant->product || ! $itemForVariant
+                    || (int) $variant->product_id !== (int) ($itemForVariant['product_id'] ?? 0)) {
+                    return response()->json(['ok' => false, 'message' => 'La variante elegida ya no está disponible. Actualiza la página.'], 422);
+                }
+                if ($variant->stock !== null && $variant->stock < $qtyTotal) {
+                    return response()->json([
+                        'ok' => false,
+                        'message' => "Stock insuficiente para \"{$variant->product->name} — {$variant->label()}\" (disponible: {$variant->stock}).",
+                    ], 422);
+                }
+                if ($variant->stock === null) {
+                    $pedidoPorProducto[$variant->product_id] = ($pedidoPorProducto[$variant->product_id] ?? 0) + $qtyTotal;
+                }
+                $variantesBloqueadas[$variantId] = $variant;
+            }
+
+            foreach ($pedidoPorProducto as $pid => $qtyTotal) {
+                $product = Product::allProjects()
+                    ->where('id', $pid)
+                    ->where('project_id', $project->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$product) continue;
+
+                // Solo se VALIDA aquí (con el lock ya tomado). El descuento se hace
+                // después de crear el pedido, para que el Kardex pueda apuntar a él.
+                if ($product->stock !== null && $product->stock < $qtyTotal) {
+                    return response()->json([
+                        'ok'      => false,
+                        'message' => "Stock insuficiente para \"{$product->name}\" (disponible: {$product->stock}).",
+                    ], 422);
+                }
+            }
+
+            // ── El precio lo pone el CATALOGO, nunca el comprador ────────────
+            // Esta ruta es publica y aceptaba `items.*.price` del cuerpo de la
+            // peticion: bastaba con enviar {product_id:7, name:"Laptop",
+            // price:0.01} para comprar a un centimo, porque solo se recurria a
+            // la base `if ($pid && (!$name || !$price))`. El stock se descontaba
+            // de verdad y el pedido entraba a Cuentas por Cobrar como bueno.
+            //
+            // Ahora cada linea se resuelve contra el catalogo del proyecto: por
+            // id, y si no lo trae, por nombre exacto (hay pedidos reales asi).
+            // Lo que no se puede verificar, no se vende.
+            $resueltos = [];
+            $variantesResueltas = [];
+            foreach ($data['items'] as $idx => $item) {
+                $prod = null;
+                if (! empty($item['product_id'])) {
+                    $prod = Product::allProjects()->where('project_id', $project->id)
+                        ->where('id', $item['product_id'])->first();
+                }
+                if (! $prod && ! empty($item['name'])) {
+                    $prod = Product::allProjects()->where('project_id', $project->id)
+                        ->where('name', $item['name'])->first();
+                }
+                if (! $prod) {
+                    return response()->json([
+                        'ok'      => false,
+                        'message' => 'No pudimos verificar uno de los productos de tu pedido. '
+                                   . 'Actualiza la página y vuelve a intentarlo.',
+                    ], 422);
+                }
+                $variant = null;
+                if (! empty($item['product_variant_id'])) {
+                    $variant = $variantesBloqueadas[(int) $item['product_variant_id']] ?? null;
+                    if (! $variant || (int) $variant->product_id !== (int) $prod->id) {
+                        return response()->json(['ok' => false, 'message' => 'La combinación seleccionada no pertenece al producto.'], 422);
+                    }
+                } elseif (\App\Models\ProductVariant::allProjects()
+                    ->where('project_id', $project->id)
+                    ->where('product_id', $prod->id)
+                    ->where('is_active', true)
+                    ->exists()) {
+                    // Un producto con matriz real nunca se vende como línea base:
+                    // el cliente debe elegir una combinación concreta y disponible.
+                    return response()->json([
+                        'ok' => false,
+                        'message' => "Selecciona las opciones de \"{$prod->name}\" antes de continuar.",
+                    ], 422);
+                }
+                $resueltos[$idx] = $prod;
+                $variantesResueltas[$idx] = $variant;
+            }
+
+            // Suma en CENTAVOS con el precio del catalogo (LineMath), no con
+            // flotantes sobre datos del cliente.
+            $subtotalCents = 0;
+            foreach ($data['items'] as $idx => $item) {
+                $subtotalCents += \App\Support\LineMath::lineCents(
+                    \App\Support\LineMath::canon((string) ($variantesResueltas[$idx]?->price ?? $resueltos[$idx]->price)),
+                    (int) $item['quantity']
+                );
+            }
+            $subtotal   = (float) \App\Support\LineMath::format($subtotalCents);
+            $shipping   = (float) ($data['shipping_cost'] ?? 0);
+            $discount   = 0.0;
+            $couponCode = null;
+
+            if (!empty($data['coupon_code'])) {
+                $code   = strtoupper(trim($data['coupon_code']));
+                $coupon = $project->coupons()->where('code', $code)->first();
+                if ($coupon && $coupon->isValid($subtotal, $data['client_phone'] ?? null)) {
+                    $discount   = $coupon->calculateDiscount($subtotal, $shipping);
+                    $couponCode = $coupon->code;
+                    $coupon->increment('uses_count');
+                }
+            }
+
+            $total = max(0, $subtotal - $discount + $shipping);
+            $order = $project->orders()->create([
+                'client_name'      => $data['client_name'],
+                'client_phone'     => $data['client_phone'],
+                'client_email'     => $data['client_email'] ?? null,
+                'notes'            => $data['notes'] ?? null,
+                'coupon_code'      => $couponCode,
+                'discount'         => $discount > 0 ? $discount : null,
+                'delivery_address' => $data['delivery_address'] ?? null,
+                'shipping_cost'    => $shipping > 0 ? $shipping : null,
+                'total'            => $total,
+                'status'           => 'pending',
+                'sales_channel'    => 'web',
+                'payment_method'   => $data['payment_method'] ?? null,
+                'payment_reference'=> $data['payment_reference'] ?? null,
+                'payment_proof'    => $data['payment_proof'] ?? null,
+            ]);
+
+            foreach ($data['items'] as $idx => $item) {
+                // Producto ya resuelto arriba contra el catalogo: nombre, precio
+                // e id salen de la base, no de lo que mando el navegador. De
+                // paso queda enlazado el `product_id` aunque el carrito no lo
+                // trajera, que era como se perdia la trazabilidad al Kardex.
+                $prod  = $resueltos[$idx];
+                $variant = $variantesResueltas[$idx];
+                $pid   = $prod->id;
+                $variantLabel = $variant?->label();
+                $order->items()->create([
+                    'product_id' => $pid,
+                    'product_variant_id' => $variant?->id,
+                    'name'       => $variantLabel ? $prod->name.' — '.$variantLabel : $prod->name,
+                    'variant_snapshot' => $variant ? [
+                        'id' => $variant->id,
+                        'sku' => $variant->sku,
+                        'label' => $variantLabel,
+                        'values' => $variant->values->map(fn ($value) => [
+                            'attribute' => $value->attribute?->name,
+                            'value' => $value->label,
+                        ])->values()->all(),
+                    ] : null,
+                    'price'      => $variant?->price ?? $prod->price,
+                    'quantity'   => $item['quantity'],
+                ]);
+
+                // Descuento de stock vía Kardex, ya con el pedido creado para referenciarlo.
+                if ($variant && $variant->stock !== null) {
+                    $variant->decrement('stock', abs((int) $item['quantity']));
+                } elseif ($pid) {
+                    $prodStock = Product::allProjects()->where('id', $pid)->where('project_id', $project->id)->first();
+                    if ($prodStock) {
+                        \App\Modules\Inventario\Support\InventoryLedger::registrar(
+                            $prodStock, -abs((int) $item['quantity']), 'venta',
+                            null, 'Venta en tienda online', 'order', $order->id, null
+                        );
+                    }
+                }
+            }
+
+            // Marcar carrito abandonado como recuperado
+            AbandonedCart::where('project_id', $project->id)
+                ->where('client_phone', $data['client_phone'])
+                ->whereNull('recovered_at')
+                ->update(['recovered_at' => now()]);
+
+            // Enviar comprobante al WhatsApp del negocio via bot Meta
+            if (!empty($data['payment_proof'])) {
+                $this->sendVoucherToOwner($project, $order, $data['payment_proof']);
+            }
+
+            return response()->json(['ok' => true, 'order_id' => $order->id, 'total' => (float) $order->total]);
+        });
+    }
+
+    /** Guarda carrito para recuperación por abandono (llamado desde JS al llenar nombre+teléfono) */
+    public function saveCart(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $data = $request->validate([
+            'client_name'  => 'required|string|max:100',
+            'client_phone' => 'required|string|max:30',
+            'client_email' => 'nullable|email|max:150',
+            'items'        => 'required|array|min:1',
+            'subtotal'     => 'required|numeric|min:0',
+            'coupon_code'  => 'nullable|string|max:50',
+        ]);
+
+        // Upsert por proyecto + teléfono para no duplicar
+        AbandonedCart::updateOrCreate(
+            ['project_id' => $project->id, 'client_phone' => $data['client_phone']],
+            [
+                'client_name'   => $data['client_name'],
+                'client_email'  => $data['client_email'] ?? null,
+                'items'         => $data['items'],
+                'subtotal'      => $data['subtotal'],
+                'coupon_code'   => $data['coupon_code'] ?? null,
+                'reminder_sent' => false,
+                'recovered_at'  => null,
+            ]
+        );
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function storeQuote(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $data = $request->validate([
+            'client_name'       => 'required|string|max:120',
+            'client_phone'      => 'required|string|max:30',
+            'client_email'      => 'nullable|email|max:120',
+            'client_doc_type'   => 'nullable|string|max:20',
+            'client_doc_number' => 'nullable|string|max:20',
+            'client_address'    => 'nullable|string|max:160',
+            'notes'             => 'nullable|string|max:2000',
+            'items'             => 'required|array|min:1|max:200',
+            'items.*.product_id'  => 'nullable|integer',
+            'items.*.description' => 'required|string|max:255',
+            'items.*.price'       => 'nullable|numeric|min:0',
+            'items.*.quantity'    => 'required|numeric|min:1',
+            'items.*.unit'        => 'nullable|string|max:30',
+        ]);
+
+        // Los datos duros salen del PRODUCTO, no del navegador: el cliente no
+        // puede inventar un SKU ni un precio, y la solicitud queda ligada al
+        // articulo real para que quien la atienda sepa que cotizar.
+        $ids = collect($data['items'])->pluck('product_id')->filter()->unique()->values();
+        $productos = $ids->isEmpty() ? collect() : $project->products()
+            ->whereIn('id', $ids->all())->with('marca')->get()->keyBy('id');
+
+        $lineas = collect($data['items'])->map(function ($item) use ($productos) {
+            $p = $item['product_id'] ? $productos->get((int) $item['product_id']) : null;
+            return [
+                'product_id'  => $p?->id,
+                'description' => $p?->name ?? $item['description'],
+                'sku'         => $p?->sku,
+                'brand'       => $p?->marca?->label,
+                'unit'        => $item['unit'] ?? $p?->unit ?? null,
+                'price'       => $p ? (float) $p->price : (float) ($item['price'] ?? 0),
+                'quantity'    => (float) $item['quantity'],
+            ];
+        });
+
+        $quote = $project->quotes()->create([
+            'client_name'       => $data['client_name'],
+            'client_phone'      => $data['client_phone'],
+            'client_email'      => $data['client_email'] ?? null,
+            'client_doc_type'   => $data['client_doc_type'] ?? null,
+            'client_doc_number' => $data['client_doc_number'] ?? null,
+            'client_address'    => $data['client_address'] ?? null,
+            'notes'             => $data['notes'] ?? null,
+            'total'             => $lineas->sum(fn ($l) => $l['price'] * $l['quantity']),
+            'status'            => 'sent',
+            'sent_at'           => now(),
+        ]);
+
+        foreach ($lineas as $linea) {
+            $quote->items()->create($linea);
+        }
+
+        return response()->json(['ok' => true, 'quote_id' => $quote->id]);
+    }
+
+    public function product(string $slug, int $id)
+    {
+        $project = $this->project($slug);
+        $product = $project->products()
+            ->where('is_available', true)
+            ->with([
+                'images', 'category', 'mainImage',
+                'variants' => fn ($query) => $query->where('is_active', true)
+                    ->with(['values.attribute', 'image']),
+            ])
+            ->findOrFail($id);
+        $settings   = $project->settings()->pluck('value', 'key');
+        // Relacionados en tres pasos para que la sección nunca quede vacía:
+        // misma categoría → categorías hermanas (mismo padre) → resto de la
+        // tienda. Antes, un producto único en su categoría no mostraba ninguno.
+        // El precio solo filtra si la tienda VENDE por precio. En modo
+        // cotizacion todos los productos valen 0 y exigir `price > 0`
+        // dejaba la seccion de relacionados siempre vacia.
+        $exigePrecio = ! (($settings['store_mode'] ?? 'direct') === 'quote'
+            && ($settings['quote_price_display'] ?? 'show') === 'hide');
+        $related = $project->products()
+            ->where('is_available', true)
+            ->when($exigePrecio, fn ($q) => $q->where('price', '>', 0))
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->with('mainImage')
+            ->take(6)->get();
+
+        if ($related->count() < 4) {
+            $padre = $product->category?->parent_id ?: $product->category_id;
+            $hermanas = $project->categories()
+                ->where(fn ($q) => $q->where('parent_id', $padre)->orWhere('id', $padre))
+                ->pluck('id');
+
+            $extra = $project->products()
+                ->where('is_available', true)
+                ->when($exigePrecio, fn ($q) => $q->where('price', '>', 0))
+                ->whereIn('category_id', $hermanas)
+                ->whereNotIn('id', $related->pluck('id')->push($product->id))
+                ->with('mainImage')
+                ->take(6 - $related->count())->get();
+
+            $related = $related->concat($extra);
+        }
+
+        if ($related->count() < 4) {
+            $extra = $project->products()
+                ->where('is_available', true)
+                ->when($exigePrecio, fn ($q) => $q->where('price', '>', 0))
+                ->whereNotIn('id', $related->pluck('id')->push($product->id))
+                ->with('mainImage')
+                ->latest()
+                ->take(6 - $related->count())->get();
+
+            $related = $related->concat($extra);
+        }
+        $categories = $project->categories()->where('is_active', true)
+            ->with(['products' => fn($q) => $q->where('is_available', true)->with('mainImage')])
+            ->orderBy('sort_order')->get();
+        $reviews    = $product->approvedReviews()->get();
+        $avgRating  = $reviews->count() ? round($reviews->avg('rating'), 1) : null;
+
+        // Plantillas que integran la página de producto dentro de su propia
+        // plantilla (mismo header, menú, carrito y footer), en modo "producto".
+        // OJO: sólo las que implementan el bloque storeView==='producto'.
+        // ecommerce maneja el producto como SPA interna (page==='product') y NO
+        // debe entrar aquí, o rompe su estado.
+        $template = (string) $project->setting('catalog_template', 'default');
+        if (in_array($template, self::PRODUCT_VIEW_TEMPLATES, true) && $this->productionTemplateView($project)) {
+            [$tplView, $data] = $this->prepararCatalogo($project, false, 'producto');
+            $data['storeProduct'] = $product;
+            $data['relatedProducts'] = $related;
+            $data['productReviews'] = $reviews;
+            $data['productAvgRating'] = $avgRating;
+            return view($tplView, $data);
+        }
+
+        if ($project->setting('storefront_structure_v2', '0') === '1') {
+            return view('tienda::public.storefront.product', $this->storefrontBaseData($project) + compact('product', 'related', 'reviews', 'avgRating'));
+        }
+        return view('tienda::public.product', compact('project', 'product', 'settings', 'related', 'categories', 'reviews', 'avgRating'));
+    }
+
+    public function storeReview(Request $request, string $slug, int $productId)
+    {
+        $project = $this->project($slug);
+        $product = $project->products()->where('is_available', true)->findOrFail($productId);
+
+        $data = $request->validate([
+            'author_name'  => 'required|string|max:100',
+            'author_email' => 'nullable|email|max:150',
+            'rating'       => 'required|integer|min:1|max:5',
+            'comment'      => 'nullable|string|max:1000',
+        ]);
+
+        // Simple rate limiting: 1 review per IP per product per hour
+        $recent = Review::where('product_id', $product->id)
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        if ($recent >= 3) {
+            return response()->json(['ok' => false, 'message' => 'Demasiadas reseñas. Inténtalo más tarde.'], 429);
+        }
+
+        $review = Review::create([
+            'project_id'   => $project->id,
+            'product_id'   => $product->id,
+            'author_name'  => $data['author_name'],
+            'author_email' => $data['author_email'] ?? null,
+            'rating'       => $data['rating'],
+            'comment'      => $data['comment'] ?? null,
+            'is_approved'  => false,
+        ]);
+
+        return response()->json(['ok' => true, 'message' => 'Reseña enviada. Aparecerá tras ser aprobada.']);
+    }
+
+    public function thankyou(string $slug, int $orderId)
+    {
+        $project  = $this->project($slug);
+        $order    = $project->orders()->with('items')->findOrFail($orderId);
+        $settings = $project->settings()->pluck('value', 'key');
+        return view('tienda::public.thankyou', compact('project', 'order', 'settings'));
+    }
+
+    public function book(string $slug)
+    {
+        $project  = $this->project($slug);
+        $services = $project->services()->where('is_available', true)->get();
+        return view('tienda::public.book', compact('project', 'services'));
+    }
+
+    public function storeBook(Request $request, string $slug)
+    {
+        $project = $this->project($slug);
+        $data = $request->validate([
+            'service_id'   => 'required|integer',
+            'client_name'  => 'required|string|max:100',
+            'client_phone' => 'required|string|max:30',
+            'date'         => 'required|date|after_or_equal:today',
+            'start_time'   => 'required',
+        ]);
+        $service = $project->services()->findOrFail($data['service_id']);
+        $endTs   = strtotime($data['start_time']) + ($service->duration_min * 60);
+        $project->appointments()->create([
+            'service_id'   => $service->id,
+            'client_name'  => $data['client_name'],
+            'client_phone' => $data['client_phone'],
+            'date'         => $data['date'],
+            'start_time'   => $data['start_time'],
+            'end_time'     => date('H:i', $endTs),
+            'status'       => 'pending',
+        ]);
+        return response()->json(['ok' => true]);
+    }
+
+    private function sendVoucherToOwner($project, $order, string $voucherUrl): void
+    {
+        try {
+            $botPort    = env('VOUCHER_PORT', '3005');
+            $botToken   = env('BOT_TOKEN', 'wa-bot-secret-2024');
+            $ownerPhone = preg_replace('/\D/', '', $project->whatsapp ?? '');
+            if (!$ownerPhone) return;
+
+            // Armar items del pedido
+            $itemLines = $order->items->map(fn($i) =>
+                "  - {$i->name} x{$i->quantity} = S/ " . number_format($i->price * $i->quantity, 2)
+            )->implode("\n");
+
+            $sep = "--------------------";
+            $caption  = "*NUEVO PEDIDO #{$order->id} - {$project->name}*\n";
+            $caption .= "{$sep}\n";
+            $caption .= "*PRODUCTOS:*\n{$itemLines}\n";
+            $caption .= "{$sep}\n";
+            $caption .= "*TOTAL: S/ " . number_format((float)$order->total, 2) . "*\n";
+            $caption .= "{$sep}\n";
+            if ($order->payment_method) $caption .= "*PAGO:* " . strtoupper($order->payment_method) . "\n";
+            if ($order->payment_reference) $caption .= "Nro. operacion: {$order->payment_reference}\n";
+            $caption .= "{$sep}\n";
+            $caption .= "*CLIENTE:*\n";
+            $caption .= "Nombre: {$order->client_name}\n";
+            $caption .= "Celular: {$order->client_phone}\n";
+            if ($order->client_email) $caption .= "Email: {$order->client_email}\n";
+            if ($order->delivery_address) $caption .= "Direccion: {$order->delivery_address}\n";
+            if ($order->notes) $caption .= "Notas: {$order->notes}\n";
+
+            $payload = json_encode([
+                'token'     => $botToken,
+                'to'        => $ownerPhone,
+                'image_url' => $voucherUrl,
+                'caption'   => $caption,
+            ]);
+
+            $ctx = stream_context_create(['http' => [
+                'method'  => 'POST',
+                'header'  => "Content-Type: application/json\r\nContent-Length: " . strlen($payload) . "\r\n",
+                'content' => $payload,
+                'timeout' => 5,
+                'ignore_errors' => true,
+            ]]);
+            @file_get_contents("http://127.0.0.1:{$botPort}/", false, $ctx);
+        } catch (\Throwable $e) {
+            // silencioso
+        }
+    }
+
+    public function uploadVoucher(Request $request, string $slug)
+    {
+        $this->project($slug); // verifica que el proyecto existe y está activo
+
+        $request->validate([
+            'voucher' => 'required|file|image|max:5120', // 5MB max
+        ]);
+
+        $path = $request->file('voucher')->store('vouchers', 'public');
+        $url  = url('storage/' . $path);
+
+        return response()->json(['ok' => true, 'url' => $url]);
+    }
+
+    public function sitemap(string $slug)
+    {
+        $project  = $this->project($slug);
+        $settings = $project->settings()->pluck('value', 'key')->toArray();
+        $baseUrl  = ($settings['seo_canonical'] ?? null)
+            ?: ($project->custom_domain ? 'https://'.$project->custom_domain : url('/'.$slug));
+
+        $products = $project->products()
+            ->where('is_available', true)
+            ->with(['images' => fn($q) => $q->where('is_main', true)])
+            ->get();
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>';
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">';
+        $xml .= '<url><loc>'.e($baseUrl).'</loc><changefreq>daily</changefreq><priority>1.0</priority></url>';
+
+        foreach ($products as $p) {
+            $xml .= '<url>';
+            $xml .= '<loc>'.e($baseUrl.'/producto/'.\App\Support\ImageVariants::claveProducto($p->id, $p->name)).'</loc>';
+            $xml .= '<changefreq>weekly</changefreq><priority>0.8</priority>';
+            $img = $p->images->first();
+            if ($img) {
+                $imgUrl = str_starts_with($img->url, 'http') ? $img->url : asset('storage/'.$img->url);
+                $xml .= '<image:image><image:loc>'.e($imgUrl).'</image:loc><image:title>'.e($p->name).'</image:title></image:image>';
+            }
+            $xml .= '</url>';
+        }
+
+        $xml .= '</urlset>';
+        return response($xml, 200)->header('Content-Type', 'application/xml');
+    }
+
+    public function robots(string $slug)
+    {
+        $project  = $this->project($slug);
+        $settings = $project->settings()->pluck('value', 'key')->toArray();
+        $baseUrl  = ($settings['seo_canonical'] ?? null)
+            ?: ($project->custom_domain ? 'https://'.$project->custom_domain : url('/'.$slug));
+
+        $txt = "User-agent: *\nAllow: /\nSitemap: {$baseUrl}/sitemap.xml\n";
+        return response($txt, 200)->header('Content-Type', 'text/plain');
+    }
+}

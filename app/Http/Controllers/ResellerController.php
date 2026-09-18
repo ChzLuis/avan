@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\PublicController;
+use App\Modules\Tienda\Controllers\TiendaPublicaController;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\ResellerPrice;
@@ -128,7 +128,7 @@ class ResellerController extends Controller
         // Reutilizamos EXACTAMENTE la tienda pública (plantilla con categorías,
         // buscador, diseño del negocio) y solo cambiamos: precios del revendedor
         // y qué productos se muestran.
-        [$view, $data] = app(PublicController::class)->prepararCatalogo($project);
+        [$view, $data] = app(TiendaPublicaController::class)->prepararCatalogo($project);
 
         $idsPermitidos = $precios->keys()->all();
         $aplicar = function ($coleccion) use ($precios, $idsPermitidos) {

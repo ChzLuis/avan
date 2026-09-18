@@ -18,7 +18,7 @@ class PortalController extends Controller
     {
         $project = $this->getProject($slug);
         $settings = $project->settings()->pluck('value', 'key');
-        return view('public.portal', compact('project', 'settings'));
+        return view('tienda::public.portal', compact('project', 'settings'));
     }
 
     // GET /b/{slug}/c/{token} — vista de cotización individual
@@ -32,7 +32,7 @@ class PortalController extends Controller
                         ->firstOrFail();
 
         $settings = $project->settings()->pluck('value', 'key');
-        return view('public.portal-quote', compact('project', 'quote', 'settings'));
+        return view('tienda::public.portal-quote', compact('project', 'quote', 'settings'));
     }
 
     /**

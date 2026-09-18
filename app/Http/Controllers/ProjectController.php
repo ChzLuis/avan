@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Module;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Database\Seeders\DefaultCatalogsSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

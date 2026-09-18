@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
-use App\Models\StoreMenu;
+use App\Modules\Tienda\Models\StoreMenu;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -64,8 +64,8 @@ class MenuTiendaTest extends TestCase
      */
     public function test_el_menu_es_un_paso_propio_del_constructor(): void
     {
-        $indice = file_get_contents(resource_path('views/settings/builder/index.blade.php'));
-        $encabezado = file_get_contents(resource_path('views/settings/builder/stages/header.blade.php'));
+        $indice = file_get_contents(app_path('Modules/Tienda/Views/settings/builder/index.blade.php'));
+        $encabezado = file_get_contents(app_path('Modules/Tienda/Views/settings/builder/stages/header.blade.php'));
 
         $this->assertStringContainsString('store-navigation-builder', $encabezado,
             'El editor de menú no está en el paso de encabezado.');
@@ -75,7 +75,7 @@ class MenuTiendaTest extends TestCase
         // Se llama "menú" porque es la palabra que busca el negocio: con
         // "navegación" el editor estaba ahí y nadie lo encontraba.
         $this->assertSame('Encabezado y menú',
-            \App\Storefront\BuilderRuleRegistry::STAGES['header']['label'],
+            \App\Modules\Tienda\Storefront\BuilderRuleRegistry::STAGES['header']['label'],
             'El paso debe nombrar el menú para que se encuentre.');
 
         // Con x-if se destruye el DOM al cambiar de paso y el gestor de menú
@@ -191,7 +191,7 @@ class MenuTiendaTest extends TestCase
         $sinCabecera = ['direct'];
         $faltan = [];
 
-        foreach (glob(resource_path('views/public/templates/*.blade.php')) as $ruta) {
+        foreach (glob(app_path('Modules/Tienda/Views/public/templates/*.blade.php')) as $ruta) {
             $nombre = basename($ruta, '.blade.php');
             if (in_array($nombre, $sinCabecera, true)) {
                 continue;

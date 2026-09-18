@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Catalog;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Storefront\ProductVariantMatrixService;
+use App\Modules\Tienda\Storefront\ProductVariantMatrixService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

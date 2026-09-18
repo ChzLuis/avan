@@ -5,16 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\ImportLog;
 use App\Models\Project;
 use App\Models\Module;
-use App\Models\Coupon;
+use App\Modules\Tienda\Models\Coupon;
 use App\Modules\Crm\Models\WaCanal;
-use App\Support\CatalogTemplates;
-use App\Support\StorefrontSections;
-use App\Support\StorefrontNavigation;
+use App\Modules\Tienda\Support\CatalogTemplates;
+use App\Modules\Tienda\Support\StorefrontSections;
+use App\Modules\Tienda\Support\StorefrontNavigation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use App\Models\ProjectTemplate;
-use App\Storefront\StorefrontContextBuilder;
-use App\Storefront\ProjectSettingWriteService;
+use App\Modules\Tienda\Models\ProjectTemplate;
+use App\Modules\Tienda\Storefront\StorefrontContextBuilder;
+use App\Modules\Tienda\Storefront\ProjectSettingWriteService;
 
 class SettingsController extends Controller
 {
@@ -855,8 +855,8 @@ class SettingsController extends Controller
         if ($request->input('save_as_template') === '1') {
             $name = $request->input('template_name') ?: ('Plantilla ' . ucfirst($templateKey));
             // Desactivar otras plantillas activas del proyecto
-            \App\Models\ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
-            \App\Models\ProjectTemplate::create([
+            \App\Modules\Tienda\Models\ProjectTemplate::where('project_id', $project->id)->where('is_active', true)->update(['is_active' => false]);
+            \App\Modules\Tienda\Models\ProjectTemplate::create([
                 'project_id' => $project->id,
                 'name'       => $name,
                 'description'=> 'Generada desde aplicación de plantilla ' . $templateKey,
@@ -869,7 +869,7 @@ class SettingsController extends Controller
             'ok' => true,
             'template' => $templateKey,
             'preserved' => $preserved,
-            'theme' => \App\Support\StorefrontTheme::resolve(['catalog_template' => $templateKey]),
+            'theme' => \App\Modules\Tienda\Support\StorefrontTheme::resolve(['catalog_template' => $templateKey]),
             // `StorefrontNavigation::publicUrl()` ya resuelve el dominio
             // propio y no se usaba aqui: un negocio con dominio propio
             // recibia el enlace a arindg.com/slug en vez de al suyo.

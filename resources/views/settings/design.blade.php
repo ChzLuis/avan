@@ -9,9 +9,9 @@
     ? 'https://' . $project->custom_domain
     : url('/' . $project->slug);
   $activeTpl  = $project->setting('catalog_template', 'default') ?: 'default';
-  $allTpls    = \App\Support\CatalogTemplates::all();
+  $allTpls    = \App\Modules\Tienda\Support\CatalogTemplates::all();
   $tplInfo    = $allTpls[$activeTpl] ?? $allTpls['default'];
-  $templateManifest = \App\Support\CatalogTemplates::manifest($activeTpl);
+  $templateManifest = \App\Modules\Tienda\Support\CatalogTemplates::manifest($activeTpl);
   $templateComponents = $templateManifest['components'] ?? [];
   $componentCatalog = $templateManifest['component_catalog'] ?? [];
   $componentLabels = [];
@@ -113,15 +113,15 @@
       {{-- ═══════════════════════════════════════ --}}
       @if($s === 'plantilla' && $isOwnerOrSuper)
       @php
-        $allTemplates   = \App\Support\CatalogTemplates::all();
-        $grouped        = \App\Support\CatalogTemplates::grouped();
+        $allTemplates   = \App\Modules\Tienda\Support\CatalogTemplates::all();
+        $grouped        = \App\Modules\Tienda\Support\CatalogTemplates::grouped();
         $activeTemplate = $project->setting('catalog_template', '');
         $tplHasView = $project->setting('storefront_structure_v2', '0') === '1'
           ? array_keys($allTemplates)
           : ['default','direct','ella','nordic','flash','boutique','urban','fresh','porto','licoreria','farma','lavanderia'];
         $templateLabels = collect($allTemplates)->mapWithKeys(fn ($template, $key) => [$key => $template['label']])->all();
         // Plantillas soportadas (mantenidas activamente): se ofrecen primero.
-        $supportedTemplateKeys = \App\Support\CatalogTemplates::supportedKeys();
+        $supportedTemplateKeys = \App\Modules\Tienda\Support\CatalogTemplates::supportedKeys();
         $supportedTemplates = collect($allTemplates)->only($supportedTemplateKeys)->map(fn ($t) => [
           'name' => $t['label'],
           'short_description' => \Illuminate\Support\Str::limit($t['description'], 96),
@@ -209,7 +209,7 @@
             <h4 class="text-sm font-semibold">Plantillas del proyecto</h4>
             <p class="text-xs text-gray-400">Crea y gestiona plantillas personalizadas para este proyecto.</p>
             <div class="mt-3 space-y-3">
-              @php $projectTemplates = \App\Models\ProjectTemplate::where('project_id', $project->id)->orderByDesc('is_active')->get(); @endphp
+              @php $projectTemplates = \App\Modules\Tienda\Models\ProjectTemplate::where('project_id', $project->id)->orderByDesc('is_active')->get(); @endphp
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 @foreach($projectTemplates as $pt)
                 <div class="p-3 border rounded-lg flex items-center justify-between">
@@ -493,8 +493,8 @@
             <p>Configura la barra superior, el menú principal y la navegación de la tienda.</p>
           </div>
         </div>
-        @include('settings.partials.store-navigation-builder')
-        @include('settings.partials.catalog-profiles')
+        @include('tienda::settings.partials.store-navigation-builder')
+        @include('tienda::settings.partials.catalog-profiles')
       </div>
 
       <div id="constructor-marca" x-show="cvTab==='marca'" x-cloak class="max-w-2xl mx-auto constructor-panel constructor-panel--marca">
@@ -1763,9 +1763,9 @@
       {{-- ═══════════════════════════════════════ --}}
       @if($s === 'constructor')
       @php
-        $cardStylesAll = \App\Support\CatalogTemplates::cardStyles();
+        $cardStylesAll = \App\Modules\Tienda\Support\CatalogTemplates::cardStyles();
         $activeTplCat  = $project->setting('catalog_template', 'default') ?: 'default';
-        $allTplsCat    = \App\Support\CatalogTemplates::all();
+        $allTplsCat    = \App\Modules\Tienda\Support\CatalogTemplates::all();
         $tplInfoCat    = $allTplsCat[$activeTplCat] ?? $allTplsCat['default'];
       @endphp
       <div id="constructor-catalogo" x-show="cvTab==='catalogo'" x-cloak class="max-w-2xl mx-auto constructor-panel constructor-panel--catalogo">
@@ -2718,7 +2718,7 @@
           </div>
           <div class="mx-auto w-full space-y-6" style="max-width:1440px">
             <div><h2 class="text-xl font-bold text-slate-900">Páginas de la tienda</h2><p class="text-sm text-slate-500">Edita las páginas Nosotros y Contacto, y revisa los mensajes recibidos.</p></div>
-            @include('settings.partials.institutional-pages')
+            @include('tienda::settings.partials.institutional-pages')
             <div class="grid gap-5 xl:grid-cols-2">
               <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-bold text-slate-900">Mensajes de contacto</h2><p class="mt-1 text-sm text-slate-500">Mensajes enviados desde el formulario de Contacto.</p><div class="mt-3 space-y-2">@forelse($messages as $message)<div class="rounded border p-3 text-sm"><b>{{ $message->name }}</b> · {{ $message->subject }}<p class="mt-1 text-slate-600">{{ $message->message }}</p></div>@empty<p class="text-sm text-slate-500">No hay mensajes.</p>@endforelse</div></div>
               <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-bold text-slate-900">Libro de Reclamaciones</h2><p class="mt-1 text-sm text-slate-500">Gestiona el estado de cada reclamo.</p><div class="mt-3 space-y-2">@forelse($complaints as $complaint)<form method="post" action="{{ route('settings.experience.complaint.status',$complaint->id) }}" class="flex flex-wrap items-center gap-2 rounded border p-3 text-sm">@csrf @method('patch')<b>{{ $complaint->code }}</b><span>{{ $complaint->consumer_name }}</span><select name="status" class="rounded border-slate-300"><option value="received" @selected($complaint->status==='received')>Recibido</option><option value="in_review" @selected($complaint->status==='in_review')>En revisión</option><option value="resolved" @selected($complaint->status==='resolved')>Resuelto</option><option value="closed" @selected($complaint->status==='closed')>Cerrado</option></select><button class="text-indigo-600">Actualizar</button></form>@empty<p class="text-sm text-slate-500">No hay registros.</p>@endforelse</div></div>

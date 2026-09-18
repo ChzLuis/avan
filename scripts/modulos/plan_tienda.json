@@ -1,0 +1,5827 @@
+{
+ "moves": [
+  [
+   "app/Http/Controllers/PublicController.php",
+   "app/Modules/Tienda/Controllers/TiendaPublicaController.php"
+  ],
+  [
+   "app/Http/Controllers/StoreBuilderController.php",
+   "app/Modules/Tienda/Controllers/StoreBuilderController.php"
+  ],
+  [
+   "app/Http/Controllers/StoreExperienceController.php",
+   "app/Modules/Tienda/Controllers/StoreExperienceController.php"
+  ],
+  [
+   "app/Http/Controllers/StoreNavigationController.php",
+   "app/Modules/Tienda/Controllers/StoreNavigationController.php"
+  ],
+  [
+   "app/Http/Controllers/StorePageController.php",
+   "app/Modules/Tienda/Controllers/StorePageController.php"
+  ],
+  [
+   "app/Http/Controllers/DesignTemplateController.php",
+   "app/Modules/Tienda/Controllers/DesignTemplateController.php"
+  ],
+  [
+   "app/Http/Controllers/PromotionController.php",
+   "app/Modules/Tienda/Controllers/PromotionController.php"
+  ],
+  [
+   "app/Http/Controllers/ComplaintController.php",
+   "app/Modules/Tienda/Controllers/ComplaintController.php"
+  ],
+  [
+   "app/Http/Controllers/CatalogProfileController.php",
+   "app/Modules/Tienda/Controllers/CatalogProfileController.php"
+  ],
+  [
+   "app/Models/Coupon.php",
+   "app/Modules/Tienda/Models/Coupon.php"
+  ],
+  [
+   "app/Models/Promotion.php",
+   "app/Modules/Tienda/Models/Promotion.php"
+  ],
+  [
+   "app/Models/Review.php",
+   "app/Modules/Tienda/Models/Review.php"
+  ],
+  [
+   "app/Models/StoreCatalogProfile.php",
+   "app/Modules/Tienda/Models/StoreCatalogProfile.php"
+  ],
+  [
+   "app/Models/StoreMenu.php",
+   "app/Modules/Tienda/Models/StoreMenu.php"
+  ],
+  [
+   "app/Models/StoreMenuItem.php",
+   "app/Modules/Tienda/Models/StoreMenuItem.php"
+  ],
+  [
+   "app/Models/StorePage.php",
+   "app/Modules/Tienda/Models/StorePage.php"
+  ],
+  [
+   "app/Models/StorePopup.php",
+   "app/Modules/Tienda/Models/StorePopup.php"
+  ],
+  [
+   "app/Models/StoreSection.php",
+   "app/Modules/Tienda/Models/StoreSection.php"
+  ],
+  [
+   "app/Models/DesignTemplate.php",
+   "app/Modules/Tienda/Models/DesignTemplate.php"
+  ],
+  [
+   "app/Models/DesignTemplateVersion.php",
+   "app/Modules/Tienda/Models/DesignTemplateVersion.php"
+  ],
+  [
+   "app/Models/ProjectTemplate.php",
+   "app/Modules/Tienda/Models/ProjectTemplate.php"
+  ],
+  [
+   "app/Models/ContactMessage.php",
+   "app/Modules/Tienda/Models/ContactMessage.php"
+  ],
+  [
+   "app/Models/Complaint.php",
+   "app/Modules/Tienda/Models/Complaint.php"
+  ],
+  [
+   "app/Support/StorefrontLayoutPacks.php",
+   "app/Modules/Tienda/Support/StorefrontLayoutPacks.php"
+  ],
+  [
+   "app/Support/StorefrontNavigation.php",
+   "app/Modules/Tienda/Support/StorefrontNavigation.php"
+  ],
+  [
+   "app/Support/StorefrontSections.php",
+   "app/Modules/Tienda/Support/StorefrontSections.php"
+  ],
+  [
+   "app/Support/StorefrontTheme.php",
+   "app/Modules/Tienda/Support/StorefrontTheme.php"
+  ],
+  [
+   "app/Support/StorefrontThemePresets.php",
+   "app/Modules/Tienda/Support/StorefrontThemePresets.php"
+  ],
+  [
+   "app/Support/HeaderPresets.php",
+   "app/Modules/Tienda/Support/HeaderPresets.php"
+  ],
+  [
+   "app/Support/DesignerIcons.php",
+   "app/Modules/Tienda/Support/DesignerIcons.php"
+  ],
+  [
+   "app/Support/ContenidoEjemplo.php",
+   "app/Modules/Tienda/Support/ContenidoEjemplo.php"
+  ],
+  [
+   "app/Support/CatalogTemplates.php",
+   "app/Modules/Tienda/Support/CatalogTemplates.php"
+  ],
+  [
+   "app/Support/CategoryIcons.php",
+   "app/Modules/Tienda/Support/CategoryIcons.php"
+  ],
+  [
+   "app/Support/IconosCategoria.php",
+   "app/Modules/Tienda/Support/IconosCategoria.php"
+  ],
+  [
+   "app/Storefront/AgrupadorModelos.php",
+   "app/Modules/Tienda/Storefront/AgrupadorModelos.php"
+  ],
+  [
+   "app/Storefront/BuilderAccess.php",
+   "app/Modules/Tienda/Storefront/BuilderAccess.php"
+  ],
+  [
+   "app/Storefront/BuilderDraftService.php",
+   "app/Modules/Tienda/Storefront/BuilderDraftService.php"
+  ],
+  [
+   "app/Storefront/BuilderProgress.php",
+   "app/Modules/Tienda/Storefront/BuilderProgress.php"
+  ],
+  [
+   "app/Storefront/BuilderRuleRegistry.php",
+   "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php"
+  ],
+  [
+   "app/Storefront/CatalogQueryService.php",
+   "app/Modules/Tienda/Storefront/CatalogQueryService.php"
+  ],
+  [
+   "app/Storefront/ConstructorAuditor.php",
+   "app/Modules/Tienda/Storefront/ConstructorAuditor.php"
+  ],
+  [
+   "app/Storefront/ContactosTienda.php",
+   "app/Modules/Tienda/Storefront/ContactosTienda.php"
+  ],
+  [
+   "app/Storefront/DatosPie.php",
+   "app/Modules/Tienda/Storefront/DatosPie.php"
+  ],
+  [
+   "app/Storefront/DesignTemplateService.php",
+   "app/Modules/Tienda/Storefront/DesignTemplateService.php"
+  ],
+  [
+   "app/Storefront/HomePresets.php",
+   "app/Modules/Tienda/Storefront/HomePresets.php"
+  ],
+  [
+   "app/Storefront/ProductVariantMatrixService.php",
+   "app/Modules/Tienda/Storefront/ProductVariantMatrixService.php"
+  ],
+  [
+   "app/Storefront/ProjectSettingWriteService.php",
+   "app/Modules/Tienda/Storefront/ProjectSettingWriteService.php"
+  ],
+  [
+   "app/Storefront/PublishChecklist.php",
+   "app/Modules/Tienda/Storefront/PublishChecklist.php"
+  ],
+  [
+   "app/Storefront/StagePresets.php",
+   "app/Modules/Tienda/Storefront/StagePresets.php"
+  ],
+  [
+   "app/Storefront/StoreCatalogProfileWriteService.php",
+   "app/Modules/Tienda/Storefront/StoreCatalogProfileWriteService.php"
+  ],
+  [
+   "app/Storefront/StoreCopyService.php",
+   "app/Modules/Tienda/Storefront/StoreCopyService.php"
+  ],
+  [
+   "app/Storefront/StoreMenuWriteService.php",
+   "app/Modules/Tienda/Storefront/StoreMenuWriteService.php"
+  ],
+  [
+   "app/Storefront/StorePageWriteService.php",
+   "app/Modules/Tienda/Storefront/StorePageWriteService.php"
+  ],
+  [
+   "app/Storefront/StorePopupWriteService.php",
+   "app/Modules/Tienda/Storefront/StorePopupWriteService.php"
+  ],
+  [
+   "app/Storefront/StoreSectionWriteService.php",
+   "app/Modules/Tienda/Storefront/StoreSectionWriteService.php"
+  ],
+  [
+   "app/Storefront/StorefrontContext.php",
+   "app/Modules/Tienda/Storefront/StorefrontContext.php"
+  ],
+  [
+   "app/Storefront/StorefrontContextBuilder.php",
+   "app/Modules/Tienda/Storefront/StorefrontContextBuilder.php"
+  ],
+  [
+   "app/Storefront/VariantPresenter.php",
+   "app/Modules/Tienda/Storefront/VariantPresenter.php"
+  ],
+  [
+   "app/Console/Commands/AuditarConstructor.php",
+   "app/Modules/Tienda/Commands/AuditarConstructor.php"
+  ],
+  [
+   "app/Console/Commands/ConsolidarMotoresTienda.php",
+   "app/Modules/Tienda/Commands/ConsolidarMotoresTienda.php"
+  ],
+  [
+   "app/Console/Commands/FusionarModelos.php",
+   "app/Modules/Tienda/Commands/FusionarModelos.php"
+  ],
+  [
+   "resources/views/public",
+   "app/Modules/Tienda/Views/public"
+  ],
+  [
+   "resources/views/storefront",
+   "app/Modules/Tienda/Views/storefront"
+  ],
+  [
+   "resources/views/promotions",
+   "app/Modules/Tienda/Views/promotions"
+  ],
+  [
+   "resources/views/complaints",
+   "app/Modules/Tienda/Views/complaints"
+  ],
+  [
+   "resources/views/settings/builder",
+   "app/Modules/Tienda/Views/settings/builder"
+  ],
+  [
+   "resources/views/settings/design-templates.blade.php",
+   "app/Modules/Tienda/Views/settings/design-templates.blade.php"
+  ],
+  [
+   "resources/views/layouts/storefront.blade.php",
+   "app/Modules/Tienda/Views/layouts/storefront.blade.php"
+  ],
+  [
+   "resources/views/settings/partials/catalog-profiles.blade.php",
+   "app/Modules/Tienda/Views/settings/partials/catalog-profiles.blade.php"
+  ],
+  [
+   "resources/views/settings/partials/store-navigation-builder.blade.php",
+   "app/Modules/Tienda/Views/settings/partials/store-navigation-builder.blade.php"
+  ],
+  [
+   "resources/views/settings/partials/store-menu-item.blade.php",
+   "app/Modules/Tienda/Views/settings/partials/store-menu-item.blade.php"
+  ],
+  [
+   "resources/views/settings/partials/institutional-pages.blade.php",
+   "app/Modules/Tienda/Views/settings/partials/institutional-pages.blade.php"
+  ],
+  [
+   "resources/views/components/storefront",
+   "app/Modules/Tienda/Views/components/storefront"
+  ],
+  [
+   "resources/views/components/computienda",
+   "app/Modules/Tienda/Views/components/computienda"
+  ],
+  [
+   "resources/views/components/store-menu.blade.php",
+   "app/Modules/Tienda/Views/components/store-menu.blade.php"
+  ],
+  [
+   "resources/views/components/public-popup.blade.php",
+   "app/Modules/Tienda/Views/components/public-popup.blade.php"
+  ],
+  [
+   "resources/views/components/public-store-runtime.blade.php",
+   "app/Modules/Tienda/Views/components/public-store-runtime.blade.php"
+  ],
+  [
+   "resources/views/components/storefront-home-sections.blade.php",
+   "app/Modules/Tienda/Views/components/storefront-home-sections.blade.php"
+  ],
+  [
+   "resources/views/components/storefront-home-skins.blade.php",
+   "app/Modules/Tienda/Views/components/storefront-home-skins.blade.php"
+  ],
+  [
+   "resources/views/components/storefront-motion.blade.php",
+   "app/Modules/Tienda/Views/components/storefront-motion.blade.php"
+  ],
+  [
+   "resources/views/components/storefront-shapes.blade.php",
+   "app/Modules/Tienda/Views/components/storefront-shapes.blade.php"
+  ]
+ ],
+ "edits": {
+  "app/Modules/Tienda/Commands/AuditarConstructor.php": [
+   {
+    "old": "App\\Storefront\\ConstructorAuditor",
+    "new": "App\\Modules\\Tienda\\Storefront\\ConstructorAuditor",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Tienda\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Commands/FusionarModelos.php": [
+   {
+    "old": "App\\Storefront\\AgrupadorModelos",
+    "new": "App\\Modules\\Tienda\\Storefront\\AgrupadorModelos",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Tienda\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/CatalogProfileController.php": [
+   {
+    "old": "App\\Storefront\\StoreCatalogProfileWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StoreCatalogProfileWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreCatalogProfile",
+    "new": "App\\Modules\\Tienda\\Models\\StoreCatalogProfile",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/ComplaintController.php": [
+   {
+    "old": "App\\Models\\Complaint",
+    "new": "App\\Modules\\Tienda\\Models\\Complaint",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('complaints.index'",
+    "new": "view('tienda::complaints.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/DesignTemplateController.php": [
+   {
+    "old": "App\\Storefront\\DesignTemplateService",
+    "new": "App\\Modules\\Tienda\\Storefront\\DesignTemplateService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\BuilderAccess",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderAccess",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\DesignTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\DesignTemplate",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('settings.design-templates'",
+    "new": "view('tienda::settings.design-templates'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/ProjectController.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/PromotionController.php": [
+   {
+    "old": "App\\Models\\Promotion",
+    "new": "App\\Modules\\Tienda\\Models\\Promotion",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('promotions.index'",
+    "new": "view('tienda::promotions.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/TiendaPublicaController.php": [
+   {
+    "old": "App\\Storefront\\CatalogQueryService",
+    "new": "App\\Modules\\Tienda\\Storefront\\CatalogQueryService",
+    "n": 6
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 8
+   },
+   {
+    "old": "App\\Storefront\\StorefrontContext",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContext",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\AgrupadorModelos",
+    "new": "App\\Modules\\Tienda\\Storefront\\AgrupadorModelos",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\StoreCatalogProfile",
+    "new": "App\\Modules\\Tienda\\Models\\StoreCatalogProfile",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontTheme",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontTheme",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\ProjectTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\ProjectTemplate",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Promotion",
+    "new": "App\\Modules\\Tienda\\Models\\Promotion",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Coupon",
+    "new": "App\\Modules\\Tienda\\Models\\Coupon",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Review",
+    "new": "App\\Modules\\Tienda\\Models\\Review",
+    "n": 3
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": " PublicController",
+    "new": " TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "view('public.storefront.shop'",
+    "new": "view('tienda::public.storefront.shop'",
+    "n": 1
+   },
+   {
+    "old": "view('public.storefront.product'",
+    "new": "view('tienda::public.storefront.product'",
+    "n": 1
+   },
+   {
+    "old": "view('public.product'",
+    "new": "view('tienda::public.product'",
+    "n": 1
+   },
+   {
+    "old": "view('public.thankyou'",
+    "new": "view('tienda::public.thankyou'",
+    "n": 1
+   },
+   {
+    "old": "view('public.book'",
+    "new": "view('tienda::public.book'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.catalog'",
+    "new": "=> 'tienda::public.catalog'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.direct'",
+    "new": "=> 'tienda::public.templates.direct'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.ella'",
+    "new": "=> 'tienda::public.templates.ella'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.editorial'",
+    "new": "=> 'tienda::public.templates.editorial'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.nordic'",
+    "new": "=> 'tienda::public.templates.nordic'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.luxe'",
+    "new": "=> 'tienda::public.templates.luxe'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.flash'",
+    "new": "=> 'tienda::public.templates.flash'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.bistro'",
+    "new": "=> 'tienda::public.templates.bistro'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.urban'",
+    "new": "=> 'tienda::public.templates.urban'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.boutique'",
+    "new": "=> 'tienda::public.templates.boutique'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.fresh'",
+    "new": "=> 'tienda::public.templates.fresh'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.porto'",
+    "new": "=> 'tienda::public.templates.porto'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.licoreria'",
+    "new": "=> 'tienda::public.templates.licoreria'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.farma'",
+    "new": "=> 'tienda::public.templates.farma'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.lavanderia'",
+    "new": "=> 'tienda::public.templates.lavanderia'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.ecommerce'",
+    "new": "=> 'tienda::public.templates.ecommerce'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.tecnologia'",
+    "new": "=> 'tienda::public.templates.tecnologia'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.computienda'",
+    "new": "=> 'tienda::public.templates.computienda'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.storefront.templates.computienda'",
+    "new": "=> 'tienda::public.storefront.templates.computienda'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.storefront.templates.ecommerce'",
+    "new": "=> 'tienda::public.storefront.templates.ecommerce'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.storefront.templates.direct'",
+    "new": "=> 'tienda::public.storefront.templates.direct'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.storefront.templates.classic'",
+    "new": "=> 'tienda::public.storefront.templates.classic'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.storefront.home'",
+    "new": "=> 'tienda::public.storefront.home'",
+    "n": 1
+   },
+   {
+    "old": ": 'public.catalog'",
+    "new": ": 'tienda::public.catalog'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/ResellerController.php": [
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "(PublicController",
+    "new": "(TiendaPublicaController",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/SettingsController.php": [
+   {
+    "old": "App\\Storefront\\ProjectSettingWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\ProjectSettingWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\StorefrontContextBuilder",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContextBuilder",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontTheme",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontTheme",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProjectTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\ProjectTemplate",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Coupon",
+    "new": "App\\Modules\\Tienda\\Models\\Coupon",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/StoreBuilderController.php": [
+   {
+    "old": "App\\Storefront\\StoreSectionWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StoreSectionWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\BuilderDraftService",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderDraftService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\BuilderRuleRegistry",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderRuleRegistry",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\CatalogQueryService",
+    "new": "App\\Modules\\Tienda\\Storefront\\CatalogQueryService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 2
+   },
+   {
+    "old": "App\\Storefront\\PublishChecklist",
+    "new": "App\\Modules\\Tienda\\Storefront\\PublishChecklist",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\StoreCopyService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StoreCopyService",
+    "n": 3
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 2
+   },
+   {
+    "old": "App\\Storefront\\BuilderProgress",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderProgress",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\ContactosTienda",
+    "new": "App\\Modules\\Tienda\\Storefront\\ContactosTienda",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\BuilderAccess",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderAccess",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\StagePresets",
+    "new": "App\\Modules\\Tienda\\Storefront\\StagePresets",
+    "n": 2
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": " PublicController",
+    "new": " TiendaPublicaController",
+    "n": 2
+   },
+   {
+    "old": "view('settings.builder.index'",
+    "new": "view('tienda::settings.builder.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/StoreExperienceController.php": [
+   {
+    "old": "App\\Storefront\\StoreSectionWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StoreSectionWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\StorePopupWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorePopupWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\StorePageWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorePageWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\Complaint",
+    "new": "App\\Modules\\Tienda\\Models\\Complaint",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "(PublicController",
+    "new": "(TiendaPublicaController",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/StoreNavigationController.php": [
+   {
+    "old": "App\\Storefront\\StoreMenuWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StoreMenuWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Controllers/StorePageController.php": [
+   {
+    "old": "App\\Storefront\\StorefrontContextBuilder",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContextBuilder",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\StorefrontContext",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContext",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\ContenidoEjemplo",
+    "new": "App\\Modules\\Tienda\\Support\\ContenidoEjemplo",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\ContactMessage",
+    "new": "App\\Modules\\Tienda\\Models\\ContactMessage",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\Complaint",
+    "new": "App\\Modules\\Tienda\\Models\\Complaint",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Tienda\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": " PublicController",
+    "new": " TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "view('public.page'",
+    "new": "view('tienda::public.page'",
+    "n": 2
+   },
+   {
+    "old": "view('public.storefront.page'",
+    "new": "view('tienda::public.storefront.page'",
+    "n": 2
+   },
+   {
+    "old": "view('public.contact'",
+    "new": "view('tienda::public.contact'",
+    "n": 1
+   },
+   {
+    "old": "view('public.storefront.contact'",
+    "new": "view('tienda::public.storefront.contact'",
+    "n": 1
+   },
+   {
+    "old": "view('public.storefront.blog'",
+    "new": "view('tienda::public.storefront.blog'",
+    "n": 1
+   },
+   {
+    "old": "view('public.storefront.blog-post'",
+    "new": "view('tienda::public.storefront.blog-post'",
+    "n": 1
+   },
+   {
+    "old": "view('public.complaints'",
+    "new": "view('tienda::public.complaints'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/Catalog/ProductController.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\StoreCatalogProfile",
+    "new": "App\\Modules\\Tienda\\Models\\StoreCatalogProfile",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Review",
+    "new": "App\\Modules\\Tienda\\Models\\Review",
+    "n": 3
+   }
+  ],
+  "app/Http/Controllers/Catalog/ProductVariantController.php": [
+   {
+    "old": "App\\Storefront\\ProductVariantMatrixService",
+    "new": "App\\Modules\\Tienda\\Storefront\\ProductVariantMatrixService",
+    "n": 1
+   }
+  ],
+  "app/Http/Middleware/DetectCustomDomain.php": [
+   {
+    "old": "App\\Http\\Controllers\\StorePageController",
+    "new": "App\\Modules\\Tienda\\Controllers\\StorePageController",
+    "n": 5
+   },
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "(PublicController",
+    "new": "(TiendaPublicaController",
+    "n": 12
+   }
+  ],
+  "app/Models/Project.php": [
+   {
+    "old": "App\\Models\\Review",
+    "new": "App\\Modules\\Tienda\\Models\\Review",
+    "n": 1
+   }
+  ],
+  "app/Modules/Bots/Support/FlowEngine/FlowRunner.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 2
+   }
+  ],
+  "app/Modules/Control/Controllers/DemoController.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/BuilderDraftService.php": [
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 3
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/CatalogQueryService.php": [
+   {
+    "old": "App\\Storefront\\VariantPresenter",
+    "new": "App\\Modules\\Tienda\\Storefront\\VariantPresenter",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreCatalogProfile",
+    "new": "App\\Modules\\Tienda\\Models\\StoreCatalogProfile",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/DesignTemplateService.php": [
+   {
+    "old": "App\\Models\\DesignTemplateVersion",
+    "new": "App\\Modules\\Tienda\\Models\\DesignTemplateVersion",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreCatalogProfile",
+    "new": "App\\Modules\\Tienda\\Models\\StoreCatalogProfile",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\DesignTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\DesignTemplate",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/HomePresets.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   },
+   {
+    "old": "resources/views/components/storefront-home-skins",
+    "new": "app/Modules/Tienda/Views/components/storefront-home-skins",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StoreCatalogProfileWriteService.php": [
+   {
+    "old": "App\\Models\\StoreCatalogProfile",
+    "new": "App\\Modules\\Tienda\\Models\\StoreCatalogProfile",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StoreCopyService.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StorefrontContext.php": [
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenu",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenu",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StorefrontContextBuilder.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontTheme",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontTheme",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProjectTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\ProjectTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenu",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenu",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Review",
+    "new": "App\\Modules\\Tienda\\Models\\Review",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StoreMenuWriteService.php": [
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenu",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenu",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StorePageWriteService.php": [
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StorePopupWriteService.php": [
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StoreSectionWriteService.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/CatalogTemplates.php": [
+   {
+    "old": "App\\Models\\ProjectTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\ProjectTemplate",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.ecommerce'",
+    "new": "=> 'tienda::public.templates.ecommerce'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.direct'",
+    "new": "=> 'tienda::public.templates.direct'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.computienda'",
+    "new": "=> 'tienda::public.templates.computienda'",
+    "n": 1
+   }
+  ],
+  "app/Support/ProjectContext.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Promotion",
+    "new": "App\\Modules\\Tienda\\Models\\Promotion",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/StorefrontNavigation.php": [
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenu",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenu",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/StorefrontSections.php": [
+   {
+    "old": "App\\Storefront\\StoreSectionWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StoreSectionWriteService",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "routes/web.php": [
+   {
+    "old": "App\\Http\\Controllers\\StoreExperienceController",
+    "new": "App\\Modules\\Tienda\\Controllers\\StoreExperienceController",
+    "n": 13
+   },
+   {
+    "old": "App\\Http\\Controllers\\StoreNavigationController",
+    "new": "App\\Modules\\Tienda\\Controllers\\StoreNavigationController",
+    "n": 6
+   },
+   {
+    "old": "App\\Http\\Controllers\\DesignTemplateController",
+    "new": "App\\Modules\\Tienda\\Controllers\\DesignTemplateController",
+    "n": 10
+   },
+   {
+    "old": "App\\Http\\Controllers\\CatalogProfileController",
+    "new": "App\\Modules\\Tienda\\Controllers\\CatalogProfileController",
+    "n": 6
+   },
+   {
+    "old": "App\\Http\\Controllers\\StoreBuilderController",
+    "new": "App\\Modules\\Tienda\\Controllers\\StoreBuilderController",
+    "n": 18
+   },
+   {
+    "old": "App\\Http\\Controllers\\StorePageController",
+    "new": "App\\Modules\\Tienda\\Controllers\\StorePageController",
+    "n": 12
+   },
+   {
+    "old": "App\\Http\\Controllers\\PromotionController",
+    "new": "App\\Modules\\Tienda\\Controllers\\PromotionController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\ComplaintController",
+    "new": "App\\Modules\\Tienda\\Controllers\\ComplaintController",
+    "n": 2
+   },
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 9
+   },
+   {
+    "old": "[PublicController",
+    "new": "[TiendaPublicaController",
+    "n": 22
+   },
+   {
+    "old": "(PublicController",
+    "new": "(TiendaPublicaController",
+    "n": 2
+   }
+  ],
+  "tests/Feature/AdminGlobalConfirmModalTest.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "tests/Feature/AdminResponsiveLayoutTest.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "tests/Feature/AgrupacionModelosTest.php": [
+   {
+    "old": "App\\Storefront\\CatalogQueryService",
+    "new": "App\\Modules\\Tienda\\Storefront\\CatalogQueryService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\AgrupadorModelos",
+    "new": "App\\Modules\\Tienda\\Storefront\\AgrupadorModelos",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BloqueDeliveryTest.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BloqueSedesTest.php": [
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BloquesInicioTest.php": [
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "resource_path('views/settings/builder/stages/home.blade.php')",
+    "new": "app_path('Modules/Tienda/Views/settings/builder/stages/home.blade.php')",
+    "n": 1
+   },
+   {
+    "old": "resource_path('views/components/storefront-home-sections.blade.php')",
+    "new": "app_path('Modules/Tienda/Views/components/storefront-home-sections.blade.php')",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotAsesoriaTest.php": [
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotClientesRealesTest.php": [
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BotMenuContextoTest.php": [
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BuilderDatosMaestrosCicloTest.php": [
+   {
+    "old": "App\\Storefront\\BuilderDraftService",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderDraftService",
+    "n": 1
+   }
+  ],
+  "tests/Feature/BuilderInformationArchitectureTest.php": [
+   {
+    "old": "App\\Storefront\\BuilderRuleRegistry",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderRuleRegistry",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ConstructorAuditoriaTest.php": [
+   {
+    "old": "App\\Storefront\\ConstructorAuditor",
+    "new": "App\\Modules\\Tienda\\Storefront\\ConstructorAuditor",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ConstructorCapacidadesRescatadasTest.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "resource_path('views/settings/builder/'.$archivo)",
+    "new": "app_path('Modules/Tienda/Views/settings/builder/'.$archivo)",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ConstructorHistorialTest.php": [
+   {
+    "old": "App\\Storefront\\BuilderDraftService",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderDraftService",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ContenidoEjemploPaginasTest.php": [
+   {
+    "old": "App\\Support\\ContenidoEjemplo",
+    "new": "App\\Modules\\Tienda\\Support\\ContenidoEjemplo",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   }
+  ],
+  "tests/Feature/DatosNegocioFuenteUnicaTest.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "tests/Feature/DisenoInicioTest.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\HomePresets",
+    "new": "App\\Modules\\Tienda\\Storefront\\HomePresets",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   }
+  ],
+  "tests/Feature/GlobalTemplateSettingsTest.php": [
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ProjectTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\ProjectTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 1
+   },
+   {
+    "old": "(PublicController",
+    "new": "(TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "$this->assertSame('public.templates.direct'",
+    "new": "$this->assertSame('tienda::public.templates.direct'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/LibroReclamacionesPanelTest.php": [
+   {
+    "old": "App\\Http\\Controllers\\ComplaintController",
+    "new": "App\\Modules\\Tienda\\Controllers\\ComplaintController",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Complaint",
+    "new": "App\\Modules\\Tienda\\Models\\Complaint",
+    "n": 1
+   }
+  ],
+  "tests/Feature/LimiteEnviosPublicosTest.php": [
+   {
+    "old": "App\\Models\\Complaint",
+    "new": "App\\Modules\\Tienda\\Models\\Complaint",
+    "n": 1
+   }
+  ],
+  "tests/Feature/MenuCategoriasTest.php": [
+   {
+    "old": "App\\Storefront\\ConstructorAuditor",
+    "new": "App\\Modules\\Tienda\\Storefront\\ConstructorAuditor",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\HeaderPresets",
+    "new": "App\\Modules\\Tienda\\Support\\HeaderPresets",
+    "n": 1
+   }
+  ],
+  "tests/Feature/MenuTiendaTest.php": [
+   {
+    "old": "App\\Storefront\\BuilderRuleRegistry",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderRuleRegistry",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenu",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenu",
+    "n": 1
+   }
+  ],
+  "tests/Feature/NumerosContactoTiendaTest.php": [
+   {
+    "old": "App\\Support\\StorefrontLayoutPacks",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontLayoutPacks",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\ContactosTienda",
+    "new": "App\\Modules\\Tienda\\Storefront\\ContactosTienda",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PaginaNosotrosDisenoTest.php": [
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PaginasCicloBorradorTest.php": [
+   {
+    "old": "App\\Storefront\\StorePageWriteService",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorePageWriteService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\BuilderDraftService",
+    "new": "App\\Modules\\Tienda\\Storefront\\BuilderDraftService",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PiesDePaginaVariantesTest.php": [
+   {
+    "old": "App\\Support\\StorefrontLayoutPacks",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontLayoutPacks",
+    "n": 1
+   },
+   {
+    "old": "\"storefront.partials.headers.$variante\"",
+    "new": "\"tienda::storefront.partials.headers.$variante\"",
+    "n": 1
+   },
+   {
+    "old": "\"storefront.partials.footers.$variante\"",
+    "new": "\"tienda::storefront.partials.footers.$variante\"",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProductVariantsTest.php": [
+   {
+    "old": "App\\Storefront\\ProductVariantMatrixService",
+    "new": "App\\Modules\\Tienda\\Storefront\\ProductVariantMatrixService",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\CatalogQueryService",
+    "new": "App\\Modules\\Tienda\\Storefront\\CatalogQueryService",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PublicacionBloqueadaTest.php": [
+   {
+    "old": "App\\Storefront\\PublishChecklist",
+    "new": "App\\Modules\\Tienda\\Storefront\\PublishChecklist",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "tests/Feature/RucEnLaTiendaTest.php": [
+   {
+    "old": "App\\Support\\StorefrontLayoutPacks",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontLayoutPacks",
+    "n": 1
+   }
+  ],
+  "tests/Feature/StorefrontContextIntegrationTest.php": [
+   {
+    "old": "App\\Storefront\\StorefrontContextBuilder",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContextBuilder",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Storefront\\StorefrontContext",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContext",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 1
+   },
+   {
+    "old": "(PublicController",
+    "new": "(TiendaPublicaController",
+    "n": 1
+   }
+  ],
+  "tests/Feature/StorefrontHomepageBuilderTest.php": [
+   {
+    "old": "App\\Http\\Controllers\\StoreExperienceController",
+    "new": "App\\Modules\\Tienda\\Controllers\\StoreExperienceController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePopup",
+    "new": "App\\Modules\\Tienda\\Models\\StorePopup",
+    "n": 1
+   },
+   {
+    "old": "(PublicController",
+    "new": "(TiendaPublicaController",
+    "n": 6
+   },
+   {
+    "old": "view('components.storefront-home-sections'",
+    "new": "view('tienda::components.storefront-home-sections'",
+    "n": 1
+   },
+   {
+    "old": "view('components.public-popup'",
+    "new": "view('tienda::components.public-popup'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/StorefrontQueryBudgetTest.php": [
+   {
+    "old": "App\\Storefront\\StorefrontContextBuilder",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContextBuilder",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "tests/Feature/StorefrontStructureV2Test.php": [
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\ProjectTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\ProjectTemplate",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   },
+   {
+    "old": "assertViewIs('public.templates.direct'",
+    "new": "assertViewIs('tienda::public.templates.direct'",
+    "n": 1
+   },
+   {
+    "old": "assertViewIs('public.templates.computienda'",
+    "new": "assertViewIs('tienda::public.templates.computienda'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.catalog'",
+    "new": "=> 'tienda::public.catalog'",
+    "n": 2
+   },
+   {
+    "old": "=> 'public.templates.direct'",
+    "new": "=> 'tienda::public.templates.direct'",
+    "n": 2
+   },
+   {
+    "old": "=> 'public.templates.ella'",
+    "new": "=> 'tienda::public.templates.ella'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.urban'",
+    "new": "=> 'tienda::public.templates.urban'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.boutique'",
+    "new": "=> 'tienda::public.templates.boutique'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.nordic'",
+    "new": "=> 'tienda::public.templates.nordic'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.flash'",
+    "new": "=> 'tienda::public.templates.flash'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.fresh'",
+    "new": "=> 'tienda::public.templates.fresh'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.porto'",
+    "new": "=> 'tienda::public.templates.porto'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.licoreria'",
+    "new": "=> 'tienda::public.templates.licoreria'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.farma'",
+    "new": "=> 'tienda::public.templates.farma'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.lavanderia'",
+    "new": "=> 'tienda::public.templates.lavanderia'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.ecommerce'",
+    "new": "=> 'tienda::public.templates.ecommerce'",
+    "n": 2
+   },
+   {
+    "old": "=> 'public.templates.tecnologia'",
+    "new": "=> 'tienda::public.templates.tecnologia'",
+    "n": 1
+   },
+   {
+    "old": "=> 'public.templates.computienda'",
+    "new": "=> 'tienda::public.templates.computienda'",
+    "n": 2
+   }
+  ],
+  "tests/Feature/TiendaPorCotizacionTest.php": [
+   {
+    "old": "App\\Storefront\\CatalogQueryService",
+    "new": "App\\Modules\\Tienda\\Storefront\\CatalogQueryService",
+    "n": 1
+   }
+  ],
+  "tests/Unit/CatalogTemplatesManifestTest.php": [
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "online', 'public.templates.ecommerce'",
+    "new": "online', 'tienda::public.templates.ecommerce'",
+    "n": 1
+   },
+   {
+    "old": "cotizaciones', 'public.templates.direct'",
+    "new": "cotizaciones', 'tienda::public.templates.direct'",
+    "n": 1
+   }
+  ],
+  "tests/Unit/PublicTemplateRuntimeTest.php": [
+   {
+    "old": "App\\Http\\Controllers\\PublicController",
+    "new": "App\\Modules\\Tienda\\Controllers\\TiendaPublicaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "tests/Unit/StorefrontContextTest.php": [
+   {
+    "old": "App\\Storefront\\StorefrontContext",
+    "new": "App\\Modules\\Tienda\\Storefront\\StorefrontContext",
+    "n": 1
+   }
+  ],
+  "database/migrations/2026_07_23_000003_initialize_home_builder_sections.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "database/migrations/2026_08_30_190000_rubro_especifico_gana_sobre_retail.php": [
+   {
+    "old": "App\\Storefront\\StagePresets",
+    "new": "App\\Modules\\Tienda\\Storefront\\StagePresets",
+    "n": 1
+   }
+  ],
+  "database/seeders/TecsistSeeder.php": [
+   {
+    "old": "App\\Models\\Promotion",
+    "new": "App\\Modules\\Tienda\\Models\\Promotion",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/complaints/index.blade.php": [
+   {
+    "old": "App\\Http\\Controllers\\ComplaintController",
+    "new": "App\\Modules\\Tienda\\Controllers\\ComplaintController",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/components/public-store-runtime.blade.php": [
+   {
+    "old": "App\\Storefront\\HomePresets",
+    "new": "App\\Modules\\Tienda\\Storefront\\HomePresets",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/components/store-menu.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/components/storefront-home-sections.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/components/storefront-home-skins.blade.php": [
+   {
+    "old": "App\\Storefront\\HomePresets",
+    "new": "App\\Modules\\Tienda\\Storefront\\HomePresets",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/components/storefront/footer.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/components/storefront/header.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/components/storefront/theme-styles.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontTheme",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontTheme",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/layouts/storefront.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontTheme",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontTheme",
+    "n": 1
+   },
+   {
+    "old": "@include('components.storefront.theme-styles'",
+    "new": "@include('tienda::components.storefront.theme-styles'",
+    "n": 1
+   },
+   {
+    "old": "@include('components.storefront.header'",
+    "new": "@include('tienda::components.storefront.header'",
+    "n": 1
+   },
+   {
+    "old": "@include('components.storefront.footer'",
+    "new": "@include('tienda::components.storefront.footer'",
+    "n": 1
+   },
+   {
+    "old": "@include('components.public-popup'",
+    "new": "@include('tienda::components.public-popup'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/product.blade.php": [
+   {
+    "old": "App\\Storefront\\VariantPresenter",
+    "new": "App\\Modules\\Tienda\\Storefront\\VariantPresenter",
+    "n": 2
+   },
+   {
+    "old": "@include('public.partials.variant-engine'",
+    "new": "@include('tienda::public.partials.variant-engine'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.partials.header'",
+    "new": "@include('tienda::public.partials.header'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.partials.footer'",
+    "new": "@include('tienda::public.partials.footer'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/partials/home-content.blade.php": [
+   {
+    "old": "App\\Storefront\\HomePresets",
+    "new": "App\\Modules\\Tienda\\Storefront\\HomePresets",
+    "n": 1
+   },
+   {
+    "old": "@include('components.storefront-home-sections'",
+    "new": "@include('tienda::components.storefront-home-sections'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/computienda.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontThemePresets",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontThemePresets",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontLayoutPacks",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontLayoutPacks",
+    "n": 3
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 32
+   },
+   {
+    "old": "App\\Storefront\\ContactosTienda",
+    "new": "App\\Modules\\Tienda\\Storefront\\ContactosTienda",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\HeaderPresets",
+    "new": "App\\Modules\\Tienda\\Support\\HeaderPresets",
+    "n": 5
+   },
+   {
+    "old": "App\\Support\\CategoryIcons",
+    "new": "App\\Modules\\Tienda\\Support\\CategoryIcons",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 7
+   },
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 4
+   },
+   {
+    "old": "App\\Models\\Promotion",
+    "new": "App\\Modules\\Tienda\\Models\\Promotion",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\StorePage",
+    "new": "App\\Modules\\Tienda\\Models\\StorePage",
+    "n": 1
+   },
+   {
+    "old": "@include('public.templates.partials.computienda-card-styles'",
+    "new": "@include('tienda::public.templates.partials.computienda-card-styles'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.templates.partials.computienda-hero-veil'",
+    "new": "@include('tienda::public.templates.partials.computienda-hero-veil'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.templates.partials.computienda-nosotros'",
+    "new": "@include('tienda::public.templates.partials.computienda-nosotros'",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.iconos-categoria'",
+    "new": "@include('tienda::storefront.partials.iconos-categoria'",
+    "n": 1
+   },
+   {
+    "old": "@includeIf('storefront.partials.nav.preset-modules'",
+    "new": "@includeIf('tienda::storefront.partials.nav.preset-modules'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.templates.partials.computienda-intro'",
+    "new": "@include('tienda::public.templates.partials.computienda-intro'",
+    "n": 6
+   },
+   {
+    "old": "@include('public.templates.partials.computienda-card'",
+    "new": "@include('tienda::public.templates.partials.computienda-card'",
+    "n": 4
+   },
+   {
+    "old": "@include('public.templates.partials.computienda-home-extras'",
+    "new": "@include('tienda::public.templates.partials.computienda-home-extras'",
+    "n": 1
+   },
+   {
+    "old": "? 'storefront.partials.headers.preset-shell'",
+    "new": "? 'tienda::storefront.partials.headers.preset-shell'",
+    "n": 1
+   },
+   {
+    "old": ": 'storefront.partials.headers.'",
+    "new": ": 'tienda::storefront.partials.headers.'",
+    "n": 1
+   },
+   {
+    "old": "?? 'storefront.partials.headers.classic'",
+    "new": "?? 'tienda::storefront.partials.headers.classic'",
+    "n": 1
+   },
+   {
+    "old": "?? 'storefront.partials.footers.classic'",
+    "new": "?? 'tienda::storefront.partials.footers.classic'",
+    "n": 1
+   },
+   {
+    "old": "?? 'storefront.partials.carts.classic'",
+    "new": "?? 'tienda::storefront.partials.carts.classic'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/direct.blade.php": [
+   {
+    "old": "App\\Storefront\\CatalogQueryService",
+    "new": "App\\Modules\\Tienda\\Storefront\\CatalogQueryService",
+    "n": 1
+   },
+   {
+    "old": "@include('public.partials.variant-engine'",
+    "new": "@include('tienda::public.partials.variant-engine'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.partials.header'",
+    "new": "@include('tienda::public.partials.header'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.partials.storefront-card'",
+    "new": "@include('tienda::public.partials.storefront-card'",
+    "n": 2
+   },
+   {
+    "old": "@include('public.partials.footer'",
+    "new": "@include('tienda::public.partials.footer'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/ecommerce.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/partials/computienda-card.blade.php": [
+   {
+    "old": "App\\Storefront\\AgrupadorModelos",
+    "new": "App\\Modules\\Tienda\\Storefront\\AgrupadorModelos",
+    "n": 4
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/partials/computienda-home-extras.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\StorefrontSections",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontSections",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\StoreSection",
+    "new": "App\\Modules\\Tienda\\Models\\StoreSection",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Review",
+    "new": "App\\Modules\\Tienda\\Models\\Review",
+    "n": 1
+   },
+   {
+    "old": "@include('public.templates.partials.computienda-card'",
+    "new": "@include('tienda::public.templates.partials.computienda-card'",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/design.blade.php": [
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 7
+   },
+   {
+    "old": "App\\Models\\ProjectTemplate",
+    "new": "App\\Modules\\Tienda\\Models\\ProjectTemplate",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.partials.store-navigation-builder'",
+    "new": "@include('tienda::settings.partials.store-navigation-builder'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.partials.catalog-profiles'",
+    "new": "@include('tienda::settings.partials.catalog-profiles'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.partials.institutional-pages'",
+    "new": "@include('tienda::settings.partials.institutional-pages'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/appearance.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontThemePresets",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontThemePresets",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/business.blade.php": [
+   {
+    "old": "App\\Storefront\\ContactosTienda",
+    "new": "App\\Modules\\Tienda\\Storefront\\ContactosTienda",
+    "n": 3
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/header.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontLayoutPacks",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontLayoutPacks",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\HeaderPresets",
+    "new": "App\\Modules\\Tienda\\Support\\HeaderPresets",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.partials.store-navigation-builder'",
+    "new": "@include('tienda::settings.partials.store-navigation-builder'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/home.blade.php": [
+   {
+    "old": "App\\Storefront\\HomePresets",
+    "new": "App\\Modules\\Tienda\\Storefront\\HomePresets",
+    "n": 7
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/legal.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontLayoutPacks",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontLayoutPacks",
+    "n": 2
+   },
+   {
+    "old": "@include('settings.partials.institutional-pages'",
+    "new": "@include('tienda::settings.partials.institutional-pages'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/sales.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontLayoutPacks",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontLayoutPacks",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/designer/inspector-panel.blade.php": [
+   {
+    "old": "App\\Support\\DesignerIcons",
+    "new": "App\\Modules\\Tienda\\Support\\DesignerIcons",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/designer/preview-panel.blade.php": [
+   {
+    "old": "App\\Support\\DesignerIcons",
+    "new": "App\\Modules\\Tienda\\Support\\DesignerIcons",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/designer/quick-script.blade.php": [
+   {
+    "old": "App\\Support\\DesignerIcons",
+    "new": "App\\Modules\\Tienda\\Support\\DesignerIcons",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/designer/script.blade.php": [
+   {
+    "old": "App\\Support\\DesignerIcons",
+    "new": "App\\Modules\\Tienda\\Support\\DesignerIcons",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/designer/structure-panel.blade.php": [
+   {
+    "old": "App\\Support\\DesignerIcons",
+    "new": "App\\Modules\\Tienda\\Support\\DesignerIcons",
+    "n": 1
+   }
+  ],
+  "resources/views/settings/designer/topbar.blade.php": [
+   {
+    "old": "App\\Support\\CatalogTemplates",
+    "new": "App\\Modules\\Tienda\\Support\\CatalogTemplates",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\DesignerIcons",
+    "new": "App\\Modules\\Tienda\\Support\\DesignerIcons",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/iconos-categoria.blade.php": [
+   {
+    "old": "App\\Support\\IconosCategoria",
+    "new": "App\\Modules\\Tienda\\Support\\IconosCategoria",
+    "n": 3
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/numeros-extra.blade.php": [
+   {
+    "old": "App\\Storefront\\ContactosTienda",
+    "new": "App\\Modules\\Tienda\\Storefront\\ContactosTienda",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/banda.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/boletin.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/classic.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/commercial.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/complete.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/conversacion.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/corporate.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.badges.ssl-seal'",
+    "new": "@include('tienda::storefront.partials.badges.ssl-seal'",
+    "n": 2
+   },
+   {
+    "old": "@include('storefront.partials.badges.pay-logos'",
+    "new": "@include('tienda::storefront.partials.badges.pay-logos'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/industrial.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/institutional.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/local.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/marca.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/minimal.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/simple.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/tarjeta.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/footers/technology.blade.php": [
+   {
+    "old": "App\\Storefront\\DatosPie",
+    "new": "App\\Modules\\Tienda\\Storefront\\DatosPie",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.numeros-extra'",
+    "new": "@include('tienda::storefront.partials.numeros-extra'",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.badges.ssl-seal'",
+    "new": "@include('tienda::storefront.partials.badges.ssl-seal'",
+    "n": 2
+   },
+   {
+    "old": "@include('storefront.partials.badges.pay-logos'",
+    "new": "@include('tienda::storefront.partials.badges.pay-logos'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/headers/banda.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 2
+   },
+   {
+    "old": "@include('storefront.partials.nav.cats-button'",
+    "new": "@include('tienda::storefront.partials.nav.cats-button'",
+    "n": 2
+   },
+   {
+    "old": "@include('storefront.partials.nav.mega-catalogo'",
+    "new": "@include('tienda::storefront.partials.nav.mega-catalogo'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/headers/centered.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/headers/classic.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 5
+   },
+   {
+    "old": "@include('storefront.partials.nav.cats-button'",
+    "new": "@include('tienda::storefront.partials.nav.cats-button'",
+    "n": 1
+   },
+   {
+    "old": "@includeIf('storefront.partials.nav.mega-extras'",
+    "new": "@includeIf('tienda::storefront.partials.nav.mega-extras'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/headers/compact.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/headers/preset-shell.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 12
+   },
+   {
+    "old": "App\\Support\\CategoryIcons",
+    "new": "App\\Modules\\Tienda\\Support\\CategoryIcons",
+    "n": 2
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.nav.search-box'",
+    "new": "@include('tienda::storefront.partials.nav.search-box'",
+    "n": 2
+   },
+   {
+    "old": "@include('storefront.partials.nav.cats-button'",
+    "new": "@include('tienda::storefront.partials.nav.cats-button'",
+    "n": 1
+   },
+   {
+    "old": "@includeIf('storefront.partials.nav.mega-extras'",
+    "new": "@includeIf('tienda::storefront.partials.nav.mega-extras'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/headers/triple.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 3
+   },
+   {
+    "old": "App\\Models\\StoreMenuItem",
+    "new": "App\\Modules\\Tienda\\Models\\StoreMenuItem",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/nav/cats-button.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/nav/mega-catalogo.blade.php": [
+   {
+    "old": "App\\Storefront\\CatalogQueryService",
+    "new": "App\\Modules\\Tienda\\Storefront\\CatalogQueryService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 5
+   },
+   {
+    "old": "App\\Support\\IconosCategoria",
+    "new": "App\\Modules\\Tienda\\Support\\IconosCategoria",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/nav/preset-modules.blade.php": [
+   {
+    "old": "App\\Support\\StorefrontNavigation",
+    "new": "App\\Modules\\Tienda\\Support\\StorefrontNavigation",
+    "n": 4
+   },
+   {
+    "old": "@include('storefront.partials.nav.sidebar'",
+    "new": "@include('tienda::storefront.partials.nav.sidebar'",
+    "n": 1
+   },
+   {
+    "old": "@include('storefront.partials.nav.visual'",
+    "new": "@include('tienda::storefront.partials.nav.visual'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/Coupon.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/Promotion.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/Review.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/StoreCatalogProfile.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/StoreMenu.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/StoreMenuItem.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/StorePage.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/StorePopup.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/StoreSection.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/DesignTemplate.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/DesignTemplateVersion.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/ProjectTemplate.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/ContactMessage.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Models/Complaint.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Tienda\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/StorefrontLayoutPacks.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   },
+   {
+    "old": "\"storefront.partials.{$slot}.{$variant}\"",
+    "new": "\"tienda::storefront.partials.{$slot}.{$variant}\"",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/StorefrontTheme.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/StorefrontThemePresets.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/HeaderPresets.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   },
+   {
+    "old": "= 'storefront.partials.nav.'",
+    "new": "= 'tienda::storefront.partials.nav.'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/DesignerIcons.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/ContenidoEjemplo.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/CategoryIcons.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Support/IconosCategoria.php": [
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Tienda\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/AgrupadorModelos.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/BuilderAccess.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/BuilderProgress.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/BuilderRuleRegistry.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/ConstructorAuditor.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   },
+   {
+    "old": "'resources/views/settings/builder'",
+    "new": "'app/Modules/Tienda/Views/settings/builder'",
+    "n": 1
+   },
+   {
+    "old": "        'resources/views/public',\n        'resources/views/components',\n        'resources/views/storefront',\n",
+    "new": "        'resources/views/components',\n",
+    "n": 1
+   },
+   {
+    "old": "str_contains($rel, 'views/settings/')",
+    "new": "str_contains(strtolower($rel), 'views/settings/')",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/ContactosTienda.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/DatosPie.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/ProductVariantMatrixService.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/ProjectSettingWriteService.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/PublishChecklist.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/StagePresets.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Storefront/VariantPresenter.php": [
+   {
+    "old": "namespace App\\Storefront;",
+    "new": "namespace App\\Modules\\Tienda\\Storefront;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Commands/ConsolidarMotoresTienda.php": [
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Tienda\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/PortalController.php": [
+   {
+    "old": "view('public.portal'",
+    "new": "view('tienda::public.portal'",
+    "n": 1
+   },
+   {
+    "old": "view('public.portal-quote'",
+    "new": "view('tienda::public.portal-quote'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/FormasDivisoriasTest.php": [
+   {
+    "old": "view('components.storefront-shapes'",
+    "new": "view('tienda::components.storefront-shapes'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/StorefrontEngineConsolidationTest.php": [
+   {
+    "old": "assertViewIs('public.templates.ecommerce'",
+    "new": "assertViewIs('tienda::public.templates.ecommerce'",
+    "n": 1
+   }
+  ],
+  "resources/views/pos/catalog.blade.php": [
+   {
+    "old": "@include('public.partials.category-sidebar'",
+    "new": "@include('tienda::public.partials.category-sidebar'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.partials.product-card'",
+    "new": "@include('tienda::public.partials.product-card'",
+    "n": 4
+   },
+   {
+    "old": "@include('public.partials.footer'",
+    "new": "@include('tienda::public.partials.footer'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/catalog.blade.php": [
+   {
+    "old": "@include('public.partials.category-sidebar'",
+    "new": "@include('tienda::public.partials.category-sidebar'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.partials.product-card'",
+    "new": "@include('tienda::public.partials.product-card'",
+    "n": 4
+   },
+   {
+    "old": "@include('public.partials.footer'",
+    "new": "@include('tienda::public.partials.footer'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/blog-post.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/blog.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/contact.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/home.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.storefront.partials.home-content'",
+    "new": "@include('tienda::public.storefront.partials.home-content'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/page.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/product.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/shop.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/templates/classic.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.storefront.partials.home-content'",
+    "new": "@include('tienda::public.storefront.partials.home-content'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/templates/computienda.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.storefront.partials.home-content'",
+    "new": "@include('tienda::public.storefront.partials.home-content'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/templates/direct.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.storefront.partials.home-content'",
+    "new": "@include('tienda::public.storefront.partials.home-content'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/storefront/templates/ecommerce.blade.php": [
+   {
+    "old": "@extends('layouts.storefront'",
+    "new": "@extends('tienda::layouts.storefront'",
+    "n": 1
+   },
+   {
+    "old": "@include('public.storefront.partials.home-content'",
+    "new": "@include('tienda::public.storefront.partials.home-content'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/public/templates/menu.blade.php": [
+   {
+    "old": "@include('public.partials.footer'",
+    "new": "@include('tienda::public.partials.footer'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/index.blade.php": [
+   {
+    "old": "@include('settings.builder.styles'",
+    "new": "@include('tienda::settings.builder.styles'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.topbar'",
+    "new": "@include('tienda::settings.builder.topbar'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stage-nav'",
+    "new": "@include('tienda::settings.builder.stage-nav'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.business'",
+    "new": "@include('tienda::settings.builder.stages.business'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.appearance'",
+    "new": "@include('tienda::settings.builder.stages.appearance'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.header'",
+    "new": "@include('tienda::settings.builder.stages.header'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.home'",
+    "new": "@include('tienda::settings.builder.stages.home'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.catalog'",
+    "new": "@include('tienda::settings.builder.stages.catalog'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.pages'",
+    "new": "@include('tienda::settings.builder.stages.pages'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.sales'",
+    "new": "@include('tienda::settings.builder.stages.sales'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.stages.legal'",
+    "new": "@include('tienda::settings.builder.stages.legal'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.advanced'",
+    "new": "@include('tienda::settings.builder.advanced'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.preview'",
+    "new": "@include('tienda::settings.builder.preview'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.script'",
+    "new": "@include('tienda::settings.builder.script'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.builder.partials.image-template-script'",
+    "new": "@include('tienda::settings.builder.partials.image-template-script'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/catalog.blade.php": [
+   {
+    "old": "@include('settings.builder.partials.image-template'",
+    "new": "@include('tienda::settings.builder.partials.image-template'",
+    "n": 1
+   },
+   {
+    "old": "@include('settings.partials.catalog-profiles'",
+    "new": "@include('tienda::settings.partials.catalog-profiles'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/builder/stages/pages.blade.php": [
+   {
+    "old": "@include('settings.partials.institutional-pages'",
+    "new": "@include('tienda::settings.partials.institutional-pages'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Tienda/Views/settings/partials/store-navigation-builder.blade.php": [
+   {
+    "old": "@include('settings.partials.store-menu-item'",
+    "new": "@include('tienda::settings.partials.store-menu-item'",
+    "n": 2
+   }
+  ],
+  "app/Modules/Tienda/Views/storefront/partials/carts/floating.blade.php": [
+   {
+    "old": "@include('storefront.partials.carts.classic'",
+    "new": "@include('tienda::storefront.partials.carts.classic'",
+    "n": 1
+   }
+  ]
+ },
+ "inserts": {
+  "app/Modules/Tienda/Controllers/TiendaPublicaController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Tienda\\Models\\Promotion;",
+   "use App\\Modules\\Tienda\\Models\\StorePage;",
+   "use App\\Modules\\Tienda\\Storefront\\AgrupadorModelos;",
+   "use App\\Modules\\Tienda\\Storefront\\CatalogQueryService;",
+   "use App\\Modules\\Tienda\\Storefront\\StorefrontContext;",
+   "use App\\Modules\\Tienda\\Storefront\\StorefrontContextBuilder;",
+   "use App\\Modules\\Tienda\\Support\\CatalogTemplates;"
+  ],
+  "app/Modules/Tienda/Controllers/StoreBuilderController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Tienda\\Storefront\\CatalogQueryService;",
+   "use App\\Modules\\Tienda\\Storefront\\ContactosTienda;",
+   "use App\\Modules\\Tienda\\Storefront\\StagePresets;",
+   "use App\\Modules\\Tienda\\Storefront\\StoreCopyService;",
+   "use App\\Modules\\Tienda\\Storefront\\StoreSectionWriteService;",
+   "use App\\Modules\\Tienda\\Support\\CatalogTemplates;",
+   "use App\\Modules\\Tienda\\Support\\StorefrontNavigation;",
+   "use App\\Modules\\Tienda\\Support\\StorefrontSections;"
+  ],
+  "app/Modules/Tienda/Controllers/StoreExperienceController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Tienda\\Models\\Complaint;"
+  ],
+  "app/Modules/Tienda/Controllers/StoreNavigationController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Tienda/Controllers/StorePageController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Tienda\\Support\\ContenidoEjemplo;"
+  ],
+  "app/Modules/Tienda/Controllers/DesignTemplateController.php": [
+   "use App\\Http\\Controllers\\Controller;",
+   "use App\\Modules\\Tienda\\Storefront\\BuilderAccess;"
+  ],
+  "app/Modules/Tienda/Controllers/PromotionController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Tienda/Controllers/ComplaintController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Tienda/Controllers/CatalogProfileController.php": [
+   "use App\\Http\\Controllers\\Controller;"
+  ],
+  "app/Modules/Tienda/Models/Coupon.php": [
+   "use App\\Models\\Order;",
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/Promotion.php": [
+   "use App\\Models\\Product;",
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/Review.php": [
+   "use App\\Models\\Product;",
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/StoreCatalogProfile.php": [
+   "use App\\Models\\Category;",
+   "use App\\Models\\Product;",
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/StoreMenu.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/StoreMenuItem.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/StorePage.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/StorePopup.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/StoreSection.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/ProjectTemplate.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/ContactMessage.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Models/Complaint.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Tienda/Storefront/BuilderDraftService.php": [
+   "use App\\Modules\\Tienda\\Models\\StorePage;"
+  ],
+  "app/Modules/Tienda/Storefront/DesignTemplateService.php": [
+   "use App\\Modules\\Tienda\\Models\\StoreCatalogProfile;"
+  ],
+  "app/Modules/Tienda/Storefront/HomePresets.php": [
+   "use App\\Modules\\Tienda\\Support\\StorefrontSections;"
+  ],
+  "app/Modules/Tienda/Storefront/StoreCopyService.php": [
+   "use App\\Modules\\Tienda\\Support\\StorefrontSections;"
+  ],
+  "app/Modules/Tienda/Storefront/StorefrontContextBuilder.php": [
+   "use App\\Modules\\Tienda\\Models\\StoreSection;"
+  ],
+  "app/Models/Product.php": [
+   "use App\\Modules\\Tienda\\Models\\Review;",
+   "use App\\Modules\\Tienda\\Models\\StoreCatalogProfile;"
+  ],
+  "app/Models/Project.php": [
+   "use App\\Modules\\Tienda\\Models\\Complaint;",
+   "use App\\Modules\\Tienda\\Models\\ContactMessage;",
+   "use App\\Modules\\Tienda\\Models\\Coupon;",
+   "use App\\Modules\\Tienda\\Models\\Promotion;",
+   "use App\\Modules\\Tienda\\Models\\Review;",
+   "use App\\Modules\\Tienda\\Models\\StoreCatalogProfile;",
+   "use App\\Modules\\Tienda\\Models\\StoreMenu;",
+   "use App\\Modules\\Tienda\\Models\\StoreMenuItem;",
+   "use App\\Modules\\Tienda\\Models\\StorePage;",
+   "use App\\Modules\\Tienda\\Models\\StorePopup;",
+   "use App\\Modules\\Tienda\\Models\\StoreSection;"
+  ]
+ },
+ "decisiones": [
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   31,
+   "public.catalog",
+   " = [         'default'     => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   32,
+   "public.templates.direct",
+   "og',         'direct'      => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   33,
+   "public.templates.ella",
+   "ct',         'ella'        => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   34,
+   "public.templates.editorial",
+   "la',         'editorial'   => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   35,
+   "public.templates.nordic",
+   "al',         'nordic'      => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   36,
+   "public.templates.luxe",
+   "ic',         'luxe'        => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   37,
+   "public.templates.flash",
+   "xe',         'flash'       => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   38,
+   "public.templates.bistro",
+   "sh',         'bistro'      => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   39,
+   "public.templates.urban",
+   "ro',         'urban'       => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   40,
+   "public.templates.boutique",
+   "an',         'boutique'    => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   41,
+   "public.templates.fresh",
+   "ue',         'fresh'       => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   42,
+   "public.templates.porto",
+   "sh',         'porto'       => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   43,
+   "public.templates.licoreria",
+   "to',         'licoreria'   => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   44,
+   "public.templates.farma",
+   "ia',         'farma'       => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   45,
+   "public.templates.lavanderia",
+   "ma',         'lavanderia'  => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   46,
+   "public.templates.ecommerce",
+   "ia',         'ecommerce'   => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   47,
+   "public.templates.tecnologia",
+   "ce',         'tecnologia'  => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   48,
+   "public.templates.computienda",
+   "ia',         'computienda' => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   601,
+   "public.storefront.templates.computienda",
+   "             'computienda' => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   602,
+   "public.storefront.templates.ecommerce",
+   "',             'ecommerce' => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   603,
+   "public.storefront.templates.direct",
+   "rce',             'direct' => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   604,
+   "public.storefront.templates.classic",
+   "ct',             'default' => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   605,
+   "public.storefront.home",
+   "ssic',             default => "
+  ],
+  [
+   "VISTA",
+   "app/Http/Controllers/PublicController.php",
+   788,
+   "public.catalog",
+   "iews[$template]             : "
+  ],
+  [
+   "ruta ",
+   "app/Http/Controllers/SettingsController.php",
+   251,
+   "settings.builder",
+   "     return redirect()->route("
+  ],
+  [
+   "ruta ",
+   "app/Http/Controllers/StoreBuilderController.php",
+   469,
+   "settings.builder.preview",
+   "eviewBase = json_encode(route("
+  ],
+  [
+   "ruta ",
+   "app/Http/Controllers/StoreExperienceController.php",
+   32,
+   "settings.builder",
+   "     return redirect()->route("
+  ],
+  [
+   "ruta ",
+   "app/Http/Controllers/StoreNavigationController.php",
+   137,
+   "settings.builder",
+   "     return redirect()->route("
+  ],
+  [
+   "VISTA",
+   "app/Support/CatalogTemplates.php",
+   40,
+   "public.templates.ecommerce",
+   "          'view'           => "
+  ],
+  [
+   "VISTA",
+   "app/Support/CatalogTemplates.php",
+   147,
+   "public.templates.direct",
+   "          'view'           => "
+  ],
+  [
+   "VISTA",
+   "app/Support/CatalogTemplates.php",
+   389,
+   "public.templates.computienda",
+   "          'view'           => "
+  ],
+  [
+   "VISTA",
+   "app/Support/HeaderPresets.php",
+   139,
+   "storefront.partials.nav.",
+   " return null;         $view = "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   91,
+   "public.catalog",
+   "tomDomain             : route("
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   176,
+   "public.catalog",
+   "     'home' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   177,
+   "public.brand",
+   "$routeName, ['public.brands', "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   178,
+   "public.promotions",
+   "promotions' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   179,
+   "public.catalog_page",
+   "atalog_pdf' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   180,
+   "public.shop",
+   " 'products' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   181,
+   "public.shop",
+   "ubcategory' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   182,
+   "public.about",
+   "    'about' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   182,
+   "public.contact",
+   ", 'contact' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   183,
+   "public.blog",
+   "> str_starts_with($routeName, "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   183,
+   "public.page",
+   "g'), 'page' => $routeName === "
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   204,
+   "public.page",
+   ";         return $key ? route("
+  ],
+  [
+   "ruta ",
+   "app/Support/StorefrontNavigation.php",
+   204,
+   "public.catalog",
+   "project->slug, $key]) : route("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   402,
+   "promotions.index",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   403,
+   "promotions.store",
+   "oller::class, 'store'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   404,
+   "promotions.update",
+   "ller::class, 'update'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   405,
+   "promotions.destroy",
+   "ler::class, 'destroy'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   406,
+   "promotions.toggle",
+   "ller::class, 'toggle'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   424,
+   "settings.builder",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   425,
+   "settings.builder.progress",
+   "er::class, 'progress'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   426,
+   "settings.builder.checklist",
+   "r::class, 'checklist'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   427,
+   "settings.builder.metrics",
+   "ass, 'catalogMetrics'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   428,
+   "settings.builder.draft.settings",
+   ", 'saveDraftSettings'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   429,
+   "settings.builder.design-preset",
+   ", 'applyDesignPreset'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   464,
+   "settings.builder.publish",
+   "ler::class, 'publish'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   467,
+   "settings.builder.discard",
+   "class, 'discardDraft'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   470,
+   "settings.builder.versions",
+   "er::class, 'versions'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   471,
+   "settings.builder.rollback",
+   "er::class, 'rollback'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   472,
+   "settings.builder.preview",
+   "ler::class, 'preview'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   473,
+   "settings.builder.catalog.list",
+   ":class, 'catalogList'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   474,
+   "settings.builder.catalog.bulk",
+   ":class, 'catalogBulk'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   475,
+   "settings.builder.copy.sources",
+   ":class, 'copySources'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   476,
+   "settings.builder.copy",
+   "r::class, 'copyStore'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   477,
+   "settings.builder.icons.search",
+   "::class, 'iconSearch'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   478,
+   "settings.builder.category-photo",
+   "lass, 'categoryPhoto'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   479,
+   "settings.builder.icons.assign",
+   "::class, 'iconAssign'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   515,
+   "complaints.index",
+   "oller::class, 'index'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   516,
+   "complaints.status",
+   "class, 'updateStatus'])->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   699,
+   "public.product.domain",
+   " '[A-Za-z0-9-]*[0-9]+')->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   710,
+   "public.product.domain.legacy",
+   "->where('id', '[0-9]+')->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   721,
+   "public.catalog_pdf_domain",
+   "st, $project->slug); })->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   812,
+   "public.storefront.preview",
+   ")->middleware('signed')->name("
+  ],
+  [
+   "ruta ",
+   "routes/web.php",
+   847,
+   "public.shop.category",
+   " $slug, $categoria); })->name("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/BloqueDeliveryTest.php",
+   38,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/BloqueSedesTest.php",
+   39,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/BloqueSedesTest.php",
+   128,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/BloquesInicioTest.php",
+   63,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/BloquesInicioTest.php",
+   107,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/BuilderInformationArchitectureTest.php",
+   53,
+   "settings.builder",
+   ">id])             ->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/CapacidadesRestringidasTest.php",
+   151,
+   "settings.builder",
+   "       ->assertRedirect(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorCapacidadesRescatadasTest.php",
+   100,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorCapacidadesRescatadasTest.php",
+   113,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorCapacidadesRescatadasTest.php",
+   130,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorHistorialTest.php",
+   52,
+   "settings.builder.versions",
+   ")             ->getJson(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorHistorialTest.php",
+   72,
+   "settings.builder.rollback",
+   "             ->postJson(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorHistorialTest.php",
+   86,
+   "settings.builder.rollback",
+   "             ->postJson(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorHistorialTest.php",
+   102,
+   "settings.builder.versions",
+   ")             ->getJson(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorHistorialTest.php",
+   116,
+   "settings.builder.rollback",
+   "             ->postJson(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/ConstructorHistorialVistaTest.php",
+   23,
+   "settings.builder",
+   ">id])             ->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/DatosNegocioFuenteUnicaTest.php",
+   56,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/DatosNegocioFuenteUnicaTest.php",
+   73,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/DatosNegocioFuenteUnicaTest.php",
+   84,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/DisenoInicioTest.php",
+   151,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/EtiquetasMasivasTest.php",
+   140,
+   "public.shop",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/EtiquetasProductoTest.php",
+   182,
+   "public.shop",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/FiltrosCatalogoTest.php",
+   74,
+   "public.shop",
+   "    $r = $this->getJson(route("
+  ],
+  [
+   "VISTA",
+   "tests/Feature/GlobalTemplateSettingsTest.php",
+   100,
+   "public.templates.direct",
+   "));         $this->assertSame("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LibroReclamacionesPanelTest.php",
+   47,
+   "complaints.index",
+   ">id])             ->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LibroReclamacionesPanelTest.php",
+   62,
+   "complaints.index",
+   ">id])             ->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LibroReclamacionesPanelTest.php",
+   65,
+   "complaints.status",
+   "d])             ->patch(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LibroReclamacionesPanelTest.php",
+   76,
+   "complaints.status",
+   "d])             ->patch(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LibroReclamacionesPanelTest.php",
+   88,
+   "complaints.status",
+   "d])             ->patch(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LibroReclamacionesPanelTest.php",
+   101,
+   "complaints.index",
+   ">id])             ->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LibroReclamacionesPanelTest.php",
+   129,
+   "complaints.index",
+   ">id])             ->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LimiteEnviosPublicosTest.php",
+   31,
+   "public.",
+   "f (! str_starts_with($nombre, "
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LimiteEnviosPublicosTest.php",
+   56,
+   "public.complaints.store",
+   " = fn () => $this->post(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/LimiteEnviosPublicosTest.php",
+   82,
+   "public.cart.save",
+   "       $r = $this->post(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/MenuCategoriasTest.php",
+   56,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/MenuTiendaTest.php",
+   114,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/MenuTiendaTest.php",
+   131,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/MenuTiendaTest.php",
+   149,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/MenuTiendaTest.php",
+   173,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/MenuTiendaTest.php",
+   223,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/MovimientoTiendaTest.php",
+   39,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/NumerosContactoTiendaTest.php",
+   44,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/PiesDePaginaVariantesTest.php",
+   62,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/RucEnLaTiendaTest.php",
+   42,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/SeoTiendaTest.php",
+   53,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/SeoTiendaTest.php",
+   72,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/SeoTiendaTest.php",
+   82,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/SeoTiendaTest.php",
+   101,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/SeoTiendaTest.php",
+   113,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/SeoTiendaTest.php",
+   122,
+   "public.catalog",
+   "     $html = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   44,
+   "public.catalog",
+   "     $home = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   48,
+   "public.shop",
+   "     $shop = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   101,
+   "public.catalog",
+   "e]);         $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   138,
+   "settings.builder",
+   "       ->assertRedirect(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   156,
+   "public.about",
+   " foreach ([             route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   156,
+   "public.contact",
+   "about',$project->slug), route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   157,
+   "public.blog",
+   "ect->slug),             route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   158,
+   "public.page",
+   "'nota-1']),             route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   158,
+   "public.product",
+   "t->slug,$custom->key]), route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   178,
+   "public.catalog",
+   " $response = $this->get(route("
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   189,
+   "public.catalog",
+   " = [             'default' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   190,
+   "public.templates.direct",
+   "log',             'direct' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   191,
+   "public.templates.ella",
+   "irect',             'ella' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   192,
+   "public.templates.urban",
+   "ella',             'urban' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   193,
+   "public.templates.boutique",
+   "n',             'boutique' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   194,
+   "public.templates.nordic",
+   "que',             'nordic' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   195,
+   "public.templates.flash",
+   "rdic',             'flash' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   196,
+   "public.templates.fresh",
+   "lash',             'fresh' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   197,
+   "public.templates.porto",
+   "resh',             'porto' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   198,
+   "public.templates.licoreria",
+   "',             'licoreria' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   199,
+   "public.templates.farma",
+   "eria',             'farma' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   200,
+   "public.templates.lavanderia",
+   ",             'lavanderia' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   201,
+   "public.templates.ecommerce",
+   "',             'ecommerce' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   202,
+   "public.templates.tecnologia",
+   ",             'tecnologia' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   203,
+   "public.templates.computienda",
+   "             'computienda' => "
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   208,
+   "public.catalog",
+   " $response = $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   231,
+   "public.catalog",
+   "             $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   245,
+   "public.catalog",
+   "rar.         $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   252,
+   "public.catalog",
+   "']);         $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   272,
+   "public.catalog",
+   "tJsonPath('public_url', route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   278,
+   "public.catalog",
+   "             $this->get(route("
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   338,
+   "public.templates.computienda",
+   "             'computienda' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   339,
+   "public.templates.ecommerce",
+   "',             'ecommerce' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   340,
+   "public.templates.direct",
+   "rce',             'direct' => "
+  ],
+  [
+   "VISTA",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   341,
+   "public.catalog",
+   "ct',             'default' => "
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   346,
+   "public.catalog",
+   "             $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   373,
+   "public.catalog",
+   "]);          $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   385,
+   "public.shop",
+   "ion.         $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/StorefrontStructureV2Test.php",
+   451,
+   "public.catalog",
+   "();          $this->get(route("
+  ],
+  [
+   "ruta ",
+   "tests/Feature/VistaTiendaProTest.php",
+   47,
+   "public.catalog",
+   "      return $this->get(route("
+  ],
+  [
+   "VISTA",
+   "tests/Unit/CatalogTemplatesManifestTest.php",
+   19,
+   "public.templates.ecommerce",
+   " completo con tienda online', "
+  ],
+  [
+   "VISTA",
+   "tests/Unit/CatalogTemplatesManifestTest.php",
+   20,
+   "public.templates.direct",
+   " para ventas y cotizaciones', "
+  ],
+  [
+   "ruta ",
+   "resources/views/complaints/index.blade.php",
+   78,
+   "public.complaints.short",
+   "lass=\"lr-link\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/complaints/index.blade.php",
+   106,
+   "complaints.index",
+   " lr-btn-plano\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/complaints/index.blade.php",
+   168,
+   "complaints.status",
+   "ethod=\"post\" action=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   214,
+   "public.order",
+   ",         'orderUrl' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   330,
+   "public.contact",
+   "ode($whatsappMessage) : route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   408,
+   "public.product",
+   "-content-card\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   415,
+   "public.catalog",
+   "time-category\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   438,
+   "public.catalog",
+   "s $category)<a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   440,
+   "public.about",
+   "($aboutPage)<a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   440,
+   "public.contact",
+   "os</a>@endif<a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/public-store-runtime.blade.php",
+   440,
+   "public.complaints",
+   ">@endforeach<a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   160,
+   "public.shop",
+   "rimary_url'] ?? null) ? route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   161,
+   "public.shop",
+   "ondary_url'] ?? null) ? route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   187,
+   "public.shop",
+   "$item['url'] ?? null) ? route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   201,
+   "public.shop",
+   "button_url'] ?? null) ? route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   208,
+   "public.product",
+   "-product-card\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   212,
+   "public.product",
+   "-product-card\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   216,
+   "public.blog",
+   "tent['all_url']==='#' ? route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   306,
+   "public.shop",
+   "ategory_id'] ?? null) ? route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront-home-sections.blade.php",
+   306,
+   "public.shop",
+   "> $c['category_id']]) : route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront/header.blade.php",
+   30,
+   "public.catalog",
+   "=\"store-brand\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront/header.blade.php",
+   45,
+   "public.shop",
+   "search-action\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront/header.blade.php",
+   46,
+   "public.shop",
+   "e-cart-action\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/components/storefront/header.blade.php",
+   55,
+   "public.shop",
+   "method=\"GET\" action=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/layouts/app.blade.php",
+   1179,
+   "promotions.index",
+   "       <a href=\"{{ $pid?route("
+  ],
+  [
+   "ruta ",
+   "resources/views/pos/catalog.blade.php",
+   265,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/pos/catalog.blade.php",
+   279,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/pos/catalog.blade.php",
+   776,
+   "public.product",
+   "             'url'   => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/pos/catalog.blade.php",
+   797,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/pos/catalog.blade.php",
+   858,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/pos/catalog.blade.php",
+   1005,
+   "public.product",
+   "             'url'   => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/book.blade.php",
+   21,
+   "public.book.store",
+   "t res = await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/catalog.blade.php",
+   265,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/catalog.blade.php",
+   279,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/catalog.blade.php",
+   772,
+   "public.product",
+   "             'url'   => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/catalog.blade.php",
+   793,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/catalog.blade.php",
+   854,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/catalog.blade.php",
+   1001,
+   "public.product",
+   "             'url'   => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/product.blade.php",
+   422,
+   "public.product",
+   "s $r)       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/partials/product-card.blade.php",
+   15,
+   "public.product",
+   "itas --}}   <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/partials/product-card.blade.php",
+   66,
+   "public.product",
+   "@endif      <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/blog-post.blade.php",
+   5,
+   "public.blog",
+   "\"article-back\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/contact.blade.php",
+   8,
+   "public.contact.send",
+   "ethod=\"POST\" action=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/product.blade.php",
+   7,
+   "public.catalog",
+   "breadcrumb\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/product.blade.php",
+   7,
+   "public.shop",
+   "pan>/</span><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/product.blade.php",
+   7,
+   "public.contact",
+   "uct-secondary\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/product.blade.php",
+   7,
+   "public.product",
+   "\"related-card\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/shop.blade.php",
+   13,
+   "public.shop",
+   "method=\"GET\" action=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/shop.blade.php",
+   20,
+   "public.shop",
+   "-filter-reset\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/shop.blade.php",
+   23,
+   "public.shop",
+   "\"store-button\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/shop.blade.php",
+   23,
+   "public.product",
+   "ss=\"shop-card\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/storefront/partials/home-content.blade.php",
+   6,
+   "public.shop",
+   "\"store-button\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/boutique.blade.php",
+   132,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/boutique.blade.php",
+   145,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/boutique.blade.php",
+   786,
+   "public.product",
+   "ading-snug\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/boutique.blade.php",
+   973,
+   "public.product",
+   "ading-snug\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/catha.blade.php",
+   143,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/catha.blade.php",
+   156,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/catha.blade.php",
+   385,
+   "public.product",
+   " }}\">       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/catha.blade.php",
+   406,
+   "public.product",
+   "3\">         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/catha.blade.php",
+   543,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/catha.blade.php",
+   578,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/catha.blade.php",
+   1220,
+   "public.order",
+   "nst res=await fetch('{{ route("
+  ],
+  [
+   "VISTA",
+   "resources/views/public/templates/computienda.blade.php",
+   5440,
+   "storefront.partials.headers.preset-shell",
+   "t['shell'])                 ? "
+  ],
+  [
+   "VISTA",
+   "resources/views/public/templates/computienda.blade.php",
+   5441,
+   "storefront.partials.headers.",
+   "eset-shell'                 : "
+  ],
+  [
+   "VISTA",
+   "resources/views/public/templates/computienda.blade.php",
+   5447,
+   "storefront.partials.headers.classic",
+   "view($settings, 'headers') ?? "
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/computienda.blade.php",
+   7917,
+   "public.privacy",
+   "y acepto la <a href=\"{{ route("
+  ],
+  [
+   "VISTA",
+   "resources/views/public/templates/computienda.blade.php",
+   8299,
+   "storefront.partials.footers.classic",
+   "view($settings, 'footers') ?? "
+  ],
+  [
+   "VISTA",
+   "resources/views/public/templates/computienda.blade.php",
+   8509,
+   "storefront.partials.carts.classic",
+   "::view($settings, 'carts') ?? "
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/computienda.blade.php",
+   9072,
+   "public.order.proof",
+   "t res = await fetch(@js(route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/computienda.blade.php",
+   9114,
+   "public.quote",
+   "etch(esCotizacion ? @js(route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/computienda.blade.php",
+   9114,
+   "public.order",
+   ",$project->slug)) : @js(route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/direct.blade.php",
+   177,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/direct.blade.php",
+   190,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ecommerce.blade.php",
+   1040,
+   "public.shop",
+   "tive' : '' }}\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ecommerce.blade.php",
+   1042,
+   "public.shop.profile",
+   "tive' : '' }}\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ecommerce.blade.php",
+   4436,
+   "public.shop",
+   "C_SHOP_ENDPOINT = @json(route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ecommerce.blade.php",
+   4442,
+   "public.order",
+   " EC_ORDER_ROUTE = @json(route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   147,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   160,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   390,
+   "public.product",
+   " }}\">       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   432,
+   "public.product",
+   "dif         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   499,
+   "public.product",
+   " }}\">       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   531,
+   "public.product",
+   "dif         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   750,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   795,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/ella.blade.php",
+   1669,
+   "public.order",
+   "t res = await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/farma.blade.php",
+   532,
+   "public.product",
+   " }}\">       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/farma.blade.php",
+   549,
+   "public.product",
+   "/p>         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/farma.blade.php",
+   586,
+   "public.product",
+   "n\">         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/farma.blade.php",
+   697,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/farma.blade.php",
+   721,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/flash.blade.php",
+   151,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/flash.blade.php",
+   164,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/flash.blade.php",
+   560,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/flash.blade.php",
+   604,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/flash.blade.php",
+   1498,
+   "public.order",
+   "t res = await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/fresh.blade.php",
+   182,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/fresh.blade.php",
+   195,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/fresh.blade.php",
+   937,
+   "public.product",
+   "ta)'>       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/fresh.blade.php",
+   970,
+   "public.product",
+   "4\">         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/fresh.blade.php",
+   1245,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/fresh.blade.php",
+   1267,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/lavanderia.blade.php",
+   532,
+   "public.product",
+   " }}\">       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/lavanderia.blade.php",
+   549,
+   "public.product",
+   "/p>         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/lavanderia.blade.php",
+   586,
+   "public.product",
+   "n\">         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/lavanderia.blade.php",
+   697,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/lavanderia.blade.php",
+   721,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/licoreria.blade.php",
+   78,
+   "public.product",
+   "          'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/licoreria.blade.php",
+   93,
+   "public.product",
+   "          'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/licoreria.blade.php",
+   1516,
+   "public.order",
+   "nst res=await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/licoreria.blade.php",
+   1542,
+   "public.order",
+   "nst res=await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/menu.blade.php",
+   65,
+   "public.product",
+   "d,           'url'   => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/menu.blade.php",
+   77,
+   "public.product",
+   "d,           'url'   => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/menu.blade.php",
+   1048,
+   "public.order",
+   "t res = await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   164,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   177,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   403,
+   "public.product",
+   ")'>         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   439,
+   "public.product",
+   "f           <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   518,
+   "public.product",
+   "ta)'>       <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   550,
+   "public.product",
+   "1\">         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   760,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   793,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/nordic.blade.php",
+   1660,
+   "public.order",
+   "t res = await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/porto.blade.php",
+   150,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/porto.blade.php",
+   163,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/porto.blade.php",
+   864,
+   "public.product",
+   "d truncate\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/porto.blade.php",
+   930,
+   "public.product",
+   "d truncate\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/porto.blade.php",
+   995,
+   "public.product",
+   "d truncate\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/porto.blade.php",
+   1078,
+   "public.product",
+   "d truncate\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/porto.blade.php",
+   1367,
+   "public.product",
+   "d truncate\"><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/tecnologia.blade.php",
+   51,
+   "public.contact",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/tecnologia.blade.php",
+   52,
+   "public.about",
+   "($aboutPage)<a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/tecnologia.blade.php",
+   272,
+   "public.complaints",
+   "        <li><a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   196,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   209,
+   "public.product",
+   ",         'url'      => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   440,
+   "public.product",
+   ")\">         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   463,
+   "public.product",
+   ">           <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   524,
+   "public.product",
+   ")\">         <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   545,
+   "public.product",
+   ">           <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   675,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   715,
+   "public.product",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/public/templates/urban.blade.php",
+   1860,
+   "public.order",
+   "t res = await fetch('{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/design.blade.php",
+   2274,
+   "settings.builder",
+   "e editan en <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/index.blade.php",
+   710,
+   "settings.builder",
+   "            <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/modules.blade.php",
+   92,
+   "settings.builder",
+   "o y colores',  'href'=> route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/modules.blade.php",
+   93,
+   "settings.builder",
+   "illa',         'href'=> route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/modules.blade.php",
+   94,
+   "settings.builder",
+   " en línea',    'href'=> route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   11,
+   "settings.builder.progress",
+   "          'progress' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   12,
+   "settings.builder.checklist",
+   "         'checklist' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   13,
+   "settings.builder.copy.sources",
+   "       'copySources' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   14,
+   "settings.builder.copy",
+   ",             'copy' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   15,
+   "settings.builder.draft.settings",
+   "     'draftSettings' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   16,
+   "settings.builder.design-preset",
+   "      'designPreset' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   17,
+   "settings.builder.publish",
+   "           'publish' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   18,
+   "settings.builder.versions",
+   "          'versions' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   19,
+   "settings.builder.rollback",
+   "          'rollback' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   20,
+   "settings.builder.preview",
+   "           'preview' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   42,
+   "settings.builder.icons.search",
+   "     'iconSearchUrl' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   43,
+   "settings.builder.icons.assign",
+   "     'iconAssignUrl' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   44,
+   "settings.builder.category-photo",
+   "  'categoryPhotoUrl' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   58,
+   "settings.builder.metrics",
+   "        'metricsUrl' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   59,
+   "settings.builder.catalog.list",
+   "    'catalogListUrl' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/builder/index.blade.php",
+   60,
+   "settings.builder.catalog.bulk",
+   "    'catalogBulkUrl' => route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/designer/topbar.blade.php",
+   45,
+   "public.catalog",
+   "button>     <a href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/settings/partials/institutional-pages.blade.php",
+   80,
+   "public.complaints.short",
+   "xt-indigo-700\" href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/storefront/partials/headers/centered.blade.php",
+   129,
+   "public.shop.profile",
+   "dif            href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/storefront/partials/headers/compact.blade.php",
+   114,
+   "public.shop.profile",
+   "dif            href=\"{{ route("
+  ],
+  [
+   "ruta ",
+   "resources/views/storefront/partials/headers/triple.blade.php",
+   139,
+   "public.shop.profile",
+   "dif            href=\"{{ route("
+  ]
+ ],
+ "avisos": [
+  "tests/Feature/FormasDivisoriasTest.php: include de componente por nombre: 'components.storefront-shapes'",
+  "tests/Feature/StorefrontHomepageBuilderTest.php: include de componente por nombre: 'components.storefront-home-sections'",
+  "tests/Feature/StorefrontHomepageBuilderTest.php: include de componente por nombre: 'components.public-popup'",
+  "resources/views/layouts/storefront.blade.php: include de componente por nombre: 'components.storefront.theme-styles'",
+  "resources/views/layouts/storefront.blade.php: include de componente por nombre: 'components.storefront.header'",
+  "resources/views/layouts/storefront.blade.php: include de componente por nombre: 'components.storefront.footer'",
+  "resources/views/layouts/storefront.blade.php: include de componente por nombre: 'components.public-popup'",
+  "resources/views/public/storefront/partials/home-content.blade.php: include de componente por nombre: 'components.storefront-home-sections'"
+ ]
+}

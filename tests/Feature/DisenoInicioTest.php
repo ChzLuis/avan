@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
-use App\Models\StoreSection;
+use App\Modules\Tienda\Models\StoreSection;
 use App\Models\User;
-use App\Storefront\HomePresets;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Storefront\HomePresets;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -103,7 +103,7 @@ class DisenoInicioTest extends TestCase
     /** Los cinco diseños se pueden elegir desde el Constructor. */
     public function test_hay_editor_para_las_dos_claves(): void
     {
-        $editor = file_get_contents(resource_path('views/settings/builder/stages/home.blade.php'));
+        $editor = file_get_contents(app_path('Modules/Tienda/Views/settings/builder/stages/home.blade.php'));
 
         $this->assertStringContainsString("setSetting('home_template'", $editor,
             'Sin editor, el diseño de Inicio no se puede elegir.');
@@ -114,7 +114,7 @@ class DisenoInicioTest extends TestCase
     /** Y cada diseño ofrecido tiene su piel: si no, se elige y no cambia nada. */
     public function test_cada_diseno_tiene_su_piel_visual(): void
     {
-        $piel = file_get_contents(resource_path('views/components/storefront-home-skins.blade.php'));
+        $piel = file_get_contents(app_path('Modules/Tienda/Views/components/storefront-home-skins.blade.php'));
 
         foreach (array_keys(HomePresets::todos()) as $clave) {
             $this->assertStringContainsString(".hp-{$clave} ", $piel,

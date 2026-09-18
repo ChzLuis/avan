@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\PublicController;
+use App\Modules\Tienda\Controllers\TiendaPublicaController;
 use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\StoreExperienceController;
+use App\Modules\Tienda\Controllers\StoreExperienceController;
 use App\Models\Project;
-use App\Models\StorePopup;
+use App\Modules\Tienda\Models\StorePopup;
 use App\Models\User;
-use App\Support\CatalogTemplates;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Support\CatalogTemplates;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Tests\TestCase;
@@ -106,8 +106,8 @@ class StorefrontHomepageBuilderTest extends TestCase
         $this->assertSame($publishedTitle, data_get($hero->content, 'single.title'));
         $this->assertSame('Portada en borrador', data_get($hero->draft_content, 'single.title'));
 
-        [, $publicData] = app(PublicController::class)->prepararCatalogo($project->fresh());
-        [, $previewData] = app(PublicController::class)->prepararCatalogo($project->fresh(), true);
+        [, $publicData] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh());
+        [, $previewData] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh(), true);
         $this->assertSame($publishedTitle, data_get($publicData['sections']->firstWhere('component', 'hero')->content, 'single.title'));
         $this->assertSame('Portada en borrador', data_get($previewData['sections']->firstWhere('component', 'hero')->content, 'single.title'));
 
@@ -119,7 +119,7 @@ class StorefrontHomepageBuilderTest extends TestCase
 
         foreach (['direct', 'computienda', 'ecommerce'] as $template) {
             $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $template]);
-            [$view, $data] = app(PublicController::class)->prepararCatalogo($project->fresh());
+            [$view, $data] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh());
             $this->assertStringContainsString($template === 'direct' ? 'direct' : $template, $view);
             $this->assertSame('Portada publicada', data_get($data['sections']->firstWhere('component', 'hero')->content, 'single.title'));
         }
@@ -140,8 +140,8 @@ class StorefrontHomepageBuilderTest extends TestCase
 
         $project->storeSections()->whereIn('component', ['hero', 'benefits', 'featured_categories'])->update(['is_enabled' => true]);
         $project->categories()->create(['name' => 'Categoría principal', 'is_active' => true, 'sort_order' => 1]);
-        [, $data] = app(PublicController::class)->prepararCatalogo($project->fresh());
-        $publicHtml = view('components.storefront-home-sections', $data)->render();
+        [, $data] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh());
+        $publicHtml = view('tienda::components.storefront-home-sections', $data)->render();
         $this->assertStringContainsString('data-store-home-section="hero"', $publicHtml);
         $this->assertStringContainsString('data-store-home-section="benefits"', $publicHtml);
         $this->assertStringContainsString('data-store-home-section="featured_categories"', $publicHtml);
@@ -173,7 +173,7 @@ class StorefrontHomepageBuilderTest extends TestCase
         // pedirselo a codigo que ninguna tienda puede servir.
         foreach (array_keys(CatalogTemplates::supported()) as $template) {
             $project->settings()->updateOrCreate(['key' => 'catalog_template'], ['value' => $template]);
-            [$view, $data] = app(PublicController::class)->prepararCatalogo($project->fresh());
+            [$view, $data] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh());
             $html = view($view, $data)->render();
 
             // Hay DOS mecanismos legitimos para exponer una seccion al
@@ -224,9 +224,9 @@ class StorefrontHomepageBuilderTest extends TestCase
             'show_mobile' => true, 'is_enabled' => true,
         ]);
 
-        [, $data] = app(PublicController::class)->prepararCatalogo($project->fresh());
+        [, $data] = app(TiendaPublicaController::class)->prepararCatalogo($project->fresh());
         $this->assertSame($popup->id, $data['popup']->id);
-        $html = view('components.public-popup', ['popup' => $data['popup']])->render();
+        $html = view('tienda::components.public-popup', ['popup' => $data['popup']])->render();
         $this->assertStringContainsString('id="bixo-store-popup"', $html);
         $this->assertStringContainsString("frequency==='session'?sessionStorage:localStorage", $html);
         $this->assertStringContainsString('Campaña de prueba', $html);

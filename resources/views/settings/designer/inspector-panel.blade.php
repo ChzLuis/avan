@@ -2,7 +2,7 @@
 <aside class="dz-inspector" aria-label="Propiedades">
   {{-- Estado vacío --}}
   <div x-show="!selected" class="dz-inspector-empty">
-    <div class="dz-inspector-empty-ico">{!! \App\Support\DesignerIcons::get('select') !!}</div>
+    <div class="dz-inspector-empty-ico">{!! \App\Modules\Tienda\Support\DesignerIcons::get('select') !!}</div>
     <p>Selecciona un bloque en la estructura o en la vista para editarlo aquí.</p>
   </div>
 

@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Project;
-use App\Models\StoreSection;
+use App\Modules\Tienda\Models\StoreSection;
 use App\Models\User;
 use App\Modules\Bots\Support\FlowEngine\FlowRunner;
 use App\Modules\Bots\Support\FlowEngine\PlantillaComercial;

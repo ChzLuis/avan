@@ -9,7 +9,7 @@
         <div class="dz-mock-header">
           <div class="dz-mock-logo" x-text="(settings.seo_title||project||'Tienda').slice(0,14)"></div>
           <div class="dz-mock-search"></div>
-          <div class="dz-mock-cart">{!! \App\Support\DesignerIcons::get('cart') !!}</div>
+          <div class="dz-mock-cart">{!! \App\Modules\Tienda\Support\DesignerIcons::get('cart') !!}</div>
         </div>
       </div>
 

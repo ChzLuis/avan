@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
-use App\Models\StoreSection;
+use App\Modules\Tienda\Models\StoreSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -117,11 +117,11 @@ class BloquesInicioTest extends TestCase
      */
     public function test_el_renderizador_cubre_lo_que_el_constructor_ofrece(): void
     {
-        $editor = file_get_contents(resource_path('views/settings/builder/stages/home.blade.php'));
+        $editor = file_get_contents(app_path('Modules/Tienda/Views/settings/builder/stages/home.blade.php'));
         preg_match_all("/editingBlock\.component==='([a-z_]+)'/", $editor, $m);
         $ofrecidos = array_unique($m[1]);
 
-        $render = file_get_contents(resource_path('views/components/storefront-home-sections.blade.php'));
+        $render = file_get_contents(app_path('Modules/Tienda/Views/components/storefront-home-sections.blade.php'));
         preg_match_all("/\\\$section->component === '([a-z_]+)'/", $render, $r);
         $pintados = array_unique($r[1]);
 

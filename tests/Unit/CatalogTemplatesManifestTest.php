@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Support\CatalogTemplates;
+use App\Modules\Tienda\Support\CatalogTemplates;
 use PHPUnit\Framework\TestCase;
 
 class CatalogTemplatesManifestTest extends TestCase
@@ -16,8 +16,8 @@ class CatalogTemplatesManifestTest extends TestCase
     public function test_supported_templates_expose_complete_application_metadata(): void
     {
         $expected = [
-            'ecommerce' => ['Ecommerce', 'Sitio web completo con tienda online', 'public.templates.ecommerce'],
-            'direct' => ['Catálogo Directo', 'Catálogo simple para ventas y cotizaciones', 'public.templates.direct'],
+            'ecommerce' => ['Ecommerce', 'Sitio web completo con tienda online', 'tienda::public.templates.ecommerce'],
+            'direct' => ['Catálogo Directo', 'Catálogo simple para ventas y cotizaciones', 'tienda::public.templates.direct'],
         ];
 
         foreach ($expected as $key => [$name, $description, $view]) {

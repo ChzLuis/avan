@@ -6,7 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Storefront\CatalogQueryService;
+use App\Modules\Tienda\Storefront\CatalogQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

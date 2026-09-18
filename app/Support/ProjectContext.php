@@ -221,7 +221,7 @@ class ProjectContext
             'whatsapp'     => $limpio($this->project->whatsapp ?: $this->project->wa_phone),
             'email'        => $limpio($s['email'] ?? null),
             'horario'      => $limpio($s['business_hours'] ?? null) ?: $limpio($s['contact_hours'] ?? null),
-            'web'          => \App\Support\StorefrontNavigation::publicUrl($this->project) ?: null,
+            'web'          => \App\Modules\Tienda\Support\StorefrontNavigation::publicUrl($this->project) ?: null,
             'redes'        => $redes,
         ];
     }
@@ -232,7 +232,7 @@ class ProjectContext
      */
     public function promocionesVigentes(int $limit = 6): array
     {
-        $campanas = \App\Models\Promotion::where('project_id', $this->project->id)
+        $campanas = \App\Modules\Tienda\Models\Promotion::where('project_id', $this->project->id)
             ->where('is_active', true)->get()
             ->filter(fn ($pr) => $pr->isActive())
             ->map(fn ($pr) => [

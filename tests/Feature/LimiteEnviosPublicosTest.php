@@ -66,7 +66,7 @@ class LimiteEnviosPublicosTest extends TestCase
         }
         $envio()->assertStatus(429);
 
-        $this->assertLessThanOrEqual(5, \App\Models\Complaint::where('project_id', $p->id)->count(),
+        $this->assertLessThanOrEqual(5, \App\Modules\Tienda\Models\Complaint::where('project_id', $p->id)->count(),
             'no se guarda mas alla del limite');
     }
 

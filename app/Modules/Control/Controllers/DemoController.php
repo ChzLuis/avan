@@ -10,7 +10,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\Employee;
 use App\Mail\DemoCreada;
-use App\Support\StorefrontSections;
+use App\Modules\Tienda\Support\StorefrontSections;
 use Database\Seeders\DefaultCatalogsSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;

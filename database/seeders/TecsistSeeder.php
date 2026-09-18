@@ -8,7 +8,7 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\Combo;
 use App\Models\ComboItem;
-use App\Models\Promotion;
+use App\Modules\Tienda\Models\Promotion;
 use App\Models\Category;
 
 class TecsistSeeder extends Seeder

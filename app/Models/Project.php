@@ -2,6 +2,17 @@
 
 namespace App\Models;
 
+use App\Modules\Tienda\Models\Complaint;
+use App\Modules\Tienda\Models\ContactMessage;
+use App\Modules\Tienda\Models\Coupon;
+use App\Modules\Tienda\Models\Promotion;
+use App\Modules\Tienda\Models\StoreCatalogProfile;
+use App\Modules\Tienda\Models\StoreMenu;
+use App\Modules\Tienda\Models\StoreMenuItem;
+use App\Modules\Tienda\Models\StorePage;
+use App\Modules\Tienda\Models\StorePopup;
+use App\Modules\Tienda\Models\StoreSection;
+
 use App\Modules\Finanzas\Models\Invoice;
 use App\Modules\Finanzas\Models\GuiaRemision;
 
@@ -71,7 +82,7 @@ class Project extends Model
     public function userGroups(): HasMany   { return $this->hasMany(UserGroup::class); }
     public function proveedores(): HasMany  { return $this->hasMany(Proveedor::class); }
     public function coupons(): HasMany      { return $this->hasMany(Coupon::class); }
-    public function reviews(): HasMany      { return $this->hasMany(\App\Models\Review::class); }
+    public function reviews(): HasMany      { return $this->hasMany(\App\Modules\Tienda\Models\Review::class); }
     public function proposals(): HasMany   { return $this->hasMany(Proposal::class); }
     public function operationalMaps(): HasMany    { return $this->hasMany(OperationalMap::class); }
     public function operationalObjects(): HasMany { return $this->hasMany(OperationalObject::class); }

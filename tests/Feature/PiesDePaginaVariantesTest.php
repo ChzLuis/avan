@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\StorefrontLayoutPacks;
+use App\Modules\Tienda\Support\StorefrontLayoutPacks;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -231,12 +231,12 @@ class PiesDePaginaVariantesTest extends TestCase
     {
         foreach (array_keys(StorefrontLayoutPacks::options('headers')) as $variante) {
             $this->assertNotSame('', StorefrontLayoutPacks::descripcion('headers', $variante), "cabecera $variante sin descripción");
-            $this->assertTrue(view()->exists("storefront.partials.headers.$variante") || $variante === 'classic', "falta el parcial de cabecera $variante");
+            $this->assertTrue(view()->exists("tienda::storefront.partials.headers.$variante") || $variante === 'classic', "falta el parcial de cabecera $variante");
         }
 
         foreach (array_keys(StorefrontLayoutPacks::options('footers')) as $variante) {
             $this->assertNotSame('', StorefrontLayoutPacks::descripcion('footers', $variante), "$variante sin descripción");
-            $this->assertTrue(view()->exists("storefront.partials.footers.$variante") || $variante === 'classic', "falta el parcial de $variante");
+            $this->assertTrue(view()->exists("tienda::storefront.partials.footers.$variante") || $variante === 'classic', "falta el parcial de $variante");
         }
     }
 }
