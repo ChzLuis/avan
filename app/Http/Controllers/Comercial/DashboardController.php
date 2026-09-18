@@ -119,7 +119,7 @@ class DashboardController extends Controller
         // Una guia con motivo VENTA que salio sin factura ni boleta vinculada
         // es mercaderia entregada sin sustento de venta: el caso "150 guias
         // pero 100 comprobantes" que nadie puede explicar despues.
-        $guiasSinComprobante = \App\Models\GuiaRemision::where('project_id', $pid)
+        $guiasSinComprobante = \App\Modules\Finanzas\Models\GuiaRemision::where('project_id', $pid)
             ->where('motivo_codigo', '01')
             ->whereNull('invoice_id')
             ->where('status', '!=', 'cancelled')

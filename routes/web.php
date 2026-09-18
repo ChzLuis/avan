@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\LectorComprobanteController;
+use App\Modules\Finanzas\Controllers\LectorComprobanteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\ProjectController;
@@ -24,13 +24,13 @@ use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PosController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\Facturacion\NotaController;
-use App\Http\Controllers\Facturacion\GuiaRemisionController;
+use App\Modules\Finanzas\Controllers\PaymentController;
+use App\Modules\Finanzas\Controllers\InvoiceController;
+use App\Modules\Finanzas\Controllers\NotaController;
+use App\Modules\Finanzas\Controllers\GuiaRemisionController;
 use App\Http\Controllers\ComunicacionesController;
 use App\Http\Controllers\ProposalController;
-use App\Http\Controllers\CertificadoController;
+use App\Modules\Finanzas\Controllers\CertificadoController;
 use App\Http\Controllers\WaWebhookController;
 use App\Http\Controllers\ComboController;
 use App\Http\Controllers\PromotionController;
@@ -39,7 +39,7 @@ use App\Http\Controllers\RifaController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\DeliveryController;
-use App\Http\Controllers\CajaController;
+use App\Modules\Finanzas\Controllers\CajaController;
 use App\Http\Controllers\BotStatusController;
 use App\Http\Controllers\OperationalMapController;
 use App\Modules\Control\Controllers\DemoController;
@@ -1000,8 +1000,8 @@ Route::get('/r/{slug}', [\App\Http\Controllers\ResellerController::class, 'catal
 Route::get('/propuesta/{token}', [\App\Http\Controllers\ProposalController::class, 'publica'])->name('proposal.publica');
 
 // ─── Portal Facturación ───────────────────────────────────────────────────────
-use App\Http\Controllers\Facturacion\AuthController as FacAuthController;
-use App\Http\Controllers\Facturacion\DashboardController as FacDashController;
+use App\Modules\Finanzas\Controllers\FacturacionAuthController as FacAuthController;
+use App\Modules\Finanzas\Controllers\FacturacionDashboardController as FacDashController;
 use App\Http\Controllers\Comercial\AuthController as ComAuthController;
 use App\Http\Controllers\Comercial\DashboardController as ComDashController;
 use App\Http\Controllers\PasswordResetPortalController;
@@ -1348,10 +1348,10 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         // F2 v1 — Cuentas por Cobrar (LECTURA sobre datos existentes; la
         // entidad contable llega en F2b/F3 con diseño auditado). Mismo permiso
         // que los reportes: es una vista agregada, no muta nada.
-        Route::get('/cuentas',                [\App\Http\Controllers\CxcController::class, 'index'])->name('cuentas')->middleware('can:reports.ver');
+        Route::get('/cuentas',                [\App\Modules\Finanzas\Controllers\CxcController::class, 'index'])->name('cuentas')->middleware('can:reports.ver');
         // Ver la deuda y CAMBIAR las condiciones de cobro son cosas distintas:
         // lo segundo exige settings.pagos, no reports.ver.
-        Route::post('/cuentas/condiciones',   [\App\Http\Controllers\CxcController::class, 'guardarCondiciones'])->name('cuentas.condiciones')->middleware('project.can:settings.pagos|manage-settings');
+        Route::post('/cuentas/condiciones',   [\App\Modules\Finanzas\Controllers\CxcController::class, 'guardarCondiciones'])->name('cuentas.condiciones')->middleware('project.can:settings.pagos|manage-settings');
 
         Route::get('/reportes/ventas-bot',    [ReporteController::class, 'ventasBot'])->name('reportes.ventas')->middleware('can:reports.ver');
         Route::get('/reportes/seguimiento',   [ReporteController::class, 'seguimientoBot'])->name('reportes.seguimiento')->middleware('can:reports.ver');

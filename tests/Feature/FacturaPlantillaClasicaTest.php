@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
+use App\Modules\Finanzas\Models\Invoice;
+use App\Modules\Finanzas\Models\InvoiceItem;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,7 +62,7 @@ class FacturaPlantillaClasicaTest extends TestCase
     private function html(Project $project, Invoice $invoice): string
     {
         return view(
-            (string) $project->setting('invoice_template') === 'clasico' ? 'invoices.pdf-clasico' : 'invoices.pdf',
+            (string) $project->setting('invoice_template') === 'clasico' ? 'finanzas::invoices.pdf-clasico' : 'finanzas::invoices.pdf',
             compact('project', 'invoice')
         )->render();
     }

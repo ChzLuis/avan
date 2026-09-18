@@ -85,7 +85,7 @@ class FacturacionDescuentoTest extends TestCase
         ]);
 
         // Y el documento cuadra consigo mismo: base + IGV = total.
-        $inv = \App\Models\Invoice::where('quote_id', $quote->id)->firstOrFail();
+        $inv = \App\Modules\Finanzas\Models\Invoice::where('quote_id', $quote->id)->firstOrFail();
         $this->assertSame(
             (string) $inv->total,
             (string) number_format((float) $inv->subtotal + (float) $inv->igv, 2, '.', ''),
@@ -107,7 +107,7 @@ class FacturacionDescuentoTest extends TestCase
 
         $this->postJson("/f/{$this->project->slug}/cotizaciones/{$quote->id}/convertir", ['type' => 'boleta']);
 
-        $inv = \App\Models\Invoice::where('quote_id', $quote->id)->firstOrFail();
+        $inv = \App\Modules\Finanzas\Models\Invoice::where('quote_id', $quote->id)->firstOrFail();
         $this->assertSame('90.00', (string) $inv->total);
         $this->assertDatabaseHas('invoice_items', ['unit_price' => '30.00', 'total' => '90.00']);
     }
@@ -129,7 +129,7 @@ class FacturacionDescuentoTest extends TestCase
 
         $this->postJson("/f/{$this->project->slug}/cotizaciones/{$quote->id}/convertir", ['type' => 'boleta']);
 
-        $inv = \App\Models\Invoice::where('quote_id', $quote->id)->firstOrFail();
+        $inv = \App\Modules\Finanzas\Models\Invoice::where('quote_id', $quote->id)->firstOrFail();
         $sumaLineas = $inv->items->sum(fn ($i) => (int) round((float) $i->total * 100));
         $this->assertSame(
             (int) round((float) $inv->total * 100),

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Project;
 use App\Models\Quote;
 use App\Models\User;
@@ -246,7 +246,7 @@ class CadenaVentaGuiaTest extends TestCase
 
         $uno->assertOk();
         $this->assertTrue((bool) $dos->json('repetida'), 'La segunda debe devolver la misma guía');
-        $this->assertSame(1, \App\Models\GuiaRemision::where('project_id', $this->project->id)->count());
+        $this->assertSame(1, \App\Modules\Finanzas\Models\GuiaRemision::where('project_id', $this->project->id)->count());
     }
 
     /**
@@ -270,7 +270,7 @@ class CadenaVentaGuiaTest extends TestCase
             ->postJson(route('bixosales.guias.store'), $malo)
             ->assertStatus(422);
 
-        $this->assertSame(0, \App\Models\GuiaRemision::where('project_id', $this->project->id)->count(),
+        $this->assertSame(0, \App\Modules\Finanzas\Models\GuiaRemision::where('project_id', $this->project->id)->count(),
             'un dato invalido no debe crear la guia');
 
         // El operador corrige y reintenta: tiene que pasar, no chocar contra el candado.
@@ -280,7 +280,7 @@ class CadenaVentaGuiaTest extends TestCase
         $this->assertNotSame(409, $r->getStatusCode(),
             'tras un fallo, el reintento no puede recibir "ya se esta emitiendo"');
         $r->assertOk();
-        $this->assertSame(1, \App\Models\GuiaRemision::where('project_id', $this->project->id)->count());
+        $this->assertSame(1, \App\Modules\Finanzas\Models\GuiaRemision::where('project_id', $this->project->id)->count());
     }
 
     public function test_dos_traslados_distintos_si_generan_dos_guias(): void
@@ -291,7 +291,7 @@ class CadenaVentaGuiaTest extends TestCase
         $this->comoDueno()->withHeaders(['X-Idempotencia' => 'traslado-2'])
             ->postJson(route('bixosales.guias.store'), $this->guia())->assertOk();
 
-        $this->assertSame(2, \App\Models\GuiaRemision::where('project_id', $this->project->id)->count());
+        $this->assertSame(2, \App\Modules\Finanzas\Models\GuiaRemision::where('project_id', $this->project->id)->count());
     }
 
     public function test_la_guia_se_puede_llenar_desde_el_telefono(): void

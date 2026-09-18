@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Models\Project;
-use App\Models\ReceivableTerm;
+use App\Modules\Finanzas\Models\ReceivableTerm;
 use Illuminate\Support\Carbon;
 
 /**

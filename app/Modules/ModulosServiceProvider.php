@@ -37,5 +37,18 @@ class ModulosServiceProvider extends ServiceProvider
                 Blade::anonymousComponentPath($dir . '/components');
             }
         }
+
+        // Comandos de consola de cada modulo (`Commands/*.php`). Laravel solo
+        // autodescubre app/Console/Commands; lo que vive en un modulo hay que
+        // darlo de alta, y se hace aqui por convencion para que mover un
+        // comando no exija tocar bootstrap/app.php.
+        $comandos = [];
+        foreach (glob(app_path('Modules/*/Commands/*.php')) ?: [] as $archivo) {
+            $modulo = basename(dirname(dirname($archivo)));
+            $comandos[] = 'App\\Modules\\' . $modulo . '\\Commands\\' . basename($archivo, '.php');
+        }
+        if ($comandos !== []) {
+            $this->commands($comandos);
+        }
     }
 }

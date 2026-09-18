@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Support\Sunat\Catalogos;
+use App\Modules\Finanzas\Support\Sunat\Catalogos;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -131,7 +131,7 @@ class SunatCatalogosTest extends TestCase
      */
     public function test_el_importe_en_letras_se_escribe_como_se_lee(): void
     {
-        $de = fn (float $m) => \App\Support\Sunat\MontoEnLetras::de($m);
+        $de = fn (float $m) => \App\Modules\Finanzas\Support\Sunat\MontoEnLetras::de($m);
 
         $this->assertSame('SON CIENTO DIECIOCHO CON 00/100 SOLES', $de(118));
         $this->assertSame('SON UN MILLÓN DOSCIENTOS CINCUENTA Y SIETE MIL OCHOCIENTOS NOVENTA Y CUATRO CON 50/100 SOLES', $de(1257894.50));

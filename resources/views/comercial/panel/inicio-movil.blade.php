@@ -19,7 +19,7 @@
     $verClientes  = $puede(['clients.ver', 'view-clients']);
     $verReportes  = $puede(['reports.ver']);
     $verProductos = $hay('products.index') && $puede(['products.ver', 'manage-products']);
-    $lector       = $facturacion && $emite && \App\Support\Lector\LectorComprobantes::disponible($project);
+    $lector       = $facturacion && $emite && \App\Modules\Finanzas\Support\Lector\LectorComprobantes::disponible($project);
 
     $avisos   = $avisos ?? [];
     $hayPend  = count($avisos) > 0;

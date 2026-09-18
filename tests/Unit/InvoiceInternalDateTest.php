@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use Tests\TestCase;
 
 class InvoiceInternalDateTest extends TestCase

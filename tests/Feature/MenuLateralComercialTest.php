@@ -133,10 +133,10 @@ class MenuLateralComercialTest extends TestCase
         ]);
 
         // Facturas y Caja solo se ofrecen a quien ya las usa; se les da uso.
-        \App\Models\Invoice::create(['project_id' => $this->project->id, 'type' => 'boleta',
+        \App\Modules\Finanzas\Models\Invoice::create(['project_id' => $this->project->id, 'type' => 'boleta',
             'serie' => 'B001', 'correlativo' => 1, 'numero' => 'B001-1', 'client_name' => 'X',
             'status' => 'draft', 'subtotal' => 10, 'igv' => 0, 'total' => 10]);
-        \App\Models\Caja::create(['project_id' => $this->project->id, 'user_id' => auth()->id(),
+        \App\Modules\Finanzas\Models\Caja::create(['project_id' => $this->project->id, 'user_id' => auth()->id(),
             'user_name' => 'QA', 'monto_inicial' => 0, 'estado' => 'abierta', 'opened_at' => now()]);
 
         $res = $this->get('/bixosales')->assertOk();

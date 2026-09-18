@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\EnviarGuiaASunat;
+use App\Modules\Finanzas\Jobs\EnviarGuiaASunat;
 use App\Models\Employee;
-use App\Models\GuiaRemision;
+use App\Modules\Finanzas\Models\GuiaRemision;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;
-use App\Support\Sunat\GuiaRemisionSender;
+use App\Modules\Finanzas\Support\Sunat\GuiaRemisionSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Permission;

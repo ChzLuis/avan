@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\SendInvoiceToSunat;
-use App\Models\Invoice;
+use App\Modules\Finanzas\Jobs\SendInvoiceToSunat;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

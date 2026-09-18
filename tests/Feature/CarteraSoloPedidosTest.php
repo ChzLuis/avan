@@ -5,10 +5,10 @@ namespace Tests\Feature;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\Quote;
-use App\Models\ReceivableTerm;
+use App\Modules\Finanzas\Models\ReceivableTerm;
 use App\Models\User;
 use App\Support\Cobranza;
-use App\Support\Ledger;
+use App\Modules\Finanzas\Support\Ledger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

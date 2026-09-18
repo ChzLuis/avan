@@ -143,7 +143,7 @@ class CxcTest extends TestCase
             'sin vencimiento pactado se cae a la antiguedad');
 
         // Con el vencimiento pactado a 30 dias, aun NO vence.
-        \App\Models\ReceivableTerm::create([
+        \App\Modules\Finanzas\Models\ReceivableTerm::create([
             'project_id' => $this->project->id, 'payable_type' => 'order', 'payable_id' => $o->id,
             'numero' => 1, 'due_date' => now()->addDays(10)->toDateString(), 'amount_cents' => 100000,
         ]);
@@ -166,7 +166,7 @@ class CxcTest extends TestCase
         $this->entrar();
         $o = Order::create(['project_id' => $this->project->id, 'client_name' => 'Moroso',
             'status' => 'pending', 'payment_status' => 'pending', 'total' => '500.00']);
-        \App\Models\ReceivableTerm::create([
+        \App\Modules\Finanzas\Models\ReceivableTerm::create([
             'project_id' => $this->project->id, 'payable_type' => 'order', 'payable_id' => $o->id,
             'numero' => 1, 'due_date' => now()->subDays(5)->toDateString(), 'amount_cents' => 50000,
         ]);
@@ -192,7 +192,7 @@ class CxcTest extends TestCase
         $this->entrar(['reports.ver', 'settings.pagos']);
         $o = Order::create(['project_id' => $this->project->id, 'client_name' => 'X',
             'status' => 'pending', 'payment_status' => 'pending', 'total' => '100.00']);
-        $termino = \App\Models\ReceivableTerm::create([
+        $termino = \App\Modules\Finanzas\Models\ReceivableTerm::create([
             'project_id' => $this->project->id, 'payable_type' => 'order', 'payable_id' => $o->id,
             'numero' => 1, 'due_date' => '2026-01-15', 'amount_cents' => 10000,
         ]);
@@ -213,7 +213,7 @@ class CxcTest extends TestCase
         $o = Order::create(['project_id' => $this->project->id, 'client_name' => 'X',
             'status' => 'pending', 'payment_status' => 'pending', 'total' => '100.00']);
         $o->forceFill(['created_at' => '2026-08-01 10:00:00'])->save();
-        $termino = \App\Models\ReceivableTerm::create([
+        $termino = \App\Modules\Finanzas\Models\ReceivableTerm::create([
             'project_id' => $this->project->id, 'payable_type' => 'order', 'payable_id' => $o->id,
             'numero' => 1, 'due_date' => '2026-08-01', 'amount_cents' => 10000,
         ]);

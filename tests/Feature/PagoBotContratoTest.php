@@ -199,8 +199,8 @@ class PagoBotContratoTest extends TestCase
         $this->postJson('/bixosales/pagos/aprobar', ['order_id' => $o->id])->assertSuccessful();
         $r = $this->postJson('/bixosales/pagos/aprobar', ['order_id' => $o->id])->assertSuccessful();
 
-        $this->assertSame(1, \App\Models\Payment::where('payable_id', $o->id)->count());
-        $this->assertSame(25000, \App\Support\Ledger::cobradoCents($this->project->id, 'order', $o->id));
+        $this->assertSame(1, \App\Modules\Finanzas\Models\Payment::where('payable_id', $o->id)->count());
+        $this->assertSame(25000, \App\Modules\Finanzas\Support\Ledger::cobradoCents($this->project->id, 'order', $o->id));
         $this->assertTrue($r->json('ok'), 'un reintento debe seguir respondiendo ok');
     }
 
@@ -214,9 +214,9 @@ class PagoBotContratoTest extends TestCase
             'order_id' => $o->id, 'motivo' => 'El comprobante era de otra persona',
         ])->assertSuccessful();
 
-        $this->assertSame(2, \App\Models\Payment::where('payable_id', $o->id)->count(),
+        $this->assertSame(2, \App\Modules\Finanzas\Models\Payment::where('payable_id', $o->id)->count(),
             'el asiento original sigue, mas su reversion');
-        $this->assertSame(0, \App\Support\Ledger::cobradoCents($this->project->id, 'order', $o->id));
+        $this->assertSame(0, \App\Modules\Finanzas\Support\Ledger::cobradoCents($this->project->id, 'order', $o->id));
         $this->assertSame('pending', $o->fresh()->payment_status);
         $this->assertDatabaseHas('payments', ['reversal_reason' => 'El comprobante era de otra persona']);
     }

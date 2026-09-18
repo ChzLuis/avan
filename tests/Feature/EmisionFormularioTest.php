@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Client;
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -139,7 +139,7 @@ class EmisionFormularioTest extends TestCase
         $r->assertStatus(422);
         $this->assertStringContainsString('TW N12', $r->json('message'), 'dice CUAL linea esta a 0');
         $this->assertStringContainsString('precio 0', $r->json('message'));
-        $this->assertSame(0, \App\Models\Invoice::count(), 'no se crea nada ni se gasta correlativo');
+        $this->assertSame(0, \App\Modules\Finanzas\Models\Invoice::count(), 'no se crea nada ni se gasta correlativo');
     }
 
     /**
@@ -158,7 +158,7 @@ class EmisionFormularioTest extends TestCase
         ]);
 
         $r->assertStatus(422);
-        $this->assertSame(0, \App\Models\Invoice::count(), 'no se crea nada ni se gasta correlativo');
+        $this->assertSame(0, \App\Modules\Finanzas\Models\Invoice::count(), 'no se crea nada ni se gasta correlativo');
     }
 
     /** Un borrador si puede quedar a medias: se completa despues. */
@@ -581,11 +581,11 @@ class EmisionFormularioTest extends TestCase
     public function test_el_pdf_imprime_la_unidad_en_castellano_y_no_el_codigo(): void
     {
         // Lo que se guarda es un codigo; lo que se lee es una palabra.
-        $this->assertSame('Unidad',  \App\Support\Sunat\Catalogos::etiquetaUnidad('NIU'));
-        $this->assertSame('Unidad',  \App\Support\Sunat\Catalogos::etiquetaUnidad('Rollo 100 m'), 'Texto viejo ya guardado en facturas emitidas');
-        $this->assertSame('Caja',    \App\Support\Sunat\Catalogos::etiquetaUnidad('BX'));
-        $this->assertSame('kg',      \App\Support\Sunat\Catalogos::etiquetaUnidad('KGM'));
-        $this->assertSame('Servicio', \App\Support\Sunat\Catalogos::etiquetaUnidad('ZZ'));
+        $this->assertSame('Unidad',  \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad('NIU'));
+        $this->assertSame('Unidad',  \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad('Rollo 100 m'), 'Texto viejo ya guardado en facturas emitidas');
+        $this->assertSame('Caja',    \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad('BX'));
+        $this->assertSame('kg',      \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad('KGM'));
+        $this->assertSame('Servicio', \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad('ZZ'));
     }
 
     public function test_el_formulario_tiene_campo_de_unidad(): void

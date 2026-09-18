@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Modules\Finanzas\Models\Invoice;
+use App\Modules\Finanzas\Models\GuiaRemision;
+
 use App\Modules\Inventario\Models\Proveedor;
 
 use App\Modules\Personas\Models\UserGroup;

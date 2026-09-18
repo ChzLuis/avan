@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\Lector\EmparejadorCatalogo;
-use App\Support\Lector\LectorComprobantes;
-use App\Support\Lector\Normalizador;
-use App\Support\Lector\ValidadorLectura;
+use App\Modules\Finanzas\Support\Lector\EmparejadorCatalogo;
+use App\Modules\Finanzas\Support\Lector\LectorComprobantes;
+use App\Modules\Finanzas\Support\Lector\Normalizador;
+use App\Modules\Finanzas\Support\Lector\ValidadorLectura;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

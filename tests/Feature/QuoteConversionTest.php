@@ -291,7 +291,7 @@ class QuoteConversionTest extends TestCase
             'unit_price' => '33.33', 'discount' => '10.00', 'total' => '89.99',
         ]);
 
-        $inv = \App\Models\Invoice::where('quote_id', $q->id)->firstOrFail();
+        $inv = \App\Modules\Finanzas\Models\Invoice::where('quote_id', $q->id)->firstOrFail();
         $this->assertSame(
             (int) round((float) $inv->total * 100),
             (int) round((float) $inv->subtotal * 100) + (int) round((float) $inv->igv * 100),

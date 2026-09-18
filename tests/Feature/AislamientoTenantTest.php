@@ -129,11 +129,11 @@ class AislamientoTenantTest extends TestCase
         session(['active_project_id' => $this->mio->id]);
 
         $modelos = [
-            \App\Models\Caja::class, \App\Models\CatalogIntegration::class,
+            \App\Modules\Finanzas\Models\Caja::class, \App\Models\CatalogIntegration::class,
             \App\Models\Client::class, \App\Models\Combo::class,
-            \App\Models\GuiaRemision::class, \App\Modules\Inventario\Models\InventoryMovement::class,
-            \App\Models\Invoice::class, \App\Models\Order::class,
-            \App\Models\Payment::class, \App\Models\Product::class,
+            \App\Modules\Finanzas\Models\GuiaRemision::class, \App\Modules\Inventario\Models\InventoryMovement::class,
+            \App\Modules\Finanzas\Models\Invoice::class, \App\Models\Order::class,
+            \App\Modules\Finanzas\Models\Payment::class, \App\Models\Product::class,
             \App\Models\Promotion::class, \App\Modules\Inventario\Models\Proveedor::class,
             \App\Models\Quote::class, \App\Models\RifaVenta::class,
         ];

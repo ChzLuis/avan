@@ -1,0 +1,1853 @@
+{
+ "moves": [
+  [
+   "app/Models/Invoice.php",
+   "app/Modules/Finanzas/Models/Invoice.php"
+  ],
+  [
+   "app/Models/InvoiceItem.php",
+   "app/Modules/Finanzas/Models/InvoiceItem.php"
+  ],
+  [
+   "app/Models/Payment.php",
+   "app/Modules/Finanzas/Models/Payment.php"
+  ],
+  [
+   "app/Models/ReceivableTerm.php",
+   "app/Modules/Finanzas/Models/ReceivableTerm.php"
+  ],
+  [
+   "app/Models/Caja.php",
+   "app/Modules/Finanzas/Models/Caja.php"
+  ],
+  [
+   "app/Models/CajaMovimiento.php",
+   "app/Modules/Finanzas/Models/CajaMovimiento.php"
+  ],
+  [
+   "app/Models/Certificado.php",
+   "app/Modules/Finanzas/Models/Certificado.php"
+  ],
+  [
+   "app/Models/LecturaComprobante.php",
+   "app/Modules/Finanzas/Models/LecturaComprobante.php"
+  ],
+  [
+   "app/Models/GuiaRemision.php",
+   "app/Modules/Finanzas/Models/GuiaRemision.php"
+  ],
+  [
+   "app/Models/GuiaRemisionItem.php",
+   "app/Modules/Finanzas/Models/GuiaRemisionItem.php"
+  ],
+  [
+   "app/Http/Controllers/InvoiceController.php",
+   "app/Modules/Finanzas/Controllers/InvoiceController.php"
+  ],
+  [
+   "app/Http/Controllers/PaymentController.php",
+   "app/Modules/Finanzas/Controllers/PaymentController.php"
+  ],
+  [
+   "app/Http/Controllers/CajaController.php",
+   "app/Modules/Finanzas/Controllers/CajaController.php"
+  ],
+  [
+   "app/Http/Controllers/CxcController.php",
+   "app/Modules/Finanzas/Controllers/CxcController.php"
+  ],
+  [
+   "app/Http/Controllers/CertificadoController.php",
+   "app/Modules/Finanzas/Controllers/CertificadoController.php"
+  ],
+  [
+   "app/Http/Controllers/LectorComprobanteController.php",
+   "app/Modules/Finanzas/Controllers/LectorComprobanteController.php"
+  ],
+  [
+   "app/Http/Controllers/Facturacion/AuthController.php",
+   "app/Modules/Finanzas/Controllers/FacturacionAuthController.php"
+  ],
+  [
+   "app/Http/Controllers/Facturacion/DashboardController.php",
+   "app/Modules/Finanzas/Controllers/FacturacionDashboardController.php"
+  ],
+  [
+   "app/Http/Controllers/Facturacion/GuiaRemisionController.php",
+   "app/Modules/Finanzas/Controllers/GuiaRemisionController.php"
+  ],
+  [
+   "app/Http/Controllers/Facturacion/NotaController.php",
+   "app/Modules/Finanzas/Controllers/NotaController.php"
+  ],
+  [
+   "app/Support/ApisPeruService.php",
+   "app/Modules/Finanzas/Support/ApisPeruService.php"
+  ],
+  [
+   "app/Support/NubefactService.php",
+   "app/Modules/Finanzas/Support/NubefactService.php"
+  ],
+  [
+   "app/Support/CatalogoDocumentos.php",
+   "app/Modules/Finanzas/Support/CatalogoDocumentos.php"
+  ],
+  [
+   "app/Support/Ledger.php",
+   "app/Modules/Finanzas/Support/Ledger.php"
+  ],
+  [
+   "app/Support/Sunat/ArchivoComprobantes.php",
+   "app/Modules/Finanzas/Support/Sunat/ArchivoComprobantes.php"
+  ],
+  [
+   "app/Support/Sunat/Catalogos.php",
+   "app/Modules/Finanzas/Support/Sunat/Catalogos.php"
+  ],
+  [
+   "app/Support/Sunat/GuiaRemisionSender.php",
+   "app/Modules/Finanzas/Support/Sunat/GuiaRemisionSender.php"
+  ],
+  [
+   "app/Support/Sunat/MontoEnLetras.php",
+   "app/Modules/Finanzas/Support/Sunat/MontoEnLetras.php"
+  ],
+  [
+   "app/Support/Lector/EmparejadorCatalogo.php",
+   "app/Modules/Finanzas/Support/Lector/EmparejadorCatalogo.php"
+  ],
+  [
+   "app/Support/Lector/LectorComprobantes.php",
+   "app/Modules/Finanzas/Support/Lector/LectorComprobantes.php"
+  ],
+  [
+   "app/Support/Lector/Normalizador.php",
+   "app/Modules/Finanzas/Support/Lector/Normalizador.php"
+  ],
+  [
+   "app/Support/Lector/ValidadorLectura.php",
+   "app/Modules/Finanzas/Support/Lector/ValidadorLectura.php"
+  ],
+  [
+   "app/Jobs/SendInvoiceToSunat.php",
+   "app/Modules/Finanzas/Jobs/SendInvoiceToSunat.php"
+  ],
+  [
+   "app/Jobs/DarDeBajaEnSunat.php",
+   "app/Modules/Finanzas/Jobs/DarDeBajaEnSunat.php"
+  ],
+  [
+   "app/Jobs/EnviarGuiaASunat.php",
+   "app/Modules/Finanzas/Jobs/EnviarGuiaASunat.php"
+  ],
+  [
+   "app/Console/Commands/ArchivarComprobantes.php",
+   "app/Modules/Finanzas/Commands/ArchivarComprobantes.php"
+  ],
+  [
+   "app/Console/Commands/ReintentarComprobantes.php",
+   "app/Modules/Finanzas/Commands/ReintentarComprobantes.php"
+  ],
+  [
+   "resources/views/invoices",
+   "app/Modules/Finanzas/Views/invoices"
+  ],
+  [
+   "resources/views/cxc",
+   "app/Modules/Finanzas/Views/cxc"
+  ],
+  [
+   "resources/views/certificados",
+   "app/Modules/Finanzas/Views/certificados"
+  ],
+  [
+   "resources/views/facturacion/facturas",
+   "app/Modules/Finanzas/Views/facturacion/facturas"
+  ],
+  [
+   "resources/views/facturacion/guias",
+   "app/Modules/Finanzas/Views/facturacion/guias"
+  ],
+  [
+   "resources/views/facturacion/layouts",
+   "app/Modules/Finanzas/Views/facturacion/layouts"
+  ],
+  [
+   "resources/views/facturacion/portada.blade.php",
+   "app/Modules/Finanzas/Views/facturacion/portada.blade.php"
+  ],
+  [
+   "resources/views/facturacion/dashboard.blade.php",
+   "app/Modules/Finanzas/Views/facturacion/dashboard.blade.php"
+  ],
+  [
+   "resources/views/facturacion/login.blade.php",
+   "app/Modules/Finanzas/Views/facturacion/login.blade.php"
+  ],
+  [
+   "resources/views/facturacion/login-general.blade.php",
+   "app/Modules/Finanzas/Views/facturacion/login-general.blade.php"
+  ]
+ ],
+ "edits": {
+  "app/Modules/Finanzas/Commands/ArchivarComprobantes.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\ArchivoComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\ArchivoComprobantes",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Finanzas\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Commands/ReintentarComprobantes.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\ApisPeruService",
+    "new": "App\\Modules\\Finanzas\\Support\\ApisPeruService",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\SendInvoiceToSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\SendInvoiceToSunat",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\EnviarGuiaASunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\EnviarGuiaASunat",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Console\\Commands;",
+    "new": "namespace App\\Modules\\Finanzas\\Commands;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/CajaController.php": [
+   {
+    "old": "App\\Models\\Caja",
+    "new": "App\\Modules\\Finanzas\\Models\\Caja",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\CajaMovimiento",
+    "new": "App\\Modules\\Finanzas\\Models\\CajaMovimiento",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/CertificadoController.php": [
+   {
+    "old": "App\\Models\\Certificado",
+    "new": "App\\Modules\\Finanzas\\Models\\Certificado",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('certificados.index'",
+    "new": "view('finanzas::certificados.index'",
+    "n": 1
+   },
+   {
+    "old": "view('certificados.verificar'",
+    "new": "view('finanzas::certificados.verificar'",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/ClientController.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/CxcController.php": [
+   {
+    "old": "App\\Models\\ReceivableTerm",
+    "new": "App\\Modules\\Finanzas\\Models\\ReceivableTerm",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('cxc.index'",
+    "new": "view('finanzas::cxc.index'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/InvoiceController.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\InvoiceItem",
+    "new": "App\\Modules\\Finanzas\\Models\\InvoiceItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\NubefactService",
+    "new": "App\\Modules\\Finanzas\\Support\\NubefactService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogoDocumentos",
+    "new": "App\\Modules\\Finanzas\\Support\\CatalogoDocumentos",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\ArchivoComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\ArchivoComprobantes",
+    "n": 4
+   },
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\LectorComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\LectorComprobantes",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\SendInvoiceToSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\SendInvoiceToSunat",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('invoices.index'",
+    "new": "view('finanzas::invoices.index'",
+    "n": 1
+   },
+   {
+    "old": "view('invoices.consulta'",
+    "new": "view('finanzas::invoices.consulta'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.facturas.create'",
+    "new": "view('finanzas::facturacion.facturas.create'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.facturas.index'",
+    "new": "view('finanzas::facturacion.facturas.index'",
+    "n": 1
+   },
+   {
+    "old": "? 'invoices.pdf-clasico'",
+    "new": "? 'finanzas::invoices.pdf-clasico'",
+    "n": 1
+   },
+   {
+    "old": ": 'invoices.pdf'",
+    "new": ": 'finanzas::invoices.pdf'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/LectorComprobanteController.php": [
+   {
+    "old": "App\\Models\\LecturaComprobante",
+    "new": "App\\Modules\\Finanzas\\Models\\LecturaComprobante",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\EmparejadorCatalogo",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\EmparejadorCatalogo",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\LectorComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\LectorComprobantes",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\ValidadorLectura",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\ValidadorLectura",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/OrderController.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 3
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 3
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/PaymentController.php": [
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/PosController.php": [
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/QuoteController.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "app/Http/Controllers/Api/PagoController.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 5
+   }
+  ],
+  "app/Http/Controllers/Comercial/DashboardController.php": [
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/FacturacionDashboardController.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\LectorComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\LectorComprobantes",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Facturacion;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.dashboard'",
+    "new": "view('finanzas::facturacion.dashboard'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.portada'",
+    "new": "view('finanzas::facturacion.portada'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/GuiaRemisionController.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\CatalogoDocumentos",
+    "new": "App\\Modules\\Finanzas\\Support\\CatalogoDocumentos",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\EnviarGuiaASunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\EnviarGuiaASunat",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Facturacion;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.guias.index'",
+    "new": "view('finanzas::facturacion.guias.index'",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.guias.consulta'",
+    "new": "view('finanzas::facturacion.guias.consulta'",
+    "n": 1
+   },
+   {
+    "old": "? 'facturacion.guias.pdf-clasico'",
+    "new": "? 'finanzas::facturacion.guias.pdf-clasico'",
+    "n": 1
+   },
+   {
+    "old": ": 'facturacion.guias.pdf-simple'",
+    "new": ": 'finanzas::facturacion.guias.pdf-simple'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/NotaController.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\SendInvoiceToSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\SendInvoiceToSunat",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\DarDeBajaEnSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\DarDeBajaEnSunat",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Http\\Controllers\\Facturacion;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Jobs/DarDeBajaEnSunat.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\ApisPeruService",
+    "new": "App\\Modules\\Finanzas\\Support\\ApisPeruService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\NubefactService",
+    "new": "App\\Modules\\Finanzas\\Support\\NubefactService",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Jobs;",
+    "new": "namespace App\\Modules\\Finanzas\\Jobs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Jobs/EnviarGuiaASunat.php": [
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\GuiaRemisionSender",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\GuiaRemisionSender",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Jobs;",
+    "new": "namespace App\\Modules\\Finanzas\\Jobs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Jobs/SendInvoiceToSunat.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\ApisPeruService",
+    "new": "App\\Modules\\Finanzas\\Support\\ApisPeruService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\NubefactService",
+    "new": "App\\Modules\\Finanzas\\Support\\NubefactService",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Jobs;",
+    "new": "namespace App\\Modules\\Finanzas\\Jobs;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/GuiaRemision.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/Invoice.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/Payment.php": [
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Control/Controllers/AdminDashboardController.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/ApisPeruService.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\ArchivoComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\ArchivoComprobantes",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\MontoEnLetras",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\MontoEnLetras",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Finanzas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/CatalogoDocumentos.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Finanzas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Support/Cobranza.php": [
+   {
+    "old": "App\\Models\\ReceivableTerm",
+    "new": "App\\Modules\\Finanzas\\Models\\ReceivableTerm",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Ledger.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\ReceivableTerm",
+    "new": "App\\Modules\\Finanzas\\Models\\ReceivableTerm",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Finanzas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Support/ModulosPortal.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Caja",
+    "new": "App\\Modules\\Finanzas\\Models\\Caja",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/NubefactService.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support;",
+    "new": "namespace App\\Modules\\Finanzas\\Support;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Lector/EmparejadorCatalogo.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support\\Lector;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Lector;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Lector/ValidadorLectura.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support\\Lector;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Lector;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Sunat/ArchivoComprobantes.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support\\Sunat;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Sunat;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Sunat/GuiaRemisionSender.php": [
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "namespace App\\Support\\Sunat;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Sunat;",
+    "n": 1
+   }
+  ],
+  "routes/web.php": [
+   {
+    "old": "App\\Http\\Controllers\\InvoiceController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\InvoiceController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\PaymentController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\PaymentController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\CajaController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\CajaController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\CxcController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\CxcController",
+    "n": 2
+   },
+   {
+    "old": "App\\Http\\Controllers\\CertificadoController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\CertificadoController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\LectorComprobanteController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\LectorComprobanteController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Facturacion\\AuthController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\FacturacionAuthController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Facturacion\\DashboardController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\FacturacionDashboardController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Facturacion\\GuiaRemisionController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\GuiaRemisionController",
+    "n": 1
+   },
+   {
+    "old": "App\\Http\\Controllers\\Facturacion\\NotaController",
+    "new": "App\\Modules\\Finanzas\\Controllers\\NotaController",
+    "n": 1
+   }
+  ],
+  "tests/Feature/AislamientoTenantTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Caja",
+    "new": "App\\Modules\\Finanzas\\Models\\Caja",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CadenaVentaGuiaTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 4
+   }
+  ],
+  "tests/Feature/CarteraSoloPedidosTest.php": [
+   {
+    "old": "App\\Models\\ReceivableTerm",
+    "new": "App\\Modules\\Finanzas\\Models\\ReceivableTerm",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CoherenciaDeudaTest.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ComercialDashboardTest.php": [
+   {
+    "old": "App\\Models\\ReceivableTerm",
+    "new": "App\\Modules\\Finanzas\\Models\\ReceivableTerm",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 3
+   }
+  ],
+  "tests/Feature/ComprobanteResumenYAccionesTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ComprobantesPorTipoTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ConsultaComprobantesFiltrosTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CumplimientoSunatTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\ApisPeruService",
+    "new": "App\\Modules\\Finanzas\\Support\\ApisPeruService",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\ArchivoComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\ArchivoComprobantes",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\DarDeBajaEnSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\DarDeBajaEnSunat",
+    "n": 1
+   }
+  ],
+  "tests/Feature/Customer360Test.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/CxcTest.php": [
+   {
+    "old": "App\\Models\\ReceivableTerm",
+    "new": "App\\Modules\\Finanzas\\Models\\ReceivableTerm",
+    "n": 4
+   }
+  ],
+  "tests/Feature/EmisionFormularioTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 3
+   },
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 5
+   }
+  ],
+  "tests/Feature/EmisionMejorasSunatTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\InvoiceItem",
+    "new": "App\\Modules\\Finanzas\\Models\\InvoiceItem",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\ApisPeruService",
+    "new": "App\\Modules\\Finanzas\\Support\\ApisPeruService",
+    "n": 1
+   }
+  ],
+  "tests/Feature/FacturacionDescuentoTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 3
+   }
+  ],
+  "tests/Feature/FacturaPlantillaClasicaTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\InvoiceItem",
+    "new": "App\\Modules\\Finanzas\\Models\\InvoiceItem",
+    "n": 1
+   },
+   {
+    "old": "? 'invoices.pdf-clasico'",
+    "new": "? 'finanzas::invoices.pdf-clasico'",
+    "n": 1
+   },
+   {
+    "old": ": 'invoices.pdf'",
+    "new": ": 'finanzas::invoices.pdf'",
+    "n": 1
+   }
+  ],
+  "tests/Feature/GuiaRemisionTest.php": [
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\GuiaRemisionSender",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\GuiaRemisionSender",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\EnviarGuiaASunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\EnviarGuiaASunat",
+    "n": 1
+   }
+  ],
+  "tests/Feature/GuiaUbigeoYDescargaTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   }
+  ],
+  "tests/Feature/HistoricoGuiasTest.php": [
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   }
+  ],
+  "tests/Feature/InvoiceClientLinkTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/InvoiceNumberingTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/LectorComprobantesTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\EmparejadorCatalogo",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\EmparejadorCatalogo",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\LectorComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\LectorComprobantes",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\Normalizador",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\Normalizador",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Lector\\ValidadorLectura",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\ValidadorLectura",
+    "n": 1
+   }
+  ],
+  "tests/Feature/LedgerTest.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   }
+  ],
+  "tests/Feature/MenuLateralComercialTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\Caja",
+    "new": "App\\Modules\\Finanzas\\Models\\Caja",
+    "n": 1
+   }
+  ],
+  "tests/Feature/NotasPantallaTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/NotasYBajaTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\ApisPeruService",
+    "new": "App\\Modules\\Finanzas\\Support\\ApisPeruService",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\SendInvoiceToSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\SendInvoiceToSunat",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\DarDeBajaEnSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\DarDeBajaEnSunat",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PagoBotContratoTest.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 2
+   }
+  ],
+  "tests/Feature/PagoPanelLedgerTest.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Ledger",
+    "new": "App\\Modules\\Finanzas\\Support\\Ledger",
+    "n": 1
+   }
+  ],
+  "tests/Feature/PortadaFacturacionTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/ProveedorFiscalPorProyectoTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Jobs\\SendInvoiceToSunat",
+    "new": "App\\Modules\\Finanzas\\Jobs\\SendInvoiceToSunat",
+    "n": 1
+   }
+  ],
+  "tests/Feature/QuoteConversionTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "tests/Feature/RespuestaSunatTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   },
+   {
+    "old": "App\\Models\\GuiaRemision",
+    "new": "App\\Modules\\Finanzas\\Models\\GuiaRemision",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\GuiaRemisionSender",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\GuiaRemisionSender",
+    "n": 1
+   }
+  ],
+  "tests/Feature/SunatCatalogosTest.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   },
+   {
+    "old": "App\\Support\\Sunat\\MontoEnLetras",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\MontoEnLetras",
+    "n": 1
+   }
+  ],
+  "tests/Feature/TenantOwnedModelScopeTest.php": [
+   {
+    "old": "App\\Models\\Payment",
+    "new": "App\\Modules\\Finanzas\\Models\\Payment",
+    "n": 1
+   }
+  ],
+  "tests/Unit/InvoiceInternalDateTest.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 1
+   }
+  ],
+  "resources/views/comercial/panel/inicio-movil.blade.php": [
+   {
+    "old": "App\\Support\\Lector\\LectorComprobantes",
+    "new": "App\\Modules\\Finanzas\\Support\\Lector\\LectorComprobantes",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Views/facturacion/facturas/index.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Views/facturacion/guias/pdf-clasico.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 4
+   }
+  ],
+  "app/Modules/Finanzas/Views/facturacion/guias/pdf-simple.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 2
+   }
+  ],
+  "app/Modules/Finanzas/Views/facturacion/guias/pdf.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Views/facturacion/layouts/app.blade.php": [
+   {
+    "old": "App\\Models\\Invoice",
+    "new": "App\\Modules\\Finanzas\\Models\\Invoice",
+    "n": 2
+   }
+  ],
+  "app/Modules/Finanzas/Views/invoices/index.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 2
+   },
+   {
+    "old": "@include('invoices._formulario'",
+    "new": "@include('finanzas::invoices._formulario'",
+    "n": 1
+   },
+   {
+    "old": "@include('invoices._lector'",
+    "new": "@include('finanzas::invoices._lector'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Views/invoices/pdf-clasico.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\Sunat\\MontoEnLetras",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\MontoEnLetras",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Views/invoices/pdf.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 2
+   },
+   {
+    "old": "App\\Support\\Sunat\\MontoEnLetras",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\MontoEnLetras",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Views/invoices/_formulario.blade.php": [
+   {
+    "old": "App\\Support\\Sunat\\Catalogos",
+    "new": "App\\Modules\\Finanzas\\Support\\Sunat\\Catalogos",
+    "n": 2
+   }
+  ],
+  "app/Modules/Finanzas/Models/InvoiceItem.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/ReceivableTerm.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/Caja.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/CajaMovimiento.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/Certificado.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/LecturaComprobante.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Models/GuiaRemisionItem.php": [
+   {
+    "old": "namespace App\\Models;",
+    "new": "namespace App\\Modules\\Finanzas\\Models;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Controllers/FacturacionAuthController.php": [
+   {
+    "old": "namespace App\\Http\\Controllers\\Facturacion;",
+    "new": "namespace App\\Modules\\Finanzas\\Controllers;",
+    "n": 1
+   },
+   {
+    "old": "view('facturacion.login-general'",
+    "new": "view('finanzas::facturacion.login-general'",
+    "n": 2
+   },
+   {
+    "old": "view('facturacion.login'",
+    "new": "view('finanzas::facturacion.login'",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Sunat/Catalogos.php": [
+   {
+    "old": "namespace App\\Support\\Sunat;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Sunat;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Sunat/MontoEnLetras.php": [
+   {
+    "old": "namespace App\\Support\\Sunat;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Sunat;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Lector/LectorComprobantes.php": [
+   {
+    "old": "namespace App\\Support\\Lector;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Lector;",
+    "n": 1
+   }
+  ],
+  "app/Modules/Finanzas/Support/Lector/Normalizador.php": [
+   {
+    "old": "namespace App\\Support\\Lector;",
+    "new": "namespace App\\Modules\\Finanzas\\Support\\Lector;",
+    "n": 1
+   }
+  ],
+  "app/View/Components/FacturacionLayout.php": [
+   {
+    "old": "view('facturacion.layouts.app'",
+    "new": "view('finanzas::facturacion.layouts.app'",
+    "n": 1
+   }
+  ]
+ },
+ "inserts": {
+  "app/Modules/Finanzas/Models/Invoice.php": [
+   "use App\\Models\\Client;",
+   "use App\\Models\\Order;",
+   "use App\\Models\\Project;",
+   "use App\\Models\\Quote;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Finanzas/Models/InvoiceItem.php": [
+   "use App\\Models\\Product;"
+  ],
+  "app/Modules/Finanzas/Models/Payment.php": [
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Finanzas/Models/ReceivableTerm.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Finanzas/Models/Caja.php": [
+   "use App\\Models\\Order;",
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Finanzas/Models/CajaMovimiento.php": [
+   "use App\\Models\\Order;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Finanzas/Models/Certificado.php": [
+   "use App\\Models\\Project;"
+  ],
+  "app/Modules/Finanzas/Models/LecturaComprobante.php": [
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Finanzas/Models/GuiaRemision.php": [
+   "use App\\Models\\Client;",
+   "use App\\Models\\Order;",
+   "use App\\Models\\Project;",
+   "use App\\Models\\User;"
+  ],
+  "app/Modules/Finanzas/Models/GuiaRemisionItem.php": [
+   "use App\\Models\\Product;"
+  ],
+  "app/Modules/Finanzas/Support/Ledger.php": [
+   "use App\\Support\\LineMath;"
+  ],
+  "app/Models/Project.php": [
+   "use App\\Modules\\Finanzas\\Models\\Invoice;",
+   "use App\\Modules\\Finanzas\\Models\\GuiaRemision;"
+  ]
+ },
+ "sospechosos": {
+  "app/Http/Controllers/CertificadoController.php": [
+   "certificados.index', compact('project', 'certificados'));"
+  ],
+  "app/Http/Controllers/InvoiceController.php": [
+   "_template') === 'clasico'             ? 'invoices.pdf-clasico'",
+   "? 'invoices.pdf-clasico'             : 'invoices.pdf';",
+   "index', compact(             'project', 'invoices', 'po",
+   "ion.facturas.index', compact('project', 'invoices', 'cl"
+  ],
+  "app/Http/Controllers/Comercial/DashboardController.php": [
+   "],                 $project->hasModule('invoices') ? ["
+  ],
+  "app/Http/Controllers/Facturacion/DashboardController.php": [
+   "ario?->id             || $usuario?->can('invoices.crear');"
+  ],
+  "app/Http/Controllers/Facturacion/GuiaRemisionController.php": [
+   "=> ['nullable', 'integer', Rule::exists('invoices', 'id",
+   "_template') === 'clasico'             ? 'facturacion.guias.pdf-clasico'",
+   "ion con \"View not found\".             : 'facturacion.guias.pdf-simple';"
+  ],
+  "app/Http/Middleware/EnsureComercialModule.php": [
+   "=> 'clients',         'facturas'     => 'invoices',",
+   "> 'invoices',         'boletas'      => 'invoices',",
+   "> 'invoices',         'comprobantes' => 'invoices',",
+   "ol de acceso.         'guias'        => 'invoices',"
+  ],
+  "app/Models/Certificado.php": [
+   "extends Model {     protected $table = 'certificados';"
+  ],
+  "app/Modules/Control/Controllers/AdminProjectController.php": [
+   "->withCount(['orders', 'clients', 'invoices'])"
+  ],
+  "app/Modules/Control/Models/DemoRequest.php": [
+   "','orders','catalog','agenda','clients','invoices','hr'",
+   "=> true],                     ['key' => 'invoices',",
+   "> ['store','orders','catalog','clients','invoices'],",
+   "> ['store','orders','catalog','clients','invoices','pro",
+   "=> true],                     ['key' => 'invoices',",
+   "','catalog','agenda','quotes','clients','invoices','hr'",
+   "=> true],                     ['key' => 'invoices',"
+  ],
+  "app/Modules/Personas/Views/roles/index.blade.php": [
+   "'invoices'=>'#8",
+   "'quotes'=>'rgba(251,191,36,.1)','invoices'=>'rg",
+   "'invoices'=>'#6"
+  ],
+  "app/Storefront/StorePageWriteService.php": [
+   "s', 'dashboard', 'b', 'f', 'up', 'pos', 'invoices', 'qu"
+  ],
+  "app/Support/Access.php": [
+   ",          // ── Facturación ──         'invoices.ver'    =",
+   "s.ver'    => 'facturacion.ver',         'invoices.crear'  =>",
+   "ar'  => 'facturacion.trabajar',         'invoices.editar' => '",
+   "tar' => 'facturacion.trabajar',         'invoices.anular' => '"
+  ],
+  "app/Support/ModulosPortal.php": [
+   "titlement = [             'facturas' => 'invoices',"
+  ],
+  "tests/Feature/BixoSalesAuthorizationTest.php": [
+   "ditar', 'clients.eliminar',             'invoices.ver', 'in",
+   ".eliminar',             'invoices.ver', 'invoices.crear', 'in",
+   "'invoices.ver', 'invoices.crear', 'invoices.editar', 'in",
+   "', 'invoices.crear', 'invoices.editar', 'invoices.anular',",
+   "foreach (['orders', 'clients', 'invoices', 'qu",
+   "ditar', 'clients.eliminar',             'invoices.ver', 'in",
+   ".eliminar',             'invoices.ver', 'invoices.crear', 'in",
+   "'invoices.ver', 'invoices.crear', 'invoices.editar', 'in",
+   "', 'invoices.crear', 'invoices.editar', 'invoices.anular',",
+   "$vigilada = str_starts_with($uri, 'invoices')"
+  ],
+  "tests/Feature/CadenaVentaGuiaTest.php": [
+   "mission\\Models\\Permission::findOrCreate('invoices.crear', 'we",
+   "ser->givePermissionTo(['quotes.editar', 'invoices.crear']);",
+   "\\Models\\Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is"
+  ],
+  "tests/Feature/ComercialEntitlementTest.php": [
+   ");         $this->usuarioCon($project, ['invoices.ver', 'cl",
+   "$project = $this->proyectoConModulos(['invoices']);",
+   "$project = $this->proyectoConModulos(['invoices']);",
+   ");         $this->usuarioCon($project, ['invoices.ver']);"
+  ],
+  "tests/Feature/ComprobanteResumenYAccionesTest.php": [
+   "\\Models\\Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is"
+  ],
+  "tests/Feature/ComprobantesPorTipoTest.php": [
+   "parent::setUp();         foreach (['invoices.ver', 'or",
+   "$m = Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is",
+   "e('fiscal_qa', 'web')->syncPermissions(['invoices.ver', 'or"
+  ],
+  "tests/Feature/ConsultaComprobantesFiltrosTest.php": [
+   "tUp();         Permission::findOrCreate('invoices.ver', 'we",
+   "$m = Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is",
+   "('filtros_qa', 'web')->syncPermissions(['invoices.ver']);"
+  ],
+  "tests/Feature/CumplimientoSunatTest.php": [
+   "$m = Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is"
+  ],
+  "tests/Feature/EmisionFormularioTest.php": [
+   "\\Models\\Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is"
+  ],
+  "tests/Feature/FacturacionDescuentoTest.php": [
+   "oreach (['quotes.ver', 'quotes.editar', 'invoices.crear'] as",
+   "issions(['quotes.ver', 'quotes.editar', 'invoices.crear']);"
+  ],
+  "tests/Feature/FacturacionPortadaMovilTest.php": [
+   "=> true,         ]);         foreach (['invoices', 'fa"
+  ],
+  "tests/Feature/FacturaPlantillaClasicaTest.php": [
+   "ing('invoice_template') === 'clasico' ? 'invoices.pdf-clasico' : 'i",
+   "== 'clasico' ? 'invoices.pdf-clasico' : 'invoices.pdf',"
+  ],
+  "tests/Feature/FinanzasModuloTest.php": [
+   "parent::setUp();          foreach (['invoices.ver', 'in",
+   "p();          foreach (['invoices.ver', 'invoices.crear', 're",
+   "=> true,         ]);         foreach (['invoices', 'or",
+   "inanzas_test', 'web')->syncPermissions(['invoices.ver', 'in",
+   "web')->syncPermissions(['invoices.ver', 'invoices.crear', 're"
+  ],
+  "tests/Feature/GuiaRemisionTest.php": [
+   "Queue::fake();          foreach (['invoices.ver', 'in",
+   "e();          foreach (['invoices.ver', 'invoices.crear', 'in",
+   "ach (['invoices.ver', 'invoices.crear', 'invoices.anular'] as",
+   "$m = Module::firstOrCreate(['key' => 'invoices'], ['",
+   ", 'web')             ->syncPermissions(['invoices.ver', 'in",
+   "->syncPermissions(['invoices.ver', 'invoices.crear', 'in",
+   "ions(['invoices.ver', 'invoices.crear', 'invoices.anular']);"
+  ],
+  "tests/Feature/GuiaUbigeoYDescargaTest.php": [
+   "\\Models\\Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is"
+  ],
+  "tests/Feature/HistoricoGuiasTest.php": [
+   "\\Models\\Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is"
+  ],
+  "tests/Feature/InvoiceClientLinkTest.php": [
+   "]);         foreach (['catalog', 'invoices', 'or",
+   "}         Permission::findOrCreate('invoices.crear', 'we",
+   "ate('fact_qa', 'web')->syncPermissions(['invoices.crear']);"
+  ],
+  "tests/Feature/LegacyMappingTest.php": [
+   "ntory.editar', 'inventory.ver',         'invoices.anular', 'in",
+   "entory.ver',         'invoices.anular', 'invoices.crear', 'in",
+   "'invoices.anular', 'invoices.crear', 'invoices.editar', 'in",
+   "', 'invoices.crear', 'invoices.editar', 'invoices.ver',",
+   "rear', 'clients.editar', 'clients.ver', 'invoices.crear', 'in",
+   "itar', 'clients.ver', 'invoices.crear', 'invoices.ver',",
+   "'hr.ver', 'inventory.ver', 'invoices.ver', 'ma",
+   "lients.ver',                            'invoices.crear', 'in",
+   "'invoices.crear', 'invoices.ver', 'or",
+   "ontador' => ['caja.ver', 'clients.ver', 'invoices.anular', 'in",
+   "ver', 'clients.ver', 'invoices.anular', 'invoices.crear',",
+   "ices.crear',                            'invoices.editar', 'in",
+   "'invoices.editar', 'invoices.ver', 'or"
+  ],
+  "tests/Feature/MenuLateralComercialTest.php": [
+   "tes.ver', 'clients.ver', 'reports.ver', 'invoices.ver',",
+   "regla de uso/ajuste.         foreach (['invoices', 'ag",
+   "lients.ver', 'reports.ver',             'invoices.ver', 'ca",
+   "lients.ver', 'reports.ver',             'invoices.ver', 'ca",
+   "lients.ver', 'reports.ver',             'invoices.ver', 'ca",
+   "ders.ver', 'quotes.ver', 'reports.ver', 'invoices.ver',",
+   "is->entrar('menu_libre', ['orders.ver', 'invoices.ver']);",
+   "s->entrar('menu_fiscal', ['orders.ver', 'invoices.ver']);"
+  ],
+  "tests/Feature/ModulesAuthorizationTest.php": [
+   "ettings.negocio', 'settings.catalogos', 'invoices.editar',",
+   "ST', '/bixoadmin/certificados',         'invoices.editar'],"
+  ],
+  "tests/Feature/NotasPantallaTest.php": [
+   "parent::setUp();          foreach (['invoices.ver', 'in",
+   "p();          foreach (['invoices.ver', 'invoices.crear', 'in",
+   "ach (['invoices.ver', 'invoices.crear', 'invoices.anular'] as",
+   "$m = Module::firstOrCreate(['key' => 'invoices'], ['",
+   ", 'web')             ->syncPermissions(['invoices.ver', 'in",
+   "->syncPermissions(['invoices.ver', 'invoices.crear', 'in",
+   "ions(['invoices.ver', 'invoices.crear', 'invoices.anular']);"
+  ],
+  "tests/Feature/NotasYBajaTest.php": [
+   "Queue::fake();          foreach (['invoices.ver', 'in",
+   "e();          foreach (['invoices.ver', 'invoices.crear', 'in",
+   "ach (['invoices.ver', 'invoices.crear', 'invoices.editar', 'in",
+   "', 'invoices.crear', 'invoices.editar', 'invoices.anular'] as",
+   "$m = Module::firstOrCreate(['key' => 'invoices'], ['",
+   ", 'web')             ->syncPermissions(['invoices.ver', 'in",
+   "->syncPermissions(['invoices.ver', 'invoices.crear', 'in",
+   "ions(['invoices.ver', 'invoices.crear', 'invoices.editar', 'in",
+   "', 'invoices.crear', 'invoices.editar', 'invoices.anular']);"
+  ],
+  "tests/Feature/PortadaFacturacionTest.php": [
+   "$m = Module::firstOrCreate(['key' => 'invoices'], ['",
+   "reate(['key' => 'invoices'], ['name' => 'invoices', 'is"
+  ],
+  "tests/Feature/PosUsabilidadTest.php": [
+   "foreach (['orders', 'catalog', 'invoices'] as"
+  ],
+  "tests/Feature/ShellUnicoWorkspaceTest.php": [
+   "foreach (['orders', 'clients', 'invoices', 'qu",
+   ".catalogos',             'catalog.ver', 'invoices.ver', 'or"
+  ],
+  "database/migrations/2026_03_14_000004_create_invoices_table.php": [
+   "(): void\r     {\r         Schema::create('invoices', fun",
+   "_items');\r         Schema::dropIfExists('invoices');"
+  ],
+  "database/migrations/2026_04_10_200001_create_certificados_table.php": [
+   "up(): void     {         Schema::create('certificados', fun",
+   "void     {         Schema::dropIfExists('certificados');"
+  ],
+  "database/migrations/2026_08_22_090000_add_nota_y_baja_to_invoices.php": [
+   "up(): void     {         Schema::table('invoices', fun",
+   "ma.             if (! Schema::hasColumn('invoices', 'af",
+   "_id')                     ->constrained('invoices')->nu",
+   "}             if (! Schema::hasColumn('invoices', 'af",
+   "}             if (! Schema::hasColumn('invoices', 'af",
+   ") ─             if (! Schema::hasColumn('invoices', 'mo",
+   "}             if (! Schema::hasColumn('invoices', 'mo",
+   "re.             if (! Schema::hasColumn('invoices', 'ba",
+   "}             if (! Schema::hasColumn('invoices', 'ba",
+   "}             if (! Schema::hasColumn('invoices', 'ba",
+   "}             if (! Schema::hasColumn('invoices', 'ba",
+   "}             if (! Schema::hasColumn('invoices', 'ba",
+   "ño.             if (! Schema::hasColumn('invoices', 'cr",
+   "own(): void     {         Schema::table('invoices', fun",
+   "{                 if (Schema::hasColumn('invoices', $fk",
+   "fn ($c) => Schema::hasColumn('invoices', $c)"
+  ],
+  "database/migrations/2026_09_04_120000_add_internal_issue_date_to_invoices.php": [
+   "d     {         if (! Schema::hasColumn('invoices', 'in",
+   "sue_date')) {             Schema::table('invoices', fun",
+   "oid     {         if (Schema::hasColumn('invoices', 'in",
+   "sue_date')) {             Schema::table('invoices', fun"
+  ],
+  "database/migrations/2026_09_04_170000_documento_fiscal_en_clientes.php": [
+   "istente.         if (! Schema::hasTable('invoices')) {",
+   "return;         }          DB::table('invoices')"
+  ],
+  "database/migrations/2026_09_05_160000_condicion_de_pago_en_comprobantes.php": [
+   "oid     {         if (Schema::hasColumn('invoices', 'pa",
+   "return;         }         Schema::table('invoices', fun",
+   "own(): void     {         Schema::table('invoices', fun"
+  ],
+  "database/migrations/2026_09_05_180000_respuesta_sunat_sin_tope.php": [
+   "os de texto         }         foreach (['invoices', 'gu",
+   "return;         }         foreach (['invoices', 'gu"
+  ],
+  "database/seeders/ModuleSeeder.php": [
+   "rt_order' => 11],             ['key' => 'invoices',"
+  ],
+  "database/seeders/PermissionsSeeder.php": [
+   "// Facturas y boletas         'invoices.ver', 'in",
+   "turas y boletas         'invoices.ver', 'invoices.crear', 'in",
+   "'invoices.ver', 'invoices.crear', 'invoices.editar', 'in",
+   "', 'invoices.crear', 'invoices.editar', 'invoices.anular',",
+   "ditar',  'quotes.eliminar',             'invoices.ver','inv",
+   "s.eliminar',             'invoices.ver','invoices.crear','inv",
+   "'invoices.ver','invoices.crear','invoices.editar','inv",
+   "ver','invoices.crear','invoices.editar','invoices.anular',",
+   "s.crear',  'quotes.editar',             'invoices.ver','inv",
+   "tes.editar',             'invoices.ver','invoices.crear',",
+   "*/         'contador' => [             'invoices.ver', 'in",
+   "tador' => [             'invoices.ver', 'invoices.crear', 'in",
+   "'invoices.ver', 'invoices.crear', 'invoices.editar', 'in",
+   "', 'invoices.crear', 'invoices.editar', 'invoices.anular',",
+   ",             'quotes.ver',             'invoices.ver',"
+  ],
+  "resources/views/comercial/layouts/_sidebar.blade.php": [
+   "', 'bixosales.facturacion', 'factura', ['invoices.ver'], nu",
+   "ras', 'bixosales.facturas', 'factura', ['invoices.ver'], nu",
+   "tas', 'bixosales.facturas', 'factura', ['invoices.ver'], nu",
+   "', 'bixosales.facturas', 'cotizacion', ['invoices.ver'], nu",
+   ", 'bixosales.guias.index', 'delivery', ['invoices.ver']] :",
+   "xosales.facturas.consulta', 'factura', ['invoices.ver']] :",
+   "bixosales.guias.consulta', 'delivery', ['invoices.ver']] :",
+   "osales.facturas.registro', 'cobranza', ['invoices.ver']] :"
+  ],
+  "resources/views/comercial/panel/inicio-movil.blade.php": [
+   "$facturacion  = $project->hasModule('invoices') &&",
+   "& $hay('bixosales.facturas') && $puede(['invoices.ver']);",
+   "$emite        = $facturacion && $puede(['invoices.crear']);"
+  ],
+  "resources/views/facturacion/facturas/index.blade.php": [
+   "00' : 'text-blue-700' }} mt-0.5\" x-text=\"invoices.length\"></p>"
+  ],
+  "resources/views/facturacion/guias/consulta.blade.php": [
+   "</button>                         @can('invoices.crear')"
+  ],
+  "resources/views/facturacion/guias/index.blade.php": [
+   "comercial' ? 'bixosales.facturas.ruc' : 'invoices.ruc';"
+  ],
+  "resources/views/facturacion/layouts/app.blade.php": [
+   "class=\"fnav-item {{ request()->routeIs('facturacion.dashboard') ? '"
+  ],
+  "resources/views/invoices/consulta.blade.php": [
+   "ante. --}}                         @can('invoices.crear')"
+  ],
+  "resources/views/layouts/app.blade.php": [
+   "===auth()->id() || auth()->user()?->can('invoices.ver'))"
+  ],
+  "resources/views/pos/index.blade.php": [
+   "(\\Illuminate\\Support\\Facades\\Route::has('invoices.clientes') ? r"
+  ],
+  "resources/views/settings/modules.blade.php": [
+   "[                     'key'   => 'invoices',"
+  ],
+  "resources/views/ventas/express.blade.php": [
+   "\\Illuminate\\Support\\Facades\\Route::has('invoices.index'))"
+  ]
+ }
+}

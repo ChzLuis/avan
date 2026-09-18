@@ -329,7 +329,7 @@ class OrderController extends Controller
     private function aplicarCobro(\App\Models\Project $project, Order $order, array $data): void
     {
         $tipo     = $data['status'];
-        $cobrado  = \App\Support\Ledger::cobradoCents($project->id, 'order', $order->id);
+        $cobrado  = \App\Modules\Finanzas\Support\Ledger::cobradoCents($project->id, 'order', $order->id);
         $totalC   = \App\Support\LineMath::toCents(\App\Support\LineMath::canon((string) $order->total));
 
         if ($tipo === 'partial' || $tipo === 'paid') {
@@ -340,7 +340,7 @@ class OrderController extends Controller
                 ? \App\Support\LineMath::toCents(\App\Support\LineMath::canon(number_format((float) $data['amount'], 2, '.', '')))
                 : null;
 
-            \App\Support\Ledger::registrar($project, $order, $importeC,
+            \App\Modules\Finanzas\Support\Ledger::registrar($project, $order, $importeC,
                 $data['method'] ?? $order->payment_method, $data['reference'] ?? null, 'panel');
 
             return;
@@ -350,11 +350,11 @@ class OrderController extends Controller
         // NO borra nada: se revierten los asientos vigentes, con motivo, para
         // que quede rastro de que hubo correccion.
         $motivo = $data['motivo'] ?: 'Marcado como ' . $tipo . ' desde el panel';
-        foreach (\App\Models\Payment::where('project_id', $project->id)
+        foreach (\App\Modules\Finanzas\Models\Payment::where('project_id', $project->id)
                      ->where('payable_type', 'order')->where('payable_id', $order->id)
                      ->whereNull('reverses_id')->get() as $asiento) {
-            if (! \App\Models\Payment::where('reverses_id', $asiento->id)->exists()) {
-                \App\Support\Ledger::revertir($asiento, $motivo);
+            if (! \App\Modules\Finanzas\Models\Payment::where('reverses_id', $asiento->id)->exists()) {
+                \App\Modules\Finanzas\Support\Ledger::revertir($asiento, $motivo);
             }
         }
     }
@@ -362,7 +362,7 @@ class OrderController extends Controller
     /** Los cobros del pedido, para que el drawer pueda mostrarlos uno a uno. */
     private function historialDeCobros(int $projectId, int $orderId): array
     {
-        return \App\Models\Payment::where('project_id', $projectId)
+        return \App\Modules\Finanzas\Models\Payment::where('project_id', $projectId)
             ->where('payable_type', 'order')->where('payable_id', $orderId)
             ->orderBy('id')->get()
             ->map(fn ($p) => [

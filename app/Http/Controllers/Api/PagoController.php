@@ -71,17 +71,17 @@ class PagoController extends Controller
         // aprobacion del bot es un asiento conciliable, con su origen, y no una
         // mutacion que borra la anterior. La respuesta JSON no cambia.
         $desde = $order->payment_status;
-        $saldo = \App\Support\Ledger::saldoCents($project->id, $order);
+        $saldo = \App\Modules\Finanzas\Support\Ledger::saldoCents($project->id, $order);
 
         if ($saldo > 0) {
             // null = "salda lo que falte", calculado dentro de la transaccion.
-            \App\Support\Ledger::registrar($project, $order, null,
+            \App\Modules\Finanzas\Support\Ledger::registrar($project, $order, null,
                 $order->payment_method, $order->payment_reference, 'bot');
         } else {
             // Ya estaba cobrado (reintento del bot): idempotente, no se duplica
             // el asiento ni se devuelve error — el bot reintenta y no debe ver
             // un fallo por algo que ya hizo bien.
-            \App\Support\Ledger::proyectar($project, $order);
+            \App\Modules\Finanzas\Support\Ledger::proyectar($project, $order);
         }
 
         $order->refresh();
@@ -115,14 +115,14 @@ class PagoController extends Controller
         // F3b: si habia cobros registrados se REVIERTEN con su motivo —queda el
         // rastro de que hubo correccion— en vez de pisar el estado. Si no habia
         // ninguno, la proyeccion devuelve el pedido a 'pending' igualmente.
-        foreach (\App\Models\Payment::where('project_id', $project->id)
+        foreach (\App\Modules\Finanzas\Models\Payment::where('project_id', $project->id)
                      ->where('payable_type', 'order')->where('payable_id', $order->id)
                      ->whereNull('reverses_id')->get() as $asiento) {
-            if (! \App\Models\Payment::where('reverses_id', $asiento->id)->exists()) {
-                \App\Support\Ledger::revertir($asiento, $motivo);
+            if (! \App\Modules\Finanzas\Models\Payment::where('reverses_id', $asiento->id)->exists()) {
+                \App\Modules\Finanzas\Support\Ledger::revertir($asiento, $motivo);
             }
         }
-        \App\Support\Ledger::proyectar($project, $order->refresh());
+        \App\Modules\Finanzas\Support\Ledger::proyectar($project, $order->refresh());
 
         $order->refresh();
         $order->notes = trim(($order->notes ? $order->notes . "\n" : '')

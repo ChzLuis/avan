@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\GuiaRemision;
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\GuiaRemision;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\Sunat\GuiaRemisionSender;
+use App\Modules\Finanzas\Support\Sunat\GuiaRemisionSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

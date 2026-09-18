@@ -245,7 +245,7 @@ class PosController extends Controller
             // La columna ya la escribio create(); se limpia para que el libro
             // sea la unica fuente y la proyeccion no sume dos veces lo mismo.
             $order->forceFill(['advance_amount' => null])->save();
-            \App\Support\Ledger::registrar($project, $order, $cobradoCents,
+            \App\Modules\Finanzas\Support\Ledger::registrar($project, $order, $cobradoCents,
                 $data['payment_method'] ?? null, null, 'pos');
         }
 

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\ApisPeruService;
-use App\Support\Sunat\ArchivoComprobantes;
+use App\Modules\Finanzas\Support\ApisPeruService;
+use App\Modules\Finanzas\Support\Sunat\ArchivoComprobantes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -139,7 +139,7 @@ class CumplimientoSunatTest extends TestCase
         $r->assertOk();
         $this->assertStringContainsString('resumen diario', $r->json('message'));
         $this->assertSame('pending', $boleta->fresh()->baja_estado);
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\DarDeBajaEnSunat::class);
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Modules\Finanzas\Jobs\DarDeBajaEnSunat::class);
     }
 
     public function test_el_pdf_genera_el_qr_en_local_sin_servicios_externos(): void

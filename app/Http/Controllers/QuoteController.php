@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Quote;
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 

@@ -29,8 +29,8 @@ final class ModulosPortal
     public static function liberados(Project $project, ?int $userId = null): array
     {
         $uso = Cache::remember("portal.uso.{$project->id}", 60, fn () => [
-            'caja'     => \App\Models\Caja::where('project_id', $project->id)->exists(),
-            'facturas' => \App\Models\Invoice::where('project_id', $project->id)->exists(),
+            'caja'     => \App\Modules\Finanzas\Models\Caja::where('project_id', $project->id)->exists(),
+            'facturas' => \App\Modules\Finanzas\Models\Invoice::where('project_id', $project->id)->exists(),
             'reservas' => \App\Models\Appointment::where('project_id', $project->id)->exists(),
             // Reparto se retira del menu hasta terminarlo: tener pedidos de
             // tipo 'delivery' ya no basta para publicarlo. Se enciende a mano

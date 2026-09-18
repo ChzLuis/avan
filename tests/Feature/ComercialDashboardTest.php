@@ -9,7 +9,7 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\Quote;
-use App\Models\ReceivableTerm;
+use App\Modules\Finanzas\Models\ReceivableTerm;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -334,11 +334,11 @@ class ComercialDashboardTest extends TestCase
         $base = [
             'project_id' => $this->project->id, 'serie' => 'T001',
             'destinatario_nombre' => 'Cliente QA', 'fecha_traslado' => now()->addDay(),
-            'modalidad' => \App\Models\GuiaRemision::PRIVADO, 'peso_total' => 10, 'peso_unidad' => 'KGM',
+            'modalidad' => \App\Modules\Finanzas\Models\GuiaRemision::PRIVADO, 'peso_total' => 10, 'peso_unidad' => 'KGM',
             'partida_direccion' => 'A', 'llegada_direccion' => 'B', 'status' => 'issued',
         ];
-        \App\Models\GuiaRemision::create($base + ['correlativo' => 1, 'numero' => 'T001-00000001', 'motivo_codigo' => '01']);
-        \App\Models\GuiaRemision::create($base + ['correlativo' => 2, 'numero' => 'T001-00000002', 'motivo_codigo' => '05']);
+        \App\Modules\Finanzas\Models\GuiaRemision::create($base + ['correlativo' => 1, 'numero' => 'T001-00000001', 'motivo_codigo' => '01']);
+        \App\Modules\Finanzas\Models\GuiaRemision::create($base + ['correlativo' => 2, 'numero' => 'T001-00000002', 'motivo_codigo' => '05']);
         $this->entrar();
 
         $this->get('/bixosales')

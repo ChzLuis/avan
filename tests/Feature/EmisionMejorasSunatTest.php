@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\ApisPeruService;
+use App\Modules\Finanzas\Support\ApisPeruService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -95,7 +95,7 @@ class EmisionMejorasSunatTest extends TestCase
             'issue_date' => '2026-09-05', 'due_date' => '2026-10-05', 'payment_condition' => 'credito',
         ]);
         $inv->setRelation('project', $this->project);
-        $inv->setRelation('items', collect([new \App\Models\InvoiceItem([
+        $inv->setRelation('items', collect([new \App\Modules\Finanzas\Models\InvoiceItem([
             'description' => 'Cable', 'unit' => 'NIU', 'quantity' => 1, 'unit_price' => 118, 'igv_amount' => 18, 'total' => 118,
         ])]));
 

@@ -2,15 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\DarDeBajaEnSunat;
-use App\Jobs\SendInvoiceToSunat;
+use App\Modules\Finanzas\Jobs\DarDeBajaEnSunat;
+use App\Modules\Finanzas\Jobs\SendInvoiceToSunat;
 use App\Models\Employee;
-use App\Models\Invoice;
+use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Module;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;
-use App\Support\ApisPeruService;
+use App\Modules\Finanzas\Support\ApisPeruService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Permission;

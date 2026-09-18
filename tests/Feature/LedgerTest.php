@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
-use App\Models\Payment;
+use App\Modules\Finanzas\Models\Payment;
 use App\Models\Project;
 use App\Models\User;
-use App\Support\Ledger;
+use App\Modules\Finanzas\Support\Ledger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use RuntimeException;

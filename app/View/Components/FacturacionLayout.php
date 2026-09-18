@@ -15,6 +15,6 @@ class FacturacionLayout extends Component
 
     public function render(): View
     {
-        return view('facturacion.layouts.app');
+        return view('finanzas::facturacion.layouts.app');
     }
 }
