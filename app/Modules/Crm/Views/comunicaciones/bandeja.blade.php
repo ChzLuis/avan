@@ -30,6 +30,11 @@ $estadoColores = [
             <h2 class="text-base font-bold text-gray-900">Chats</h2>
             <div class="flex items-center gap-1">
                 <span class="text-[10px] bg-green-100 text-green-700 font-black px-1.5 py-0.5 rounded-full" x-show="totalNoLeidos > 0" x-text="totalNoLeidos"></span>
+                <button @click="alternarAvisos()" class="p-1.5 rounded-lg hover:bg-gray-100 relative" :class="avisos ? 'text-green-600' : 'text-gray-400'"
+                        :title="avisos ? 'Avisos activados: sonido y notificación al llegar un mensaje (clic para apagar)' : 'Activar sonido y notificaciones de mensajes nuevos'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span x-show="!avisos" class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="block w-5 h-px bg-gray-400" style="transform:rotate(45deg)"></span></span>
+                </button>
                 <button @click="modalRespuestas = true" class="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100" title="Respuestas rápidas">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </button>
@@ -633,6 +638,8 @@ function bandeja() {
         enviando: false,
         textoMensaje: '',
         errorEnvio: null,
+        avisos: (() => { try { return localStorage.getItem('bx_avisos') === '1'; } catch (e) { return false; } })(),
+        ultimoAviso: {},
         esMovil: window.innerWidth < 768,
         masOpciones: false,
         ventana: { es_meta: false, abierta: true, cierra_at: null },
@@ -803,8 +810,52 @@ function bandeja() {
             );
         },
 
+        // ── Avisos: sonido + notificacion del navegador (tambien en el celular con la pestaña abierta) ──
+        async alternarAvisos() {
+            if (this.avisos) {
+                this.avisos = false;
+                try { localStorage.setItem('bx_avisos', '0'); } catch (e) {}
+                return;
+            }
+            if ('Notification' in window && Notification.permission !== 'granted') {
+                try { await Notification.requestPermission(); } catch (e) {}
+            }
+            this.avisos = true;
+            try { localStorage.setItem('bx_avisos', '1'); } catch (e) {}
+            this.sonar();
+        },
+        sonar() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [[880, 0], [1175, 0.12]].forEach(([f, t]) => {
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.type = 'sine'; o.frequency.value = f;
+                    g.gain.setValueAtTime(0.0001, ctx.currentTime + t);
+                    g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + t + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.25);
+                    o.connect(g).connect(ctx.destination);
+                    o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.3);
+                });
+            } catch (e) {}
+        },
+        avisar(conv) {
+            if (!this.avisos) return;
+            this.sonar();
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    const n = new Notification(conv.cliente_nombre || conv.cliente_telefono, {
+                        body: (conv.ultimo_mensaje || 'Mensaje nuevo').slice(0, 120),
+                        icon: '/favicon.ico', tag: 'bx-conv-' + conv.id, renotify: true,
+                    });
+                    n.onclick = () => { window.focus(); const c = this.conversaciones.find(x => x.id === conv.id); if (c) this.abrirConversacion(c); n.close(); };
+                } catch (e) {}
+            }
+        },
+
         init() {
             this.pollingInterval = setInterval(() => this.poll(), 3000);
+            // Chrome exige un gesto para el audio: el primer clic "desbloquea" el contexto.
+            document.addEventListener('click', () => { try { new (window.AudioContext || window.webkitAudioContext)().resume(); } catch (e) {} }, { once: true });
         },
 
         async abrirConversacion(conv) {
@@ -1048,6 +1099,15 @@ function bandeja() {
 
                 data.conversaciones_actualizadas.forEach(updated => {
                     const idx = this.conversaciones.findIndex(c => c.id === updated.id);
+                    // Mensaje NUEVO del cliente (no visto aun): sonido + notificacion.
+                    const entrante = (updated.ultimo_direccion === 'in' || updated.ultimo_direccion === 'entrante')
+                        && updated.ultimo_mensaje_at && this.ultimoAviso[updated.id] !== updated.ultimo_mensaje_at
+                        && (idx < 0 || this.conversaciones[idx].ultimo_mensaje_at !== updated.ultimo_mensaje_at);
+                    if (entrante) {
+                        this.ultimoAviso[updated.id] = updated.ultimo_mensaje_at;
+                        const enPantalla = this.convActiva?.id === updated.id && !document.hidden;
+                        if (!enPantalla) this.avisar(updated);
+                    }
                     if (idx >= 0) Object.assign(this.conversaciones[idx], updated);
                     else this.conversaciones.push(updated);
                 });
