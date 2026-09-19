@@ -46,6 +46,7 @@ use App\Modules\Crm\Controllers\BandejaController;
 use App\Modules\Crm\Controllers\ClientesCrmController;
 use App\Modules\Crm\Controllers\TratosController;
 use App\Modules\Crm\Controllers\PushController;
+use App\Modules\Crm\Controllers\AccionesController;
 use App\Modules\Crm\Controllers\CanalesController;
 use Illuminate\Support\Facades\Route;
 
@@ -1045,6 +1046,11 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::patch('/tratos/{trato}/mover',        [TratosController::class, 'mover'])->name('tratos.mover');
         Route::patch('/tratos/{trato}',              [TratosController::class, 'update'])->name('tratos.update');
         Route::delete('/tratos/{trato}',             [TratosController::class, 'destroy'])->name('tratos.destroy');
+        // Acciones: la siguiente cosa que hacer con cada cliente, con recordatorio push
+        Route::get('/acciones',                      [AccionesController::class, 'index'])->name('acciones');
+        Route::post('/acciones',                     [AccionesController::class, 'store'])->name('acciones.store');
+        Route::patch('/acciones/{accion}',           [AccionesController::class, 'update'])->name('acciones.update');
+        Route::delete('/acciones/{accion}',          [AccionesController::class, 'destroy'])->name('acciones.destroy');
 
         Route::get('/configuracion',                 [CanalesController::class, 'index'])->name('configuracion');
         // Asistente de conexion con Meta (WhatsApp Cloud API)

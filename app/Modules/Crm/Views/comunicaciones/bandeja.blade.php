@@ -88,9 +88,11 @@ $estadoColores = [
     {{-- Lista --}}
     <div class="flex-1 overflow-y-auto">
         <template x-for="conv in conversacionesFiltradas" :key="conv.id">
-            <div @click="abrirConversacion(conv)"
+            <div @click="Math.abs(deslizX) < 5 && abrirConversacion(conv)"
                  @contextmenu.prevent="menuConv = conv.id"
+                 @touchstart.passive="deslizarInicio($event, conv)" @touchmove.passive="deslizarMover($event)" @touchend="deslizarFin(conv)"
                  :class="convActiva?.id === conv.id ? 'bg-green-50' : 'hover:bg-gray-50'"
+                 :style="deslizId === conv.id && deslizX ? 'transform:translateX(' + deslizX + 'px);background:' + (deslizX < 0 ? '#fef3c7' : '#dcfce7') : ''"
                  class="group relative px-3 py-2.5 cursor-pointer transition-colors border-b border-gray-50">
                 <div class="flex items-center gap-3">
                     <div class="w-11 h-11 rounded-full flex items-center justify-center text-white text-base font-bold flex-shrink-0 relative"
@@ -510,6 +512,30 @@ $estadoColores = [
             <button @click="guardarDetalle()" class="mt-1 w-full text-xs text-white py-1.5 rounded-lg" style="background:#25d366">Guardar notas</button>
         </div>
 
+        {{-- Acciones de este cliente: lo siguiente que hay que hacer, con recordatorio push. --}}
+        <div class="rounded-xl border border-gray-200 p-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+                <p class="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Siguiente acción</p>
+                <a href="/bixocrm/acciones" class="text-[10px] text-gray-400 hover:underline">Ver todas</a>
+            </div>
+            <template x-for="a in accionesConv" :key="'acc' + a.id">
+                <div class="flex items-start gap-2 py-1">
+                    <button @click="accionHecha(a)" class="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" :class="a.hecho_at ? 'bg-green-500 border-green-500' : 'border-gray-300'"></button>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs text-gray-800" :class="a.hecho_at ? 'line-through text-gray-400' : ''" x-text="a.titulo"></p>
+                        <p class="text-[10px]" :class="a.vencida && !a.hecho_at ? 'text-red-600 font-semibold' : 'text-gray-400'" x-text="a.vence_texto || 'Sin fecha'"></p>
+                    </div>
+                </div>
+            </template>
+            <div class="flex gap-1.5 mt-1.5">
+                <input x-model="accionNueva" @keydown.enter="crearAccion()" placeholder="Ej: Llamar mañana" class="flex-1 min-w-0 text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                <select x-model="accionCuando" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1">
+                    <option value="2h">En 2 h</option><option value="manana">Mañana 9:00</option><option value="lunes">Lunes 9:00</option><option value="">Sin fecha</option>
+                </select>
+                <button @click="crearAccion()" :disabled="!accionNueva.trim()" class="text-xs font-bold text-white px-2.5 rounded-lg disabled:opacity-50" style="background:#f59e0b">+</button>
+            </div>
+        </div>
+
         <a :href="'/bixocrm/tratos?nuevo=1&conversacion=' + (convActiva?.id || '')"
            class="block text-center text-xs font-semibold text-white py-2 rounded-lg" style="background:#16a34a">+ Crear trato desde este chat</a>
 
@@ -658,6 +684,8 @@ function bandeja() {
         avisos: (() => { try { return localStorage.getItem('bx_avisos') === '1'; } catch (e) { return false; } })(),
         ultimoAviso: {},
         esMovil: window.innerWidth < 768,
+        accionesConv: [], accionNueva: '', accionCuando: 'manana',
+        deslizX: 0, deslizId: null, deslizX0: null,
         masOpciones: false,
         ventana: { es_meta: false, abierta: true, cierra_at: null },
         modalPlantillas: false, plantillas: [], plantillaSel: null, plantillaParams: [], cargandoPlantillas: false, errorPlantillas: '',
@@ -729,6 +757,47 @@ function bandeja() {
             return c.ultimo_mensaje || 'Sin mensajes';
         },
         esSaliente(m) { return m.direccion === 'saliente' || m.direccion === 'out'; },
+
+        // ── Acciones del cliente (fase 3) ──
+        async cargarAcciones(conv) {
+            this.accionesConv = [];
+            try {
+                const r = await fetch('/bixocrm/acciones?json=1&conversacion_id=' + conv.id, { headers: { Accept: 'application/json' } });
+                const d = await r.json();
+                this.accionesConv = (d.acciones || []).filter(a => !a.hecho_at).slice(0, 5);
+            } catch (e) {}
+        },
+        cuandoAccion() {
+            const p = n => String(n).padStart(2, '0');
+            const f = d => d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+            const d = new Date();
+            if (this.accionCuando === '2h') return f(new Date(Date.now() + 2 * 3600e3));
+            if (this.accionCuando === 'manana') { d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return f(d); }
+            if (this.accionCuando === 'lunes') { d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); d.setHours(9, 0, 0, 0); return f(d); }
+            return null;
+        },
+        async crearAccion() {
+            if (!this.accionNueva.trim() || !this.convActiva) return;
+            const r = await fetch('/bixocrm/acciones', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
+                body: JSON.stringify({ titulo: this.accionNueva, vence_at: this.cuandoAccion(), wa_conversacion_id: this.convActiva.id }) });
+            const d = await r.json().catch(() => ({}));
+            if (d.ok) { this.accionesConv.push(d.accion); this.accionNueva = ''; if (typeof bxAviso === 'function') bxAviso('Acción guardada. Te avisará por notificación al vencer.', 'success'); }
+        },
+        async accionHecha(a) {
+            const r = await fetch('/bixocrm/acciones/' + a.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' }, body: JSON.stringify({ hecha: !a.hecho_at }) });
+            const d = await r.json().catch(() => ({}));
+            if (d.ok) Object.assign(a, d.accion);
+        },
+
+        // ── Deslizar un chat en movil: derecha = no leido, izquierda = archivar ──
+        deslizarInicio(e, conv) { if (!this.esMovil) return; this.deslizX0 = e.touches[0].clientX; this.deslizId = conv.id; this.deslizX = 0; },
+        deslizarMover(e) { if (this.deslizX0 === null) return; this.deslizX = Math.max(-110, Math.min(110, e.touches[0].clientX - this.deslizX0)); },
+        deslizarFin(conv) {
+            if (this.deslizX0 === null) return;
+            const dx = this.deslizX; this.deslizX0 = null; this.deslizX = 0; this.deslizId = null;
+            if (dx < -80) { this.archivar(conv, !conv.archivado); if (typeof bxAviso === 'function') bxAviso(conv.archivado ? 'Chat desarchivado' : 'Chat archivado'); }
+            else if (dx > 80) { this.marcarNoLeida(conv); if (typeof bxAviso === 'function') bxAviso('Marcado como no leído'); }
+        },
 
         // ── Plantillas de Meta (ventana de 24 h) ──
         async abrirPlantillas() {
@@ -943,6 +1012,7 @@ function bandeja() {
             const data = await res.json();
             this.mensajes = data.mensajes;
             this.ventana = data.ventana || { es_meta: false, abierta: true, cierra_at: null };
+            this.cargarAcciones(conv);
             this.cargandoMensajes = false;
             conv.no_leidos = 0;
             this.$nextTick(() => this.scrollBottom());

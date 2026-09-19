@@ -2,7 +2,7 @@
 @section('pageTitle', 'Clientes CRM')
 @section('content')
 
-<div class="flex-1 overflow-auto p-6"
+<div class="flex-1 overflow-auto p-3 md:p-6"
      x-data="crm()" x-init="init()">
 
     {{-- Header --}}
@@ -71,8 +71,29 @@
         <span class="text-xs text-gray-400" x-text="`${clientesFiltrados.length} clientes`"></span>
     </div>
 
-    {{-- Vista Lista --}}
-    <div x-show="vista === 'lista'">
+    {{-- Vista Lista: en movil, tarjetas; en PC, tabla --}}
+    <div x-show="vista === 'lista' && window.innerWidth < 768" class="space-y-2">
+        <template x-for="c in clientesFiltrados" :key="'card' + c.id">
+            <a :href="`/bixocrm?conversacion=${c.id}`" class="block bg-white rounded-2xl border border-gray-200 px-3 py-2.5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" :style="`background:${c.canal_color}`" x-text="(c.cliente_nombre || c.cliente_telefono).charAt(0).toUpperCase()"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold text-gray-900 truncate" x-text="c.cliente_nombre || c.cliente_telefono"></p>
+                            <span class="text-[10px] text-gray-400 flex-shrink-0" x-text="formatFecha(c.ultimo_mensaje_at)"></span>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate" x-text="c.ultimo_mensaje || c.cliente_telefono"></p>
+                        <div class="flex items-center gap-1 mt-1">
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full" :style="estadoBadge(c.estado)" x-text="estadoLabel(c.estado)"></span>
+                            <span x-show="c.cliente_sector" class="text-[10px] text-gray-500" x-text="c.cliente_sector"></span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </template>
+        <p x-show="clientesFiltrados.length === 0" class="text-center text-sm text-gray-400 py-12">Sin clientes que coincidan con el filtro</p>
+    </div>
+    <div x-show="vista === 'lista' && window.innerWidth >= 768">
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
@@ -122,7 +143,7 @@
                                 <span class="text-xs text-gray-400" x-text="formatFecha(c.ultimo_mensaje_at)"></span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <a :href="`/comunicaciones?abrir=${c.id}`"
+                                <a :href="`/bixocrm?conversacion=${c.id}`"
                                    class="text-xs font-medium hover:underline"
                                    style="color:#25d366">Abrir chat</a>
                             </td>
@@ -168,7 +189,7 @@
                                 <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                                       :style="`background:${c.canal_color}22; color:${c.canal_color}`"
                                       x-text="c.canal_nombre"></span>
-                                <a :href="`/comunicaciones?abrir=${c.id}`"
+                                <a :href="`/bixocrm?conversacion=${c.id}`"
                                    class="text-[10px] font-medium hover:underline"
                                    style="color:#25d366">Chat</a>
                             </div>

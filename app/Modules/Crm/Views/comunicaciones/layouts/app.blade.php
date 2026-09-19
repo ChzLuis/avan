@@ -100,10 +100,12 @@
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Tratos
             </a>
-            <span class="nav-item nav-pronto" title="Fase 3: tareas y recordatorios">
+            @php $_accionesPend = \App\Modules\Crm\Models\CrmAccion::where('project_id', session('comunicaciones_project_id'))->whereNull('hecho_at')->where(fn ($w) => $w->whereNull('vence_at')->orWhere('vence_at', '<=', now()->endOfDay()))->count(); @endphp
+            <a href="{{ route('bixocrm.acciones') }}" class="nav-item {{ request()->routeIs('bixocrm.acciones*') ? 'nav-active' : '' }}">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                Acciones <span class="nav-tag">pronto</span>
-            </span>
+                Acciones
+                @if($_accionesPend > 0)<span class="ml-auto text-[10px] font-black px-1.5 py-0.5 rounded-full" style="background:#f59e0b;color:#1f1c33">{{ $_accionesPend }}</span>@endif
+            </a>
             <span class="nav-item nav-pronto" title="Fase 3: metricas del equipo">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 Avances <span class="nav-tag">pronto</span>
@@ -188,11 +190,13 @@
             ['bixocrm.bandeja',  'bixocrm.bandeja',  'Bandeja',    'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'],
             ['bixocrm.clientes', 'bixocrm.clientes', 'Prospectos', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
             ['bixocrm.tratos',   'bixocrm.tratos*',  'Tratos',     'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+            ['bixocrm.acciones', 'bixocrm.acciones*', 'Acciones',  'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'],
         ]; @endphp
         @foreach($tabs as [$ruta, $patron, $texto, $icono])
             <a href="{{ route($ruta) }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold"
                style="color:{{ request()->routeIs($patron) ? '#ffffff' : '#9a9bb5' }};{{ request()->routeIs($patron) ? 'background:rgba(91,78,245,.35)' : '' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="{{ $icono }}"/></svg>
+                <span class="relative"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="{{ $icono }}"/></svg>
+                @if($ruta === 'bixocrm.acciones' && $_accionesPend > 0)<span class="absolute -top-1 -right-2 text-[9px] font-black px-1 rounded-full" style="background:#f59e0b;color:#1f1c33">{{ $_accionesPend }}</span>@endif</span>
                 {{ $texto }}
             </a>
         @endforeach

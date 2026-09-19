@@ -23,6 +23,9 @@ Schedule::command('catalog:sync')->everyFifteenMinutes()->withoutOverlapping();
 // cada hora mientras siga dentro del plazo de 3 dias de SUNAT.
 Schedule::command('facturacion:reintentar')->hourly()->withoutOverlapping();
 
+// CRM: recordatorio push de las acciones que vencen (una vez por accion).
+Schedule::command('crm:recordar-acciones')->everyMinute()->withoutOverlapping();
+
 // Conciliación completa nocturna: detecta productos que ya no existen en el
 // ERP y los marca huérfanos (nunca en una corrida incremental parcial).
 Schedule::command('catalog:sync --full')->dailyAt('03:30')->withoutOverlapping();
