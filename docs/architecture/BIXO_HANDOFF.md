@@ -131,6 +131,18 @@ schedule:run): push al asignado (o a todo el negocio), una vez (`recordada_at`),
 la fecha. Tambien: deslizar un chat en movil (derecha = no leido, izquierda = archivar) y Prospectos
 como tarjetas en movil con enlaces corregidos (`/bixocrm?conversacion=`; antes iban a `/comunicaciones`).
 
+**Primer cliente real (19/09 05:06, 51906965037, desde el anuncio) y lo que enseño**:
+(1) el motor IGNORABA `bot_activo` (el interruptor Bot ON/OFF de la bandeja no hacia nada): ahora
+con el bot en pausa el mensaje se guarda, se avisa UNA vez en 12 h ("un asesor te responde") y
+calla; (2) al entregar al asesor (`gracias_datos` con `pausar_bot: true`) el flujo pausa el bot
+solo; (3) 12 fotos seguidas = 12 "recibi tu imagen": ahora una respuesta por rafaga (Cache 10 min);
+(4) sesion abandonada > 6 h empieza de nuevo (antes su "hola" del dia siguiente se tomaba como
+respuesta a "¿que negocio tienes?"); (5) el texto prellenado del anuncio ("quiero mi tienda
+virtual y deseo mas informacion") entra por el menu (reglas `quiero` y `pdf` ajustadas); (6) tras
+el cierre ya NO hay router ni IA (la IA saludaba "¡Hola!" y volvia a preguntar el negocio):
+escucha -> gracias_datos -> pausa. Apertura v5.1: flyer con la presentacion de Valeria + menu.
+"Ver precios" ya no repite el flyer.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
