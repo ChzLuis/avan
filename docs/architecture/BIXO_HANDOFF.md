@@ -188,6 +188,15 @@ modal "Editar estados" (nombre, color, orden, inicial, cierra). El validador de 
 `Rule::exists('crm_estados','clave')` del negocio. Pruebas: `CrmEstadosTest`.
 PENDIENTE: `clientes.blade.php` (Prospectos) e `index.blade.php` siguen con la lista a mano.
 
+**Acciones con hora y aviso por WhatsApp (19/09)**: `crm_acciones` + `avisar_whatsapp`,
+`avisar_minutos` (10 por defecto), `avisada_at` (columnas creadas en ARIN por --sql, batch 60).
+En la bandeja: desplegable de tipo (llamar/escribir/reunion/tarea), "Hoy a las…", "Mañana a las…"
+y "Fecha y hora…", y una casilla OPCIONAL "Avisarme por WhatsApp antes" (10/30/60/1440 min) con el
+numero, que se recuerda en el navegador. Comando `crm:avisar-acciones` cada minuto: manda el aviso
+por la primera linea Meta del negocio, una sola vez (`avisada_at`); al mover la hora se re-arma.
+OJO: el filtro "falta <= avisar_minutos" va en PHP, no en SQL (DATE_SUB no existe en SQLite y las
+pruebas corren ahi). El push al vencer sigue aparte (`recordada_at`). Pruebas en `CrmAccionesTest`.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
