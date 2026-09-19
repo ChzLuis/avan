@@ -4,6 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Instalable como app en el celular --}}
+    <link rel="manifest" href="/manifest-panel.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/img/pwa/panel-192.png">
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => {}); }</script>
     {{-- Token CSRF fresco para los formularios de POST clásico.
          El panel refrescaba el token solo para su JavaScript; los formularios
          que envían POST de toda la vida (Páginas, Nosotros, Pagos, SEO…)

@@ -1,0 +1,32 @@
+{
+    "id": "/bixosales",
+    "name": "BIXO Sales",
+    "short_name": "BIXO Sales",
+    "start_url": "/bixosales",
+    "scope": "/bixosales",
+    "display": "standalone",
+    "orientation": "portrait",
+    "lang": "es",
+    "background_color": "#1e293b",
+    "theme_color": "#1e293b",
+    "icons": [
+        {
+            "src": "/img/pwa/sales-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/img/pwa/sales-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/img/pwa/sales-512-maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

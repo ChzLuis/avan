@@ -135,6 +135,12 @@ $_nav = match(true) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Instalable como app en el celular --}}
+    <link rel="manifest" href="/manifest-sales.json">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/img/pwa/sales-192.png">
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => {}); }</script>
     <title>{{ $project->name ?? 'Panel' }} — Operaciones</title>
     {{-- Sin favicon propio, el navegador reutiliza el ultimo que vio para
          arindg.com —el de otra tienda—, asi que la pestaña de TECSIST salia
