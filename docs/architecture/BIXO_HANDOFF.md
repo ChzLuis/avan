@@ -114,6 +114,14 @@ fondo y X, barra de escritura movil con "+", contador de grabacion, aviso de ses
 (scope /) atiende navegacion (Chrome lo exige para instalar) y push (solo el CRM lo usa hoy).
 Generador: scratchpad `pwa_productos.py` de la sesion 2026-09-18.
 
+**CRM movil (2026-09-18, noche)**: barra inferior fija (Bandeja / Prospectos / Tratos / Menu) solo
+< 1024 px, con `env(safe-area-inset-bottom)` y `viewport-fit=cover`; chips de respuestas rapidas
+sobre el campo (8 primeras + "Todas…"); `navigator.setAppBadge` con los no leidos; tablero de tratos
+con `scroll-snap` (una columna por pantalla, 84vw). Push: pagina `/bixocrm/push/diagnostico`. El
+"push service error" del usuario era su wifi bloqueando FCM (con datos funciono). Regla de estas
+vistas: NO hay clases responsivas `md:`/`lg:` compiladas para todo; usar `window.innerWidth` en
+Alpine o estilos inline.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
