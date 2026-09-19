@@ -181,4 +181,27 @@ class CrmAccionesTest extends TestCase
         $this->assertNull($a->fresh()->avisada_at, 'Si se mueve la hora, hay que volver a avisar');
         $this->assertNull($a->fresh()->recordada_at);
     }
+    /** Lo que se crea desde el chat tiene que verse en la pagina Acciones, con su tipo y su aviso. */
+    public function test_la_accion_creada_desde_el_chat_figura_en_la_pagina_acciones(): void
+    {
+        $conv = $this->conv();
+        $this->enElCrm()->postJson('/bixocrm/acciones', [
+            'titulo' => 'Llamar Sábado 19', 'tipo' => 'llamada',
+            'vence_at' => now()->addHours(3)->format('Y-m-d\TH:i'),
+            'wa_conversacion_id' => $conv->id,
+            'avisar_whatsapp' => '51955354646', 'avisar_minutos' => 10,
+        ])->assertCreated();
+
+        // En la pagina (los datos viajan como JSON a Alpine).
+        $html = $this->enElCrm()->get('/bixocrm/acciones')->assertOk()->getContent();
+        $this->assertStringContainsString('Llamar S', $html, 'El titulo viaja a la vista');
+        $this->assertStringContainsString('"tipo":"llamada"', $html);
+        $this->assertStringContainsString('"avisar_whatsapp":"51955354646"', $html);
+
+        // Y en la lista JSON que usa la ficha del chat.
+        $lista = $this->enElCrm()->getJson('/bixocrm/acciones?json=1')->assertOk()->json('acciones');
+        $this->assertSame('Llamar Sábado 19', $lista[0]['titulo']);
+        $this->assertSame('llamada', $lista[0]['tipo']);
+        $this->assertSame(10, $lista[0]['avisar_minutos']);
+    }
 }
