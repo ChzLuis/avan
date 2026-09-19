@@ -143,6 +143,11 @@ el cierre ya NO hay router ni IA (la IA saludaba "¡Hola!" y volvia a preguntar 
 escucha -> gracias_datos -> pausa. Apertura v5.1: flyer con la presentacion de Valeria + menu.
 "Ver precios" ya no repite el flyer.
 
+**IA solo como respaldo (19/09)**: el router del flujo de Eskala manda a `dudas` (IA) todo texto que
+ninguna regla entiende (antes volvia al menu). La IA responde con el contexto de planes y cierra
+siempre con "¿Quieres ver precios, ver una tienda o hablar con un asesor?"; sin IA, el respaldo
+dice lo mismo derivando al asesor. El menu con botones solo sale en la apertura o cuando se pide.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
