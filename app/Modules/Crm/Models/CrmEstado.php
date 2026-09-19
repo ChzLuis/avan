@@ -23,12 +23,13 @@ class CrmEstado extends Model
     public const SEMILLA = [
         ['clave' => 'nuevo',        'nombre' => 'Nuevo',        'color' => '#16a34a', 'es_inicial' => true],
         ['clave' => 'contactado',   'nombre' => 'Contactado',   'color' => '#2563eb'],
+        ['clave' => 'seguimiento',  'nombre' => 'Seguimiento',  'color' => '#0891b2'],
         ['clave' => 'demo_enviada', 'nombre' => 'Demo enviada', 'color' => '#d97706'],
         ['clave' => 'propuesta',    'nombre' => 'Propuesta',    'color' => '#7c3aed'],
-        ['clave' => 'proyecto',     'nombre' => 'Proyecto',     'color' => '#0891b2'],
+        ['clave' => 'negociacion',  'nombre' => 'Negociación',  'color' => '#c026d3'],
         ['clave' => 'no_responde',  'nombre' => 'No responde',  'color' => '#a16207'],
-        ['clave' => 'academia',     'nombre' => 'Academia',     'color' => '#0284c7'],
-        ['clave' => 'cerrado',      'nombre' => 'Cerrado',      'color' => '#059669', 'es_final' => true],
+        ['clave' => 'proyecto',     'nombre' => 'Proyecto',     'color' => '#0284c7'],
+        ['clave' => 'venta',        'nombre' => 'Venta',        'color' => '#059669', 'es_final' => true],
         ['clave' => 'perdido',      'nombre' => 'Perdido',      'color' => '#dc2626', 'es_final' => true],
     ];
 

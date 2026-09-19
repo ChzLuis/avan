@@ -53,7 +53,7 @@ class CrmEstadosTest extends TestCase
         // Los que pidio el usuario existen desde el arranque.
         $this->assertNotNull($estados->firstWhere('clave', 'no_responde'));
         $this->assertNotNull($estados->firstWhere('clave', 'proyecto'));
-        $this->assertTrue($estados->firstWhere('clave', 'cerrado')->es_final);
+        $this->assertTrue($estados->firstWhere('clave', 'venta')->es_final);
 
         // Entrar de nuevo no duplica.
         $this->enElCrm()->get('/bixocrm')->assertOk();
@@ -119,5 +119,30 @@ class CrmEstadosTest extends TestCase
 
         $conv = $this->conv();
         $this->enElCrm()->patchJson("/bixocrm/{$conv->id}", ['estado' => 'solo_suyo'])->assertStatus(422);
+    }
+    /** La semilla trae los estados de venta que pidio el usuario. */
+    public function test_la_semilla_incluye_venta_negociacion_seguimiento_y_no_responde(): void
+    {
+        $this->enElCrm()->get('/bixocrm')->assertOk();
+        $claves = CrmEstado::where('project_id', $this->proyecto->id)->orderBy('orden')->pluck('clave')->all();
+
+        foreach (['nuevo', 'contactado', 'seguimiento', 'demo_enviada', 'propuesta', 'negociacion', 'no_responde', 'proyecto', 'venta', 'perdido'] as $c) {
+            $this->assertContains($c, $claves, "Falta el estado {$c}");
+        }
+        $this->assertTrue(CrmEstado::where('project_id', $this->proyecto->id)->where('clave', 'venta')->first()->es_final);
+    }
+
+    /** Prospectos pinta los estados del negocio, no una lista escrita a mano. */
+    public function test_prospectos_usa_los_estados_del_negocio(): void
+    {
+        $this->enElCrm()->get('/bixocrm');
+        // Un estado propio del negocio tiene que aparecer en la pantalla de Prospectos.
+        CrmEstado::create(['project_id' => $this->proyecto->id, 'clave' => 'visita', 'nombre' => 'Visita agendada', 'color' => '#123456', 'orden' => 99]);
+
+        $html = $this->enElCrm()->get('/bixocrm/clientes')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Visita agendada', $html);
+        $this->assertStringContainsString('Negociaci', $html, 'Los estados nuevos de la semilla tambien salen');
+        $this->assertStringNotContainsString('Academia', $html, 'Ya no se usa la lista vieja');
     }
 }

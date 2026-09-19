@@ -112,6 +112,10 @@ class ClientesCrmController extends Controller
 
         $clientes = $query->get();
 
+        // Estados del negocio (los mismos que la bandeja; editables desde alli).
+        \App\Modules\Crm\Models\CrmEstado::asegurar($project);
+        $estados = \App\Modules\Crm\Models\CrmEstado::delProyecto($project->id);
+
         $clientesJs = $clientes->map(fn($c) => [
             'id'               => $c->id,
             'cliente_nombre'   => $c->cliente_nombre,
@@ -135,6 +139,6 @@ class ClientesCrmController extends Controller
             ->selectRaw('estado, count(*) as total')
             ->groupBy('estado')->pluck('total', 'estado');
 
-        return view('crm::comunicaciones.clientes', compact('project', 'clientesJs', 'stats'));
+        return view('crm::comunicaciones.clientes', compact('project', 'clientesJs', 'stats', 'estados'));
     }
 }

@@ -25,25 +25,15 @@
     </div>
 
     {{-- Stats por estado --}}
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
-        @php
-        $estadoCfg = [
-            'nuevo'        => ['label'=>'Nuevo',      'bg'=>'#dcfce7','text'=>'#166534'],
-            'contactado'   => ['label'=>'Contactado', 'bg'=>'#dbeafe','text'=>'#1e40af'],
-            'demo_enviada' => ['label'=>'Demo',       'bg'=>'#fef3c7','text'=>'#92400e'],
-            'propuesta'    => ['label'=>'Propuesta',  'bg'=>'#ede9fe','text'=>'#5b21b6'],
-            'cerrado'      => ['label'=>'Cerrado',    'bg'=>'#d1fae5','text'=>'#065f46'],
-            'perdido'      => ['label'=>'Perdido',    'bg'=>'#fee2e2','text'=>'#991b1b'],
-            'academia'     => ['label'=>'Academia',   'bg'=>'#e0f2fe','text'=>'#0c4a6e'],
-        ];
-        @endphp
-        @foreach($estadoCfg as $key => $cfg)
-        <button @click="filtroEstado === '{{ $key }}' ? filtroEstado='' : filtroEstado='{{ $key }}'"
-                :class="filtroEstado === '{{ $key }}' ? 'ring-2 ring-offset-1' : 'opacity-80 hover:opacity-100'"
+    {{-- Los estados son los del negocio (crm_estados): se editan desde la bandeja. --}}
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 mb-6">
+        @foreach($estados as $e)
+        <button @click="filtroEstado === '{{ $e['clave'] }}' ? filtroEstado='' : filtroEstado='{{ $e['clave'] }}'"
+                :class="filtroEstado === '{{ $e['clave'] }}' ? 'ring-2 ring-offset-1' : 'opacity-80 hover:opacity-100'"
                 class="rounded-xl px-3 py-2 text-center transition-all"
-                style="background:{{ $cfg['bg'] }};--tw-ring-color:{{ $cfg['text'] }}">
-            <p class="text-lg font-black" style="color:{{ $cfg['text'] }}">{{ $stats[$key] ?? 0 }}</p>
-            <p class="text-[10px] font-semibold" style="color:{{ $cfg['text'] }}">{{ $cfg['label'] }}</p>
+                style="background:{{ $e['color'] }}1a;--tw-ring-color:{{ $e['color'] }}">
+            <p class="text-lg font-black" style="color:{{ $e['color'] }}">{{ $stats[$e['clave']] ?? 0 }}</p>
+            <p class="text-[10px] font-semibold" style="color:{{ $e['color'] }}">{{ $e['nombre'] }}</p>
         </button>
         @endforeach
     </div>
@@ -162,17 +152,17 @@
     {{-- Vista Kanban --}}
     <div x-show="vista === 'kanban'" class="overflow-x-auto">
         <div class="flex gap-3 pb-4" style="min-width:max-content">
-            @foreach($estadoCfg as $key => $cfg)
+            @foreach($estados as $e)
             <div class="flex-shrink-0 rounded-2xl p-3" style="width:230px;background:#f8fafc;border:1px solid #e2e8f0;">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-bold px-2 py-1 rounded-full"
-                          style="background:{{ $cfg['bg'] }};color:{{ $cfg['text'] }}">
-                        {{ $cfg['label'] }}
+                          style="background:{{ $e['color'] }}1a;color:{{ $e['color'] }}">
+                        {{ $e['nombre'] }}
                     </span>
-                    <span class="text-xs text-gray-400">{{ $stats[$key] ?? 0 }}</span>
+                    <span class="text-xs text-gray-400">{{ $stats[$e['clave']] ?? 0 }}</span>
                 </div>
                 <div class="space-y-2">
-                    <template x-for="c in clientesPorEstado('{{ $key }}')" :key="c.id">
+                    <template x-for="c in clientesPorEstado('{{ $e['clave'] }}')" :key="c.id">
                         <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
                             <div class="flex items-center gap-2 mb-1.5">
                                 <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
@@ -195,7 +185,7 @@
                             </div>
                         </div>
                     </template>
-                    <div x-show="clientesPorEstado('{{ $key }}').length === 0"
+                    <div x-show="clientesPorEstado('{{ $e['clave'] }}').length === 0"
                          class="text-center py-4 text-[10px] text-gray-400">
                         Sin clientes
                     </div>
@@ -210,6 +200,7 @@
 <script>
 const CLIENTES_INIT = @json($clientesJs);
 
+const ESTADOS_PROS = @json($estados);
 function crm() {
     return {
         clientes: CLIENTES_INIT,
@@ -244,25 +235,15 @@ function crm() {
             });
         },
 
+        // Los estados vienen de crm_estados (los mismos que la bandeja).
+        estados: ESTADOS_PROS,
         estadoBadge(estado) {
-            const map = {
-                nuevo:        'background:#dcfce7;color:#166534',
-                contactado:   'background:#dbeafe;color:#1e40af',
-                demo_enviada: 'background:#fef3c7;color:#92400e',
-                propuesta:    'background:#ede9fe;color:#5b21b6',
-                cerrado:      'background:#d1fae5;color:#065f46',
-                perdido:      'background:#fee2e2;color:#991b1b',
-                academia:     'background:#e0f2fe;color:#0c4a6e',
-            };
-            return map[estado] || 'background:#f3f4f6;color:#374151';
+            const e = this.estados.find(x => x.clave === estado);
+            return e ? `background:${e.color}22;color:${e.color}` : 'background:#f3f4f6;color:#374151';
         },
 
         estadoLabel(estado) {
-            const map = {
-                nuevo:'Nuevo', contactado:'Contactado', demo_enviada:'Demo enviada',
-                propuesta:'Propuesta', cerrado:'Cerrado', perdido:'Perdido', academia:'Academia'
-            };
-            return map[estado] || estado || '';
+            return this.estados.find(x => x.clave === estado)?.nombre || estado || '';
         },
 
         formatFecha(iso) {
