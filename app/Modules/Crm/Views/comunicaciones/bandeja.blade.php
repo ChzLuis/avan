@@ -154,7 +154,7 @@
 
     {{-- Header chat: nombre y linea a la izquierda, acciones a la derecha. En movil, flecha para volver a la lista. --}}
     <div class="flex items-center gap-2 px-2 md:px-4 py-2 flex-shrink-0 bg-white border-b border-gray-200">
-        <button @click="convActiva = null" class="md:hidden p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100" title="Volver">
+        <button @click="volverALista()" class="md:hidden p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100" title="Volver">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         </button>
         <div class="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 cursor-pointer"
@@ -1093,8 +1093,33 @@ function bandeja() {
             }
         },
 
+        // Cierra lo que este abierto por encima de la lista; devuelve true si cerro algo.
+        cerrarCapaSuperior() {
+            if (this.modalEstados) { this.modalEstados = false; return true; }
+            if (this.modalRespuestas) { this.modalRespuestas = false; return true; }
+            if (this.modalPlantillas) { this.modalPlantillas = false; return true; }
+            if (this.reenvio) { this.reenvio = null; return true; }
+            if (this.mostrarFicha && this.esMovil) { this.mostrarFicha = false; return true; }
+            if (this.convActiva) { this.convActiva = null; this.mensajes = []; return true; }
+            return false;
+        },
+        volverALista() {
+            // Si el chat se abrio apilando historial, retroceder dispara popstate y cierra.
+            if (this.esMovil && history.state && history.state.bxChat) { history.back(); return; }
+            this.convActiva = null;
+            this.mensajes = [];
+        },
+
         init() {
             this.pollingInterval = setInterval(() => this.poll(), 3000);
+            // Boton "atras" del telefono: cierra el chat o el modal abierto, no la app.
+            window.addEventListener('popstate', () => {
+                if (!this.cerrarCapaSuperior() && this.esMovil) {
+                    // Nada que cerrar: se deja salir (se repone el paso para no quedar atrapado).
+                    try { history.pushState({ bxSalida: 1 }, '', location.pathname + location.search); } catch (e) {}
+                    history.back();
+                }
+            });
             if (this.avisos) setTimeout(() => this.suscribirPush(), 1500);
             // Abrir la conversacion que pide la URL (la notificacion push llega con ?conversacion=ID).
             const pedida = new URLSearchParams(location.search).get('conversacion');
@@ -1104,6 +1129,11 @@ function bandeja() {
         },
 
         async abrirConversacion(conv) {
+            // Un paso en el historial por cada chat abierto: asi el boton "atras" del
+            // telefono vuelve a la lista en vez de cerrar la app (queja real en movil).
+            if (this.esMovil && !this.convActiva) {
+                try { history.pushState({ bxChat: conv.id }, '', location.pathname + location.search); } catch (e) {}
+            }
             this.convActiva = conv;
             this.estadoActual = conv.estado;
             this.editNombre   = conv.cliente_nombre   || '';
