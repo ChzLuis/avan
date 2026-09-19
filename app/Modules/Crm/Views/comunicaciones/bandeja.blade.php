@@ -875,7 +875,7 @@ function bandeja() {
                     const m = (e && e.message) || '';
                     let txt = 'No se pudo activar el push: ' + (m === 'sw' ? 'el service worker no cargó; recarga la página e inténtalo de nuevo.' : (m || 'error desconocido'));
                     if (/push service error/i.test(m)) {
-                        txt = 'Tu navegador no puede recibir push. Si usas Brave: Ajustes → Privacidad y seguridad → activa "Usar los servicios de Google para la mensajería push" y vuelve a tocar Activar. O instala el CRM desde Chrome.';
+                        txt = 'El navegador no pudo registrarse en el servicio de push de Google. En Android: Ajustes → Aplicaciones → Chrome → Notificaciones → permitir (y apaga "No molestar"); luego vuelve a tocar Activar. En Brave: Ajustes → Privacidad → "Usar los servicios de Google para la mensajería push".';
                     }
                     this.aviso(txt, 'error');
                 }
