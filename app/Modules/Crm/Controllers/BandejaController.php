@@ -153,7 +153,12 @@ class BandejaController extends Controller
     {
         $project = $this->project();
         $canales = WaCanal::where('project_id', $project->id)->pluck('id');
-        $since   = $request->since ? \Carbon\Carbon::createFromTimestamp($request->since) : now()->subSeconds(5);
+        // createFromTimestamp devuelve UTC; la base guarda hora de Lima (5 h menos): sin el
+        // huso de la app ningun mensaje era "nuevo" y la bandeja solo se veia al recargar.
+        // Los 2 s de margen cubren un mensaje escrito en el mismo segundo del sondeo anterior.
+        $since   = $request->since
+            ? \Carbon\Carbon::createFromTimestamp((int) $request->since, config('app.timezone'))->subSeconds(2)
+            : now()->subSeconds(5);
 
         $actualizadas = WaConversacion::whereIn('wa_canal_id', $canales)
             ->where('archivado', false)
