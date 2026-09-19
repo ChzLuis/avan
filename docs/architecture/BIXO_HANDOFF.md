@@ -162,6 +162,13 @@ bucle de `procesar` corta a la 4.ª visita del mismo bloque en un turno (`bucle`
 `asesorComercial` es un guion de ventas completo (saluda y pide el rubro) y NO sirve para dudas.
 El boton "Tengo una duda" va a `duda_pregunta` ("¿Cuál es tu duda?") y recien el texto va a la IA.
 
+**Freno de seguridad del bot** (`BotWebhookController::frenar`, ambos canales): por turno maximo 6
+mensajes y sin repetidos (`bot.tope_turno` en el log); por cliente maximo 20 en 2 min: se corta
+todo, `bot.avalancha_cortada` en el log y el bot de ese chat se pausa. **Prueba de robustez**
+`BotEskalaRobustezTest`: grafo sin destinos rotos ni ciclos sin espera, cada boton de cada bloque,
+18 textos desde cada bloque que espera (grupo `lento`, ~5 min: `artisan test --group lento`) y una
+seguidilla de 10 mensajes. Correrla cada vez que se cambie el flujo de Eskala.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
