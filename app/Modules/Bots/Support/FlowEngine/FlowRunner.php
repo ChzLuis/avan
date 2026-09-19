@@ -134,7 +134,20 @@ class FlowRunner
 
         // Ejecutar bloques en cadena hasta que uno pida esperar o se acabe.
         $guardas = 0;
+        $visitas = [];
         while ($actualId !== null && isset($bloques[$actualId]) && $guardas++ < 50) {
+            // Un mismo bloque mas de 3 veces en un turno es un ciclo del flujo: se corta y
+            // se espera al cliente, en vez de disparar decenas de mensajes.
+            $visitas[$actualId] = ($visitas[$actualId] ?? 0) + 1;
+            if ($visitas[$actualId] > 3) {
+                return [
+                    'respuestas' => $respuestas,
+                    'estado' => ['bloque' => $actualId, 'vars' => $vars, 'esperando' => true],
+                    'fin' => false,
+                    'acciones' => $acciones,
+                    'bucle' => $actualId,
+                ];
+            }
             $bloque = $bloques[$actualId];
             $bloque['_id'] = $actualId;
             $r = $this->ejecutar($bloque, $mensaje, $vars, $telefono);
@@ -528,12 +541,15 @@ class FlowRunner
                     break;
                 }
 
-                $r = $esAsesor
-                    ? IA::asesorComercial($mensaje, $historial, $ctxNegocio,
-                        $vars['_estado_ia'] ?? 'INICIO', $vars['_datos_ia'] ?? [],
-                        $vars['_lista_pendiente'] ?? null)
-                    : IA::asistenteBot($mensaje, $historial, $ctxNegocio,
-                        $vars['_estado_ia'] ?? 'MENU', $vars['_datos_ia'] ?? []);
+                // modo 'duda': solo contesta la pregunta con el contexto del bloque (nada de guion).
+                $r = ($bloque['modo'] ?? '') === 'duda'
+                    ? IA::responderDuda($mensaje, $historial, $ctxNegocio)
+                    : ($esAsesor
+                        ? IA::asesorComercial($mensaje, $historial, $ctxNegocio,
+                            $vars['_estado_ia'] ?? 'INICIO', $vars['_datos_ia'] ?? [],
+                            $vars['_lista_pendiente'] ?? null)
+                        : IA::asistenteBot($mensaje, $historial, $ctxNegocio,
+                            $vars['_estado_ia'] ?? 'MENU', $vars['_datos_ia'] ?? []));
 
                 if (!empty($r['sin_ia'])) {
                     // Sin IA disponible: no dejamos al cliente sin respuesta, y si el
@@ -817,7 +833,12 @@ class FlowRunner
                 // del cliente se clasifica en resolverRespuesta. Asi el cierre
                 // "te ayudo con algo mas?" entiende la siguiente consulta en
                 // vez de que el flujo muera y el bot se quede mudo.
-                $pregLanzada = ! empty($vars['_pregunta_' . ($bloque['_id'] ?? '')]);
+                // "Turno de vuelta" solo existe para las preguntas de si/no. Un intencion normal
+                // que el flujo vuelve a visitar (p. ej. desde un router) PREGUNTA otra vez: si se
+                // tomaba el aviso `_pregunta_` como "ya pregunte", caia en la rama de abajo y el
+                // router lo devolvia en bucle (24 "Claro 👇" seguidos a un cliente real).
+                $esSiNo = ! empty($bloque['confirmacion']) || ! empty($bloque['negacion']);
+                $pregLanzada = $esSiNo && ! empty($vars['_pregunta_' . ($bloque['_id'] ?? '')]);
                 if (! empty($bloque['esperar']) && ! $pregLanzada) {
                     if (! empty($bloque['router_inicial']) && trim($mensaje) !== ''
                         && empty($vars['_intencion_inicial_vista'])

@@ -344,6 +344,33 @@ class IA
         }
     }
 
+    /**
+     * Modo DUDA: responde SOLO la pregunta del cliente con el contexto que le da el bloque
+     * (planes, reglas, cierre fijo). Sin guion de ventas, sin saludar, sin pedir el rubro.
+     * Devuelve la misma forma que el asesor para que el FlowRunner no distinga.
+     */
+    public static function responderDuda(string $mensaje, string $historial, string $contexto): array
+    {
+        $system = "Eres el asistente de WhatsApp de un negocio. Responde UNICAMENTE lo que el cliente pregunta, "
+            . "en espanol de Peru, tono WhatsApp, maximo 4 lineas. No saludes, no te presentes, no preguntes por su negocio ni cuantos productos tiene. "
+            . "Usa solo la informacion de CONTEXTO; si el dato no esta ahi, dilo con honestidad y ofrece un asesor. "
+            . "Respeta al pie de la letra las REGLAS del contexto, incluida la linea de cierre si la hay.\n\n=== CONTEXTO ===\n" . $contexto;
+        $user = "Conversacion previa:\n" . $historial . "\n\nCliente: " . $mensaje . "\n\nRespuesta (solo el texto para WhatsApp):";
+        try {
+            $texto = trim(self::provider()->chat([
+                ['role' => 'system', 'content' => $system],
+                ['role' => 'user', 'content' => $user],
+            ], ['temperature' => 0.3, 'max_tokens' => 400]));
+            if ($texto === '') {
+                throw new RuntimeException('respuesta vacia');
+            }
+
+            return ['mensajes' => [$texto], 'respuesta' => $texto, 'estado' => 'DUDA', 'datos' => [], 'escalar' => false, 'lista' => null];
+        } catch (\Throwable $e) {
+            return ['mensajes' => [], 'respuesta' => '', 'estado' => 'DUDA', 'datos' => [], 'escalar' => false, 'lista' => null, 'sin_ia' => true];
+        }
+    }
+
     public static function asistenteBot(string $mensaje, string $historial, string $contexto, string $estado = 'MENU', array $datos = []): array
     {
         $datosJson = json_encode($datos, JSON_UNESCAPED_UNICODE);

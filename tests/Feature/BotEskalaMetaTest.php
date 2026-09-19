@@ -157,7 +157,7 @@ class BotEskalaMetaTest extends TestCase
         $this->meta($this->toque('btn:comparar'));
         $env = $this->nuevos($n);
 
-        $this->assertSame('button:btn:quiero|btn:tienda|btn:dudas', $this->resumen($env[0]), 'El flyer ya se vio en precios');
+        $this->assertSame('button:btn:quiero|btn:tienda|btn:duda_pregunta', $this->resumen($env[0]), 'El flyer ya se vio en precios');
         $this->assertStringContainsString('Hasta 100 productos', $this->cuerpo($env[0]));
         $this->assertStringContainsString('catálogo PDF', $this->cuerpo($env[0]));
     }
@@ -172,7 +172,7 @@ class BotEskalaMetaTest extends TestCase
         $this->assertCount(2, $env);
         $this->assertSame('cta_url+image:https://arindg.com/ferreteria-demo', $this->resumen($env[0]));
         $this->assertStringContainsString('Así puede verse tu tienda', $this->cuerpo($env[0]));
-        $this->assertSame('button:btn:precios|btn:quiero|btn:dudas', $this->resumen($env[1]));
+        $this->assertSame('button:btn:precios|btn:quiero|btn:duda_pregunta', $this->resumen($env[1]));
         $this->assertStringContainsString('desde *S/ 490*', $this->cuerpo($env[1]));
         $this->sinIa();
     }
@@ -300,7 +300,7 @@ class BotEskalaMetaTest extends TestCase
         // Ejemplos -> demo. Que incluye -> comparar. Quiero comprar -> quiero.
         $casos = [
             ['quiero ver ejemplos', 'cta_url+image:https://arindg.com/ferreteria-demo'],
-            ['qué incluye?', 'button:btn:quiero|btn:tienda|btn:dudas'],
+            ['qué incluye?', 'button:btn:quiero|btn:tienda|btn:duda_pregunta'],
             ['quiero comprar', 'text'],
         ];
         foreach ($casos as $j => [$msg, $esperado]) {
@@ -388,5 +388,26 @@ class BotEskalaMetaTest extends TestCase
         $n = count($this->enviados());
         $this->meta($this->texto('Hola'));
         $this->assertSame('image', $this->resumen($this->nuevos($n)[0]));
+    }
+    public function test_tengo_una_duda_primero_pregunta_cual_es_y_la_ia_no_saluda_ni_pide_el_rubro(): void
+    {
+        $this->meta($this->texto('hola'));
+        $this->meta($this->toque('btn:tienda'));
+        $n = count($this->enviados());
+        $this->meta($this->toque('btn:duda_pregunta'));
+        $env = $this->nuevos($n);
+
+        $this->assertCount(1, $env);
+        $this->assertStringContainsString('Cuál es tu duda', $this->cuerpo($env[0]));
+        $this->sinIa();
+
+        // Escribe la duda: en pruebas no hay IA, asi que sale el respaldo (nunca "Hola, soy Valeria... ¿a que se dedica tu negocio?").
+        $n = count($this->enviados());
+        $this->meta($this->texto('¿el dominio lo pongo yo o ustedes?'));
+        $env = $this->nuevos($n);
+        $this->assertCount(1, $env);
+        $this->assertStringNotContainsString('Soy Valeria', $this->cuerpo($env[0]));
+        $this->assertStringNotContainsString('dedica tu negocio', $this->cuerpo($env[0]));
+        $this->assertStringContainsString('asesor', $this->cuerpo($env[0]));
     }
 }

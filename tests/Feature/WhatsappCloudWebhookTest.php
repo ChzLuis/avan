@@ -497,6 +497,28 @@ class WhatsappCloudWebhookTest extends TestCase
         $this->assertDatabaseMissing('wa_mensajes', ['direccion' => 'out', 'tipo' => 'texto', 'contenido' => 'https://arindg.com/img/planes.jpg']);
     }
 
+    /** Regresion del bucle "Claro 👇": un intencion al que el router vuelve pregunta UNA vez, no 24. */
+    public function test_un_router_que_vuelve_a_la_pregunta_no_dispara_un_bucle(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode([
+            'disparos' => [], 'inicio' => 'pregunta',
+            'bloques'  => [
+                'pregunta' => ['tipo' => 'intencion', 'esperar' => true, 'texto' => '¿Cómo se llama tu negocio?', 'siguiente' => 'router'],
+                'router'   => ['tipo' => 'condicion', 'si_no' => 'pregunta', 'reglas' => [['contiene' => 'precio', 'siguiente' => 'precio']]],
+                'precio'   => ['tipo' => 'mensaje', 'texto' => 'Desde S/ 490'],
+            ],
+        ])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+        $this->enviar($this->evento('111', 'no se'), 'secreto-a')->assertOk(); // el router no entiende y vuelve a la pregunta
+
+        $textos = [];
+        Http::recorded(function ($req) use (&$textos) { if (isset($req->data()['text'])) $textos[] = $req->data()['text']['body']; });
+        $this->assertSame(['¿Cómo se llama tu negocio?', '¿Cómo se llama tu negocio?'], $textos, 'Vuelve a preguntar una vez; nada de "Claro 👇" repetido');
+    }
+
     public function test_atiende_aunque_falte_el_content_type(): void
     {
         $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');
