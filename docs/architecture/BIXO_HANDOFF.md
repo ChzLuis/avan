@@ -148,6 +148,12 @@ ninguna regla entiende (antes volvia al menu). La IA responde con el contexto de
 siempre con "¿Quieres ver precios, ver una tienda o hablar con un asesor?"; sin IA, el respaldo
 dice lo mismo derivando al asesor. El menu con botones solo sale en la apertura o cuando se pide.
 
+**Reinicio y silencio (19/09)**: la definicion del flujo acepta `reinicio: [frases]`; el motor
+(`esReinicio`) arranca de cero si el mensaje es una de ellas aunque el bot estuviera esperando
+(frases >= 15 caracteres: contenidas; cortas como "hola": exactas; sin tildes ni mayusculas).
+El bloque `asesor` lleva `pausar_bot` y sin `siguiente`: tras "Hablar con asesor" el bot NO
+vuelve a hablar (el aviso generico de pausa solo aplica cuando el asesor apaga el bot a mano).
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
