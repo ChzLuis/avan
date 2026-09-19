@@ -61,35 +61,45 @@
 
     <div class="flex-1 overflow-y-auto p-3 md:p-5 space-y-2">
         <template x-for="a in grupo(pestana)" :key="a.id">
-            <div class="bg-white rounded-2xl border px-3 py-2.5 flex items-start gap-3" :class="a.vencida && !a.hecho_at ? 'border-red-200' : 'border-gray-200'">
-                <button @click="alternar(a)" class="mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition"
-                        :class="a.hecho_at ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-green-500'" title="Marcar hecha">
-                    <svg x-show="a.hecho_at" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                </button>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 flex items-center gap-1.5" :class="a.hecho_at ? 'line-through text-gray-400' : ''">
-                        <span x-text="iconoTipo(a.tipo)"></span>
-                        <span x-text="a.titulo"></span>
-                    </p>
-                    <p class="text-[11px] mt-0.5 flex items-center gap-2 flex-wrap">
-                        <span :class="a.vencida && !a.hecho_at ? 'text-red-600 font-semibold' : 'text-gray-500'" x-text="a.vence_texto || 'Sin fecha'"></span>
-                        <a x-show="a.wa_conversacion_id" :href="'/bixocrm?conversacion=' + a.wa_conversacion_id" class="text-green-700 font-semibold hover:underline"
-                           x-text="'💬 ' + nombreContacto(a)"></a>
-                        <a x-show="a.trato_id" :href="'/bixocrm/tratos'" class="text-indigo-700 font-semibold hover:underline">$ trato</a>
-                        <span x-show="a.avisar_whatsapp" class="text-green-700" :title="'Aviso por WhatsApp a ' + a.avisar_whatsapp"
-                              x-text="'💬 aviso ' + (a.avisar_minutos >= 60 ? (a.avisar_minutos / 60) + ' h' : a.avisar_minutos + ' min') + ' antes'"></span>
-                    </p>
-                    <p x-show="a.notas" class="text-[11px] text-gray-500 mt-1 whitespace-pre-wrap" x-text="a.notas"></p>
-                </div>
-                <div class="flex flex-col gap-1 flex-shrink-0">
-                    <button x-show="!a.hecho_at" @click="posponer(a)" class="text-[11px] px-2 py-1 rounded-lg bg-gray-100 text-gray-600" title="Mover esta acción a mañana 9:00">Posponer</button>
-                    <button @click="borrar(a)" class="text-[11px] px-2 py-1 rounded-lg text-red-500 hover:bg-red-50">Borrar</button>
+            <div class="bg-white rounded-2xl border px-3 py-3" :class="a.vencida && !a.hecho_at ? 'border-red-200' : 'border-gray-200'">
+                {{-- Que hay que hacer --}}
+                <p class="text-sm font-semibold text-gray-900 flex items-start gap-1.5" :class="a.hecho_at ? 'line-through text-gray-400' : ''">
+                    <span x-text="iconoTipo(a.tipo)"></span>
+                    <span class="flex-1 min-w-0" x-text="a.titulo"></span>
+                </p>
+                {{-- Cuando y con quien --}}
+                <p class="text-[11px] mt-1 flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold" :class="a.vencida && !a.hecho_at ? 'text-red-600' : 'text-gray-600'" x-text="cuandoTexto(a)"></span>
+                    <a x-show="a.wa_conversacion_id" :href="'/bixocrm?conversacion=' + a.wa_conversacion_id" class="text-green-700 font-semibold hover:underline"
+                       x-text="'💬 ' + nombreContacto(a)"></a>
+                    <span x-show="a.avisar_whatsapp" class="text-gray-500"
+                          x-text="'🔔 aviso ' + (a.avisar_minutos >= 60 ? (a.avisar_minutos / 60) + ' h' : a.avisar_minutos + ' min') + ' antes'"></span>
+                </p>
+                <p x-show="a.notas" class="text-[11px] text-gray-500 mt-1 whitespace-pre-wrap" x-text="a.notas"></p>
+
+                {{-- Acciones con TEXTO: nada de iconos que se toquen sin querer --}}
+                <div class="flex flex-wrap gap-1.5 mt-2.5">
+                    <a x-show="!a.hecho_at && a.tipo === 'llamada' && a.contacto_telefono" :href="'tel:+' + a.contacto_telefono"
+                       class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-700">📞 Llamar</a>
+                    <a x-show="!a.hecho_at && a.tipo !== 'llamada' && a.wa_conversacion_id" :href="'/bixocrm?conversacion=' + a.wa_conversacion_id"
+                       class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-700">💬 Abrir chat</a>
+                    <button x-show="!a.hecho_at" @click="hacer(a)" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg text-white" style="background:#16a34a">✓ Ya la hice</button>
+                    <button x-show="!a.hecho_at" @click="posponer(a)" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-700">Posponer a mañana</button>
+                    <button x-show="a.hecho_at" @click="reabrir(a)" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-700">↩ Reabrir</button>
+                    <button @click="borrar(a)" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 ml-auto">Borrar</button>
                 </div>
             </div>
         </template>
         <div x-show="grupo(pestana).length === 0" class="text-center text-sm text-gray-400 py-16">
             <div class="text-4xl mb-2">✅</div>Nada por aquí.
         </div>
+    </div>
+
+    {{-- Se puede deshacer durante unos segundos: marcar hecha no es un camino sin retorno. --}}
+    <div x-show="deshacer" x-cloak class="fixed left-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-lg text-white text-xs"
+         style="bottom:calc(72px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1f2937">
+        <span x-text="deshacer?.texto"></span>
+        <button @click="deshacerAhora()" class="font-bold underline">Deshacer</button>
     </div>
 </div>
 
@@ -100,6 +110,7 @@ function acciones() {
     return {
         acciones: @json($acciones),
         pestana: 'hoy', nueva: false, guardando: false,
+        deshacer: null, _deshacerTimer: null,
         form: {
             titulo: '', vence_at: '', tipo: 'llamada',
             avisar: false, avisar_minutos: '10',
@@ -160,10 +171,44 @@ function acciones() {
             const d = await r.json().catch(() => ({}));
             if (d.ok) Object.assign(a, d.accion);
         },
-        alternar(a) { this.patch(a, { hecha: !a.hecho_at }); },
-        posponer(a) { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); this.patch(a, { vence_at: local(d) }); },
+        // Fecha en palabras: "Hoy 22:00", "Mañana 09:00", "sáb. 19 sep., 22:00".
+        cuandoTexto(a) {
+            if (!a.vence_at) return 'Sin fecha';
+            const v = new Date(a.vence_at), h = new Date(), m = new Date();
+            m.setDate(m.getDate() + 1);
+            const hora = v.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const mismoDia = (x, y) => x.toDateString() === y.toDateString();
+            if (mismoDia(v, h)) return (v < new Date() && !a.hecho_at ? 'Hoy ' : 'Hoy ') + hora;
+            if (mismoDia(v, m)) return 'Mañana ' + hora;
+            return a.vence_texto || v.toLocaleDateString('es-PE');
+        },
+
+        // Marcar hecha / reabrir, siempre con opcion de deshacer unos segundos.
+        hacer(a) { this.patch(a, { hecha: true }); this.mostrarDeshacer(a, 'Marcada como hecha', { hecha: false }); },
+        reabrir(a) { this.patch(a, { hecha: false }); this.mostrarDeshacer(a, 'Vuelve a estar pendiente', { hecha: true }); },
+        mostrarDeshacer(a, texto, revertir) {
+            clearTimeout(this._deshacerTimer);
+            this.deshacer = { id: a.id, texto, revertir };
+            this._deshacerTimer = setTimeout(() => { this.deshacer = null; }, 6000);
+        },
+        deshacerAhora() {
+            const d = this.deshacer;
+            if (!d) return;
+            const a = this.acciones.find(x => x.id === d.id);
+            if (a) this.patch(a, d.revertir);
+            this.deshacer = null;
+        },
+        posponer(a) {
+            const antes = a.vence_at;
+            const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
+            this.patch(a, { vence_at: local(d) });
+            this.mostrarDeshacer(a, 'Movida a mañana 9:00', { vence_at: antes ? local(new Date(antes)) : null });
+        },
         async borrar(a) {
-            if (typeof bxConfirmar === 'function' && !(await bxConfirmar({ descripcion: '¿Borrar "' + a.titulo + '"?' }))) return;
+            const ok = typeof bxConfirmar === 'function'
+                ? await bxConfirmar({ titulo: 'Borrar acción', descripcion: '"' + a.titulo + '" se elimina para siempre. ¿Continuar?', confirmar: 'Sí, borrar' })
+                : confirm('¿Borrar "' + a.titulo + '"? Se elimina para siempre.');
+            if (!ok) return;
             const r = await fetch('/bixocrm/acciones/' + a.id, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' } });
             if (r.ok) this.acciones = this.acciones.filter(x => x.id !== a.id);
         },

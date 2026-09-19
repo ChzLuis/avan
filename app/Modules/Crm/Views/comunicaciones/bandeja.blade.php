@@ -514,7 +514,11 @@
             </div>
             <template x-for="a in accionesConv" :key="'acc' + a.id">
                 <div class="flex items-start gap-2 py-1">
-                    <button @click="accionHecha(a)" class="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" :class="a.hecho_at ? 'bg-green-500 border-green-500' : 'border-gray-300'"></button>
+                    <button @click="accionHecha(a)" class="mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                            :class="a.hecho_at ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'"
+                            :title="a.hecho_at ? 'Hecha: toca para reabrirla' : 'Marcar como hecha'">
+                        <span x-show="a.hecho_at" class="text-[10px] leading-none">✓</span>
+                    </button>
                     <div class="flex-1 min-w-0">
                         <p class="text-xs text-gray-800" :class="a.hecho_at ? 'line-through text-gray-400' : ''" x-text="a.titulo"></p>
                         <p class="text-[10px] flex items-center gap-1" :class="a.vencida && !a.hecho_at ? 'text-red-600 font-semibold' : 'text-gray-400'">
@@ -884,7 +888,13 @@ function bandeja() {
         async accionHecha(a) {
             const r = await fetch('/bixocrm/acciones/' + a.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' }, body: JSON.stringify({ hecha: !a.hecho_at }) });
             const d = await r.json().catch(() => ({}));
-            if (d.ok) Object.assign(a, d.accion);
+            if (d.ok) {
+                Object.assign(a, d.accion);
+                // Se avisa de lo que acaba de pasar: antes desaparecia sin explicacion.
+                if (typeof bxAviso === 'function') {
+                    bxAviso(a.hecho_at ? 'Acción marcada como hecha (toca el círculo para reabrirla)' : 'Acción pendiente otra vez', 'success');
+                }
+            }
         },
 
         // ── Deslizar un chat en movil: derecha = no leido, izquierda = archivar ──
