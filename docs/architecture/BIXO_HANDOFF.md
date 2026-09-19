@@ -197,6 +197,14 @@ por la primera linea Meta del negocio, una sola vez (`avisada_at`); al mover la 
 OJO: el filtro "falta <= avisar_minutos" va en PHP, no en SQL (DATE_SUB no existe en SQLite y las
 pruebas corren ahi). El push al vencer sigue aparte (`recordada_at`). Pruebas en `CrmAccionesTest`.
 
+**Estados de venta y Prospectos migrado (19/09)**: la semilla de `CrmEstado` ahora es Nuevo,
+Contactado, Seguimiento, Demo enviada, Propuesta, Negociacion, No responde, Proyecto, Venta (final)
+y Perdido (final); "cerrado" y "academia" se retiraron (en ARIN se renombro cerrado->venta y se
+migraron las conversaciones). `clientes.blade.php` (Prospectos) y su controlador ya usan
+`CrmEstado::delProyecto()` en los chips, el kanban y el JS: no queda ninguna lista escrita a mano.
+Acciones: botones con texto (Ya la hice / Reabrir / Posponer), "Deshacer" 6 s, borrar con
+confirmacion y fecha en palabras. Pruebas: `CrmEstadosTest` (7).
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
