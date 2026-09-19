@@ -188,8 +188,8 @@ window.addEventListener('pageshow', function(e) {
 <div x-data="sessionWatcherCrm()" x-init="init()" x-cloak>
 
     {{-- Modal preventivo (3 min antes) --}}
-    <div x-show="phase==='warn'"
-         style="position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);">
+    <div x-show="phase==='warn'" x-cloak class="flex items-center justify-center"
+         style="position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);">
         <div style="background:#fff;border-radius:16px;padding:28px 32px;width:380px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.25);">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
                 <div style="width:40px;height:40px;min-width:40px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;line-height:1;">
@@ -217,8 +217,8 @@ window.addEventListener('pageshow', function(e) {
     </div>
 
     {{-- Modal definitivo (sesión cerrada) --}}
-    <div x-show="phase==='expired'"
-         style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);">
+    <div x-show="phase==='expired'" x-cloak class="flex items-center justify-center"
+         style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);">
         <div style="background:#fff;border-radius:16px;padding:32px;width:360px;max-width:92vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);">
             <div style="width:52px;height:52px;min-width:52px;border-radius:50%;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;line-height:1;">
                 🔒

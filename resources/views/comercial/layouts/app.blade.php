@@ -624,6 +624,33 @@ $_nav = match(true) {
             margin: 10px 0 2px; padding: 0 10px;
         }
         body.nav-abierto .nav-sep { display: none; }
+
+        /* ── Secciones plegables ───────────────────────────────────────
+           <details> nativo: sin JavaScript de por medio. El titulo sigue
+           viendose como rotulo, no como un desplegable de formulario. */
+        .nav-grupo-caja { width: 100%; }
+        .nav-grupo-caja > summary { list-style: none; cursor: pointer; }
+        .nav-grupo-caja > summary::-webkit-details-marker { display: none; }
+        body.nav-abierto .nav-grupo-caja > summary {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 6px; min-height: 32px; border-radius: 8px;
+        }
+        body.nav-abierto .nav-grupo-caja > summary:hover { color: var(--text); background: var(--bg); }
+        .nav-grupo-caja > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+        .nav-grupo-flecha { width: 12px; height: 12px; flex-shrink: 0; transition: transform .18s ease; transform: rotate(-90deg); }
+        .nav-grupo-caja[open] > summary .nav-grupo-flecha { transform: rotate(0deg); }
+        /* En modo iconos no hay titulos: el plegado no aplica y se ven todos
+           los enlaces. Sin esto, un grupo cerrado los esconderia sin que haya
+           forma de abrirlo.
+           OJO: la clase 'nav-abierto' la lleva el BODY, no el #sidebar. Escrito
+           como '#sidebar:not(.nav-abierto)' casaba SIEMPRE, asi que los titulos
+           quedaban ocultos tambien con el menu desplegado: sin <summary> no hay
+           donde pulsar y los grupos cerrados desaparecian sin rescate. Se veia
+           un solo grupo —el de la pantalla actual, el unico que abre el
+           servidor— y el resto del menu parecia no existir. */
+        body:not(.nav-abierto) .nav-grupo-caja > summary { display: none; }
+        body:not(.nav-abierto) .nav-grupo-caja > *:not(summary) { display: flex; }
+        @media (prefers-reduced-motion: reduce) { .nav-grupo-flecha { transition: none; } }
         body.nav-abierto .nav-toggle svg { transform: rotate(180deg); }
         /* Con el nombre delante, el tooltip sobra y tapaba contenido. */
         body.nav-abierto .nav-item::after { content: none; }
@@ -1195,8 +1222,8 @@ $_nav = match(true) {
 <div x-data="sessionWatcher()" x-init="init()">
 
     {{-- ── Modal preventivo (falta ≤ 3 min) ── --}}
-    <div x-show="phase==='warn'" x-cloak
-         style="position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.35);">
+    <div x-show="phase==='warn'" x-cloak class="flex items-center justify-center"
+         style="position:fixed;inset:0;z-index:9998;padding:16px;background:rgba(0,0,0,.35);">
         <div style="background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.18);
                     width:100%;max-width:360px;overflow:hidden;"
              @click.stop>
@@ -1246,8 +1273,8 @@ $_nav = match(true) {
     </div>
 
     {{-- ── Modal definitivo (sesión expirada) ── --}}
-    <div x-show="phase==='expired'" x-cloak
-         style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.60);">
+    <div x-show="phase==='expired'" class="flex items-center justify-center" x-cloak
+         style="position:fixed;inset:0;z-index:9999;padding:16px;background:rgba(0,0,0,.60);">
         <div style="background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.25);
                     width:100%;max-width:340px;overflow:hidden;text-align:center;">
 
