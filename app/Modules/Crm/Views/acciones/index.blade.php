@@ -73,7 +73,8 @@
                     </p>
                     <p class="text-[11px] mt-0.5 flex items-center gap-2 flex-wrap">
                         <span :class="a.vencida && !a.hecho_at ? 'text-red-600 font-semibold' : 'text-gray-500'" x-text="a.vence_texto || 'Sin fecha'"></span>
-                        <a x-show="a.wa_conversacion_id" :href="'/bixocrm?conversacion=' + a.wa_conversacion_id" class="text-green-700 font-semibold hover:underline" x-text="'💬 ' + (a.contacto || 'chat')"></a>
+                        <a x-show="a.wa_conversacion_id" :href="'/bixocrm?conversacion=' + a.wa_conversacion_id" class="text-green-700 font-semibold hover:underline"
+                           x-text="'💬 ' + nombreContacto(a)"></a>
                         <a x-show="a.trato_id" :href="'/bixocrm/tratos'" class="text-indigo-700 font-semibold hover:underline">$ trato</a>
                         <span x-show="a.avisar_whatsapp" class="text-green-700" :title="'Aviso por WhatsApp a ' + a.avisar_whatsapp"
                               x-text="'💬 aviso ' + (a.avisar_minutos >= 60 ? (a.avisar_minutos / 60) + ' h' : a.avisar_minutos + ' min') + ' antes'"></span>
@@ -81,7 +82,7 @@
                     <p x-show="a.notas" class="text-[11px] text-gray-500 mt-1 whitespace-pre-wrap" x-text="a.notas"></p>
                 </div>
                 <div class="flex flex-col gap-1 flex-shrink-0">
-                    <button x-show="!a.hecho_at" @click="posponer(a)" class="text-[11px] px-2 py-1 rounded-lg bg-gray-100 text-gray-600" title="Mover a mañana 9:00">Mañana</button>
+                    <button x-show="!a.hecho_at" @click="posponer(a)" class="text-[11px] px-2 py-1 rounded-lg bg-gray-100 text-gray-600" title="Mover esta acción a mañana 9:00">Posponer</button>
                     <button @click="borrar(a)" class="text-[11px] px-2 py-1 rounded-lg text-red-500 hover:bg-red-50">Borrar</button>
                 </div>
             </div>
@@ -105,6 +106,12 @@ function acciones() {
             avisar_tel: (() => { try { return localStorage.getItem('bx_avisar_tel') || ''; } catch (e) { return ''; } })(),
         },
         iconoTipo(t) { return { llamada: '📞', whatsapp: '💬', reunion: '🤝' }[t] || '✅'; },
+        // El nombre de perfil de WhatsApp puede ser solo un emoji (⌚) o estar vacio:
+        // en ese caso se muestra el telefono, que si identifica al cliente.
+        nombreContacto(a) {
+            const n = (a.contacto || '').replace(/[^\p{L}\p{N}]/gu, '').trim();
+            return n ? a.contacto : (a.contacto_telefono || 'chat');
+        },
         pestanas: [{ id: 'vencidas', nombre: 'Vencidas' }, { id: 'hoy', nombre: 'Hoy' }, { id: 'proximas', nombre: 'Próximas' }, { id: 'hechas', nombre: 'Hechas' }],
         atajos: [
             { t: 'En 2 h', f: () => local(new Date(Date.now() + 2 * 3600e3)) },
