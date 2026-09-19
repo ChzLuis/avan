@@ -40,6 +40,16 @@ $estadoColores = [
                 </button>
             </div>
         </div>
+        {{-- Activar avisos: visible hasta que el dispositivo quede suscrito (o se oculte por hoy). --}}
+        <div x-show="!pushListo && !bannerOculto" x-cloak class="mb-3 rounded-xl border px-3 py-2.5 flex items-center gap-3" style="background:#fff7ed;border-color:#fdba74">
+            <span class="text-xl flex-shrink-0">🔔</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-900">Entérate de cada mensaje nuevo</p>
+                <p class="text-[11px] text-gray-600">Sonido y notificación en este dispositivo, aunque el CRM esté cerrado.</p>
+            </div>
+            <button @click="alternarAvisos()" class="text-xs font-bold text-white px-3 py-1.5 rounded-lg flex-shrink-0" style="background:#ea580c">Activar</button>
+            <button @click="bannerOculto = true; try { sessionStorage.setItem('bx_banner_avisos', '1'); } catch (e) {}" class="text-gray-400 hover:text-gray-600 text-sm flex-shrink-0" title="Ahora no">✕</button>
+        </div>
         <div class="relative">
             <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
             <input type="text" x-model="busqueda" placeholder="Buscar un chat o un teléfono"
@@ -812,6 +822,7 @@ function bandeja() {
 
         // ── Avisos: sonido + notificacion del navegador (tambien en el celular con la pestaña abierta) ──
         pushListo: false,
+        bannerOculto: (() => { try { return sessionStorage.getItem('bx_banner_avisos') === '1'; } catch (e) { return false; } })(),
         aviso(msg, tipo) { if (typeof bxAviso === 'function') bxAviso(msg, tipo || 'info'); else alert(msg); },
         async alternarAvisos() {
             // Solo se apaga si ya estaba completo (permiso + suscripcion); si no, se completa.
@@ -860,7 +871,14 @@ function bandeja() {
                 }
             } catch (e) {
                 console.warn('push', e);
-                if (avisar) this.aviso('No se pudo activar el push: ' + (e && e.message === 'sw' ? 'el service worker no cargó; recarga la página e inténtalo de nuevo.' : (e && e.message ? e.message : 'error desconocido')), 'error');
+                if (avisar) {
+                    const m = (e && e.message) || '';
+                    let txt = 'No se pudo activar el push: ' + (m === 'sw' ? 'el service worker no cargó; recarga la página e inténtalo de nuevo.' : (m || 'error desconocido'));
+                    if (/push service error/i.test(m)) {
+                        txt = 'Tu navegador no puede recibir push. Si usas Brave: Ajustes → Privacidad y seguridad → activa "Usar los servicios de Google para la mensajería push" y vuelve a tocar Activar. O instala el CRM desde Chrome.';
+                    }
+                    this.aviso(txt, 'error');
+                }
             }
         },
         sonar() {
