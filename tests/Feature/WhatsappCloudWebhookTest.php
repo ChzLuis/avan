@@ -519,6 +519,34 @@ class WhatsappCloudWebhookTest extends TestCase
         $this->assertSame(['¿Cómo se llama tu negocio?', '¿Cómo se llama tu negocio?'], $textos, 'Vuelve a preguntar una vez; nada de "Claro 👇" repetido');
     }
 
+    /** Freno de seguridad: un flujo mal armado no puede mandar una avalancha ni textos repetidos. */
+    public function test_el_freno_corta_las_avalanchas_y_los_repetidos_aunque_el_flujo_este_mal(): void
+    {
+        [$proyecto] = $this->negocio('Negocio A', '111', 'secreto-a', 'ignorado');
+        // 12 mensajes encadenados sin esperar, 4 de ellos identicos.
+        $bloques = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $bloques["m{$i}"] = ['tipo' => 'mensaje', 'texto' => $i <= 4 ? 'Claro 👇' : "Mensaje {$i}", 'siguiente' => $i < 12 ? 'm' . ($i + 1) : null];
+        }
+        BotFlow::where('project_id', $proyecto->id)->update(['definicion' => json_encode(['disparos' => [], 'inicio' => 'm1', 'bloques' => $bloques])]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+
+        $this->enviar($this->evento('111', 'hola'), 'secreto-a')->assertOk();
+        $textos = [];
+        Http::recorded(function ($req) use (&$textos) { if (isset($req->data()['text'])) $textos[] = $req->data()['text']['body']; });
+        $this->assertSame(['Claro 👇', 'Mensaje 5', 'Mensaje 6', 'Mensaje 7', 'Mensaje 8', 'Mensaje 9'], $textos, 'Sin repetidos y como maximo 6 por turno');
+
+        // Cuatro turnos mas (6 cada uno) superan los 20 en 2 minutos: el freno corta y pausa el bot del chat.
+        foreach (range(1, 4) as $k) {
+            $this->enviar($this->evento('111', 'otra vez ' . $k), 'secreto-a')->assertOk();
+        }
+        $conv = WaConversacion::where('cliente_telefono', '51900000001')->firstOrFail();
+        $this->assertFalse((bool) $conv->bot_activo, 'Tras la avalancha el bot de ese chat queda en pausa para que lo mire una persona');
+        $total = 0;
+        Http::recorded(function ($req) use (&$total) { if (isset($req->data()['text'])) $total++; });
+        $this->assertLessThanOrEqual(\App\Modules\Bots\Controllers\BotWebhookController::MAX_POR_VENTANA + 6, $total, 'Nunca mas de ~20 mensajes en la ventana');
+    }
+
     public function test_atiende_aunque_falte_el_content_type(): void
     {
         $this->negocio('Negocio A', '111', 'secreto-a', 'Hola desde A');

@@ -188,6 +188,10 @@ class BotWebhookController extends Controller
         $session->save();
 
         // 3) Guardar también lo que respondió el bot (mensajes salientes).
+        // FRENO DE SEGURIDAD: pase lo que pase en el flujo, un cliente nunca recibe una
+        // avalancha (ayer un bucle mando 24 "Claro" seguidos a un cliente real).
+        $res['respuestas'] = $this->frenar($project, $telefono, $res['respuestas'] ?? []);
+
         // El conector Baileys no sabe de botones ni de cta_url: recibe el texto
         // de respaldo. Meta (canal de entrada conocido) recibe el formato nativo.
         if (! $this->canalEntradaId) {
@@ -413,6 +417,48 @@ class BotWebhookController extends Controller
         }
 
         return false;
+    }
+
+    public const MAX_POR_TURNO = 6;
+    public const MAX_POR_VENTANA = 20;   // mensajes del bot a un mismo cliente...
+    public const VENTANA_SEG = 120;      // ...en este lapso
+
+    /**
+     * Tope por turno (sin repetidos) y por ventana de tiempo. Al pasarse el tope de la
+     * ventana se corta todo, queda en el log y el bot del chat se pausa para que lo
+     * revise una persona: mejor un chat mudo que uno que dispara sin parar.
+     */
+    private function frenar(Project $project, string $telefono, array $respuestas): array
+    {
+        $vistos = [];
+        $limpias = [];
+        foreach ($respuestas as $r) {
+            $clave = is_array($r) ? md5(json_encode($r)) : md5(trim((string) $r));
+            if ((is_string($r) && trim($r) === '') || isset($vistos[$clave])) {
+                continue;
+            }
+            $vistos[$clave] = true;
+            $limpias[] = $r;
+            if (count($limpias) >= self::MAX_POR_TURNO) {
+                \Illuminate\Support\Facades\Log::warning('bot.tope_turno', ['proyecto' => $project->id, 'telefono' => $telefono, 'pedidos' => count($respuestas)]);
+                break;
+            }
+        }
+        if ($limpias === []) {
+            return [];
+        }
+        $claveVentana = "bot_ritmo_{$project->id}_{$telefono}";
+        $cache = \Illuminate\Support\Facades\Cache::store();
+        $cache->add($claveVentana, 0, self::VENTANA_SEG);
+        $acumulado = (int) $cache->increment($claveVentana, count($limpias));
+        if ($acumulado > self::MAX_POR_VENTANA) {
+            \Illuminate\Support\Facades\Log::error('bot.avalancha_cortada', ['proyecto' => $project->id, 'telefono' => $telefono, 'en_ventana' => $acumulado]);
+            $this->conversacionDe($project, $telefono)?->update(['bot_activo' => false]);
+
+            return [];
+        }
+
+        return $limpias;
     }
 
     /** Conversacion del CRM de este telefono en el negocio (cualquiera de sus lineas). */
