@@ -130,7 +130,7 @@ class FlowRunner
         }
 
         // Acciones sobre el CRM que el webhook ejecuta (registrar lead, agendar, crear pedido).
-        $acciones = ['registrar' => null, 'agendar' => null, 'pedido' => null, 'trato' => null];
+        $acciones = ['registrar' => null, 'agendar' => null, 'pedido' => null, 'trato' => null, 'pausar_bot' => false];
 
         // Ejecutar bloques en cadena hasta que uno pida esperar o se acabe.
         $guardas = 0;
@@ -145,6 +145,8 @@ class FlowRunner
             if (!empty($r['pedido']))    $acciones['pedido']    = $r['pedido'];
             // Cualquier bloque puede abrir un TRATO en el embudo del CRM al pasar por el
             // (p. ej. "asesor": el cliente pidio que lo contacten = oportunidad real).
+            // `pausar_bot`: a partir de aqui atiende una persona; el webhook apaga el bot del chat.
+            if (!empty($bloque['pausar_bot'])) $acciones['pausar_bot'] = true;
             if (!empty($bloque['trato']) && is_array($bloque['trato'])) {
                 $acciones['trato'] = [
                     'titulo' => $this->interpolar((string) ($bloque['trato']['titulo'] ?? 'Oportunidad de WhatsApp'), $vars),

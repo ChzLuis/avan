@@ -83,6 +83,21 @@ class BotWebhookController extends Controller
         //    como los CRM profesionales: acumula historial hacia adelante).
         $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $data['texto_visible'] ?? $data['mensaje'], 'in');
 
+        // 1.a) BOT EN PAUSA para este chat (lo apago el asesor, o el flujo al pasar con
+        //      una persona): el mensaje queda en el CRM y el bot calla. Solo la primera
+        //      vez en 12 h dice que un asesor lo atiende, para que el cliente no se
+        //      quede sin saber por que nadie contesta.
+        $conv = $this->conversacionDe($project, $telefono);
+        if ($conv && ! $conv->bot_activo) {
+            $respuestas = [];
+            if (\Illuminate\Support\Facades\Cache::add("bot_pausa_aviso_{$conv->id}", 1, 12 * 3600)) {
+                $respuestas[] = 'Gracias 🙌 Un asesor te responde por aquí en breve. Puedes dejar tus fotos o dudas y las verá.';
+                $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $respuestas[0], 'out');
+            }
+
+            return response()->json(['respuestas' => $respuestas, 'bot_pausado' => true]);
+        }
+
         // 2) Ejecutar el bot activo (si hay).
         $flow = BotFlow::where('project_id', $project->id)->where('activo', true)->latest()->first();
         if (!$flow || empty($flow->definicion['bloques'])) {
@@ -98,8 +113,13 @@ class BotWebhookController extends Controller
             if ($this->reglaSilencia($project, $telefono, $flow->definicion['reglas'] ?? [])) {
                 return response()->json(['respuestas' => [], 'silenciado' => true]);
             }
+            // Una rafaga de fotos (un cliente mando 12 seguidas) recibe UNA respuesta,
+            // no una por foto: las demas quedan guardadas en el CRM sin contestar.
+            if (! \Illuminate\Support\Facades\Cache::add("bot_adjunto_aviso_{$project->id}_{$telefono}", 1, 600)) {
+                return response()->json(['respuestas' => [], 'adjunto' => $tipo, 'agrupado' => true]);
+            }
             $texto = match ($tipo) {
-                'imagen'    => "📷 ¡Recibí tu imagen! Aún no puedo verla, pero un *asesor* la revisará. Mientras tanto cuéntame en texto qué necesitas 🙂",
+                'imagen'    => "📷 ¡Recibí tu imagen! Un *asesor* la revisará. Puedes enviar todas las fotos que quieras; te contesto una sola vez para no llenarte de mensajes 🙂",
                 'audio'     => "🎧 Recibí tu audio. Por ahora solo puedo leer *texto*: ¿me lo escribes? O escribe *asesor* y te atiende una persona.",
                 'video'     => "🎬 ¡Recibí tu video! Un *asesor* lo revisará. Cuéntame en texto en qué te ayudo 🙂",
                 'documento' => "📄 Recibí tu archivo, un *asesor* lo revisará. ¿En qué te puedo ayudar mientras tanto?",
@@ -117,6 +137,12 @@ class BotWebhookController extends Controller
             'telefono'   => $telefono,
         ]);
         $estado = $session->estado ?? ['bloque' => null, 'vars' => [], 'esperando' => false];
+        // Una conversacion abandonada horas atras no sigue donde quedo: un cliente que
+        // vuelve a escribir al dia siguiente (o toca otra vez el anuncio) empieza de nuevo.
+        // Sin esto, su "hola" se tomaba como respuesta a "¿que tipo de negocio tienes?".
+        if ($session->exists && $session->updated_at && $session->updated_at->lt(now()->subHours(6))) {
+            $estado = ['bloque' => null, 'vars' => [], 'esperando' => false];
+        }
         $definicion = $flow->definicion;
 
         // El asistente atiende 24/7: nunca dejamos a un cliente sin respuesta.
@@ -367,6 +393,14 @@ class BotWebhookController extends Controller
         ]);
     }
 
+    /** Conversacion del CRM de este telefono en el negocio (cualquiera de sus lineas). */
+    private function conversacionDe(Project $project, string $telefono): ?WaConversacion
+    {
+        $canales = WaCanal::where('project_id', $project->id)->pluck('id');
+
+        return WaConversacion::whereIn('wa_canal_id', $canales)->where('cliente_telefono', $telefono)->first();
+    }
+
     /** Aplica las acciones CRM (registrar etapa/etiqueta, agendar seguimiento) que pidió el flujo. */
     private function aplicarAcciones(Project $project, string $telefono, string $nombre, array $acciones): void
     {
@@ -381,6 +415,10 @@ class BotWebhookController extends Controller
 
         if (!empty($acciones['trato'])) {
             $this->abrirTrato($project, $telefono, $nombre, $acciones['trato']);
+        }
+        // El flujo entrego el chat a una persona: el bot se pausa (la bandeja lo puede volver a encender).
+        if (!empty($acciones['pausar_bot'])) {
+            $this->conversacionDe($project, $telefono)?->update(['bot_activo' => false]);
         }
 
         if (!empty($acciones['registrar'])) {
