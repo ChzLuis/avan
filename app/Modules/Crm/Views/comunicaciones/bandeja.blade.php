@@ -155,10 +155,10 @@ $estadoColores = [
         <div class="flex-1 min-w-0 cursor-pointer" @click="mostrarFicha = !mostrarFicha">
             <p class="text-sm font-bold text-gray-900 truncate" x-text="convActiva?.cliente_nombre || convActiva?.cliente_telefono"></p>
             <p class="text-[11px] text-gray-500 truncate">
-                <span x-text="convActiva?.cliente_telefono"></span>
-                <span x-show="{{ $canales->count() }} > 1" x-text="' · ' + (convActiva?.canal_nombre || '')"></span>
+                <span x-show="!esMovil" x-text="convActiva?.cliente_telefono"></span>
+                <span x-show="{{ $canales->count() }} > 1 && !esMovil" x-text="' · ' + (convActiva?.canal_nombre || '')"></span>
                 <span x-show="convActiva?.asignado_a" x-text="' · ' + (convActiva?.asignado_a || '')"></span>
-                <span x-show="convActiva?.bot_activo" class="text-green-600 font-semibold"> · Bot atendiendo</span>
+                <span x-show="convActiva?.bot_activo" class="text-green-600 font-semibold" x-text="esMovil ? '🤖 Bot atendiendo' : ' · Bot atendiendo'"></span>
             </p>
         </div>
         <button @click="toggleBot()"
@@ -301,45 +301,75 @@ $estadoColores = [
             <span>📎</span><span class="truncate" x-text="adjunto?.name"></span>
             <button @click="adjunto = null; $refs.inputArchivo.value = ''" class="ml-auto text-green-600 hover:text-green-800">✕</button>
         </div>
-        <div class="flex items-end gap-2">
-            <input type="file" x-ref="inputArchivo" class="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf,.mp3,.ogg,.m4a,.aac" @change="adjunto = $event.target.files[0] || null">
-            <button @click="grabando ? pararGrabacion() : grabarNota()"
+        <div class="flex items-end gap-2 relative">
+            <input type="file" x-ref="inputArchivo" class="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf,.mp3,.ogg,.m4a,.aac" @change="adjunto = $event.target.files[0] || null; masOpciones = false">
+            {{-- Movil: un solo "+" agrupa adjuntar, plantillas y respuestas rapidas. --}}
+            <template x-if="esMovil">
+                <div class="relative flex-shrink-0">
+                    <button @click="masOpciones = !masOpciones" class="p-2 rounded-full text-gray-500 hover:text-green-600 transition-colors" :class="masOpciones ? 'bg-gray-100' : ''" :style="'transition:transform .15s;' + (masOpciones ? 'transform:rotate(45deg)' : '')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                    <div x-show="masOpciones" x-cloak @click.outside="masOpciones = false"
+                         style="bottom:3rem" class="absolute left-0 z-30 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-1 text-sm">
+                        <button @click="$refs.inputArchivo.click()" class="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3"><span>📎</span> Foto o PDF</button>
+                        <button @click="masOpciones = false; grabando ? pararGrabacion() : grabarNota()" class="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3"><span>🎤</span> Nota de voz</button>
+                        <button x-show="ventana.es_meta" @click="masOpciones = false; abrirPlantillas()" class="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3"><span>📋</span> Plantillas de Meta</button>
+                        <button @click="masOpciones = false; modalRespuestas = true" class="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3"><span>⚡</span> Respuestas rápidas</button>
+                    </div>
+                </div>
+            </template>
+            <button x-show="!esMovil" @click="grabando ? pararGrabacion() : grabarNota()"
                     :class="grabando ? 'text-red-600 animate-pulse' : 'text-gray-400 hover:text-green-600'"
                     class="p-2 transition-colors flex-shrink-0" :title="grabando ? 'Detener y adjuntar la nota de voz' : 'Grabar nota de voz'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
                 </svg>
             </button>
-            <button @click="$refs.inputArchivo.click()"
+            <button x-show="!esMovil" @click="$refs.inputArchivo.click()"
                     class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
                     title="Adjuntar imagen o PDF (hasta 20 MB)">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                 </svg>
             </button>
-            <button x-show="ventana.es_meta" @click="abrirPlantillas()"
+            <button x-show="ventana.es_meta && !esMovil" @click="abrirPlantillas()"
                     class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
                     title="Plantillas aprobadas por Meta (sirven pasadas las 24 h)">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
             </button>
-            <button @click="modalRespuestas = true"
+            <button x-show="!esMovil" @click="modalRespuestas = true"
                     class="p-2 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
                     title="Respuestas rápidas">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
             </button>
-            <textarea x-model="textoMensaje"
+            {{-- Grabando: en vez del campo, el contador de segundos (como WhatsApp). --}}
+            <div x-show="grabando" x-cloak class="flex-1 flex items-center gap-2 text-sm border border-red-200 rounded-xl px-3 py-2 bg-red-50 text-red-700">
+                <span class="rounded-full bg-red-500 animate-pulse flex-shrink-0" style="width:10px;height:10px"></span>
+                <span class="font-semibold tabular-nums" x-text="grabTiempo()"></span>
+                <span class="text-[11px] text-red-500 truncate">Grabando… toca ■ para enviar</span>
+                <button @click="cancelarGrabacion()" class="ml-auto text-[11px] text-red-600 underline flex-shrink-0">Cancelar</button>
+            </div>
+            <textarea x-show="!grabando" x-model="textoMensaje"
                       @paste="pegarArchivo($event)"
                       @keydown.enter.prevent="if(!$event.shiftKey) enviarMensaje()"
                       @keydown.enter.shift="textoMensaje += '\n'"
-                      placeholder="Escribe un mensaje... (Enter para enviar)"
+                      :placeholder="esMovil ? 'Escribe un mensaje' : 'Escribe un mensaje... (Enter para enviar)'"
                       rows="1"
                       class="flex-1 resize-none text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 bg-gray-50"
                       style="max-height:120px;--tw-ring-color:#25d366"
                       x-ref="inputMensaje"
                       @input="$el.style.height='auto'; $el.style.height=Math.min($el.scrollHeight,120)+'px'"></textarea>
-            <button @click="enviarMensaje()"
+            <button x-show="esMovil && !textoMensaje.trim() && !adjunto && !grabando" @click="grabarNota()"
+                    class="p-2 text-white rounded-full flex-shrink-0" style="background:#25d366" title="Grabar nota de voz">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+            </button>
+            <button x-show="esMovil && grabando" @click="pararGrabacion()"
+                    class="p-2 text-white rounded-full flex-shrink-0 animate-pulse" style="background:#dc2626" title="Detener y adjuntar">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            </button>
+            <button x-show="!esMovil || textoMensaje.trim() || adjunto" @click="enviarMensaje()"
                     :disabled="(!textoMensaje.trim() && !adjunto) || enviando"
                     class="p-2 text-white rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                     style="background:#25d366">
@@ -603,6 +633,8 @@ function bandeja() {
         enviando: false,
         textoMensaje: '',
         errorEnvio: null,
+        esMovil: window.innerWidth < 768,
+        masOpciones: false,
         ventana: { es_meta: false, abierta: true, cierra_at: null },
         modalPlantillas: false, plantillas: [], plantillaSel: null, plantillaParams: [], cargandoPlantillas: false, errorPlantillas: '',
         adjunto: null,
@@ -613,6 +645,7 @@ function bandeja() {
         buscarEnChat: false,
         busquedaChat: '',
         grabando: false,
+        grabSegundos: 0, grabTimer: null, grabCancelada: false,
         grabador: null,
         reenvio: null,
         buscadorReenvio: '',
@@ -895,17 +928,23 @@ function bandeja() {
                 this.grabador.ondataavailable = e => { if (e.data.size) trozos.push(e.data); };
                 this.grabador.onstop = () => {
                     stream.getTracks().forEach(t => t.stop());
-                    this.adjunto = new File(trozos, 'nota-' + Date.now() + '.webm', { type: 'audio/webm' });
                     this.grabando = false;
+                    if (this.grabCancelada) return;
+                    this.adjunto = new File(trozos, 'nota-' + Date.now() + '.webm', { type: 'audio/webm' });
                     this.enviarMensaje();
                 };
                 this.grabador.start();
                 this.grabando = true;
+                this.grabCancelada = false;
+                this.grabSegundos = 0;
+                this.grabTimer = setInterval(() => { this.grabSegundos++; }, 1000);
             } catch (e) {
                 this.errorEnvio = 'No se pudo acceder al micrófono.';
             }
         },
-        pararGrabacion() { this.grabador?.stop(); },
+        pararGrabacion() { clearInterval(this.grabTimer); this.grabador?.stop(); },
+        cancelarGrabacion() { this.grabCancelada = true; clearInterval(this.grabTimer); this.grabador?.stop(); },
+        grabTiempo() { const s = this.grabSegundos || 0; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
 
         abrirReenvio(msg) { this.reenvio = msg; this.errorReenvio = null; this.buscadorReenvio = ''; },
 
