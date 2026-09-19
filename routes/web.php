@@ -45,6 +45,7 @@ use App\Modules\Crm\Controllers\CrmAuthController as ComWaAuthController;
 use App\Modules\Crm\Controllers\BandejaController;
 use App\Modules\Crm\Controllers\ClientesCrmController;
 use App\Modules\Crm\Controllers\TratosController;
+use App\Modules\Crm\Controllers\PushController;
 use App\Modules\Crm\Controllers\CanalesController;
 use Illuminate\Support\Facades\Route;
 
@@ -1014,6 +1015,11 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
     Route::middleware(['auth', 'comunicaciones.auth'])->group(function () {
         Route::get('/',                              [BandejaController::class, 'index'])->name('bandeja');
         Route::get('/poll',                          [BandejaController::class, 'poll'])->name('poll');
+        // Notificaciones push (CRM instalado como app en el celular)
+        Route::get('/push/clave',                    [PushController::class, 'clave'])->name('push.clave');
+        Route::post('/push/suscribir',               [PushController::class, 'suscribir'])->name('push.suscribir');
+        Route::delete('/push/suscribir',             [PushController::class, 'baja'])->name('push.baja');
+        Route::post('/push/probar',                  [PushController::class, 'probar'])->middleware('throttle:10,1')->name('push.probar');
         // Cambiar de negocio activo dentro del CRM (selector)
         Route::post('/cambiar-negocio',              [ComWaAuthController::class, 'cambiarProyecto'])->name('cambiar.negocio');
         // Estado + QR del bot WhatsApp (Baileys) — el frontend hace polling

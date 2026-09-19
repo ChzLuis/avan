@@ -543,6 +543,16 @@ class BotWebhookController extends Controller
             'estado' => $dir === 'in' ? 'recibido' : 'enviado',
         ]);
 
+        // Aviso push a los dispositivos del negocio (tras responder el webhook).
+        if ($dir === 'in') {
+            $convId = $conv->id; $projectId = $project->id; $textoAviso = $texto;
+            dispatch(function () use ($convId, $projectId, $textoAviso) {
+                if ($c = WaConversacion::find($convId)) {
+                    \App\Modules\Crm\Support\WebPush\AvisoPush::mensajeEntrante($projectId, $c, $textoAviso);
+                }
+            })->afterResponse();
+        }
+
         // Clasificar el lead con los mensajes entrantes acumulados.
         if ($dir === 'in') {
             $textos = \App\Modules\Crm\Models\WaMensaje::where('wa_conversacion_id', $conv->id)

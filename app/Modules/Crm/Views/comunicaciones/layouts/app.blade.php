@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('pageTitle', 'BIXO') &mdash; BIXO</title>
+    {{-- CRM instalable como app (Android/iOS) con notificaciones push --}}
+    <link rel="manifest" href="/manifest-crm.json">
+    <meta name="theme-color" content="#26233b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="BIXO CRM">
+    <link rel="apple-touch-icon" href="/img/pwa/icono-192.png">
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => {}); }</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>

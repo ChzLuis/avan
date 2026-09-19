@@ -1,0 +1,17 @@
+{
+    "name": "BIXO CRM",
+    "short_name": "BIXO CRM",
+    "description": "Bandeja de WhatsApp, prospectos y tratos de tu negocio.",
+    "start_url": "/bixocrm",
+    "scope": "/bixocrm",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#26233b",
+    "theme_color": "#26233b",
+    "lang": "es",
+    "icons": [
+        { "src": "/img/pwa/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "/img/pwa/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+        { "src": "/img/pwa/icono-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    ]
+}

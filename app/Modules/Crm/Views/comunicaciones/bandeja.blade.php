@@ -823,6 +823,28 @@ function bandeja() {
             this.avisos = true;
             try { localStorage.setItem('bx_avisos', '1'); } catch (e) {}
             this.sonar();
+            this.suscribirPush();
+        },
+        // Push real (llega aunque el CRM este cerrado, si esta instalado como app o Chrome sigue abierto).
+        async suscribirPush() {
+            try {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                if (Notification.permission !== 'granted') return;
+                const reg = await navigator.serviceWorker.ready;
+                const { clave } = await (await fetch('/bixocrm/push/clave', { headers: { 'Accept': 'application/json' } })).json();
+                const raw = Uint8Array.from(atob(clave.replace(/-/g, '+').replace(/_/g, '/').padEnd(clave.length + (4 - clave.length % 4) % 4, '=')), c => c.charCodeAt(0));
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+                const r = await fetch('/bixocrm/push/suscribir', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                    body: JSON.stringify(sub.toJSON()),
+                });
+                if (r.ok) {
+                    // Prueba real: si llega, el celular esta listo.
+                    fetch('/bixocrm/push/probar', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' } }).catch(() => {});
+                }
+            } catch (e) { console.warn('push', e); }
         },
         sonar() {
             try {
@@ -854,6 +876,10 @@ function bandeja() {
 
         init() {
             this.pollingInterval = setInterval(() => this.poll(), 3000);
+            if (this.avisos) setTimeout(() => this.suscribirPush(), 1500);
+            // Abrir la conversacion que pide la URL (la notificacion push llega con ?conversacion=ID).
+            const pedida = new URLSearchParams(location.search).get('conversacion');
+            if (pedida) { const c = this.conversaciones.find(x => String(x.id) === pedida); if (c) this.$nextTick(() => this.abrirConversacion(c)); }
             // Chrome exige un gesto para el audio: el primer clic "desbloquea" el contexto.
             document.addEventListener('click', () => { try { new (window.AudioContext || window.webkitAudioContext)().resume(); } catch (e) {} }, { once: true });
         },
