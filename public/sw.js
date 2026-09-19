@@ -6,11 +6,19 @@ self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 // conexion, un aviso simple (el CRM necesita internet igual).
 self.addEventListener('fetch', (e) => {
     if (e.request.mode !== 'navigate') return;
-    e.respondWith(fetch(e.request).catch(() => new Response(
+    // Solo se muestra "Sin conexion" cuando de verdad no hay red: un fallo puntual del
+    // servidor o un corte momentaneo se reintenta una vez y, si persiste, el navegador
+    // muestra su propio error (recargar lo resuelve).
+    e.respondWith(fetch(e.request).catch(async (err) => {
+        if (self.navigator && self.navigator.onLine !== false) {
+            try { return await fetch(e.request); } catch (e2) { throw err; }
+        }
+        return new Response(
         '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         + '<body style="font-family:sans-serif;background:#26233b;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
         + '<div><div style="font-size:42px">📡</div><h2>Sin conexión</h2><p>Conéctate a internet y vuelve a abrir BIXO CRM.</p></div></body>',
-        { headers: { 'Content-Type': 'text/html; charset=utf-8' } })));
+        { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }));
 });
 
 self.addEventListener('push', (e) => {
