@@ -24,6 +24,9 @@
 
 <div class="flex h-screen overflow-hidden">
 
+    {{-- Fondo oscuro en movil: tocar fuera cierra el menu (la barra tapaba el boton de la cabecera). --}}
+    <div x-show="open && window.innerWidth < 1024" x-cloak @click="open=false" class="fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
+
     {{-- SIDEBAR --}}
     <aside class="flex-shrink-0 flex flex-col h-full z-50 fixed lg:relative transition-all duration-200"
            :class="open ? 'w-56' : 'w-0 lg:w-14'"
@@ -36,6 +39,9 @@
                     <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                 </svg>
             </div>
+            <button x-show="window.innerWidth < 1024" @click="open=false" type="button" class="ml-auto order-last p-1.5 rounded-lg text-gray-400 hover:text-white flex-shrink-0" title="Cerrar menú">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
             <div class="flex flex-col leading-tight min-w-0">
                 <span class="text-white font-bold text-xs">BIXO CRM</span>
                 @php $_negocios = \App\Modules\Crm\Controllers\CrmAuthController::proyectosDelUsuario(); @endphp
