@@ -97,6 +97,18 @@ contesta el `fallback` y SIGUE a `siguiente` (antes se quedaba esperando). Flujo
 (duda -> `dudas_fotos` -> `cierre`; si no -> `cierre`). Imagenes: capturas reales montadas
 (`scripts/capturar_movil.py` + `scripts/montar_capturas_eskala.py`), subidas por SFTP.
 
+**CRM como app + push (2026-09-18, en ARIN)**: `public/manifest-crm.json` + `public/sw.js` +
+iconos `public/img/pwa/` (subidos por SFTP). Web Push SIN paquetes: `Crm/Support/WebPush/PushWeb`
+(VAPID ES256 con openssl_sign + DER->raw; cifrado aes128gcm RFC 8291 con openssl_pkey_derive +
+hash_hkdf). Claves VAPID en tabla `push_claves` (se crean solas la primera vez); suscripciones en
+`push_suscripciones` (user+project+endpoint). Rutas `bixocrm.push.*` (clave/suscribir/baja/probar).
+La campana de la bandeja pide permiso, suscribe y manda una prueba. `BotWebhookController::guardarEnCrm`
+dispara `AvisoPush::mensajeEntrante` con `dispatch()->afterResponse()` en cada entrante. Prueba
+`CrmPushTest` descifra como el navegador. Trampa: en XAMPP `openssl_pkey_new` necesita `config` =
+openssl.cnf (`PushWeb::opcionesEc`). Tablas creadas en ARIN por --sql (batch 60). Tambien: sonido +
+Notification API en la bandeja, sondeo con huso de Lima (antes nunca traia nuevos), menu movil con
+fondo y X, barra de escritura movil con "+", contador de grabacion, aviso de sesion centrado.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
