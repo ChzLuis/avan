@@ -306,14 +306,22 @@ class BotEskalaMetaTest extends TestCase
         $this->sinIa();
     }
 
-    public function test_texto_que_no_se_entiende_vuelve_al_menu(): void
+    public function test_lo_que_el_bot_no_entiende_lo_responde_la_ia_o_el_asesor(): void
     {
         $this->meta($this->texto('hola'));
         $n = count($this->enviados());
-        $this->meta($this->texto('asdfgh'));
+        $this->meta($this->texto('¿ustedes también hacen logos?'));
         $env = $this->nuevos($n);
-        $this->assertCount(1, $env, 'Vuelve al menu sin repetir el flyer');
-        $this->assertSame('button:btn:precios|btn:tienda|btn:asesor', $this->resumen(end($env)));
+
+        // Sin IA licenciada (como en pruebas) responde el respaldo y ofrece el menu; con IA, contesta la IA.
+        $this->assertCount(1, $env);
+        $this->assertStringContainsString('asesor', $this->cuerpo($env[0]));
+        $this->assertStringContainsString('ver precios, ver una tienda o hablar con un asesor', $this->cuerpo($env[0]));
+
+        // Y despues de eso, "precio" sigue funcionando por el router.
+        $n = count($this->enviados());
+        $this->meta($this->texto('precio'));
+        $this->assertStringContainsString('Start — S/ 490', $this->cuerpo($this->nuevos($n)[0]));
     }
 
     public function test_un_boton_que_no_existe_no_rompe(): void
