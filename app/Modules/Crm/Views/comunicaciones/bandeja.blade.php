@@ -546,7 +546,7 @@
                     </select>
                     <input x-show="accionCuando === 'hoy' || accionCuando === 'manana_hora'" type="time" x-model="accionHora" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1.5 flex-1 min-w-0">
                     <input x-show="accionCuando === 'exacta'" type="datetime-local" x-model="accionFecha" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1.5 flex-1 min-w-0">
-                    <button @click="crearAccion()" :disabled="!accionNueva.trim()" class="text-xs font-bold text-white px-3 rounded-lg disabled:opacity-50 flex-shrink-0" style="background:#f59e0b">+</button>
+                    <button @click="crearAccion()" :disabled="!accionNueva.trim()" class="text-xs font-bold text-white px-3 py-1.5 rounded-lg disabled:opacity-50 flex-shrink-0" style="background:#f59e0b">Guardar</button>
                 </div>
                 {{-- Recordatorio por WhatsApp: opcional, apagado salvo que se active a proposito. --}}
                 <label class="flex items-center gap-2 text-[11px] text-gray-600 cursor-pointer" x-show="accionCuando !== ''">
