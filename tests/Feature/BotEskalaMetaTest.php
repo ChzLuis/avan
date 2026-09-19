@@ -275,11 +275,15 @@ class BotEskalaMetaTest extends TestCase
         $conv->update(['bot_activo' => false]);
         $n = count($this->enviados());
 
-        $this->meta($this->texto('precio?'));
-        $env = $this->nuevos($n);
-        $this->assertCount(1, $env, 'Apagado a mano por el asesor: un solo aviso de que atiende una persona');
-        $this->assertStringNotContainsString('S/ 490', $this->cuerpo($env[0]));
+        // Apagado a mano por el asesor: SILENCIO TOTAL, ni siquiera un aviso automatico
+        // (se cruzaba con lo que el asesor estaba escribiendo).
+        foreach (['precio?', 'hola?', 'sigues ahi?'] as $m) {
+            $n = count($this->enviados());
+            $this->meta($this->texto($m));
+            $this->assertCount(0, $this->nuevos($n), 'El bot apagado no contesta nada: ' . $m);
+        }
         $this->assertDatabaseHas('wa_mensajes', ['wa_conversacion_id' => $conv->id, 'direccion' => 'in', 'contenido' => 'precio?']);
+        $this->assertDatabaseHas('wa_mensajes', ['wa_conversacion_id' => $conv->id, 'direccion' => 'in', 'contenido' => 'sigues ahi?']);
     }
 
     public function test_sin_producto_crm_no_crea_tratos(): void

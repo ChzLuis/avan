@@ -83,19 +83,13 @@ class BotWebhookController extends Controller
         //    como los CRM profesionales: acumula historial hacia adelante).
         $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $data['texto_visible'] ?? $data['mensaje'], 'in');
 
-        // 1.a) BOT EN PAUSA para este chat (lo apago el asesor, o el flujo al pasar con
-        //      una persona): el mensaje queda en el CRM y el bot calla. Solo la primera
-        //      vez en 12 h dice que un asesor lo atiende, para que el cliente no se
-        //      quede sin saber por que nadie contesta.
+        // 1.a) BOT EN PAUSA para este chat (lo apago el asesor, o el flujo al pasar con una
+        //      persona): SILENCIO TOTAL. El mensaje queda en el CRM y nadie automatico
+        //      contesta. Antes salia un "un asesor te responde en breve" que se cruzaba con
+        //      lo que el asesor ya estaba escribiendo: apagar el bot debe callarlo del todo.
         $conv = $this->conversacionDe($project, $telefono);
         if ($conv && ! $conv->bot_activo) {
-            $respuestas = [];
-            if (\Illuminate\Support\Facades\Cache::add("bot_pausa_aviso_{$conv->id}", 1, 12 * 3600)) {
-                $respuestas[] = 'Gracias 🙌 Un asesor te responde por aquí en breve. Puedes dejar tus fotos o dudas y las verá.';
-                $this->guardarEnCrm($project, $telefono, $data['nombre'] ?? $telefono, $respuestas[0], 'out');
-            }
-
-            return response()->json(['respuestas' => $respuestas, 'bot_pausado' => true]);
+            return response()->json(['respuestas' => [], 'bot_pausado' => true]);
         }
 
         // 2) Ejecutar el bot activo (si hay).
@@ -486,12 +480,8 @@ class BotWebhookController extends Controller
         }
         // El flujo entrego el chat a una persona: el bot se pausa (la bandeja lo puede volver a encender).
         if (!empty($acciones['pausar_bot'])) {
-            if ($c = $this->conversacionDe($project, $telefono)) {
-                $c->update(['bot_activo' => false]);
-                // El flujo ya dijo "te paso con un asesor": a partir de aqui, silencio total
-                // (el aviso generico de pausa es solo para cuando lo apaga el asesor a mano).
-                \Illuminate\Support\Facades\Cache::put("bot_pausa_aviso_{$c->id}", 1, 12 * 3600);
-            }
+            // El flujo ya dijo "te paso con un asesor": a partir de aqui el bot calla.
+            $this->conversacionDe($project, $telefono)?->update(['bot_activo' => false]);
         }
 
         if (!empty($acciones['registrar'])) {
