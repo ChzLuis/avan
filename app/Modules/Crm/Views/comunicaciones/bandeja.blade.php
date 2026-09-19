@@ -312,6 +312,13 @@ $estadoColores = [
             </p>
             <button @click="abrirPlantillas()" class="text-[11px] font-semibold text-white px-2.5 py-1 rounded-lg flex-shrink-0" style="background:#d97706">Elegir plantilla</button>
         </div>
+        {{-- Movil: respuestas rapidas a un toque, sin abrir el modal. --}}
+        <div x-show="esMovil && respuestas.length && !grabando && !textoMensaje" class="flex gap-1.5 overflow-x-auto mb-2 pb-0.5" style="scrollbar-width:none;-webkit-overflow-scrolling:touch">
+            <template x-for="r in respuestas.slice(0, 8)" :key="'chip' + r.id">
+                <button @click="usarRespuesta(r)" class="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-green-200 text-green-800 bg-green-50 whitespace-nowrap" x-text="r.nombre"></button>
+            </template>
+            <button @click="modalRespuestas = true" class="flex-shrink-0 text-[11px] px-2.5 py-1 rounded-full border border-gray-200 text-gray-500 whitespace-nowrap">Todas…</button>
+        </div>
         <div x-show="adjunto" x-cloak class="flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg bg-green-50 border border-green-200 text-[11px] text-green-800">
             <span>📎</span><span class="truncate" x-text="adjunto?.name"></span>
             <button @click="adjunto = null; $refs.inputArchivo.value = ''" class="ml-auto text-green-600 hover:text-green-800">✕</button>
@@ -1173,6 +1180,8 @@ function bandeja() {
                     else this.conversaciones.push(updated);
                 });
 
+                // Insignia con los no leidos en el icono de la app instalada.
+                try { if ('setAppBadge' in navigator) { this.totalNoLeidos > 0 ? navigator.setAppBadge(this.totalNoLeidos) : navigator.clearAppBadge(); } } catch (e) {}
                 (data.estados || []).forEach(e => {
                     const m = this.mensajes.find(x => x.id === e.id);
                     if (m) Object.assign(m, e);

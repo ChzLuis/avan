@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('pageTitle', 'BIXO') &mdash; BIXO</title>
     {{-- CRM instalable como app (Android/iOS) con notificaciones push --}}
@@ -175,10 +175,32 @@
         </div>
         @endif
 
-        <div class="flex flex-1 overflow-hidden">
+        <div class="flex flex-1 overflow-hidden" :style="window.innerWidth < 1024 ? 'padding-bottom:calc(56px + env(safe-area-inset-bottom))' : ''">
             @yield('content')
         </div>
     </div>
+
+    {{-- Barra inferior en movil: lo que mas se usa a un toque (la lateral queda en "Menú"). --}}
+    <nav x-show="window.innerWidth < 1024" x-cloak
+         class="fixed bottom-0 left-0 right-0 z-40 flex items-stretch"
+         style="background:#26233b;border-top:1px solid #1f1c33;padding-bottom:env(safe-area-inset-bottom);height:calc(56px + env(safe-area-inset-bottom))">
+        @php $tabs = [
+            ['bixocrm.bandeja',  'bixocrm.bandeja',  'Bandeja',    'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'],
+            ['bixocrm.clientes', 'bixocrm.clientes', 'Prospectos', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
+            ['bixocrm.tratos',   'bixocrm.tratos*',  'Tratos',     'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+        ]; @endphp
+        @foreach($tabs as [$ruta, $patron, $texto, $icono])
+            <a href="{{ route($ruta) }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold"
+               style="color:{{ request()->routeIs($patron) ? '#ffffff' : '#9a9bb5' }};{{ request()->routeIs($patron) ? 'background:rgba(91,78,245,.35)' : '' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="{{ $icono }}"/></svg>
+                {{ $texto }}
+            </a>
+        @endforeach
+        <button type="button" @click="open = true" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold" style="color:#9a9bb5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            Menú
+        </button>
+    </nav>
 </div>
 
 <script>

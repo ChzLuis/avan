@@ -27,10 +27,10 @@
     </div>
 
     {{-- TABLERO --}}
-    <div x-show="vista==='tablero'" class="flex-1 overflow-x-auto overflow-y-hidden">
+    <div x-show="vista==='tablero'" class="flex-1 overflow-x-auto overflow-y-hidden" :style="window.innerWidth < 768 ? 'scroll-snap-type:x mandatory' : ''">
         <div class="flex gap-3 p-3 md:p-4 h-full min-w-max">
             <template x-for="et in etapasVisibles" :key="et.id">
-                <div class="flex flex-col w-[270px] md:w-[290px] rounded-2xl bg-gray-100/80 h-full"
+                <div class="flex flex-col w-[270px] md:w-[290px] rounded-2xl bg-gray-100/80 h-full" :style="window.innerWidth < 768 ? 'width:84vw;scroll-snap-align:start' : ''"
                      @dragover.prevent="sobre = et.id" @dragleave="sobre = null" @drop.prevent="soltar(et)"
                      :class="sobre === et.id ? 'ring-2 ring-indigo-400' : ''">
                     <div class="px-3 pt-3 pb-2">
