@@ -143,6 +143,13 @@ class BotWebhookController extends Controller
         if ($session->exists && $session->updated_at && $session->updated_at->lt(now()->subHours(6))) {
             $estado = ['bloque' => null, 'vars' => [], 'esperando' => false];
         }
+        // Frases de REINICIO del flujo (`reinicio` en la definicion): el texto que trae el
+        // anuncio o un saludo a secas siempre arrancan de cero, aunque el bot estuviera
+        // esperando otra cosa (un cliente volvio a tocar el anuncio y su "hola, quiero mi
+        // tienda" se tomo como respuesta a "¿ya tienes fotos listas?").
+        if (! empty($estado['esperando']) && $this->esReinicio($data['mensaje'], $flow->definicion['reinicio'] ?? [])) {
+            $estado = ['bloque' => null, 'vars' => [], 'esperando' => false];
+        }
         $definicion = $flow->definicion;
 
         // El asistente atiende 24/7: nunca dejamos a un cliente sin respuesta.
@@ -393,6 +400,21 @@ class BotWebhookController extends Controller
         ]);
     }
 
+    /** ¿El mensaje es una frase de reinicio del flujo? Saludos exactos o frases contenidas (sin tildes ni mayusculas). */
+    private function esReinicio(string $mensaje, array $frases): bool
+    {
+        $norm = fn (string $t) => trim(preg_replace('/[^a-z0-9 ]/u', ' ', mb_strtolower(\Illuminate\Support\Str::ascii($t))));
+        $m = preg_replace('/\s+/', ' ', $norm($mensaje));
+        foreach ($frases as $f) {
+            $f = preg_replace('/\s+/', ' ', $norm((string) $f));
+            if ($f === '') continue;
+            // Frases largas (el texto del anuncio): basta con que esten contenidas. Cortas ("hola"): exactas.
+            if (mb_strlen($f) >= 15 ? str_contains($m, $f) : $m === $f) return true;
+        }
+
+        return false;
+    }
+
     /** Conversacion del CRM de este telefono en el negocio (cualquiera de sus lineas). */
     private function conversacionDe(Project $project, string $telefono): ?WaConversacion
     {
@@ -418,7 +440,12 @@ class BotWebhookController extends Controller
         }
         // El flujo entrego el chat a una persona: el bot se pausa (la bandeja lo puede volver a encender).
         if (!empty($acciones['pausar_bot'])) {
-            $this->conversacionDe($project, $telefono)?->update(['bot_activo' => false]);
+            if ($c = $this->conversacionDe($project, $telefono)) {
+                $c->update(['bot_activo' => false]);
+                // El flujo ya dijo "te paso con un asesor": a partir de aqui, silencio total
+                // (el aviso generico de pausa es solo para cuando lo apaga el asesor a mano).
+                \Illuminate\Support\Facades\Cache::put("bot_pausa_aviso_{$c->id}", 1, 12 * 3600);
+            }
         }
 
         if (!empty($acciones['registrar'])) {

@@ -188,6 +188,15 @@ class BotEskalaMetaTest extends TestCase
         $this->assertCount(1, $env, 'Sin mas bot');
         $this->assertStringContainsString('Te paso con un asesor', $this->cuerpo($env[0]));
         $this->assertCount(1, CrmTrato::where('project_id', $this->proyecto->id)->get());
+
+        // Desde aqui el bot NO vuelve a hablar: ni menu, ni IA, ni aviso.
+        foreach (['hola?', 'precio', 'están ahí?'] as $m) {
+            $n = count($this->enviados());
+            $this->meta($this->texto($m));
+            $this->assertCount(0, $this->nuevos($n), 'Silencio tras "Hablar con asesor": ' . $m);
+        }
+        $this->assertDatabaseHas('wa_mensajes', ['direccion' => 'in', 'contenido' => 'están ahí?']);
+        $this->sinIa();
     }
 
     public function test_quiero_una_pregunta_el_negocio_luego_las_fotos_y_cierra_con_trato(): void
@@ -223,14 +232,11 @@ class BotEskalaMetaTest extends TestCase
         // el embudo (le paso a un cliente real a las 5 am): avisa una vez y calla.
         $conv = WaConversacion::where('cliente_telefono', '51900000001')->firstOrFail();
         $this->assertFalse((bool) $conv->bot_activo, 'El flujo pauso el bot al entregar al asesor');
-        $n = count($this->enviados());
-        $this->meta($this->texto('Hola'));
-        $env = $this->nuevos($n);
-        $this->assertCount(1, $env);
-        $this->assertStringContainsString('asesor te responde', $this->cuerpo($env[0]));
-        $n = count($this->enviados());
-        $this->meta($this->texto('No tengo Instagram'));
-        $this->assertCount(0, $this->nuevos($n), 'Segundo mensaje en pausa: silencio, ya aviso (y nada de IA saludando)');
+        foreach (['Hola', 'No tengo Instagram'] as $m) {
+            $n = count($this->enviados());
+            $this->meta($this->texto($m));
+            $this->assertCount(0, $this->nuevos($n), 'Ya esta con el asesor: silencio total (y nada de IA saludando)');
+        }
         $this->sinIa();
     }
 
@@ -271,7 +277,7 @@ class BotEskalaMetaTest extends TestCase
 
         $this->meta($this->texto('precio?'));
         $env = $this->nuevos($n);
-        $this->assertCount(1, $env, 'Solo el aviso de que atiende una persona');
+        $this->assertCount(1, $env, 'Apagado a mano por el asesor: un solo aviso de que atiende una persona');
         $this->assertStringNotContainsString('S/ 490', $this->cuerpo($env[0]));
         $this->assertDatabaseHas('wa_mensajes', ['wa_conversacion_id' => $conv->id, 'direccion' => 'in', 'contenido' => 'precio?']);
     }
@@ -363,5 +369,24 @@ class BotEskalaMetaTest extends TestCase
         $this->meta($this->texto('sí, tengo todo listo'));
         $env = $this->nuevos($n);
         $this->assertStringContainsString('nombre de tu negocio', $this->cuerpo($env[0]));
+    }
+    public function test_el_texto_del_anuncio_o_un_hola_reinician_aunque_el_bot_este_esperando_otra_cosa(): void
+    {
+        $this->meta($this->texto('hola'));
+        $this->meta($this->toque('btn:tienda'));
+        $this->meta($this->toque('btn:quiero'));
+        $this->meta($this->texto('venta de métodos')); // esperando "¿fotos listas?"
+        $n = count($this->enviados());
+
+        // Vuelve a tocar el anuncio 16 minutos despues (sin caducar la sesion).
+        $this->meta($this->texto('👋 Hola, quiero mi tienda virtual y deseo más información.'));
+        $env = $this->nuevos($n);
+        $this->assertSame(['image', 'button:btn:precios|btn:tienda|btn:asesor'], array_map(fn ($d) => $this->resumen($d), $env), 'Empieza de cero, no cierra con "dime el nombre de tu negocio"');
+
+        // Un "Hola" a secas tambien reinicia; un texto normal no.
+        $this->meta($this->toque('btn:precios'));
+        $n = count($this->enviados());
+        $this->meta($this->texto('Hola'));
+        $this->assertSame('image', $this->resumen($this->nuevos($n)[0]));
     }
 }
