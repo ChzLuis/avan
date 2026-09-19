@@ -55,8 +55,9 @@ $estadoColores = [
             <input type="text" x-model="busqueda" placeholder="Buscar un chat o un teléfono"
                    class="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-400">
         </div>
-        {{-- Pestañas: como WhatsApp (Todos / No leídos) y como un CRM (Mías / Sin asignar / Cerradas) --}}
-        <div class="flex gap-1 mt-2 overflow-x-auto pb-0.5" style="scrollbar-width:none">
+        {{-- Pestañas: como WhatsApp (Todos / No leídos) y como un CRM (Mías / Sin asignar / Cerradas).
+             Van en dos filas: en una sola, "Archivadas" quedaba fuera de la pantalla. --}}
+        <div class="flex gap-1 mt-2 flex-wrap">
             <template x-for="t in [['todas','Todas'],['sin_leer','No leídas'],['mias','Mías'],['sin_asignar','Sin asignar'],['cerradas','Cerradas'],['archivadas','Archivadas']]" :key="t[0]">
                 <button @click="vista = t[0]"
                         :class="vista === t[0] ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
@@ -1246,8 +1247,13 @@ function bandeja() {
                         const enPantalla = this.convActiva?.id === updated.id && !document.hidden;
                         if (!enPantalla) this.avisar(updated);
                     }
-                    if (idx >= 0) Object.assign(this.conversaciones[idx], updated);
-                    else this.conversaciones.push(updated);
+                    if (idx >= 0) {
+                        // Nunca pisar con undefined lo que el sondeo no trae.
+                        Object.keys(updated).forEach(k => { if (updated[k] !== undefined) this.conversaciones[idx][k] = updated[k]; });
+                        if (this.convActiva?.id === updated.id && updated.bot_activo !== undefined) this.convActiva.bot_activo = updated.bot_activo;
+                    } else {
+                        this.conversaciones.push(updated);
+                    }
                 });
 
                 // Insignia con los no leidos en el icono de la app instalada.

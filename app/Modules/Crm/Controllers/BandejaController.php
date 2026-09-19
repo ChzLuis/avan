@@ -160,8 +160,9 @@ class BandejaController extends Controller
             ? \Carbon\Carbon::createFromTimestamp((int) $request->since, config('app.timezone'))->subSeconds(2)
             : now()->subSeconds(5);
 
+        // Los archivados tambien se refrescan: si no, desaparecian de la lista al sondear
+        // y la pestaña "Archivadas" se quedaba con datos viejos.
         $actualizadas = WaConversacion::whereIn('wa_canal_id', $canales)
-            ->where('archivado', false)
             ->where('ultimo_mensaje_at', '>=', $since)
             ->with(['canal', 'ultimoMensaje'])
             ->get()->map(fn($c) => [
@@ -170,6 +171,9 @@ class BandejaController extends Controller
                 'cliente_telefono' => $c->cliente_telefono,
                 'no_leidos'        => $c->no_leidos,
                 'estado'           => $c->estado,
+                // SIN esto, al mezclar en el navegador se borraba el apagado del bot
+                // y el bot volvia a responder solo (pasado real con un cliente).
+                'bot_activo'       => (bool) ($c->bot_activo ?? true),
                 'ultimo_mensaje'   => $c->ultimoMensaje?->contenido,
                 'ultimo_tipo'      => $c->ultimoMensaje?->tipo,
                 'ultimo_direccion' => $c->ultimoMensaje?->direccion,
