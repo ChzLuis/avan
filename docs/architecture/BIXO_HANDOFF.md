@@ -178,6 +178,16 @@ los archivados (desaparecian de la pestaña al refrescar) y las pestañas van en
 REGLA: toda clave que la bandeja escriba (bot_activo, fijada, asignado_a...) DEBE viajar en el
 sondeo o se pierde sola.
 
+**Estados de conversacion editables (19/09)**: tabla `crm_estados` por negocio (creada en ARIN por
+--sql, batch 60; sembrada para el 16). Antes estaban escritos a mano en 4 vistas y el `in:` del
+validador. `CrmEstado::asegurar()` siembra al entrar a la bandeja: Nuevo (inicial), Contactado,
+Demo enviada, Propuesta, **Proyecto**, **No responde**, Academia, Cerrado (final), Perdido (final).
+`EstadosController::guardar` recibe la lista COMPLETA (como las etapas de Tratos): lo que no venga
+se borra y sus chats pasan al inicial. La bandeja los pinta con el color de la tabla y trae el
+modal "Editar estados" (nombre, color, orden, inicial, cierra). El validador de `actualizar` usa
+`Rule::exists('crm_estados','clave')` del negocio. Pruebas: `CrmEstadosTest`.
+PENDIENTE: `clientes.blade.php` (Prospectos) e `index.blade.php` siguen con la lista a mano.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
