@@ -61,9 +61,9 @@ class AccionesController extends Controller
             'avisar_whatsapp'    => 'nullable|string|max:20',
             'avisar_minutos'     => 'nullable|integer|min:0|max:1440',
         ]);
-        if (! empty($data['avisar_whatsapp'])) {
-            $data['avisar_whatsapp'] = preg_replace('/\D/', '', $data['avisar_whatsapp']);
-        }
+        // Sin aviso marcado llegan en null y `avisar_minutos` no admite null: se normaliza.
+        $data['avisar_whatsapp'] = ! empty($data['avisar_whatsapp']) ? preg_replace('/\D/', '', $data['avisar_whatsapp']) : null;
+        $data['avisar_minutos'] = (int) ($data['avisar_minutos'] ?? 10) ?: 10;
         if (! empty($data['wa_conversacion_id'])) {
             $canales = WaCanal::where('project_id', $project->id)->pluck('id');
             abort_unless(WaConversacion::whereIn('wa_canal_id', $canales)->where('id', $data['wa_conversacion_id'])->exists(), 403);
@@ -94,9 +94,9 @@ class AccionesController extends Controller
             'avisar_whatsapp' => 'nullable|string|max:20',
             'avisar_minutos'  => 'nullable|integer|min:0|max:1440',
         ]);
-        if (! empty($data['avisar_whatsapp'])) {
-            $data['avisar_whatsapp'] = preg_replace('/\D/', '', $data['avisar_whatsapp']);
-        }
+        // Sin aviso marcado llegan en null y `avisar_minutos` no admite null: se normaliza.
+        $data['avisar_whatsapp'] = ! empty($data['avisar_whatsapp']) ? preg_replace('/\D/', '', $data['avisar_whatsapp']) : null;
+        $data['avisar_minutos'] = (int) ($data['avisar_minutos'] ?? 10) ?: 10;
         if (array_key_exists('hecha', $data)) {
             $accion->hecho_at = $data['hecha'] ? now() : null;
             unset($data['hecha']);

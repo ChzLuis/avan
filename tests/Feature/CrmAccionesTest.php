@@ -204,4 +204,28 @@ class CrmAccionesTest extends TestCase
         $this->assertSame('llamada', $lista[0]['tipo']);
         $this->assertSame(10, $lista[0]['avisar_minutos']);
     }
+    /**
+     * Regresion: sin marcar la casilla, el navegador manda avisar_whatsapp y avisar_minutos
+     * en null; la columna no admite null y la accion no se guardaba ("No se pudo guardar").
+     */
+    public function test_se_guarda_aunque_lleguen_los_campos_del_aviso_en_null(): void
+    {
+        $conv = $this->conv();
+
+        $r = $this->enElCrm()->postJson('/bixocrm/acciones', [
+            'titulo' => 'Llamar coordinador', 'tipo' => 'llamada',
+            'vence_at' => now()->setTime(22, 0)->format('Y-m-d\TH:i'),
+            'wa_conversacion_id' => $conv->id,
+            'avisar_whatsapp' => null, 'avisar_minutos' => null,
+        ])->assertCreated();
+
+        $this->assertTrue($r->json('ok'));
+        $a = CrmAccion::firstOrFail();
+        $this->assertNull($a->avisar_whatsapp);
+        $this->assertSame(10, $a->avisar_minutos, 'Queda el valor por defecto, no null');
+
+        // Y editarla sin tocar el aviso tampoco rompe.
+        $this->enElCrm()->patchJson("/bixocrm/acciones/{$a->id}", ['titulo' => 'Llamar al coordinador', 'avisar_whatsapp' => null, 'avisar_minutos' => null])->assertOk();
+        $this->assertSame('Llamar al coordinador', $a->fresh()->titulo);
+    }
 }
