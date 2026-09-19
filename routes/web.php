@@ -1017,6 +1017,7 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::get('/poll',                          [BandejaController::class, 'poll'])->name('poll');
         // Notificaciones push (CRM instalado como app en el celular)
         Route::get('/push/clave',                    [PushController::class, 'clave'])->name('push.clave');
+        Route::get('/push/diagnostico',              fn () => view('crm::comunicaciones.push-diagnostico'))->name('push.diagnostico');
         Route::post('/push/suscribir',               [PushController::class, 'suscribir'])->name('push.suscribir');
         Route::delete('/push/suscribir',             [PushController::class, 'baja'])->name('push.baja');
         Route::post('/push/probar',                  [PushController::class, 'probar'])->middleware('throttle:10,1')->name('push.probar');
