@@ -169,6 +169,15 @@ todo, `bot.avalancha_cortada` en el log y el bot de ese chat se pausa. **Prueba 
 18 textos desde cada bloque que espera (grupo `lento`, ~5 min: `artisan test --group lento`) y una
 seguidilla de 10 mensajes. Correrla cada vez que se cambie el flujo de Eskala.
 
+**Bot OFF que volvia a ON (19/09, cliente real 51941510319)**: el sondeo (`poll`, cada 3 s) NO
+devolvia `bot_activo`; `Object.assign` en la bandeja lo borraba y el boton volvia a ON, asi que el
+bot seguia respondiendo con el asesor dentro. Arreglo: el sondeo lo devuelve, la mezcla en el
+navegador ignora las claves `undefined` y sincroniza `convActiva`. De paso el sondeo ya no excluye
+los archivados (desaparecian de la pestaña al refrescar) y las pestañas van en dos filas (con
+`overflow-x` "Archivadas" quedaba fuera de pantalla). Regresion en `CrmBandejaPollTest`.
+REGLA: toda clave que la bandeja escriba (bot_activo, fijada, asignado_a...) DEBE viajar en el
+sondeo o se pierde sola.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
