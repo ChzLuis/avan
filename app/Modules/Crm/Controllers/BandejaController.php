@@ -24,6 +24,9 @@ class BandejaController extends Controller
     {
         $project  = $this->project();
         $canales  = WaCanal::where('project_id', $project->id)->where('activo', true)->get();
+        // Estados de conversacion del negocio (editables desde la propia bandeja).
+        \App\Modules\Crm\Models\CrmEstado::asegurar($project);
+        $estados = \App\Modules\Crm\Models\CrmEstado::delProyecto($project->id);
 
         // Trae tambien las archivadas: la bandeja las muestra en su pestana.
         $query = WaConversacion::whereIn('wa_canal_id', $canales->pluck('id'))
@@ -78,7 +81,7 @@ class BandejaController extends Controller
 
         $respuestasRapidas = WaRespuestaRapida::where('project_id', $project->id)->orderBy('orden')->get();
 
-        return view('crm::comunicaciones.bandeja', compact('project', 'canales', 'conversacionesJs', 'metricas', 'respuestasRapidas'));
+        return view('crm::comunicaciones.bandeja', compact('project', 'canales', 'conversacionesJs', 'metricas', 'respuestasRapidas', 'estados'));
     }
 
     public function mensajes(WaConversacion $conversacion)
@@ -344,7 +347,9 @@ class BandejaController extends Controller
     {
         $this->autorizar($conversacion);
         $data = $request->validate([
-            'estado'           => 'nullable|in:nuevo,contactado,demo_enviada,propuesta,cerrado,perdido,academia',
+            // Los estados los define cada negocio: se validan contra su propia tabla.
+            'estado'           => ['nullable', 'string', \Illuminate\Validation\Rule::exists('crm_estados', 'clave')
+                ->where('project_id', (int) session('comunicaciones_project_id'))],
             'notas'            => 'nullable|string',
             'archivado'        => 'nullable|boolean',
             'fijada'           => 'nullable|boolean',

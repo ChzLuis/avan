@@ -47,6 +47,7 @@ use App\Modules\Crm\Controllers\ClientesCrmController;
 use App\Modules\Crm\Controllers\TratosController;
 use App\Modules\Crm\Controllers\PushController;
 use App\Modules\Crm\Controllers\AccionesController;
+use App\Modules\Crm\Controllers\EstadosController;
 use App\Modules\Crm\Controllers\CanalesController;
 use Illuminate\Support\Facades\Route;
 
@@ -1047,6 +1048,9 @@ Route::prefix('bixocrm')->name('bixocrm.')->group(function () {
         Route::patch('/tratos/{trato}',              [TratosController::class, 'update'])->name('tratos.update');
         Route::delete('/tratos/{trato}',             [TratosController::class, 'destroy'])->name('tratos.destroy');
         // Acciones: la siguiente cosa que hacer con cada cliente, con recordatorio push
+        // Estados de conversacion editables por negocio
+        Route::get('/estados',                       [EstadosController::class, 'index'])->name('estados');
+        Route::put('/estados',                       [EstadosController::class, 'guardar'])->name('estados.guardar');
         Route::get('/acciones',                      [AccionesController::class, 'index'])->name('acciones');
         Route::post('/acciones',                     [AccionesController::class, 'store'])->name('acciones.store');
         Route::patch('/acciones/{accion}',           [AccionesController::class, 'update'])->name('acciones.update');

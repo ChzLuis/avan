@@ -2,17 +2,7 @@
 @section('pageTitle', 'Bandeja')
 @section('content')
 
-@php
-$estadoColores = [
-    'nuevo'       => ['bg'=>'#dcfce7','text'=>'#166534','label'=>'Nuevo'],
-    'contactado'  => ['bg'=>'#dbeafe','text'=>'#1e40af','label'=>'Contactado'],
-    'demo_enviada'=> ['bg'=>'#fef3c7','text'=>'#92400e','label'=>'Demo enviada'],
-    'propuesta'   => ['bg'=>'#ede9fe','text'=>'#5b21b6','label'=>'Propuesta'],
-    'cerrado'     => ['bg'=>'#d1fae5','text'=>'#065f46','label'=>'Cerrado'],
-    'perdido'     => ['bg'=>'#fee2e2','text'=>'#991b1b','label'=>'Perdido'],
-    'academia'    => ['bg'=>'#e0f2fe','text'=>'#0c4a6e','label'=>'Academia'],
-];
-@endphp
+{{-- Los estados los define cada negocio (tabla crm_estados); llegan en \$estados. --}}
 
 <div class="flex h-full w-full overflow-hidden"
      x-data="bandeja()" x-init="init()"
@@ -433,12 +423,15 @@ $estadoColores = [
 
         {{-- Estado del lead (el que se ve en la lista) --}}
         <div>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Estado</p>
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estado</p>
+                <button @click="abrirEstados()" class="text-[10px] text-gray-400 hover:text-gray-700 hover:underline">Editar estados</button>
+            </div>
             <select x-model="estadoActual" @change="cambiarEstado(estadoActual)"
                     class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-green-400">
-                @foreach($estadoColores as $key => $cfg)
-                <option value="{{ $key }}">{{ $cfg['label'] }}</option>
-                @endforeach
+                <template x-for="e in estados" :key="e.clave">
+                    <option :value="e.clave" x-text="e.nombre"></option>
+                </template>
             </select>
         </div>
 
@@ -667,9 +660,47 @@ $estadoColores = [
     </div>
 </div>
 
+
+{{-- Modal: estados de conversacion del negocio --}}
+<div x-show="modalEstados" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="modalEstados = false" style="background:rgba(0,0,0,.4)">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div>
+                <h3 class="text-sm font-bold text-gray-900">Estados de conversación</h3>
+                <p class="text-[11px] text-gray-500">Los que uses en tu negocio. El chip del chat usa su color.</p>
+            </div>
+            <button @click="modalEstados = false" class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <div class="p-3 overflow-y-auto flex-1 space-y-2">
+            <template x-for="(e, i) in estadosEdit" :key="i">
+                <div class="flex items-center gap-2 border border-gray-200 rounded-xl px-2 py-1.5">
+                    <input type="color" x-model="e.color" class="w-8 h-8 rounded border border-gray-200 p-0.5 flex-shrink-0" title="Color del chip">
+                    <input type="text" x-model="e.nombre" maxlength="60" placeholder="Nombre del estado" class="flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-2 py-1.5">
+                    <button @click="marcarInicial(i)" :class="e.es_inicial ? 'bg-green-100 text-green-700 border-green-300' : 'text-gray-400 border-gray-200'"
+                            class="text-[10px] px-1.5 py-1 rounded-lg border flex-shrink-0" title="Con este estado nacen los chats nuevos">Inicial</button>
+                    <button @click="e.es_final = !e.es_final" :class="e.es_final ? 'bg-gray-800 text-white border-gray-800' : 'text-gray-400 border-gray-200'"
+                            class="text-[10px] px-1.5 py-1 rounded-lg border flex-shrink-0" title="Cuenta como cerrada">Cierra</button>
+                    <div class="flex flex-col flex-shrink-0">
+                        <button @click="moverEstado(i, -1)" class="text-gray-300 hover:text-gray-600 text-[10px] leading-none">▲</button>
+                        <button @click="moverEstado(i, 1)" class="text-gray-300 hover:text-gray-600 text-[10px] leading-none">▼</button>
+                    </div>
+                    <button @click="estadosEdit.splice(i, 1)" class="text-red-400 hover:text-red-600 text-sm flex-shrink-0" title="Quitar">🗑</button>
+                </div>
+            </template>
+            <button @click="nuevoEstado()" class="w-full text-xs font-semibold text-green-700 border border-dashed border-green-300 rounded-xl py-2 hover:bg-green-50">+ Añadir estado</button>
+            <p class="text-[11px] text-gray-400 px-1">Si quitas un estado, los chats que lo tenían pasan al inicial.</p>
+        </div>
+        <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2">
+            <button @click="modalEstados = false" class="px-3 py-2 text-xs rounded-lg border border-gray-200 text-gray-600">Cancelar</button>
+            <button @click="guardarEstados()" :disabled="guardandoEstados" class="px-3 py-2 text-xs font-semibold rounded-lg text-white disabled:opacity-50" style="background:#25d366">Guardar</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const CONVERSACIONES_INIT = @json($conversacionesJs);
 const RESPUESTAS_INIT = @json($respuestasRapidas);
+const ESTADOS_INIT = @json($estados);
 const YO = @json(auth()->user()->name ?? '');
 
 function bandeja() {
@@ -714,6 +745,8 @@ function bandeja() {
         modalRespuestas: false,
         buscadorRespuestas: '',
         respuestas: RESPUESTAS_INIT,
+        estados: ESTADOS_INIT,
+        modalEstados: false, estadosEdit: [], guardandoEstados: false,
         pollingInterval: null,
         serverTime: Math.floor(Date.now() / 1000),
 
@@ -1281,25 +1314,56 @@ function bandeja() {
             this.$nextTick(() => this.$refs.inputMensaje?.focus());
         },
 
+        // El chip usa el color del estado con transparencia (fondo) y el color pleno (texto).
         estadoBadge(estado) {
-            const map = {
-                nuevo:        'background:#dcfce7;color:#166534',
-                contactado:   'background:#dbeafe;color:#1e40af',
-                demo_enviada: 'background:#fef3c7;color:#92400e',
-                propuesta:    'background:#ede9fe;color:#5b21b6',
-                cerrado:      'background:#d1fae5;color:#065f46',
-                perdido:      'background:#fee2e2;color:#991b1b',
-                academia:     'background:#e0f2fe;color:#0c4a6e',
-            };
-            return map[estado] || 'background:#f3f4f6;color:#374151';
+            const e = this.estados.find(x => x.clave === estado);
+            return e ? `background:${e.color}22;color:${e.color}` : 'background:#f3f4f6;color:#374151';
         },
 
         estadoLabel(estado) {
-            const map = {
-                nuevo:'Nuevo', contactado:'Contactado', demo_enviada:'Demo',
-                propuesta:'Propuesta', cerrado:'Cerrado', perdido:'Perdido', academia:'Academia'
-            };
-            return map[estado] || estado || '';
+            return this.estados.find(x => x.clave === estado)?.nombre || estado || '';
+        },
+
+        // ── Gestionar estados (crear, renombrar, color, orden, borrar) ──
+        abrirEstados() {
+            this.estadosEdit = this.estados.map((e, i) => ({ ...e, id: e.id ?? null, orden: i }));
+            this.modalEstados = true;
+            this.cargarEstadosParaEditar();
+        },
+        async cargarEstadosParaEditar() {
+            try {
+                const r = await fetch('/bixocrm/estados', { headers: { Accept: 'application/json' } });
+                const d = await r.json();
+                if (d.estados) { this.estados = d.estados; this.estadosEdit = d.estados.map(e => ({ ...e })); }
+            } catch (e) {}
+        },
+        nuevoEstado() { this.estadosEdit.push({ id: null, clave: null, nombre: '', color: '#64748b', es_inicial: false, es_final: false }); },
+        moverEstado(i, d) {
+            const j = i + d;
+            if (j < 0 || j >= this.estadosEdit.length) return;
+            const t = this.estadosEdit[i]; this.estadosEdit[i] = this.estadosEdit[j]; this.estadosEdit[j] = t;
+        },
+        marcarInicial(i) { this.estadosEdit.forEach((e, k) => e.es_inicial = k === i); },
+        async guardarEstados() {
+            const lista = this.estadosEdit.filter(e => (e.nombre || '').trim());
+            if (!lista.length) { if (typeof bxAviso === 'function') bxAviso('Deja al menos un estado', 'error'); return; }
+            this.guardandoEstados = true;
+            try {
+                const r = await fetch('/bixocrm/estados', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
+                    body: JSON.stringify({ estados: lista }),
+                });
+                const d = await r.json().catch(() => ({}));
+                if (d.ok) {
+                    this.estados = d.estados;
+                    this.modalEstados = false;
+                    if (typeof bxAviso === 'function') bxAviso('Estados guardados', 'success');
+                } else if (typeof bxAviso === 'function') {
+                    bxAviso('No se pudo guardar: ' + (d.message || 'revisa los nombres'), 'error');
+                }
+            } catch (e) { if (typeof bxAviso === 'function') bxAviso('No se pudo guardar', 'error'); }
+            this.guardandoEstados = false;
         },
 
         origenLabel(origen) {
