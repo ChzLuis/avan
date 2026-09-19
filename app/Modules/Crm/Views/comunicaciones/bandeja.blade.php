@@ -811,26 +811,36 @@ function bandeja() {
         },
 
         // ── Avisos: sonido + notificacion del navegador (tambien en el celular con la pestaña abierta) ──
+        pushListo: false,
+        aviso(msg, tipo) { if (typeof bxAviso === 'function') bxAviso(msg, tipo || 'info'); else alert(msg); },
         async alternarAvisos() {
-            if (this.avisos) {
-                this.avisos = false;
+            // Solo se apaga si ya estaba completo (permiso + suscripcion); si no, se completa.
+            if (this.avisos && this.pushListo) {
+                this.avisos = false; this.pushListo = false;
                 try { localStorage.setItem('bx_avisos', '0'); } catch (e) {}
+                this.aviso('Avisos apagados en este dispositivo.');
                 return;
             }
-            if ('Notification' in window && Notification.permission !== 'granted') {
-                try { await Notification.requestPermission(); } catch (e) {}
+            if (!('Notification' in window)) { this.aviso('Este navegador no soporta notificaciones. En iPhone: agrega el CRM a la pantalla de inicio desde Safari y ábrelo desde ahí.', 'error'); return; }
+            let permiso = Notification.permission;
+            if (permiso !== 'granted') {
+                try { permiso = await Notification.requestPermission(); } catch (e) {}
+            }
+            if (permiso !== 'granted') {
+                this.aviso('El navegador tiene las notificaciones bloqueadas para arindg.com. Ábrelas en Configuración del sitio y vuelve a tocar la campana.', 'error');
+                return;
             }
             this.avisos = true;
             try { localStorage.setItem('bx_avisos', '1'); } catch (e) {}
             this.sonar();
-            this.suscribirPush();
+            await this.suscribirPush(true);
         },
         // Push real (llega aunque el CRM este cerrado, si esta instalado como app o Chrome sigue abierto).
-        async suscribirPush() {
+        async suscribirPush(avisar = false) {
             try {
-                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if (avisar) this.aviso('Este navegador no soporta push. Instala el CRM como app (menú ⋮ → Instalar) y actívalo desde ahí.', 'error'); return; }
                 if (Notification.permission !== 'granted') return;
-                const reg = await navigator.serviceWorker.ready;
+                const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_, rj) => setTimeout(() => rj(new Error('sw')), 8000))]);
                 const { clave } = await (await fetch('/bixocrm/push/clave', { headers: { 'Accept': 'application/json' } })).json();
                 const raw = Uint8Array.from(atob(clave.replace(/-/g, '+').replace(/_/g, '/').padEnd(clave.length + (4 - clave.length % 4) % 4, '=')), c => c.charCodeAt(0));
                 let sub = await reg.pushManager.getSubscription();
@@ -840,11 +850,18 @@ function bandeja() {
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
                     body: JSON.stringify(sub.toJSON()),
                 });
-                if (r.ok) {
+                if (!r.ok) throw new Error('registro ' + r.status);
+                this.pushListo = true;
+                if (avisar) {
                     // Prueba real: si llega, el celular esta listo.
-                    fetch('/bixocrm/push/probar', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' } }).catch(() => {});
+                    const pr = await fetch('/bixocrm/push/probar', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' } });
+                    const d = await pr.json().catch(() => ({}));
+                    this.aviso(d.ok ? 'Notificaciones activadas ✅ Te acaba de llegar una de prueba.' : 'Suscrito, pero la prueba no llegó (respuesta ' + (d.enviadas ?? '?') + '). Avísame para revisar.', d.ok ? 'success' : 'error');
                 }
-            } catch (e) { console.warn('push', e); }
+            } catch (e) {
+                console.warn('push', e);
+                if (avisar) this.aviso('No se pudo activar el push: ' + (e && e.message === 'sw' ? 'el service worker no cargó; recarga la página e inténtalo de nuevo.' : (e && e.message ? e.message : 'error desconocido')), 'error');
+            }
         },
         sonar() {
             try {
