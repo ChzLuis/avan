@@ -517,16 +517,51 @@
                     <button @click="accionHecha(a)" class="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" :class="a.hecho_at ? 'bg-green-500 border-green-500' : 'border-gray-300'"></button>
                     <div class="flex-1 min-w-0">
                         <p class="text-xs text-gray-800" :class="a.hecho_at ? 'line-through text-gray-400' : ''" x-text="a.titulo"></p>
-                        <p class="text-[10px]" :class="a.vencida && !a.hecho_at ? 'text-red-600 font-semibold' : 'text-gray-400'" x-text="a.vence_texto || 'Sin fecha'"></p>
+                        <p class="text-[10px] flex items-center gap-1" :class="a.vencida && !a.hecho_at ? 'text-red-600 font-semibold' : 'text-gray-400'">
+                            <span x-text="a.vence_texto || 'Sin fecha'"></span>
+                            <span x-show="a.avisar_whatsapp" class="text-green-600" :title="'Aviso por WhatsApp ' + a.avisar_minutos + ' min antes'">💬</span>
+                        </p>
                     </div>
                 </div>
             </template>
-            <div class="flex gap-1.5 mt-1.5">
-                <input x-model="accionNueva" @keydown.enter="crearAccion()" placeholder="Ej: Llamar mañana" class="flex-1 min-w-0 text-xs border border-gray-200 rounded-lg px-2 py-1.5">
-                <select x-model="accionCuando" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1">
-                    <option value="2h">En 2 h</option><option value="manana">Mañana 9:00</option><option value="lunes">Lunes 9:00</option><option value="">Sin fecha</option>
-                </select>
-                <button @click="crearAccion()" :disabled="!accionNueva.trim()" class="text-xs font-bold text-white px-2.5 rounded-lg disabled:opacity-50" style="background:#f59e0b">+</button>
+            <div class="mt-1.5 space-y-1.5">
+                <div class="flex gap-1.5">
+                    <select x-model="accionTipo" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1.5 flex-shrink-0">
+                        <option value="llamada">📞 Llamar</option>
+                        <option value="whatsapp">💬 Escribir</option>
+                        <option value="reunion">🤝 Reunión</option>
+                        <option value="tarea">✅ Tarea</option>
+                    </select>
+                    <input x-model="accionNueva" @keydown.enter="crearAccion()" :placeholder="accionTipo === 'llamada' ? 'Ej: Llamar para cerrar' : 'Qué hay que hacer'" class="flex-1 min-w-0 text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                </div>
+                <div class="flex gap-1.5">
+                    <select x-model="accionCuando" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1.5 flex-shrink-0">
+                        <option value="2h">En 2 h</option>
+                        <option value="hoy">Hoy a las…</option>
+                        <option value="manana">Mañana 9:00</option>
+                        <option value="manana_hora">Mañana a las…</option>
+                        <option value="lunes">Lunes 9:00</option>
+                        <option value="exacta">Fecha y hora…</option>
+                        <option value="">Sin fecha</option>
+                    </select>
+                    <input x-show="accionCuando === 'hoy' || accionCuando === 'manana_hora'" type="time" x-model="accionHora" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1.5 flex-1 min-w-0">
+                    <input x-show="accionCuando === 'exacta'" type="datetime-local" x-model="accionFecha" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1.5 flex-1 min-w-0">
+                    <button @click="crearAccion()" :disabled="!accionNueva.trim()" class="text-xs font-bold text-white px-3 rounded-lg disabled:opacity-50 flex-shrink-0" style="background:#f59e0b">+</button>
+                </div>
+                {{-- Recordatorio por WhatsApp: opcional, apagado salvo que se active a proposito. --}}
+                <label class="flex items-center gap-2 text-[11px] text-gray-600 cursor-pointer" x-show="accionCuando !== ''">
+                    <input type="checkbox" x-model="accionAvisar" class="rounded border-gray-300">
+                    Avisarme por WhatsApp antes
+                </label>
+                <div x-show="accionAvisar && accionCuando !== ''" x-cloak class="flex gap-1.5">
+                    <select x-model="accionAvisarMin" class="text-[11px] border border-gray-200 rounded-lg px-1.5 py-1.5 flex-shrink-0">
+                        <option value="10">10 min antes</option>
+                        <option value="30">30 min antes</option>
+                        <option value="60">1 h antes</option>
+                        <option value="1440">1 día antes</option>
+                    </select>
+                    <input x-model="accionAvisarTel" placeholder="51955354646" inputmode="numeric" class="flex-1 min-w-0 text-[11px] border border-gray-200 rounded-lg px-2 py-1.5">
+                </div>
             </div>
         </div>
 
@@ -717,6 +752,10 @@ function bandeja() {
         ultimoAviso: {},
         esMovil: window.innerWidth < 768,
         accionesConv: [], accionNueva: '', accionCuando: 'manana',
+        accionTipo: 'llamada', accionHora: '10:00', accionFecha: '',
+        // El aviso por WhatsApp es opcional: solo cuando se marca a proposito.
+        accionAvisar: false, accionAvisarMin: '10',
+        accionAvisarTel: (() => { try { return localStorage.getItem('bx_avisar_tel') || ''; } catch (e) { return ''; } })(),
         deslizX: 0, deslizId: null, deslizX0: null,
         masOpciones: false,
         ventana: { es_meta: false, abierta: true, cierra_at: null },
@@ -805,17 +844,42 @@ function bandeja() {
             const p = n => String(n).padStart(2, '0');
             const f = d => d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
             const d = new Date();
+            const [hh, mm] = (this.accionHora || '10:00').split(':').map(Number);
             if (this.accionCuando === '2h') return f(new Date(Date.now() + 2 * 3600e3));
+            if (this.accionCuando === 'hoy') { d.setHours(hh, mm, 0, 0); return f(d); }
             if (this.accionCuando === 'manana') { d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return f(d); }
+            if (this.accionCuando === 'manana_hora') { d.setDate(d.getDate() + 1); d.setHours(hh, mm, 0, 0); return f(d); }
             if (this.accionCuando === 'lunes') { d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); d.setHours(9, 0, 0, 0); return f(d); }
+            if (this.accionCuando === 'exacta') return this.accionFecha || null;
             return null;
         },
         async crearAccion() {
             if (!this.accionNueva.trim() || !this.convActiva) return;
             const r = await fetch('/bixocrm/acciones', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
-                body: JSON.stringify({ titulo: this.accionNueva, vence_at: this.cuandoAccion(), wa_conversacion_id: this.convActiva.id }) });
+                body: JSON.stringify({
+                    titulo: this.accionNueva,
+                    tipo: this.accionTipo,
+                    vence_at: this.cuandoAccion(),
+                    wa_conversacion_id: this.convActiva.id,
+                    // Solo si el usuario marco la casilla.
+                    avisar_whatsapp: (this.accionAvisar && this.accionAvisarTel.trim()) ? this.accionAvisarTel.trim() : null,
+                    avisar_minutos: this.accionAvisar ? Number(this.accionAvisarMin) : null,
+                }) });
             const d = await r.json().catch(() => ({}));
-            if (d.ok) { this.accionesConv.push(d.accion); this.accionNueva = ''; if (typeof bxAviso === 'function') bxAviso('Acción guardada. Te avisará por notificación al vencer.', 'success'); }
+            if (d.ok) {
+                this.accionesConv.push(d.accion);
+                this.accionNueva = '';
+                if (this.accionAvisar && this.accionAvisarTel.trim()) {
+                    try { localStorage.setItem('bx_avisar_tel', this.accionAvisarTel.trim()); } catch (e) {}
+                }
+                if (typeof bxAviso === 'function') {
+                    bxAviso(d.accion.avisar_whatsapp
+                        ? `Acción guardada. Te llega un WhatsApp ${d.accion.avisar_minutos} min antes.`
+                        : 'Acción guardada. Te avisará por notificación al vencer.', 'success');
+                }
+            } else if (typeof bxAviso === 'function') {
+                bxAviso('No se pudo guardar la acción', 'error');
+            }
         },
         async accionHecha(a) {
             const r = await fetch('/bixocrm/acciones/' + a.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' }, body: JSON.stringify({ hecha: !a.hecho_at }) });

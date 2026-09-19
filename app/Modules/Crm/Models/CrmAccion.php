@@ -16,9 +16,10 @@ class CrmAccion extends Model
     protected $fillable = [
         'project_id', 'titulo', 'notas', 'tipo', 'vence_at', 'hecho_at', 'recordada_at',
         'asignado_a', 'creado_por', 'wa_conversacion_id', 'trato_id',
+        'avisar_whatsapp', 'avisar_minutos', 'avisada_at',
     ];
 
-    protected $casts = ['vence_at' => 'datetime', 'hecho_at' => 'datetime', 'recordada_at' => 'datetime'];
+    protected $casts = ['vence_at' => 'datetime', 'hecho_at' => 'datetime', 'recordada_at' => 'datetime', 'avisada_at' => 'datetime'];
 
     public function conversacion()
     {
@@ -52,6 +53,8 @@ class CrmAccion extends Model
             'asignado_a'         => $this->asignado_a,
             'wa_conversacion_id' => $this->wa_conversacion_id,
             'trato_id'           => $this->trato_id,
+            'avisar_whatsapp'    => $this->avisar_whatsapp,
+            'avisar_minutos'     => $this->avisar_minutos,
             'contacto'           => $conv ? ($conv->cliente_nombre ?: $conv->cliente_telefono) : null,
             'contacto_telefono'  => $conv?->cliente_telefono,
         ];

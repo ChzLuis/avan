@@ -121,4 +121,64 @@ class CrmAccionesTest extends TestCase
         $html = $this->enElCrm()->get('/bixocrm/tratos')->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/Acciones\s*<span[^>]*>2<\/span>/s', $html, 'Cuenta la de hoy y la vencida; no la de pasado ni la hecha');
     }
+    public function test_el_aviso_por_whatsapp_es_opcional_y_no_se_manda_si_no_se_activo(): void
+    {
+        $this->canal->update(['phone_number_id' => '777', 'access_token' => 'TOKEN', 'app_secret' => 's']);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+        $conv = $this->conv();
+
+        // Sin marcar la casilla: no se guarda numero y el comando no manda nada.
+        $this->enElCrm()->postJson('/bixocrm/acciones', ['titulo' => 'Llamar', 'tipo' => 'llamada', 'vence_at' => now()->addMinutes(5)->format('Y-m-d\TH:i'), 'wa_conversacion_id' => $conv->id])->assertCreated();
+        $this->artisan('crm:avisar-acciones')->assertSuccessful();
+        Http::assertNothingSent();
+        $this->assertNull(CrmAccion::first()->avisar_whatsapp);
+    }
+
+    public function test_con_el_aviso_activado_llega_un_whatsapp_los_minutos_antes_y_una_sola_vez(): void
+    {
+        $this->canal->update(['phone_number_id' => '777', 'access_token' => 'TOKEN', 'app_secret' => 's']);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'x']]], 200)]);
+        $conv = $this->conv();
+
+        // Llamada a las 22:00 con aviso 10 minutos antes.
+        $r = $this->enElCrm()->postJson('/bixocrm/acciones', [
+            'titulo' => 'Llamar para cerrar', 'tipo' => 'llamada',
+            'vence_at' => now()->addMinutes(30)->format('Y-m-d\TH:i'),
+            'wa_conversacion_id' => $conv->id,
+            'avisar_whatsapp' => '+51 955 354 646', 'avisar_minutos' => 10,
+        ])->assertCreated();
+        $this->assertSame('51955354646', $r->json('accion.avisar_whatsapp'), 'El numero se guarda solo con digitos');
+
+        // Faltan 30 min: todavia no toca.
+        $this->artisan('crm:avisar-acciones')->assertSuccessful();
+        Http::assertNothingSent();
+
+        // A 10 minutos de la hora: sale el WhatsApp al numero indicado.
+        $a = CrmAccion::first();
+        $a->forceFill(['vence_at' => now()->addMinutes(9)])->save();
+        $this->artisan('crm:avisar-acciones')->assertSuccessful();
+        Http::assertSent(function ($req) {
+            $d = $req->data();
+            return ($d['to'] ?? '') === '51955354646'
+                && str_contains($d['text']['body'] ?? '', 'Llamar para cerrar')
+                && str_contains($d['text']['body'] ?? '', 'Recordatorio');
+        });
+        $this->assertNotNull($a->fresh()->avisada_at);
+
+        // No se repite en el siguiente minuto.
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'y']]], 200)]);
+        $this->artisan('crm:avisar-acciones')->assertSuccessful();
+        Http::assertNothingSent();
+    }
+
+    public function test_al_mover_la_hora_el_aviso_vuelve_a_quedar_pendiente(): void
+    {
+        $a = CrmAccion::create(['project_id' => $this->proyecto->id, 'titulo' => 'X', 'vence_at' => now()->addMinutes(5),
+            'avisar_whatsapp' => '51955354646', 'avisar_minutos' => 10, 'avisada_at' => now(), 'recordada_at' => now()]);
+
+        $this->enElCrm()->patchJson("/bixocrm/acciones/{$a->id}", ['vence_at' => now()->addDay()->format('Y-m-d\TH:i')])->assertOk();
+
+        $this->assertNull($a->fresh()->avisada_at, 'Si se mueve la hora, hay que volver a avisar');
+        $this->assertNull($a->fresh()->recordada_at);
+    }
 }

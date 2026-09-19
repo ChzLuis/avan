@@ -57,7 +57,13 @@ class AccionesController extends Controller
             'wa_conversacion_id' => 'nullable|integer',
             'trato_id'           => 'nullable|integer',
             'asignado_a'         => 'nullable|integer',
+            // Aviso por WhatsApp antes de la hora (a quien coordina la accion).
+            'avisar_whatsapp'    => 'nullable|string|max:20',
+            'avisar_minutos'     => 'nullable|integer|min:0|max:1440',
         ]);
+        if (! empty($data['avisar_whatsapp'])) {
+            $data['avisar_whatsapp'] = preg_replace('/\D/', '', $data['avisar_whatsapp']);
+        }
         if (! empty($data['wa_conversacion_id'])) {
             $canales = WaCanal::where('project_id', $project->id)->pluck('id');
             abort_unless(WaConversacion::whereIn('wa_canal_id', $canales)->where('id', $data['wa_conversacion_id'])->exists(), 403);
@@ -85,7 +91,12 @@ class AccionesController extends Controller
             'vence_at'   => 'nullable|date',
             'asignado_a' => 'nullable|integer',
             'hecha'      => 'nullable|boolean',
+            'avisar_whatsapp' => 'nullable|string|max:20',
+            'avisar_minutos'  => 'nullable|integer|min:0|max:1440',
         ]);
+        if (! empty($data['avisar_whatsapp'])) {
+            $data['avisar_whatsapp'] = preg_replace('/\D/', '', $data['avisar_whatsapp']);
+        }
         if (array_key_exists('hecha', $data)) {
             $accion->hecho_at = $data['hecha'] ? now() : null;
             unset($data['hecha']);
@@ -93,6 +104,7 @@ class AccionesController extends Controller
         // Si se mueve la fecha hacia adelante, el recordatorio vuelve a estar pendiente.
         if (isset($data['vence_at']) && $accion->vence_at?->toDateTimeString() !== \Carbon\Carbon::parse($data['vence_at'])->toDateTimeString()) {
             $accion->recordada_at = null;
+            $accion->avisada_at = null;
         }
         $accion->fill($data)->save();
 
