@@ -109,6 +109,11 @@ openssl.cnf (`PushWeb::opcionesEc`). Tablas creadas en ARIN por --sql (batch 60)
 Notification API en la bandeja, sondeo con huso de Lima (antes nunca traia nuevos), menu movil con
 fondo y X, barra de escritura movil con "+", contador de grabacion, aviso de sesion centrado.
 
+**Apps instalables por producto** (`1eb5365`): manifest-{crm,sales,fact,panel}.json con scope
+/bixocrm, /bixosales, /bixofact, /bixoadmin; iconos en public/img/pwa (SFTP); el mismo `sw.js`
+(scope /) atiende navegacion (Chrome lo exige para instalar) y push (solo el CRM lo usa hoy).
+Generador: scratchpad `pwa_productos.py` de la sesion 2026-09-18.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
