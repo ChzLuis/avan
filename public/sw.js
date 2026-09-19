@@ -2,6 +2,17 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
+// Chrome pide un manejador de red para considerar la app instalable: red primero y, sin
+// conexion, un aviso simple (el CRM necesita internet igual).
+self.addEventListener('fetch', (e) => {
+    if (e.request.mode !== 'navigate') return;
+    e.respondWith(fetch(e.request).catch(() => new Response(
+        '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        + '<body style="font-family:sans-serif;background:#26233b;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
+        + '<div><div style="font-size:42px">📡</div><h2>Sin conexión</h2><p>Conéctate a internet y vuelve a abrir BIXO CRM.</p></div></body>',
+        { headers: { 'Content-Type': 'text/html; charset=utf-8' } })));
+});
+
 self.addEventListener('push', (e) => {
     let d = {};
     try { d = e.data ? e.data.json() : {}; } catch (err) { d = { cuerpo: e.data ? e.data.text() : '' }; }
