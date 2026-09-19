@@ -122,6 +122,17 @@ con `scroll-snap` (una columna por pantalla, 84vw). Push: pagina `/bixocrm/push/
 vistas: NO hay clases responsivas `md:`/`lg:` compiladas para todo; usar `window.innerWidth` en
 Alpine o estilos inline.
 
+**Acciones (fase 3, en ARIN)**: tabla `crm_acciones` (creada por --sql, batch 60), modelo
+`CrmAccion`, `AccionesController` (index html/json con ?conversacion_id, store, update con `hecha`,
+destroy), vista `crm::acciones.index` (Vencidas/Hoy/Proximas/Hechas, atajos "En 2 h / Mañana 9:00 /
+Lunes 9:00", posponer), bloque "Siguiente accion" en la ficha del chat, contador ambar en el menu
+lateral y en la barra inferior. Comando `crm:recordar-acciones` cada minuto (cron de ARIN ya corre
+schedule:run): push al asignado (o a todo el negocio), una vez (`recordada_at`), se re-arma al mover
+la fecha. Tambien: deslizar un chat en movil (derecha = no leido, izquierda = archivar) y Prospectos
+como tarjetas en movil con enlaces corregidos (`/bixocrm?conversacion=`; antes iban a `/comunicaciones`).
+
+**Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
+
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
 al WABA solo, confirmar "Eliminar canal", merge `redesign/mega-hogar`, plantillas Meta para la
 ventana de 24 h.
