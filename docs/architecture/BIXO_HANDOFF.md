@@ -154,6 +154,14 @@ dice lo mismo derivando al asesor. El menu con botones solo sale en la apertura 
 El bloque `asesor` lleva `pausar_bot` y sin `siguiente`: tras "Hablar con asesor" el bot NO
 vuelve a hablar (el aviso generico de pausa solo aplica cuando el asesor apaga el bot a mano).
 
+**Bucle "Claro 👇" x24 (05:12 del 19/09)**: al generalizar `_pregunta_<id>` a todo `intencion`, un
+bloque revisitado por el flujo (router en seco -> mismo bloque) caia en la rama "ya salude" y el
+router lo devolvia hasta la guarda de 50. Arreglo: esa rama es solo para si/no (`$esSiNo`), y el
+bucle de `procesar` corta a la 4.ª visita del mismo bloque en un turno (`bucle` en la salida).
+**IA en modo `duda`** (`IA::responderDuda`): solo contesta la pregunta con el contexto del bloque;
+`asesorComercial` es un guion de ventas completo (saluda y pide el rubro) y NO sirve para dudas.
+El boton "Tengo una duda" va a `duda_pregunta` ("¿Cuál es tu duda?") y recien el texto va a la IA.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
