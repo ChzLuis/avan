@@ -229,12 +229,10 @@
                                  : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm'"
                          :style="esSaliente(msg) ? 'background:#d9fdd3' : ''"
                          class="relative max-w-[88%] md:max-w-[72%] px-3 py-1.5 text-sm shadow-sm">
-                        {{-- Menú del mensaje (aparece al pasar el mouse) --}}
-                        <div class="absolute -top-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition" :class="esSaliente(msg) ? 'left-1' : 'right-1'">
-                            <button @click="abrirReenvio(msg)" class="bg-white border border-gray-200 rounded-full w-6 h-6 text-[11px] shadow hover:bg-gray-50" title="Reenviar">↪</button>
-                            <button @click="copiarMensaje(msg)" class="bg-white border border-gray-200 rounded-full w-6 h-6 text-[11px] shadow hover:bg-gray-50" title="Copiar texto">⧉</button>
-                            <button @click="eliminarMensaje(msg)" class="bg-white border border-gray-200 rounded-full w-6 h-6 text-[11px] shadow hover:bg-red-50 text-red-600" title="Eliminar del historial">🗑</button>
-                        </div>
+                        {{-- Opciones del mensaje: un solo boton (en movil no existe "pasar el mouse"). --}}
+                        <button @click.stop="menuMensaje = msg"
+                                class="absolute -top-2 w-6 h-6 rounded-full bg-white border border-gray-200 shadow text-[11px] text-gray-500 md:opacity-0 md:group-hover:opacity-100 transition"
+                                :class="esSaliente(msg) ? 'left-1' : 'right-1'" title="Opciones del mensaje">⋯</button>
                         {{-- Adjuntos: imagen en linea, PDF como enlace. Todo lo demas, texto. --}}
                         <template x-if="msg.tipo === 'imagen' && msg.media_url">
                             <a :href="msg.media_url" target="_blank" class="block mb-1">
@@ -737,6 +735,17 @@
 </div>
 
 
+{{-- Opciones de un mensaje (reenviar, copiar, eliminar) --}}
+<div x-show="menuMensaje" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="menuMensaje = null" style="background:rgba(0,0,0,.4)">
+    <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-2">
+        <p class="text-[11px] text-gray-500 px-3 py-2 line-clamp-2" x-text="menuMensaje?.contenido || 'Adjunto'"></p>
+        <button @click="abrirReenvio(menuMensaje); menuMensaje = null" class="w-full text-left px-3 py-3 rounded-xl hover:bg-gray-50 text-sm flex items-center gap-3">↪ Reenviar a otro chat</button>
+        <button @click="copiarMensaje(menuMensaje); menuMensaje = null" class="w-full text-left px-3 py-3 rounded-xl hover:bg-gray-50 text-sm flex items-center gap-3">⧉ Copiar texto</button>
+        <button @click="eliminarMensaje(menuMensaje)" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 text-sm text-red-600 flex items-center gap-3">🗑 Eliminar mensaje</button>
+        <button @click="menuMensaje = null" class="w-full px-3 py-2.5 text-xs text-gray-500">Cancelar</button>
+    </div>
+</div>
+
 {{-- Eliminar un mensaje: en la bandeja o tambien en el telefono del cliente --}}
 <div x-show="menuBorrar" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="menuBorrar = null" style="background:rgba(0,0,0,.4)">
     <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-4">
@@ -800,6 +809,7 @@ function bandeja() {
         grabador: null,
         reenvio: null,
         menuBorrar: null,
+        menuMensaje: null,
         buscadorReenvio: '',
         errorReenvio: null,
         busqueda: @json((string) request('q', '')),
@@ -1016,6 +1026,7 @@ function bandeja() {
             return (Date.now() - new Date(msg.created_at).getTime()) < 15 * 60 * 1000;
         },
         eliminarMensaje(msg) {
+            this.menuMensaje = null;
             this.menuBorrar = msg;
         },
         async borrarMensaje(msg, paraTodos) {
@@ -1139,6 +1150,8 @@ function bandeja() {
             if (this.modalEstados) { this.modalEstados = false; return true; }
             if (this.modalRespuestas) { this.modalRespuestas = false; return true; }
             if (this.modalPlantillas) { this.modalPlantillas = false; return true; }
+            if (this.menuBorrar) { this.menuBorrar = null; return true; }
+            if (this.menuMensaje) { this.menuMensaje = null; return true; }
             if (this.reenvio) { this.reenvio = null; return true; }
             if (this.mostrarFicha && this.esMovil) { this.mostrarFicha = false; return true; }
             if (this.convActiva) { this.convActiva = null; this.mensajes = []; return true; }
