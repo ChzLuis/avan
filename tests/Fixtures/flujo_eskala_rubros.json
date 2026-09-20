@@ -193,7 +193,7 @@
    ],
    "esperar": true,
    "siguiente": "router",
-   "botones_texto": "Puedes tener una desde *S/ 490*, pago único. ¿Quieres ver una de tu rubro?"
+   "botones_texto": "Puedes tener una desde *S/ 490*, pago único. ¿Te muestro una de tu rubro?"
   },
   "escucha": {
    "x": 1750,
@@ -207,12 +207,8 @@
    "x": 400,
    "y": 150,
    "tipo": "intencion",
-   "texto": "Tenemos 3 opciones:\n\n🚀 Start — S/ 490\n⭐ Pro — S/ 590\n💼 Business — S/ 690\n\nPago único. Sin mensualidad por la plataforma.",
+   "texto": "Tenemos 3 planes, todos *pago único* y sin mensualidad 👇\n\n🚀 *START* · S/ 490\nHasta 50 productos · subdominio\nIdeal para empezar hoy.\n\n⭐ *PRO* · S/ 590 · el más elegido\nHasta 100 productos · dominio propio (www.tunegocio.com)\n➕ Catálogo PDF para compartir por WhatsApp\n\n💼 *BUSINESS* · S/ 690\nHasta 200 productos · dominio propio\n➕ Catálogo PDF + punto de venta (POS) para tu local\n\nTodos incluyen carrito, pedidos a tu WhatsApp, SEO y capacitación.",
    "botones": [
-    {
-     "titulo": "📋 Comparar planes",
-     "siguiente": "comparar"
-    },
     {
      "titulo": "👀 Ver una tienda",
      "siguiente": "rubro"
@@ -220,25 +216,29 @@
     {
      "titulo": "🚀 Quiero empezar",
      "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
     }
    ],
    "esperar": true,
    "siguiente": "router",
-   "texto_repetido": "Te repito los precios 👇\n\n🚀 Start — S/ 490\n⭐ Pro — S/ 590\n💼 Business — S/ 690\n\nPago único, sin mensualidad. ¿Te muestro qué incluye cada uno?"
+   "texto_repetido": "Te repito los planes 👇\n\n🚀 START S/ 490 · 50 productos, subdominio\n⭐ PRO S/ 590 · 100 productos, dominio propio + catálogo PDF\n💼 BUSINESS S/ 690 · 200 productos, dominio propio + PDF + POS\n\nPago único, sin mensualidad. ¿Te muestro una tienda de tu rubro?"
   },
   "comparar": {
    "x": 700,
    "y": 150,
    "tipo": "intencion",
-   "texto": "¿Cuál te conviene?\n\n🚀 *START* · S/ 490\nHasta 50 productos · subdominio\nIdeal para empezar hoy.\n\n⭐ *PRO* · S/ 590 · el más elegido\nHasta 100 productos · dominio propio (www.tunegocio.com)\n➕ Generador de catálogo PDF para compartir por WhatsApp\n\n💼 *BUSINESS* · S/ 690\nHasta 200 productos · dominio propio\n➕ Catálogo PDF + punto de venta (POS) para tu local\n\nTodos incluyen carrito, pedidos a tu WhatsApp, SEO y capacitación.",
+   "texto": "Tenemos 3 planes, todos *pago único* y sin mensualidad 👇\n\n🚀 *START* · S/ 490\nHasta 50 productos · subdominio\nIdeal para empezar hoy.\n\n⭐ *PRO* · S/ 590 · el más elegido\nHasta 100 productos · dominio propio (www.tunegocio.com)\n➕ Catálogo PDF para compartir por WhatsApp\n\n💼 *BUSINESS* · S/ 690\nHasta 200 productos · dominio propio\n➕ Catálogo PDF + punto de venta (POS) para tu local\n\nTodos incluyen carrito, pedidos a tu WhatsApp, SEO y capacitación.",
    "botones": [
-    {
-     "titulo": "🚀 Quiero empezar",
-     "siguiente": "quiero"
-    },
     {
      "titulo": "👀 Ver una tienda",
      "siguiente": "rubro"
+    },
+    {
+     "titulo": "🚀 Quiero empezar",
+     "siguiente": "quiero"
     },
     {
      "titulo": "💬 Tengo una duda",
@@ -360,55 +360,20 @@
   "rubro": {
    "x": 400,
    "y": 480,
-   "tipo": "lista",
-   "titulo": "Tiendas de ejemplo",
-   "texto": "¿De qué rubro es tu negocio? Te muestro una tienda parecida a la tuya 👇",
-   "boton": "Ver rubros",
-   "secciones": [
+   "tipo": "intencion",
+   "texto": "¿De qué rubro es tu negocio? Te muestro una tienda parecida 👇\n\nToca una opción o escríbeme tu rubro:\n🏪 Minimarket · 🔧 Ferretería · 💊 Farmacia\n🐾 Veterinaria · 🍗 Restaurante · 🍷 Licorería · 👗 Boutique",
+   "botones": [
     {
-     "titulo": "Elige tu rubro",
-     "filas": [
-      {
-       "id": "rubro_ferreteria",
-       "titulo": "Ferretería / construcción",
-       "descripcion": "herramientas y materiales"
-      },
-      {
-       "id": "rubro_minimarket",
-       "titulo": "Minimarket / abarrotes",
-       "descripcion": "abarrotes y bebidas"
-      },
-      {
-       "id": "rubro_farmacia",
-       "titulo": "Farmacia / botica",
-       "descripcion": "medicamentos y cuidado"
-      },
-      {
-       "id": "rubro_veterinaria",
-       "titulo": "Veterinaria / mascotas",
-       "descripcion": "alimento y accesorios"
-      },
-      {
-       "id": "rubro_restaurante",
-       "titulo": "Restaurante / pollería",
-       "descripcion": "platos y combos"
-      },
-      {
-       "id": "rubro_licoreria",
-       "titulo": "Licorería / bebidas",
-       "descripcion": "licores y bebidas"
-      },
-      {
-       "id": "rubro_boutique",
-       "titulo": "Boutique / ropa",
-       "descripcion": "ropa y accesorios"
-      },
-      {
-       "id": "rubro_otro",
-       "titulo": "Otro rubro",
-       "descripcion": "Te muestro una tienda general"
-      }
-     ]
+     "titulo": "🏪 Minimarket",
+     "siguiente": "demo_minimarket"
+    },
+    {
+     "titulo": "🔧 Ferretería",
+     "siguiente": "demo_ferreteria"
+    },
+    {
+     "titulo": "👗 Otro rubro",
+     "siguiente": "router_rubro"
     }
    ],
    "esperar": true,
@@ -419,40 +384,42 @@
    "y": 480,
    "tipo": "condicion",
    "si_no": "tienda",
+   "palabra_completa": true,
+   "ia_fallback": true,
    "reglas": [
     {
-     "ia_desc": "su negocio es del rubro ferretería / construcción",
-     "contiene": "rubro_ferreteria, ferretería / construcción, ferreteria",
+     "ia_desc": "su negocio es del rubro ferretería",
+     "contiene": "ferreteria, ferretería, construccion, construcción, herramientas, materiales, fierro, cemento",
      "siguiente": "demo_ferreteria"
     },
     {
-     "ia_desc": "su negocio es del rubro minimarket / abarrotes",
-     "contiene": "rubro_minimarket, minimarket / abarrotes, minimarket",
+     "ia_desc": "su negocio es del rubro minimarket",
+     "contiene": "minimarket, mini market, abarrotes, bodega, bodeguita, market, tienda de abarrotes, gaseosas, galletas, agua, golosinas, snacks",
      "siguiente": "demo_minimarket"
     },
     {
-     "ia_desc": "su negocio es del rubro farmacia / botica",
-     "contiene": "rubro_farmacia, farmacia / botica, farmacia",
+     "ia_desc": "su negocio es del rubro farmacia",
+     "contiene": "farmacia, botica, medicamentos, medicina, salud, droguería, drogueria",
      "siguiente": "demo_farmacia"
     },
     {
-     "ia_desc": "su negocio es del rubro veterinaria / mascotas",
-     "contiene": "rubro_veterinaria, veterinaria / mascotas, veterinaria",
+     "ia_desc": "su negocio es del rubro veterinaria",
+     "contiene": "veterinaria, mascotas, perros, gatos, pet, animales, alimento para perro",
      "siguiente": "demo_veterinaria"
     },
     {
-     "ia_desc": "su negocio es del rubro restaurante / pollería",
-     "contiene": "rubro_restaurante, restaurante / pollería, restaurante",
+     "ia_desc": "su negocio es del rubro restaurante",
+     "contiene": "restaurante, polleria, pollería, pollos, comida, menu, menú, cevicheria, cevichería, chifa, pizzeria, pizzería, cafeteria, cafetería, panaderia, panadería",
      "siguiente": "demo_restaurante"
     },
     {
-     "ia_desc": "su negocio es del rubro licorería / bebidas",
-     "contiene": "rubro_licoreria, licorería / bebidas, licoreria",
+     "ia_desc": "su negocio es del rubro licorería",
+     "contiene": "licoreria, licorería, licores, cerveza, cervezas, tragos, vinos, bebidas alcoholicas, bebidas alcohólicas",
      "siguiente": "demo_licoreria"
     },
     {
-     "ia_desc": "su negocio es del rubro boutique / ropa",
-     "contiene": "rubro_boutique, boutique / ropa, boutique",
+     "ia_desc": "su negocio es del rubro boutique",
+     "contiene": "boutique, ropa, vestidos, moda, zapatos, calzado, tienda de ropa, prendas, accesorios",
      "siguiente": "demo_boutique"
     }
    ]
