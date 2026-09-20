@@ -736,6 +736,30 @@
     </div>
 </div>
 
+
+{{-- Eliminar un mensaje: en la bandeja o tambien en el telefono del cliente --}}
+<div x-show="menuBorrar" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="menuBorrar = null" style="background:rgba(0,0,0,.4)">
+    <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-4">
+        <p class="text-sm font-bold text-gray-900 mb-1">Eliminar mensaje</p>
+        <p class="text-[11px] text-gray-500 mb-3 line-clamp-2" x-text="menuBorrar?.contenido || 'Adjunto'"></p>
+        <div class="space-y-2">
+            <button x-show="menuBorrar && sePuedeEliminarParaTodos(menuBorrar)" @click="borrarMensaje(menuBorrar, true)"
+                    class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-white" style="background:#dc2626">
+                Eliminar para todos
+                <span class="block text-[11px] font-normal opacity-90">Desaparece también del WhatsApp del cliente</span>
+            </button>
+            <p x-show="menuBorrar && !sePuedeEliminarParaTodos(menuBorrar)" class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                Ya no se puede borrar en el teléfono del cliente: WhatsApp solo lo permite durante los 15 minutos siguientes al envío.
+            </p>
+            <button @click="borrarMensaje(menuBorrar, false)" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700">
+                Quitar solo de mi bandeja
+                <span class="block text-[11px] font-normal text-gray-500">El cliente lo sigue viendo</span>
+            </button>
+            <button @click="menuBorrar = null" class="w-full px-3 py-2 rounded-xl text-xs text-gray-500">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const CONVERSACIONES_INIT = @json($conversacionesJs);
 const RESPUESTAS_INIT = @json($respuestasRapidas);
@@ -775,6 +799,7 @@ function bandeja() {
         grabSegundos: 0, grabTimer: null, grabCancelada: false,
         grabador: null,
         reenvio: null,
+        menuBorrar: null,
         buscadorReenvio: '',
         errorReenvio: null,
         busqueda: @json((string) request('q', '')),
@@ -985,14 +1010,30 @@ function bandeja() {
             }
             this.menuConv = null;
         },
-        async eliminarMensaje(msg) {
-            const ok = confirm('¿Quitar este mensaje del historial? En el teléfono del cliente no cambia nada.');
-            if (!ok || !this.convActiva) return;
-            const res = await fetch(`/bixocrm/${this.convActiva.id}/mensajes/${msg.id}`, {
+        // ¿Todavia se puede borrar en el telefono del cliente? (Meta: 15 min y solo lo que enviamos)
+        sePuedeEliminarParaTodos(msg) {
+            if (!this.esSaliente(msg) || !msg.wa_message_id || !this.ventana.es_meta) return false;
+            return (Date.now() - new Date(msg.created_at).getTime()) < 15 * 60 * 1000;
+        },
+        eliminarMensaje(msg) {
+            this.menuBorrar = msg;
+        },
+        async borrarMensaje(msg, paraTodos) {
+            this.menuBorrar = null;
+            if (!this.convActiva) return;
+            const res = await fetch(`/bixocrm/${this.convActiva.id}/mensajes/${msg.id}` + (paraTodos ? '?para_todos=1' : ''), {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
             });
-            if (res.ok) this.mensajes = this.mensajes.filter(m => m.id !== msg.id);
+            const d = await res.json().catch(() => ({}));
+            if (d.ok) {
+                this.mensajes = this.mensajes.filter(m => m.id !== msg.id);
+                if (typeof bxAviso === 'function') {
+                    bxAviso(paraTodos ? 'Eliminado también en el WhatsApp del cliente' : 'Quitado de tu bandeja (el cliente lo sigue viendo)', 'success');
+                }
+            } else if (typeof bxAviso === 'function') {
+                bxAviso(d.error || 'No se pudo eliminar', 'error');
+            }
         },
         copiarMensaje(msg) { navigator.clipboard?.writeText(msg.contenido || '').catch(() => {}); },
 

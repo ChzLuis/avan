@@ -383,16 +383,37 @@ class BandejaController extends Controller
     }
 
     /** Eliminar un mensaje del historial (solo de la bandeja). */
-    public function eliminarMensaje(WaConversacion $conversacion, int $mensaje)
+    /**
+     * Quita el mensaje. Con `para_todos`, primero lo borra en el WhatsApp del cliente
+     * (Meta solo deja hacerlo dentro de los 15 min siguientes al envio); si Meta lo
+     * rechaza NO se borra nada y se explica por que, para no creer que se elimino alla.
+     */
+    public function eliminarMensaje(Request $request, WaConversacion $conversacion, int $mensaje)
     {
         $this->autorizar($conversacion);
         $m = $conversacion->mensajes()->findOrFail($mensaje);
+        $paraTodos = $request->boolean('para_todos');
+
+        if ($paraTodos) {
+            $canal = $conversacion->canal;
+            if (! $m->wa_message_id || ! $canal?->conectadoAMeta()) {
+                return response()->json(['ok' => false, 'error' => 'Este mensaje no se puede eliminar en WhatsApp (no salió por la línea oficial).'], 422);
+            }
+            if ($m->created_at->lt(now()->subMinutes(self::MINUTOS_ELIMINAR))) {
+                return response()->json(['ok' => false, 'error' => 'Pasaron más de ' . self::MINUTOS_ELIMINAR . ' minutos: WhatsApp ya no deja borrarlo para el cliente.'], 422);
+            }
+            $r = (new \App\Modules\Crm\Support\WhatsappCloud\ClienteCloud($canal))->eliminarMensaje($m->wa_message_id);
+            if (empty($r['ok'])) {
+                return response()->json(['ok' => false, 'error' => $r['error'] ?? 'WhatsApp no pudo eliminar el mensaje.'], 422);
+            }
+        }
+
         if ($m->media_url) {
             $this->borrarAdjunto($m->media_url);
         }
         $m->delete();
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'para_todos' => $paraTodos]);
     }
 
     /** Solo borra archivos del disco publico de ESTE negocio (wa/{project}/...). */
@@ -405,6 +426,9 @@ class BandejaController extends Controller
         }
         Storage::disk('public')->delete('wa/' . session('comunicaciones_project_id') . '/' . substr($url, $pos + strlen($prefijo)));
     }
+
+    /** WhatsApp solo deja borrar para el cliente dentro de este margen. */
+    public const MINUTOS_ELIMINAR = 15;
 
     private function autorizar(WaConversacion $conv): void
     {

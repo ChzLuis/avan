@@ -395,6 +395,19 @@ class ClienteCloud
     }
 
     /**
+     * Borra el mensaje en el WhatsApp del cliente ("eliminar para todos").
+     * Meta solo lo permite dentro de los 15 minutos siguientes al envio.
+     */
+    public function eliminarMensaje(string $waMessageId): array
+    {
+        return $this->post([
+            'messaging_product' => 'whatsapp',
+            'status'            => 'deleted',
+            'message_id'        => $waMessageId,
+        ]);
+    }
+
+    /**
      * Una llamada a la Graph API. Nunca lanza: un fallo de Meta no debe
      * tumbar el webhook (Meta reintentaria y duplicaria la conversacion).
      */
