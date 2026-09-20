@@ -154,33 +154,21 @@ class CrmBandejaAccionesTest extends TestCase
         $this->assertNull($this->canal->fresh()->ultimo_error, 'Probar un token sin guardar no ensucia el estado del canal');
         \Illuminate\Support\Facades\Http::assertSent(fn ($req) => $req->hasHeader('Authorization', 'Bearer NUEVO'));
     }
-    /** "Eliminar para todos": borra el mensaje tambien en el WhatsApp del cliente (15 min de margen). */
-    public function test_eliminar_para_todos_pide_a_meta_que_lo_borre_en_el_telefono_del_cliente(): void
+    /**
+     * La API oficial de Meta NO permite borrar un mensaje ya enviado (el campo `status`
+     * solo acepta 'read'). Pedirlo devuelve un aviso claro y no borra nada.
+     */
+    public function test_whatsapp_no_permite_borrar_en_el_telefono_del_cliente(): void
     {
         $this->canal->update(['phone_number_id' => '777', 'access_token' => 'TOKEN']);
         $c = $this->conv();
         $m = $c->mensajes()->create(['direccion' => 'saliente', 'tipo' => 'texto', 'contenido' => 'Mensaje con error', 'estado' => 'enviado', 'wa_message_id' => 'wamid.abc']);
-        \Illuminate\Support\Facades\Http::fake(['graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response(['success' => true], 200)]);
-
-        $this->enElCrm()->deleteJson("/bixocrm/{$c->id}/mensajes/{$m->id}?para_todos=1")->assertOk()->assertJson(['ok' => true, 'para_todos' => true]);
-
-        \Illuminate\Support\Facades\Http::assertSent(fn ($req) => ($req->data()['status'] ?? '') === 'deleted' && ($req->data()['message_id'] ?? '') === 'wamid.abc');
-        $this->assertDatabaseMissing('wa_mensajes', ['id' => $m->id]);
-    }
-
-    public function test_pasados_15_minutos_no_se_borra_para_el_cliente_y_se_explica(): void
-    {
-        $this->canal->update(['phone_number_id' => '777', 'access_token' => 'TOKEN']);
-        $c = $this->conv();
-        $m = $c->mensajes()->create(['direccion' => 'saliente', 'tipo' => 'texto', 'contenido' => 'Antiguo', 'estado' => 'enviado', 'wa_message_id' => 'wamid.viejo']);
-        $m->forceFill(['created_at' => now()->subMinutes(20)])->saveQuietly();
         \Illuminate\Support\Facades\Http::fake();
 
         $r = $this->enElCrm()->deleteJson("/bixocrm/{$c->id}/mensajes/{$m->id}?para_todos=1")->assertStatus(422);
 
-        $this->assertStringContainsString('15 minutos', $r->json('error'));
+        $this->assertStringContainsString('app de WhatsApp', $r->json('error'));
         \Illuminate\Support\Facades\Http::assertNothingSent();
-        // No se borra nada si no se pudo borrar en el telefono del cliente.
         $this->assertDatabaseHas('wa_mensajes', ['id' => $m->id]);
     }
 

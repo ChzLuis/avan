@@ -755,18 +755,14 @@
         <p class="text-sm font-bold text-gray-900 mb-1">Eliminar mensaje</p>
         <p class="text-[11px] text-gray-500 mb-3 line-clamp-2" x-text="menuBorrar?.contenido || 'Adjunto'"></p>
         <div class="space-y-2">
-            <button x-show="menuBorrar && sePuedeEliminarParaTodos(menuBorrar)" @click="borrarMensaje(menuBorrar, true)"
-                    class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-white" style="background:#dc2626">
-                Eliminar para todos
-                <span class="block text-[11px] font-normal opacity-90">Desaparece también del WhatsApp del cliente</span>
-            </button>
-            <p x-show="menuBorrar && !sePuedeEliminarParaTodos(menuBorrar)" class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                Ya no se puede borrar en el teléfono del cliente: WhatsApp solo lo permite durante los 15 minutos siguientes al envío.
-            </p>
             <button @click="borrarMensaje(menuBorrar, false)" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700">
-                Quitar solo de mi bandeja
-                <span class="block text-[11px] font-normal text-gray-500">El cliente lo sigue viendo</span>
+                Quitar de mi bandeja
+                <span class="block text-[11px] font-normal text-gray-500">Lo saca del historial del CRM</span>
             </button>
+            <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                Para que desaparezca también del teléfono del cliente, bórralo desde la app de WhatsApp del negocio
+                (mantener pulsado → Eliminar → Eliminar para todos). WhatsApp no permite hacerlo desde el CRM.
+            </p>
             <button @click="menuBorrar = null" class="w-full px-3 py-2 rounded-xl text-xs text-gray-500">Cancelar</button>
         </div>
     </div>
@@ -1023,11 +1019,6 @@ function bandeja() {
                 if (this.convActiva?.id === conv.id) { this.convActiva = null; this.mensajes = []; }
             }
             this.menuConv = null;
-        },
-        // ¿Todavia se puede borrar en el telefono del cliente? (Meta: 15 min y solo lo que enviamos)
-        sePuedeEliminarParaTodos(msg) {
-            if (!this.esSaliente(msg) || !msg.wa_message_id || !this.ventana.es_meta) return false;
-            return (Date.now() - new Date(msg.created_at).getTime()) < 15 * 60 * 1000;
         },
         eliminarMensaje(msg) {
             this.menuMensaje = null;

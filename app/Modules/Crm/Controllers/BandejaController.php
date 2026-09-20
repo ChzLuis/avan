@@ -394,18 +394,11 @@ class BandejaController extends Controller
         $m = $conversacion->mensajes()->findOrFail($mensaje);
         $paraTodos = $request->boolean('para_todos');
 
+        // La API oficial de Meta NO permite borrar un mensaje ya enviado (el campo `status`
+        // solo acepta 'read'). Eliminar aqui quita el mensaje de la bandeja; en el telefono
+        // del cliente sigue, y hay que borrarlo desde el WhatsApp del negocio.
         if ($paraTodos) {
-            $canal = $conversacion->canal;
-            if (! $m->wa_message_id || ! $canal?->conectadoAMeta()) {
-                return response()->json(['ok' => false, 'error' => 'Este mensaje no se puede eliminar en WhatsApp (no salió por la línea oficial).'], 422);
-            }
-            if ($m->created_at->lt(now()->subMinutes(self::MINUTOS_ELIMINAR))) {
-                return response()->json(['ok' => false, 'error' => 'Pasaron más de ' . self::MINUTOS_ELIMINAR . ' minutos: WhatsApp ya no deja borrarlo para el cliente.'], 422);
-            }
-            $r = (new \App\Modules\Crm\Support\WhatsappCloud\ClienteCloud($canal))->eliminarMensaje($m->wa_message_id);
-            if (empty($r['ok'])) {
-                return response()->json(['ok' => false, 'error' => $r['error'] ?? 'WhatsApp no pudo eliminar el mensaje.'], 422);
-            }
+            return response()->json(['ok' => false, 'error' => 'WhatsApp no permite borrar mensajes enviados desde la API. Bórralo desde la app de WhatsApp del negocio.'], 422);
         }
 
         if ($m->media_url) {
@@ -426,9 +419,6 @@ class BandejaController extends Controller
         }
         Storage::disk('public')->delete('wa/' . session('comunicaciones_project_id') . '/' . substr($url, $pos + strlen($prefijo)));
     }
-
-    /** WhatsApp solo deja borrar para el cliente dentro de este margen. */
-    public const MINUTOS_ELIMINAR = 15;
 
     private function autorizar(WaConversacion $conv): void
     {
