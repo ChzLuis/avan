@@ -760,8 +760,8 @@
                 <span class="block text-[11px] font-normal text-gray-500">Lo saca del historial del CRM</span>
             </button>
             <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                Para que desaparezca también del teléfono del cliente, bórralo desde la app de WhatsApp del negocio
-                (mantener pulsado → Eliminar → Eliminar para todos). WhatsApp no permite hacerlo desde el CRM.
+                En el teléfono del cliente el mensaje se queda. WhatsApp no permite borrar lo ya enviado
+                por un número conectado a la API, y ese número tampoco se puede abrir en la app normal.
             </p>
             <button @click="menuBorrar = null" class="w-full px-3 py-2 rounded-xl text-xs text-gray-500">Cancelar</button>
         </div>
