@@ -60,7 +60,7 @@ class FlowRunner
         $bloqueActual = $bloques[$estado['bloque'] ?? ''] ?? null;
         $esperaSiONo = $bloqueActual
             && (! empty($bloqueActual['confirmacion']) || ! empty($bloqueActual['negacion']));
-        $social = $esperaSiONo ? null : $this->respuestaSocial($mensaje, $estado['vars'] ?? []);
+        $social = $esperaSiONo ? null : $this->respuestaSocial($mensaje, $estado['vars'] ?? [], $bloqueActual);
         if ($social !== null) {
             return [
                 'respuestas' => [$social],
@@ -1628,7 +1628,7 @@ class FlowRunner
         return null;
     }
 
-    private function respuestaSocial(string $mensaje, array $vars = []): ?string
+    private function respuestaSocial(string $mensaje, array $vars = [], ?array $bloqueActual = null): ?string
     {
         $m = mb_strtolower(trim($mensaje));
 
@@ -1649,12 +1649,41 @@ class FlowRunner
         $n = $this->normalizarIntencion($m);
         $cortesia = ['gracias', 'muchas gracias', 'mil gracias', 'ok gracias', 'ya gracias', 'gracias por la info',
                      'ok', 'okey', 'oka', 'vale', 'ya', 'listo', 'dale', 'claro', 'bueno', 'perfecto',
-                     'genial', 'excelente', 'buenisimo', 'de nada', 'entendido', 'entiendo', 'ah ya', 'ya veo'];
+                     'genial', 'excelente', 'buenisimo', 'de nada', 'entendido', 'entiendo', 'ah ya', 'ya veo',
+                     // Tal como escribe la gente en WhatsApp (visto en conversaciones reales):
+                     'aya', 'aja', 'aha', 'mmm', 'umm', 'oki', 'okis', 'oka ya', 'ta bien', 'esta bien',
+                     'correcto', 'asu', 'ahh', 'ah', 'oh', 'ya ok', 'ok ya', 'ya listo', 'bien'];
         if (in_array($n, $cortesia, true)) {
+            // Un "ok"/"ya"/"aya" NO es un cierre de conversacion: en WhatsApp la
+            // gente asiente y espera el siguiente paso. Despedirse ahi mataba
+            // ventas vivas (un cliente dijo "Ok" dos veces tras ver precios y el
+            // bot le contesto "si necesitas algo mas..." las dos veces).
+            // Con opciones abiertas se vuelven a ofrecer; nunca se cierra.
+            $despedida = ['gracias', 'muchas gracias', 'mil gracias', 'ok gracias', 'ya gracias',
+                          'gracias por la info', 'de nada'];
+            if (! in_array($n, $despedida, true) && ! empty($bloqueActual['botones'])) {
+                $ops = [];
+                foreach ($bloqueActual['botones'] as $b) {
+                    if (! empty($b['titulo'])) $ops[] = '*' . trim($b['titulo']) . '*';
+                }
+                if ($ops) {
+                    return '👍 ¿Qué prefieres: ' . $this->listaNatural($ops) . '?';
+                }
+            }
+
             return '¡Con gusto! 🙂 Si necesitas algo más, escríbeme o pon *menú* para ver las opciones.';
         }
 
         return null;
+    }
+
+    /** ["a","b","c"] => "a, b o c" (para reofrecer opciones en una sola linea). */
+    private function listaNatural(array $items): string
+    {
+        if (count($items) <= 1) return (string) ($items[0] ?? '');
+        $ultimo = array_pop($items);
+
+        return implode(', ', $items) . ' o ' . $ultimo;
     }
 
     /** ¿El mensaje es SOLO un saludo? ("hola", "buenas tardes", "hola que tal como estan") */
