@@ -755,7 +755,7 @@
         <p class="text-sm font-bold text-gray-900 mb-1">Eliminar mensaje</p>
         <p class="text-[11px] text-gray-500 mb-3 line-clamp-2" x-text="menuBorrar?.contenido || 'Adjunto'"></p>
         <div class="space-y-2">
-            <button @click="borrarMensaje(menuBorrar, false)" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700">
+            <button @click="borrarMensaje(menuBorrar)" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700">
                 Quitar de mi bandeja
                 <span class="block text-[11px] font-normal text-gray-500">Lo saca del historial del CRM</span>
             </button>
@@ -1024,19 +1024,18 @@ function bandeja() {
             this.menuMensaje = null;
             this.menuBorrar = msg;
         },
-        async borrarMensaje(msg, paraTodos) {
+        // Solo quita el mensaje del CRM: WhatsApp no deja borrarlo en el telefono del cliente.
+        async borrarMensaje(msg) {
             this.menuBorrar = null;
             if (!this.convActiva) return;
-            const res = await fetch(`/bixocrm/${this.convActiva.id}/mensajes/${msg.id}` + (paraTodos ? '?para_todos=1' : ''), {
+            const res = await fetch(`/bixocrm/${this.convActiva.id}/mensajes/${msg.id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
             });
             const d = await res.json().catch(() => ({}));
             if (d.ok) {
                 this.mensajes = this.mensajes.filter(m => m.id !== msg.id);
-                if (typeof bxAviso === 'function') {
-                    bxAviso(paraTodos ? 'Eliminado también en el WhatsApp del cliente' : 'Quitado de tu bandeja (el cliente lo sigue viendo)', 'success');
-                }
+                if (typeof bxAviso === 'function') bxAviso('Quitado de tu bandeja (el cliente lo sigue viendo)', 'success');
             } else if (typeof bxAviso === 'function') {
                 bxAviso(d.error || 'No se pudo eliminar', 'error');
             }
