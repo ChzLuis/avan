@@ -1,0 +1,660 @@
+{
+ "inicio": "saludo",
+ "bloques": {
+  "menu": {
+   "x": 250,
+   "y": 300,
+   "tipo": "intencion",
+   "texto": "¿Qué te gustaría ver?",
+   "botones": [
+    {
+     "titulo": "💰 Ver precios",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "👀 Ver una tienda",
+     "siguiente": "rubro"
+    },
+    {
+     "titulo": "💬 Hablar con asesor",
+     "siguiente": "asesor"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "router_inicial": "router"
+  },
+  "dudas": {
+   "x": 1000,
+   "y": 700,
+   "modo": "duda",
+   "tipo": "asistente",
+   "contexto": "Eres asesor comercial de Eskala (Perú). Vendemos tiendas virtuales administrables.\n\n=== LOS 3 PLANES (pago único, precios negociables) ===\n\nSTART — S/ 490 · \"Comienza hoy\" · Ideal para comenzar\nCon SUBDOMINIO. Hasta 50 productos.\nTienda virtual completa, carrito de compras, QR de la tienda, Libro de Reclamaciones, política de privacidad y términos y condiciones.\n\nPRO — S/ 590 · \"Haz crecer tu negocio\" · EL MÁS RECOMENDADO\nCon DOMINIO PROPIO. Hasta 100 productos.\nTodo lo del plan START + dominio propio, generador de catálogo PDF y mejor presencia para tu negocio.\n\nBUSINESS — S/ 690 · \"Gestiona y vende más\" · EL MÁS COMPLETO\nCon DOMINIO PROPIO. Hasta 200 productos.\nTodo lo del plan PRO + POS de ventas (punto de venta) y mayor control para tu negocio.\n\nTODOS LOS PLANES INCLUYEN: SEO, capacitación, implementación incluida y precios negociables.\n\n=== ADICIONALES OPCIONALES ===\nBot de pedidos por WhatsApp: S/ 20 al mes. Asesoría Meta Ads (2 h): S/ 50. Administración de campañas Facebook/Instagram: S/ 200 al mes (sin el presupuesto publicitario).\n\n=== RESPUESTAS A LAS DUDAS MÁS COMUNES ===\n· Quién carga los productos: nosotros hacemos la carga inicial y te capacitamos para que tú puedas subir, editar y cambiar precios cuando quieras, desde el panel.\n· Cuánto demora: normalmente entre 5 y 10 días hábiles desde que nos pasas tu información y tus fotos. Si tienes prisa, coordínalo con el asesor.\n· Es confiable: somos una empresa peruana con tiendas funcionando; puedes navegarlas antes de decidir. Si pides ver una, se te comparte el enlace.\n· Si ya intentó por redes y no funcionó: en redes el cliente pregunta y hay que responder uno por uno; con tienda propia ve precios, stock y hace el pedido solo, a cualquier hora.\n· Renovación: S/100 al año a partir del segundo año (hosting, mantenimiento y continuidad).\n· Diferencia entre subdominio y dominio propio: el subdominio va incluido en START (tunegocio.eskalaweb.pe); el dominio propio (www.tunegocio.com) viene desde el plan PRO.\n\n=== REGLAS ===\n- Responde SOLO la duda concreta que te hicieron. Máximo 4 líneas, tono WhatsApp.\n- Si el dato NO está arriba, dilo con honestidad y ofrece pasar con un asesor. NUNCA inventes plazos, precios, garantías ni funciones.\n- No repitas el catálogo entero ni vuelvas a saludar.\n- NUNCA preguntes qué vende, qué negocio tiene ni cuántos productos maneja: eso se pregunta solo cuando ya quiere contratar.\n- NUNCA menciones nombres de otros clientes ni de tiendas de ejemplo (GABDE, Baby Toncito, etc.).\n- No uses el nombre de perfil de WhatsApp como si fuera su nombre.\n- Cierra SIEMPRE con esta linea exacta: \"¿Quieres ver precios, ver una tienda o hablar con un asesor?\"",
+   "fallback": "Buena pregunta 🙂 Un asesor te la responde por aquí en un momento. Mientras tanto: ¿quieres ver precios, ver una tienda o hablar con un asesor?",
+   "siguiente": "dudas_cierre"
+  },
+  "fotos": {
+   "x": 1300,
+   "y": 300,
+   "tipo": "intencion",
+   "texto": "¿Ya tienes productos y fotos listas?",
+   "botones": [
+    {
+     "titulo": "✅ Sí, listas",
+     "siguiente": "cierre"
+    },
+    {
+     "titulo": "🕐 Aún no",
+     "siguiente": "cierre"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router_fotos"
+  },
+  "asesor": {
+   "x": 400,
+   "y": 850,
+   "tipo": "mensaje",
+   "texto": "Claro 🙌 Te paso con un asesor para ayudarte.",
+   "trato": {
+    "etapa": "Nuevo",
+    "valor": 490,
+    "titulo": ""
+   },
+   "siguiente": null,
+   "pausar_bot": true
+  },
+  "cierre": {
+   "x": 1600,
+   "y": 300,
+   "tipo": "mensaje",
+   "texto": "Perfecto 🙌 Un asesor te escribe por aquí para coordinar tu tienda.\nDime el nombre de tu negocio y tu Facebook (si tienes).",
+   "siguiente": "escucha"
+  },
+  "quiero": {
+   "x": 1000,
+   "y": 300,
+   "tipo": "intencion",
+   "texto": "Excelente 🙌\n¿Qué tipo de negocio tienes?",
+   "trato": {
+    "etapa": "Nuevo",
+    "valor": 490,
+    "titulo": ""
+   },
+   "esperar": true,
+   "siguiente": "router_quiero"
+  },
+  "router": {
+   "x": 100,
+   "y": 100,
+   "tipo": "condicion",
+   "si_no": "dudas",
+   "reglas": [
+    {
+     "ia_desc": "pregunta el precio, cuánto cuesta, cuánto vale o los planes",
+     "contiene": "precio, precios, cuanto cuesta, cuánto cuesta, cuanto vale, cuánto vale, cuanto es, cuánto es, costo, costos, tarifa, tarifas, cuanto sale, cuánto sale, planes, plan",
+     "siguiente": "precios"
+    },
+    {
+     "ia_desc": "pregunta qué incluye, las características o las diferencias entre planes",
+     "contiene": "que incluye, qué incluye, incluye, caracteristicas, características, funciones, diferencia, diferencias, comparar",
+     "siguiente": "comparar"
+    },
+    {
+     "ia_desc": "quiere ver ejemplos, una tienda o la demo",
+     "contiene": "ejemplo, ejemplos, ver una tienda, tienda demo, demo, muestra, muestrame, muéstrame",
+     "siguiente": "rubro"
+    },
+    {
+     "ia_desc": "quiere comprar, contratar o empezar ya",
+     "contiene": "quiero comprar, quiero contratar, quiero empezar, lo tomo, contratar, comprar, empezar, quiero pagar",
+     "siguiente": "quiero"
+    },
+    {
+     "ia_desc": "el cliente dice que NO quiere, que lo pensará o que preguntaba por curiosidad",
+     "contiene": "no quiero, no deseo, no me interesa, no gracias, todavia no, todavía no, aun no, aún no, mas adelante, más adelante, despues, después, lo pensare, lo pensaré, solo preguntaba, solo consultaba, por ahora no",
+     "siguiente": "sin_prisa"
+    },
+    {
+     "ia_desc": "le parece caro, no le alcanza, pide descuento, rebaja o pagar en partes",
+     "contiene": "no puedo pagar, no tengo presupuesto, no me alcanza, muy caro, esta caro, está caro, demasiado caro, carisimo, carísimo, descuento, rebaja, mas barato, más barato, negociable, financiamiento, cuotas, en partes",
+     "siguiente": "presupuesto"
+    },
+    {
+     "ia_desc": "hace una PREGUNTA sobre el servicio (cómo funciona, quién carga los productos, plazos, garantía, soporte, dominio), DUDA de que la empresa sea confiable, pide referencias, o cuenta que ya intentó vender por redes y le fue mal. NO es una decisión de compra.",
+     "contiene": "quien sube, quién sube, quien carga, quién carga, quien lo hace, quién lo hace, cuanto demora, cuánto demora, cuanto se demoran, cuánto se demoran, cuanto tiempo, cuánto tiempo, cuando esta lista, cuándo está lista, es confiable, es seguro, estafa, garantia, garantía, y si no funciona, no me funciona, hosting, dominio, renovacion, renovación, capacitacion, capacitación, soporte, quien me ayuda, quién me ayuda, facebook, redes sociales, instagram, marketplace, no es estafa, sera estafa, será estafa, es real, son reales, desconfio, desconfío, me da desconfianza, no me da confianza, referencias, reseñas, resenas, clientes reales, ya intente, ya intenté, no me funciono, no me funcionó, probe, probé, no vendi, no vendí, no sirvio, no sirvió, perdi plata, perdí plata, que plan, qué plan, en que plan, en qué plan, cual plan, cuál plan, que incluye, qué incluye, viene con, trae, cuantos productos, cuántos productos, catalogo pdf, catálogo pdf, subdominio, diferencia entre, cual me conviene, cuál me conviene",
+     "siguiente": "dudas"
+    },
+    {
+     "ia_desc": "quiere contratar, comprar, pagar o hablar con una persona AHORA",
+     "contiene": "quiero contratar, deseo contratar, voy a contratar, lo tomo, me interesa contratar, como empezamos, cómo empezamos, cuando empezamos, cuándo empezamos, quiero comprarlo, acepto, hablar con un asesor, hablar con asesor, pasame un asesor, pásame un asesor, quiero pagar, como pago, cómo pago, deposito, depósito, adelanto, quiero el plan, quiero start, quiero pro, quiero business",
+     "siguiente": "asesor"
+    },
+    {
+     "ia_desc": "quiere ver una tienda funcionando, navegarla o pide un enlace",
+     "contiene": "demo, funcionando, en vivo, tienda de ejemplo, puedo verla, quiero verla, navegar, probarla, ver una tienda",
+     "siguiente": "rubro"
+    },
+    {
+     "ia_desc": "pide ver más ejemplos, otros trabajos o el portafolio",
+     "contiene": "mas ejemplos, más ejemplos, otros ejemplos, otro ejemplo, mas modelos, más modelos, otras tiendas, mas tiendas, más tiendas, portafolio, otros trabajos, muestrame mas, muéstrame más",
+     "siguiente": "rubro"
+    },
+    {
+     "ia_desc": "pide que le ENVÍEN la propuesta comercial o toda la información por escrito (para revisarla, evaluarla o verla con un socio). NO es preguntar qué incluye un plan.",
+     "contiene": "mandame toda, mándame toda, toda la informacion, toda la información, mas informacion, más información, propuesta, cotizacion formal, cotización formal, brochure, con mi socio, con mi socia, evaluarlo, que incluye exactamente, qué incluye exactamente, detalle completo, mandame el pdf, enviame el pdf, pasame el pdf",
+     "siguiente": "menu"
+    },
+    {
+     "ia_desc": "no entiende cómo funciona y pide que le expliquen",
+     "contiene": "explicame*, explícame*, explicar, como funciona, cómo funciona, no entiendo, no entendi, no entendí, no me queda claro, que es eso, qué es eso, punto de venta, audio, explicacion*, explicación*",
+     "siguiente": "rubro"
+    },
+    {
+     "ia_desc": "menciona un rubro o giro de negocio que NO está en la lista anterior (por ejemplo botica, farmacia, veterinaria, repuestos, librería, restaurante, servicios)",
+     "contiene": "__nunca_por_palabra_clave__",
+     "siguiente": "dudas"
+    }
+   ],
+   "ia_fallback": true,
+   "palabra_completa": true
+  },
+  "saludo": {
+   "x": 100,
+   "y": 300,
+   "url": "https://arindg.com/uploads/eskala/planes.jpg",
+   "tipo": "imagen",
+   "caption": "👋 Hola, soy *Valeria* de Eskala.\n\nCreamos tiendas virtuales para negocios que venden por WhatsApp: tus clientes eligen, arman su pedido y te llega listo, sin responder uno por uno.\n\nPlanes desde *S/ 490*, pago único, sin mensualidades 👆",
+   "siguiente": "menu"
+  },
+  "tienda": {
+   "x": 400,
+   "y": 500,
+   "tipo": "intencion",
+   "texto": "Así puede verse tu tienda 👇",
+   "enlace": {
+    "url": "https://arindg.com/ferreteria-demo",
+    "boton": "👀 Abrir la demo"
+   },
+   "imagen": "https://arindg.com/uploads/eskala/tienda-ferreteria.jpg",
+   "botones": [
+    {
+     "titulo": "🏪 Ver mi rubro",
+     "siguiente": "rubro"
+    },
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Puedes tener una desde *S/ 490*, pago único. ¿Quieres ver una de tu rubro?"
+  },
+  "escucha": {
+   "x": 1750,
+   "y": 300,
+   "tipo": "intencion",
+   "texto": "",
+   "esperar": true,
+   "siguiente": "gracias_datos"
+  },
+  "precios": {
+   "x": 400,
+   "y": 150,
+   "tipo": "intencion",
+   "texto": "Tenemos 3 opciones:\n\n🚀 Start — S/ 490\n⭐ Pro — S/ 590\n💼 Business — S/ 690\n\nPago único. Sin mensualidad por la plataforma.",
+   "botones": [
+    {
+     "titulo": "📋 Comparar planes",
+     "siguiente": "comparar"
+    },
+    {
+     "titulo": "👀 Ver una tienda",
+     "siguiente": "rubro"
+    },
+    {
+     "titulo": "🚀 Quiero empezar",
+     "siguiente": "quiero"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "texto_repetido": "Te repito los precios 👇\n\n🚀 Start — S/ 490\n⭐ Pro — S/ 590\n💼 Business — S/ 690\n\nPago único, sin mensualidad. ¿Te muestro qué incluye cada uno?"
+  },
+  "comparar": {
+   "x": 700,
+   "y": 150,
+   "tipo": "intencion",
+   "texto": "¿Cuál te conviene?\n\n🚀 *START* · S/ 490\nHasta 50 productos · subdominio\nIdeal para empezar hoy.\n\n⭐ *PRO* · S/ 590 · el más elegido\nHasta 100 productos · dominio propio (www.tunegocio.com)\n➕ Generador de catálogo PDF para compartir por WhatsApp\n\n💼 *BUSINESS* · S/ 690\nHasta 200 productos · dominio propio\n➕ Catálogo PDF + punto de venta (POS) para tu local\n\nTodos incluyen carrito, pedidos a tu WhatsApp, SEO y capacitación.",
+   "botones": [
+    {
+     "titulo": "🚀 Quiero empezar",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "👀 Ver una tienda",
+     "siguiente": "rubro"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router"
+  },
+  "sin_prisa": {
+   "x": 1300,
+   "y": 1000,
+   "tipo": "intencion",
+   "texto": "Sin problema 🙂 Cuando quieras, escríbeme *demo* o *precios*.",
+   "esperar": true,
+   "siguiente": "router"
+  },
+  "dudas_fotos": {
+   "x": 1150,
+   "y": 900,
+   "modo": "duda",
+   "tipo": "asistente",
+   "contexto": "Eres asesor comercial de Eskala (Perú). Vendemos tiendas virtuales administrables.\n\n=== LOS 3 PLANES (pago único, precios negociables) ===\n\nSTART — S/ 490 · \"Comienza hoy\" · Ideal para comenzar\nCon SUBDOMINIO. Hasta 50 productos.\nTienda virtual completa, carrito de compras, QR de la tienda, Libro de Reclamaciones, política de privacidad y términos y condiciones.\n\nPRO — S/ 590 · \"Haz crecer tu negocio\" · EL MÁS RECOMENDADO\nCon DOMINIO PROPIO. Hasta 100 productos.\nTodo lo del plan START + dominio propio, generador de catálogo PDF y mejor presencia para tu negocio.\n\nBUSINESS — S/ 690 · \"Gestiona y vende más\" · EL MÁS COMPLETO\nCon DOMINIO PROPIO. Hasta 200 productos.\nTodo lo del plan PRO + POS de ventas (punto de venta) y mayor control para tu negocio.\n\nTODOS LOS PLANES INCLUYEN: SEO, capacitación, implementación incluida y precios negociables.\n\n=== ADICIONALES OPCIONALES ===\nBot de pedidos por WhatsApp: S/ 20 al mes. Asesoría Meta Ads (2 h): S/ 50. Administración de campañas Facebook/Instagram: S/ 200 al mes (sin el presupuesto publicitario).\n\n=== RESPUESTAS A LAS DUDAS MÁS COMUNES ===\n· Quién carga los productos: nosotros hacemos la carga inicial y te capacitamos para que tú puedas subir, editar y cambiar precios cuando quieras, desde el panel.\n· Cuánto demora: normalmente entre 5 y 10 días hábiles desde que nos pasas tu información y tus fotos. Si tienes prisa, coordínalo con el asesor.\n· Es confiable: somos una empresa peruana con tiendas funcionando; puedes navegarlas antes de decidir. Si pides ver una, se te comparte el enlace.\n· Si ya intentó por redes y no funcionó: en redes el cliente pregunta y hay que responder uno por uno; con tienda propia ve precios, stock y hace el pedido solo, a cualquier hora.\n· Renovación: S/100 al año a partir del segundo año (hosting, mantenimiento y continuidad).\n· Diferencia entre subdominio y dominio propio: el subdominio va incluido en START (tunegocio.eskalaweb.pe); el dominio propio (www.tunegocio.com) viene desde el plan PRO.\n\n=== REGLAS ===\n- Responde SOLO la duda concreta que te hicieron. Máximo 4 líneas, tono WhatsApp.\n- Si el dato NO está arriba, dilo con honestidad y ofrece pasar con un asesor. NUNCA inventes plazos, precios, garantías ni funciones.\n- No repitas el catálogo entero ni vuelvas a saludar.\n- NUNCA preguntes qué vende ni cuántos productos maneja. NUNCA menciones nombres de otros clientes ni tiendas de ejemplo.\n- NO cierres con pregunta ni ofrezcas nada: justo después el flujo retoma su pregunta pendiente.",
+   "fallback": "Buena pregunta 🙂 Un asesor te la responde por aquí en un momento.",
+   "siguiente": "cierre"
+  },
+  "presupuesto": {
+   "x": 1000,
+   "y": 1000,
+   "tipo": "intencion",
+   "texto": "Los precios son negociables 🙂 ¿Qué presupuesto tienes?",
+   "botones": [
+    {
+     "titulo": "💬 Hablar con asesor",
+     "siguiente": "asesor"
+    },
+    {
+     "titulo": "⏳ Ahora no",
+     "siguiente": "sin_prisa"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router"
+  },
+  "dudas_cierre": {
+   "x": 1300,
+   "y": 700,
+   "tipo": "intencion",
+   "texto": "",
+   "esperar": true,
+   "siguiente": "router"
+  },
+  "dudas_quiero": {
+   "x": 1150,
+   "y": 750,
+   "modo": "duda",
+   "tipo": "asistente",
+   "contexto": "Eres asesor comercial de Eskala (Perú). Vendemos tiendas virtuales administrables.\n\n=== LOS 3 PLANES (pago único, precios negociables) ===\n\nSTART — S/ 490 · \"Comienza hoy\" · Ideal para comenzar\nCon SUBDOMINIO. Hasta 50 productos.\nTienda virtual completa, carrito de compras, QR de la tienda, Libro de Reclamaciones, política de privacidad y términos y condiciones.\n\nPRO — S/ 590 · \"Haz crecer tu negocio\" · EL MÁS RECOMENDADO\nCon DOMINIO PROPIO. Hasta 100 productos.\nTodo lo del plan START + dominio propio, generador de catálogo PDF y mejor presencia para tu negocio.\n\nBUSINESS — S/ 690 · \"Gestiona y vende más\" · EL MÁS COMPLETO\nCon DOMINIO PROPIO. Hasta 200 productos.\nTodo lo del plan PRO + POS de ventas (punto de venta) y mayor control para tu negocio.\n\nTODOS LOS PLANES INCLUYEN: SEO, capacitación, implementación incluida y precios negociables.\n\n=== ADICIONALES OPCIONALES ===\nBot de pedidos por WhatsApp: S/ 20 al mes. Asesoría Meta Ads (2 h): S/ 50. Administración de campañas Facebook/Instagram: S/ 200 al mes (sin el presupuesto publicitario).\n\n=== RESPUESTAS A LAS DUDAS MÁS COMUNES ===\n· Quién carga los productos: nosotros hacemos la carga inicial y te capacitamos para que tú puedas subir, editar y cambiar precios cuando quieras, desde el panel.\n· Cuánto demora: normalmente entre 5 y 10 días hábiles desde que nos pasas tu información y tus fotos. Si tienes prisa, coordínalo con el asesor.\n· Es confiable: somos una empresa peruana con tiendas funcionando; puedes navegarlas antes de decidir. Si pides ver una, se te comparte el enlace.\n· Si ya intentó por redes y no funcionó: en redes el cliente pregunta y hay que responder uno por uno; con tienda propia ve precios, stock y hace el pedido solo, a cualquier hora.\n· Renovación: S/100 al año a partir del segundo año (hosting, mantenimiento y continuidad).\n· Diferencia entre subdominio y dominio propio: el subdominio va incluido en START (tunegocio.eskalaweb.pe); el dominio propio (www.tunegocio.com) viene desde el plan PRO.\n\n=== REGLAS ===\n- Responde SOLO la duda concreta que te hicieron. Máximo 4 líneas, tono WhatsApp.\n- Si el dato NO está arriba, dilo con honestidad y ofrece pasar con un asesor. NUNCA inventes plazos, precios, garantías ni funciones.\n- No repitas el catálogo entero ni vuelvas a saludar.\n- NUNCA preguntes qué vende ni cuántos productos maneja. NUNCA menciones nombres de otros clientes ni tiendas de ejemplo.\n- NO cierres con pregunta ni ofrezcas nada: justo después el flujo retoma su pregunta pendiente.",
+   "fallback": "Buena pregunta 🙂 Un asesor te la responde por aquí en un momento.",
+   "siguiente": "fotos"
+  },
+  "router_fotos": {
+   "x": 1150,
+   "y": 600,
+   "tipo": "condicion",
+   "si_no": "cierre",
+   "reglas": [
+    {
+     "ia_desc": "hace una PREGUNTA sobre el servicio (cómo funciona, quién carga los productos, plazos, garantía, soporte, dominio), DUDA de que la empresa sea confiable, pide referencias, o cuenta que ya intentó vender por redes y le fue mal. NO es una decisión de compra.",
+     "contiene": "quien sube, quién sube, quien carga, quién carga, quien lo hace, quién lo hace, cuanto demora, cuánto demora, cuanto se demoran, cuánto se demoran, cuanto tiempo, cuánto tiempo, cuando esta lista, cuándo está lista, es confiable, es seguro, estafa, garantia, garantía, y si no funciona, no me funciona, hosting, dominio, renovacion, renovación, capacitacion, capacitación, soporte, quien me ayuda, quién me ayuda, facebook, redes sociales, instagram, marketplace, no es estafa, sera estafa, será estafa, es real, son reales, desconfio, desconfío, me da desconfianza, no me da confianza, referencias, reseñas, resenas, clientes reales, ya intente, ya intenté, no me funciono, no me funcionó, probe, probé, no vendi, no vendí, no sirvio, no sirvió, perdi plata, perdí plata, que plan, qué plan, en que plan, en qué plan, cual plan, cuál plan, que incluye, qué incluye, viene con, trae, cuantos productos, cuántos productos, catalogo pdf, catálogo pdf, subdominio, diferencia entre, cual me conviene, cuál me conviene",
+     "siguiente": "dudas_fotos"
+    },
+    {
+     "ia_desc": "hace una pregunta (lleva signo de interrogación o pregunta si puede, cómo, cuánto, dónde)",
+     "contiene": "puedo, se puede, como, cómo, cuanto, cuánto, donde, dónde, que pasa, qué pasa, tienen, hay que, necesito saber, es posible, sirve, funciona",
+     "siguiente": "dudas_fotos"
+    }
+   ],
+   "ia_fallback": true,
+   "palabra_completa": true
+  },
+  "duda_pregunta": {
+   "x": 900,
+   "y": 700,
+   "tipo": "intencion",
+   "texto": "Claro 🙂 ¿Cuál es tu duda? Escríbela y te la respondo.",
+   "esperar": true,
+   "siguiente": "dudas"
+  },
+  "gracias_datos": {
+   "x": 2200,
+   "y": 300,
+   "tipo": "intencion",
+   "texto": "Anotado 📝 Ya está con el asesor. Te escribe por aquí en horario de atención (lun a sáb, 9 am a 7 pm).",
+   "esperar": true,
+   "siguiente": "menu",
+   "pausar_bot": true
+  },
+  "router_quiero": {
+   "x": 1150,
+   "y": 450,
+   "tipo": "condicion",
+   "si_no": "fotos",
+   "reglas": [
+    {
+     "ia_desc": "hace una PREGUNTA sobre el servicio (cómo funciona, quién carga los productos, plazos, garantía, soporte, dominio), DUDA de que la empresa sea confiable, pide referencias, o cuenta que ya intentó vender por redes y le fue mal. NO es una decisión de compra.",
+     "contiene": "quien sube, quién sube, quien carga, quién carga, quien lo hace, quién lo hace, cuanto demora, cuánto demora, cuanto se demoran, cuánto se demoran, cuanto tiempo, cuánto tiempo, cuando esta lista, cuándo está lista, es confiable, es seguro, estafa, garantia, garantía, y si no funciona, no me funciona, hosting, dominio, renovacion, renovación, capacitacion, capacitación, soporte, quien me ayuda, quién me ayuda, facebook, redes sociales, instagram, marketplace, no es estafa, sera estafa, será estafa, es real, son reales, desconfio, desconfío, me da desconfianza, no me da confianza, referencias, reseñas, resenas, clientes reales, ya intente, ya intenté, no me funciono, no me funcionó, probe, probé, no vendi, no vendí, no sirvio, no sirvió, perdi plata, perdí plata, que plan, qué plan, en que plan, en qué plan, cual plan, cuál plan, que incluye, qué incluye, viene con, trae, cuantos productos, cuántos productos, catalogo pdf, catálogo pdf, subdominio, diferencia entre, cual me conviene, cuál me conviene",
+     "siguiente": "dudas_quiero"
+    },
+    {
+     "ia_desc": "hace una pregunta (lleva signo de interrogación o pregunta si puede, cómo, cuánto, dónde)",
+     "contiene": "puedo, se puede, como, cómo, cuanto, cuánto, donde, dónde, que pasa, qué pasa, tienen, hay que, necesito saber, es posible, sirve, funciona",
+     "siguiente": "dudas_quiero"
+    }
+   ],
+   "ia_fallback": true,
+   "palabra_completa": true
+  },
+  "rubro": {
+   "x": 400,
+   "y": 480,
+   "tipo": "lista",
+   "titulo": "Tiendas de ejemplo",
+   "texto": "¿De qué rubro es tu negocio? Te muestro una tienda parecida a la tuya 👇",
+   "boton": "Ver rubros",
+   "secciones": [
+    {
+     "titulo": "Elige tu rubro",
+     "filas": [
+      {
+       "id": "rubro_ferreteria",
+       "titulo": "Ferretería / construcción",
+       "descripcion": "herramientas y materiales"
+      },
+      {
+       "id": "rubro_minimarket",
+       "titulo": "Minimarket / abarrotes",
+       "descripcion": "abarrotes y bebidas"
+      },
+      {
+       "id": "rubro_farmacia",
+       "titulo": "Farmacia / botica",
+       "descripcion": "medicamentos y cuidado"
+      },
+      {
+       "id": "rubro_veterinaria",
+       "titulo": "Veterinaria / mascotas",
+       "descripcion": "alimento y accesorios"
+      },
+      {
+       "id": "rubro_restaurante",
+       "titulo": "Restaurante / pollería",
+       "descripcion": "platos y combos"
+      },
+      {
+       "id": "rubro_licoreria",
+       "titulo": "Licorería / bebidas",
+       "descripcion": "licores y bebidas"
+      },
+      {
+       "id": "rubro_boutique",
+       "titulo": "Boutique / ropa",
+       "descripcion": "ropa y accesorios"
+      },
+      {
+       "id": "rubro_otro",
+       "titulo": "Otro rubro",
+       "descripcion": "Te muestro una tienda general"
+      }
+     ]
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router_rubro"
+  },
+  "router_rubro": {
+   "x": 700,
+   "y": 480,
+   "tipo": "condicion",
+   "si_no": "tienda",
+   "reglas": [
+    {
+     "ia_desc": "su negocio es del rubro ferretería / construcción",
+     "contiene": "rubro_ferreteria, ferretería / construcción, ferreteria",
+     "siguiente": "demo_ferreteria"
+    },
+    {
+     "ia_desc": "su negocio es del rubro minimarket / abarrotes",
+     "contiene": "rubro_minimarket, minimarket / abarrotes, minimarket",
+     "siguiente": "demo_minimarket"
+    },
+    {
+     "ia_desc": "su negocio es del rubro farmacia / botica",
+     "contiene": "rubro_farmacia, farmacia / botica, farmacia",
+     "siguiente": "demo_farmacia"
+    },
+    {
+     "ia_desc": "su negocio es del rubro veterinaria / mascotas",
+     "contiene": "rubro_veterinaria, veterinaria / mascotas, veterinaria",
+     "siguiente": "demo_veterinaria"
+    },
+    {
+     "ia_desc": "su negocio es del rubro restaurante / pollería",
+     "contiene": "rubro_restaurante, restaurante / pollería, restaurante",
+     "siguiente": "demo_restaurante"
+    },
+    {
+     "ia_desc": "su negocio es del rubro licorería / bebidas",
+     "contiene": "rubro_licoreria, licorería / bebidas, licoreria",
+     "siguiente": "demo_licoreria"
+    },
+    {
+     "ia_desc": "su negocio es del rubro boutique / ropa",
+     "contiene": "rubro_boutique, boutique / ropa, boutique",
+     "siguiente": "demo_boutique"
+    }
+   ]
+  },
+  "demo_ferreteria": {
+   "x": 1000,
+   "y": 560,
+   "tipo": "intencion",
+   "texto": "Mira una tienda de ferretería funcionando 👇",
+   "enlace": {
+    "url": "https://arindg.com/ferreteria-demo",
+    "boton": "👀 Abrir la demo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Así se vería la tuya con tus herramientas y materiales. Desde *S/ 490*, pago único."
+  },
+  "demo_minimarket": {
+   "x": 1000,
+   "y": 620,
+   "tipo": "intencion",
+   "texto": "Mira una tienda de minimarket funcionando 👇",
+   "enlace": {
+    "url": "https://arindg.com/demomarket",
+    "boton": "👀 Abrir la demo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Así se vería la tuya con tus abarrotes y bebidas. Desde *S/ 490*, pago único."
+  },
+  "demo_farmacia": {
+   "x": 1000,
+   "y": 680,
+   "tipo": "intencion",
+   "texto": "Mira una tienda de farmacia funcionando 👇",
+   "enlace": {
+    "url": "https://arindg.com/demofarma",
+    "boton": "👀 Abrir la demo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Así se vería la tuya con tus medicamentos y cuidado. Desde *S/ 490*, pago único."
+  },
+  "demo_veterinaria": {
+   "x": 1000,
+   "y": 740,
+   "tipo": "intencion",
+   "texto": "Mira una tienda de veterinaria funcionando 👇",
+   "enlace": {
+    "url": "https://arindg.com/demovet",
+    "boton": "👀 Abrir la demo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Así se vería la tuya con tus alimento y accesorios. Desde *S/ 490*, pago único."
+  },
+  "demo_restaurante": {
+   "x": 1000,
+   "y": 800,
+   "tipo": "intencion",
+   "texto": "Mira una tienda de restaurante funcionando 👇",
+   "enlace": {
+    "url": "https://arindg.com/demopolleria",
+    "boton": "👀 Abrir la demo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Así se vería la tuya con tus platos y combos. Desde *S/ 490*, pago único."
+  },
+  "demo_licoreria": {
+   "x": 1000,
+   "y": 860,
+   "tipo": "intencion",
+   "texto": "Mira una tienda de licorería funcionando 👇",
+   "enlace": {
+    "url": "https://arindg.com/demolicor",
+    "boton": "👀 Abrir la demo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Así se vería la tuya con tus licores y bebidas. Desde *S/ 490*, pago único."
+  },
+  "demo_boutique": {
+   "x": 1000,
+   "y": 920,
+   "tipo": "intencion",
+   "texto": "Mira una tienda de boutique funcionando 👇",
+   "enlace": {
+    "url": "https://arindg.com/demoboutique",
+    "boton": "👀 Abrir la demo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    },
+    {
+     "titulo": "💬 Tengo una duda",
+     "siguiente": "duda_pregunta"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Así se vería la tuya con tus ropa y accesorios. Desde *S/ 490*, pago único."
+  }
+ },
+ "reinicio": [
+  "quiero mi tienda virtual y deseo más información",
+  "hola",
+  "hola!",
+  "buenas",
+  "buenos días",
+  "buenas tardes",
+  "buenas noches",
+  "hola buenas"
+ ]
+}
