@@ -116,7 +116,7 @@
                     </div>
                     {{-- Menú del chat (⋯), como WhatsApp --}}
                     <button @click.stop="menuConv = menuConv === conv.id ? null : conv.id"
-                            class="absolute right-2 top-2 p-1 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition"
+                            class="absolute right-2 top-2 p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-white"
                             :class="menuConv === conv.id ? 'opacity-100' : ''">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
@@ -230,8 +230,10 @@
                          :style="esSaliente(msg) ? 'background:#d9fdd3' : ''"
                          class="relative max-w-[88%] md:max-w-[72%] px-3 py-1.5 text-sm shadow-sm">
                         {{-- Opciones del mensaje: un solo boton (en movil no existe "pasar el mouse"). --}}
+                        {{-- SIEMPRE visible: las variantes md:opacity-0 / group-hover NO estan en el CSS
+                             compilado, asi que el boton quedaba invisible y no se podia tocar. --}}
                         <button @click.stop="menuMensaje = msg"
-                                class="absolute -top-2 w-6 h-6 rounded-full bg-white border border-gray-200 shadow text-[11px] text-gray-500 md:opacity-0 md:group-hover:opacity-100 transition"
+                                class="absolute -top-2 w-6 h-6 rounded-full bg-white border border-gray-200 shadow text-[11px] text-gray-500 hover:bg-gray-50"
                                 :class="esSaliente(msg) ? 'left-1' : 'right-1'" title="Opciones del mensaje">⋯</button>
                         {{-- Adjuntos: imagen en linea, PDF como enlace. Todo lo demas, texto. --}}
                         <template x-if="msg.tipo === 'imagen' && msg.media_url">
