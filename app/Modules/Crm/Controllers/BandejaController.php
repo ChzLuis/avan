@@ -88,6 +88,7 @@ class BandejaController extends Controller
     {
         $this->autorizar($conversacion);
         $conversacion->update(['no_leidos' => 0]);
+        $this->avisarLeidoAMeta($conversacion);
         // Varios mensajes en el mismo segundo (el bot manda tres seguidos): el id desempata, si no salian de cabeza.
         // reorder(): la relacion trae su propio orderBy('created_at') ASC y, sin quitarlo, el
         // limit(100) se quedaba con los MAS VIEJOS y el reverse() los pintaba de cabeza.
@@ -97,6 +98,42 @@ class BandejaController extends Controller
             'conversacion' => $conversacion->load('canal'),
             'ventana'      => $this->ventana($conversacion),
         ]);
+    }
+
+    /**
+     * Los dos checks AZULES en el telefono del cliente cuando el asesor abre el chat.
+     *
+     * El bot ya lo hacia al contestar, pero en un chat atendido a mano (que es el uso
+     * normal de la bandeja) nadie avisaba a Meta y el cliente se quedaba en visto gris
+     * para siempre, creyendo que lo ignoran. Solo se avisa del ultimo entrante sin leer:
+     * Meta marca ese y todos los anteriores de la conversacion.
+     */
+    private function avisarLeidoAMeta(WaConversacion $conversacion): void
+    {
+        $canal = $conversacion->canal;
+        if (! $canal?->conectadoAMeta()) {
+            return;
+        }
+
+        $ultimo = $conversacion->mensajes()->reorder()
+            ->whereIn('direccion', ['in', 'entrante'])
+            ->whereNotNull('wa_message_id')
+            ->where('estado', '!=', 'leido')
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->first();
+        if (! $ultimo) {
+            return;
+        }
+
+        // Despues de responder: abrir el chat no debe esperar a la Graph API.
+        dispatch(function () use ($canal, $ultimo, $conversacion) {
+            (new \App\Modules\Crm\Support\WhatsappCloud\ClienteCloud($canal))->marcarLeido($ultimo->wa_message_id);
+            $conversacion->mensajes()->reorder()
+                ->whereIn('direccion', ['in', 'entrante'])
+                ->where('id', '<=', $ultimo->id)
+                ->where('estado', '!=', 'leido')
+                ->update(['estado' => 'leido', 'leido_at' => now()]);
+        })->afterResponse();
     }
 
     /**

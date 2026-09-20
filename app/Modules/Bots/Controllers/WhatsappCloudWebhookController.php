@@ -234,6 +234,10 @@ class WhatsappCloudWebhookController extends Controller
             return;
         }
 
+        // Ojo: el visto azul NO se manda aqui cuando el chat lo lleva una persona.
+        // Marcarlo al recibir seria mentirle al cliente ("leido" sin que nadie lo
+        // haya visto). Lo hace la bandeja al abrir la conversacion. El bot si lo
+        // marca, porque va a contestar en el acto.
         if ($respuestas === []) {
             return;
         }
@@ -242,6 +246,7 @@ class WhatsappCloudWebhookController extends Controller
         if ($waId !== '') {
             $cliente->marcarLeido($waId);
         }
+
         $resultados = $cliente->enviarRespuestas($telefono, $respuestas);
         $this->anotarEnvios($canal, $telefono, $resultados);
     }

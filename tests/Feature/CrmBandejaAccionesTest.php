@@ -183,4 +183,51 @@ class CrmBandejaAccionesTest extends TestCase
         \Illuminate\Support\Facades\Http::assertNothingSent();
         $this->assertDatabaseMissing('wa_mensajes', ['id' => $m->id]);
     }
+
+    /**
+     * Abrir el chat pone los dos checks AZULES en el telefono del cliente.
+     * Antes solo lo hacia el bot al contestar: en un chat atendido a mano el
+     * cliente se quedaba en visto gris creyendo que lo ignoran.
+     */
+    public function test_abrir_el_chat_avisa_a_meta_que_se_leyo(): void
+    {
+        $this->canal->update(['phone_number_id' => '777', 'access_token' => 'TOKEN']);
+        $c = $this->conv();
+        $viejo = $c->mensajes()->create(['direccion' => 'entrante', 'tipo' => 'texto', 'contenido' => 'Hola', 'estado' => 'entregado', 'wa_message_id' => 'wamid.1']);
+        $ultimo = $c->mensajes()->create(['direccion' => 'entrante', 'tipo' => 'texto', 'contenido' => '¿Precio?', 'estado' => 'entregado', 'wa_message_id' => 'wamid.2']);
+        \Illuminate\Support\Facades\Http::fake(['graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response(['success' => true], 200)]);
+
+        $this->enElCrm()->getJson("/bixocrm/{$c->id}/mensajes")->assertOk();
+
+        // Se avisa del ULTIMO sin leer: Meta marca ese y todos los anteriores.
+        \Illuminate\Support\Facades\Http::assertSent(fn ($req) => ($req->data()['status'] ?? '') === 'read' && ($req->data()['message_id'] ?? '') === 'wamid.2');
+        $this->assertSame('leido', $ultimo->fresh()->estado);
+        $this->assertSame('leido', $viejo->fresh()->estado, 'Los anteriores tambien quedan leidos');
+    }
+
+    /** Sin linea de Meta (bot por QR) no hay a quien avisar: no se llama a la Graph API. */
+    public function test_sin_linea_de_meta_no_se_avisa_nada(): void
+    {
+        $this->canal->update(['phone_number_id' => null, 'access_token' => null]);
+        $c = $this->conv();
+        $c->mensajes()->create(['direccion' => 'entrante', 'tipo' => 'texto', 'contenido' => 'Hola', 'estado' => 'entregado', 'wa_message_id' => 'wamid.9']);
+        \Illuminate\Support\Facades\Http::fake();
+
+        $this->enElCrm()->getJson("/bixocrm/{$c->id}/mensajes")->assertOk();
+
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    /** Abrir un chat ya leido no molesta a Meta otra vez. */
+    public function test_abrir_un_chat_ya_leido_no_reenvia_el_aviso(): void
+    {
+        $this->canal->update(['phone_number_id' => '777', 'access_token' => 'TOKEN']);
+        $c = $this->conv();
+        $c->mensajes()->create(['direccion' => 'entrante', 'tipo' => 'texto', 'contenido' => 'Hola', 'estado' => 'leido', 'wa_message_id' => 'wamid.5']);
+        \Illuminate\Support\Facades\Http::fake();
+
+        $this->enElCrm()->getJson("/bixocrm/{$c->id}/mensajes")->assertOk();
+
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
 }

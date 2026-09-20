@@ -100,8 +100,15 @@
                         </div>
                         <div class="flex items-center justify-between gap-2 mt-0.5">
                             <p class="text-xs text-gray-500 truncate flex items-center gap-1">
-                                <span x-show="conv.ultimo_direccion === 'saliente' || conv.ultimo_direccion === 'out'" class="text-gray-400">✓</span>
-                                <span x-text="previewMensaje(conv)"></span>
+                                <template x-if="borradorDe(conv)">
+                                    <span class="truncate"><span class="text-red-500 font-semibold">Borrador:</span> <span x-text="borradorDe(conv)"></span></span>
+                                </template>
+                                <template x-if="!borradorDe(conv)">
+                                    <span class="truncate flex items-center gap-1">
+                                        <span x-show="conv.ultimo_direccion === 'saliente' || conv.ultimo_direccion === 'out'" class="text-gray-400">✓</span>
+                                        <span x-text="previewMensaje(conv)"></span>
+                                    </span>
+                                </template>
                             </p>
                             <span class="flex items-center gap-1 flex-shrink-0">
                                 <span x-show="conv.bot_activo" class="text-[10px]" title="Bot atendiendo">🤖</span>
@@ -848,6 +855,11 @@ function bandeja() {
             if (t === 'documento') return '📄 ' + (c.ultimo_mensaje || 'Documento');
             return c.ultimo_mensaje || 'Sin mensajes';
         },
+        // Como WhatsApp: si quedo algo escrito sin enviar, eso manda en la lista.
+        borradorDe(c) {
+            if (this.convActiva && this.convActiva.id === c.id) return (this.textoMensaje || '').trim();
+            return this.leerBorrador(c.id).trim();
+        },
         esSaliente(m) { return m.direccion === 'saliente' || m.direccion === 'out'; },
 
         // ── Acciones del cliente (fase 3) ──
@@ -1017,6 +1029,20 @@ function bandeja() {
                 bxAviso(d.error || 'No se pudo eliminar', 'error');
             }
         },
+        // ── Borradores: lo escrito y no enviado sobrevive al cambiar de chat ──
+        claveBorrador(id) { return 'bx_borrador_' + id; },
+        guardarBorrador() {
+            if (!this.convActiva) return;
+            const t = (this.textoMensaje || '').trim();
+            try {
+                if (t) localStorage.setItem(this.claveBorrador(this.convActiva.id), this.textoMensaje);
+                else localStorage.removeItem(this.claveBorrador(this.convActiva.id));
+            } catch (e) {}
+        },
+        leerBorrador(id) { try { return localStorage.getItem(this.claveBorrador(id)) || ''; } catch (e) { return ''; } },
+        olvidarBorrador(id) { try { localStorage.removeItem(this.claveBorrador(id)); } catch (e) {} },
+        hayBorrador(id) { return this.leerBorrador(id) !== ''; },
+
         copiarMensaje(msg) { navigator.clipboard?.writeText(msg.contenido || '').catch(() => {}); },
 
         get respuestasFiltradas() {
@@ -1129,6 +1155,7 @@ function bandeja() {
         },
         volverALista() {
             // Si el chat se abrio apilando historial, retroceder dispara popstate y cierra.
+            this.guardarBorrador();
             if (this.esMovil && history.state && history.state.bxChat) { history.back(); return; }
             this.convActiva = null;
             this.mensajes = [];
@@ -1136,6 +1163,8 @@ function bandeja() {
 
         init() {
             this.pollingInterval = setInterval(() => this.poll(), 3000);
+            // Cerrar o recargar la pestaña no debe llevarse lo escrito a medias.
+            window.addEventListener('beforeunload', () => this.guardarBorrador());
             // Boton "atras" del telefono: cierra el chat o el modal abierto, no la app.
             window.addEventListener('popstate', () => {
                 if (!this.cerrarCapaSuperior() && this.esMovil) {
@@ -1158,7 +1187,9 @@ function bandeja() {
             if (this.esMovil && !this.convActiva) {
                 try { history.pushState({ bxChat: conv.id }, '', location.pathname + location.search); } catch (e) {}
             }
+            this.guardarBorrador();      // lo escrito en el chat anterior no se pierde
             this.convActiva = conv;
+            this.textoMensaje = this.leerBorrador(conv.id);
             this.estadoActual = conv.estado;
             this.editNombre   = conv.cliente_nombre   || '';
             this.editSector   = conv.cliente_sector   || '';
@@ -1216,6 +1247,7 @@ function bandeja() {
             if ((!this.textoMensaje.trim() && !this.adjunto) || !this.convActiva || this.enviando) return;
             this.enviando = true;
             const contenido = this.textoMensaje;
+            this.olvidarBorrador(this.convActiva.id);
             const archivo = this.adjunto;
             this.textoMensaje = '';
 
@@ -1247,6 +1279,7 @@ function bandeja() {
             if (!data.ok) {
                 this.errorEnvio = data.error || (data.errors ? Object.values(data.errors).flat().join(' ') : 'No se pudo enviar el mensaje a WhatsApp.');
                 this.textoMensaje = contenido;
+                this.guardarBorrador();   // si no salio, que no se pierda al cambiar de chat
             } else {
                 this.errorEnvio = null;
                 this.adjunto = null;
