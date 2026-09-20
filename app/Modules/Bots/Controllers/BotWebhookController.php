@@ -92,6 +92,16 @@ class BotWebhookController extends Controller
             return response()->json(['respuestas' => [], 'bot_pausado' => true]);
         }
 
+        // 1.a.bis) UNA PERSONA YA ESTA ATENDIENDO: si en los ultimos 10 minutos salio un
+        //      mensaje escrito por un asesor desde la bandeja (direccion 'saliente'; el bot
+        //      guarda 'out'), el bot se calla y se apaga solo en ese chat. Paso de verdad:
+        //      el asesor saludaba y el bot contestaba por encima.
+        if ($conv && $this->asesorAtendiendo($conv)) {
+            $conv->update(['bot_activo' => false]);
+
+            return response()->json(['respuestas' => [], 'asesor_atendiendo' => true]);
+        }
+
         // 2) Ejecutar el bot activo (si hay).
         $flow = BotFlow::where('project_id', $project->id)->where('activo', true)->latest()->first();
         if (!$flow || empty($flow->definicion['bloques'])) {
@@ -453,6 +463,15 @@ class BotWebhookController extends Controller
         }
 
         return $limpias;
+    }
+
+    /** ¿Un humano escribio en este chat hace poco? (la bandeja guarda 'saliente'; el bot, 'out') */
+    private function asesorAtendiendo(WaConversacion $conv, int $minutos = 10): bool
+    {
+        return WaMensaje::where('wa_conversacion_id', $conv->id)
+            ->where('direccion', 'saliente')
+            ->where('created_at', '>=', now()->subMinutes($minutos))
+            ->exists();
     }
 
     /** Conversacion del CRM de este telefono en el negocio (cualquiera de sus lineas). */

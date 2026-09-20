@@ -862,6 +862,13 @@ class FlowRunner
                         }
                     }
                     if (! empty($bloque['texto'])) {
+                        // Si el cliente vuelve al MISMO bloque, se usa `texto_repetido` (si existe):
+                        // repetir el mismo parrafo palabra por palabra parece que no escucho.
+                        $vistoAntes = ! empty($vars['_visto_' . ($bloque['_id'] ?? '')]);
+                        $vars['_visto_' . ($bloque['_id'] ?? '')] = true;
+                        if ($vistoAntes && ! empty($bloque['texto_repetido'])) {
+                            $bloque['texto'] = $bloque['texto_repetido'];
+                        }
                         foreach ($this->preguntaIntencion($bloque, $vars) as $r) {
                             $out['respuestas'][] = $r;
                         }

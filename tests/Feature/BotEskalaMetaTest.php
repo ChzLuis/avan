@@ -414,4 +414,41 @@ class BotEskalaMetaTest extends TestCase
         $this->assertStringNotContainsString('dedica tu negocio', $this->cuerpo($env[0]));
         $this->assertStringContainsString('asesor', $this->cuerpo($env[0]));
     }
+    /**
+     * Caso real (19/09, 51929375237): el asesor saludaba desde la bandeja y el bot seguia
+     * contestando por encima. Si un humano escribio hace poco, el bot calla y se apaga.
+     */
+    public function test_si_un_asesor_esta_escribiendo_el_bot_se_calla_y_se_apaga(): void
+    {
+        $this->meta($this->texto('hola'));
+        $conv = WaConversacion::where('cliente_telefono', '51900000001')->firstOrFail();
+        // El asesor escribe desde la bandeja (direccion 'saliente').
+        $conv->mensajes()->create(['direccion' => 'saliente', 'tipo' => 'texto', 'contenido' => 'Hola, le saluda Luis de Eskala.', 'estado' => 'enviado']);
+        $n = count($this->enviados());
+
+        $this->meta($this->toque('btn:tienda'));
+
+        $this->assertCount(0, $this->nuevos($n), 'Con una persona atendiendo, el bot no responde');
+        $this->assertFalse((bool) $conv->fresh()->bot_activo, 'Y queda apagado para ese chat');
+        $this->assertDatabaseHas('wa_mensajes', ['wa_conversacion_id' => $conv->id, 'direccion' => 'in', 'contenido' => '👆 x']);
+    }
+
+    /** Volver a "Ver precios" no repite el mismo parrafo palabra por palabra. */
+    public function test_al_volver_a_los_precios_el_texto_cambia(): void
+    {
+        $this->meta($this->texto('hola'));
+        $this->meta($this->toque('btn:precios'));
+        $env = $this->enviados();
+        $primero = $this->cuerpo(end($env));
+        $this->meta($this->toque('btn:tienda'));
+        $n = count($this->enviados());
+
+        $this->meta($this->toque('btn:precios'));
+        $segundo = $this->cuerpo($this->nuevos($n)[0]);
+
+        $this->assertStringContainsString('Tenemos 3 opciones', $primero);
+        $this->assertStringContainsString('Te repito los precios', $segundo);
+        $this->assertNotSame($primero, $segundo, 'No se repite identico');
+        $this->assertStringContainsString('S/ 490', $segundo, 'Pero sigue dando la informacion');
+    }
 }
