@@ -648,7 +648,8 @@
     </div>
 </div>
 
-</div>
+{{-- El cierre del x-data va DESPUES de todos los modales: si queda aqui, los modales
+     de abajo caen fuera de Alpine y no responden (paso con el menu de 3 puntos). --}}
 
 
 {{-- Modal: plantillas aprobadas por Meta --}}
@@ -771,6 +772,7 @@
     </div>
 </div>
 
+</div>
 <script>
 const CONVERSACIONES_INIT = @json($conversacionesJs);
 const RESPUESTAS_INIT = @json($respuestasRapidas);
