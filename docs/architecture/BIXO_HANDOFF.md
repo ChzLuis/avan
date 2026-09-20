@@ -205,6 +205,14 @@ migraron las conversaciones). `clientes.blade.php` (Prospectos) y su controlador
 Acciones: botones con texto (Ya la hice / Reabrir / Posponer), "Deshacer" 6 s, borrar con
 confirmacion y fecha en palabras. Pruebas: `CrmEstadosTest` (7).
 
+**Incoherencias de chats reales (19/09, 51929375237)**: (1) el asesor saludaba desde la bandeja y
+el bot contestaba por encima -> `asesorAtendiendo()`: si hay un mensaje `saliente` (humano) en los
+ultimos 10 min, el bot calla y APAGA `bot_activo` de ese chat; (2) el aviso "un asesor te responde"
+se quito del todo (apagado = silencio total); (3) volver a un bloque repetia el parrafo identico ->
+`texto_repetido` ahora aplica a cualquier `intencion` (marca `_visto_<id>`), usado en `precios`.
+Regla: la bandeja guarda `saliente` y el bot `out`; para "¿hay un humano atendiendo?" se mira
+`saliente`.
+
 **Pendiente**: Avances (metricas), playbooks, widget web, A/B con metricas por etapa del bot.
 
 **Pendiente**: fase 3 CRM (Acciones, Contactos unificados, Avances), asistente que suscriba la app
