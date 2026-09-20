@@ -373,6 +373,20 @@
                 <span class="text-[11px] text-red-500 truncate">Grabando… toca ■ para enviar</span>
                 <button @click="cancelarGrabacion()" class="ml-auto text-[11px] text-red-600 underline flex-shrink-0">Cancelar</button>
             </div>
+            {{-- Emojis: en movil el teclado del telefono ya los trae, aqui no. --}}
+            <div class="relative" x-show="!esMovil" @click.outside="panelEmojis = false">
+                <button @click="panelEmojis = !panelEmojis" type="button"
+                        class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Emojis">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </button>
+                <div x-show="panelEmojis" x-cloak
+                     class="absolute bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-40"
+                     style="bottom:100%;left:0;margin-bottom:.5rem;width:280px;max-height:220px;overflow-y:auto">
+                    <template x-for="e in EMOJIS" :key="e">
+                        <button type="button" @click="ponerEmoji(e)" class="text-xl leading-none p-1 rounded hover:bg-gray-100" x-text="e"></button>
+                    </template>
+                </div>
+            </div>
             <textarea x-show="!grabando" x-model="textoMensaje"
                       @paste="pegarArchivo($event)"
                       @keydown.enter.prevent="if(!$event.shiftKey) enviarMensaje()"
@@ -772,6 +786,13 @@ function bandeja() {
         cargandoMensajes: false,
         enviando: false,
         textoMensaje: '',
+        panelEmojis: false,
+        EMOJIS: ['😀','😃','😄','😁','😅','😂','🙂','😉','😊','😍','😘','🤗','🤔','😐','😴','😒','😞','😭','😡','👍','👎','👌','🙏','👏','💪','🤝','👋','☝️','✌️','❤️','🔥','⭐','✨','🎉','🎁','💯','✅','❌','⚠️','❓','❗','💬','📌','📎','📷','🎥','🎤','📄','📦','🚚','🏠','🏪','🛒','💰','💵','💳','🧾','📈','📉','📊','⏰','📅','🕐','📍','📱','☎️','✉️','🔗','🔒','🎯','🚀','👀','🙌','😎','🤩','🥳','😢','🤦','🤷','🙃','😇'],
+        ponerEmoji(e) {
+            this.textoMensaje = (this.textoMensaje || '') + e;
+            this.panelEmojis = false;
+            this.$nextTick(() => this.$refs.inputMensaje?.focus());
+        },
         errorEnvio: null,
         avisos: (() => { try { return localStorage.getItem('bx_avisos') === '1'; } catch (e) { return false; } })(),
         ultimoAviso: {},
@@ -1147,6 +1168,7 @@ function bandeja() {
             if (this.modalEstados) { this.modalEstados = false; return true; }
             if (this.modalRespuestas) { this.modalRespuestas = false; return true; }
             if (this.modalPlantillas) { this.modalPlantillas = false; return true; }
+            if (this.panelEmojis) { this.panelEmojis = false; return true; }
             if (this.menuMensaje) { this.menuMensaje = null; return true; }
             if (this.reenvio) { this.reenvio = null; return true; }
             if (this.mostrarFicha && this.esMovil) { this.mostrarFicha = false; return true; }
