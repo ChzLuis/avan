@@ -744,27 +744,8 @@
         <p class="text-[11px] text-gray-500 px-3 py-2 line-clamp-2" x-text="menuMensaje?.contenido || 'Adjunto'"></p>
         <button @click="abrirReenvio(menuMensaje); menuMensaje = null" class="w-full text-left px-3 py-3 rounded-xl hover:bg-gray-50 text-sm flex items-center gap-3">↪ Reenviar a otro chat</button>
         <button @click="copiarMensaje(menuMensaje); menuMensaje = null" class="w-full text-left px-3 py-3 rounded-xl hover:bg-gray-50 text-sm flex items-center gap-3">⧉ Copiar texto</button>
-        <button @click="eliminarMensaje(menuMensaje)" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 text-sm text-red-600 flex items-center gap-3">🗑 Eliminar mensaje</button>
+        <button @click="eliminarMensaje(menuMensaje)" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 text-sm text-red-600 flex items-center gap-3">🗑 Quitar de mi bandeja</button>
         <button @click="menuMensaje = null" class="w-full px-3 py-2.5 text-xs text-gray-500">Cancelar</button>
-    </div>
-</div>
-
-{{-- Eliminar un mensaje: en la bandeja o tambien en el telefono del cliente --}}
-<div x-show="menuBorrar" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="menuBorrar = null" style="background:rgba(0,0,0,.4)">
-    <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-4">
-        <p class="text-sm font-bold text-gray-900 mb-1">Eliminar mensaje</p>
-        <p class="text-[11px] text-gray-500 mb-3 line-clamp-2" x-text="menuBorrar?.contenido || 'Adjunto'"></p>
-        <div class="space-y-2">
-            <button @click="borrarMensaje(menuBorrar)" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700">
-                Quitar de mi bandeja
-                <span class="block text-[11px] font-normal text-gray-500">Lo saca del historial del CRM</span>
-            </button>
-            <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                En el teléfono del cliente el mensaje se queda. WhatsApp no permite borrar lo ya enviado
-                por un número conectado a la API, y ese número tampoco se puede abrir en la app normal.
-            </p>
-            <button @click="menuBorrar = null" class="w-full px-3 py-2 rounded-xl text-xs text-gray-500">Cancelar</button>
-        </div>
     </div>
 </div>
 
@@ -808,7 +789,6 @@ function bandeja() {
         grabSegundos: 0, grabTimer: null, grabCancelada: false,
         grabador: null,
         reenvio: null,
-        menuBorrar: null,
         menuMensaje: null,
         buscadorReenvio: '',
         errorReenvio: null,
@@ -1020,13 +1000,10 @@ function bandeja() {
             }
             this.menuConv = null;
         },
-        eliminarMensaje(msg) {
+        // Quita el mensaje del CRM. En el telefono del cliente se queda: la API de Meta
+        // no permite borrar lo ya enviado, asi que no se ofrece esa opcion.
+        async eliminarMensaje(msg) {
             this.menuMensaje = null;
-            this.menuBorrar = msg;
-        },
-        // Solo quita el mensaje del CRM: WhatsApp no deja borrarlo en el telefono del cliente.
-        async borrarMensaje(msg) {
-            this.menuBorrar = null;
             if (!this.convActiva) return;
             const res = await fetch(`/bixocrm/${this.convActiva.id}/mensajes/${msg.id}`, {
                 method: 'DELETE',
@@ -1144,7 +1121,6 @@ function bandeja() {
             if (this.modalEstados) { this.modalEstados = false; return true; }
             if (this.modalRespuestas) { this.modalRespuestas = false; return true; }
             if (this.modalPlantillas) { this.modalPlantillas = false; return true; }
-            if (this.menuBorrar) { this.menuBorrar = null; return true; }
             if (this.menuMensaje) { this.menuMensaje = null; return true; }
             if (this.reenvio) { this.reenvio = null; return true; }
             if (this.mostrarFicha && this.esMovil) { this.mostrarFicha = false; return true; }
