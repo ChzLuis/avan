@@ -539,11 +539,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/canales',            [SettingsController::class, 'storeCanal'])->name('settings.canales.store')->middleware('can:settings.catalogos');
         Route::delete('/settings/canales/{canal}',  [SettingsController::class, 'destroyCanal'])->name('settings.canales.destroy')->middleware('can:settings.catalogos');
 
-        // Propuestas BIXO
-        Route::get('/proposals',              [ProposalController::class, 'index'])->name('proposals.index');
-        Route::post('/proposals',             [ProposalController::class, 'store'])->name('proposals.store')->middleware('can:quotes.crear');
-        Route::put('/proposals/{proposal}',   [ProposalController::class, 'update'])->name('proposals.update')->middleware('can:quotes.editar');
-        Route::delete('/proposals/{proposal}',[ProposalController::class, 'destroy'])->name('proposals.destroy')->middleware('can:quotes.eliminar');
+        // Propuestas BIXO — herramienta interna de Eskala, no del cliente:
+        // aqui se ven precios, margenes y el pipeline comercial propio, asi que
+        // va cerrada a superadmin y no a los permisos del tenant.
+        Route::middleware('superadmin')->group(function () {
+            Route::get('/proposals',              [ProposalController::class, 'index'])->name('proposals.index');
+            Route::post('/proposals',             [ProposalController::class, 'store'])->name('proposals.store');
+            Route::put('/proposals/{proposal}',   [ProposalController::class, 'update'])->name('proposals.update');
+            Route::delete('/proposals/{proposal}',[ProposalController::class, 'destroy'])->name('proposals.destroy');
+        });
 
         // Certificados digitales
         Route::get('/certificados',                    [CertificadoController::class, 'index'])->name('certificados.index');
@@ -610,6 +614,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/guias/opciones',        [GuiaRemisionController::class, 'opciones'])->name('guias.opciones')->middleware('can:invoices.ver');
         Route::get('/guias/historico',       [GuiaRemisionController::class, 'consulta'])->name('guias.consulta')->middleware('can:invoices.ver');
         Route::post('/guias',                [GuiaRemisionController::class, 'store'])->name('guias.store')->middleware('can:invoices.crear');
+        Route::post('/guias/previsualizar',  [GuiaRemisionController::class, 'previsualizar'])->name('guias.previsualizar')->middleware('can:invoices.crear');
         Route::get('/guias/{guia}',          [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
         Route::get('/guias/{guia}/pdf',      [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');
         Route::post('/guias/{guia}/enviar',  [GuiaRemisionController::class, 'enviar'])->name('guias.enviar')->middleware('can:invoices.crear');
@@ -1268,6 +1273,7 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/guias/opciones',       [GuiaRemisionController::class, 'opciones'])->name('guias.opciones')->middleware('can:invoices.ver');
         Route::get('/guias/historico',       [GuiaRemisionController::class, 'consulta'])->name('guias.consulta')->middleware('can:invoices.ver');
         Route::post('/guias',               [GuiaRemisionController::class, 'store'])->name('guias.store')->middleware('can:invoices.crear');
+        Route::post('/guias/previsualizar', [GuiaRemisionController::class, 'previsualizar'])->name('guias.previsualizar')->middleware('can:invoices.crear');
         Route::get('/guias/{guia}',         [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
         Route::get('/guias/{guia}/pdf',     [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');
         Route::post('/guias/{guia}/enviar', [GuiaRemisionController::class, 'enviar'])->name('guias.enviar')->middleware('can:invoices.crear');

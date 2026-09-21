@@ -135,7 +135,7 @@
       <tr>
         <td style="text-align:left;">{{ $item->codigo ?: '—' }}</td>
         <td class="desc">{{ $item->description }}</td>
-        <td>{{ $item->unit }}</td>
+        <td>{{ \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad($item->unit) }}</td>
         <td class="total-linea">{{ rtrim(rtrim(number_format($item->quantity, 3), '0'), '.') }}</td>
       </tr>
       @endforeach

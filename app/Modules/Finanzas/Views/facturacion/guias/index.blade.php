@@ -375,6 +375,14 @@
                      Se pregunta, pero solo si hay algo escrito. --}}
                 <button type="button" @click="limpiarGuia()"
                         class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600">Limpiar</button>
+                {{-- La factura se revisaba antes de emitir y la guia no,
+                     aunque es la que VIAJA con la mercaderia: un error aqui
+                     se descubre con el camion en la carretera. No graba nada
+                     ni gasta correlativo. --}}
+                <button type="button" @click="verPrevia()"
+                        class="px-4 py-2 rounded-lg text-sm font-semibold text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50">
+                    Vista previa
+                </button>
                 <button @click="emitir()" :disabled="enviando"
                         class="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
                     <span x-text="enviando ? 'Emitiendo...' : 'Emitir y enviar a SUNAT'"></span>
@@ -385,6 +393,13 @@
 </div>
 
 <script>
+/* La ruta cambia segun la cara por la que se entro (panel o Ventas): cada
+   portal tiene sus propias rutas nombradas. */
+const PREVIA_GUIA_URL = @json(($portalLayout ?? 'panel') === 'comercial'
+    ? route('bixosales.guias.previsualizar')
+    : route('guias.previsualizar'));
+const CSRF_GUIA = @json(csrf_token());
+
 function guiasPage() {
     return {
         abierta: false,
@@ -470,13 +485,16 @@ function guiasPage() {
            y el numero ya dice por su longitud que tipo es. Si la API falla o
            el rol no tiene la ruta, el nombre se escribe a mano: la emision
            nunca se bloquea por una consulta. */
-        async consultarDoc(campoDoc, campoNombre, campoDireccion = null, campoUbigeo = null) {
+        async consultarDoc(campoDoc, campoNombre, campoDireccion = null, campoUbigeo = null, forzar = false) {
             const url = @json($rucUrl);
             if (!url) return;
 
             const doc = String(this.form[campoDoc] || '').replace(/\D/g, '');
             if (doc.length !== 8 && doc.length !== 11) return;
-            if (this.docConsultado[campoDoc] === doc) return;   // no repetir la misma consulta
+            /* `forzar` para el caso del comprobante: el RUC pudo consultarse ya
+               (llenando el nombre) y quedar el ubigeo sin poner; sin esto el
+               guardia cortaba la segunda consulta y el campo seguia vacio. */
+            if (!forzar && this.docConsultado[campoDoc] === doc) return;
 
             this.docConsultado[campoDoc] = doc;
             this.docBuscando = campoDoc;
@@ -627,6 +645,17 @@ function guiasPage() {
                 if (!this.form.llegada_direccion) this.form.llegada_direccion = destino.direccion || '';
             }
 
+            /* Primera guia a ese cliente: no hay guia anterior de donde copiar
+               el ubigeo y el campo quedaba vacio, aunque el RUC ya estaba
+               escrito y la consulta a SUNAT SI lo devuelve (V.L DISTRIBUCIONES
+               -> 150101). Se pregunta por el documento del destinatario. */
+            if (!this.form.llegada_ubigeo && this.form.destinatario_doc_numero) {
+                await this.consultarDoc(
+                    'destinatario_doc_numero', 'destinatario_nombre',
+                    'llegada_direccion', 'llegada_ubigeo', true
+                );
+            }
+
             if (data.desde_venta?.items?.length) {
                 this.form.items = data.desde_venta.items.map(i => ({
                     description: i.description, unit: i.unit, quantity: i.quantity,
@@ -668,6 +697,32 @@ function guiasPage() {
                 malos.push(['__items', 'al menos un bien a trasladar']);
             }
             return malos;
+        },
+
+        /* Abre la representacion impresa en otra pestana con los datos del
+           formulario. Se manda por POST dentro de un solo campo `payload`
+           porque una guia lleva 20 campos y no caben en una URL. */
+        verPrevia() {
+            const f = document.createElement('form');
+            f.method = 'POST';
+            f.action = PREVIA_GUIA_URL;
+            f.target = '_blank';
+            f.style.display = 'none';
+            const campo = (n, v) => {
+                const i = document.createElement('input');
+                i.type = 'hidden'; i.name = n; i.value = v;
+                f.appendChild(i);
+            };
+            campo('_token', CSRF_GUIA);
+            // Igual que al emitir: los renglones en blanco no son lineas.
+            const datos = Object.assign({}, this.form);
+            datos.items = (this.form.items || []).filter(
+                i => (i.description || '').trim() !== ''
+            );
+            campo('payload', JSON.stringify(datos));
+            document.body.appendChild(f);
+            f.submit();
+            f.remove();
         },
 
         async emitir() {

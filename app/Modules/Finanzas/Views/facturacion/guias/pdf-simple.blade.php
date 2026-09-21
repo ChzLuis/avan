@@ -265,7 +265,7 @@
           <td class="cen">{{ $i + 1 }}</td>
           <td class="cen">{{ $item->codigo ?: ($item->product?->sku ?? '') }}</td>
           <td>{{ $item->description }}</td>
-          <td class="cen">{{ $item->unit ?: 'NIU' }}</td>
+          <td class="cen">{{ \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad($item->unit) }}</td>
           <td class="der">{{ rtrim(rtrim(number_format($item->quantity, 3), '0'), '.') }}</td>
         </tr>
         @endforeach

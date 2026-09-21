@@ -475,7 +475,7 @@
                                 <td>
                                     {{-- Sin este campo la unidad venia del catalogo y no habia
                                          forma de corregirla: salia "Rollo 100 m" en el papel. --}}
-                                    <select x-model="item.unit" class="input px-1 text-xs">
+                                    <select x-model="item.unit" @change="item.unitTocada = true" class="input px-1 text-xs">
                                         @foreach(\App\Modules\Finanzas\Support\Sunat\Catalogos::unidadesComunes() as $codigoUm => $etiquetaUm)
                                         <option value="{{ $codigoUm }}">{{ $etiquetaUm }}</option>
                                         @endforeach
@@ -585,7 +585,7 @@
                         <div class="grid grid-cols-4 gap-2 mt-2">
                             <div>
                                 <label class="text-xs text-gray-400">UM</label>
-                                <select x-model="item.unit" class="input px-1 text-xs w-full">
+                                <select x-model="item.unit" @change="item.unitTocada = true" class="input px-1 text-xs w-full">
                                         @foreach(\App\Modules\Finanzas\Support\Sunat\Catalogos::unidadesComunes() as $codigoUm => $etiquetaUm)
                                         <option value="{{ $codigoUm }}">{{ $etiquetaUm }}</option>
                                         @endforeach

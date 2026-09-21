@@ -66,7 +66,15 @@
 /* Cabecera: cada dato con el ancho de lo que guarda, no a tercios. */
 .inv-cab { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; }
 .inv-w-serie { width: 96px; }
-.inv-w-corr  { width: 128px; }
+/* El correlativo muestra "F001 · siguiente disponible": con 128px fijos ese
+   texto se partia en TRES lineas y estiraba toda la cabecera. Se le deja
+   crecer hasta lo que necesita y nunca se parte. */
+.inv-w-corr  { width: auto; min-width: 128px; max-width: 260px; }
+/* El correlativo es un DIV, no un input: sin altura propia quedaba mas bajo
+   que Serie y Fecha y la fila se veia descuadrada. */
+.inv-w-corr .input { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 38px; }
+/* Las tres cajas de la cabecera comparten linea base. */
+.inv-cab > div { display: flex; flex-direction: column; }
 .inv-w-fecha { width: 160px; }
 .inv-w-tipo  { width: 176px; }
 /* Icono, subtitulo y separador del distintivo: se ocultan o aparecen segun
@@ -106,7 +114,10 @@
     /* En movil todo apilado: 12 columnas en 390 px no se leen. */
     .inv-fila { grid-template-columns: minmax(0, 1fr); }
     .inv-c2, .inv-c4, .inv-c6 { grid-column: 1 / -1; }
-    .inv-w-serie, .inv-w-corr { width: calc(50% - 6px); }
+    /* En movil la serie es corta y el correlativo lleva el texto largo:
+       repartirlos al 50% dejaba el numero recortado. */
+    .inv-w-serie { width: 96px; }
+    .inv-w-corr  { width: auto; min-width: 0; max-width: none; flex: 1 1 140px; }
     .inv-w-fecha, .inv-w-tipo { width: 100%; }
 }
 
@@ -1367,7 +1378,7 @@ function invoicesApp() {
             client_doc_type: '', client_doc_number: '', client_address: '',
             payment_method: '', payment_condition: 'contado', currency: 'PEN', notes: '',
             igv_included: true,
-            items: [1,2,3,4,5].map(function () { return { description: '', unit: 'NIU', quantity: 1, unit_price: '', discount: '', catalogKey: null, showSuggestions: false, suggestions: [], activeSuggestion: -1 }; })
+            items: [1,2,3,4,5].map(function () { return { description: '', unit: 'NIU', unitTocada: false, quantity: '', unit_price: '', discount: '', catalogKey: null, showSuggestions: false, suggestions: [], activeSuggestion: -1 }; })
         },
 
         init() {
@@ -1502,7 +1513,7 @@ function invoicesApp() {
                 client_doc_type: '', client_doc_number: '', client_address: '',
                 payment_method: '', payment_condition: 'contado', currency: 'PEN', notes: '',
                 igv_included: true,
-                items: [1,2,3,4,5].map(function () { return { description: '', unit: 'NIU', quantity: 1, unit_price: '', discount: '', catalogKey: null, showSuggestions: false, suggestions: [], activeSuggestion: -1 }; })
+                items: [1,2,3,4,5].map(function () { return { description: '', unit: 'NIU', unitTocada: false, quantity: '', unit_price: '', discount: '', catalogKey: null, showSuggestions: false, suggestions: [], activeSuggestion: -1 }; })
             };
             this.saveError = '';
             // Huella nueva por comprobante: reusarla haria que el servidor
@@ -2026,6 +2037,16 @@ function invoicesApp() {
                 && !i.catalogKey);
         },
 
+        /* Que unidad proponer en una linea nueva: la que el cajero ya eligio
+           en la ultima linea que toco. Quien factura cajas, factura varias
+           seguidas; obligarle a elegirla en cada renglon es como se cuelan
+           los errores. Si nunca toco ninguna, manda la del producto. */
+        unidadPorDefecto(product) {
+            const previa = [...(this.form.items || [])].reverse().find(i => i.unitTocada);
+            if (previa) return previa.unit;
+            return (product && product.unit) || 'NIU';
+        },
+
         addItem() {
             /* Si la ultima linea sigue en blanco NO se crea otra: se salta a
                ella. Pulsar "+" tres veces dejaba tres renglones vacios que
@@ -2057,7 +2078,8 @@ function invoicesApp() {
                    campo se lee como un precio de verdad ("esta a cero") y
                    obliga a borrarlo antes de teclear. Vacio se ve como lo que
                    es: falta por llenar. El calculo ya trata el vacio como 0. */
-                description: '', unit: 'NIU', quantity: 1, unit_price: '', discount: '',
+                description: '', unit: this.unidadPorDefecto(null), unitTocada: false,
+                quantity: '', unit_price: '', discount: '',
                 catalogKey: null, showSuggestions: false, suggestions: [], activeSuggestion: -1,
             };
         },
@@ -2169,7 +2191,10 @@ function invoicesApp() {
             const item = this.form.items[idx];
             if (!item || !product) return;
             item.description = product.name;
-            item.unit = product.unit || 'NIU';
+            /* La unidad del producto solo se PROPONE: si el cajero ya eligio
+               una, manda la suya. Antes esta linea la pisaba y la Caja que
+               habia elegido volvia a Unidad (F001-00000025 salio asi). */
+            if (!item.unitTocada) item.unit = product.unit || 'NIU';
             item.unit_price = Number(product.price) || 0;
             item.catalogKey = product.key;
             item.showSuggestions = false;
@@ -2387,7 +2412,10 @@ function invoicesApp() {
                 }
                 const item = this.emptyInvoiceItem();
                 item.description = product.name;
-                item.unit = product.unit || 'NIU';
+                /* Linea recien creada por el selector: aqui el cajero aun no
+                   ha elegido nada, asi que la del producto es la propuesta.
+                   Hereda la del renglon anterior si ya venia cambiada. */
+                item.unit = this.unidadPorDefecto(product);
                 item.unit_price = Number(product.price) || 0;
                 item.catalogKey = product.key;
                 this.form.items.push(item);

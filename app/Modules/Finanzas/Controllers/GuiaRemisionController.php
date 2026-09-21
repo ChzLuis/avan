@@ -5,6 +5,7 @@ namespace App\Modules\Finanzas\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Finanzas\Jobs\EnviarGuiaASunat;
 use App\Modules\Finanzas\Models\GuiaRemision;
+use App\Modules\Finanzas\Models\GuiaRemisionItem;
 use App\Modules\Finanzas\Models\Invoice;
 use App\Models\Project;
 use App\Modules\Finanzas\Support\Sunat\Catalogos;
@@ -387,6 +388,109 @@ class GuiaRemisionController extends Controller
      * Sin esto la guia existia en SUNAT pero el chofer no llevaba nada que
      * ensenar en un control.
      */
+    /**
+     * VISTA PREVIA de la guia, antes de emitirla.
+     *
+     * La factura se podia revisar antes de emitir y la guia no, aunque es la
+     * que viaja con la mercaderia: un error aqui se descubre en la carretera.
+     * Se arma una guia EN MEMORIA —no se graba ni gasta correlativo— y se
+     * pinta con la misma plantilla impresa que usara la definitiva, para que
+     * lo que se ve sea lo que sale.
+     */
+    public function previsualizar(Request $request)
+    {
+        /** @var \App\Models\Project $project */
+        $project = app('active_project');
+
+        // El formulario viaja serializado en un campo para poder abrirse en
+        // una pestana nueva con un POST normal (igual que los comprobantes).
+        $payload = json_decode((string) $request->input('payload'), true);
+        if (is_array($payload)) {
+            $request->merge($payload);
+        }
+
+        $data = $request->validate([
+            'destinatario_nombre'     => 'nullable|string|max:200',
+            'destinatario_doc_tipo'   => 'nullable|string|max:5',
+            'destinatario_doc_numero' => 'nullable|string|max:15',
+            'motivo_codigo'           => 'nullable|string|max:5',
+            'fecha_traslado'          => 'nullable|date',
+            'modalidad'               => 'nullable|string|max:5',
+            'peso_total'              => 'nullable|numeric|min:0',
+            'peso_unidad'             => 'nullable|string|max:5',
+            'partida_direccion'       => 'nullable|string|max:300',
+            'partida_ubigeo'          => 'nullable|string|max:6',
+            'llegada_direccion'       => 'nullable|string|max:300',
+            'llegada_ubigeo'          => 'nullable|string|max:6',
+            'transportista_nombre'    => 'nullable|string|max:200',
+            'transportista_doc'       => 'nullable|string|max:15',
+            'conductor_nombre'        => 'nullable|string|max:200',
+            'conductor_doc'           => 'nullable|string|max:15',
+            'conductor_licencia'      => 'nullable|string|max:20',
+            'vehiculo_placa'          => 'nullable|string|max:10',
+            'observaciones'           => 'nullable|string',
+            'items'                   => 'nullable|array',
+            'items.*.description'     => 'nullable|string|max:300',
+            'items.*.unit'            => 'nullable|string|max:20',
+            'items.*.quantity'        => 'nullable|numeric|min:0',
+        ]);
+
+        // Solo las lineas con algo escrito: la fila vacia no es un item.
+        $lineas = array_values(array_filter(
+            $data['items'] ?? [],
+            fn ($i) => trim((string) ($i['description'] ?? '')) !== ''
+        ));
+        if (! $lineas) {
+            $lineas = [['description' => '(sin productos)', 'quantity' => 1, 'unit' => 'NIU']];
+        }
+
+        $guia = new GuiaRemision([
+            'serie'                   => $this->serie($project),
+            'numero'                  => $this->serie($project).'-XXXXXXXX',
+            'emisor_razon_social'     => $project->setting('razon_social') ?? $project->name,
+            'emisor_ruc'              => $project->setting('ruc'),
+            'emisor_direccion'        => $project->address,
+            'destinatario_nombre'     => ($data['destinatario_nombre'] ?? null) ?: 'Destinatario',
+            'destinatario_doc_tipo'   => $data['destinatario_doc_tipo'] ?? null,
+            'destinatario_doc_numero' => $data['destinatario_doc_numero'] ?? null,
+            'motivo_codigo'           => $data['motivo_codigo'] ?? '01',
+            'fecha_traslado'          => $data['fecha_traslado'] ?? now()->toDateString(),
+            'modalidad'               => $data['modalidad'] ?? '02',
+            'peso_total'              => $data['peso_total'] ?? 0,
+            'peso_unidad'             => $data['peso_unidad'] ?? 'KGM',
+            'partida_direccion'       => $data['partida_direccion'] ?? null,
+            'partida_ubigeo'          => $data['partida_ubigeo'] ?? null,
+            'llegada_direccion'       => $data['llegada_direccion'] ?? null,
+            'llegada_ubigeo'          => $data['llegada_ubigeo'] ?? null,
+            'transportista_nombre'    => $data['transportista_nombre'] ?? null,
+            'transportista_doc'       => $data['transportista_doc'] ?? null,
+            'conductor_nombre'        => $data['conductor_nombre'] ?? null,
+            'conductor_doc'           => $data['conductor_doc'] ?? null,
+            'conductor_licencia'      => $data['conductor_licencia'] ?? null,
+            'vehiculo_placa'          => $data['vehiculo_placa'] ?? null,
+            'observaciones'           => $data['observaciones'] ?? null,
+            'status'                  => 'draft',
+        ]);
+
+        $guia->setRelation('items', collect($lineas)->map(fn ($l) => new GuiaRemisionItem([
+            'description' => $l['description'] ?? '',
+            'unit'        => ($l['unit'] ?? null) ?: 'NIU',
+            'quantity'    => (float) ($l['quantity'] ?? 0) > 0 ? $l['quantity'] : 1,
+        ])));
+        $guia->setRelation('invoice', null);
+
+        // La MISMA plantilla que la guia definitiva: lo que se ve es lo que sale.
+        $vista = (string) $project->setting('invoice_template') === 'clasico'
+            ? 'finanzas::facturacion.guias.pdf-clasico'
+            : 'finanzas::facturacion.guias.pdf-simple';
+
+        return view($vista, [
+            'project'     => $project,
+            'guia'        => $guia,
+            'vistaPrevia' => true,
+        ]);
+    }
+
     public function pdf(GuiaRemision $guia)
     {
         $project = $this->soloDeMiNegocio($guia);
@@ -463,7 +567,7 @@ class GuiaRemisionController extends Controller
             return $hoja;
         }
 
-        return response()->download($pdf, $guia->numero.'.pdf')->deleteFileAfterSend();
+        return response()->download($pdf, $guia->nombreArchivo().'.pdf')->deleteFileAfterSend();
     }
 
     public function show(GuiaRemision $guia)
