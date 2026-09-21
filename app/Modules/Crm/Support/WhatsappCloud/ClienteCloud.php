@@ -422,6 +422,10 @@ class ClienteCloud
                 190    => 'Token vencido o inválido. Genera un token PERMANENTE de usuario del sistema en Meta y pégalo en la línea.',
                 131005 => 'El token no tiene permiso sobre este número: en Meta, asigna la cuenta de WhatsApp al usuario del sistema (control total).',
                 131047 => 'Pasaron más de 24 h desde el último mensaje del cliente: solo se puede escribir con una plantilla aprobada.',
+                // Meta corta TODA la API (ni siquiera deja consultar el numero), no solo
+                // el envio. Suele ser la cuenta de empresa restringida o sin verificar.
+                200    => 'Meta bloqueó el acceso a la API de esta cuenta. Entra a business.facebook.com → Configuración → Seguridad / Calidad de la cuenta y revisa si hay una restricción o una verificación pendiente. Mientras dure, no se puede enviar ni consultar nada.',
+                131056 => 'Demasiados mensajes seguidos a ese mismo cliente: WhatsApp lo frenó un rato. Espera unos minutos.',
                 default => (string) data_get($res->json(), 'error.message', 'HTTP ' . $res->status()),
             };
             $this->canal->forceFill(['ultimo_error' => mb_substr($motivo, 0, 255)])->saveQuietly();
