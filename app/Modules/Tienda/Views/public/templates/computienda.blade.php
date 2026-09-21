@@ -73,7 +73,7 @@
     $themeIsDark = (bool) ($themePresetDef['dark'] ?? false);
 
     // Variante estructural de las tarjetas de producto (no solo color).
-    $productCardStyle = in_array(($settings['product_card_style'] ?? 'classic'), ['classic','tech','soft','elegant','contrast','pro'], true)
+    $productCardStyle = in_array(($settings['product_card_style'] ?? 'classic'), ['classic','tech','soft','elegant','contrast','pro','comercial'], true)
         ? ($settings['product_card_style'] ?? 'classic') : 'classic';
     $sectionSpacing = in_array(($settings['section_spacing'] ?? 'comfortable'), ['compact','comfortable','dense'], true)
         ? ($settings['section_spacing'] ?? 'comfortable') : 'comfortable';
@@ -317,8 +317,21 @@
         ->mapWithKeys(fn ($img, $label) => [mb_strtoupper((string) $label) => $img])
         ->all();
 
-    $marcaAgua = ($settings['catalog_watermark'] ?? '') === '1' ? $logoUrl : null;
+    /* Imagen de la marca de agua: la propia si el negocio subio una, y si no
+       el logo de la tienda, que es lo que se hacia siempre.
+       Existe la opcion propia porque un logo en JPG no tiene transparencia: se
+       pinta como un disco opaco encima del producto, y ahi no hay opacidad que
+       valga. El PNG recortado se sube como imagen aparte para no cambiar de
+       paso el logo de la cabecera, que es el mismo ajuste. */
+    $marcaAgua = ($settings['catalog_watermark'] ?? '') === '1'
+        ? (filled($settings['catalog_watermark_image'] ?? null)
+            ? $assetUrl($settings['catalog_watermark_image'])
+            : $logoUrl)
+        : null;
     $marcaOpacidad = max(5, min(100, (int) ($settings['catalog_watermark_opacity'] ?? 42))) / 100;
+    /* Sitio y tamano tambien los elige el negocio: antes estaban fijos en el
+       CSS y mover el control del Constructor no cambiaba nada en la tienda. */
+    $marcaEstilo = \App\Support\MarcaAguaCatalogo::estilo($marcaAgua, $settings);
 
     $waSource = $settings['whatsapp_number']
         ?? $settings['quote_whatsapp']
@@ -333,7 +346,9 @@
     $productButtonMode = in_array($settings['product_button_mode'] ?? '', ['cart', 'inquiry', 'both'], true) ? $settings['product_button_mode'] : 'cart';
     $inquiryText = trim($settings['btn_inquiry_text'] ?? '') !== '' ? trim($settings['btn_inquiry_text']) : 'Consultar';
     $showCartButton = $productButtonMode !== 'inquiry';
-    $showInquiryButton = $productButtonMode !== 'cart' && $whatsapp;
+    // La tarjeta "comercial" se define por su doble accion: si el dueño la
+    // eligio, la consulta se muestra aunque el modo de botones fuera solo compra.
+    $showInquiryButton = ($productButtonMode !== 'cart' || $productCardStyle === 'comercial') && $whatsapp;
     // Mensaje con el que se abre WhatsApp desde una tarjeta o ficha. Estaba
     // escrito a fuego en la plantilla: cambiar el saludo con el que un cliente
     // recibe a SUS compradores obligaba a tocar código. Se le añade el nombre
@@ -659,6 +674,11 @@
     $catsMobileLimit = (int) ($settings['cats_mobile_limit'] ?? 0);
     $trustSectionStyle = in_array(($settings['trust_section_style'] ?? 'cards'), ['cards','compact','icons-top','tiles','band','outline','stripe','inline','linea'], true)
         ? ($settings['trust_section_style'] ?? 'cards') : 'cards';
+    // Pestanas de orden sobre la rejilla. Apagadas por defecto: en un catalogo
+    // corto no aportan y solo anaden ruido sobre los filtros.
+    $catalogTabs = (string) ($settings['catalog_tabs'] ?? '0') === '1';
+    // Ultimos ingresos bajo los filtros del catalogo (solo escritorio).
+    $catalogSideLatest = (string) ($settings['catalog_side_latest'] ?? '0') === '1';
     $trustSectionColumns = max(2, min(4, (int) ($settings['trust_section_columns'] ?? 4)));
     $trustSectionMobileColumns = max(1, min(2, (int) ($settings['trust_section_mobile_columns'] ?? 1)));
     $trustSectionRadius = max(0, min(28, (int) ($settings['trust_section_radius'] ?? 16)));
@@ -864,7 +884,10 @@
             'showContent' => $showContent,
             'cta1Show'  => $cta1Show,
             'cta1Text'  => trim($settings["hero_slide_{$n}_cta1_text"] ?? $heroCta),
-            'cta1Url'   => trim($settings["hero_slide_{$n}_cta1_url"] ?? '#catalogo'),
+            /* A la pagina Tienda y no a `#catalogo`: ese ancla NO existe en la
+               portada, asi que el boton principal del hero no llevaba a ningun
+               sitio — se quedaba en Inicio, en escritorio y en movil. */
+            'cta1Url'   => trim($settings["hero_slide_{$n}_cta1_url"] ?? '') ?: $shopUrl,
             'cta2Show'  => $cta2Show,
             'cta2Text'  => trim($settings["hero_slide_{$n}_cta2_text"] ?? $contactCta),
             'cta2Url'   => trim($settings["hero_slide_{$n}_cta2_url"] ?? ($whatsapp ? "https://wa.me/{$whatsapp}" : '')),
@@ -909,7 +932,25 @@
     // Diseño del pie de página: oscuro clásico, claro elegante, color de marca, compacto centrado.
     $footerStyle = in_array(($settings['footer_style'] ?? 'classic'), ['classic', 'light', 'accent', 'minimal'], true)
         ? ($settings['footer_style'] ?? 'classic') : 'classic';
-    $footerText = $color($settings['footer_text_color'] ?? null, '#94a3b8');
+    /* El gris por defecto (#94a3b8) nacio para el pie OSCURO. Sobre un pie en
+       color de marca —turquesa, naranja, azul— ese gris casi no se lee: los
+       titulos y enlaces se pierden contra el fondo. Sin color elegido a mano,
+       se decide por la luminancia del fondo, igual que ya se hacia para los
+       perfiles: blanco sobre fondo oscuro, gris sobre el oscuro de siempre. */
+    $footerText = $settings['footer_text_color'] ?? null;
+    if (blank($footerText)) {
+        $lumFondo = (static function (string $hex): float {
+            $hex = ltrim($hex, '#');
+            if (strlen($hex) !== 6) return 0.0;
+            return (0.299 * hexdec(substr($hex, 0, 2)) + 0.587 * hexdec(substr($hex, 2, 2)) + 0.114 * hexdec(substr($hex, 4, 2))) / 255;
+        })($footerBg);
+        // El gris se mantiene en los pies OSCUROS de siempre (navy, negro),
+        // que es donde se leia bien y son la inmensa mayoria; el blanco entra
+        // solo cuando el fondo tiene color de verdad, que es donde el gris se
+        // perdia. El umbral 0.22 deja fuera los azules marinos tipicos.
+        $footerText = $lumFondo > 0.62 ? '#3F3730' : ($lumFondo < 0.22 ? '#94a3b8' : '#FFFFFF');
+    }
+    $footerText = $color($footerText, '#94a3b8');
     // El pie tambien pertenece al mundo activo: si el perfil define su propio
     // fondo o color de cabecera, el pie lo sigue en vez de quedarse con el de la
     // tienda general. Sin valores propios, comportamiento identico al anterior.
@@ -1532,6 +1573,17 @@
         /* Contenedor más ancho y con respiro lateral */
         body.section-preset-commerce{--header-layout-width:min(1680px,calc(100vw - 96px))}
         body.section-preset-commerce .container{width:min(1680px,calc(100% - 96px))}
+        /* La cabecera usa el MISMO calculo que el contenedor del cuerpo (96px
+           de aire, no 48): con medidas distintas el logo no arrancaba donde
+           arranca el contenido. */
+        body.section-preset-commerce .hba-main,
+        body.section-preset-commerce .hba-nav-in{width:min(1680px,calc(100% - 96px))!important}
+        @media(max-width:1024px){body.section-preset-commerce .hba-main,body.section-preset-commerce .hba-nav-in{width:calc(100% - 48px)!important}}
+        @media(max-width:640px){body.section-preset-commerce .hba-main,body.section-preset-commerce .hba-nav-in{width:calc(100% - 32px)!important}}
+        /* La barra del menu iba pegada a la fila del logo: 47px de alto sin
+           aire propio. Se le da respiro arriba y abajo para que el boton
+           "Categorias" no toque el buscador. */
+        body.section-preset-commerce .hba-nav{padding-block:7px}
         @media(max-width:1024px){body.section-preset-commerce .container{width:calc(100% - 48px)}}
         @media(max-width:640px){body.section-preset-commerce .container{width:calc(100% - 32px)}}
         /* Topbar delgada */
@@ -1912,11 +1964,11 @@
             display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;
             scroll-behavior:smooth;scrollbar-width:none;padding:4px 2px 8px}
         body.featured-view-carousel .pf-grid::-webkit-scrollbar{display:none}
-        body.featured-view-carousel .pf-card{
+        body.featured-view-carousel .pf-card,body.featured-view-carousel .pf-grid>.catalog-card{
             flex:0 0 calc((100% - 54px) / 4);scroll-snap-align:start;min-width:0}
-        @media(max-width:1024px){body.featured-view-carousel .pf-card{flex-basis:calc((100% - 36px) / 3)}}
-        @media(max-width:760px){body.featured-view-carousel .pf-card{flex-basis:calc((100% - 18px) / 2)}}
-        @media(max-width:520px){body.featured-view-carousel .pf-card{flex-basis:82%}}
+        @media(max-width:1024px){body.featured-view-carousel .pf-card,body.featured-view-carousel .pf-grid>.catalog-card{flex-basis:calc((100% - 36px) / 3)}}
+        @media(max-width:760px){body.featured-view-carousel .pf-card,body.featured-view-carousel .pf-grid>.catalog-card{flex-basis:calc((100% - 18px) / 2)}}
+        @media(max-width:520px){body.featured-view-carousel .pf-card,body.featured-view-carousel .pf-grid>.catalog-card{flex-basis:82%}}
 
         .pf-carrusel{position:relative}
         /* Los puntos indican cuantas paginas hay y en cual se esta. Sin ellos
@@ -1940,7 +1992,7 @@
         }
 
         body.featured-view-editorial .pf-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
-        body.featured-view-editorial .pf-card{display:grid;grid-template-columns:42% 58%;min-height:280px}
+        body.featured-view-editorial .pf-card,body.featured-view-editorial .pf-grid>.catalog-card{display:grid;grid-template-columns:42% 58%;min-height:280px}
         body.featured-view-editorial .pf-media{aspect-ratio:auto;height:100%;border-bottom:0;border-right:1px solid #eef2f7}
         body.featured-view-editorial .pf-media img{padding:var(--foto-aire)}
         body.featured-view-editorial .pf-body{padding:28px}
@@ -1949,7 +2001,7 @@
         body.featured-view-editorial .pf-action{margin:0 28px 24px}
         @media(max-width:900px){body.featured-view-editorial .pf-grid{grid-template-columns:1fr}}
         @media(max-width:560px){
-            body.featured-view-editorial .pf-card{grid-template-columns:1fr}
+            body.featured-view-editorial .pf-card,body.featured-view-editorial .pf-grid>.catalog-card{grid-template-columns:1fr}
             body.featured-view-editorial .pf-media{height:220px;border-right:0;border-bottom:1px solid #eef2f7}
             body.featured-view-editorial .pf-body{padding:18px}
             body.featured-view-editorial .pf-action{margin:0 18px 18px}
@@ -3051,7 +3103,11 @@
         .official-whatsapp-float.wa-anim-shake{animation:wa-vibra 3s ease-in-out infinite}
         .official-whatsapp-float:hover{animation-play-state:paused}
         @media(prefers-reduced-motion:reduce){.official-whatsapp-float{animation:none!important}}
-        @media(max-width:560px){.official-whatsapp-float.wa-style-pill{padding:8px 14px 8px 12px;border-radius:14px}.official-whatsapp-float.wa-style-pill svg{width:30px;height:30px}.official-whatsapp-float .wa-texto b{font-size:16px}.official-whatsapp-float .wa-texto small{font-size:12px}}
+        /* En movil la pildora (~190px de ancho) se plantaba sobre la fila de
+           beneficios, que ahi va a una columna, y tapaba la tarjeta de
+           Asesoria. La pildora es un reclamo de escritorio: en pantallas
+           estrechas vuelve al boton redondo, que cumple igual y no tapa nada. */
+        @media(max-width:560px){.official-whatsapp-float.wa-style-pill{width:54px;height:54px;padding:0;border-radius:50%;display:grid;place-items:center;gap:0}.official-whatsapp-float.wa-style-pill svg{width:29px;height:29px}.official-whatsapp-float.wa-style-pill .wa-texto{display:none}}
         @media(max-width:560px){.official-whatsapp-float{right:16px;bottom:16px;width:54px;height:54px}.official-whatsapp-float svg{width:29px;height:29px}}
     
         /* ═══════════════════════════════════════════════════════
@@ -3106,10 +3162,27 @@
         .footer a:hover{color:#fff!important}
         .footer-logo img{filter:drop-shadow(0 4px 10px rgba(0,0,0,.18))}
         .official-whatsapp-float{position:fixed!important;overflow:hidden!important;bottom:24px!important;z-index:99999!important;width:64px!important;height:64px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:999px!important;background:#25D366!important;box-shadow:0 18px 35px rgba(37,211,102,.36)!important;visibility:visible!important;opacity:1!important}
+        /* El boton con TEXTO no puede ser un circulo de 64px: el rotulo se
+           salia de la pastilla y quedaba recortado por el overflow. Estas
+           reglas nacieron para blindar el modo icono, asi que se le devuelve
+           al modo pastilla su ancho automatico. Manda el ajuste del
+           Constructor (float_wa_style), no el CSS. */
+        .official-whatsapp-float.wa-style-pill{width:auto!important;height:auto!important;border-radius:16px!important;overflow:visible!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;padding:10px 18px 10px 14px!important;gap:12px!important;white-space:nowrap!important}
+        .official-whatsapp-float.wa-style-pill svg{width:34px!important;height:34px!important}
+        /* En movil la pastilla con rotulo mide 160px de ancho y se sienta
+           encima de las tarjetas del catalogo: tapaba "Disponible para
+           cotizar" y el cuerpo de la tarjeta de debajo. El rotulo se queda
+           para escritorio, donde sobra sitio; en movil vuelve a ser el circulo
+           de siempre, que estorba lo minimo. */
+        @media(max-width:640px){
+          .official-whatsapp-float.wa-style-pill{width:56px!important;height:56px!important;border-radius:50%!important;padding:0!important;justify-content:center!important;gap:0!important}
+          .official-whatsapp-float.wa-style-pill .wa-texto{display:none!important}
+          .official-whatsapp-float.wa-style-pill svg{width:29px!important;height:29px!important}
+        }
         .official-whatsapp-float.wa-pos-left{left:22px!important;right:auto!important}
         .official-whatsapp-float.wa-pos-right{right:22px!important;left:auto!important}
         .official-whatsapp-float:hover{transform:translateY(-2px) scale(1.02)!important;box-shadow:0 20px 38px rgba(37,211,102,.42)!important}
-        .official-whatsapp-float svg{display:block!important;width:31px!important;height:31px!important}
+        .official-whatsapp-float:not(.wa-style-pill) svg{display:block!important;width:31px!important;height:31px!important}
         .official-whatsapp-float::before{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
         .official-whatsapp-float::after{content:'';position:absolute;inset:-8px;border-radius:inherit;border:1px solid rgba(37,211,102,.22);animation:waPulse 2.4s ease-out infinite}
         @keyframes waPulse{0%{transform:scale(.92);opacity:.55}70%{transform:scale(1.18);opacity:0}100%{transform:scale(1.18);opacity:0}}
@@ -3133,6 +3206,13 @@
            ALINEACIÓN DE CABECERA Y MENÚ
            ═══════════════════════════════════════════════════════ */
         :root{--header-layout-width:1360px}
+        /* `.hba-main` es la cabecera BANDA, que traia su propio ancho fijo de
+           1400px: con el preset comercial el cuerpo pasa a 1680px y la
+           cabecera quedaba 280px mas estrecha, descuadrada 140px por lado
+           respecto al contenido. Se suma aqui para que comparta la misma
+           medida que el resto y el logo arranque donde arranca el contenido. */
+        .hba-main,
+        .hba-nav-in,
         .topbar>.container.topbar-inner,
         .store-header>.container.header-main,
         .category-nav>.container.category-bar{
@@ -3802,6 +3882,11 @@
     body.cards-pro .pc-pro-disp{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12.5px;font-weight:700;color:#15803d}
     body.cards-pro .pc-pro-disp i{width:9px;height:9px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.16)}
     body.cards-pro .pc-pro-disp.is-off{color:#b91c1c}body.cards-pro .pc-pro-disp.is-off i{background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.16)}
+    /* Volumen: es un dato comercial, no un semaforo. Va en el color de la
+       marca y con el numero en negrita, que es lo que se lee de reojo. */
+    body.cards-pro .pc-pro-disp.pc-pro-mayor{color:var(--text,#334155);font-weight:600}
+    body.cards-pro .pc-pro-disp.pc-pro-mayor i{background:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 18%,transparent)}
+    body.cards-pro .pc-pro-disp.pc-pro-mayor b{color:var(--primary);font-weight:800}
     body.cards-pro .catalog-card-prices,body.cards-pro .quote-price{display:none!important}
     body.cards-pro .catalog-card-actions{padding-top:10px}
     body.cards-pro .catalog-card-action{width:100%!important;justify-content:center;border-radius:8px!important;background:var(--primary)!important;color:#fff!important;font-weight:700;min-height:42px}
@@ -3810,6 +3895,36 @@
     body.cards-pro #storefront-main .catalog-card-category{display:none!important}
     body.cards-pro #storefront-main .catalog-card-prices{display:none!important}
     body.cards-pro #storefront-main .catalog-card-action{width:100%!important;justify-content:center!important;background:var(--primary)!important;color:#fff!important;border-radius:8px!important}
+    /* ── Tarjeta "comercial": SKU visible y doble accion (comprar + consultar).
+       Replica el patron de las tiendas peruanas de referencia, donde el cliente
+       elige entre cerrar la compra o preguntar por WhatsApp sin salir del catalogo. ── */
+    body.cards-comercial .catalog-card{border:1px solid var(--border);border-radius:10px;box-shadow:none;background:#fff}
+    body.cards-comercial .catalog-card:hover{box-shadow:0 12px 28px rgba(15,23,42,.1);border-color:color-mix(in srgb,var(--primary) 32%,var(--border))}
+    body.cards-comercial .catalog-card-name{font-weight:700;font-size:15px;line-height:1.35}
+    body.cards-comercial .pc-com-sku{display:block;margin-top:5px;font-size:12px;color:var(--muted);letter-spacing:.02em}
+    body.cards-comercial .pc-com-sku b{font-weight:700;color:var(--text)}
+    body.cards-comercial .catalog-card-actions{display:flex;flex-direction:column;gap:7px;padding-top:10px}
+    body.cards-comercial .catalog-card-action{width:100%!important;justify-content:center;border-radius:8px!important;min-height:42px;font-weight:700}
+    /* Reutiliza el boton de consulta que ya existe (catalog-card-inquiry): aqui
+       solo cambia de aspecto para quedar a la par del boton de compra. */
+    body.cards-comercial .catalog-card-inquiry{width:100%!important;justify-content:center;min-height:40px;border-radius:8px!important;border:1px solid var(--border)!important;background:#fff!important;color:var(--text)!important;font-weight:700;transition:background .18s,border-color .18s,color .18s}
+    body.cards-comercial .catalog-card-inquiry:hover{background:#25d366!important;border-color:#25d366!important;color:#fff!important}
+    body.cards-comercial .catalog-card-more{display:none!important}
+    /* ── Pestanas de orden sobre la rejilla ── */
+    .catalog-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:0 0 14px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+    .catalog-tabs::-webkit-scrollbar{display:none}
+    .catalog-tab{appearance:none;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:9px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;flex:none;transition:color .18s,border-color .18s}
+    .catalog-tab:hover{color:var(--text)}
+    .catalog-tab.is-on{color:var(--primary);border-bottom-color:var(--primary)}
+    @media(max-width:640px){.catalog-tab{padding:9px 11px;font-size:13px;min-height:42px}}
+    /* ── Ultimos productos bajo los filtros ── */
+    .cat-side-latest{border-top:1px solid var(--border);padding:14px 16px 16px}
+    .cat-side-title{display:block;font-size:13px;font-weight:700;margin-bottom:10px}
+    .cat-side-item{display:flex;align-items:center;gap:10px;padding:7px 0;color:inherit;text-decoration:none}
+    .cat-side-item:hover .cat-side-txt{color:var(--primary)}
+    .cat-side-img{width:46px;height:46px;flex:none;border-radius:7px;overflow:hidden;background:var(--card-img-bg,#f1f5f9)}
+    .cat-side-img img{width:100%;height:100%;object-fit:cover;display:block}
+    .cat-side-txt{font-size:12.5px;line-height:1.35;color:var(--text);transition:color .18s}
     /* La flecha del carrusel se montaba encima del titulo: el bloque de texto
        deja sitio a las flechas en vez de compartirlo. */
     #storefront-main .premium-hero:has(.ph-arrow) .premium-hero-copy.is-left{padding-left:56px!important}
@@ -3933,7 +4048,27 @@
     #storefront-main .promo-cta,#storefront-main .home-see-all{border-radius:var(--r-btn)!important;font-size:14px!important;font-weight:700!important}
     #storefront-main .button{min-height:44px!important}
     /* Espaciado de seccion unico: habia tiendas a 68 y otras a 46. */
-    #storefront-main > section:not(.premium-hero):not(.trust-section){padding-block:56px!important}
+    /* El aire entre secciones lo elige el negocio en el Constructor
+       (`section_spacing`). Estaba clavado a 56px con `!important` y, por ser
+       un selector de id, ganaba siempre a `body.section-spacing-*`: mover el
+       control no cambiaba nada en la tienda. Ahora el 56 es solo el valor por
+       defecto de la variable, que cada modo redefine mas abajo. */
+    #storefront-main{--sec-aire:56px}
+    /* El pie arrancaba a 46px del contenido y sin aire propio por dentro: la
+       ultima seccion y los enlaces del pie quedaban pegados. Respira lo mismo
+       que las secciones. */
+    .site-footer{padding-top:var(--sec-aire,56px)}
+    /* La franja de beneficios va PEGADA bajo el hero: con el aire completo
+       (68px) se leia como una banda blanca vacia entre la foto y las tarjetas.
+       Se apunta por clase y no con `+`, porque el orden visual lo decide
+       `order` de CSS mientras que `+` mira el orden del DOM: ahi el hermano
+       inmediato del hero es otra seccion, asi que la regla no llegaba a
+       aplicarse nunca. */
+    #storefront-main > section.trust-section{padding-top:calc(var(--sec-aire,56px) / 2)!important}
+    #storefront-main > section:not(.premium-hero):not(.trust-section){padding-block:var(--sec-aire)!important}
+    body.section-spacing-compact #storefront-main{--sec-aire:42px}
+    body.section-spacing-comfortable #storefront-main{--sec-aire:68px}
+    body.section-spacing-dense #storefront-main{--sec-aire:clamp(26px,3.2vw,46px)}
     /* Peso 900 fuera: junto al 800 no se distingue y endurece la marca. */
     #storefront-main [style*="font-weight:900"],#storefront-main .fw-900{font-weight:800!important}
     @unless($heroCaps)
@@ -4484,8 +4619,12 @@
        fila; a la derecha, la tarjeta de promociones en el azul corporativo. */
     #storefront-main .hc-tiles-wrap{display:grid; grid-template-columns:1fr; gap:18px; align-items:stretch}
     #storefront-main .hc-tiles-wrap.has-promo{grid-template-columns:minmax(0,1fr) 250px}
+    /* `center` y no `start`: cuando las categorias caben en una sola fila,
+       `start` las pegaba arriba y dejaba un hueco blanco de ~74px frente a la
+       tarjeta de promocion, que es mas alta. Con varias filas se comporta
+       igual que antes, porque entonces la rejilla ya llena el alto. */
     #storefront-main .hc-tiles{
-        display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:12px 10px; align-content:start;
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:12px 10px; align-content:center;
     }
     #storefront-main .hc-tile{
         display:flex; flex-direction:column; align-items:center; gap:7px; min-width:0;
@@ -4497,8 +4636,15 @@
         transition:transform .2s ease, border-color .2s ease, background .2s ease, color .2s ease;
     }
     #storefront-main .hc-tile-ico svg{width:40px; height:40px}
-    #storefront-main .hc-tile-ico.has-img{padding:8px; overflow:hidden}
-    #storefront-main .hc-tile-ico.has-img img{width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply}
+    /* Con imagen propia el icono manda: sin caja gris ni recuadro, y ocupando
+       toda la casilla. Con el padding y el fondo de la version por defecto, un
+       icono circular quedaba pequeno y flotando en un cuadro vacio. */
+    #storefront-main .hc-tile-ico.has-img{
+        padding:0; overflow:hidden; background:transparent; border:0; border-radius:50%;
+    }
+    #storefront-main .hc-tile-ico.has-img img{width:100%; height:100%; object-fit:cover; mix-blend-mode:normal}
+    #storefront-main .hc-tile:has(.has-img) .hc-tile-ico{width:104px; height:104px}
+    @media (max-width:640px){#storefront-main .hc-tile:has(.has-img) .hc-tile-ico{width:78px; height:78px}}
     #storefront-main .hc-tile strong{font-size:12.5px; font-weight:600; line-height:1.25; color:var(--text-strong,#1f2937)}
     #storefront-main .hc-tile small{display:block; margin-top:-3px; font-size:11px; color:var(--muted,#6b7280)}
     @media (hover:hover){
@@ -4753,8 +4899,14 @@
         transition:transform .2s ease, box-shadow .2s ease;
     }
     @media (hover:hover){#storefront-main .promo-card:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(15,23,42,.09)}}
-    #storefront-main .promo-card-media{position:relative; display:grid; place-items:center; height:190px; padding:12px; background:#fff}
-    #storefront-main .promo-card-media img{max-width:100%; max-height:100%; object-fit:contain}
+    /* Caja de foto proporcional, no de alto fijo. Las fotos de producto son
+       cuadradas (1000x1000); en un hueco de 190px de alto y ~330px de ancho la
+       imagen se apoyaba en el ancho, crecia a 330px de alto y se comia el
+       cuerpo de la tarjeta: en portada solo asomaba la ultima linea de la
+       descripcion, como texto suelto. Con aspect-ratio la caja acompana a la
+       columna y la foto cabe entera, siempre. */
+    #storefront-main .promo-card-media{position:relative; display:grid; place-items:center; aspect-ratio:1/1; max-height:260px; padding:14px; background:#fff; overflow:hidden}
+    #storefront-main .promo-card-media img{width:100%; height:100%; object-fit:contain}
     #storefront-main .promo-card-noimg{color:var(--muted,#94a3b8); font-size:12px}
     #storefront-main .promo-card-tag{
         position:absolute; top:10px; left:10px; padding:4px 9px; border-radius:6px;
@@ -4777,7 +4929,17 @@
     #storefront-main .promo-card-add svg{width:16px; height:16px}
     @media (hover:hover){#storefront-main .promo-card-add:hover{filter:brightness(.93); transform:translateY(-1px)}}
     #storefront-main .promo-cards-wrap.has-side{display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:16px; align-items:stretch}
-    #storefront-main .promo-cards-wrap.has-side .promo-cards-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    /* Las tarjetas no se estiran para rellenar: con 3 promociones en 1078px
+       salian a 349px cada una, un 43% mas anchas que las del catalogo (244px)
+       y con la misma foto dentro, asi que se veian infladas. Se les pone un
+       ancho maximo sano y la fila se queda alineada a la izquierda. */
+    #storefront-main .promo-cards-wrap.has-side .promo-cards-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+    /* El ancho se acota en la CAJA, no en cada columna: asi las tarjetas
+       reparten un espacio razonable y no queda un hueco suelto entre la
+       ultima y el bloque lateral. */
+    #storefront-main .promo-cards-wrap.has-side{grid-template-columns:minmax(0,860px) 250px; justify-content:space-between}
     #storefront-main .promo-side{
         position:relative; display:flex; flex-direction:column; justify-content:space-between; gap:18px; padding:22px; border-radius:14px; overflow:hidden; color:#fff;
         background:linear-gradient(160deg, color-mix(in srgb, var(--secondary,#1c1917) 86%, #1d4ed8), var(--secondary,#1c1917));
@@ -4804,7 +4966,7 @@
     @media (max-width:640px){#storefront-main .promo-side{flex-direction:column; align-items:stretch}
         #storefront-main .promo-side-list{grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px}
         #storefront-main .promo-side-list li{padding:8px 4px; font-size:10.5px}}
-    @media (max-width:640px){#storefront-main .promo-cards-grid{gap:10px} #storefront-main .promo-card-media{height:150px}
+    @media (max-width:640px){#storefront-main .promo-cards-grid{gap:10px} #storefront-main .promo-card-media{max-height:200px}
         #storefront-main .promo-cards-section{padding:28px 0}}
 
     /* ═══ Resultados de busqueda ═══ */
@@ -4895,6 +5057,56 @@
     }
     @media (max-width:640px){#storefront-main .marca-head{gap:12px}
         #storefront-main .marca-head-logo{width:88px; height:60px}}
+
+    /* ═══ Cambiar de marca ═══
+       Dentro de una marca no habia salida lateral: para ver otra tocaba
+       retroceder o rehacer el camino por el menu. Las demas marcas van aqui,
+       con su logo, y en una fila que se desplaza a lo ancho si no caben. */
+    #storefront-main .marca-switch{
+        display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+        margin-top:14px; padding-top:14px; border-top:1px solid var(--border,#e2e8f0);
+    }
+    #storefront-main .marca-switch-et{font-size:12.5px; font-weight:700; color:var(--muted,#64748b); flex-shrink:0}
+    #storefront-main .marca-switch-lista{display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0}
+    #storefront-main .marca-switch-lista a{
+        display:grid; place-items:center; height:42px; min-width:74px; padding:6px 12px;
+        border:1px solid var(--border,#e2e8f0); border-radius:10px; background:#fff;
+        text-decoration:none; color:var(--text,#475569); font-size:12px; font-weight:700;
+        transition:border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+    #storefront-main .marca-switch-lista a:hover{
+        border-color:var(--primary); box-shadow:0 6px 16px rgba(15,23,42,.1); transform:translateY(-2px);
+    }
+    #storefront-main .marca-switch-lista img{max-width:62px; max-height:28px; object-fit:contain}
+    #storefront-main .marca-switch-todas{color:var(--primary)!important}
+    @media (max-width:640px){
+        /* En movil se desplaza de lado en vez de apilar ocho filas. */
+        #storefront-main .marca-switch{gap:8px}
+        #storefront-main .marca-switch-lista{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px}
+        #storefront-main .marca-switch-lista::-webkit-scrollbar{display:none}
+        #storefront-main .marca-switch-lista a{flex:0 0 auto; height:38px; min-width:66px}
+    }
+
+    /* ═══ Favoritos ═══
+       El corazon de guardar, arriba a la derecha de la foto. Lo llevan casi
+       todas las tiendas del rubro; sin el, quien duda se va y no vuelve. */
+    #storefront-main .catalog-fav{
+        position:absolute; top:8px; right:8px; z-index:3;
+        width:34px; height:34px; display:grid; place-items:center;
+        border:0; border-radius:50%; cursor:pointer;
+        background:rgba(255,255,255,.92); box-shadow:0 2px 8px rgba(15,23,42,.14);
+        transition:transform .16s ease, background .16s ease;
+    }
+    #storefront-main .catalog-fav svg{width:18px; height:18px; fill:none; stroke:#64748b; stroke-width:1.9}
+    #storefront-main .catalog-fav:hover{transform:scale(1.09); background:#fff}
+    #storefront-main .catalog-fav.is-on svg{fill:#e11d48; stroke:#e11d48}
+    #storefront-main .catalog-fav.is-on{background:#fff}
+    /* En movil el corazon es tactil: 40px para el dedo. */
+    @media (max-width:640px){
+        #storefront-main .catalog-fav{width:40px; height:40px; top:6px; right:6px}
+        #storefront-main .catalog-fav svg{width:20px; height:20px}
+    }
+    @media (prefers-reduced-motion: reduce){ #storefront-main .catalog-fav{transition:none} }
 
     /* ═══ Marca en la tarjeta ═══
        Junto a la categoria, alineada a la derecha. El comprador de ferreteria
@@ -5524,7 +5736,7 @@
                         @if($sl['sub'] ?: $heroSubtitle)<p class="ph-sub">{{ $sl['sub'] ?: $heroSubtitle }}</p>@endif
                         @if(($sl['cta1Show'] && $sl['cta1Text']) || ($sl['cta2Show'] && $sl['cta2Text'] && $sl['cta2Url']))
                         <div class="hero-actions">
-                            @if($sl['cta1Show'] && $sl['cta1Text'])<a class="button button-primary" data-rotulo-fijo href="{{ $sl['cta1Url'] ?: '#catalogo' }}">{{ $sl['cta1Text'] }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
+                            @if($sl['cta1Show'] && $sl['cta1Text'])<a class="button button-primary" data-rotulo-fijo href="{{ $sl['cta1Url'] ?: $shopUrl }}">{{ $sl['cta1Text'] }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
                             @if($sl['cta2Show'] && $sl['cta2Text'] && $sl['cta2Url'])<a class="button button-ghost" data-rotulo-fijo href="{{ $sl['cta2Url'] }}" @if(str_starts_with($sl['cta2Url'],'http')) target="_blank" rel="noopener" @endif>{{ $sl['cta2Text'] }}</a>@endif
                         </div>
                         @endif
@@ -5554,7 +5766,7 @@
                     <h1 class="ph-title">{!! $heroTitleHtml($heroTitle) !!}</h1>
                     <p class="ph-sub">{{ $heroSubtitle }}</p>
                     <div class="hero-actions">
-                        @if($heroCtaVisible)<a class="button button-primary" data-rotulo-fijo href="{{ trim($settings['hero_slide_1_cta1_url'] ?? '') ?: '#catalogo' }}">{{ $heroCta }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
+                        @if($heroCtaVisible)<a class="button button-primary" data-rotulo-fijo href="{{ trim($settings['hero_slide_1_cta1_url'] ?? '') ?: $shopUrl }}">{{ $heroCta }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 6l6 6-6 6"></path></svg></a>@endif
                         {{-- CTA secundario: enlace propio si está configurado; si no, WhatsApp --}}
                         @php $heroCta2Url = trim($settings['hero_slide_1_cta2_url'] ?? ''); @endphp
                         @if($contactCtaVisible && ($heroCta2Url !== '' || $whatsapp))
@@ -6466,6 +6678,33 @@
                                 @endif
                             </div>
                         </div>
+                        {{-- Cambiar de marca sin volver atras: estando dentro de una
+                             marca, la unica salida era el navegador o rehacer el
+                             camino por el menu. Se listan las demas aqui mismo. --}}
+                        @php
+                            $abOtras = collect($catalogBrands ?? [])
+                                ->filter(fn ($m) => (int) data_get($m, 'id') !== (int) $activeBrand->id)
+                                ->values();
+                            // La base de la tienda, sin el "/tienda" final. Con rtrim
+                            // se irian tambien las letras finales del slug, que borra
+                            // CARACTERES y no un sufijo.
+                            $abBase = \Illuminate\Support\Str::beforeLast($shopUrl, '/tienda');
+                        @endphp
+                        @if($abOtras->isNotEmpty())
+                        <nav class="marca-switch" aria-label="Otras marcas">
+                            <span class="marca-switch-et">Ver otra marca:</span>
+                            <div class="marca-switch-lista">
+                                @foreach($abOtras as $m)
+                                @php $mSw = data_get($m, 'image_url') ? $assetUrl(data_get($m, 'image_url')) : null; @endphp
+                                <a href="{{ $abBase }}/marca/{{ data_get($m, 'slug') }}" title="{{ data_get($m, 'label') }}">
+                                    @if($mSw)<img src="{{ $mSw }}" alt="{{ data_get($m, 'label') }}" loading="lazy">
+                                    @else<span>{{ data_get($m, 'label') }}</span>@endif
+                                </a>
+                                @endforeach
+                                <a class="marca-switch-todas" href="{{ $abBase }}/marcas">Todas</a>
+                            </div>
+                        </nav>
+                        @endif
                         @else
                         <h1 class="catalog-h1" @if(empty($activeProfile)) x-text="activeFilterLabel" @endif>{{ !empty($activeProfile) ? ($activeProfile->hero_title ?: $activeProfile->name) : 'Todos los productos' }}</h1>
                         @endif
@@ -6486,6 +6725,20 @@
                 <aside class="catalog-filter-panel" aria-label="Filtros del catálogo">
                     <div class="catalog-filter-header"><strong>Filtros</strong><button class="catalog-clear" type="button" @click="clearAllFilters()" :disabled="!hasActiveFilters">Limpiar todo</button></div>
                     <x-computienda.catalog-filters :sin-precio="$quoteMode" :categories="$categoriasFiltro" :catalog-products="$catalogProducts" :profile-links="$perfilPorCategoria" :facets="$catalogFacets ?? collect()" :brands="$catalogBrands ?? collect()" :brand-map="$catalogBrandMap ?? []" filter-scope="desktop" />
+                    @if($catalogSideLatest && !empty($newArrivals) && count($newArrivals))
+                    {{-- Ultimos ingresos al pie de la columna de filtros: aprovecha el
+                         hueco que ya existe bajo los filtros en vez de abrir otra
+                         columna. Solo en escritorio; en movil el panel no se pinta. --}}
+                    <div class="cat-side-latest">
+                        <strong class="cat-side-title">Últimos productos</strong>
+                        @foreach($newArrivals->take(4) as $np)
+                        <a class="cat-side-item" href="{{ \App\Support\ImageVariants::productUrl($project, $np->id, $np->name) }}">
+                            <span class="cat-side-img">@if($np->main_image_url)<img src="{{ $np->main_image_url }}" alt="{{ $np->name }}" loading="lazy">@endif</span>
+                            <span class="cat-side-txt">{{ \Illuminate\Support\Str::limit($np->name, 46) }}</span>
+                        </a>
+                        @endforeach
+                    </div>
+                    @endif
                 </aside>
 
                 <div class="catalog-results" x-data="catalogBrowser({ endpoint: {{ Js::from(\App\Modules\Tienda\Support\StorefrontNavigation::shopUrl($project)) }}, total: {{ $catalogPage->total() }}, hasMore: {{ $catalogPage->hasMorePages() ? 'true' : 'false' }}, lastPage: {{ $catalogPage->lastPage() }}, perPage: {{ $catalogPage->perPage() }}, startPage: {{ $catalogPage->currentPage() }} })" x-init="init()">
@@ -6503,6 +6756,20 @@
                         <button class="catalog-chip catalog-chip-neutral" type="button" @click="clearAllFilters()">Limpiar todo</button>
                     </div>
 
+                    @if($catalogTabs)
+                    {{-- Pestanas de orden rapido (patron de las tiendas grandes): son
+                         atajos del mismo `sort` que ya usa el desplegable, no una
+                         segunda forma de ordenar. Por eso se marcan leyendo `sort`. --}}
+                    <div class="catalog-tabs" role="tablist" aria-label="Ordenar catálogo">
+                        @foreach(['recommended' => 'Populares', 'newest' => 'Novedades', 'price_asc' => 'Menor precio'] as $tabKey => $tabLabel)
+                        <button type="button" role="tab" class="catalog-tab"
+                                :class="sort === '{{ $tabKey }}' ? 'is-on' : ''"
+                                :aria-selected="sort === '{{ $tabKey }}' ? 'true' : 'false'"
+                                @click="sort = '{{ $tabKey }}'; applyFilters()">{{ $tabLabel }}</button>
+                        @endforeach
+                    </div>
+                    @endif
+
                     <div class="catalog-results-head">
                         <div class="catalog-results-count" aria-live="polite"><strong x-text="total">{{ $catalogPage->total() }}</strong> productos</div>
                         <div class="catalog-results-tools">
@@ -6516,7 +6783,14 @@
                             <template x-if="!serverRendered">
                                 <template x-for="product in products" :key="product.id">
                                     <article class="catalog-card">
-                                        <div class="catalog-card-media" :class="!product.image && 'is-noimg'" @if($marcaAgua) style="--card-marca:url('{{ $marcaAgua }}');--card-marca-op:{{ $marcaOpacidad }}"@endif>
+                                        <div class="catalog-card-media" :class="!product.image && 'is-noimg'" @if($marcaEstilo) style="{{ $marcaEstilo }}"@endif>
+                                            <button type="button" class="catalog-fav" :class="{'is-on': esFav(product.id)}"
+                                                @click.prevent.stop="alternarFav(product.id)"
+                                                :aria-pressed="esFav(product.id) ? 'true' : 'false'"
+                                                :aria-label="esFav(product.id) ? 'Quitar de favoritos' : 'Guardar en favoritos'"
+                                                title="Guardar en favoritos">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.4-9.6 9-9.6 9Z"/></svg>
+                                            </button>
                                             {{-- Descuento automático: todo producto con precio tachado
                                                  se marca solo, sin configurar nada. La rejilla del
                                                  catálogo era la única que no lo pintaba: 10 productos
@@ -6548,12 +6822,23 @@
                                         <div class="catalog-card-body">
                                             <span class="catalog-card-category" x-text="product.category"></span><template x-if="product.marca"><span class="catalog-card-brand" x-text="product.marca"></span></template>
                                             <a class="catalog-card-name" :href="product.url" @click="qvMobile($event, product)" x-text="product.name"></a>
+                                            @if($productCardStyle === 'comercial')<template x-if="product.sku"><span class="pc-com-sku">SKU: <b x-text="product.sku"></b></span></template>@endif
                                             @if($productCardStyle === 'pro')
                                             <div class="pc-pro-meta">
                                                 <template x-if="product.sku"><span>Código: <b x-text="product.sku"></b></span></template>
                                                 <template x-if="product.unit && product.unit !== 'unidad'"><span x-text="product.unit"></span></template>
                                             </div>
-                                            <div class="pc-pro-disp" :class="(!{{ $quoteMode ? 'true' : 'false' }} && product.stock===0) ? 'is-off' : ''"><i></i><span x-text="(!{{ $quoteMode ? 'true' : 'false' }} && product.stock===0) ? {{ Js::from($settings['catalog_badge_sold_out'] ?? 'Agotado') }} : {{ Js::from($txtDisponible) }}"></span></div>
+                                            {{-- En una tienda a cotizacion todo esta "disponible": esa
+                                                 etiqueta, repetida en las doce tarjetas, no distinguia
+                                                 nada. Si el producto tiene precio por volumen, aqui va
+                                                 desde cuantas unidades entra: es lo que el contratista
+                                                 mira antes de pedir. Sin mayorista, la etiqueta de siempre. --}}
+                                            <template x-if="{{ $quoteMode ? 'true' : 'false' }} && product.wholesaleMinQty > 1">
+                                                <div class="pc-pro-disp pc-pro-mayor"><i></i><span>Precio por volumen desde <b x-text="product.wholesaleMinQty"></b> <span x-text="plural(product.wholesaleUnit || 'unidades', product.wholesaleMinQty)"></span></span></div>
+                                            </template>
+                                            <template x-if="!({{ $quoteMode ? 'true' : 'false' }} && product.wholesaleMinQty > 1)">
+                                                <div class="pc-pro-disp" :class="(!{{ $quoteMode ? 'true' : 'false' }} && product.stock===0) ? 'is-off' : ''"><i></i><span x-text="(!{{ $quoteMode ? 'true' : 'false' }} && product.stock===0) ? {{ Js::from($settings['catalog_badge_sold_out'] ?? 'Agotado') }} : {{ Js::from($txtDisponible) }}"></span></div>
+                                            </template>
                                             @endif
                                             @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">{{ $txtPrecioConsul }}</span></div>@else
                                             @if($pcMode==='auto')
@@ -6633,7 +6918,16 @@
                                      sin JS la tarjeta se ve igual (SEO intacto) y con JS el
                                      selector de color puede reemplazarla en el sitio. --}}
                                 <article class="catalog-card" x-data="{ vp: {{ Js::from($card) }} }">
-                                    <div class="catalog-card-media{{ $card['image'] ? '' : ' is-noimg' }}" @if($marcaAgua) style="--card-marca:url('{{ $marcaAgua }}');--card-marca-op:{{ $marcaOpacidad }}"@endif>
+                                    <div class="catalog-card-media{{ $card['image'] ? '' : ' is-noimg' }}" @if($marcaEstilo) style="{{ $marcaEstilo }}"@endif>
+                                        {{-- Guardar en favoritos. Esta es la tarjeta que pinta el
+                                             SERVIDOR, que es la que ve el visitante: las otras dos
+                                             ramas solo entran cuando Alpine repinta la rejilla. --}}
+                                        <button type="button" class="catalog-fav" :class="{'is-on': esFav({{ $card['id'] }})}"
+                                                @click.prevent.stop="alternarFav({{ $card['id'] }})"
+                                                :aria-pressed="esFav({{ $card['id'] }}) ? 'true' : 'false'"
+                                                aria-label="Guardar en favoritos" title="Guardar en favoritos">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.4-9.6 9-9.6 9Z"/></svg>
+                                        </button>
                                         @php $cDesc = (!empty($card['comparePrice']) && $card['comparePrice'] > $card['price']) ? (int) round((1 - $card['price'] / max(0.01, (float) $card['comparePrice'])) * 100) : 0; @endphp
                                         @if($cDesc > 0)<span class="catalog-discount">-{{ $cDesc }}%</span>@endif
                                         <x-etiquetas-producto :etiquetas="$card['etiquetas'] ?? []" />
@@ -6647,13 +6941,24 @@
                                     <div class="catalog-card-body">
                                         <span class="catalog-card-category">{{ $card['category'] }}</span>@if(!empty($card['marca']))<span class="catalog-card-brand">{{ $card['marca'] }}</span>@endif
                                         <a class="catalog-card-name" href="{{ $card['url'] }}" :href="vp.url" @click="qvMobile($event, vp)">{{ $card['name'] }}</a>
+                                        @if($productCardStyle === 'comercial' && !empty($card['sku']))<span class="pc-com-sku">SKU: <b>{{ $card['sku'] }}</b></span>@endif
                                         @if($productCardStyle === 'pro')
                                         <div class="pc-pro-meta">
                                             @if(!empty($card['sku']))<span>Código: <b>{{ $card['sku'] }}</b></span>@endif
                                             @if(!empty($card['unit']) && $card['unit'] !== 'unidad')<span>{{ $card['unit'] }}</span>@endif
                                         </div>
-                                        @php $cAgotado = !$quoteMode && (int) ($card['stock'] ?? 1) === 0; @endphp
+                                        @php
+                                            $cAgotado = !$quoteMode && (int) ($card['stock'] ?? 1) === 0;
+                                            /* Sin mirar el precio: en una tienda a cotizacion el mayorista
+                                               no viaja al navegador (es confidencial) y la condicion nunca
+                                               se cumplia. El minimo de volumen si es publico. */
+                                            $cMayor   = $quoteMode && (int) ($card['wholesaleMinQty'] ?? 1) > 1;
+                                        @endphp
+                                        @if($cMayor)
+                                        <div class="pc-pro-disp pc-pro-mayor"><i></i><span>Precio por volumen desde <b>{{ (int) $card['wholesaleMinQty'] }}</b> {{ (int) $card['wholesaleMinQty'] === 1 ? ($card['wholesaleUnit'] ?? 'unidad') : \App\Support\Plural::de($card['wholesaleUnit'] ?? 'unidades') }}</span></div>
+                                        @else
                                         <div class="pc-pro-disp{{ $cAgotado ? ' is-off' : '' }}"><i></i><span>{{ $cAgotado ? ($settings['catalog_badge_sold_out'] ?? 'Agotado') : $txtDisponible }}</span></div>
+                                        @endif
                                         @endif
                                         @if($hidePrices)<div class="catalog-card-prices"><span class="quote-price">{{ $txtPrecioConsul }}</span></div>@else
                                         @if($pcMode==='auto')
@@ -6683,7 +6988,7 @@
                                             @if($pcShowCart && $pcCartStyle!=='inline')<button type="button" class="buy-add buy-add--{{ $pcCartStyle }}" @click.prevent.stop="addSmart(p,q)">{{ $cartText }}</button>@endif
                                         </div>
                                         @else
-                                        @if(!($wholesale && !empty($card['wholesalePrice'])))<div class="catalog-card-prices"><span class="catalog-card-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['price'],2) }}</span>@if($card['comparePrice'])<span class="catalog-card-compare">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['comparePrice'],2) }}</span>@endif @if(!empty($card['hasTax']))<span class="catalog-card-tax-note">Incluye IGV</span>@endif</div>@endif
+                                        @if(!($wholesale && !empty($card['wholesalePrice'])))<div class="catalog-card-prices">{{-- Un precio ausente NO es cero: en cotizacion el motor manda null y number_format lo pintaba como "S/ 0.00" en todo el catalogo. --}}<span class="catalog-card-price">@if(($card['price'] ?? null) === null){{ $txtPrecioConsul }}@else{{ $currencySymbol ?? 'S/' }} {{ number_format($card['price'],2) }}@endif</span>@if($card['comparePrice'])<span class="catalog-card-compare">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['comparePrice'],2) }}</span>@endif @if(!empty($card['hasTax']))<span class="catalog-card-tax-note">Incluye IGV</span>@endif</div>@endif
                                         @if($wholesale && !empty($card['wholesalePrice']))<div class="buy-block buy-block--retail" x-data="{ q:1 }">
                                             <div class="buy-head"><span class="buy-tag">{{ $txtMinorista }}</span><span class="buy-price">{{ $currencySymbol ?? 'S/' }} {{ number_format($card['price'],2) }}</span></div>
                                             <small class="buy-min">{{ $txtPorUnidad }}</small>
@@ -7459,7 +7764,14 @@
                     @foreach($relatedProducts as $rp)
                     @php $rpImg = $rp->mainImage?->url ? \App\Support\Imagen\Img::deAncho($assetUrl($rp->mainImage->url), 400) : null; $rpUrl = \App\Support\ImageVariants::productUrl($project, $rp->id, $rp->name); @endphp
                     <article class="catalog-card">
-                        <div class="catalog-card-media" @if($marcaAgua) style="--card-marca:url('{{ $marcaAgua }}');--card-marca-op:{{ $marcaOpacidad }}"@endif>
+                        <div class="catalog-card-media" @if($marcaEstilo) style="{{ $marcaEstilo }}"@endif>
+                            <button type="button" class="catalog-fav" :class="{'is-on': esFav({{ $rp->id }})}"
+                                                @click.prevent.stop="alternarFav({{ $rp->id }})"
+                                                :aria-pressed="esFav({{ $rp->id }}) ? 'true' : 'false'"
+                                                :aria-label="esFav({{ $rp->id }}) ? 'Quitar de favoritos' : 'Guardar en favoritos'"
+                                                title="Guardar en favoritos">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.4-9.6 9-9.6 9Z"/></svg>
+                                            </button>
                             <a class="catalog-card-media-link" href="{{ $rpUrl }}" aria-label="Ver {{ $rp->name }}">
                                 @if($rpImg)<img src="{{ $rpImg }}" alt="{{ $rp->name }}" loading="lazy">@else<svg class="catalog-card-placeholder" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg><span class="ph-note">{{ $txtSinFoto }}</span>@endif
                             </a>
@@ -8026,7 +8338,7 @@
                                         <button class="ck-qtybtn" @click="increase(item.id,item.talla)">+</button>
                                     </div>
                                 </div>
-                                <span style="font-size:14px;font-weight:700;white-space:nowrap" x-text="money(item.precio*item.cantidad)"></span>
+                                <span style="font-size:14px;font-weight:700;white-space:nowrap" x-text="money(item.precio===null||item.precio===undefined?null:item.precio*item.cantidad)"></span>
                             </div>
                         </template>
                         <div class="ck-sum-row"><span>Subtotal</span><span x-text="money(total())"></span></div>
@@ -8252,7 +8564,7 @@
                                         <button class="cart-line-remove" type="button" @click="remove(item.id,item.talla)">Eliminar</button>
                                     </div>
                                 </div>
-                                <div class="cart-line-price" x-text="money(item.precio*item.cantidad)"></div>
+                                <div class="cart-line-price" x-text="money(item.precio===null||item.precio===undefined?null:item.precio*item.cantidad)"></div>
                             </div>
                         </template>
                     </div>
@@ -8706,7 +9018,13 @@
                     window.location=base.replace(/\/tienda$/,'/buscar')+'?q='+encodeURIComponent(q);
                 },
                 filterCats:[],
-                filterBrands:[],
+                /* Entrando por /marca/{slug} el servidor YA filtro (el HTML trae
+                   solo esa marca), pero Alpine arrancaba con la lista vacia y al
+                   hidratar volvia a pedir el catalogo ENTERO: dentro de 3M se
+                   leia "136 productos" y la rejilla mostraba Opalux, Pavco y
+                   Schneider. Se siembra con la marca activa para que cliente y
+                   servidor partan del mismo filtro. */
+                filterBrands:@js(!empty($activeBrand) ? [(string) $activeBrand->id] : []),
                 brandMap: {{ Js::from($catalogBrandMap ?? []) }},
                 filterSubCats:[],
                 filterInStock:false,
@@ -8721,6 +9039,19 @@
                 soldOutText:@js($settings['catalog_badge_sold_out'] ?? 'Agotado'),
                 cartButtonText:@js($quoteMode ? $quoteBtnText : $cartText),
                 cart:[],
+                /* FAVORITOS. Lo llevan casi todas las tiendas del rubro
+                   (biocenter, sassari, equilibrio): el cliente guarda lo que
+                   le gusto y vuelve. Se conserva en el navegador, igual que
+                   el carrito, y no necesita cuenta ni servidor. */
+                favs:[],
+                esFav(id){ return this.favs.includes(Number(id)); },
+                alternarFav(id){
+                    id = Number(id);
+                    const i = this.favs.indexOf(id);
+                    if (i >= 0) this.favs.splice(i, 1); else this.favs.push(id);
+                    try { localStorage.setItem(@js('bixo_store_favs_'.$project->id), JSON.stringify(this.favs)); } catch(e) {}
+                },
+                get totalFavs(){ return this.favs.length; },
                 qv:null, qvSize:null, qvSizeError:false, qvColor:null, qvColorError:false,
 
                 init(){
@@ -8730,6 +9061,11 @@
                     } catch(e) {
                         this.cart=[];
                     }
+                    // Favoritos guardados de visitas anteriores.
+                    try {
+                        const f=JSON.parse(localStorage.getItem(@js('bixo_store_favs_'.$project->id))||'[]');
+                        this.favs=Array.isArray(f)?f.map(Number):[];
+                    } catch(e) { this.favs=[]; }
                     this.maxPrice=Math.ceil((Number(COMPUTIENDA_MAX_PRICE)||1000)/10)*10;
                     this.priceMax=this.maxPrice;
                     this.$watch('cart',value=>localStorage.setItem(key,JSON.stringify(value)),{deep:true});
@@ -8751,8 +9087,13 @@
                         if(cids.length) this.applyCategoryFromUrl(String(cids[0]));
                         // Marca desde la URL: es como entra el visitante que
                         // pulsa una marca en la banda de la portada.
-                        this.filterBrands = params.getAll('brand[]').concat(params.getAll('brand'))
+                        /* Solo si la URL trae marca. En /marca/{slug} la marca va
+                           en la RUTA, no en la query: sobrescribir aqui dejaba la
+                           lista vacia y borraba la marca ya sembrada, asi que la
+                           pagina de 3M acababa mostrando el catalogo entero. */
+                        const marcasUrl = params.getAll('brand[]').concat(params.getAll('brand'))
                             .filter(v=>/^\d+$/.test(v));
+                        if(marcasUrl.length) this.filterBrands = marcasUrl;
                         Object.keys(this.filterAttributes).forEach(attributeId => {
                             this.filterAttributes[attributeId] = params.getAll(`attribute[${attributeId}][]`);
                         });
@@ -8944,8 +9285,13 @@
                     variantId=variantId||null;
                     extra=extra||{};
                     const row=this.cart.find(item=>String(item.id)===String(id)&&(item.talla||'')===talla&&String(item.variantId||'')===String(variantId||''));
+                    /* `Number(null)` es 0, y ahi un precio DESCONOCIDO se volvia
+                       cero: la cotizacion mostraba "S/ 0.00" por linea y total.
+                       Se conserva el vacio como vacio para que money() lo pinte
+                       como "a solicitud". */
+                    const _p = (precio===null||precio===undefined||precio==='') ? null : Number(precio);
                     if(row){row.cantidad++;this._retarifar(row)}
-                    else this.cart.push({id,nombre,precio:Number(precio),base:Number(precio),cantidad:1,
+                    else this.cart.push({id,nombre,precio:_p,base:_p,cantidad:1,
                         imagen:imagen||'',categoria:categoria||'',talla,variantId,
                         // Datos B2B de la linea: en una cotizacion se pide por codigo y
                         // marca, no solo por nombre.
@@ -8986,8 +9332,45 @@
                 decrease(id,talla){const row=this._line(id,talla);if(!row)return;row.cantidad--;if(row.cantidad<=0){this.remove(id,talla);return}this._retarifar(row)},
                 remove(id,talla){this.cart=this.cart.filter(item=>!(String(item.id)===String(id)&&(item.talla||'')===(talla||'')))},
                 itemCount(){return this.cart.reduce((sum,item)=>sum+Number(item.cantidad||0),0)},
-                total(){return this.cart.reduce((sum,item)=>sum+Number(item.precio||0)*Number(item.cantidad||0),0)},
-                money(value){return @js($currency)+' '+Number(value||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2})},
+                /* Sin ningun precio real en el carrito el total no es CERO, es
+                   desconocido: devolver 0 imprimia "S/ 0.00" como total de la
+                   cotizacion. Devuelve null y money() lo pinta como consulta. */
+                total(){
+                    const conPrecio = this.cart.some(i => i.precio !== null && i.precio !== undefined && i.precio !== '');
+                    if(@js($hidePrices) && !conPrecio) return null;
+                    return this.cart.reduce((sum,item)=>sum+Number(item.precio||0)*Number(item.cantidad||0),0);
+                },
+                /* Una tienda a cotizacion no publica precios, asi que el importe
+                   llega vacio. `Number(null||0)` lo convertia en 0 y el carrito
+                   mostraba "S/ 0.00" en cada linea y en el total, como si todo
+                   fuese gratis. Sin importe se dice que se consulta, que es lo
+                   que ya hace el catalogo. Un 0 de verdad (envio gratis) sigue
+                   imprimiendose, porque solo se descarta null/vacio. */
+                money(value){
+                    if(@js($hidePrices) && (value===null || value===undefined || value==='')) return @js($txtPrecioConsul);
+                    return @js($currency)+' '+Number(value||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+                },
+                /* Plural de la unidad de medida: sin esto las tarjetas decian
+                   "desde 12 Unidad". Solo se pluraliza la primera palabra, que
+                   las unidades traen complemento ("Rollo 100 m" -> "Rollos 100 m").
+                   Gemela de App\Support\Plural en el servidor. */
+                plural(unidad, cantidad){
+                    const u = String(unidad || '').trim();
+                    if (!u || Number(cantidad) === 1) return u;
+                    const invariables = ['m','cm','mm','km','kg','g','l','ml','m2','m3','und'];
+                    const partes = u.split(/\s+/);
+                    const nucleo = partes[0];
+                    const resto = partes.length > 1 ? ' ' + partes.slice(1).join(' ') : '';
+                    const bajo = nucleo.toLowerCase();
+                    if (invariables.includes(bajo)) return u;
+                    if (bajo.length > 2 && bajo.endsWith('s')) return u;
+                    const fin = bajo.slice(-1);
+                    let p;
+                    if (fin === 'z') p = nucleo.slice(0, -1) + 'ces';
+                    else if ('aeiou'.includes(fin)) p = nucleo + 's';
+                    else p = nucleo + 'es';
+                    return p + resto;
+                },
                 // Mismo gesto dentro de la vista rapida, donde ademas hay que
                 // dejar constancia del color para que llegue al pedido.
                 elegirColorQv(v){
@@ -9047,7 +9430,9 @@
                      envio por WhatsApp no es cierta, asi que el texto de coste cero
                      es configurable. Por defecto se mantiene "Gratis". --}}
                 get shippingLabel(){ return this.shippingCost>0 ? this.money(this.shippingCost) : @js(trim((string) ($settings['cart_shipping_zero_label'] ?? '')) ?: 'Gratis'); },
-                get checkoutTotal(){ return this.total() + this.shippingCost; },
+                /* `null + envio` daria un numero: si no hay precios, el total
+                   sigue siendo desconocido aunque haya costo de envio. */
+                get checkoutTotal(){ const t = this.total(); return t === null ? null : t + this.shippingCost; },
                 openCartPage(){ this.cartOpen=false; this.cartPageOpen=true; document.body.style.overflow=''; window.scrollTo({top:0}); },
                 aviso:{on:false,texto:'',t:null},
                 /* Aviso breve al agregar. Se reemplaza si llega otro antes de
