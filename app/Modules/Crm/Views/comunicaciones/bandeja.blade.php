@@ -48,9 +48,37 @@
         {{-- Pestañas: como WhatsApp (Todos / No leídos) y como un CRM (Mías / Sin asignar / Cerradas).
              Van en dos filas: en una sola, "Archivadas" quedaba fuera de la pantalla. --}}
         <div class="flex gap-1 mt-2 flex-wrap">
-            <template x-for="t in [['todas','Todas'],['sin_leer','No leídas'],['mias','Mías'],['sin_asignar','Sin asignar'],['cerradas','Cerradas'],['archivadas','Archivadas']]" :key="t[0]">
+            <template x-for="t in [['todas','Todas'],['sin_leer','No leídas']]" :key="t[0]">
                 <button @click="vista = t[0]"
                         :class="vista === t[0] ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        class="px-2.5 py-1 text-[11px] font-semibold rounded-full whitespace-nowrap transition-colors flex items-center gap-1">
+                    <span x-text="t[1]"></span>
+                    <span class="opacity-70" x-text="'(' + contarVista(t[0]) + ')'"></span>
+                </button>
+            </template>
+
+            {{-- Un filtro por estado, con el color que el negocio configuro.
+                 Antes habia pestanas fijas (Mias, Sin asignar, Cerradas) que
+                 quedaban en (0) o repetian el total, y no se podia filtrar por
+                 el estado, que es lo unico que se usa de verdad. Solo aparecen
+                 los estados que TIENEN chats. --}}
+            <template x-for="e in estadosConChats" :key="'f-'+e.clave">
+                <button @click="vista = 'estado:' + e.clave"
+                        :style="vista === 'estado:' + e.clave
+                                ? 'background:' + e.color + ';color:#fff'
+                                : 'background:' + e.color + '1f;color:' + e.color"
+                        class="px-2.5 py-1 text-[11px] font-semibold rounded-full whitespace-nowrap transition-colors flex items-center gap-1">
+                    <span x-text="e.nombre"></span>
+                    <span class="opacity-70" x-text="'(' + contarVista('estado:' + e.clave) + ')'"></span>
+                </button>
+            </template>
+
+            {{-- Estas viven al final y solo si tienen algo: en un negocio que no
+                 asigna conversaciones estaban siempre vacias ocupando sitio. --}}
+            <template x-for="t in [['mias','Mías'],['sin_asignar','Sin asignar'],['archivadas','Archivadas']]" :key="t[0]">
+                <button x-show="contarVista(t[0]) > 0 || vista === t[0]"
+                        @click="vista = t[0]"
+                        :class="vista === t[0] ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
                         class="px-2.5 py-1 text-[11px] font-semibold rounded-full whitespace-nowrap transition-colors flex items-center gap-1">
                     <span x-text="t[1]"></span>
                     <span class="opacity-70" x-text="'(' + contarVista(t[0]) + ')'"></span>
@@ -92,11 +120,14 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="text-sm font-semibold text-gray-900 truncate flex items-center gap-1">
-                                <span x-text="conv.cliente_nombre || conv.cliente_telefono"></span>
-                                <span x-show="conv.fijada" class="text-gray-400 text-[10px]" title="Fijado">📌</span>
+                            {{-- min-w-0: sin el, este span con `truncate` no cede
+                                 ancho y aplasta la fecha de la derecha hasta
+                                 dejarla en una rayita. Mismo caso que los pies. --}}
+                            <span class="text-sm font-semibold text-gray-900 truncate flex items-center gap-1 min-w-0">
+                                <span class="truncate" x-text="conv.cliente_nombre || conv.cliente_telefono"></span>
+                                <span x-show="conv.fijada" class="text-gray-400 text-[10px] flex-shrink-0" title="Fijado">📌</span>
                             </span>
-                            <span class="text-[10px] flex-shrink-0" :class="conv.no_leidos > 0 ? 'text-green-600 font-bold' : 'text-gray-400'" x-text="conv.tiempo"></span>
+                            <span class="text-[10px] flex-shrink-0 whitespace-nowrap tabular-nums" :class="conv.no_leidos > 0 ? 'text-green-600 font-bold' : 'text-gray-400'" x-text="conv.tiempo"></span>
                         </div>
                         <div class="flex items-center justify-between gap-2 mt-0.5">
                             <p class="text-xs text-gray-500 truncate flex items-center gap-1">
@@ -105,7 +136,18 @@
                                 </template>
                                 <template x-if="!borradorDe(conv)">
                                     <span class="truncate flex items-center gap-1">
-                                        <span x-show="conv.ultimo_direccion === 'saliente' || conv.ultimo_direccion === 'out'" class="text-gray-400">✓</span>
+                                        {{-- Mismo acuse que dentro del chat: la lista pintaba
+                                             un ✓ gris fijo y todos los chats se veian igual,
+                                             sin poder distinguir lo entregado de lo fallido. --}}
+                                        <span x-show="esSalienteConv(conv)"
+                                              x-text="acuseConv(conv)"
+                                              :class="conv.ultimo_estado === 'leido' ? 'text-sky-500'
+                                                    : (conv.ultimo_estado === 'fallido' || conv.ultimo_estado === 'pendiente') ? 'text-red-500'
+                                                    : 'text-gray-400'"
+                                              :title="conv.ultimo_estado === 'fallido' ? 'No se envio'
+                                                    : conv.ultimo_estado === 'pendiente' ? 'No se entrego'
+                                                    : conv.ultimo_estado === 'leido' ? 'Leido'
+                                                    : conv.ultimo_estado === 'entregado' ? 'Entregado' : 'Enviado'"></span>
                                         <span x-text="previewMensaje(conv)"></span>
                                     </span>
                                 </template>
@@ -454,6 +496,10 @@
                     <option :value="e.clave" x-text="e.nombre"></option>
                 </template>
             </select>
+            <template x-if="etapaAviso">
+                <p class="text-[11px] mt-1" x-text="etapaAviso.texto"
+                   :class="etapaAviso.ok ? 'text-green-600' : 'text-red-600 font-semibold'"></p>
+            </template>
         </div>
 
         {{-- Temperatura (IA) --}}
@@ -476,17 +522,12 @@
             </template>
         </div>
 
-        {{-- Etapa del pipeline --}}
-        <div x-show="lead">
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Etapa</p>
-            <select class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5" x-model="lead.etapa" @change="guardarEtapa()">
-                <option value="prospecto">Prospecto</option>
-                <option value="contactado">Contactado</option>
-                <option value="propuesta">Propuesta</option>
-                <option value="negociacion">Negociación</option>
-                <option value="ganado">Ganado</option>
-                <option value="perdido">Perdido</option>
-            </select>
+        {{-- La Etapa del embudo ya NO se elige aqui: el Estado de arriba la
+             arrastra (ver etapaDeEstado). Tener dos selectores que significaban
+             lo mismo dejaba al chat en "contactado" y al cliente en "propuesta".
+             Se muestra solo como lectura, para saber donde cae en el Pipeline. --}}
+        <div x-show="lead && lead.etapa" class="text-[11px] text-gray-400">
+            En el embudo: <span class="font-semibold text-gray-600" x-text="etapaNombre(lead.etapa)"></span>
         </div>
 
         {{-- Datos --}}
@@ -782,6 +823,8 @@ function bandeja() {
         conversaciones: CONVERSACIONES_INIT,
         convActiva: null,
         lead: null,
+        etapaAviso: null,      // resultado del ultimo guardado de etapa
+        etapaGuardada: null,   // etapa confirmada por el servidor (para revertir)
         mensajes: [],
         cargandoMensajes: false,
         enviando: false,
@@ -843,15 +886,33 @@ function bandeja() {
         contarVista(v) {
             return this.conversaciones.filter(c => this.enVista(c, v)).length;
         },
+        /* Estados que cierran el ciclo: no se listan en "Todas" para que la
+           bandeja muestre lo que sigue vivo. Antes estaba escrito a mano
+           ['cerrado','perdido'] y 'cerrado' NO existe entre los estados que
+           configura el negocio, asi que ese filtro nunca encontraba nada. */
+        estadoCierra(estado) {
+            return ['cerrado', 'perdido', 'venta', 'ganado', 'no_responde'].includes(estado);
+        },
+
         enVista(c, v) {
-            const cerrada = ['cerrado', 'perdido'].includes(c.estado);
+            const cerrada = this.estadoCierra(c.estado);
             if (v === 'archivadas') return !!c.archivado;
             if (c.archivado) return false;
+            // Filtro por un estado concreto ("estado:propuesta").
+            if (v.startsWith('estado:')) return c.estado === v.slice(7);
             if (v === 'sin_leer') return c.no_leidos > 0;
             if (v === 'mias') return c.asignado_a === YO;
             if (v === 'sin_asignar') return !c.asignado_a && !cerrada;
-            if (v === 'cerradas') return cerrada;
             return !cerrada;
+        },
+
+        /* Solo los estados que tienen chats, en el orden configurado: mostrar
+           diez chips, seis de ellos en (0), no ayuda a nadie. */
+        get estadosConChats() {
+            const vivos = this.conversaciones.filter(c => !c.archivado);
+            return this.estados
+                .filter(e => vivos.some(c => c.estado === e.clave))
+                .map(e => ({ ...e, color: e.color || '#6b7280' }));
         },
         get conversacionesFiltradas() {
             return this.conversaciones.filter(c => {
@@ -1106,7 +1167,12 @@ function bandeja() {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if (avisar) this.aviso('Este navegador no soporta push. Instala el CRM como app (menú ⋮ → Instalar) y actívalo desde ahí.', 'error'); return; }
                 if (Notification.permission !== 'granted') return;
                 const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_, rj) => setTimeout(() => rj(new Error('sw')), 8000))]);
-                const { clave } = await (await fetch('/bixocrm/push/clave', { headers: { 'Accept': 'application/json' } })).json();
+                // Si la sesion caduco, esto responde 401 y no trae clave: hay que
+                // decir "vuelve a entrar", no reventar con un error de JavaScript.
+                const resClave = await fetch('/bixocrm/push/clave', { headers: { 'Accept': 'application/json' } });
+                if (resClave.status === 401 || resClave.status === 419) throw new Error('sesion');
+                const { clave } = await resClave.json().catch(() => ({}));
+                if (!clave) throw new Error('sin_clave');
                 const raw = Uint8Array.from(atob(clave.replace(/-/g, '+').replace(/_/g, '/').padEnd(clave.length + (4 - clave.length % 4) % 4, '=')), c => c.charCodeAt(0));
                 let sub = await reg.pushManager.getSubscription();
                 if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
@@ -1115,6 +1181,7 @@ function bandeja() {
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
                     body: JSON.stringify(sub.toJSON()),
                 });
+                if (r.status === 401 || r.status === 419) throw new Error('sesion');
                 if (!r.ok) throw new Error('registro ' + r.status);
                 this.pushListo = true;
                 if (avisar) {
@@ -1128,6 +1195,8 @@ function bandeja() {
                 if (avisar) {
                     const m = (e && e.message) || '';
                     let txt = 'No se pudo activar el push: ' + (m === 'sw' ? 'el service worker no cargó; recarga la página e inténtalo de nuevo.' : (m || 'error desconocido'));
+                    if (m === 'sesion')   txt = 'Tu sesión caducó. Vuelve a entrar al CRM y toca Activar otra vez.';
+                    if (m === 'sin_clave') txt = 'El servidor no devolvió la clave de notificaciones. Recarga la página e inténtalo de nuevo.';
                     if (/push service error/i.test(m)) {
                         txt = 'El navegador no pudo registrarse en el servicio de push de Google. En Android: Ajustes → Aplicaciones → Chrome → Notificaciones → permitir (y apaga "No molestar"); luego vuelve a tocar Activar. En Brave: Ajustes → Privacidad → "Usar los servicios de Google para la mensajería push".';
                     }
@@ -1236,6 +1305,8 @@ function bandeja() {
         // Carga la ficha CRM del cliente (scoring, pipeline, historial).
         async cargarLead(conv) {
             this.lead = null;
+            this.etapaAviso = null;
+            this.etapaGuardada = null;
             try {
                 const res = await fetch(`/bixocrm/lead`, {
                     method: 'POST',
@@ -1250,19 +1321,56 @@ function bandeja() {
                     }),
                 });
                 if (res.ok) this.lead = await res.json();
+                this.etapaGuardada = this.lead?.etapa ?? null;
+                this.etapaAviso = null;
             } catch (e) { this.lead = { nombre: conv.cliente_nombre, telefono: conv.cliente_telefono }; }
         },
 
         async guardarEtapa() {
-            if (!this.lead?.id) return;
-            await fetch(`/bixocrm/lead/${this.lead.id}/etapa`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify({ etapa: this.lead.etapa }),
-            });
+            // Sin ficha cargada no hay a quien guardarle la etapa: se avisa en
+            // vez de no hacer nada (antes el select se movia y no pasaba nada).
+            if (!this.lead?.id) {
+                this.etapaAviso = { ok: false, texto: 'No se pudo: la ficha del cliente no cargo' };
+                return;
+            }
+
+            const anterior = this.etapaGuardada;
+            const elegida  = this.lead.etapa;
+            this.etapaAviso = { ok: true, texto: 'Guardando...' };
+
+            try {
+                const res = await fetch(`/bixocrm/lead/${this.lead.id}/etapa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ etapa: elegida }),
+                });
+
+                // Sin mirar res.ok el guardado fallaba en silencio: con la
+                // pestana abierta un rato el token CSRF vence y responde 419,
+                // el select se quedaba en la etapa nueva y el servidor con la
+                // vieja, asi que al recargar "no habia guardado".
+                if (!res.ok) {
+                    this.lead.etapa = anterior;
+                    this.etapaAviso = {
+                        ok: false,
+                        texto: res.status === 419
+                            ? 'Caduco la sesion: recarga la pagina (F5) y vuelve a intentar'
+                            : 'No se pudo guardar (error ' + res.status + ')',
+                    };
+                    return;
+                }
+
+                this.etapaGuardada = elegida;
+                this.etapaAviso = { ok: true, texto: 'Etapa guardada' };
+                setTimeout(() => { this.etapaAviso = null; }, 2500);
+            } catch (e) {
+                this.lead.etapa = anterior;
+                this.etapaAviso = { ok: false, texto: 'Sin conexion: no se guardo' };
+            }
         },
 
         async enviarMensaje() {
@@ -1390,19 +1498,93 @@ function bandeja() {
             }
         },
 
+        /* Estados del chat que significan lo mismo que una etapa del embudo.
+           El panel muestra UN solo selector (Estado); la etapa se mantiene al
+           dia por dentro para que Pipeline, Tratos y Copilot sigan leyendola. */
+        /* Acuse del ultimo mensaje en la LISTA de chats. Mismos criterios que
+           el acuse de dentro del chat, para que no digan cosas distintas. */
+        esSalienteConv(conv) {
+            return conv.ultimo_direccion === 'saliente' || conv.ultimo_direccion === 'out';
+        },
+
+        acuseConv(conv) {
+            const e = conv.ultimo_estado;
+            if (e === 'leido' || e === 'entregado') return '✓✓';
+            if (e === 'pendiente' || e === 'fallido') return '⚠';
+            return '✓';
+        },
+
+        etapaNombre(etapa) {
+            return ({
+                prospecto: 'Prospecto', contactado: 'Contactado',
+                propuesta: 'Propuesta', negociacion: 'Negociacion',
+                ganado: 'Ganado', perdido: 'Perdido',
+            })[etapa] || etapa;
+        },
+
+        etapaDeEstado(estado) {
+            return ({
+                nuevo: 'prospecto',
+                contactado: 'contactado',
+                seguimiento: 'contactado',
+                demo_enviada: 'propuesta',
+                propuesta: 'propuesta',
+                negociacion: 'negociacion',
+                proyecto: 'negociacion',
+                venta: 'ganado',
+                perdido: 'perdido',
+            })[estado] || null;
+        },
+
         async cambiarEstado(estado) {
             if (!this.convActiva) return;
-            await fetch(`/bixocrm/${this.convActiva.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify({ estado }),
-            });
-            this.convActiva.estado = estado;
-            const c = this.conversaciones.find(x => x.id === this.convActiva.id);
-            if (c) c.estado = estado;
+
+            const anterior = this.convActiva.estado;
+            this.etapaAviso = { ok: true, texto: 'Guardando...' };
+
+            try {
+                const res = await fetch(`/bixocrm/${this.convActiva.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ estado }),
+                });
+
+                // Antes no se miraba la respuesta: con la pestana abierta un
+                // rato el token CSRF vence, el servidor responde 419 y el
+                // selector se quedaba en el valor nuevo sin haber guardado.
+                if (!res.ok) {
+                    this.estadoActual = anterior;
+                    this.etapaAviso = {
+                        ok: false,
+                        texto: res.status === 419
+                            ? 'Caduco la sesion: recarga la pagina (F5) y vuelve a intentar'
+                            : 'No se pudo guardar (error ' + res.status + ')',
+                    };
+                    return;
+                }
+
+                this.convActiva.estado = estado;
+                const c = this.conversaciones.find(x => x.id === this.convActiva.id);
+                if (c) c.estado = estado;
+
+                // Arrastrar la etapa del cliente cuando el estado equivale a una.
+                const etapa = this.etapaDeEstado(estado);
+                if (etapa && this.lead?.id && this.lead.etapa !== etapa) {
+                    this.lead.etapa = etapa;
+                    await this.guardarEtapa();
+                    return;
+                }
+
+                this.etapaAviso = { ok: true, texto: 'Estado guardado' };
+                setTimeout(() => { this.etapaAviso = null; }, 2500);
+            } catch (e) {
+                this.estadoActual = anterior;
+                this.etapaAviso = { ok: false, texto: 'Sin conexion: no se guardo' };
+            }
         },
 
         async guardarDetalle() {
@@ -1563,13 +1745,28 @@ function bandeja() {
             document.getElementById('chat-bottom')?.scrollIntoView({ behavior: 'smooth' });
         },
 
+        /* Hora para hoy, "Ayer", dia de la semana esta semana y fecha corta
+           mas atras: "4d" obligaba a calcular de que dia hablaba. */
         tiempoRelativo(iso) {
             if (!iso) return '';
-            const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+            const d = new Date(iso);
+            if (isNaN(d)) return '';
+            const diff = Math.floor((Date.now() - d) / 1000);
+
             if (diff < 60) return 'ahora';
-            if (diff < 3600) return Math.floor(diff/60) + 'm';
-            if (diff < 86400) return Math.floor(diff/3600) + 'h';
-            return Math.floor(diff/86400) + 'd';
+            if (diff < 3600) return Math.floor(diff/60) + ' min';
+
+            const hoy = new Date();
+            const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+            if (d.toDateString() === hoy.toDateString()) {
+                return d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+            }
+            if (d.toDateString() === ayer.toDateString()) return 'Ayer';
+            if (diff < 7 * 86400) {
+                const dia = d.toLocaleDateString('es-PE', {weekday:'short'}).replace('.', '');
+                return dia.charAt(0).toUpperCase() + dia.slice(1);
+            }
+            return d.toLocaleDateString('es-PE', {day:'2-digit', month:'2-digit'});
         },
 
         formatearHora(iso) {
