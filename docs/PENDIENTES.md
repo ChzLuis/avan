@@ -13,7 +13,7 @@ Convención: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y validado.
 | # | Qué pidió | Estado | Validado |
 |---|---|---|---|
 | 10 | Subir imágenes reales al demo de celulares (proyecto 35, `democell`) | `[x]` | 24 fotos subidas y asignadas: **25 productos con foto propia**, imágenes distintas de 9 → 27; verificado por HTTP (200) y en la tienda |
-| 11 | Logos de las marcas | `[ ]` | Pendiente: los logos de Apple/Samsung/Xiaomi son marca registrada. Ver nota |
+| 11 | Logos de las marcas | `[x]` | 4 logos (dominio público) subidos + lista de marcas creada: 32 productos clasificados; las 4 páginas `/marca/{slug}` responden 200 con su logo |
 | 12 | Un logo para Nexo Movil | `[x]` | SVG propio subido y `logo_url` configurado; aparece 3 veces en el HTML de arindg.com/democell |
 
 ### 10. Fotos del catálogo
@@ -41,12 +41,26 @@ esos productos.
 `deploy.py` **no sirve para binarios** (abre los archivos como UTF-8): las
 imágenes van por SFTP reusando sus credenciales, nunca duplicándolas.
 
-### 11. Logos de las marcas — pendiente, con reserva
+### 11. Logos de las marcas
 
-Los logos de Apple, Samsung, Xiaomi y Motorola son **marcas registradas**. En
-un demo que se enseña a clientes, reproducirlos es un riesgo distinto al de
-una foto con licencia libre. Antes de subirlos conviene decidir si el demo los
-necesita o basta con el nombre de la marca en texto.
+Los cuatro logos (Apple, Samsung, Xiaomi, Motorola) son **dominio público** en
+Commons: un logotipo de formas simples no alcanza el umbral de originalidad
+del derecho de autor. Mostrar el logo del fabricante del equipo que se vende
+es **uso nominativo**, legítimo mientras no se sugiera patrocinio.
+
+**El demo no tenía marcas**: los 40 productos tenían `brand_catalog_id` en
+NULL, así que el filtro por marca no servía y no había dónde colgar un logo.
+Se creó la lista y se clasificaron **32 productos** (Apple 10, Samsung 10,
+Xiaomi 8, Motorola 4); los 8 accesorios genéricos quedan sin marca, que es lo
+correcto.
+
+Dónde se ven: en el **filtro lateral** del catálogo (como texto, que es lo que
+corresponde a una casilla) y con su **logotipo** en la página de cada marca,
+`/democell/marca/{slug}` — las cuatro responden 200.
+
+**Trampa:** pedir los logos por búsqueda de texto trajo el logo arcoíris de
+Apple de 1977, el de un Galaxy A15 y la tablet Motorola Xoom. Hay que pedirlos
+por nombre de archivo exacto y mirarlos antes de publicarlos.
 
 ---
 

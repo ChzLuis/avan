@@ -58,7 +58,27 @@ Accesorios (cargadores, cables, micas, power bank, audífonos), relojes y dos
 Motorola siguen con la imagen que ya traía el demo: en Commons no hay material
 libre que corresponda a ese producto. Es preferible a dejar la tarjeta vacía.
 
-## El logo
+## Logotipos de las marcas
+
+Los cuatro son **dominio público** en Commons: un logotipo de formas simples
+no alcanza el umbral de originalidad que exige el derecho de autor.
+
+La marca registrada es asunto distinto del copyright, pero mostrar el logo del
+fabricante del equipo que se vende es **uso nominativo** y es legítimo,
+mientras no se sugiera que la marca respalda o patrocina la tienda.
+
+| Archivo | Marca | Licencia | Obra original |
+|---|---|---|---|
+| `marca-apple.png` | Apple | Public domain | [Apple logo grey.svg](https://commons.wikimedia.org/wiki/File%3AApple_logo_grey.svg) |
+| `marca-samsung.png` | Samsung | Public domain | [Samsung wordmark.svg](https://commons.wikimedia.org/wiki/File%3ASamsung_wordmark.svg) |
+| `marca-xiaomi.png` | Xiaomi | Public domain | [Xiaomi logo (2021-).svg](https://commons.wikimedia.org/wiki/File%3AXiaomi_logo_%282021-%29.svg) |
+| `marca-motorola.png` | Motorola | Public domain | [Motorola new logo.svg](https://commons.wikimedia.org/wiki/File%3AMotorola_new_logo.svg) |
+
+Se pidieron por **nombre exacto**: la búsqueda por texto trajo el logo
+arcoíris de Apple de 1977, el de un Galaxy A15 suelto y la tablet Motorola
+Xoom en vez de los corporativos.
+
+## El logo de la tienda
 
 `logo-nexo.svg` y `logo-nexo-oscuro.svg` son obra propia para este demo —
 Nexo Movil es una marca ficticia — así que no dependen de terceros.
