@@ -8,6 +8,45 @@ Convención: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y validado.
 
 ---
 
+## Tanda 2026-09-22 (b) · Menú de Ventas y cerrar sesión
+
+| # | Qué pidió | Estado | Validado |
+|---|---|---|---|
+| 6 | En el menú de Ventas no aparecen Facturas ni Boletas | `[x]` | No es un bug: es la regla de `ModulosPortal`. El usuario decide dejarlo como está |
+| 7 | No puede cerrar sesión desde el portal Comercial | `[x]` | Test `CerrarSesionComercialTest` (5): fallaba antes del arreglo y pasa después; desplegado |
+
+### 6. Facturas y Boletas no salen en el menú
+
+**No es un fallo.** Las entradas existen (`_sidebar.blade.php`, grupo
+"Facturación": Facturas, Boletas, Notas, Guías, Comprobantes emitidos), pero
+`App\Support\ModulosPortal` solo las ofrece si el negocio **ya emitió al
+menos una factura** (`Invoice::exists()`) o si se enciende el ajuste
+`modulo_facturas`. Es la regla de "no ofrecer lo que aún no se usa".
+
+Medido en el proyecto 16 (Eskala): **0 facturas emitidas**, ajuste sin
+activar, módulo `invoices` **sí contratado**. Aparecerá en cuanto se emita la
+primera factura. El usuario decide dejar la regla como está.
+
+### 7. Cerrar sesión no cerraba nada
+
+`Comercial\AuthController::logout()` solo hacía
+`session()->forget('comercial_project_id')`: olvidaba qué negocio estaba
+abierto pero **dejaba al usuario autenticado** — sin `Auth::logout()`, sin
+invalidar la sesión ni regenerar el token. Volvía a entrar solo y el botón
+parecía no hacer nada.
+
+Es además un asunto de seguridad: en una computadora compartida, el siguiente
+que se sienta entraba con la cuenta del anterior.
+
+**El CRM (`CrmAuthController`) tenía el mismo agujero** y se arregló a la vez,
+por decisión del usuario. Ambos usan ahora el cierre del panel de
+administración: `Auth::logout()` + `invalidate()` + `regenerateToken()`.
+
+Trampa: el aviso de cierre por inactividad se lee **antes** de invalidar,
+porque invalidar borra la sesión donde se guardaría el flash.
+
+---
+
 ## Tanda 2026-09-22 · Precios al filtrar en MegaHogar
 
 | # | Qué pidió | Estado | Validado |

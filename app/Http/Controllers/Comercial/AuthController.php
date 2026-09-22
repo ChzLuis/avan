@@ -102,15 +102,36 @@ class AuthController extends Controller
         // negocio movia el negocio del Admin en la misma sesion.
         session(['comercial_project_id' => $project->id]);
 
+        \App\Support\UsuarioRecordado::recordar('comercial', $login);
+
         return redirect()->route('bixosales.dashboard');
     }
 
+    /**
+     * CERRAR SESION DE VERDAD.
+     *
+     * Antes esto solo hacia `forget('comercial_project_id')`: olvidaba que
+     * negocio estaba abierto pero dejaba al usuario AUTENTICADO, asi que
+     * volvia a entrar solo y el boton parecia no hacer nada. En una
+     * computadora compartida eso es un agujero: el siguiente que se sienta
+     * entra con la cuenta del anterior.
+     *
+     * Mismo cierre que el panel de administracion: desautenticar, invalidar
+     * la sesion (se van todas las claves, la del portal incluida) y regenerar
+     * el token CSRF para que no se pueda reusar el de la sesion cerrada.
+     */
     public function logout(Request $request)
     {
-        session()->forget('comercial_project_id');
-        if ($request->input('_inactivity')) {
+        $porInactividad = (bool) $request->input('_inactivity');
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        if ($porInactividad) {
             return redirect()->route('bixosales.login')->with('inactivity', true);
         }
+
         return redirect()->route('bixosales.login');
     }
 }

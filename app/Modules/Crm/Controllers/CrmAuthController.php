@@ -38,6 +38,8 @@ class CrmAuthController extends Controller
             return back()->withErrors(['email' => 'Credenciales incorrectas.'])->withInput();
         }
 
+        \App\Support\UsuarioRecordado::recordar('crm', $login);
+
         $user = Auth::user();
 
         // Solo abren el CRM los negocios que lo tienen contratado (modulo
@@ -165,9 +167,20 @@ class CrmAuthController extends Controller
         return redirect()->route('bixocrm.bandeja');
     }
 
-    public function logout()
+    /**
+     * CERRAR SESION DE VERDAD.
+     *
+     * Igual que en el portal Comercial: esto solo olvidaba que negocio estaba
+     * abierto y dejaba al usuario AUTENTICADO, asi que volvia a entrar solo.
+     * En una computadora compartida, el siguiente que se sienta entraba con
+     * la cuenta del anterior.
+     */
+    public function logout(Request $request)
     {
-        session()->forget('comunicaciones_project_id');
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('bixocrm.login');
     }
 }
