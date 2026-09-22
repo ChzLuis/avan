@@ -28,6 +28,14 @@ class ProposalController extends Controller
             'client_phone'      => 'nullable|string|max:50',
             'client_email'      => 'nullable|email|max:150',
             'city'              => 'nullable|string|max:100',
+            'demo_url'          => 'nullable|url|max:255',
+            // Demos adicionales que se adjuntan como muestra de trabajo.
+            'demos_extra'       => 'nullable|array|max:6',
+            'demos_extra.*'     => 'url|max:255',
+            'apertura'          => 'nullable|string|max:2000',
+            'plan_recomendado'  => 'nullable|in:start,pro,business',
+            'plan_motivo'       => 'nullable|string|max:1000',
+            'lost_reason'       => 'nullable|string|max:255',
             'price'             => 'nullable|numeric|min:0',
             'price_renewal'     => 'nullable|numeric|min:0',
             'products_included' => 'nullable|integer|min:0',
@@ -37,7 +45,7 @@ class ProposalController extends Controller
             'extras.*.precio'   => 'required_with:extras|numeric|min:0',
             'extras.*.periodo'  => 'nullable|string|max:20',   // unico|mensual|sesion
             'extra_notes'       => 'nullable|string',
-            'status'            => 'nullable|in:borrador,enviada,aceptada,rechazada',
+            'status'            => 'nullable|in:borrador,enviada,conversando,aceptada,rechazada',
         ];
     }
 
@@ -47,7 +55,19 @@ class ProposalController extends Controller
         $project   = app('active_project');
         $proposals = $project->proposals()->latest()->get();
 
-        return view('ventas::proposals.index', compact('project', 'proposals'));
+        // Catalogo de demos y textos por rubro: un solo sitio, para que la lista
+        // no se quede vieja como paso antes (tenia 3 demos y ya habia 13).
+        $demos = \App\Modules\Ventas\Support\DemosPorRubro::opciones();
+        $textos = [
+            'aperturas' => \App\Modules\Ventas\Support\DemosPorRubro::APERTURAS,
+            'motivos' => \App\Modules\Ventas\Support\DemosPorRubro::MOTIVOS,
+            'rubros' => array_map(
+                fn ($d) => $d['etiqueta'],
+                \App\Modules\Ventas\Support\DemosPorRubro::DEMOS
+            ),
+        ];
+
+        return view('ventas::proposals.index', compact('project', 'proposals', 'demos', 'textos'));
     }
 
     public function store(Request $request)
@@ -61,7 +81,10 @@ class ProposalController extends Controller
         $data['number']     = 'PRO-' . str_pad((string) $n, 4, '0', STR_PAD_LEFT);
         $data['token']      = Str::random(40);
         $data['status']     = 'borrador';
-        $data['price']         = $data['price'] ?? 490;
+        $data['plan_recomendado'] = $data['plan_recomendado'] ?? 'pro';
+        // El precio sigue al plan recomendado salvo que se escriba otro.
+        $data['price']         = $data['price']
+            ?? ['start' => 490, 'pro' => 590, 'business' => 690][$data['plan_recomendado']] ?? 490;
         $data['price_renewal'] = $data['price_renewal'] ?? 100;
         $data['products_included'] = $data['products_included'] ?? 200;
         $data['valid_days']    = $data['valid_days'] ?? 15;
@@ -84,10 +107,24 @@ class ProposalController extends Controller
         if (($data['status'] ?? null) === 'enviada' && !$proposal->sent_at) {
             $data['sent_at'] = now();
         }
+        // Una propuesta cerrada deja fecha: sin esto no se sabe cuanto tardo
+        // el cliente en decidir, ni cuales llevan semanas sin respuesta.
+        if (in_array($data['status'] ?? null, ['aceptada', 'rechazada'], true)) {
+            $data['closed_at'] = $proposal->closed_at ?? now();
+        }
+        /* Una propuesta sin token (creada antes de que existiera el enlace
+           publico, o importada) tumbaba la edicion entera con un 500 al
+           generar la URL. Se le da uno al vuelo: editarla no puede fallar por
+           algo que el usuario no sabe ni que existe. */
+        if (blank($proposal->token)) {
+            $data['token'] = Str::random(40);
+        }
+
         $proposal->update($data);
+        $proposal->refresh();
 
         return response()->json([
-            'proposal' => $proposal->fresh(),
+            'proposal' => $proposal,
             'url'      => route('proposal.publica', $proposal->token),
         ]);
     }
