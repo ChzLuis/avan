@@ -222,6 +222,13 @@ Route::middleware(['auth'])->group(function () {
         // editar y BORRAR clientes — la misma clase de agujero que el hotfix
         // "*.ver ya no autoriza escribir" cerro en Pedidos y Cotizaciones,
         // pero Clientes quedo fuera de aquel barrido.
+        // ── Bandeja del Validador de Financiamiento ──────────────────────────
+        // Se gatea con el permiso `creditos.*`: el rol Validador solo lleva eso,
+        // asi que ve las solicitudes sin tocar el resto del negocio.
+        Route::get('/creditos',                [\App\Modules\Credito\Controllers\BandejaCreditoController::class, 'index'])->name('creditos.index')->middleware('can:creditos.ver');
+        Route::get('/creditos/{id}',           [\App\Modules\Credito\Controllers\BandejaCreditoController::class, 'show'])->name('creditos.show')->middleware('can:creditos.ver')->where('id', '[0-9]+');
+        Route::patch('/creditos/{id}/decidir', [\App\Modules\Credito\Controllers\BandejaCreditoController::class, 'decidir'])->name('creditos.decidir')->middleware('can:creditos.evaluar')->where('id', '[0-9]+');
+
         Route::get('/clients',                 [ClientController::class, 'index'])->name('clients')->middleware(['module:clients', 'can:clients.ver']);
         Route::get('/clients/create',          [ClientController::class, 'create'])->name('clients.create')->middleware(['module:clients', 'can:clients.crear']);
         Route::post('/clients',                [ClientController::class, 'store'])->name('clients.store')->middleware(['module:clients', 'can:clients.crear']);
@@ -618,6 +625,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/guias/{guia}',          [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
         Route::get('/guias/{guia}/pdf',      [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');
         Route::post('/guias/{guia}/enviar',  [GuiaRemisionController::class, 'enviar'])->name('guias.enviar')->middleware('can:invoices.crear');
+        // Una guia ACEPTADA no se borra: se comunica su baja a SUNAT.
+        Route::post('/guias/{guia}/baja',    [GuiaRemisionController::class, 'darDeBaja'])->name('guias.baja')->middleware('can:invoices.anular');
         Route::delete('/guias/{guia}',       [GuiaRemisionController::class, 'destroy'])->name('guias.destroy')->middleware('can:invoices.anular');
 
         // Cotizaciones
@@ -821,6 +830,15 @@ Route::get('/storefront-preview/{project}', function (\App\Models\Project $proje
 })->middleware('signed')->name('public.storefront.preview');
 Route::get('/{slug}/sitemap.xml', [TiendaPublicaController::class, 'sitemap'])->name('public.sitemap')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 Route::get('/{slug}/robots.txt',  [TiendaPublicaController::class, 'robots'])->name('public.robots')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+// ── Financiamiento propio (cara publica) ─────────────────────────────────────
+// Cuelgan del slug de la tienda, asi que no chocan con el comodin `$reserved`.
+// `throttle` en lo que escribe: son rutas publicas sin sesion.
+Route::get('/{slug}/financiamiento', [\App\Modules\Credito\Controllers\SolicitudPublicaController::class, 'formulario'])->name('credito.formulario')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/financiamiento', [\App\Modules\Credito\Controllers\SolicitudPublicaController::class, 'guardar'])->name('credito.guardar')->middleware('throttle:10,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/financiamiento/simular', [\App\Modules\Credito\Controllers\SolicitudPublicaController::class, 'simular'])->name('credito.simular')->middleware('throttle:60,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::get('/{slug}/financiamiento/{token}', [\App\Modules\Credito\Controllers\SolicitudPublicaController::class, 'estado'])->name('credito.estado')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+Route::post('/{slug}/financiamiento/{token}/documento', [\App\Modules\Credito\Controllers\SolicitudPublicaController::class, 'subirDocumento'])->name('credito.documento')->middleware('throttle:20,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+
 Route::get('/{slug}/contacto', [\App\Modules\Tienda\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 Route::get('/{slug}/nosotros', [\App\Modules\Tienda\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 // Marcas: pagina de todas y pagina de una (la tienda filtrada, con cabecera).
@@ -1277,6 +1295,8 @@ Route::prefix('bixosales')->name('bixosales.')->group(function () {
         Route::get('/guias/{guia}',         [GuiaRemisionController::class, 'show'])->name('guias.show')->middleware('can:invoices.ver');
         Route::get('/guias/{guia}/pdf',     [GuiaRemisionController::class, 'pdf'])->name('guias.pdf')->middleware('can:invoices.ver');
         Route::post('/guias/{guia}/enviar', [GuiaRemisionController::class, 'enviar'])->name('guias.enviar')->middleware('can:invoices.crear');
+        // Una guia ACEPTADA no se borra: se comunica su baja a SUNAT.
+        Route::post('/guias/{guia}/baja',   [GuiaRemisionController::class, 'darDeBaja'])->name('guias.baja')->middleware('can:invoices.anular');
         Route::delete('/guias/{guia}',      [GuiaRemisionController::class, 'destroy'])->name('guias.destroy')->middleware('can:invoices.anular');
 
         Route::get('/clientes',               [ClientController::class, 'index'])->name('clientes')->middleware('project.can:clients.ver|view-clients');

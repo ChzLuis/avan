@@ -38,6 +38,7 @@ class GuiaRemision extends Model
         'conductor_nombres', 'conductor_apellidos', 'conductor_licencia',
         'status', 'sunat_status', 'sunat_ticket', 'sunat_hash', 'sunat_cdr',
         'sunat_error', 'sunat_sent_at', 'observaciones', 'created_by',
+        'baja_estado', 'baja_ticket', 'baja_motivo', 'baja_error', 'baja_at',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class GuiaRemision extends Model
         'vehiculo_m1l'          => 'boolean',
         'transbordo_programado' => 'boolean',
         'sunat_sent_at'  => 'datetime',
+        'baja_at'        => 'datetime',
     ];
 
     /** Con transportista contratado; si no, va en vehículo propio. */
@@ -159,5 +161,65 @@ class GuiaRemision extends Model
     public function sePuedeBorrar(): bool
     {
         return $this->sunat_status !== 'accepted';
+    }
+
+    /**
+     * SUNAT solo admite la comunicación de baja dentro de los 7 días
+     * calendario siguientes a la emisión. Pasado ese plazo la guía queda
+     * firme y el error llega desde SUNAT, ya con el camión despachado: se
+     * avisa antes de dejar pedirla.
+     */
+    public const DIAS_PARA_BAJA = 7;
+
+    public function diasDesdeEmision(): int
+    {
+        $emitida = $this->sunat_sent_at ?? $this->created_at;
+
+        return $emitida ? (int) $emitida->startOfDay()->diffInDays(now()->startOfDay()) : 0;
+    }
+
+    public function dentroDelPlazoDeBaja(): bool
+    {
+        return $this->diasDesdeEmision() <= self::DIAS_PARA_BAJA;
+    }
+
+    /**
+     * ¿Se puede pedir la baja? Solo una guía viva y aceptada por SUNAT, que
+     * no tenga ya una baja en curso o hecha.
+     */
+    public function sePuedeDarDeBaja(): bool
+    {
+        return $this->sunat_status === 'accepted'
+            && ! in_array($this->baja_estado, ['pending', 'accepted'], true);
+    }
+
+    public function estaDeBaja(): bool
+    {
+        return $this->baja_estado === 'accepted';
+    }
+
+    public function estadoBajaLegible(): string
+    {
+        return match ($this->baja_estado) {
+            'accepted' => 'Dada de baja ante SUNAT',
+            'pending'  => 'Comunicando la baja a SUNAT...',
+            'rejected' => 'SUNAT no aceptó la baja',
+            default    => '',
+        };
+    }
+
+    /**
+     * Nombre del archivo al descargar, con el MISMO criterio que el
+     * comprobante: numero + destinatario + documento. Bajaba solo con el
+     * numero ("T001-15.pdf") y en una carpeta con varias no se sabia cual
+     * era de quien sin abrirlas una por una.
+     */
+    public function nombreArchivo(): string
+    {
+        $nombre = $this->numero
+            .($this->destinatario_nombre ? ' - '.$this->destinatario_nombre : '')
+            .($this->destinatario_doc_numero ? ' - '.$this->destinatario_doc_numero : '');
+
+        return trim(preg_replace('/\s+/', ' ', preg_replace('#[\\/:*?"<>|]+#', ' ', $nombre)));
     }
 }

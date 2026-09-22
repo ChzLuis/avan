@@ -614,6 +614,57 @@ class GuiaRemisionController extends Controller
     }
 
     /**
+     * Da de baja ante SUNAT una guía que ya fue aceptada.
+     *
+     * Una guía aceptada no se borra: se comunica su baja. Antes el sistema lo
+     * impedía con un aviso ("se anula ante SUNAT") pero no ofrecía cómo, y
+     * había que entrar al portal de SUNAT con la clave SOL.
+     */
+    public function darDeBaja(Request $request, GuiaRemision $guia)
+    {
+        $this->soloDeMiNegocio($guia);
+
+        abort_unless(
+            $guia->sePuedeDarDeBaja(),
+            422,
+            match (true) {
+                $guia->sunat_status !== 'accepted' => 'Solo se da de baja una guía que SUNAT ya aceptó. Esta todavía no lo está: bórrala o vuelve a enviarla.',
+                $guia->baja_estado === 'accepted'  => 'Esta guía ya está dada de baja.',
+                default => 'Esta guía ya tiene una baja en curso.',
+            }
+        );
+
+        /* El plazo lo pone SUNAT, no el sistema: pasados 7 días calendario la
+           comunicación se rechaza. Se avisa aquí porque el error llegaría
+           después, en segundo plano, con el camión ya despachado. */
+        abort_unless(
+            $guia->dentroDelPlazoDeBaja(),
+            422,
+            'SUNAT solo admite la baja dentro de los '.GuiaRemision::DIAS_PARA_BAJA
+            .' días siguientes a la emisión, y esta guía tiene '.$guia->diasDesdeEmision()
+            .'. Corrige el traslado con una guía nueva.'
+        );
+
+        $data = $request->validate([
+            'motivo' => ['required', 'string', 'min:3', 'max:250'],
+        ]);
+
+        $guia->update([
+            'baja_estado' => 'pending',
+            'baja_motivo' => $data['motivo'],
+            'baja_error'  => null,
+            'status'      => 'cancelled',
+        ]);
+
+        \App\Modules\Finanzas\Jobs\DarDeBajaGuiaEnSunat::dispatch($guia->id);
+
+        return response()->json([
+            'ok'      => true,
+            'message' => 'Comunicando la baja de '.$guia->numero.' a SUNAT...',
+        ]);
+    }
+
+    /**
      * La serie de guía del negocio.
      *
      * SUNAT exige que la de un remitente empiece por T. Si alguien configura

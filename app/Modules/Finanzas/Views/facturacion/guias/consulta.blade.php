@@ -28,7 +28,49 @@
 
 @include('partials.consulta-estilos')
 
-<div class="ce-wrap" x-data="{ verUrl: '', verNum: '' }">
+<div class="ce-wrap" x-data="{
+        verUrl: '', verNum: '',
+        /* BAJA ANTE SUNAT. Se pide el motivo porque SUNAT lo exige en la
+           comunicacion, y porque queda en el documento: "Error en la emision"
+           a secas no le sirve a nadie dentro de seis meses.
+           El envio mira res.ok: un 422 (fuera de plazo, ya anulada) traia
+           el motivo en el cuerpo y sin leerlo el usuario veia un exito falso,
+           que es justo como se rompio el guardado del editor de productos. */
+        bajaId: null, bajaNum: '', bajaMotivo: '', bajaEnviando: false, bajaError: '',
+        pedirBaja(id, numero) {
+            this.bajaId = id; this.bajaNum = numero;
+            this.bajaMotivo = ''; this.bajaError = ''; this.bajaEnviando = false;
+        },
+        async confirmarBaja() {
+            if (this.bajaMotivo.trim().length < 3) {
+                this.bajaError = 'Escribe el motivo de la baja (mínimo 3 letras).';
+                return;
+            }
+            this.bajaEnviando = true; this.bajaError = '';
+            try {
+                const res = await fetch(this.bajaUrl.replace('__ID__', this.bajaId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                    },
+                    body: JSON.stringify({ motivo: this.bajaMotivo.trim() }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.bajaError = data.message || 'No se pudo pedir la baja.';
+                    this.bajaEnviando = false;
+                    return;
+                }
+                window.location.reload();
+            } catch (e) {
+                this.bajaError = 'No hay conexión con el servidor. Inténtalo otra vez.';
+                this.bajaEnviando = false;
+            }
+        },
+        bajaUrl: '{{ route($rp.'guias.baja', ['guia' => '__ID__']) }}',
+    }">
 
     <div class="ce-head">
         <h1>Histórico de guías de remisión</h1>
@@ -130,6 +172,34 @@
                         </form>
                         @endif
                         @endcan
+                        {{-- BAJA ANTE SUNAT. Una guia aceptada no se borra: se
+                             comunica su baja. Antes el sistema lo impedia con un
+                             aviso pero no ofrecia como, y habia que entrar al
+                             portal de SUNAT con la clave SOL. El boton solo sale
+                             cuando SE PUEDE: aceptada, sin baja en curso y dentro
+                             de los 7 dias que admite SUNAT. --}}
+                        @can('invoices.anular')
+                        @if($g->estaDeBaja())
+                            <span class="ce-chip" style="color:#b91c1c;background:#fef2f2"
+                                  title="{{ $g->baja_motivo }}">De baja</span>
+                        @elseif($g->baja_estado === 'pending')
+                            <span class="ce-chip" style="color:#b45309;background:#fffbeb">Anulando…</span>
+                        @elseif($g->sePuedeDarDeBaja() && $g->dentroDelPlazoDeBaja())
+                        <button type="button" class="ce-accion ce-accion-ghost"
+                                @click="pedirBaja({{ $g->id }}, '{{ $g->numero }}')"
+                                title="Dar de baja {{ $g->numero }} ante SUNAT">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path stroke-linecap="round" d="m5.6 5.6 12.8 12.8"/>
+                            </svg>
+                            <span>Dar de baja</span>
+                        </button>
+                        @endif
+                        @if($g->baja_estado === 'rejected')
+                            <span class="ce-chip" style="color:#b91c1c;background:#fef2f2"
+                                  title="{{ $g->baja_error }}">Baja rechazada</span>
+                        @endif
+                        @endcan
                         {{-- Descarga DIRECTA: para adjuntar la guia a un correo
                              sin pasar por "imprimir a PDF" del navegador. --}}
                         <a class="ce-accion ce-accion-ghost" href="{{ route($rp.'guias.pdf', $g->id) }}?descargar=1"
@@ -176,6 +246,44 @@
                 </span>
             </div>
             <iframe :src="verUrl || 'about:blank'" title="Vista de la guía"></iframe>
+        </div>
+    </div>
+
+    {{-- BAJA ANTE SUNAT: se pide el motivo y se avisa de que no tiene vuelta
+         atras. Mismo visor de fondo que la vista previa para no introducir un
+         patron nuevo. --}}
+    <div x-show="bajaId" x-cloak class="ce-visor" @keydown.escape.window="bajaId = null">
+        <div class="ce-visor-fondo" @click="bajaId = null"></div>
+        <div class="ce-visor-caja" style="max-width:480px">
+            <div class="ce-visor-cab">
+                <strong>Dar de baja <span x-text="bajaNum"></span></strong>
+                <button type="button" class="ce-visor-x" @click="bajaId = null" aria-label="Cerrar">&times;</button>
+            </div>
+            <div style="padding:18px 20px 20px">
+                <p style="font-size:13px;color:#4b5563;margin:0 0 4px">
+                    Se comunica a SUNAT que esta guía queda sin efecto. No se puede deshacer.
+                </p>
+                <p style="font-size:12px;color:#9ca3af;margin:0 0 14px">
+                    Si la mercadería ya viajó con ella, emite una guía nueva en vez de anular.
+                </p>
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">
+                    Motivo de la baja
+                </label>
+                <input type="text" x-model="bajaMotivo" maxlength="250"
+                       placeholder="Ej.: error en la placa del vehículo"
+                       @keydown.enter="confirmarBaja()"
+                       style="width:100%;font-size:16px;padding:9px 11px;border:1px solid #d1d5db;border-radius:9px">
+                <p x-show="bajaError" x-cloak x-text="bajaError"
+                   style="font-size:12px;color:#b91c1c;margin:8px 0 0"></p>
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                    <button type="button" class="ce-accion ce-accion-ghost"
+                            @click="bajaId = null" :disabled="bajaEnviando">Cancelar</button>
+                    <button type="button" class="ce-accion" @click="confirmarBaja()" :disabled="bajaEnviando"
+                            style="background:#b91c1c;color:#fff;border-color:#b91c1c">
+                        <span x-text="bajaEnviando ? 'Comunicando…' : 'Dar de baja'">Dar de baja</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
