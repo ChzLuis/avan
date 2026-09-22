@@ -1206,7 +1206,12 @@ function bandeja() {
         },
         sonar() {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                // Un solo contexto reutilizado: crear uno por aviso agota el limite del
+                // navegador y a partir de ahi deja de sonar sin avisar.
+                if (!this._audio) this._audio = new (window.AudioContext || window.webkitAudioContext)();
+                const ctx = this._audio;
+                // Chrome lo deja "suspendido" hasta que el usuario interactua con la pagina.
+                if (ctx.state === 'suspended') ctx.resume().catch(() => {});
                 [[880, 0], [1175, 0.12]].forEach(([f, t]) => {
                     const o = ctx.createOscillator(), g = ctx.createGain();
                     o.type = 'sine'; o.frequency.value = f;
@@ -1219,7 +1224,9 @@ function bandeja() {
             } catch (e) {}
         },
         avisar(conv) {
-            if (!this.avisos) return;
+            // Basta con tener el push activo o la campana encendida: antes, con el push
+            // activado y la campana apagada, no sonaba nada estando el CRM abierto.
+            if (!this.avisos && !this.pushListo) return;
             this.sonar();
             if ('Notification' in window && Notification.permission === 'granted') {
                 try {

@@ -30,7 +30,9 @@ self.addEventListener('push', (e) => {
         badge: '/img/pwa/badge-96.png',
         tag: d.tag || 'bx',
         renotify: true,
-        vibrate: [120, 60, 120],
+        silent: false,
+        requireInteraction: true,
+        vibrate: [200, 100, 200, 100, 200],
         data: { url: d.url || '/bixocrm' },
     }));
 });
