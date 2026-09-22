@@ -176,7 +176,15 @@
     $quoteBtnText = trim($settings['btn_quote_text'] ?? '') !== '' ? trim($settings['btn_quote_text']) : 'Cotizar';
     $checkoutText = $settings['btn_checkout_text'] ?? $settings['checkout_button_text'] ?? 'Finalizar pedido';
     $quoteMode = ($settings['store_mode'] ?? 'direct') === 'quote';
-    $hidePrices = $quoteMode && ($settings['quote_price_display'] ?? 'show') === 'hide';
+    /* EL DEFECTO DE `quote_price_display` ES OCULTAR, NO MOSTRAR.
+       Con `?? 'show'`, una tienda a cotizacion que nunca toco ese ajuste
+       (el caso de MegaHogar: la clave ni existia) dejaba $hidePrices en
+       false. Pero el motor SI manda price=null en modo cotizacion —no
+       publica precios, y eso no se negocia desde la vista—, asi que
+       number_format(null) pintaba "S/ 0.00" en todo el catalogo.
+       Mostrar un precio que no se tiene es peor que no mostrarlo: quien
+       decide publicarlos activa el ajuste a proposito. */
+    $hidePrices = $quoteMode && ($settings['quote_price_display'] ?? 'hide') !== 'show';
 
     /* ═══ Checkout / pago / envío (mismo esqueleto que la plantilla ecommerce) ═══ */
     $isQuoteOnly = $quoteMode;

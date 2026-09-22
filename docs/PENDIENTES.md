@@ -8,6 +8,39 @@ Convención: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y validado.
 
 ---
 
+## Tanda 2026-09-22 · Precios al filtrar en MegaHogar
+
+| # | Qué pidió | Estado | Validado |
+|---|---|---|---|
+| 5 | Al filtrar en la tienda a veces salen precios y a veces S/ 0.00 | `[x]` | 4 tiendas medidas en ARIN: 0 apariciones de "S/ 0.00"; test `PrecioCeroAlFiltrarTest` (4) + 11 de precios ya existentes |
+
+**Síntoma:** filtrando por Sala todas las tarjetas mostraban S/ 0.00.
+
+**Causa:** `$hidePrices` en `computienda.blade.php` exigía que el ajuste
+`quote_price_display` valiera `'hide'`, y caía al defecto `'show'` cuando la
+clave **no existía** — justo el caso de MegaHogar y ELECTRO JARA. Pero el
+motor sí omite el precio en modo cotización, así que `number_format(null)`
+pintaba `"0.00"` en todo el catálogo.
+
+**Arreglo:** el defecto de `quote_price_display` pasa a ser **ocultar**.
+Publicar precios en una tienda a cotización es una decisión que se toma a
+propósito; mostrar un precio que no se tiene es peor que no mostrarlo.
+
+**Medido en producción tras el arreglo:**
+
+| Tienda | Modo | Precios ausentes | "S/ 0.00" |
+|---|---|---|---|
+| MegaHogar | quote | 12/12 | 0 |
+| ELECTRO JARA | quote | 12/12 | 0 (tenía el mismo bug) |
+| Sabor Criollo | direct | 0/12 | 0 (sus precios siguen saliendo) |
+| MURUHUAY | quote (`hide`) | 12/12 | 0 |
+
+**Nota aparte:** MegaHogar está **suspendida** (`suspended_at` 2026-09-22
+12:48) por decisión del usuario, así que su tienda responde 404. El
+diagnóstico se hizo llamando al controlador directo, sin tocar la suspensión.
+
+---
+
 ## Tanda 2026-09-21 · Unidades y guías
 
 | # | Qué pidió | Estado | Validado |
