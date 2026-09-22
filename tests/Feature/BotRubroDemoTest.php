@@ -98,12 +98,43 @@ class BotRubroDemoTest extends TestCase
             'FUGA: un cliente de abarrotes volvio a recibir la demo de ferreteria.');
     }
 
-    public function test_un_rubro_desconocido_cae_en_la_demo_general(): void
+    /**
+     * "Otro rubro" mandaba la demo de FERRETERIA.
+     *
+     * El botón apuntaba al router, y el router clasifica EL TEXTO del
+     * mensaje. Al pulsarlo llega "Otro rubro", que no coincide con ningún
+     * rubro, así que caía en la rama por defecto: la ferretería. Visto en una
+     * conversación real el 2026-09-22.
+     */
+    public function test_otro_rubro_pregunta_no_manda_la_ferreteria(): void
     {
-        $r = $this->conversar(['hola', 'btn:rubro', 'vendo paneles solares']);
+        $r = $this->conversar(['hola', 'btn:rubro', 'btn:rubro_otro']);
 
-        $this->assertStringContainsString('arindg.com/', $r,
-            'Un rubro sin demo propia igual debe recibir una tienda de ejemplo.');
+        $this->assertStringNotContainsString('ferreteria-demo', $r,
+            'FUGA: "Otro rubro" volvió a mandar la demo de ferretería.');
+        $this->assertStringContainsString('qué vendes', $r,
+            'Debe preguntar el rubro por escrito.');
+    }
+
+    public function test_tras_otro_rubro_lo_escrito_si_enruta(): void
+    {
+        $r = $this->conversar(['hola', 'btn:rubro', 'btn:rubro_otro', 'vendo licores']);
+
+        $this->assertStringContainsString('arindg.com/demolicor', $r);
+    }
+
+    /**
+     * Un rubro sin demo propia recibe un ejemplo, pero DICIENDO que no es de
+     * lo suyo. Mandar una ferretería a quien vende paneles solares, como si
+     * fuera su rubro, parece que el bot no lo escuchó.
+     */
+    public function test_un_rubro_desconocido_lo_dice_en_vez_de_fingir(): void
+    {
+        $r = $this->conversar(['hola', 'btn:rubro', 'btn:rubro_otro', 'vendo paneles solares']);
+
+        $this->assertStringContainsString('Todavía no tengo una tienda de ejemplo de tu rubro', $r);
+        $this->assertStringContainsString('asesor', $r,
+            'Sin demo de su rubro, la salida es un asesor que se la prepare.');
     }
 
     public function test_ver_precios_muestra_el_detalle_en_un_solo_paso(): void

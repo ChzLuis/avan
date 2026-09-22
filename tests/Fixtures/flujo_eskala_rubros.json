@@ -373,7 +373,7 @@
     },
     {
      "titulo": "👗 Otro rubro",
-     "siguiente": "router_rubro"
+     "siguiente": "rubro_otro"
     }
    ],
    "esperar": true,
@@ -383,7 +383,7 @@
    "x": 700,
    "y": 480,
    "tipo": "condicion",
-   "si_no": "tienda",
+   "si_no": "rubro_sin_demo",
    "palabra_completa": true,
    "ia_fallback": true,
    "reglas": [
@@ -612,6 +612,41 @@
    "esperar": true,
    "siguiente": "router",
    "botones_texto": "Así se vería la tuya con tus ropa y accesorios. Desde *S/ 490*, pago único."
+  },
+  "rubro_otro": {
+   "x": 700,
+   "y": 400,
+   "tipo": "intencion",
+   "texto": "Cuéntame en una palabra qué vendes y te muestro la tienda más parecida 👇\n\nPor ejemplo: ropa, licores, comida, medicinas, mascotas, repuestos…",
+   "esperar": true,
+   "siguiente": "router_rubro"
+  },
+  "rubro_sin_demo": {
+   "x": 1000,
+   "y": 400,
+   "tipo": "intencion",
+   "texto": "Todavía no tengo una tienda de ejemplo de tu rubro, pero la tuya se hace igual: con tus productos, tus precios y tu marca.\n\nMira cómo queda una terminada 👇",
+   "enlace": {
+    "url": "https://arindg.com/ferreteria-demo",
+    "boton": "👀 Ver un ejemplo"
+   },
+   "botones": [
+    {
+     "titulo": "💰 Ver planes",
+     "siguiente": "precios"
+    },
+    {
+     "titulo": "💬 Hablar con asesor",
+     "siguiente": "asesor"
+    },
+    {
+     "titulo": "🚀 Quiero una",
+     "siguiente": "quiero"
+    }
+   ],
+   "esperar": true,
+   "siguiente": "router",
+   "botones_texto": "Desde *S/ 490*, pago único. Un asesor puede prepararte una demo de tu rubro."
   }
  },
  "reinicio": [
