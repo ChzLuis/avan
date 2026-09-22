@@ -30,6 +30,15 @@
                 </button>
             </div>
         </div>
+        {{-- Sesion caida: sin esto el CRM parece vivo pero no trae nada (ni avisos ni chats). --}}
+        <div x-show="sesionCaida" x-cloak class="mb-3 rounded-xl border px-3 py-2.5 flex items-center gap-3" style="background:#fef2f2;border-color:#fca5a5">
+            <span class="text-xl flex-shrink-0">⚠️</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-900">Tu sesión caducó</p>
+                <p class="text-[11px] text-gray-600">No estás recibiendo mensajes nuevos. Vuelve a entrar para seguir atendiendo.</p>
+            </div>
+            <a href="{{ route('bixocrm.login') }}" class="text-xs font-bold text-white px-3 py-1.5 rounded-lg flex-shrink-0" style="background:#dc2626">Entrar</a>
+        </div>
         {{-- Activar avisos: visible hasta que el dispositivo quede suscrito (o se oculte por hoy). --}}
         <div x-show="!pushListo && !bannerOculto" x-cloak class="mb-3 rounded-xl border px-3 py-2.5 flex items-center gap-3" style="background:#fff7ed;border-color:#fdba74">
             <span class="text-xl flex-shrink-0">🔔</span>
@@ -1137,6 +1146,7 @@ function bandeja() {
 
         // ── Avisos: sonido + notificacion del navegador (tambien en el celular con la pestaña abierta) ──
         pushListo: false,
+        sesionCaida: false,
         bannerOculto: (() => { try { return sessionStorage.getItem('bx_banner_avisos') === '1'; } catch (e) { return false; } })(),
         aviso(msg, tipo) { if (typeof bxAviso === 'function') bxAviso(msg, tipo || 'info'); else alert(msg); },
         async alternarAvisos() {
@@ -1638,6 +1648,9 @@ function bandeja() {
                 const res = await fetch(`/bixocrm/poll?${params}`, {
                     headers: {'X-Requested-With': 'XMLHttpRequest'}
                 });
+                if (res.status === 401 || res.status === 419) { this.sesionCaida = true; return; }
+                if (!res.ok) return;
+                this.sesionCaida = false;
                 const data = await res.json();
                 this.serverTime = data.server_time;
 
@@ -1677,7 +1690,7 @@ function bandeja() {
                         }
                     });
                 }
-            } catch(e) { /* ignore network errors during poll */ }
+            } catch(e) { /* un corte de red puntual no se avisa: el siguiente sondeo reintenta */ }
         },
 
         usarRespuesta(r) {
