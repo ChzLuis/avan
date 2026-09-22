@@ -123,6 +123,36 @@ class UnidadYPreviaGuiaTest extends TestCase
             'la vista previa no debe grabar ninguna guia');
     }
 
+    /**
+     * La previa apunta a la ruta de la cara por la que se entro.
+     *
+     * Yo habia repetido la condicion con $portalLayout dentro del <script> y
+     * salia SIEMPRE la del panel: pulsar "Vista previa" entrando por Ventas
+     * llamaba a /guias/previsualizar en vez de /bixosales/guias/previsualizar.
+     */
+    public function test_la_previa_usa_la_ruta_del_portal_de_entrada(): void
+    {
+        $vista = file_get_contents(base_path('app/Modules/Finanzas/Views/facturacion/guias/index.blade.php'));
+
+        $this->assertStringContainsString("route(\$rutaGuias.'.previsualizar')", $vista,
+            'la URL debe salir de \$rutaGuias, como el resto de acciones de la pantalla');
+        $this->assertStringNotContainsString("? route('bixosales.guias.previsualizar')", $vista,
+            'no se repite la condicion del portal: ya la resuelve \$rutaGuias');
+    }
+
+    /** En la guia la unidad elegida tampoco se pisa con la del catalogo. */
+    public function test_la_guia_respeta_la_unidad_elegida(): void
+    {
+        $vista = file_get_contents(base_path('app/Modules/Finanzas/Views/facturacion/guias/index.blade.php'));
+
+        $this->assertStringContainsString('if (!item.unitTocada) item.unit', $vista,
+            'el catalogo propone la unidad, no la impone');
+        $this->assertStringContainsString('unitTocada = true', $vista,
+            'el select debe marcar que el operador eligio');
+        $this->assertStringContainsString('unitTocada: false', $vista,
+            'las lineas nuevas nacen con el marcador');
+    }
+
     /** El botón existe en la pantalla de emisión. */
     public function test_el_boton_de_previa_esta_en_la_pantalla(): void
     {

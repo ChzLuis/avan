@@ -153,6 +153,23 @@
         <a href="{{ route((($portalLayout ?? 'panel') === 'comercial' ? 'bixosales.' : '').'guias.consulta') }}"
            class="text-sm text-gray-500 hover:text-indigo-600">Ver todas en el histórico →</a>
     </div>
+
+    {{-- La guia se emitia a ciegas: solo quedaba abrir el PDF en otra pestaña
+         para saber que se iba a imprimir. Es el mismo visor que ya usan facturas
+         y cotizaciones: la representacion impresa real, con la plantilla que el
+         negocio tenga elegida. Plegado para no empujar el formulario hacia abajo.
+         El <details> es nativo: no depende de Alpine ni puede quedar en blanco
+         si el JS falla, que es como ya se rompio el menu comercial una vez. --}}
+    <details class="mt-3 rounded-2xl border border-gray-200 bg-white overflow-hidden">
+        <summary class="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-indigo-600">
+            Ver vista previa de la guía
+        </summary>
+        <div class="border-t border-gray-200">
+            <iframe src="{{ route($rutaGuias.'.pdf', $ultima->id) }}?vista=incrustada"
+                    class="w-full bg-white" style="height:1120px;border:0" loading="lazy"
+                    title="Representación impresa de la guía"></iframe>
+        </div>
+    </details>
     @endif
 
     {{-- ══ Nueva guía ═══════════════════════════════════════════════════ --}}
@@ -340,7 +357,7 @@
                                         </template>
                                     </div>
                                 </div>
-                                <select x-model="item.unit" class="col-span-4 rounded-lg border-gray-300 text-sm">
+                                <select x-model="item.unit" @change="item.unitTocada = true" class="col-span-4 rounded-lg border-gray-300 text-sm">
                                     @foreach($unidades as $codigo => $nombre)
                                     <option value="{{ $codigo }}">{{ $nombre }}</option>
                                     @endforeach
@@ -380,7 +397,13 @@
                      se descubre con el camion en la carretera. No graba nada
                      ni gasta correlativo. --}}
                 <button type="button" @click="verPrevia()"
-                        class="px-4 py-2 rounded-lg text-sm font-semibold text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50">
+                        class="px-4 py-2 rounded-lg text-sm font-semibold text-indigo-700 bg-indigo-50 border-2 border-indigo-300 hover:bg-indigo-100 inline-flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                    </svg>
                     Vista previa
                 </button>
                 <button @click="emitir()" :disabled="enviando"
@@ -395,9 +418,11 @@
 <script>
 /* La ruta cambia segun la cara por la que se entro (panel o Ventas): cada
    portal tiene sus propias rutas nombradas. */
-const PREVIA_GUIA_URL = @json(($portalLayout ?? 'panel') === 'comercial'
-    ? route('bixosales.guias.previsualizar')
-    : route('guias.previsualizar'));
+/* La ruta la resuelve $rutaGuias, la MISMA variable que ya usan Guardar,
+   Enviar e Imprimir (linea 5). Yo habia repetido la condicion con
+   $portalLayout y salia siempre la del panel: pulsando Vista previa desde
+   Ventas se llamaba a /guias/previsualizar y no a /bixosales/... */
+const PREVIA_GUIA_URL = @json(route($rutaGuias.'.previsualizar'));
 const CSRF_GUIA = @json(csrf_token());
 
 function guiasPage() {
@@ -423,7 +448,7 @@ function guiasPage() {
            Asi la guia dice exactamente lo que dice la factura. */
         agregarLinea() {
             this.form.items.push({
-                description: '', unit: 'NIU', quantity: 1,
+                description: '', unit: 'NIU', unitTocada: false, quantity: 1,
                 sugerencias: [], verSugerencias: false, sugerenciaActiva: -1,
             });
             // El boton vive arriba y la linea nace abajo: sin esto no se ve
@@ -466,9 +491,11 @@ function guiasPage() {
         elegirProducto(i, p) {
             const item = this.form.items[i];
             item.description = p.name;
-            // La unidad viene del producto: en una guia, declarar cajas donde
-            // eran metros es un problema en el control de carretera.
-            item.unit = p.unit || 'NIU';
+            /* La unidad del producto se PROPONE, no se impone: si el operador
+               ya eligio una, manda la suya. Pisarla es lo que hizo que una
+               factura saliera con "Unidad" donde se habia elegido "Caja"
+               (F001-00000025), y en una guia el error viaja en el camion. */
+            if (!item.unitTocada) item.unit = p.unit || 'NIU';
             this.cerrarSugerencias(i);
         },
 
@@ -611,7 +638,7 @@ function guiasPage() {
                 vehiculo_m1l: false, transbordo_programado: false,
                 vehiculo_placa: '', conductor_doc_numero: '',
                 conductor_nombres: '', conductor_apellidos: '', conductor_licencia: '',
-                items: [{ description: '', unit: 'NIU', quantity: 1, sugerencias: [], verSugerencias: false, sugerenciaActiva: -1 }],
+                items: [{ description: '', unit: 'NIU', unitTocada: false, quantity: 1, sugerencias: [], verSugerencias: false, sugerenciaActiva: -1 }],
             };
             this.abierta = true;
         },

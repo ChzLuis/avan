@@ -8,6 +8,35 @@ Convención: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y validado.
 
 ---
 
+## Tanda 2026-09-22 (c) · La vista previa de la guía no se veía
+
+| # | Qué pidió | Estado | Validado |
+|---|---|---|---|
+| 8 | "Aún no veo la vista previa de la guía" | `[x]` | Renderizado por las dos caras en ARIN: cada una usa su ruta; 8 tests en `UnidadYPreviaGuiaTest` |
+
+**Tres causas, no una:**
+
+1. **La URL estaba rota justo en Ventas.** Dentro del `<script>` repetí la
+   condición con `$portalLayout` en vez de usar `$rutaGuias`, la variable que
+   ya resuelve la cara (y que usan Guardar, Enviar e Imprimir). Salía siempre
+   `/guias/previsualizar`, así que pulsando el botón desde Ventas se llamaba a
+   la ruta del panel. Medido después del arreglo:
+   - panel → `/guias/previsualizar`
+   - Ventas → `/bixosales/guias/previsualizar`
+2. **El botón no se distinguía.** Estaba al pie del formulario (59 % del
+   documento) y con el mismo peso visual que "Limpiar". Ahora lleva icono de
+   ojo, fondo y borde más marcados.
+3. **La guía pisaba la unidad elegida**, el mismo bug que se arregló en
+   facturas: `item.unit = p.unit || 'NIU'` sin comprobar si el operador ya
+   había elegido. En una guía el error viaja en el camión.
+
+**Nota:** la franja "Última guía" que se quitó el 2026-09-21 volvió a aparecer
+en esta vista. No la pisó otra sesión: el cambio se hizo sobre la ruta
+anterior a la modularización y se perdió en la mudanza a `app/Modules/`.
+Queda pendiente volver a quitarla.
+
+---
+
 ## Tanda 2026-09-22 (b) · Menú de Ventas y cerrar sesión
 
 | # | Qué pidió | Estado | Validado |
