@@ -212,7 +212,7 @@
         <div class="flex-1 min-w-0 cursor-pointer" @click="mostrarFicha = !mostrarFicha">
             <p class="text-sm font-bold text-gray-900 truncate" x-text="convActiva?.cliente_nombre || convActiva?.cliente_telefono"></p>
             <p class="text-[11px] text-gray-500 truncate">
-                <span x-show="!esMovil" x-text="convActiva?.cliente_telefono"></span>
+                <span x-show="!esMovil" class="font-semibold text-gray-700 tracking-wide select-all" style="font-size:13px" x-text="convActiva?.cliente_telefono"></span>
                 <span x-show="{{ $canales->count() }} > 1 && !esMovil" x-text="' · ' + (convActiva?.canal_nombre || '')"></span>
                 <span x-show="convActiva?.asignado_a" x-text="' · ' + (convActiva?.asignado_a || '')"></span>
                 <span x-show="convActiva?.bot_activo" class="text-green-600 font-semibold" x-text="esMovil ? '🤖 Bot atendiendo' : ' · Bot atendiendo'"></span>
@@ -480,7 +480,7 @@
                 <input x-model="editNombre" @change="guardarDetalle()"
                        class="text-sm font-semibold text-gray-900 border-0 border-b border-dashed border-gray-300 focus:outline-none focus:border-green-400 bg-transparent w-full"
                        placeholder="Nombre del cliente">
-                <p class="text-xs text-gray-500 mt-0.5" x-text="convActiva?.cliente_telefono"></p>
+                <p class="text-sm font-semibold text-gray-700 mt-0.5 tracking-wide select-all" x-text="convActiva?.cliente_telefono"></p>
             </div>
         </div>
 
@@ -661,7 +661,7 @@
             <template x-for="c in conversaciones.filter(c => c.id !== convActiva?.id && (c.cliente_nombre + ' ' + c.cliente_telefono).toLowerCase().includes(buscadorReenvio.toLowerCase()))" :key="c.id">
                 <button @click="reenviarA(c)" class="w-full text-left px-5 py-2.5 hover:bg-green-50 border-b border-gray-50">
                     <p class="text-sm font-medium text-gray-900" x-text="c.cliente_nombre"></p>
-                    <p class="text-[11px] text-gray-500" x-text="c.cliente_telefono"></p>
+                    <p class="text-xs font-medium text-gray-600 tracking-wide" x-text="c.cliente_telefono"></p>
                 </button>
             </template>
         </div>
