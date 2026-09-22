@@ -8,6 +8,48 @@ Convención: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y validado.
 
 ---
 
+## Tanda 2026-09-22 (e) · Imágenes de Nexo Movil (demo celulares)
+
+| # | Qué pidió | Estado | Validado |
+|---|---|---|---|
+| 10 | Subir imágenes reales al demo de celulares (proyecto 35, `democell`) | `[x]` | 24 fotos subidas y asignadas: **25 productos con foto propia**, imágenes distintas de 9 → 27; verificado por HTTP (200) y en la tienda |
+| 11 | Logos de las marcas | `[ ]` | Pendiente: los logos de Apple/Samsung/Xiaomi son marca registrada. Ver nota |
+| 12 | Un logo para Nexo Movil | `[x]` | SVG propio subido y `logo_url` configurado; aparece 3 veces en el HTML de arindg.com/democell |
+
+### 10. Fotos del catálogo
+
+**Antes:** 9 imágenes genéricas repartidas entre 40 productos — el iPhone 16
+Pro Max y el Galaxy A36 compartían foto.
+
+**Ahora:** 24 fotos de Wikimedia Commons con **licencia libre** (CC0 / CC BY /
+CC BY-SA), una por modelo. Autor y licencia registrados en
+`docs/demos/CREDITOS-IMAGENES-DEMOCELL.md`, que es lo que exige CC BY-SA.
+
+Quedan con la genérica los accesorios (cargadores, cables, micas, power bank,
+audífonos), los relojes y dos Motorola: en Commons no hay material libre de
+esos productos.
+
+**Tres trampas que costaron tiempo:**
+
+1. Las URLs de Commons traen parámetros de seguimiento
+   (`…jpg?utm_campaign=imageinfo`), así que comprobar la extensión **al final
+   de la URL** descartaba las 39 candidatas. Hay que mirar la ruta sin query.
+2. Commons responde **HTTP 429** si se piden más de ~1 búsqueda cada 6 s.
+3. Varios `.jpg` son **PNG de verdad**: hay que detectar el formato por los
+   bytes de cabecera, no por la extensión, o GD no los abre.
+
+`deploy.py` **no sirve para binarios** (abre los archivos como UTF-8): las
+imágenes van por SFTP reusando sus credenciales, nunca duplicándolas.
+
+### 11. Logos de las marcas — pendiente, con reserva
+
+Los logos de Apple, Samsung, Xiaomi y Motorola son **marcas registradas**. En
+un demo que se enseña a clientes, reproducirlos es un riesgo distinto al de
+una foto con licencia libre. Antes de subirlos conviene decidir si el demo los
+necesita o basta con el nombre de la marca en texto.
+
+---
+
 ## Tanda 2026-09-22 (d) · La previa de la guía debe ser como la de facturas
 
 | # | Qué pidió | Estado | Validado |
