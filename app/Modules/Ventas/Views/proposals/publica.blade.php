@@ -1,11 +1,14 @@
 @php
-    $emp      = $settings['company_name']  ?? $project->name;
-    $logo     = $settings['logo_url']      ?? null;
-    $tel      = $settings['company_phone'] ?? $project->whatsapp ?? '';
-    $mail     = $settings['company_email'] ?? '';
-    $web      = $settings['company_web']   ?? url('/' . $project->slug);
-    $ruc      = $settings['company_ruc']   ?? '';
-    $dir      = $settings['company_address'] ?? '';
+    $emp      = $settings['business_name'] ?? $settings['razon_social'] ?? $project->name;
+    $logoRaw  = $settings['logo_url'] ?? null;
+    $logo     = $logoRaw
+        ? (str_starts_with((string) $logoRaw, 'http') ? $logoRaw : asset('storage/' . ltrim((string) $logoRaw, '/')))
+        : null;
+    $tel      = $settings['contact_phone'] ?? $project->whatsapp ?? '';
+    $mail     = $settings['contact_email'] ?? '';
+    $web      = $settings['contact_web']   ?? url('/' . $project->slug);
+    $ruc      = $settings['ruc']           ?? '';
+    $dir      = $settings['contact_address'] ?? '';
     // El setting guarda el código ISO (PEN/USD): lo mostramos como símbolo.
     $simbolos = ['PEN' => 'S/', 'USD' => '$', 'EUR' => '€', 'CLP' => '$', 'COP' => '$', 'MXN' => '$'];
     $codMoneda = $settings['currency'] ?? 'PEN';
@@ -199,6 +202,49 @@
       @endif
     </div>
 
+    {{-- APERTURA: por que le escribimos a ESTE negocio. --}}
+    @if(filled($proposal->apertura))
+    <h2 class="sec">Por qué le escribimos</h2>
+    <p style="margin:0 0 22px;line-height:1.65;color:#444">{{ $proposal->apertura }}</p>
+    @endif
+
+    {{-- DEMOSTRACION: que vea su tienda antes de leer el precio. --}}
+    @if(filled($proposal->demo_url))
+    <h2 class="sec">Vea primero, decida después</h2>
+    <p style="margin:0 0 14px;line-height:1.65;color:#444">
+      Preparamos una demostración con productos parecidos a los suyos, para que
+      vea cómo quedaría su tienda en lugar de imaginársela.
+    </p>
+    <a href="{{ $proposal->demo_url }}" target="_blank" rel="noopener"
+       style="display:block;margin:0 0 14px;padding:16px 18px;background:#f4f7fb;border:1px solid #dde4ec;border-radius:9px;text-decoration:none">
+      <span style="display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7b8794;margin-bottom:5px">Su demostración</span>
+      <span style="font-size:18px;font-weight:700;color:#1c4e80;word-break:break-word">{{ preg_replace('#^https?://#', '', $proposal->demo_url) }}</span>
+    </a>
+    <p style="margin:0 0 22px;line-height:1.65;color:#444">
+      Ábrala desde el celular: entre a un producto, use el buscador y pida una
+      cotización por WhatsApp. Funciona de verdad; es el mismo sistema que
+      quedaría operando, con otro nombre y otros productos.
+    </p>
+    @endif
+
+    {{-- Otras tiendas como muestra de trabajo. Van DESPUES y en un bloque mas
+         sobrio: la demo de su rubro es la que tiene que llevarse la atencion. --}}
+    @php $demosExtra = array_values(array_filter((array) $proposal->demos_extra, fn ($u) => filled($u) && $u !== $proposal->demo_url)); @endphp
+    @if(count($demosExtra))
+    <h2 class="sec">Otras tiendas que hemos hecho</h2>
+    <p style="margin:0 0 14px;line-height:1.65;color:#444">
+      Todas están funcionando. Ábralas si quiere ver cómo resolvemos otros giros.
+    </p>
+    <div style="margin:0 0 22px">
+      @foreach($demosExtra as $url)
+      <a href="{{ $url }}" target="_blank" rel="noopener"
+         style="display:block;margin-bottom:7px;padding:11px 14px;background:#fafbfc;border:1px solid #e6eaef;border-radius:8px;text-decoration:none;font-size:14px;color:#1c4e80;word-break:break-word">
+        {{ preg_replace('#^https?://#', '', $url) }}
+      </a>
+      @endforeach
+    </div>
+    @endif
+
     {{-- INVERSIÓN --}}
     <h2 class="sec">Inversión</h2>
     <div class="inv">
@@ -212,6 +258,14 @@
         <span class="nota">IGV incluido</span>
       </div>
     </div>
+    @if(filled($proposal->plan_motivo))
+    <div style="margin:0 0 22px;padding:15px 17px;border-left:3px solid #1c4e80;background:#f7f9fb;border-radius:0 7px 7px 0">
+      <p style="margin:0;line-height:1.6;color:#333">
+        <strong>Le recomendamos el plan {{ ucfirst($proposal->plan_recomendado ?: 'Pro') }}.</strong>
+        {{ $proposal->plan_motivo }}
+      </p>
+    </div>
+    @endif
 
     {{-- ALCANCE --}}
     <h2 class="sec">Alcance del servicio</h2>
