@@ -100,6 +100,29 @@ class CerrarSesionComercialTest extends TestCase
         $this->assertNull(session('comunicaciones_project_id'));
     }
 
+    /**
+     * El boton tiene que VERSE en escritorio.
+     *
+     * Arreglar que el logout cerrara la sesion no servia de nada si no habia
+     * donde pulsarlo: el unico boton vivia en el cajon movil (`.nav-acciones`,
+     * con display:none en escritorio) y en los modales de INACTIVIDAD, que
+     * solo salen cuando la sesion va a expirar.
+     */
+    public function test_hay_donde_cerrar_sesion_en_escritorio(): void
+    {
+        $shell = file_get_contents(base_path('resources/views/comercial/layouts/app.blade.php'));
+
+        // El menu de cuenta del chip de empresa, que no depende del cajon movil.
+        $this->assertStringContainsString("route('bixosales.logout')", $shell,
+            'la cabecera debe tener el formulario de cerrar sesion');
+        $this->assertStringContainsString('Cerrar sesión', $shell);
+
+        // Y no puede estar SOLO dentro de los modales de inactividad.
+        $antesDeModales = substr($shell, 0, strpos($shell, "x-show=\"phase==='expired'\"") ?: strlen($shell));
+        $this->assertStringContainsString("route('bixosales.logout')", $antesDeModales,
+            'el boton no puede vivir solo en el modal de sesion expirada');
+    }
+
     /** El cierre por inactividad avisa, y también desautentica. */
     public function test_el_cierre_por_inactividad_tambien_cierra(): void
     {

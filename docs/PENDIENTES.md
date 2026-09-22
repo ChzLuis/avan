@@ -42,7 +42,7 @@ Queda pendiente volver a quitarla.
 | # | Qué pidió | Estado | Validado |
 |---|---|---|---|
 | 6 | En el menú de Ventas no aparecen Facturas ni Boletas | `[x]` | No es un bug: es la regla de `ModulosPortal`. El usuario decide dejarlo como está |
-| 7 | No puede cerrar sesión desde el portal Comercial | `[x]` | Test `CerrarSesionComercialTest` (5): fallaba antes del arreglo y pasa después; desplegado |
+| 7 | No puede cerrar sesión desde el portal Comercial | `[x]` | Dos fallos: el logout no cerraba (tests 1-5) y **no había dónde pulsarlo en escritorio** (test 6). Página real en ARIN: 200 y el botón presente fuera del modal |
 
 ### 6. Facturas y Boletas no salen en el menú
 
@@ -73,6 +73,19 @@ administración: `Auth::logout()` + `invalidate()` + `regenerateToken()`.
 
 Trampa: el aviso de cierre por inactividad se lee **antes** de invalidar,
 porque invalidar borra la sesión donde se guardaría el flash.
+
+**Segunda parte (el usuario: "no veo cómo cerrar sesión").** Arreglar que el
+logout cerrara la sesión no servía de nada porque **en escritorio no había
+dónde pulsarlo**. El único botón vivía en dos sitios inútiles para salir a
+voluntad:
+
+- el cajón móvil (`.nav-acciones`), con `display:none` sobre 767 px;
+- los modales de **inactividad**, que solo aparecen cuando la sesión expira.
+
+El chip de la empresa ("E Eskala") ya tenía `cursor:pointer` —estaba pensado
+para pulsarse— pero no abría nada. Ahora es el **menú de cuenta**: nombre del
+negocio, correo, Configuración y Cerrar sesión en rojo. En móvil sigue el
+botón del cajón, así que las dos caras quedan cubiertas.
 
 ---
 

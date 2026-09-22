@@ -969,15 +969,68 @@ $_nav = match(true) {
          ademas exponia una marca interna. Se elimina en vez de renombrarla:
          un indicador que nadie puede accionar no aporta valor operativo. --}}
 
-    {{-- Empresa --}}
-    <div class="empresa-chip">
-        <div style="width:20px; height:20px; border-radius:6px; flex-shrink:0;
-                    background:var(--blue); color:#fff;
-                    display:flex; align-items:center; justify-content:center;
-                    font-size:10px; font-weight:700;">
-            {{ strtoupper(substr($project->name ?? 'A', 0, 1)) }}
+    {{-- EMPRESA · MENU DE CUENTA.
+         Aqui vive "Cerrar sesion" en escritorio. Antes el boton solo estaba
+         en el cajon movil (oculto por CSS en escritorio) y dentro de los
+         modales de inactividad: quien queria salir a voluntad no tenia por
+         donde. El chip ya era `cursor:pointer` pero no abria nada. --}}
+    <div class="empresa-chip" x-data="{ abierto: false }" @keydown.escape.window="abierto = false"
+         style="position:relative">
+        <button type="button" @click="abierto = !abierto"
+                :aria-expanded="abierto ? 'true' : 'false'" aria-haspopup="menu"
+                style="display:flex; align-items:center; gap:6px; background:none;
+                       border:0; padding:0; cursor:pointer; font:inherit; color:inherit;">
+            <span style="width:20px; height:20px; border-radius:6px; flex-shrink:0;
+                        background:var(--blue); color:#fff;
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:10px; font-weight:700;">
+                {{ strtoupper(substr($project->name ?? 'A', 0, 1)) }}
+            </span>
+            <span>{{ $project->name ?? '' }}</span>
+            <svg style="width:13px;height:13px;opacity:.55" fill="none" stroke="currentColor"
+                 stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+            </svg>
+        </button>
+
+        <div x-show="abierto" x-cloak @click.outside="abierto = false" role="menu"
+             style="position:absolute; top:calc(100% + 8px); right:0; z-index:60;
+                    min-width:210px; padding:6px; background:#fff;
+                    border:1px solid var(--border); border-radius:12px;
+                    box-shadow:0 12px 32px rgba(15,23,42,.16);">
+            <div style="padding:8px 10px 9px; border-bottom:1px solid var(--border); margin-bottom:4px;">
+                <div style="font-size:12.5px; font-weight:700; color:#0F172A;">{{ $project->name ?? '' }}</div>
+                <div style="font-size:11px; color:#64748B; margin-top:1px;">{{ auth()->user()?->email }}</div>
+            </div>
+
+            @if(\Illuminate\Support\Facades\Route::has('settings'))
+            <a href="{{ route('settings') }}" role="menuitem"
+               style="display:flex; align-items:center; gap:9px; padding:8px 10px;
+                      border-radius:8px; font-size:13px; color:#334155; text-decoration:none;"
+               onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='none'">
+                <svg style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.782-.93-.397-.164-.854-.142-1.203.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                </svg>
+                Configuración
+            </a>
+            @endif
+
+            @if(\Illuminate\Support\Facades\Route::has('bixosales.logout'))
+            <form method="POST" action="{{ route('bixosales.logout') }}" style="margin:0">@csrf
+                <button type="submit" role="menuitem"
+                        style="display:flex; align-items:center; gap:9px; width:100%;
+                               padding:8px 10px; border:0; border-radius:8px; background:none;
+                               font:inherit; font-size:13px; color:#DC2626; cursor:pointer; text-align:left;"
+                        onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background='none'">
+                    <svg style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"/>
+                    </svg>
+                    Cerrar sesión
+                </button>
+            </form>
+            @endif
         </div>
-        <span>{{ $project->name ?? '' }}</span>
     </div>
 </header>
 
