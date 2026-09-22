@@ -8,6 +8,46 @@ Convención: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y validado.
 
 ---
 
+## Tanda 2026-09-22 (d) · La previa de la guía debe ser como la de facturas
+
+| # | Qué pidió | Estado | Validado |
+|---|---|---|---|
+| 9 | La previa de la guía debe ser una confirmación ANTES de emitir, igual que en facturas, con los mismos cuadros y el mismo orden | `[x]` | Flujo completo en Chrome: el modal abre al pulsar Emitir, 0 errores tras montar; 30 tests de guías en verde |
+
+Antes la guía abría la hoja impresa en otra pestaña: se veía, pero no
+confirmaba nada y el botón Emitir seguía emitiendo a ciegas.
+
+**Ahora es la misma pantalla que Facturas**, en el mismo orden: cabecera
+"Revisa antes de emitir", aviso ámbar, cuadro de datos, detalle de líneas,
+cifra grande, la hoja incrustada en un iframe y los botones Corregir /
+Confirmar. Cambia solo lo que un traslado necesita:
+
+| Facturas | Guías |
+|---|---|
+| Se emite el · Cliente · Dirección | Traslado el · Destinatario · **Parte de** · **Llega a** · **Transporte** |
+| Cantidad × precio | Cantidad + **unidad en palabras** ("50 Caja") |
+| **Total a emitir** S/ … | **Peso total** 60 kg |
+
+Una guía no declara importes: el total de la factura no aparece (hay un test
+que lo vigila).
+
+**Medido en Chrome con el flujo real** (llenar la guía y pulsar Emitir):
+modal abre, `faltantes: []`, unidad "Caja", fecha "22 de setiembre de 2026",
+transporte "Transporte privado · placa ABC-123 · JUAN PEREZ", peso "60 kg",
+**0 errores tras montar el componente**.
+
+**Dos falsos diagnósticos míos por el camino**, anotados para no repetirlos:
+
+1. Creí que un `</div>` sobrante sacaba el formulario del componente Alpine.
+   Era un error de MEDICIÓN: contaba desde el atributo `x-data` en vez de
+   desde el `<div` que lo abre, así que el saldo arrancaba en −1 y siempre
+   daba "fuera". La plantilla estaba bien; revertí esos cambios.
+2. El modal "no abría" en la prueba porque `faltantes()` devolvía
+   `conductor_doc_numero`: la validación hacía su trabajo y mi guía de prueba
+   estaba incompleta.
+
+---
+
 ## Tanda 2026-09-22 (c) · La vista previa de la guía no se veía
 
 | # | Qué pidió | Estado | Validado |

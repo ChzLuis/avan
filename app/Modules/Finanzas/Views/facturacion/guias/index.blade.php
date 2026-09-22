@@ -74,7 +74,10 @@
                 Guía en blanco
             </button>
         </div>
-    </div>
+
+</div>
+
+</div>
 
     {{-- Solo la ULTIMA guia: al emitir, la pagina recarga y esta franja es
          lo que confirma el numero que salio y da el boton de imprimir. El
@@ -392,29 +395,123 @@
                      Se pregunta, pero solo si hay algo escrito. --}}
                 <button type="button" @click="limpiarGuia()"
                         class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600">Limpiar</button>
-                {{-- La factura se revisaba antes de emitir y la guia no,
-                     aunque es la que VIAJA con la mercaderia: un error aqui
-                     se descubre con el camion en la carretera. No graba nada
-                     ni gasta correlativo. --}}
-                <button type="button" @click="verPrevia()"
-                        class="px-4 py-2 rounded-lg text-sm font-semibold text-indigo-700 bg-indigo-50 border-2 border-indigo-300 hover:bg-indigo-100 inline-flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                              d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                              d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                    </svg>
-                    Vista previa
-                </button>
-                <button @click="emitir()" :disabled="enviando"
+                {{-- Igual que en Facturas: este boton NO emite, abre la
+                     confirmacion. Se emite desde el modal, tras ver la hoja
+                     que va a viajar con la mercaderia. --}}
+                <button @click="confirmarEmision()" :disabled="enviando"
                         class="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
                     <span x-text="enviando ? 'Emitiendo...' : 'Emitir y enviar a SUNAT'"></span>
                 </button>
             </div>
         </div>
+        {{-- ══ CONFIRMACION ANTES DE EMITIR ═══════════════════════════════════════
+     La MISMA pantalla que Facturas (mismo orden y mismos cuadros), con lo
+     que importa en un traslado: a quien, a donde, como viaja y que lleva.
+     Sin importes: una guia no los declara. --}}
+<div x-show="confirmarAbierto" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     @keydown.escape.window="confirmarAbierto = false">
+    <div class="absolute inset-0 bg-black/50" @click="confirmarAbierto = false"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col"
+         style="max-height:92vh">
+
+        <div class="px-5 py-3.5 border-b flex items-center gap-3 flex-shrink-0" style="border-color:#e5e7eb">
+            <div class="min-w-0">
+                <h3 class="text-sm font-bold text-gray-900">Revisa antes de emitir</h3>
+                <p class="text-xs text-gray-500 leading-tight" x-text="resumenConfirmacion()"></p>
+            </div>
+            <button type="button" @click="confirmarAbierto = false"
+                    class="ml-auto text-gray-400 hover:text-gray-600 flex-shrink-0" aria-label="Cerrar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {{-- La guia viaja con la mercaderia: el aviso habla de la carretera,
+             no de la contabilidad. --}}
+        <p class="px-5 py-2 text-[11px] leading-snug text-amber-800 bg-amber-50 border-b flex-shrink-0"
+           style="border-color:#fde68a">
+            Al confirmar se emite y se declara a SUNAT. La guia tiene que viajar
+            con la mercaderia: si sale mal, se corrige con el camion detenido.
+        </p>
+
+        {{-- Lo que se va a emitir, en claro y ANTES de la hoja impresa. --}}
+        <div class="px-5 py-3 border-b bg-white flex-shrink-0" style="border-color:#e5e7eb">
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-1 mb-2 pb-2 border-b text-xs" style="border-color:#f1f5f9">
+                <div class="flex items-baseline gap-1.5">
+                    <dt class="text-gray-400 flex-shrink-0">Traslado el</dt>
+                    <dd class="font-semibold text-gray-900" id="confirmar-fecha" x-text="fechaLarga(form.fecha_traslado)"></dd>
+                </div>
+                <div class="flex items-baseline gap-1.5 min-w-0">
+                    <dt class="text-gray-400 flex-shrink-0">Destinatario</dt>
+                    <dd class="font-semibold text-gray-900 truncate" x-text="form.destinatario_nombre || '-'"></dd>
+                </div>
+                <div class="col-span-2 flex items-baseline gap-1.5 min-w-0">
+                    <dt class="text-gray-400 flex-shrink-0">Parte de</dt>
+                    <dd id="confirmar-partida"
+                        x-text="form.partida_direccion || 'sin direccion de partida'"
+                        :class="form.partida_direccion ? 'text-gray-700' : 'text-gray-400 italic'"></dd>
+                </div>
+                <div class="col-span-2 flex items-baseline gap-1.5 min-w-0">
+                    <dt class="text-gray-400 flex-shrink-0">Llega a</dt>
+                    <dd id="confirmar-llegada"
+                        x-text="form.llegada_direccion || 'sin direccion de llegada'"
+                        :class="form.llegada_direccion ? 'text-gray-700' : 'text-gray-400 italic'"></dd>
+                </div>
+                <div class="col-span-2 flex items-baseline gap-1.5 min-w-0">
+                    <dt class="text-gray-400 flex-shrink-0">Transporte</dt>
+                    <dd class="text-gray-700" x-text="resumenTransporte()"></dd>
+                </div>
+            </dl>
+
+            {{-- Cada linea con su cantidad y unidad EN PALABRAS: "50 Caja", no
+                 "50 BX". El codigo es para el XML, no para quien revisa. --}}
+            <table class="w-full text-xs" id="confirmar-resumen">
+                <template x-for="(l, i) in lineasUtiles()" :key="i">
+                    <tr>
+                        <td class="py-0.5 pr-2 text-gray-800" x-text="l.description"></td>
+                        <td class="py-0.5 pl-2 text-right font-semibold text-gray-900 whitespace-nowrap"
+                            x-text="Number(l.quantity) + ' ' + nombreUnidad(l.unit)"></td>
+                    </tr>
+                </template>
+            </table>
+            <div class="flex items-baseline justify-between mt-2 pt-2 border-t" style="border-color:#e5e7eb">
+                <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Peso total</span>
+                <strong class="text-2xl text-gray-900" id="confirmar-peso" x-text="resumenPeso()"></strong>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-auto bg-gray-100 p-3 min-h-[240px]">
+            <template x-if="confirmarCargando">
+                <p class="text-center text-xs text-gray-500 py-10">Preparando la vista previa...</p>
+            </template>
+            <template x-if="!confirmarCargando && confirmarHtml">
+                <iframe x-ref="marcoPrevia" class="w-full bg-white rounded-lg shadow-sm"
+                        style="height:60vh;border:0" title="Vista previa de la guia"></iframe>
+            </template>
+            <template x-if="!confirmarCargando && !confirmarHtml">
+                <p class="text-center text-xs text-red-600 py-10"
+                   x-text="confirmarError || 'No se pudo cargar la vista previa.'"></p>
+            </template>
+        </div>
+
+        <div class="px-5 py-3 border-t flex items-center justify-end gap-2 flex-shrink-0"
+             style="border-color:#e5e7eb">
+            <button type="button" @click="confirmarAbierto = false" :disabled="enviando"
+                    class="min-h-[42px] px-4 rounded-lg border text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    style="border-color:#e5e7eb">Corregir</button>
+            <button type="button" @click="emitirConfirmado()" :disabled="enviando || confirmarCargando"
+                    class="min-h-[42px] px-5 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+                <svg x-show="enviando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span x-text="enviando ? 'Emitiendo...' : 'Confirmar y enviar a SUNAT'"></span>
+            </button>
+        </div>
     </div>
 </div>
-
+</div>
 <script>
 /* La ruta cambia segun la cara por la que se entro (panel o Ventas): cada
    portal tiene sus propias rutas nombradas. */
@@ -424,6 +521,11 @@
    Ventas se llamaba a /guias/previsualizar y no a /bixosales/... */
 const PREVIA_GUIA_URL = @json(route($rutaGuias.'.previsualizar'));
 const CSRF_GUIA = @json(csrf_token());
+/* Codigo SUNAT -> nombre legible ("BX" -> "Caja"). El MISMO catalogo del
+   servidor, para que el modal y la hoja impresa no se contradigan. */
+const UNIDADES_GUIA = @json(collect($unidades)->mapWithKeys(fn ($n, $c) => [
+    $c => \App\Modules\Finanzas\Support\Sunat\Catalogos::etiquetaUnidad($c),
+]));
 
 function guiasPage() {
     return {
@@ -433,6 +535,12 @@ function guiasPage() {
         catalogo: @json($catalogo ?? []),
         enviando: false,
         errores: [],
+        // Confirmacion previa, igual que en Facturas: el boton Emitir abre
+        // este modal y solo se emite desde dentro.
+        confirmarAbierto: false,
+        confirmarCargando: false,
+        confirmarHtml: '',
+        confirmarError: '',
         // Consulta de documento: que campo se esta consultando, aviso al pie
         // y memoria del ultimo numero por campo, para no repetir la llamada.
         docBuscando: '',
@@ -729,28 +837,117 @@ function guiasPage() {
         /* Abre la representacion impresa en otra pestana con los datos del
            formulario. Se manda por POST dentro de un solo campo `payload`
            porque una guia lleva 20 campos y no caben en una URL. */
-        verPrevia() {
-            const f = document.createElement('form');
-            f.method = 'POST';
-            f.action = PREVIA_GUIA_URL;
-            f.target = '_blank';
-            f.style.display = 'none';
-            const campo = (n, v) => {
-                const i = document.createElement('input');
-                i.type = 'hidden'; i.name = n; i.value = v;
-                f.appendChild(i);
-            };
-            campo('_token', CSRF_GUIA);
-            // Igual que al emitir: los renglones en blanco no son lineas.
-            const datos = Object.assign({}, this.form);
-            datos.items = (this.form.items || []).filter(
-                i => (i.description || '').trim() !== ''
+        /* Las lineas con algo escrito: un renglon en blanco no es un item.
+           Gemela de la de Facturas. */
+        lineasUtiles() {
+            return (this.form.items || []).filter(
+                i => (i.description || '').trim() !== '' && Number(i.quantity) > 0
             );
-            campo('payload', JSON.stringify(datos));
-            document.body.appendChild(f);
-            f.submit();
-            f.remove();
         },
+
+        /* La unidad EN PALABRAS: quien revisa lee "Caja", no "BX". El codigo
+           es para el XML de SUNAT. */
+        nombreUnidad(codigo) {
+            return (UNIDADES_GUIA[codigo] || codigo || 'Unidad');
+        },
+
+        /* La fecha en claro. Se parte la cadena a mano porque
+           `new Date('2026-09-22')` se lee como UTC y en Peru (UTC-5) muestra
+           el dia ANTERIOR. Gemela de la de Facturas. */
+        fechaLarga(iso) {
+            const p = String(iso || '').split('-');
+            if (p.length !== 3) return iso || '-';
+            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                           'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+            return Number(p[2]) + ' de ' + (meses[Number(p[1]) - 1] || '?') + ' de ' + p[0];
+        },
+
+        /* Una linea para la cabecera del modal: cuantos productos y a quien. */
+        resumenConfirmacion() {
+            const n = this.lineasUtiles().length;
+            const quien = (this.form.destinatario_nombre || '').trim() || 'sin destinatario';
+            return n + (n === 1 ? ' producto' : ' productos') + ' · ' + quien;
+        },
+
+        /* Como viaja: transportista y placa, que es lo que para un control. */
+        resumenTransporte() {
+            const modalidad = this.form.modalidad === '01' ? 'Transporte publico' : 'Transporte privado';
+            const placa = (this.form.vehiculo_placa || '').trim();
+            const quien = (this.form.transportista_nombre || this.form.conductor_nombre || '').trim();
+            return [modalidad, placa ? 'placa ' + placa : '', quien].filter(Boolean).join(' · ');
+        },
+
+        /* El peso declarado, con su unidad. En una guia el peso ocupa el sitio
+           que en la factura ocupa el total. */
+        resumenPeso() {
+            const p = Number(this.form.peso_total || 0);
+            const u = this.form.peso_unidad === 'TNE' ? 't' : 'kg';
+            return (p > 0 ? p.toLocaleString('es-PE') : '0') + ' ' + u;
+        },
+
+        /* Abre la confirmacion: valida primero, pide la hoja impresa despues.
+           No graba nada ni gasta correlativo; se emite al confirmar. */
+        async confirmarEmision() {
+            if (this.enviando) return;
+
+            // Las mismas validaciones que antes de emitir: no se confirma lo
+            // que el servidor va a rechazar.
+            const faltan = this.faltantes();
+            if (faltan.length) {
+                const nombres = faltan.map(([, n]) => n);
+                const texto = nombres.length === 1
+                    ? 'Falta ' + nombres[0] + '.'
+                    : 'Faltan ' + nombres.length + ' datos: ' + nombres.slice(0, 3).join(', ')
+                      + (nombres.length > 3 ? ' y ' + (nombres.length - 3) + ' más.' : '.');
+                bxAviso(texto, 'error');
+                const campo = document.querySelector('#guia-form [x-model="form.' + faltan[0][0] + '"]')
+                           || document.querySelector('#guia-form [x-model\\.number="form.' + faltan[0][0] + '"]');
+                if (campo) {
+                    campo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    campo.focus({ preventScroll: true });
+                }
+                return;
+            }
+
+            this.confirmarAbierto  = true;
+            this.confirmarCargando = true;
+            this.confirmarHtml     = '';
+            this.confirmarError    = '';
+
+            try {
+                const cuerpo = new FormData();
+                cuerpo.append('_token', CSRF_GUIA);
+                cuerpo.append('payload', JSON.stringify({
+                    ...this.form,
+                    items: this.lineasUtiles(),
+                }));
+                const res = await fetch(PREVIA_GUIA_URL, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF_GUIA },
+                    body: cuerpo,
+                    signal: AbortSignal.timeout(20000),
+                });
+                if (!res.ok) throw new Error('respuesta ' + res.status);
+                this.confirmarHtml = await res.text();
+
+                /* La hoja es un documento completo con sus propios estilos:
+                   inyectarla en la pagina le pisaria el CSS al panel. Va en un
+                   iframe con srcdoc, aislada. */
+                this.$nextTick(() => {
+                    if (this.$refs.marcoPrevia) this.$refs.marcoPrevia.srcdoc = this.confirmarHtml;
+                });
+            } catch (e) {
+                this.confirmarError = 'No se pudo cargar la vista previa. Revisa la conexión e inténtalo de nuevo.';
+            } finally {
+                this.confirmarCargando = false;
+            }
+        },
+
+        async emitirConfirmado() {
+            this.confirmarAbierto = false;
+            await this.emitir();
+        },
+
 
         async emitir() {
             if (this.enviando) return;

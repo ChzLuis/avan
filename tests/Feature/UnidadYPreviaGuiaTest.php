@@ -153,12 +153,62 @@ class UnidadYPreviaGuiaTest extends TestCase
             'las lineas nuevas nacen con el marcador');
     }
 
-    /** El botón existe en la pantalla de emisión. */
-    public function test_el_boton_de_previa_esta_en_la_pantalla(): void
+    /**
+     * La previa es la CONFIRMACION antes de emitir, igual que en Facturas.
+     *
+     * Antes abria la hoja en otra pestana: se veia, pero no confirmaba nada y
+     * el boton Emitir seguia emitiendo a ciegas. Ahora Emitir abre el modal y
+     * solo se emite desde dentro.
+     */
+    public function test_emitir_abre_la_confirmacion_no_emite_directo(): void
     {
         $html = $this->comoDueno()->get(route('guias.index'))->assertOk()->getContent();
 
-        $this->assertStringContainsString('Vista previa', $html);
-        $this->assertStringContainsString('verPrevia()', $html);
+        $this->assertStringContainsString('confirmarEmision()', $html,
+            'el boton Emitir debe abrir la confirmacion');
+        $this->assertStringContainsString('emitirConfirmado()', $html,
+            'se emite desde el modal');
+        $this->assertStringNotContainsString('verPrevia()', $html,
+            'ya no hay boton de previa suelto');
+        $this->assertStringContainsString('Revisa antes de emitir', $html);
+        $this->assertStringContainsString('Confirmar y enviar a SUNAT', $html);
+    }
+
+    /**
+     * El modal tiene los MISMOS cuadros y el mismo orden que el de Facturas,
+     * con lo que importa en un traslado.
+     */
+    public function test_la_confirmacion_calca_la_de_facturas(): void
+    {
+        $guia    = file_get_contents(base_path('app/Modules/Finanzas/Views/facturacion/guias/index.blade.php'));
+        $factura = file_get_contents(base_path('app/Modules/Finanzas/Views/invoices/index.blade.php'));
+
+        // Las piezas que definen la pantalla, en las dos.
+        foreach (['Revisa antes de emitir', 'resumenConfirmacion()', 'confirmar-resumen',
+                  'confirmarCargando', 'marcoPrevia', 'Corregir'] as $pieza) {
+            $this->assertStringContainsString($pieza, $factura, "falta {$pieza} en Facturas");
+            $this->assertStringContainsString($pieza, $guia, "la guia debe tener {$pieza}");
+        }
+
+        // Lo propio del traslado: a donde va, como viaja y cuanto pesa.
+        foreach (['confirmar-partida', 'confirmar-llegada', 'resumenTransporte()',
+                  'resumenPeso()', 'Peso total'] as $pieza) {
+            $this->assertStringContainsString($pieza, $guia, "falta {$pieza}");
+        }
+
+        // Una guia NO declara importes: el total de la factura no pinta aqui.
+        $this->assertStringNotContainsString('Total a emitir', $guia,
+            'una guia no lleva importes');
+    }
+
+    /** En el resumen la unidad se lee en palabras, no el codigo SUNAT. */
+    public function test_el_resumen_muestra_la_unidad_en_palabras(): void
+    {
+        $html = $this->comoDueno()->get(route('guias.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('nombreUnidad(l.unit)', $html);
+        $this->assertStringContainsString('UNIDADES_GUIA', $html);
+        // El mapa se construye con el mismo catalogo del servidor.
+        $this->assertStringContainsString('"BX":"Caja"', str_replace(' ', '', $html));
     }
 }
