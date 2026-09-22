@@ -172,8 +172,32 @@
                                 </label>
                                 @endforeach
                             </div>
+                            {{-- Enlaces que no estan en la lista (una tienda recien
+                                 entregada, un catalogo puntual). --}}
+                            <div class="mt-2 flex gap-1.5">
+                                <input type="url" x-model="urlManual" @keydown.enter.prevent="agregarUrlManual()"
+                                       placeholder="https://otra-tienda.com  (pegar y añadir)"
+                                       class="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300">
+                                <button type="button" @click="agregarUrlManual()"
+                                        class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Añadir</button>
+                            </div>
+                            <p x-show="errorUrl" x-cloak class="text-[11px] text-red-600 mt-1" x-text="errorUrl"></p>
+
+                            {{-- Las añadidas a mano se listan aparte, con su boton de quitar. --}}
+                            <template x-if="urlsManuales().length">
+                                <div class="mt-2 space-y-1">
+                                    <template x-for="u in urlsManuales()" :key="u">
+                                        <div class="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5">
+                                            <span class="flex-1 truncate text-gray-700" x-text="u.replace(/^https?:\/\//,'')"></span>
+                                            <button type="button" @click="alternarDemo(u)" class="text-gray-400 hover:text-red-600" title="Quitar">✕</button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
                             <p class="text-[11px] text-gray-400 mt-1">
                                 La demo principal se muestra destacada arriba; estas van como referencia.
+                                <span x-show="(f.demos_extra||[]).length >= 6" class="text-amber-600 font-semibold">Máximo 6.</span>
                             </p>
                         </div>
                         <div>
@@ -351,7 +375,32 @@ function propuestas() {
         alternarDemo(url) {
             if (!Array.isArray(this.f.demos_extra)) this.f.demos_extra = [];
             const i = this.f.demos_extra.indexOf(url);
-            if (i >= 0) this.f.demos_extra.splice(i, 1); else this.f.demos_extra.push(url);
+            if (i >= 0) { this.f.demos_extra.splice(i, 1); return; }
+            // El servidor rechaza mas de 6: avisar aqui en vez de fallar al guardar.
+            if (this.f.demos_extra.length >= 6) { this.errorUrl = 'Máximo 6 tiendas de ejemplo.'; return; }
+            this.errorUrl = '';
+            this.f.demos_extra.push(url);
+        },
+
+        // ── Enlaces escritos a mano (los que no estan en la lista) ──
+        urlManual: '',
+        errorUrl: '',
+        /** Las elegidas que NO vienen del catalogo: se listan aparte para poder quitarlas. */
+        urlsManuales() {
+            const conocidas = (this.catalogoDemos || []).map(d => d.url);
+            return (this.f.demos_extra || []).filter(u => !conocidas.includes(u));
+        },
+        agregarUrlManual() {
+            let u = (this.urlManual || '').trim();
+            if (!u) return;
+            if (!/^https?:\/\//i.test(u)) u = 'https://' + u;   // pegar sin https es lo normal
+            try { new URL(u); } catch (e) { this.errorUrl = 'Esa dirección no es válida.'; return; }
+            if ((this.f.demos_extra || []).includes(u) || this.f.demo_url === u) {
+                this.errorUrl = 'Esa tienda ya está en la lista.'; return;
+            }
+            this.errorUrl = '';
+            this.alternarDemo(u);
+            if (!this.errorUrl) this.urlManual = '';
         },
         async guardar() {
             if (!this.f.client_name || !this.f.client_name.trim()) { this.error = 'Escribe el nombre del cliente.'; return; }

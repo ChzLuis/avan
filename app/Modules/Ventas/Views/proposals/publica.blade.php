@@ -131,6 +131,12 @@
 
   /* Barra de acciones (no se imprime) */
   .acciones{max-width:820px; margin:0 auto; display:flex; gap:9px; justify-content:flex-end; padding:0 4px;}
+  /* Barra fija: el cliente siempre tiene a mano Descargar y Compartir. */
+  .barra{position:fixed; left:0; right:0; bottom:0; z-index:50; background:rgba(255,255,255,.97);
+         border-top:1px solid var(--linea); padding:10px 16px; display:flex; gap:9px;
+         justify-content:center; box-shadow:0 -2px 12px rgba(15,23,42,.08);}
+  .barra .btn{padding:11px 20px; font-size:13.5px;}
+  body{padding-bottom:68px;}
   .btn{border:none; border-radius:7px; padding:9px 16px; font-size:12.5px; font-weight:600;
        cursor:pointer; font-family:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:6px;}
   .btn-p{background:var(--acento); color:#fff;}
@@ -144,7 +150,8 @@
   }
   @media print{
     body{background:#fff;}
-    .acciones{display:none !important;}
+    .acciones,.barra{display:none !important;}
+    body{padding-bottom:0;}
     .hoja{margin:0; box-shadow:none; max-width:100%;}
     .pad{padding:24px 30px;}
     h2.sec{page-break-after:avoid;} .bloque,.tabla,.renov,.inv{page-break-inside:avoid;}
@@ -407,8 +414,9 @@
   </div>
 </div>
 
-<div class="acciones" style="margin:10px auto 30px;">
-  <button class="btn btn-p" onclick="window.print()">Descargar PDF</button>
+<div class="barra">
+  <a class="btn btn-s" href="https://wa.me/{{ preg_replace('/\D/','',$proposal->client_phone) }}?text={{ urlencode('Le comparto nuestra propuesta comercial: '.url()->current()) }}" target="_blank">Compartir</a>
+  <button class="btn btn-p" onclick="window.print()">⬇ Descargar PDF</button>
 </div>
 
 </body>
