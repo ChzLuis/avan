@@ -18,6 +18,9 @@ use Illuminate\Support\Str;
  */
 class ProposalController extends Controller
 {
+    /** La numeracion de propuestas arranca aqui (antes era PRO-0001). */
+    private const CORRELATIVO_INICIAL = 1101;
+
     /** Reglas comunes de validación. */
     private function rules(bool $creando = true): array
     {
@@ -76,9 +79,13 @@ class ProposalController extends Controller
         $project = app('active_project');
         $data = $request->validate($this->rules());
 
-        $n = $project->proposals()->count() + 1;
+        $ultimo = (int) $project->proposals()
+            ->where('number', 'like', 'PRO-%')
+            ->selectRaw('MAX(CAST(SUBSTRING(number, 5) AS UNSIGNED)) AS n')
+            ->value('n');
+        $n = max($ultimo + 1, self::CORRELATIVO_INICIAL);
         $data['project_id'] = $project->id;
-        $data['number']     = 'PRO-' . str_pad((string) $n, 4, '0', STR_PAD_LEFT);
+        $data['number']     = 'PRO-' . $n;
         $data['token']      = Str::random(40);
         $data['status']     = 'borrador';
         $data['plan_recomendado'] = $data['plan_recomendado'] ?? 'pro';

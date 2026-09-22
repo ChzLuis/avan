@@ -8,6 +8,7 @@
     $mail     = $settings['contact_email'] ?? '';
     $web      = $settings['contact_web']   ?? url('/' . $project->slug);
     $ruc      = $settings['ruc']           ?? '';
+    $razon    = $settings['razon_social']  ?? '';
     $dir      = $settings['contact_address'] ?? '';
     // El setting guarda el código ISO (PEN/USD): lo mostramos como símbolo.
     $simbolos = ['PEN' => 'S/', 'USD' => '$', 'EUR' => '€', 'CLP' => '$', 'COP' => '$', 'MXN' => '$'];
@@ -39,10 +40,10 @@
   /* Encabezado */
   .cab{display:flex; justify-content:space-between; align-items:flex-start; gap:26px;
        border-bottom:3px solid var(--acento); padding-bottom:18px;}
-  .marca{display:flex; align-items:center; gap:12px;}
-  .marca img{height:46px; width:auto;}
-  .marca .nom{font-size:19px; font-weight:800; letter-spacing:-.3px;}
-  .marca .sub{font-size:11px; color:var(--gris2); margin-top:1px;}
+  .marca{display:block;}
+  .marca img{height:46px; width:auto; display:block; margin-bottom:10px;}
+  .marca .nom{font-size:15px; font-weight:700; letter-spacing:-.2px; line-height:1.3;}
+  .marca .sub{font-size:11.5px; color:var(--gris2); margin-top:2px;}
   .doc{text-align:right;}
   .doc .tipo{font-size:10px; letter-spacing:2.2px; color:var(--acento); font-weight:700;}
   .doc .num{font-size:15px; font-weight:800; margin-top:3px;}
@@ -164,11 +165,8 @@
     {{-- ENCABEZADO --}}
     <div class="cab">
       <div class="marca">
-        @if($logo)<img src="{{ $logo }}" alt="{{ $emp }}">@endif
-        <div>
-          <div class="nom">{{ $emp }}</div>
-          @if($ruc)<div class="sub">RUC {{ $ruc }}</div>@endif
-        </div>
+        {{-- Solo la marca: sin logo se escribe el nombre, con logo no se repite. --}}
+        @if($logo)<img src="{{ $logo }}" alt="{{ $emp }}">@else<div class="nom">{{ $emp }}</div>@endif
       </div>
       <div class="doc">
         <div class="tipo">PROPUESTA COMERCIAL</div>
@@ -399,11 +397,12 @@
 
   {{-- PIE --}}
   <div class="pie">
-    <div><strong>{{ $emp }}</strong>@if($dir) · {{ $dir }}@endif</div>
+    <div><strong>{{ $razon ?: $emp }}</strong>@if($ruc) · RUC {{ $ruc }}@endif</div>
+    @if($dir)<div>{{ $dir }}</div>@endif
     <div>
       @if($tel){{ $tel }}@endif
       @if($mail) · {{ $mail }}@endif
-      @if($web) · {{ preg_replace('#^https?://#','',$web) }}@endif
+      @if($web) · <a href="{{ $web }}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">{{ rtrim(preg_replace('#^https?://#','',$web), '/') }}</a>@endif
     </div>
   </div>
 </div>
