@@ -1270,7 +1270,12 @@ function bandeja() {
         },
 
         init() {
-            this.pollingInterval = setInterval(() => this.poll(), 3000);
+            this.arrancarSondeo();
+            // Volver a la pestaña: consultar YA, sin esperar al siguiente turno.
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) { this.poll(); }
+                this.arrancarSondeo();
+            });
             // Cerrar o recargar la pestaña no debe llevarse lo escrito a medias.
             window.addEventListener('beforeunload', () => this.guardarBorrador());
             // Boton "atras" del telefono: cierra el chat o el modal abierto, no la app.
@@ -1638,6 +1643,15 @@ function bandeja() {
             });
             this.conversaciones = this.conversaciones.filter(c => c.id !== this.convActiva.id);
             this.convActiva = null;
+        },
+
+        /** Delante 1,5 s (se esta atendiendo); de fondo 5 s, para no gastar de mas. */
+        arrancarSondeo() {
+            const ms = document.hidden ? 5000 : 1500;
+            if (this._sondeoMs === ms && this.pollingInterval) return;
+            this._sondeoMs = ms;
+            if (this.pollingInterval) clearInterval(this.pollingInterval);
+            this.pollingInterval = setInterval(() => this.poll(), ms);
         },
 
         async poll() {

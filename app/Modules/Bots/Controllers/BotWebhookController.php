@@ -663,14 +663,17 @@ class BotWebhookController extends Controller
             'estado' => $dir === 'in' ? 'recibido' : 'enviado',
         ]);
 
-        // Aviso push a los dispositivos del negocio (tras responder el webhook).
+        // AVISO AL INSTANTE. Antes iba en afterResponse y esperaba a que terminara
+        // todo el webhook (clasificar el lead con IA + generar la respuesta del bot):
+        // el telefono sonaba varios segundos tarde. Aqui sale nada mas guardarse el
+        // mensaje. Si el envio falla no puede tumbar el webhook: Meta reintentaria
+        // y duplicaria la conversacion.
         if ($dir === 'in') {
-            $convId = $conv->id; $projectId = $project->id; $textoAviso = $texto;
-            dispatch(function () use ($convId, $projectId, $textoAviso) {
-                if ($c = WaConversacion::find($convId)) {
-                    \App\Modules\Crm\Support\WebPush\AvisoPush::mensajeEntrante($projectId, $c, $textoAviso);
-                }
-            })->afterResponse();
+            try {
+                \App\Modules\Crm\Support\WebPush\AvisoPush::mensajeEntrante($project->id, $conv, $texto);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('push.aviso_fallo', ['error' => class_basename($e)]);
+            }
         }
 
         // Clasificar el lead con los mensajes entrantes acumulados.

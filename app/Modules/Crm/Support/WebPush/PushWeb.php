@@ -143,7 +143,7 @@ class PushWeb
                 'Content-Type'     => 'application/octet-stream',
                 'TTL'              => (string) $ttl,
                 'Urgency'          => 'high',
-            ])->withBody($cuerpo, 'application/octet-stream')->timeout(10)->post($endpoint);
+            ])->withBody($cuerpo, 'application/octet-stream')->timeout(4)->connectTimeout(3)->post($endpoint);
             $estado = $res->status();
 
             return ['ok' => $res->successful(), 'estado' => $estado, 'caducada' => in_array($estado, [404, 410], true)];
