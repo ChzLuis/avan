@@ -31,16 +31,32 @@ class CrmEstado extends Model
         ['clave' => 'proyecto',     'nombre' => 'Proyecto',     'color' => '#0284c7'],
         ['clave' => 'venta',        'nombre' => 'Venta',        'color' => '#059669', 'es_final' => true],
         ['clave' => 'perdido',      'nombre' => 'Perdido',      'color' => '#dc2626', 'es_final' => true],
+        ['clave' => 'no_aplica',    'nombre' => 'No aplica',    'color' => '#64748b', 'es_final' => true],
     ];
 
-    /** Siembra los estados de fabrica la primera vez que el negocio entra al CRM. */
+    /**
+     * Siembra los estados de fabrica y, en negocios que ya estaban, agrega los
+     * que se hayan añadido despues (al final, sin tocar los suyos).
+     */
     public static function asegurar(Project $project): void
     {
-        if (static::where('project_id', $project->id)->exists()) {
+        $existentes = static::where('project_id', $project->id)->pluck('clave')->all();
+
+        if ($existentes === []) {
+            foreach (self::SEMILLA as $i => $e) {
+                static::create($e + ['project_id' => $project->id, 'orden' => $i]);
+            }
+
             return;
         }
-        foreach (self::SEMILLA as $i => $e) {
-            static::create($e + ['project_id' => $project->id, 'orden' => $i]);
+
+        $faltan = array_filter(self::SEMILLA, fn ($e) => ! in_array($e['clave'], $existentes, true));
+        if ($faltan === []) {
+            return;
+        }
+        $orden = (int) static::where('project_id', $project->id)->max('orden');
+        foreach ($faltan as $e) {
+            static::create($e + ['project_id' => $project->id, 'orden' => ++$orden]);
         }
     }
 

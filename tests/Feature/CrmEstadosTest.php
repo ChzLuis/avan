@@ -145,4 +145,45 @@ class CrmEstadosTest extends TestCase
         $this->assertStringContainsString('Negociaci', $html, 'Los estados nuevos de la semilla tambien salen');
         $this->assertStringNotContainsString('Academia', $html, 'Ya no se usa la lista vieja');
     }
+
+    /**
+     * "No aplica": el que escribe por error o pide algo que el negocio no vende.
+     * Va aparte de "Perdido" para no ensuciar las cifras (nunca fue un cliente).
+     */
+    public function test_existe_el_estado_no_aplica_y_es_final(): void
+    {
+        $this->enElCrm()->get('/bixocrm');
+
+        $e = CrmEstado::where('project_id', $this->proyecto->id)->where('clave', 'no_aplica')->first();
+
+        $this->assertNotNull($e, 'Falta el estado No aplica');
+        $this->assertTrue($e->es_final, 'No aplica cierra la conversacion');
+        $this->assertSame('No aplica', $e->nombre);
+    }
+
+    /**
+     * Un negocio que YA tenia estados debe recibir los de fabrica que se
+     * agreguen despues. Antes se salia al ver que ya habia estados y no los
+     * veia nunca; y no puede tocar los que el negocio renombro ni su orden.
+     */
+    public function test_un_negocio_antiguo_recibe_los_estados_nuevos_sin_perder_los_suyos(): void
+    {
+        // Negocio "viejo": solo tiene dos estados, uno con nombre propio.
+        CrmEstado::create(['project_id' => $this->proyecto->id, 'clave' => 'nuevo', 'nombre' => 'Recien llegado', 'color' => '#111111', 'orden' => 0, 'es_inicial' => true]);
+        CrmEstado::create(['project_id' => $this->proyecto->id, 'clave' => 'venta', 'nombre' => 'Cerrada', 'color' => '#059669', 'orden' => 1, 'es_final' => true]);
+
+        CrmEstado::asegurar($this->proyecto);
+
+        $suyo = CrmEstado::where('project_id', $this->proyecto->id)->where('clave', 'nuevo')->first();
+        $this->assertSame('Recien llegado', $suyo->nombre, 'No se pisa lo que el negocio renombro');
+        $this->assertSame(0, $suyo->orden, 'Ni su orden');
+
+        $nuevo = CrmEstado::where('project_id', $this->proyecto->id)->where('clave', 'no_aplica')->first();
+        $this->assertNotNull($nuevo, 'El estado nuevo si se agrega');
+        $this->assertGreaterThan(1, $nuevo->orden, 'Y va al final, no en medio de los suyos');
+
+        // No duplica al volver a llamarse.
+        CrmEstado::asegurar($this->proyecto);
+        $this->assertSame(1, CrmEstado::where('project_id', $this->proyecto->id)->where('clave', 'no_aplica')->count());
+    }
 }
