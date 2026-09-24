@@ -63,6 +63,12 @@ class DemosPorRubro
                 'ferreteria-demo' => 'Distribuidores GABDE',
             ],
         ],
+        'agricola' => [
+            'etiqueta' => 'Agrícola / tubérculos y granos',
+            'tiendas' => [
+                'demoagro' => 'Agro Andino Distribuidora',
+            ],
+        ],
     ];
 
 
@@ -122,6 +128,7 @@ class DemosPorRubro
         'ferreteria' => 'Cotizar cada consulta a mano toma tiempo y se repite. Con el catálogo el cliente arma su lista, la envía como cotización y usted solo confirma precios.',
         'hogar' => 'Los muebles y electrodomésticos se deciden viendo: medidas, acabados y precio. Mandar fotos sueltas por WhatsApp no cierra la venta; con la tienda el cliente compara y reserva.',
         'tecnologia' => 'En tecnología el cliente compara precio y especificaciones antes de decidir. Con el catálogo en línea ve stock y características al detalle, sin que usted repita lo mismo cada vez.',
+        'agricola' => 'El precio cambia cada mañana y usted lo repite por teléfono cliente por cliente. Con el catálogo en línea publica el precio del día una sola vez, y el comprador arma su pedido por saco sabiendo la procedencia y el calibre.',
         'industrial' => 'La venta industrial arranca con una cotización, no con un impulso. Con el catálogo el cliente arma su requerimiento, lo envía completo y usted cotiza sobre algo concreto.',
     ];
 
@@ -136,6 +143,7 @@ class DemosPorRubro
         'ferreteria' => 'Porque el catálogo es amplio y el cliente cotiza antes de comprar.',
         'hogar' => 'Porque cada producto necesita varias fotos, medidas y ficha, y el cliente compara antes de decidir.',
         'tecnologia' => 'Porque las fichas técnicas y el stock cambian seguido, y el cliente los consulta antes de comprar.',
+        'agricola' => 'Porque se vende por saco y al por menor a la vez, y el precio del día tiene que poder cambiarse rápido sin rehacer el catálogo.',
         'industrial' => 'Porque la venta va por cotización y el catálogo tiene que soportar pedidos por volumen.',
     ];
 
@@ -246,6 +254,7 @@ class DemosPorRubro
                ninguna tienda parecida a la suya. */
             'hogar' => ['hogar', 'mueble', 'colchon', 'decorac', 'electrodomest'],
             'tecnologia' => ['tecnolog', 'celular', 'computo', 'computad', 'laptop', 'informat'],
+            'agricola' => ['agricol', 'agro', 'tuberc', 'papa', 'grano', 'menestr', 'chacra', 'cosech', 'semill'],
             'industrial' => ['industrial', 'iluminac', 'solar', 'reflector', 'pastoral'],
         ];
 
