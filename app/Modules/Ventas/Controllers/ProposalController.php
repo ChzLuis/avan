@@ -70,7 +70,63 @@ class ProposalController extends Controller
             ),
         ];
 
-        return view('ventas::proposals.index', compact('project', 'proposals', 'demos', 'textos'));
+        // Mensajes listos para copiar. Se arman en el servidor y viajan como
+        // JSON al componente: en un atributo HTML los saltos de linea rompen
+        // el marcado y el boton deja de responder.
+        $mensajes = [];
+        foreach ($proposals as $p) {
+            $negocio = $p->business_name ?: 'su negocio';
+            $mensajes[$p->id] = [
+                'envio' => "Hola {$p->client_name}, ¿cómo está?
+
+"
+                    ."Le comparto la propuesta para la tienda en línea de {$negocio}. "
+                    ."Ahí encontrará todo lo que incluye, la inversión y ejemplos de tiendas que ya trabajamos.
+
+"
+                    .route('proposal.publica', $p->token)."
+
+"
+                    ."Se abre desde el celular. Cualquier duda me escribe por aquí.",
+                'lista' => "¡Excelente, {$p->client_name}! Gracias por la confianza.
+
+"
+                    ."Para empezar con su tienda, por favor respóndame estos datos:
+
+"
+                    ."1. Nombre del negocio (como quiere que aparezca)
+"
+                    ."2. ¿Cómo quiere que se llame su página? (ej: minegocio.com)
+"
+                    ."3. RUC
+"
+                    ."4. Razón social (como figura en SUNAT)
+"
+                    ."5. Rubro
+"
+                    ."6. Dirección del local y distrito
+"
+                    ."7. Persona de contacto
+"
+                    ."8. Celular / WhatsApp
+"
+                    ."9. Correo (ahí enviamos los accesos)
+"
+                    ."10. Redes sociales
+
+"
+                    ."Y si los tiene a mano, envíeme por aquí:
+"
+                    ."• Su logo
+"
+                    ."• Fotos de sus productos
+
+"
+                    ."Puede responder todo en un solo mensaje. ¡Gracias!",
+            ];
+        }
+
+        return view('ventas::proposals.index', compact('project', 'proposals', 'demos', 'textos', 'mensajes'));
     }
 
     public function store(Request $request)
@@ -144,6 +200,87 @@ class ProposalController extends Controller
         $proposal->delete();
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * El MISMO formulario de alta, en pagina propia.
+     *
+     * Se manda por WhatsApp cuando el cliente ya dijo que si: asi no tiene que
+     * volver a recorrer la propuesta entera para llegar al formulario.
+     */
+    public function formularioAlta(string $token)
+    {
+        $proposal = Proposal::where('token', $token)->firstOrFail();
+        $project  = $proposal->project;
+
+        return view('ventas::proposals.alta', [
+            'proposal' => $proposal,
+            'project'  => $project,
+            'settings' => $project->settings()->pluck('value', 'key'),
+        ]);
+    }
+
+    /**
+     * El cliente ACEPTA la propuesta y deja los datos de su negocio.
+     *
+     * Dos cosas en un solo acto: el si queda con fecha y rastro, y los datos
+     * que antes se pedian por WhatsApp uno a uno (RUC, razon social, logo)
+     * llegan completos. Sin login: la llave es el token del enlace.
+     */
+    public function aceptar(Request $request, string $token)
+    {
+        $proposal = Proposal::where('token', $token)->firstOrFail();
+
+        // Ya aceptada: no se repisa la fecha ni los datos originales si el
+        // cliente vuelve a abrir el enlace y pulsa otra vez.
+        if ($proposal->accepted_at) {
+            return back()->with('success', 'Ya recibimos tu aceptación. Nos comunicamos contigo muy pronto.');
+        }
+
+        $datos = $request->validate([
+            'onb_negocio'      => ['required', 'string', 'max:150'],
+            'onb_ruc'          => ['nullable', 'string', 'max:15'],
+            'onb_razon_social' => ['nullable', 'string', 'max:200'],
+            'onb_rubro'        => ['nullable', 'string', 'max:100'],
+            'onb_direccion'    => ['nullable', 'string', 'max:220'],
+            'onb_distrito'     => ['nullable', 'string', 'max:100'],
+            'onb_contacto'     => ['required', 'string', 'max:150'],
+            'onb_celular'      => ['required', 'string', 'max:40'],
+            'onb_email'        => ['required', 'email', 'max:150'],
+            'onb_dominio'      => ['required', 'string', 'max:150'],
+            'onb_redes'        => ['nullable', 'string', 'max:300'],
+            'onb_notas'        => ['nullable', 'string', 'max:2000'],
+            'archivos'         => ['nullable', 'array', 'max:8'],
+            'archivos.*'       => ['file', 'mimes:jpg,jpeg,png,webp,pdf,zip', 'max:10240'],
+        ], [
+            'onb_negocio.required'  => 'Necesitamos el nombre de tu negocio.',
+            'onb_contacto.required' => 'Dinos con quién coordinamos.',
+            'onb_celular.required'  => 'Necesitamos un celular para contactarte.',
+            'onb_email.required'    => 'Necesitamos un correo para enviarte los accesos.',
+            'onb_dominio.required'  => 'Dinos cómo quieres que se llame tu página.',
+        ]);
+
+        $guardados = [];
+        foreach ((array) $request->file('archivos', []) as $archivo) {
+            if (! $archivo) {
+                continue;
+            }
+            $guardados[] = [
+                'path' => $archivo->store("propuestas/{$proposal->id}", 'public'),
+                'nombre' => $archivo->getClientOriginalName(),
+            ];
+        }
+
+        $proposal->update($datos + [
+            'onb_archivos' => $guardados ?: null,
+            'status' => 'aceptada',
+            'accepted_at' => now(),
+            'accepted_ip' => $request->ip(),
+            'accepted_by' => $datos['onb_contacto'],
+            'closed_at' => $proposal->closed_at ?? now(),
+        ]);
+
+        return back()->with('success', '¡Gracias! Recibimos tu aceptación y tus datos. Nos comunicamos contigo dentro de las próximas horas.');
     }
 
     /**

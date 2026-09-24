@@ -42,12 +42,19 @@
                         <td class="px-4 py-3 text-center">
                             @php $badge = ['borrador'=>'bg-gray-100 text-gray-600','enviada'=>'bg-blue-100 text-blue-700','aceptada'=>'bg-green-100 text-green-700','rechazada'=>'bg-red-100 text-red-600'][$p->status] ?? 'bg-gray-100 text-gray-600'; @endphp
                             <span class="text-[11px] font-bold px-2.5 py-1 rounded-full {{ $badge }}">{{ ucfirst($p->status) }}</span>
+                            @if($p->accepted_at)<span class="block text-[10px] text-emerald-600 mt-1">✓ {{ $p->accepted_at->format('d/m/Y') }}</span>@endif
                         </td>
                         <td class="px-4 py-3 text-gray-500 text-xs">{{ $p->created_at->format('d/m/Y') }}</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-1.5">
                                 <a href="{{ route('proposal.publica', $p->token) }}" target="_blank"
                                    class="text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition">Ver</a>
+                                {{-- Datos que dejo el cliente al aceptar: sin esto habria
+                                     que entrar a la base para leer su RUC o su logo. --}}
+                                @if($p->accepted_at)
+                                <button @click='verDatos(@json($p))'
+                                        class="text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition">Datos</button>
+                                @endif
                                 {{-- EDITAR: la ruta `update` existia desde el principio,
                                      pero no habia por donde llamarla: corregir un precio
                                      o el telefono obligaba a borrar y rehacer la
@@ -57,8 +64,26 @@
                                 <button @click="copiar('{{ route('proposal.publica', $p->token) }}')"
                                         class="text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg transition">Copiar link</button>
                                 @if($p->client_phone)
-                                <a href="https://wa.me/{{ preg_replace('/\D/','',$p->client_phone) }}?text={{ urlencode('Le comparto nuestra propuesta comercial: '.route('proposal.publica', $p->token)) }}"
-                                   target="_blank" class="text-xs font-semibold bg-green-100 text-green-700 hover:bg-green-200 px-2.5 py-1.5 rounded-lg transition">WhatsApp</a>
+                                @php $wa = preg_replace('/\D/', '', $p->client_phone); @endphp
+                                <a href="https://wa.me/{{ $wa }}?text={{ urlencode($mensajes[$p->id]['envio'] ?? '') }}"
+                                   target="_blank" class="text-xs font-semibold bg-green-100 text-green-700 hover:bg-green-200 px-2.5 py-1.5 rounded-lg transition"
+                                   title="Enviar la propuesta">Enviar</a>
+                                <a href="https://wa.me/{{ $wa }}?text={{ urlencode('¡Excelente! Para empezar necesito los datos de su negocio: '.route('proposal.datos', $p->token)) }}"
+                                   target="_blank" class="text-xs font-semibold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-2.5 py-1.5 rounded-lg transition"
+                                   title="Pedir los datos del negocio">Pedir datos</a>
+                                {{-- Copia el mensaje al portapapeles para pegarlo en
+                                     cualquier chat: no todos los clientes estan en
+                                     WhatsApp Web ni quieren abrir otra ventana.
+                                     Se pasa el ID, no el texto: el mensaje lleva saltos
+                                     de linea reales y meterlos en un atributo HTML rompia
+                                     el marcado, asi que el navegador leia el manejador
+                                     como parte del texto y el boton no hacia nada. --}}
+                                <button type="button" @click="copiarMsg({{ $p->id }}, 'lista')"
+                                        class="text-xs font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 px-2.5 py-1.5 rounded-lg transition"
+                                        title="Copiar las preguntas para pegarlas en el chat">Copiar preguntas</button>
+                                <button type="button" @click="copiarMsg({{ $p->id }}, 'envio')"
+                                        class="text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition"
+                                        title="Copiar el mensaje de envío de la propuesta">Copiar envío</button>
                                 @endif
                                 <button @click="eliminar({{ $p->id }})"
                                         class="text-xs text-gray-300 hover:text-red-500 px-1.5 transition">✕</button>
@@ -282,6 +307,60 @@
             </div>
         </div>
     </div>
+
+    {{-- ═══ DATOS DE ALTA (los que dejo el cliente al aceptar) ═══ --}}
+    <div x-show="datosAbierto" x-cloak class="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto p-4"
+         @click.self="datosAbierto=false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl my-6">
+            <div class="px-6 py-4 border-b flex items-center justify-between">
+                <div>
+                    <h2 class="font-bold text-gray-800">Datos del negocio</h2>
+                    <p class="text-xs text-gray-500" x-text="'Aceptada el ' + (d.accepted_at ? new Date(d.accepted_at).toLocaleDateString('es-PE') : '')"></p>
+                </div>
+                <button @click="datosAbierto=false" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="p-6 space-y-3 text-sm">
+                <template x-for="campo in camposAlta" :key="campo[0]">
+                    <div class="flex justify-between gap-4 border-b border-dashed border-gray-100 pb-2"
+                         x-show="d[campo[1]]">
+                        <span class="text-gray-500" x-text="campo[0]"></span>
+                        <span class="font-semibold text-right" x-text="d[campo[1]]"></span>
+                    </div>
+                </template>
+
+                <template x-if="d.onb_notas">
+                    <div class="pt-1">
+                        <p class="text-gray-500 mb-1">Notas del cliente</p>
+                        <p class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-700" x-text="d.onb_notas"></p>
+                    </div>
+                </template>
+
+                <template x-if="d.onb_archivos && d.onb_archivos.length">
+                    <div class="pt-1">
+                        <p class="text-gray-500 mb-2">Archivos que envió</p>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="a in d.onb_archivos" :key="a.path">
+                                <a :href="'/storage/' + a.path" target="_blank"
+                                   class="text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-lg"
+                                   x-text="a.nombre"></a>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="pt-3 flex gap-2">
+                    <a :href="'https://wa.me/' + String(d.onb_celular || '').replace(/\D/g,'') "
+                       target="_blank"
+                       class="flex-1 text-center text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200 px-4 py-2.5 rounded-xl"
+                       x-show="d.onb_celular">Escribir al cliente</a>
+                    <button @click="copiarAlta()"
+                            class="flex-1 text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2.5 rounded-xl">
+                        Copiar todos los datos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -302,6 +381,62 @@ function propuestas() {
         textos: @js($textos),
         catalogoDemos: @js($demos),
         etiqueta(p) { return { unico:'pago único', mensual:'mensual', sesion:'por sesión', anual:'anual' }[p] || p; },
+        // Datos de alta que dejo el cliente al aceptar.
+        datosAbierto: false,
+        d: {},
+        camposAlta: [
+            ['Negocio', 'onb_negocio'],
+            ['RUC', 'onb_ruc'],
+            ['Razón social', 'onb_razon_social'],
+            ['Rubro', 'onb_rubro'],
+            ['Dirección', 'onb_direccion'],
+            ['Distrito', 'onb_distrito'],
+            ['Contacto', 'onb_contacto'],
+            ['Celular', 'onb_celular'],
+            ['Correo', 'onb_email'],
+            ['Nombre de página', 'onb_dominio'],
+            ['Redes', 'onb_redes'],
+        ],
+        verDatos(p) { this.d = p; this.datosAbierto = true; },
+        /* Mensajes listos para copiar, indexados por propuesta. Se arman aqui
+           dentro del <script> y no en un atributo: el texto lleva saltos de
+           linea reales que en un atributo HTML rompen el marcado. */
+        msgs: @js($mensajes ?? []),
+        copiarMsg(id, tipo) {
+            const m = (this.msgs[id] || {})[tipo];
+            if (!m) { if (window.bxAviso) bxAviso('No hay mensaje para copiar', 'error'); return; }
+            this.copiarTexto(m);
+        },
+        /* Copiar al portapapeles con respaldo: `navigator.clipboard` solo
+           existe en HTTPS y falla en silencio si no, dejando al usuario sin
+           saber si copio o no. */
+        copiarTexto(txt) {
+            const ok = () => { if (window.bxAviso) bxAviso('Mensaje copiado, pégalo en el chat'); };
+            const mal = () => { if (window.bxAviso) bxAviso('No se pudo copiar', 'error'); };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(txt).then(ok, mal);
+                return;
+            }
+            const ta = document.createElement('textarea');
+            ta.value = txt;
+            ta.style.cssText = 'position:fixed;left:-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy') ? ok() : mal(); } catch (e) { mal(); }
+            ta.remove();
+        },
+        /* Copiar en texto plano: asi se pega tal cual en el alta del negocio
+           sin ir campo por campo leyendo de la pantalla. */
+        copiarAlta() {
+            const txt = this.camposAlta
+                .filter(c => this.d[c[1]])
+                .map(c => c[0] + ': ' + this.d[c[1]])
+                .join(String.fromCharCode(10));
+            navigator.clipboard.writeText(txt).then(
+                () => { if (window.bxAviso) bxAviso('Datos copiados'); },
+                () => { if (window.bxAviso) bxAviso('No se pudo copiar', 'error'); }
+            );
+        },
         abrirNueva() {
             this.f = { client_name:'', business_name:'', rubro:'', city:'', client_phone:'', client_email:'',
                        demo_url:'', demos_extra:[], plan_recomendado:'pro', plan_motivo:'', apertura:'',
