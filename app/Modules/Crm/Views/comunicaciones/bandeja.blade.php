@@ -4,6 +4,22 @@
 
 {{-- Los estados los define cada negocio (tabla crm_estados); llegan en \$estados. --}}
 
+{{-- Pantallas medianas (una ventana a media pantalla, una tablet): la lista de
+     340 px fijos + la ficha de 300 dejaban el chat sin sitio y el texto salia
+     cortado. Va en estilo propio porque las clases xl:* de Tailwind NO estan
+     en el CSS compilado. --}}
+<style>
+  @media (min-width:768px) and (max-width:1279px){
+    .crm-lista{ width:clamp(240px, 28vw, 300px) !important; }
+  }
+  /* Por debajo de 1280 px la ficha del cliente se abre por encima (como en
+     movil) en vez de robarle 300 px al chat. */
+  @media (min-width:1024px) and (max-width:1279px){
+    .crm-ficha{ position:fixed !important; width:min(88vw, 360px) !important;
+                max-width:360px !important; box-shadow:-8px 0 24px rgba(15,23,42,.18) !important; }
+  }
+</style>
+
 <div class="flex h-full w-full overflow-hidden"
      x-data="bandeja()" x-init="init()"
      style="height:100%">
@@ -11,7 +27,7 @@
 {{-- ══════════════════════
      COLUMNA IZQUIERDA — Lista de chats (estilo WhatsApp)
 ══════════════════════ --}}
-<div class="flex-col bg-white border-r border-gray-200 flex-shrink-0 w-full md:w-[340px]"
+<div class="crm-lista flex-col bg-white border-r border-gray-200 flex-shrink-0 w-full md:w-[340px]"
      :class="convActiva ? 'hidden md:flex' : 'flex'">
 
     {{-- Cabecera --}}
@@ -474,7 +490,7 @@
 
 {{-- ═══ FICHA DEL CLIENTE: un solo panel. En PC es una columna plegable; en movil, un cajon superpuesto. ═══ --}}
 <div x-show="convActiva && mostrarFicha" x-cloak
-     class="fixed inset-y-0 right-0 z-40 w-[88vw] max-w-sm shadow-2xl lg:static lg:shadow-none lg:w-[300px] lg:max-w-none flex-col bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0 flex">
+     class="crm-ficha fixed inset-y-0 right-0 z-40 w-[88vw] max-w-sm shadow-2xl lg:static lg:shadow-none lg:w-[300px] lg:max-w-none flex-col bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0 flex">
     <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
         <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ficha del cliente</span>
         <button @click="mostrarFicha = false" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100" title="Cerrar">✕</button>

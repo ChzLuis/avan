@@ -27,7 +27,7 @@
     </style>
 </head>
 {{-- En movil la barra lateral arranca cerrada (es fija y taparia el chat); en PC, abierta. --}}
-<body class="font-sans antialiased bg-gray-50" x-data="{ open: window.innerWidth >= 1024 }">
+<body class="font-sans antialiased bg-gray-50" x-data="{ open: window.innerWidth >= 1280 }">
 
 <div class="flex h-screen overflow-hidden">
 
