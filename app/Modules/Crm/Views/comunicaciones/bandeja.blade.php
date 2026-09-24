@@ -73,7 +73,7 @@
         {{-- Pestañas: como WhatsApp (Todos / No leídos) y como un CRM (Mías / Sin asignar / Cerradas).
              Van en dos filas: en una sola, "Archivadas" quedaba fuera de la pantalla. --}}
         <div class="flex gap-1 mt-2 flex-wrap">
-            <template x-for="t in [['todas','Todas'],['sin_leer','No leídas']]" :key="t[0]">
+            <template x-for="t in [['todas','Todas'],['abiertas','Abiertas'],['sin_leer','No leídas']]" :key="t[0]">
                 <button @click="vista = t[0]"
                         :class="vista === t[0] ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
                         class="px-2.5 py-1 text-[11px] font-semibold rounded-full whitespace-nowrap transition-colors flex items-center gap-1">
@@ -918,7 +918,11 @@ function bandeja() {
            ['cerrado','perdido'] y 'cerrado' NO existe entre los estados que
            configura el negocio, asi que ese filtro nunca encontraba nada. */
         estadoCierra(estado) {
-            return ['cerrado', 'perdido', 'venta', 'ganado', 'no_responde'].includes(estado);
+            // Cierran de verdad: el trato termino. "No responde" NO cierra
+            // (hay que insistir) y por eso estaba escondiendo 10 chats.
+            const e = (this.estados || []).find(x => x.clave === estado);
+            if (e) return !!e.es_final;                       // lo decide el negocio
+            return ['cerrado', 'perdido', 'venta', 'ganado', 'no_aplica'].includes(estado);
         },
 
         enVista(c, v) {
@@ -930,13 +934,15 @@ function bandeja() {
             if (v === 'sin_leer') return c.no_leidos > 0;
             if (v === 'mias') return c.asignado_a === YO;
             if (v === 'sin_asignar') return !c.asignado_a && !cerrada;
-            return !cerrada;
+            if (v === 'abiertas') return !cerrada;   // lo que sigue vivo
+            return true;                              // "todas" = TODAS
         },
 
         /* Solo los estados que tienen chats, en el orden configurado: mostrar
            diez chips, seis de ellos en (0), no ayuda a nadie. */
         get estadosConChats() {
             const vivos = this.conversaciones.filter(c => !c.archivado);
+            // Incluye los estados finales: son chats reales y deben poder verse.
             return this.estados
                 .filter(e => vivos.some(c => c.estado === e.clave))
                 .map(e => ({ ...e, color: e.color || '#6b7280' }));
