@@ -61,4 +61,34 @@ class CrmBandejaPollTest extends TestCase
         $this->assertFalse($fila['bot_activo'], 'El bot sigue apagado tras el sondeo');
         $this->assertNotNull($filas->firstWhere('id', $archivada->id), 'Los archivados tambien se refrescan');
     }
+
+    /**
+     * Las notas del cliente deben viajar en el sondeo.
+     *
+     * No lo hacian, pero el sondeo SI reemplaza la conversacion en la lista: al
+     * reabrir el chat las notas y el sector volvian vacios y parecia que el boton
+     * "Guardar notas" no funcionaba, aunque en la base si estaban guardadas.
+     */
+    public function test_el_sondeo_devuelve_las_notas_del_cliente(): void
+    {
+        $usuario = User::factory()->create();
+        $proyecto = Project::create(['owner_id' => $usuario->id, 'name' => 'CRM notas', 'slug' => 'crm-notas-' . uniqid(), 'is_active' => true]);
+        Productos::activar($proyecto, 'crm');
+        $canal = WaCanal::create(['project_id' => $proyecto->id, 'nombre' => 'L', 'tipo' => 'bixo', 'activo' => true, 'phone_number_id' => '1', 'access_token' => 'T']);
+        $conv = WaConversacion::create(['wa_canal_id' => $canal->id, 'cliente_nombre' => 'Alicia', 'cliente_telefono' => '51970', 'estado' => 'nuevo', 'no_leidos' => 0, 'ultimo_mensaje_at' => now(), 'bot_activo' => true]);
+        $yo = fn () => $this->actingAs($usuario)->withSession(['comunicaciones_project_id' => $proyecto->id]);
+
+        $yo()->patchJson("/bixocrm/{$conv->id}", [
+            'notas'            => 'Busca celulares',
+            'cliente_sector'   => 'Tecnologia',
+            'cliente_distrito' => 'Los Olivos',
+        ])->assertOk();
+
+        $fila = collect($yo()->getJson('/bixocrm/poll?since=' . now()->subMinute()->timestamp)
+            ->assertOk()->json('conversaciones_actualizadas'))->firstWhere('id', $conv->id);
+
+        $this->assertSame('Busca celulares', $fila['notas'] ?? null, 'Sin esto el navegador borra las notas al sondear');
+        $this->assertSame('Tecnologia', $fila['cliente_sector'] ?? null);
+        $this->assertSame('Los Olivos', $fila['cliente_distrito'] ?? null);
+    }
 }

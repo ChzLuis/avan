@@ -574,7 +574,9 @@
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Notas</p>
             <textarea x-model="editNotas" rows="4" placeholder="Notas del cliente..."
                       class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-green-400 resize-none"></textarea>
-            <button @click="guardarDetalle()" class="mt-1 w-full text-xs text-white py-1.5 rounded-lg" style="background:#25d366">Guardar notas</button>
+            <button @click="guardarDetalle(true)" class="mt-1 w-full text-xs text-white py-1.5 rounded-lg transition-colors"
+                    :style="notasGuardadas ? 'background:#059669' : 'background:#25d366'"
+                    x-text="notasGuardadas ? '✓ Guardado' : 'Guardar notas'"></button>
         </div>
 
         {{-- Acciones de este cliente: lo siguiente que hay que hacer, con recordatorio push. --}}
@@ -1609,25 +1611,44 @@ function bandeja() {
             }
         },
 
-        async guardarDetalle() {
+        notasGuardadas: false,
+        async guardarDetalle(avisar = false) {
             if (!this.convActiva) return;
-            await fetch(`/bixocrm/${this.convActiva.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify({
-                    cliente_nombre:   this.editNombre,
-                    cliente_sector:   this.editSector,
-                    cliente_distrito: this.editDistrito,
-                    notas:            this.editNotas,
-                }),
-            });
-            this.convActiva.cliente_nombre   = this.editNombre;
-            this.convActiva.cliente_sector   = this.editSector;
-            this.convActiva.cliente_distrito = this.editDistrito;
-            this.convActiva.notas            = this.editNotas;
+            const conv = this.convActiva;
+            try {
+                const res = await fetch(`/bixocrm/${conv.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cliente_nombre:   this.editNombre,
+                        cliente_sector:   this.editSector,
+                        cliente_distrito: this.editDistrito,
+                        notas:            this.editNotas,
+                    }),
+                });
+                if (res.status === 401 || res.status === 419) {
+                    this.sesionCaida = true;
+                    this.aviso('Tu sesión caducó: no se guardó. Vuelve a entrar y repite.', 'error');
+                    return;
+                }
+                if (!res.ok) { this.aviso('No se pudo guardar (error ' + res.status + ').', 'error'); return; }
+
+                // Solo despues de que el servidor lo acepte se da por guardado.
+                conv.cliente_nombre   = this.editNombre;
+                conv.cliente_sector   = this.editSector;
+                conv.cliente_distrito = this.editDistrito;
+                conv.notas            = this.editNotas;
+                if (avisar) {
+                    this.notasGuardadas = true;
+                    setTimeout(() => { this.notasGuardadas = false; }, 2000);
+                }
+            } catch (e) {
+                this.aviso('Sin conexión: no se guardó. Revisa tu internet e inténtalo de nuevo.', 'error');
+            }
         },
 
         archivarConversacion() { if (this.convActiva) this.archivar(this.convActiva, true); },
