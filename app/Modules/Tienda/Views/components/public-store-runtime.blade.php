@@ -383,7 +383,28 @@
      "Explora por categoría", "Promociones", etc.). --}}
 @if($storeView === 'home' && ! $ownFooter && ! $ownWhatsapp)
 <x-storefront-home-skins :settings="$settings" />
-<x-storefront-home-sections :project="$project" :settings="$settings"
+@php
+    // Los bloques "Productos destacados" y "Productos con descuento" reciben
+    // la lista de productos por parametro. Ninguna plantilla se la pasaba, asi
+    // que los dos bloques salian vacios en TODAS las tiendas aunque el
+    // constructor los mostrara activos.
+    //
+    // Se carga aqui, y solo si alguno de los dos bloques existe, para no
+    // cobrarle una consulta a las tiendas que no los usan. El tope es 60:
+    // el componente muestra como mucho 24 de cada uno.
+    $pideProductos = $sections->whereIn('component', ['featured_products', 'discounts'])->isNotEmpty();
+    $productosHome = collect();
+    if ($pideProductos) {
+        $productosHome = \App\Modules\Catalogo\Models\Product::query()
+            ->where('project_id', $project->id)
+            ->where('is_available', true)
+            ->with('mainImage')
+            ->orderBy('sort_order')
+            ->limit(60)
+            ->get();
+    }
+@endphp
+<x-storefront-home-sections :project="$project" :settings="$settings" :products="$productosHome"
     :sections="\App\Modules\Tienda\Storefront\HomePresets::ordenar($sections, $settings['home_template'] ?? null)" />
 @endif
 
@@ -584,7 +605,11 @@
         if (config.ownFooter) {
             if (fallbackHero) fallbackHero.remove();
         } else {
-            let heroTitle = document.querySelector('[class*="hero" i] h1,[class*="banner" i] h1,section[data-hero] h1');
+            /* `[data-hero]` a secas, no `section[data-hero]`: la plantilla de
+               carta marca su hero en un <div> y el selector viejo, que exigia
+               <section>, no lo encontraba. Resultado: el runtime anadia SU
+               banner encima y el titulo salia dos veces. */
+            let heroTitle = document.querySelector('[class*="hero" i] h1,[class*="banner" i] h1,[data-hero] h1');
             const builderHero = managedSections.find(section => section.dataset.storeHomeSection === 'hero');
             if (builderHero) {
                 const nativeHero = heroTitle?.closest('section') || heroTitle?.closest('[class*="hero" i],[class*="banner" i]');
