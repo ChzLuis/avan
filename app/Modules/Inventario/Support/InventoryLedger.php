@@ -76,6 +76,13 @@ class InventoryLedger
             $fresco->save();
             $product->stock = $saldo;   // el objeto en memoria queda al día
 
+            // Si la mercaderia SALE, tambien sale de su estante. Sin esto la
+            // ubicacion seguiria diciendo que hay 174 cuando quedan 169, y en
+            // dos dias nadie se fiaria de las ubicaciones.
+            if ($delta < 0) {
+                self::descontarDeUbicaciones($fresco->id, abs($delta));
+            }
+
             return InventoryMovement::create([
                 'project_id'     => $fresco->project_id,
                 'product_id'     => $fresco->id,
@@ -90,6 +97,49 @@ class InventoryLedger
                 'notes'          => $notes,
             ]);
         });
+    }
+
+    /**
+     * Descuenta unidades de las ubicaciones donde esta guardado el producto.
+     *
+     * Se empieza por la ubicacion que mas tiene, que es de donde se coge en
+     * la practica. Si una queda en cero, su linea se borra en vez de quedarse
+     * a 0: una ubicacion no deberia listar productos que ya no guarda.
+     *
+     * Lo que no alcance a cubrirse se ignora a proposito. Significa que habia
+     * mercaderia sin ubicar, y eso lo arregla una toma de inventario, no una
+     * resta a ciegas que dejaria estantes en negativo.
+     */
+    private static function descontarDeUbicaciones(int $productId, int $unidades): void
+    {
+        if ($unidades <= 0) {
+            return;
+        }
+
+        $lineas = DB::table('product_locations')
+            ->where('product_id', $productId)
+            ->whereNotNull('cantidad')
+            ->where('cantidad', '>', 0)
+            ->orderByDesc('cantidad')
+            ->get(['id', 'cantidad']);
+
+        foreach ($lineas as $linea) {
+            if ($unidades <= 0) {
+                break;
+            }
+
+            $quita = min((int) $linea->cantidad, $unidades);
+            $resto = (int) $linea->cantidad - $quita;
+
+            if ($resto > 0) {
+                DB::table('product_locations')->where('id', $linea->id)
+                    ->update(['cantidad' => $resto, 'updated_at' => now()]);
+            } else {
+                DB::table('product_locations')->where('id', $linea->id)->delete();
+            }
+
+            $unidades -= $quita;
+        }
     }
 
     /**

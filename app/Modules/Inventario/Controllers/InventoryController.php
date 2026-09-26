@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Inventario\Models\InventoryMovement;
 use App\Modules\Catalogo\Models\Product;
 use App\Modules\Inventario\Support\InventoryLedger;
+use App\Modules\Inventario\Support\StockSituacion;
 use Illuminate\Http\Request;
 
 /**
@@ -35,7 +36,9 @@ class InventoryController extends Controller
 
         // Valorización: se calcula sobre TODO el inventario, no sobre el filtro,
         // para que el total no cambie al buscar (sería confuso).
-        $todos = $project->products()->whereNotNull('stock')->get(['stock', 'cost', 'price', 'stock_min']);
+        // El `id` hace falta para cruzar con lo comprometido: sin el, el
+        // resumen no encuentra ningun producto y sale todo a cero.
+        $todos = $project->products()->whereNotNull('stock')->get(['id', 'stock', 'cost', 'price', 'stock_min']);
         $resumen = [
             'referencias' => $todos->count(),
             'unidades'    => (int) $todos->sum('stock'),
@@ -55,8 +58,14 @@ class InventoryController extends Controller
         $motivosEntrada = InventoryLedger::ENTRADAS;
         $motivosSalida  = InventoryLedger::SALIDAS;
 
+        // Vendido y aun en el estante. Sin esto, la pantalla dice que hay 3
+        // cuando en el almacen se ven 8, y nadie sabe cual de las dos miente.
+        $comprometidos = StockSituacion::comprometidoPorProducto($project->id);
+        $situacion = StockSituacion::resumen($project->id, $todos);
+
         return view('inventario::inventory.index', compact(
-            'project', 'productos', 'resumen', 'ultimos', 'motivosEntrada', 'motivosSalida'
+            'project', 'productos', 'resumen', 'ultimos', 'motivosEntrada', 'motivosSalida',
+            'comprometidos', 'situacion'
         ));
     }
 

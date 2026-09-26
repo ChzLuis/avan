@@ -21,7 +21,7 @@ class InventoryMovement extends Model {
     /** Motivo legible ("Compra a proveedor", "Venta"…). */
     public function getMotivoAttribute(): string
     {
-        return \App\Support\InventoryLedger::etiqueta($this->reason);
+        return \App\Modules\Inventario\Support\InventoryLedger::etiqueta($this->reason);
     }
 
     /** Valor del movimiento (cantidad × costo unitario), siempre positivo. */

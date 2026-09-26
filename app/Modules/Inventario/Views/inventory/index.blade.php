@@ -17,6 +17,18 @@
         </div>
         <div class="flex items-center gap-2 flex-wrap">
             <a href="{{ route('products.index') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 font-semibold bg-white">Ir al catálogo</a>
+            <a href="{{ route('inventory.etiquetas') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-emerald-400 hover:text-emerald-700 font-semibold bg-white flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                Etiquetas QR
+            </a>
+            <a href="{{ route('inventory.tomas') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 font-semibold bg-white flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                Toma de inventario
+            </a>
+            <a href="{{ route('inventory.ubicaciones') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 font-semibold bg-white">Ubicaciones</a>
+            <a href="{{ route('inventory.activos') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 font-semibold bg-white">Activos fijos</a>
+            <a href="{{ route('inventory.bultos') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 font-semibold bg-white">Bultos</a>
+            <a href="{{ route('inventory.traslados') }}" class="text-xs px-3 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 font-semibold bg-white">Traslados</a>
             <button @click="movModal = true" class="text-xs px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                 Registrar movimiento
@@ -82,10 +94,27 @@
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm min-w-[620px]">
+                        @if(($situacion['comprometido'] ?? 0) > 0 || ($situacion['sobreventa'] ?? 0) > 0)
+                        <caption class="caption-top text-left px-4 py-2 text-xs text-gray-500 bg-blue-50/50 border-b border-blue-100">
+                            @if($situacion['comprometido'] > 0)
+                            <b class="text-blue-800">{{ $situacion['comprometido'] }}
+                            {{ $situacion['comprometido'] === 1 ? 'unidad' : 'unidades' }}</b> en
+                            {{ $situacion['referencias_comprometidas'] }}
+                            {{ $situacion['referencias_comprometidas'] === 1 ? 'producto' : 'productos' }}
+                            {{ $situacion['comprometido'] === 1 ? 'está vendida y aún en el almacén' : 'están vendidas y aún en el almacén' }}:
+                            al contar el estante {{ $situacion['comprometido'] === 1 ? 'la vas' : 'las vas' }} a encontrar.
+                            @endif
+                            @if($situacion['sobreventa'] > 0)
+                            <span class="text-red-700 font-semibold">{{ $situacion['sobreventa'] }} producto(s) con stock negativo: se vendió más de lo que había.</span>
+                            @endif
+                        </caption>
+                        @endif
                         <thead>
                             <tr class="bg-gray-50 text-gray-500 text-[10px] uppercase tracking-wide">
                                 <th class="text-left font-bold px-4 py-2.5">Producto</th>
                                 <th class="text-right font-bold px-3 py-2.5">Stock</th>
+                                <th class="text-right font-bold px-3 py-2.5" title="Vendido y todavía en el almacén, esperando despacho">Comprometido</th>
+                                <th class="text-right font-bold px-3 py-2.5" title="Lo que deberías encontrar al contar el estante">En estante</th>
                                 <th class="text-right font-bold px-3 py-2.5">Mínimo</th>
                                 <th class="text-right font-bold px-3 py-2.5">Costo</th>
                                 <th class="text-right font-bold px-4 py-2.5">Valorizado</th>
@@ -98,6 +127,10 @@
                                 $stock = (int) $p->stock;
                                 $min   = (int) ($p->stock_min ?? 0);
                                 $estado = $stock <= 0 ? 'agotado' : ($min > 0 && $stock <= $min ? 'bajo' : 'ok');
+                                // La venta descuenta al crear el pedido, no al despacharlo:
+                                // lo comprometido sigue fisicamente en el estante.
+                                $comp = (int) ($comprometidos[$p->id] ?? 0);
+                                $enEstante = $stock + $comp;
                             @endphp
                             <tr class="border-t border-gray-50 hover:bg-gray-50/60">
                                 <td class="px-4 py-2.5">
@@ -113,6 +146,18 @@
                                     @elseif($estado === 'bajo')
                                         <div class="text-[10px] font-semibold text-amber-500">Bajo mínimo</div>
                                     @endif
+                                </td>
+                                <td class="px-3 py-2.5 text-right">
+                                    @if($comp > 0)
+                                    <span class="font-semibold text-blue-700" style="font-variant-numeric:tabular-nums">{{ $comp }}</span>
+                                    <div class="text-[10px] text-blue-400">por despachar</div>
+                                    @else
+                                    <span class="text-gray-300">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2.5 text-right">
+                                    <span class="{{ $comp > 0 ? 'font-bold text-gray-800' : 'text-gray-400' }}"
+                                          style="font-variant-numeric:tabular-nums">{{ $enEstante }}</span>
                                 </td>
                                 <td class="px-3 py-2.5 text-right text-gray-400">{{ $min ?: '—' }}</td>
                                 <td class="px-3 py-2.5 text-right text-gray-600">{{ $p->cost !== null ? $fmt($p->cost) : '—' }}</td>
