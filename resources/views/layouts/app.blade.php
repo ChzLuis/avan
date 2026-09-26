@@ -898,7 +898,7 @@
         $sCatActivo     = request()->routeIs('catalog') || request()->routeIs('products.*') || request()->routeIs('services.*') || request()->routeIs('categories.*') || request()->routeIs('reviews.*');
         $sCrmActivo     = request()->routeIs('clients') || request()->routeIs('clients.*') || request()->routeIs('bot-flows.*') || request()->routeIs('bixocrm.*');
         $sComActivo     = request()->routeIs('bixosales.pos*') || request()->routeIs('bixosales.pedidos*') || request()->routeIs('bixosales.cotizaciones*') || request()->routeIs('bixosales.facturas*') || request()->routeIs('proposals*');
-        $sLogActivo     = request()->routeIs('bixosales.reportes*') || request()->routeIs('bots*');
+        $sLogActivo     = request()->routeIs('inventory.*');
 
         $negCat  = $activeProject->category ?? 'default';
         $sbLabels = match(true) {
@@ -1172,7 +1172,8 @@
             <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.cat" x-collapse>
                 @if($sbLabels['productos'] !== null)
                 <a href="{{ $pid?route('products.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('products.*') ? 'active' : '' }}">{{ $sbLabels['productos'] }}</a>
-                <a href="{{ $pid?route('inventory.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}">Inventario</a>
+                {{-- Inventario se mudo al bloque Logistica, que es su sitio:
+                     aqui se define QUE se vende, alli se controla QUE HAY. --}}
                 @endif
                 @if($sbLabels['servicios'] !== null)
                 <a href="{{ $pid?route('services.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('services.*') ? 'active' : '' }}">{{ $sbLabels['servicios'] }}</a>
@@ -1217,6 +1218,14 @@
                     <a href="{{ route('bixocrm.bandeja') }}" class="sb-sub-item {{ request()->routeIs('bixocrm.bandeja') ? 'active' : '' }}">Conversaciones</a>
                     <a href="{{ route('clients') }}" class="sb-sub-item {{ request()->routeIs('clients') ? 'active' : '' }}">Clientes / Leads</a>
                     <a href="{{ route('clients.pipeline') }}" class="sb-sub-item {{ request()->routeIs('clients.pipeline') ? 'active' : '' }}">Pipeline de ventas</a>
+                    @endif
+                    {{-- Bandeja del Validador. Doble puerta: el permiso y el
+                         interruptor del negocio. Un negocio que no financia no
+                         tiene por que ver una entrada de credito en su menu. --}}
+                    @if(($project ?? null) && (string) $project->setting('credito_activo', '0') === '1')
+                    @can('creditos.ver')
+                    <a href="{{ route('creditos.index') }}" class="sb-sub-item {{ request()->routeIs('creditos.*') ? 'active' : '' }}">Financiamientos</a>
+                    @endcan
                     @endif
                     @if($canBotQr)
                     <a href="{{ route('bot-flows.index') }}" class="sb-sub-item {{ request()->routeIs('bot-flows.*') ? 'active' : '' }}">Bots</a>
@@ -1270,12 +1279,28 @@
                 <a href="{{ $pid?route('bixosales.cotizaciones'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.cotizaciones*') ? 'active' : '' }}">{{ $sbLabels['cotizaciones'] }}</a>
                 @endif
             @endif
+                @if($isOwnerOrSuper)
+                <a href="{{ $pid?route('bixosales.reportes.ventas.general'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.reportes*') ? 'active' : '' }}">Reportes</a>
+                @endif
             </div>
         </div>
         @endif
 
-        {{-- ══ BLOQUE: LOGÍSTICA — solo owner/superadmin ══ --}}
-        @if($isOwnerOrSuper)
+        {{-- ══ BLOQUE: LOGÍSTICA ══ --}}
+        {{-- Todo lo que mueve mercadería física: existencias, dónde está,
+             cómo se cuenta, cómo sale y quién responde por ella. Se abre con
+             el módulo `logistics` o `inventory`; `catalog` entra también
+             porque los negocios que ya lo tenían llevaban el inventario ahí y
+             quitárselo sería una regresión. --}}
+        @php
+            $puedeLogistica = $activeProject
+                && ($activeProject->hasModule('logistics') || $activeProject->hasModule('inventory') || $activeProject->hasModule('catalog'))
+                && (auth()->user()?->is_superadmin
+                    || $activeProject->owner_id === auth()->id()
+                    || auth()->user()?->can('inventory.ver')
+                    || auth()->user()?->can('catalog.ver'));
+        @endphp
+        @if($puedeLogistica)
         <div class="sb-module {{ $sLogActivo ? 'is-active is-open' : '' }}" :class="sec.log ? 'is-open' : ''">
             <button @click="toggle('log')" class="sb-module-head">
                 <svg class="sb-mod-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1289,12 +1314,14 @@
                 <span class="sb-mod-tip" x-show="!open && !sidebarOpen" x-cloak>Logística</span>
             </button>
             <div class="sb-sub-list" x-show="(open || sidebarOpen) && sec.log" x-collapse>
-            @if($isOwnerOrSuper)
-                <a href="{{ $pid?route('bixosales.reportes.ventas.general'):'#' }}" class="sb-sub-item {{ request()->routeIs('bixosales.reportes*') ? 'active' : '' }}">Reportes</a>
-            @endif
-            @if($activeProject && $activeProject->hasModule('bots') && (auth()->user()?->is_superadmin || $activeProject->owner_id===auth()->id()))
-                <a href="{{ $pid?route('bots.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('bots*') ? 'active' : '' }}">Bots WhatsApp</a>
-            @endif
+                <a href="{{ $pid?route('inventory.compras'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.compras*') ? 'active' : '' }}">Órdenes de compra</a>
+                <a href="{{ $pid?route('inventory.index'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.index') ? 'active' : '' }}">Existencias y kardex</a>
+                <a href="{{ $pid?route('inventory.tomas'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.tomas*') ? 'active' : '' }}">Toma de inventario</a>
+                <a href="{{ $pid?route('inventory.ubicaciones'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.ubicaciones*') ? 'active' : '' }}">Ubicaciones</a>
+                <a href="{{ $pid?route('inventory.traslados'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.traslados') ? 'active' : '' }}">Mover entre almacenes</a>
+                <a href="{{ $pid?route('inventory.etiquetas'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.etiquetas*') ? 'active' : '' }}">Etiquetas QR</a>
+                <a href="{{ $pid?route('inventory.activos'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.activos*') ? 'active' : '' }}">Activos fijos</a>
+                <a href="{{ $pid?route('inventory.bultos'):'#' }}" class="sb-sub-item {{ request()->routeIs('inventory.bultos*') ? 'active' : '' }}">Bultos y despacho</a>
             </div>
         </div>
         @endif

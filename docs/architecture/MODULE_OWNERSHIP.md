@@ -21,6 +21,10 @@ Cada entidad tiene un único propietario. Otros módulos pueden consultar o ejec
 | `Payment`, `ReceivableTerm` | Finance | Sales, POS, Automation | `payments`, `receivable_terms` |
 | `Invoice`, `InvoiceItem`, `GuiaRemision` | Finance/Fiscal | Sales, Fulfillment | tablas homónimas |
 | `InventoryMovement`, `Product.stock` | Inventory | Catalog, Sales, Purchasing | `inventory_movements`; `InventoryLedger` es el escritor canónico |
+| `InventoryCount`, `InventoryCountItem` | Inventory | Catalog | `inventory_counts`, `inventory_count_items`; la toma de inventario NO escribe `stock`: al cerrarse aplica las diferencias con `InventoryLedger` |
+| `WarehouseLocation`, `product_locations` | Inventory | Catalog | `warehouse_locations`, `product_locations`; la cantidad por ubicación es orientativa, el saldo que manda sigue siendo `products.stock` |
+| `FixedAsset`, `FixedAssetEvent` | Inventory | — | `fixed_assets`, `fixed_asset_events`; NO es un `Product`: se posee y se asigna, no se vende. El historial es inmutable |
+| `OrderPackage` | Inventory | Sales, Fulfillment | `order_packages`; el rastro de despacho va a `OrderEvent`, no se duplica aquí |
 | `Proveedor` | Purchasing | Inventory, Finance | `proveedores` |
 | Campos de entrega en `Order` | Fulfillment | Sales, Commerce | temporalmente `orders`; extraer sólo cuando haya casos de uso suficientes |
 | `Store*`, `DesignTemplate`, `Coupon`, `Promotion`, `Review` | Commerce | Catalog, Sales | tablas `store_*` y relacionadas |

@@ -388,6 +388,57 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/inventario/movimiento',      [\App\Modules\Inventario\Controllers\InventoryController::class, 'store'])->name('inventory.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
         Route::get('/inventario/{product}/kardex', [\App\Modules\Inventario\Controllers\InventoryController::class, 'kardex'])->name('inventory.kardex')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
 
+        // Etiquetas con QR. Imprimir es una lectura: no cambia el stock, solo
+        // pinta lo que ya existe, por eso va con `*.ver` y no con `*.editar`.
+        Route::get('/inventario/etiquetas',          [\App\Modules\Inventario\Controllers\EtiquetaController::class, 'index'])->name('inventory.etiquetas')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/etiquetas/imprimir', [\App\Modules\Inventario\Controllers\EtiquetaController::class, 'imprimir'])->name('inventory.etiquetas.imprimir')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+
+        // Toma de inventario. Ver el conteo es lectura; anotar cantidades y
+        // cerrarlo MUEVEN el stock, asi que esos dos exigen `*.editar`.
+        Route::get('/inventario/tomas',              [\App\Modules\Inventario\Controllers\TomaInventarioController::class, 'index'])->name('inventory.tomas')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/tomas',             [\App\Modules\Inventario\Controllers\TomaInventarioController::class, 'store'])->name('inventory.tomas.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::get('/inventario/tomas/{id}',         [\App\Modules\Inventario\Controllers\TomaInventarioController::class, 'show'])->name('inventory.tomas.show')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/tomas/{id}/contar', [\App\Modules\Inventario\Controllers\TomaInventarioController::class, 'contar'])->name('inventory.tomas.contar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::post('/inventario/tomas/{id}/cerrar', [\App\Modules\Inventario\Controllers\TomaInventarioController::class, 'cerrar'])->name('inventory.tomas.cerrar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+
+        // Ubicaciones del almacen. Consultar que hay en un estante es lectura;
+        // guardar o quitar un producto de el, no.
+        Route::get('/inventario/ubicaciones',               [\App\Modules\Inventario\Controllers\UbicacionController::class, 'index'])->name('inventory.ubicaciones')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::get('/inventario/ubicaciones/etiquetas',     [\App\Modules\Inventario\Controllers\UbicacionController::class, 'etiquetas'])->name('inventory.ubicaciones.etiquetas')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/ubicaciones',              [\App\Modules\Inventario\Controllers\UbicacionController::class, 'store'])->name('inventory.ubicaciones.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::get('/inventario/ubicaciones/{id}',          [\App\Modules\Inventario\Controllers\UbicacionController::class, 'show'])->name('inventory.ubicaciones.show')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/ubicaciones/{id}/asignar', [\App\Modules\Inventario\Controllers\UbicacionController::class, 'asignar'])->name('inventory.ubicaciones.asignar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::post('/inventario/ubicaciones/{id}/quitar',  [\App\Modules\Inventario\Controllers\UbicacionController::class, 'quitar'])->name('inventory.ubicaciones.quitar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+
+        // Mover entre almacenes. Ver el historial es lectura; mover, no.
+        Route::get('/inventario/traslados',   [\App\Modules\Inventario\Controllers\UbicacionController::class, 'traslados'])->name('inventory.traslados')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/traslados',  [\App\Modules\Inventario\Controllers\UbicacionController::class, 'trasladar'])->name('inventory.ubicaciones.trasladar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+
+        // Ordenes de compra. Consultar es lectura; crear, recibir y anular
+        // MUEVEN stock o comprometen dinero, asi que exigen `*.editar`.
+        Route::get('/inventario/compras',              [\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'index'])->name('inventory.compras')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/compras',             [\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'store'])->name('inventory.compras.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::get('/inventario/compras/{id}',         [\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'show'])->name('inventory.compras.show')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/compras/{id}/linea',  [\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'agregarLinea'])->name('inventory.compras.linea')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::post('/inventario/compras/{id}/quitar', [\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'quitarLinea'])->name('inventory.compras.quitar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::post('/inventario/compras/{id}/enviar', [\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'enviar'])->name('inventory.compras.enviar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::post('/inventario/compras/{id}/recibir',[\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'recibir'])->name('inventory.compras.recibir')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::post('/inventario/compras/{id}/anular', [\App\Modules\Inventario\Controllers\OrdenCompraController::class, 'anular'])->name('inventory.compras.anular')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+
+        // Activos fijos: lo que la empresa posee, no lo que vende.
+        Route::get('/inventario/activos',           [\App\Modules\Inventario\Controllers\ActivoFijoController::class, 'index'])->name('inventory.activos')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::get('/inventario/activos/etiquetas', [\App\Modules\Inventario\Controllers\ActivoFijoController::class, 'etiquetas'])->name('inventory.activos.etiquetas')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::get('/inventario/activos/buscar',    [\App\Modules\Inventario\Controllers\ActivoFijoController::class, 'porCodigo'])->name('inventory.activos.buscar')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/activos',          [\App\Modules\Inventario\Controllers\ActivoFijoController::class, 'store'])->name('inventory.activos.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::get('/inventario/activos/{id}',      [\App\Modules\Inventario\Controllers\ActivoFijoController::class, 'show'])->name('inventory.activos.show')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/activos/{id}',     [\App\Modules\Inventario\Controllers\ActivoFijoController::class, 'actualizar'])->name('inventory.activos.actualizar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+
+        // Bultos y despacho.
+        Route::get('/inventario/bultos',           [\App\Modules\Inventario\Controllers\BultoController::class, 'index'])->name('inventory.bultos')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::get('/inventario/bultos/etiquetas', [\App\Modules\Inventario\Controllers\BultoController::class, 'etiquetas'])->name('inventory.bultos.etiquetas')->middleware(['module:inventory|catalog', 'project.can:inventory.ver|catalog.ver']);
+        Route::post('/inventario/bultos',          [\App\Modules\Inventario\Controllers\BultoController::class, 'store'])->name('inventory.bultos.store')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+        Route::post('/inventario/bultos/avanzar',  [\App\Modules\Inventario\Controllers\BultoController::class, 'avanzar'])->name('inventory.bultos.avanzar')->middleware(['module:inventory|catalog', 'project.can:inventory.editar|catalog.editar']);
+
         // Proveedores
         // proveedores.ver / proveedores.editar ya existian en la tabla de permisos
         // y aparecian en Roles, pero ninguna ruta los usaba: cualquier miembro
@@ -839,6 +890,10 @@ Route::post('/{slug}/financiamiento/simular', [\App\Modules\Credito\Controllers\
 Route::get('/{slug}/financiamiento/{token}', [\App\Modules\Credito\Controllers\SolicitudPublicaController::class, 'estado'])->name('credito.estado')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 Route::post('/{slug}/financiamiento/{token}/documento', [\App\Modules\Credito\Controllers\SolicitudPublicaController::class, 'subirDocumento'])->name('credito.documento')->middleware('throttle:20,1')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 
+// Pagina de tiendas fisicas con mapa. Va antes de /contacto para leerse junto
+// a las demas paginas publicas de la tienda.
+Route::get('/{slug}/tiendas', [\App\Modules\Tienda\Controllers\StorePageController::class, 'tiendas'])->name('public.tiendas')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
+
 Route::get('/{slug}/contacto', [\App\Modules\Tienda\Controllers\StorePageController::class, 'contact'])->name('public.contact')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 Route::get('/{slug}/nosotros', [\App\Modules\Tienda\Controllers\StorePageController::class, 'about'])->name('public.about')->where('slug', '(?!(?:' . $reserved . ')(?:/|$))[a-z0-9-]+');
 // Marcas: pagina de todas y pagina de una (la tienda filtrada, con cabecera).
@@ -945,6 +1000,12 @@ Route::get('/r/{slug}', [\App\Modules\Ventas\Controllers\ResellerController::cla
 
 // ─── Propuesta comercial pública (la abre el cliente y la guarda como PDF) ────
 Route::get('/propuesta/{token}', [\App\Modules\Ventas\Controllers\ProposalController::class, 'publica'])->name('proposal.publica');
+// El cliente acepta y deja los datos de su negocio. Publica y sin login: la
+// llave es el token. Con throttle, como toda ruta publica que escribe.
+Route::post('/propuesta/{token}/aceptar', [\App\Modules\Ventas\Controllers\ProposalController::class, 'aceptar'])->name('proposal.aceptar')->middleware('throttle:10,1');
+// Mismo formulario, pagina propia: se manda por WhatsApp cuando el cliente ya
+// dijo que si y solo falta que entregue sus datos.
+Route::get('/propuesta/{token}/datos', [\App\Modules\Ventas\Controllers\ProposalController::class, 'formularioAlta'])->name('proposal.datos');
 
 // ─── Portal Facturación ───────────────────────────────────────────────────────
 use App\Modules\Finanzas\Controllers\FacturacionAuthController as FacAuthController;
